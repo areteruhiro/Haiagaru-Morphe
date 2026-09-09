@@ -61,3 +61,6 @@ https://github.com/nonnonstop/Tsubonofuta
 
 Forked from Binnosoko
 https://github.com/Chipppppppppp/Binnosoko
+
+Contribution
+LEINsに対して寄付/ご購入してくださった皆様
