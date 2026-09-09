@@ -1,6 +1,8 @@
 # Haiagaru for Morphe
 
 ChMate `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。
+機能は以下を参照
+https://github.com/areteruhiro/Haiagaru
 
 ## 対象
 
