@@ -37,6 +37,9 @@ Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
 APKは再署名されるため、Play版など署名が異なるChMateとはそのまま上書きできません。
 
 ## サポート
+何かあればGitHubのIssueか
+以下のサーバーで対応させていただきます。
+お気軽にご質問等お願いします。
 
 [Haiagaru サポートチャンネル](https://discord.com/channels/1392057820316303362/1547235153347092572)
 
