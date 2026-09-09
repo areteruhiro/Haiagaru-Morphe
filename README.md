@@ -4,6 +4,14 @@ ChMate `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッ�
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
+
+## Features
+
+* Remove ads (including margins)
+* Modify User-Agent
+* Remove MonaKey
+
+
 ## 対象
 
 - パッケージ: `jp.co.airfront.android.a2chMate`
