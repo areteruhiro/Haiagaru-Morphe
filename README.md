@@ -49,3 +49,15 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 
 ベースのビルドシステムとパッチ形式は
 [Morphe patches](https://github.com/MorpheApp/morphe-patches) を使用しています。
+
+
+## Credit
+
+Original Tsubonofuta is developed by AioiLight. \
+https://github.com/AioiLight/Tsubonofuta
+
+Forked from Tsubonofuta (Modify), developed by nonnonstop. \
+https://github.com/nonnonstop/Tsubonofuta
+
+Forked from Binnosoko
+https://github.com/Chipppppppppp/Binnosoko
