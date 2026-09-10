@@ -12,6 +12,10 @@ https://github.com/areteruhiro/Haiagaru
 
 ## 更新履歴
 
+### 1.2.1
+
+- Android版Morphe Managerで読み込めるDEX形式のパッチバンドルへ修正
+
 ### 1.2.0
 
 - ChMate `0.8.10.191 dev` の画像アップロード時クラッシュを修正
@@ -40,7 +44,7 @@ https://github.com/areteruhiro/Haiagaru
 生成物:
 
 ```text
-patches\build\libs\patches-1.2.0.mpp
+patches\build\libs\patches-1.2.1.mpp
 ```
 
 Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
