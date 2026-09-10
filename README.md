@@ -34,7 +34,7 @@ https://github.com/areteruhiro/Haiagaru
 ## ビルド
 
 ```powershell
-.\gradlew.bat :patches:jar --no-daemon --max-workers=1
+.\gradlew.bat :patches:buildAndroid --no-daemon --max-workers=1
 ```
 
 生成物:
