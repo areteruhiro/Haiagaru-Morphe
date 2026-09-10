@@ -46,6 +46,7 @@ public final class Haiagaru {
             "com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor";
     private static final String DEFAULT_MONAKEY_FILE = "2chapi";
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
+    private static final String AD_CLASS_191 = "o.qheCC";
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
     private static final String AD_CLASS_242 = "o.zzbgb";
     private static final String AD_CLASS_243 = "o.zzexb";
@@ -167,9 +168,54 @@ public final class Haiagaru {
         );
     }
 
+    public static String rewrite5chUrl(String original) {
+        if (original == null || !isChtoioEnabled()) return original;
+        return original.replace("5ch.net", "5ch.io");
+    }
+
+    public static boolean is5chHost(String host) {
+        if (host == null) return false;
+        String normalized = host.toLowerCase(Locale.ROOT);
+        return normalized.equals("5ch.net")
+                || normalized.endsWith(".5ch.net")
+                || normalized.equals("5ch.io")
+                || normalized.endsWith(".5ch.io");
+    }
+
+    public static String normalizePostError(String error) {
+        if (error != null && "0000 Confirmation".equalsIgnoreCase(error.trim())) {
+            // Let ChMate's existing confirmation-form parser merge the returned hidden
+            // fields and repeat the POST instead of treating the confirmation as failure.
+            return "";
+        }
+        return error;
+    }
+
+    public static boolean isCurrentPostConfirmation(String html) {
+        return html != null
+                && html.contains("<!-- _X:cookie -->")
+                && html.contains("name=\"feature\"")
+                && html.contains("上記全てを承諾して書き込む");
+    }
+
+    public static boolean preserveServerPostForm(
+            CharSequence ignoredExcludedField,
+            CharSequence ignoredResponseField
+    ) {
+        return true;
+    }
+
     public static void hideAdView(View view) {
         if (view == null || !shouldHideAds()) return;
 
+        collapseAdView(view);
+        view.post(() -> collapseAdView(view));
+        view.postDelayed(() -> collapseAdView(view), 300);
+        view.postDelayed(() -> collapseAdView(view), 1000);
+        view.postDelayed(() -> collapseAdView(view), 2500);
+    }
+
+    private static void collapseAdView(View view) {
         view.setVisibility(View.GONE);
         ViewGroup.LayoutParams params = view.getLayoutParams();
         if (params != null) {
@@ -204,6 +250,25 @@ public final class Haiagaru {
                     scheduleKnownAdChecks(rootGroup);
                     return;
                 }
+            }
+        }
+
+        hideRememberedAdViews(rootGroup);
+        scheduleKnownAdChecks(rootGroup);
+    }
+
+    /** Finds the legacy banner slot in every Fragment root by its stable layout position. */
+    public static void hideLegacyBanner(View root) {
+        if (!(root instanceof ViewGroup) || !shouldHideAds()) return;
+
+        ViewGroup rootGroup = (ViewGroup) root;
+        int childCount = rootGroup.getChildCount();
+        if (childCount >= 3) {
+            View candidate = rootGroup.getChildAt(childCount - 3);
+            if (candidate instanceof FrameLayout
+                    && candidate.getClass() != FrameLayout.class) {
+                rememberAdClass(candidate);
+                hideAdView(candidate);
             }
         }
 
@@ -398,7 +463,8 @@ public final class Haiagaru {
 
         // A downgrade/upgrade keeps SharedPreferences. Migrate only our built-in
         // obfuscated defaults; an explicitly entered custom class is preserved verbatim.
-        if ((AD_CLASS_241.equals(savedClass)
+        if ((AD_CLASS_191.equals(savedClass)
+                || AD_CLASS_241.equals(savedClass)
                 || AD_CLASS_242.equals(savedClass)
                 || AD_CLASS_243.equals(savedClass))
                 && !classExists(savedClass)) {
@@ -410,7 +476,8 @@ public final class Haiagaru {
     private static String defaultAdClass() {
         if (classExists(AD_CLASS_243)) return AD_CLASS_243;
         if (classExists(AD_CLASS_242)) return AD_CLASS_242;
-        return AD_CLASS_241;
+        if (classExists(AD_CLASS_241)) return AD_CLASS_241;
+        return AD_CLASS_191;
     }
 
     private static boolean classExists(String className) {

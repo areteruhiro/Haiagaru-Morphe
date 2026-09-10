@@ -13,11 +13,17 @@ import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.StringReference
+import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 
 private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
@@ -32,6 +38,10 @@ private val compatibility = Compatibility(
     ),
     targets = listOf(
         AppTarget(
+            version = "0.8.10.191 dev",
+            minSdk = 21
+        ),
+        AppTarget(
             version = "0.8.10.241",
             minSdk = 23
         ),
@@ -44,13 +54,6 @@ private val compatibility = Compatibility(
             minSdk = 24
         )
     )
-)
-
-private object ApplicationOnCreateFingerprint : Fingerprint(
-    definingClass = "Ljp/syoboi/a2chMate/RoidonApp;",
-    name = "onCreate",
-    returnType = "V",
-    parameters = emptyList()
 )
 
 private object SettingsOnResumeFingerprint : Fingerprint(
@@ -74,15 +77,12 @@ private object HiltSettingsOnCreateFingerprint : Fingerprint(
     parameters = listOf("Landroid/os/Bundle;")
 )
 
-private object HomeOnViewCreatedFingerprint : Fingerprint(
-    definingClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
-    name = "onViewCreated",
-    returnType = "V",
-    parameters = listOf("Landroid/view/View;", "Landroid/os/Bundle;")
-)
-
 private data class ChMateProfile(
     val providerClass: String,
+    val providerStartupTrapClass: String?,
+    val settingsViewModelClass: String?,
+    val applicationClass: String,
+    val homeFragmentClass: String,
     val cookieClearMethod: String,
     val signatureClass: String,
     val signatureMethod: String,
@@ -92,12 +92,14 @@ private data class ChMateProfile(
     val signatureSuperType: String,
     val patchSignatureWrapper: Boolean,
     val signatureDirectWrapperBypass: Boolean,
-    val viewModelFactoryClass: String,
+    val viewModelFactoryClass: String?,
     val viewModelDispatchField: String,
     val viewModelTrapKind: ViewModelTrapKind,
     val settingsWindowFeatureDivideTrap: Boolean,
+    val hasHiltSettings: Boolean,
+    val hasLevelPlayBanner: Boolean,
     val homeAdClass: String,
-    val homeAdLoadMethod: String,
+    val homeAdLoadMethod: String?,
 )
 
 private enum class ViewModelTrapKind {
@@ -107,8 +109,38 @@ private enum class ViewModelTrapKind {
 }
 
 private fun profileFor(versionName: String) = when (versionName) {
+    "0.8.10.191 dev" -> ChMateProfile(
+        providerClass = "Lo/ndExternalSyntheticLambda7;",
+        providerStartupTrapClass = "Lo/mc${'$'}5;",
+        settingsViewModelClass = "Lo/onAppOpenAdLoadFailed;",
+        applicationClass = "Lo/lo;",
+        homeFragmentClass = "Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;",
+        cookieClearMethod = "b",
+        signatureClass = "",
+        signatureMethod = "",
+        signatureDelegateField = "",
+        signatureDelegateType = "",
+        signatureDelegateMethod = "",
+        signatureSuperType = "",
+        patchSignatureWrapper = false,
+        // The legacy settings Activity has the same normal fall-through/failure-branch
+        // shape even though it predates the provider wrapper used by newer versions.
+        signatureDirectWrapperBypass = true,
+        viewModelFactoryClass = null,
+        viewModelDispatchField = "",
+        viewModelTrapKind = ViewModelTrapKind.NONE,
+        settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = false,
+        hasLevelPlayBanner = false,
+        homeAdClass = "Lo/qheCC;",
+        homeAdLoadMethod = null,
+    )
     "0.8.10.241" -> ChMateProfile(
         providerClass = "Lo/Kjv22;",
+        providerStartupTrapClass = null,
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
         cookieClearMethod = "e",
         signatureClass = "Lo/getWebView${'$'}3;",
         signatureMethod = "a",
@@ -123,11 +155,17 @@ private fun profileFor(versionName: String) = when (versionName) {
         viewModelDispatchField = "c",
         viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
         settingsWindowFeatureDivideTrap = true,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
         homeAdClass = "Lo/setUseHandlerThreadForCallbacks;",
         homeAdLoadMethod = "e",
     )
     "0.8.10.242 dev" -> ChMateProfile(
         providerClass = "Lo/isConnected;",
+        providerStartupTrapClass = null,
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
         cookieClearMethod = "e",
         signatureClass = "Lo/TTRewardExpressVideoActivity${'$'}5;",
         signatureMethod = "c",
@@ -143,11 +181,17 @@ private fun profileFor(versionName: String) = when (versionName) {
         viewModelDispatchField = "e",
         viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
         settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
         homeAdClass = "Lo/zzbgb;",
         homeAdLoadMethod = "d",
     )
     "0.8.10.243 dev" -> ChMateProfile(
         providerClass = "Lo/zzbvh;",
+        providerStartupTrapClass = null,
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
         cookieClearMethod = "a",
         signatureClass = "Lo/SafeParcelableReserved${'$'}4;",
         signatureMethod = "a",
@@ -161,6 +205,8 @@ private fun profileFor(versionName: String) = when (versionName) {
         viewModelDispatchField = "d",
         viewModelTrapKind = ViewModelTrapKind.DIVIDE_BY_ZERO,
         settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
         homeAdClass = "Lo/zzexb;",
         homeAdLoadMethod = "c",
     )
@@ -186,20 +232,40 @@ val haiagaruPatch = bytecodePatch(
             0,
             "invoke-static { }, $EXTENSION->installSignatureSpoof()V"
         )
+        profile.providerStartupTrapClass?.let { startupTrapClass ->
+            mutableClassDefBy(startupTrapClass).methods.single { method ->
+                method.name == "a"
+                    && method.returnType == "Ljava/lang/Object;"
+                    && method.parameters.isEmpty()
+            }.returnProviderStartupDelegate()
+        }
 
-        ApplicationOnCreateFingerprint.method.addBeforeEveryReturn(
+        mutableClassDefBy(profile.applicationClass).methods.single { method ->
+            method.name == "onCreate"
+                && method.returnType == "V"
+                && method.parameters.isEmpty()
+        }.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onApplicationCreate(Landroid/app/Application;)V"
         )
         SettingsOnResumeFingerprint.method.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onSettingsResume(Landroid/app/Activity;)V"
         )
-        // ChMate 0.8.10.242 reuses the p1 register later in onViewCreated. Inject while
-        // p1 is still guaranteed to contain the Fragment root; the extension posts its
-        // scans to the view queue, so child views are inspected after construction.
-        HomeOnViewCreatedFingerprint.method.addInstruction(
-            0,
-            "invoke-static/range { p1 .. p1 }, $EXTENSION->hideHomeBanner(Landroid/view/View;)V"
-        )
+        if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchLegacyFragmentBannerDiscovery()
+        } else {
+            // ChMate 0.8.10.242 reuses the p1 register later in onViewCreated. Inject while
+            // p1 is still guaranteed to contain the Fragment root; the extension posts its
+            // scans to the view queue, so child views are inspected after construction.
+            mutableClassDefBy(profile.homeFragmentClass).methods.single { method ->
+                method.name == "onViewCreated"
+                    && method.returnType == "V"
+                    && method.parameters.map(CharSequence::toString) ==
+                    listOf("Landroid/view/View;", "Landroid/os/Bundle;")
+            }.addInstruction(
+                0,
+                "invoke-static/range { p1 .. p1 }, $EXTENSION->hideHomeBanner(Landroid/view/View;)V"
+            )
+        }
         mutableClassDefBy(
             "Lcom/franmontiel/persistentcookiejar/persistence/SharedPrefsCookiePersistor;"
         ).methods.single { method ->
@@ -229,34 +295,54 @@ val haiagaruPatch = bytecodePatch(
             }
         }
 
-        mutableClassDefBy(profile.viewModelFactoryClass).methods.single { method ->
-            method.name == "get"
-                && method.returnType == "Ljava/lang/Object;"
-                && method.parameters.isEmpty()
-        }.bypassTamperTrap(profile)
-        if (profile.viewModelTrapKind != ViewModelTrapKind.NONE) {
-            SettingsOnCreateFingerprint.method.bypassSettingsTamperTrap(profile)
-            HiltSettingsOnCreateFingerprint.method.bypassHiltSettingsTamperTrap(profile)
+        profile.viewModelFactoryClass?.let { viewModelFactoryClass ->
+            mutableClassDefBy(viewModelFactoryClass).methods.single { method ->
+                method.name == "get"
+                    && method.returnType == "Ljava/lang/Object;"
+                    && method.parameters.isEmpty()
+            }.bypassTamperTrap(profile)
         }
-        patchDistributedIntegrityComparisons()
+        profile.settingsViewModelClass?.let { viewModelClass ->
+            mutableClassDefBy(viewModelClass).methods.single { method ->
+                method.name == "<init>"
+                    && method.returnType == "V"
+                    && method.parameters.map(CharSequence::toString) ==
+                    listOf("Landroid/app/Application;")
+            }.bypassLegacyViewModelTamperTrap()
+        }
+        if (profile.viewModelTrapKind != ViewModelTrapKind.NONE
+            || profile.settingsViewModelClass != null
+        ) {
+            SettingsOnCreateFingerprint.method.bypassSettingsTamperTrap(profile)
+            if (profile.hasHiltSettings) {
+                HiltSettingsOnCreateFingerprint.method.bypassHiltSettingsTamperTrap(profile)
+            }
+        }
+        patchDistributedIntegrityComparisons(
+            includeAllObfuscatedClasses = packageMetadata.versionName == "0.8.10.191 dev"
+        )
 
-        listOf(
-            "Lcom/amazon/device/ads/DTBAdRequest;",
-            "Lcom/unity3d/mediation/banner/LevelPlayBannerAdView;"
-        ).forEach { classType ->
+        buildList {
+            add("Lcom/amazon/device/ads/DTBAdRequest;")
+            if (profile.hasLevelPlayBanner) {
+                add("Lcom/unity3d/mediation/banner/LevelPlayBannerAdView;")
+            }
+        }.forEach { classType ->
             mutableClassDefBy(classType).methods
                 .filter { it.name == "loadAd" && it.returnType == "V" }
                 .forEach { it.addHideAdsGuard() }
         }
 
-        mutableClassDefBy("Lcom/unity3d/mediation/banner/LevelPlayBannerAdView;")
-            .methods
-            .filter { it.name == "<init>" }
-            .forEach {
-                it.addBeforeEveryReturn(
-                    "invoke-static/range { p0 .. p0 }, $EXTENSION->hideAdView(Landroid/view/View;)V"
-                )
-            }
+        if (profile.hasLevelPlayBanner) {
+            mutableClassDefBy("Lcom/unity3d/mediation/banner/LevelPlayBannerAdView;")
+                .methods
+                .filter { it.name == "<init>" }
+                .forEach {
+                    it.addBeforeEveryReturn(
+                        "invoke-static/range { p0 .. p0 }, $EXTENSION->hideAdView(Landroid/view/View;)V"
+                    )
+                }
+        }
 
         // The exact class is version-specific, but each target was matched by the same
         // FrameLayout/ad-placement/load-method structure instead of by its obfuscated name.
@@ -265,15 +351,90 @@ val haiagaruPatch = bytecodePatch(
                 method.name == "<init>" -> method.addBeforeEveryReturn(
                     "invoke-static/range { p0 .. p0 }, $EXTENSION->hideAdView(Landroid/view/View;)V"
                 )
-                method.name == profile.homeAdLoadMethod
+                profile.homeAdLoadMethod != null
+                    && method.name == profile.homeAdLoadMethod
                     && method.returnType == "V"
                     && method.parameters.isEmpty() ->
                     method.addHideAdsViewGuard()
             }
         }
 
-        patchSetTextCalls()
+        if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchLegacy5chIoCompatibility()
+        } else {
+            patchSetTextCalls()
+        }
     }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyFragmentBannerDiscovery() {
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Ljp/syoboi/") && !classDef.type.startsWith("Lo/")) {
+            return@classDefForEach
+        }
+
+        val candidates = classDef.methods.filter { method ->
+            method.name == "onViewCreated"
+                && method.returnType == "V"
+                && method.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/view/View;", "Landroid/os/Bundle;")
+                && method.implementation != null
+        }
+        if (candidates.isEmpty()) return@classDefForEach
+
+        val mutableClass = mutableClassDefBy(classDef)
+        candidates.forEach { method ->
+            mutableClass.findMutableMethodOf(method).addInstruction(
+                0,
+                "invoke-static/range { p1 .. p1 }, $EXTENSION->hideLegacyBanner(Landroid/view/View;)V"
+            )
+        }
+    }
+}
+
+private fun MutableMethod.returnProviderStartupDelegate() {
+    addInstructionsWithLabels(
+        0,
+        """
+            move-object/from16 v0, p0
+            iget-object v0, v0, Lo/mc${'$'}5;->e:Lo/mc${'$'}read;
+            invoke-virtual { v0 }, Lo/mc${'$'}read;->a()Ljava/lang/Object;
+            move-result-object v0
+            return-object v0
+        """
+    )
+}
+
+private fun MutableMethod.bypassLegacyViewModelTamperTrap() {
+    val instructions = implementation?.instructions
+        ?: error("ChMate legacy settings ViewModel constructor has no implementation")
+    val trapIndex = instructions.indices.firstOrNull { index ->
+        index + 2 < instructions.size
+            && instructions[index].opcode == Opcode.NEW_ARRAY
+            && instructions[index + 1].opcode == Opcode.ADD_INT_LIT8
+            && instructions[index + 2].opcode == Opcode.APUT
+    } ?: error("ChMate legacy settings ViewModel array trap was not found")
+    val failureBranchIndex = instructions.subList(0, trapIndex)
+        .indexOfLast { it.opcode == Opcode.IF_NE }
+        .takeIf { it >= 0 }
+        ?: error("ChMate legacy settings ViewModel failure branch was not found")
+
+    replaceInstruction(failureBranchIndex, "nop")
+
+    // The constructor later derives the SharedPreferences mode from the same
+    // certificate state. On a re-signed APK the decoy calculation makes its
+    // divisor zero; the real value is Context.MODE_PRIVATE (0).
+    val preferencesNameIndex = instructions.indices.firstOrNull { index ->
+        ((instructions[index] as? ReferenceInstruction)?.reference as? StringReference)
+            ?.string == "dispose_dialog"
+    } ?: error("ChMate legacy settings preferences initialization was not found")
+    val modeDivisionIndex = instructions.subList(maxOf(0, preferencesNameIndex - 80), preferencesNameIndex)
+        .indexOfLast { it.opcode == Opcode.DIV_INT }
+        .takeIf { it >= 0 }
+        ?.plus(maxOf(0, preferencesNameIndex - 80))
+        ?: error("ChMate legacy settings preferences mode trap was not found")
+    val modeRegister = (instructions[modeDivisionIndex] as ThreeRegisterInstruction).registerA
+    replaceInstruction(modeDivisionIndex, "const/4 v$modeRegister, 0x0")
 }
 
 private fun MutableMethod.bypassHiltSettingsTamperTrap(profile: ChMateProfile) {
@@ -505,9 +666,16 @@ private fun MutableMethod.addBeforeEveryReturn(instruction: String) {
  * Object[] state and IF_NE jumps to a decoy exception block. Keep the real constructor
  * body by forcing the equality fall-through.
  */
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegrityComparisons() {
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegrityComparisons(
+    includeAllObfuscatedClasses: Boolean = false,
+) {
     classDefForEach { classDef ->
-        if (!classDef.type.startsWith("Ljp/syoboi/")) return@classDefForEach
+        if (!classDef.type.startsWith("Ljp/syoboi/")
+            && classDef.type != "Lo/getLabel;"
+            && !(includeAllObfuscatedClasses && classDef.type.startsWith("Lo/"))
+        ) {
+            return@classDefForEach
+        }
 
         val mutableClass by lazy { mutableClassDefBy(classDef) }
         classDef.methods.forEach { method ->
@@ -519,10 +687,95 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
                     && window.count { it.opcode == Opcode.CHECK_CAST } >= 2
                     && window.count { it.opcode == Opcode.AGET } >= 2
             }
-            if (matches.isEmpty()) return@forEach
+            val literalZeroDivides = if (includeAllObfuscatedClasses) {
+                instructions.indices.filter { index ->
+                    val instruction = instructions[index]
+                    (instruction.opcode == Opcode.DIV_INT_LIT8
+                        || instruction.opcode == Opcode.DIV_INT_LIT16)
+                        && (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 0
+                }
+            } else {
+                emptyList()
+            }
+
+            val provableZeroDivides = if (includeAllObfuscatedClasses) {
+                instructions.indices.filter { index ->
+                    val instruction = instructions[index]
+                    if (instruction.opcode != Opcode.DIV_INT
+                        && instruction.opcode != Opcode.DIV_INT_2ADDR
+                    ) {
+                        return@filter false
+                    }
+                    fun wasSetToZero(register: Int): Boolean {
+                        return instructions.subList(maxOf(0, index - 5), index)
+                            .indexOfLast { previous ->
+                                (previous as? OneRegisterInstruction)?.registerA == register
+                                    && (previous as? NarrowLiteralInstruction)?.narrowLiteral == 0
+                            } >= 0
+                    }
+                    when (instruction) {
+                        is ThreeRegisterInstruction ->
+                            wasSetToZero(instruction.registerB)
+                                || wasSetToZero(instruction.registerC)
+                        is TwoRegisterInstruction ->
+                            wasSetToZero(instruction.registerA)
+                                || wasSetToZero(instruction.registerB)
+                        else -> false
+                    }
+                }
+            } else {
+                emptyList()
+            }
+
+            val derivedValueDivides = if (matches.isNotEmpty()) {
+                instructions.indices.filter { index ->
+                    val instruction = instructions[index]
+                    if (instruction.opcode != Opcode.DIV_INT
+                        && instruction.opcode != Opcode.DIV_INT_2ADDR
+                    ) {
+                        return@filter false
+                    }
+                    val nextInstructions = instructions.subList(
+                        index + 1,
+                        minOf(index + 16, instructions.size)
+                    )
+                    val discardedBeforeFlagDecode = instruction.opcode == Opcode.DIV_INT
+                        && nextInstructions.firstOrNull()?.opcode == Opcode.AND_INT_LIT8
+                    val suppliesFrameworkIndex = nextInstructions.any { next ->
+                        val reference = (next as? ReferenceInstruction)?.reference
+                            as? MethodReference ?: return@any false
+                        (reference.definingClass == "Ljava/lang/String;"
+                            && reference.name == "substring"
+                            && reference.parameterTypes.map(CharSequence::toString) == listOf("I"))
+                            || (reference.definingClass == "Landroid/content/Context;"
+                                && reference.name == "getSharedPreferences"
+                                && reference.parameterTypes.map(CharSequence::toString) ==
+                                listOf("Ljava/lang/String;", "I"))
+                    }
+                    discardedBeforeFlagDecode || suppliesFrameworkIndex
+                }
+            } else {
+                emptyList()
+            }
+
+            if (matches.isEmpty() && literalZeroDivides.isEmpty()
+                && provableZeroDivides.isEmpty()
+                && derivedValueDivides.isEmpty()
+            ) return@forEach
 
             val mutableMethod = mutableClass.findMutableMethodOf(method)
             matches.asReversed().forEach { mutableMethod.replaceInstruction(it, "nop") }
+            (literalZeroDivides + provableZeroDivides + derivedValueDivides)
+                .distinct()
+                .sortedDescending()
+                .forEach { index ->
+                    val register = when (val instruction = instructions[index]) {
+                        is ThreeRegisterInstruction -> instruction.registerA
+                        is TwoRegisterInstruction -> instruction.registerA
+                        else -> error("ChMate integrity divide destination was not found")
+                    }
+                    mutableMethod.replaceInstruction(index, "const/16 v$register, 0x0")
+                }
         }
     }
 }
@@ -568,5 +821,272 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
                 )
             }
         }
+    }
+}
+
+/**
+ * Restores the current 5ch.io transport contract in the last pre-io ChMate build.
+ * The legacy URL model and posting engine are retained; only their domain, clock,
+ * and confirmation semantics are adapted.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompatibility() {
+    val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
+
+    urlInfoClass.methods.single { method ->
+        method.name == "b"
+            && method.returnType == "Ljp/syoboi/a2chMate/client/BBSUrlInfo;"
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->rewrite5chUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p0
+        """
+    )
+
+    urlInfoClass.methods.single { method ->
+        method.name == "e"
+            && method.returnType == "I"
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    }.let { classifyHostMethod ->
+        val firstInstruction = classifyHostMethod.implementation?.instructions?.firstOrNull()
+            ?: error("ChMate legacy host classifier has no implementation")
+        classifyHostMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static/range { p0 .. p0 }, $EXTENSION->is5chHost(Ljava/lang/String;)Z
+                move-result v0
+                if-eqz v0, :haiagaru_original_host_classifier
+                const/4 v0, 0x1
+                return v0
+            """,
+            ExternalLabel("haiagaru_original_host_classifier", firstInstruction)
+        )
+    }
+
+    // Rewrite every URL-like String emitted by the URL model. Non-5ch values are
+    // returned unchanged, so board types and other BBS implementations stay intact.
+    urlInfoClass.methods.filter { it.returnType == "Ljava/lang/String;" }.forEach { method ->
+        val returnIndexes = method.implementation?.instructions
+            ?.mapIndexedNotNull { index, instruction ->
+                if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+            }
+            .orEmpty()
+        returnIndexes.asReversed().forEach { index ->
+            val register = (method.implementation!!.instructions[index] as OneRegisterInstruction)
+                .registerA
+            method.addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->rewrite5chUrl(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v$register
+                """
+            )
+        }
+    }
+
+    val confirmationDetector = mutableClassDefBy("Lo/getJsonData;").methods.single { method ->
+        method.name == "a"
+            && method.returnType == "Z"
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    }
+    val detectorStart = confirmationDetector.implementation?.instructions?.firstOrNull()
+        ?: error("ChMate legacy confirmation detector has no implementation")
+    confirmationDetector.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->isCurrentPostConfirmation(Ljava/lang/String;)Z
+            move-result v0
+            if-eqz v0, :haiagaru_original_confirmation_detector
+            const/4 v0, 0x1
+            return v0
+        """,
+        ExternalLabel("haiagaru_original_confirmation_detector", detectorStart)
+    )
+
+    // Update fixed service hosts and domain filters used by menus, search-result
+    // acceptance, cookies, and auxiliary 5ch endpoints.
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Ljp/syoboi/") && !classDef.type.startsWith("Lo/")) {
+            return@classDefForEach
+        }
+        val mutableClass by lazy { mutableClassDefBy(classDef) }
+        classDef.methods.forEach { method ->
+            val replacements = method.implementation?.instructions
+                ?.mapIndexedNotNull { index, instruction ->
+                    val string = ((instruction as? ReferenceInstruction)?.reference
+                        as? StringReference)?.string ?: return@mapIndexedNotNull null
+                    if (string.any { it.code !in 0x20..0x7e }) {
+                        return@mapIndexedNotNull null
+                    }
+                    val rewritten = string
+                        .replace("[25]ch\\.net", "(?:2ch\\.net|5ch\\.io)")
+                        .replace("5ch\\.net", "5ch\\.io")
+                        .replace("5ch.net", "5ch.io")
+                    if (rewritten == string) null else Triple(index, instruction, rewritten)
+                }
+                ?.toList()
+                .orEmpty()
+            if (replacements.isEmpty()) return@forEach
+
+            val mutableMethod = mutableClass.findMutableMethodOf(method)
+            replacements.asReversed().forEach { (index, instruction, rewritten) ->
+                val register = (instruction as OneRegisterInstruction).registerA
+                val escaped = rewritten
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                mutableMethod.replaceInstruction(index, "const-string v$register, \"$escaped\"")
+            }
+        }
+    }
+
+    val networkClass = mutableClassDefBy("Lo/getLabel;")
+    networkClass.methods.forEach { method ->
+        val instructions = method.implementation?.instructions ?: return@forEach
+
+        val oldClockIndexes = instructions.mapIndexedNotNull { index, instruction ->
+            if ((instruction as? WideLiteralInstruction)?.wideLiteral == 900L) index else null
+        }
+        oldClockIndexes.asReversed().forEach { index ->
+            val register = (instructions[index] as OneRegisterInstruction).registerA
+            method.replaceInstruction(index, "const-wide/16 v$register, 0x3c")
+        }
+
+        val confirmationHeaderIndexes = instructions.mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                ?: return@mapIndexedNotNull null
+            if (reference.definingClass != "Lokhttp3/Headers;"
+                || reference.name != "get"
+                || reference.returnType != "Ljava/lang/String;"
+            ) {
+                return@mapIndexedNotNull null
+            }
+            val hasConfirmationHeader = instructions.subList(maxOf(0, index - 8), index)
+                .any { previous ->
+                    ((previous as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+                        "X-Chx-Error"
+                }
+            if (hasConfirmationHeader) index else null
+        }
+
+        if (confirmationHeaderIndexes.isNotEmpty()) {
+            // The legacy 5ch path calls a dynamically restored request signer before
+            // every POST. That signer is the source of RuntimeException("39") on the
+            // current endpoint, and the headers it adds are no longer part of the
+            // posting contract. Match the call by its three stable argument types and
+            // leave the already-built request/form untouched.
+            val legacySignerIndexes = instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (reference.definingClass != "Ljava/lang/reflect/Method;"
+                    || reference.name != "invoke"
+                    || reference.returnType != "Ljava/lang/Object;"
+                    || instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+                ) {
+                    return@mapIndexedNotNull null
+                }
+                val argumentTypes = instructions.subList(maxOf(0, index - 80), index)
+                    .mapNotNull { previous ->
+                        ((previous as? ReferenceInstruction)?.reference as? TypeReference)?.type
+                    }
+                    .toSet()
+                val isLegacySigner = argumentTypes.containsAll(
+                    setOf(
+                        "Lo/r8lambda17vlhACr7B0IDgCdn1Q67LKhir8\$setContentView;",
+                        "Lo/getCredentials\$write;",
+                        "Ljava/lang/String;"
+                    )
+                )
+                if (isLegacySigner) index else null
+            }
+            if (legacySignerIndexes.size != 1) {
+                error("Expected one ChMate legacy request signer, found ${legacySignerIndexes.size}")
+            }
+            method.replaceInstruction(legacySignerIndexes.single(), "nop")
+
+            val confirmationMergeIndexes = instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (reference.definingClass != "Landroid/text/TextUtils;"
+                    || reference.name != "equals"
+                    || reference.returnType != "Z"
+                    || reference.parameterTypes.map(CharSequence::toString) !=
+                    listOf("Ljava/lang/CharSequence;", "Ljava/lang/CharSequence;")
+                ) {
+                    return@mapIndexedNotNull null
+                }
+                val comparesExclusionArray = instructions.subList(maxOf(0, index - 4), index)
+                    .any { it.opcode == Opcode.AGET_OBJECT }
+                if (comparesExclusionArray) index else null
+            }
+            if (confirmationMergeIndexes.isEmpty()) {
+                error("ChMate legacy confirmation merge was not found")
+            }
+            confirmationMergeIndexes.asReversed().forEach { index ->
+                val invocation = instructions[index]
+                val firstRegister: Int
+                val secondRegister: Int
+                when (invocation) {
+                    is FiveRegisterInstruction -> {
+                        firstRegister = invocation.registerC
+                        secondRegister = invocation.registerD
+                    }
+                    is RegisterRangeInstruction -> {
+                        firstRegister = invocation.startRegister
+                        secondRegister = invocation.startRegister + 1
+                    }
+                    else -> error("ChMate legacy confirmation merge arguments were not found")
+                }
+                method.replaceInstruction(
+                    index,
+                    "invoke-static { v$firstRegister, v$secondRegister }, " +
+                        "$EXTENSION->preserveServerPostForm(" +
+                        "Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Z"
+                )
+            }
+
+            // The old implementation parses and merges the confirmation form but
+            // then restores its form parameter before retrying. Store the parsed
+            // server form in that existing parameter immediately while its type is
+            // known, so the original retry edge naturally sends it unchanged.
+            val confirmationParserIndexes = instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (reference.definingClass == "Lo/getCredentials;"
+                    && reference.name == "c"
+                    && reference.returnType == "Lo/getCredentials\$write;"
+                    && reference.parameterTypes.map(CharSequence::toString) ==
+                    listOf("Ljava/lang/String;")
+                ) index else null
+            }
+            if (confirmationParserIndexes.size != 1) {
+                error("Expected one ChMate legacy confirmation parser, found ${confirmationParserIndexes.size}")
+            }
+            val parserIndex = confirmationParserIndexes.single()
+            val parsedFormRegister = (instructions.getOrNull(parserIndex + 1)
+                ?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT }
+                as? OneRegisterInstruction)?.registerA
+                ?: error("ChMate legacy parsed confirmation form was not found")
+            method.addInstruction(
+                parserIndex + 2,
+                "move-object/from16 p4, v$parsedFormRegister"
+            )
+        }
+
+        confirmationHeaderIndexes.asReversed().forEach { index ->
+            val resultInstruction = instructions.getOrNull(index + 1)
+                ?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT }
+                as? OneRegisterInstruction
+                ?: error("ChMate legacy X-Chx-Error result was not found")
+            val register = resultInstruction.registerA
+            method.addInstructionsWithLabels(
+                index + 2,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->normalizePostError(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v$register
+                """
+            )
+        }
+
     }
 }

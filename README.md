@@ -1,9 +1,8 @@
 # Haiagaru for Morphe
 
-ChMate `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
-
 
 ## Features
 
@@ -11,10 +10,17 @@ https://github.com/areteruhiro/Haiagaru
 * Modify User-Agent
 * Remove MonaKey
 
+## 更新履歴
+
+### 1.1.0
+
+- ChMate `0.8.10.191 dev` 対応
+- `5ch.io` の表示・検索・書き込みに対応
 
 ## 対象
 
 - パッケージ: `jp.co.airfront.android.a2chMate`
+- バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
 - バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
 - バージョン: `0.8.10.242 dev`（versionCode 512、minSdk 23）
 - バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
@@ -30,7 +36,7 @@ https://github.com/areteruhiro/Haiagaru
 生成物:
 
 ```text
-patches\build\libs\patches-1.0.0.mpp
+patches\build\libs\patches-1.1.0.mpp
 ```
 
 Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
@@ -44,6 +50,11 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 
 [Haiagaru サポートチャンネル](https://discord.com/channels/1392057820316303362/1547235153347092572)
 
+## 寄付
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_RsY3yQavNdvx74da)
+
 ## 構成
 
 - `patches/src/main/kotlin/app/morphe/patches/chmate/HaiagaruPatch.kt`
@@ -53,7 +64,6 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 
 ベースのビルドシステムとパッチ形式は
 [Morphe patches](https://github.com/MorpheApp/morphe-patches) を使用しています。
-
 
 ## Credit
 
