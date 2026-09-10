@@ -252,6 +252,8 @@ val haiagaruPatch = bytecodePatch(
         )
         if (packageMetadata.versionName == "0.8.10.191 dev") {
             patchLegacyFragmentBannerDiscovery()
+            patchLegacyImageUploadTempName()
+            patchLegacyImageUploadCall()
         } else {
             // ChMate 0.8.10.242 reuses the p1 register later in onViewCreated. Inject while
             // p1 is still guaranteed to contain the Fragment root; the extension posts its
@@ -680,6 +682,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
         val mutableClass by lazy { mutableClassDefBy(classDef) }
         classDef.methods.forEach { method ->
             val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+            val preserveLegacyImageArithmetic = classDef.type == "Lo/nq;"
+                && method.name == "e"
+                && method.returnType == "Lo/r0ExternalSyntheticLambda13;"
+                && method.parameters.isEmpty()
             val matches = instructions.indices.filter { index ->
                 if (instructions[index].opcode != Opcode.IF_NE) return@filter false
                 val window = instructions.subList(maxOf(0, index - 12), index)
@@ -687,7 +693,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
                     && window.count { it.opcode == Opcode.CHECK_CAST } >= 2
                     && window.count { it.opcode == Opcode.AGET } >= 2
             }
-            val literalZeroDivides = if (includeAllObfuscatedClasses) {
+            val literalZeroDivides = if (includeAllObfuscatedClasses
+                && !preserveLegacyImageArithmetic
+            ) {
                 instructions.indices.filter { index ->
                     val instruction = instructions[index]
                     (instruction.opcode == Opcode.DIV_INT_LIT8
@@ -698,7 +706,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
                 emptyList()
             }
 
-            val provableZeroDivides = if (includeAllObfuscatedClasses) {
+            val provableZeroDivides = if (includeAllObfuscatedClasses
+                && !preserveLegacyImageArithmetic
+            ) {
                 instructions.indices.filter { index ->
                     val instruction = instructions[index]
                     if (instruction.opcode != Opcode.DIV_INT
@@ -727,7 +737,12 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
                 emptyList()
             }
 
-            val derivedValueDivides = if (matches.isNotEmpty()) {
+            // nq.e is the legacy image upload pipeline. Its divisions are decoder and
+            // payload arithmetic, not rejection traps; rewriting them can inflate an
+            // ordinary image into a near-gigabyte allocation.
+            val derivedValueDivides = if (matches.isNotEmpty()
+                && !preserveLegacyImageArithmetic
+            ) {
                 instructions.indices.filter { index ->
                     val instruction = instructions[index]
                     if (instruction.opcode != Opcode.DIV_INT
@@ -778,6 +793,74 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchDistributedIntegr
                 }
         }
     }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUploadTempName() {
+    val method = mutableClassDefBy("Lo/nq;").methods.single { method ->
+        method.name == "e"
+            && method.returnType == "Lo/r0ExternalSyntheticLambda13;"
+            && method.parameters.isEmpty()
+    }
+    val instructions = method.implementation?.instructions?.toList()
+        ?: error("ChMate legacy image upload method has no implementation")
+    val encodedNameIndex = instructions.indexOfFirst { instruction ->
+        ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+            "22|3|22|9|18|uploading"
+    }.takeIf { it >= 0 }
+        ?: error("ChMate legacy image upload filename was not found")
+    val substringIndex = (encodedNameIndex until instructions.size).firstOrNull { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@firstOrNull false
+        reference.definingClass == "Ljava/lang/String;"
+            && reference.name == "substring"
+            && reference.returnType == "Ljava/lang/String;"
+            && reference.parameterTypes.map(CharSequence::toString) == listOf("I")
+    } ?: error("ChMate legacy image upload filename decoder was not found")
+    val substringInstruction = instructions[substringIndex]
+    val indexRegister = when (substringInstruction) {
+        is FiveRegisterInstruction -> substringInstruction.registerD
+        is RegisterRangeInstruction -> substringInstruction.startRegister + 1
+        else -> error("ChMate legacy image upload filename register was not found")
+    }
+    val divideIndex = (encodedNameIndex until substringIndex).lastOrNull { index ->
+        val instruction = instructions[index]
+        instruction.opcode == Opcode.DIV_INT_2ADDR
+            && (instruction as? TwoRegisterInstruction)?.registerA == indexRegister
+    } ?: error("ChMate legacy image upload filename division was not found")
+
+    // The decoded suffix begins at character 13. Avoid the signature-derived divisor
+    // while leaving file copying, image decoding, resizing, and uploading untouched.
+    method.replaceInstruction(divideIndex, "const/16 v$indexRegister, 0xd")
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUploadCall() {
+    val method = mutableClassDefBy("Lo/nq;").methods.single { method ->
+        method.name == "e"
+            && method.returnType == "Lo/r0ExternalSyntheticLambda13;"
+            && method.parameters.isEmpty()
+    }
+    val instructions = method.implementation?.instructions?.toList()
+        ?: error("ChMate legacy image upload method has no implementation")
+    val invokeIndex = instructions.indices.single { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@single false
+        reference.definingClass == "Ljava/lang/reflect/Method;"
+            && reference.name == "invoke"
+            && reference.returnType == "Ljava/lang/Object;"
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+            && ((instructions.getOrNull(index + 2) as? ReferenceInstruction)?.reference
+                as? TypeReference)?.type == "Lo/r0ExternalSyntheticLambda13;"
+    }
+    val argumentArrayRegister = when (val invocation = instructions[invokeIndex]) {
+        is FiveRegisterInstruction -> invocation.registerE
+        is RegisterRangeInstruction -> invocation.startRegister + 2
+        else -> error("ChMate legacy image upload invocation arguments were not found")
+    }
+    method.replaceInstruction(
+        invokeIndex,
+        "invoke-static/range { v$argumentArrayRegister .. v$argumentArrayRegister }, " +
+            "$EXTENSION->uploadLegacyImage([Ljava/lang/Object;)Ljava/lang/Object;"
+    )
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
