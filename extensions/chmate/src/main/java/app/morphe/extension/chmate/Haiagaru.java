@@ -29,8 +29,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
+import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
 
@@ -145,6 +155,79 @@ public final class Haiagaru {
             }
         }
         throw new NoSuchFieldException(type.getName() + "." + name);
+    }
+
+    /** Runs the legacy 0.8.10.191 image request without its generated integrity decoy. */
+    public static Object uploadLegacyImage(Object[] arguments) throws Exception {
+        File image = (File) arguments[0];
+        HttpURLConnection connection = (HttpURLConnection) new URL(
+                "https://imgw.syoboi.jp/3/image").openConnection();
+        connection.setConnectTimeout(30_000);
+        connection.setReadTimeout(30_000);
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("x-imgw-key",
+                "0c6d5f862ad665e0556be3602dfc3f673b01060ab7acf4ccebba10bb073b4c8f");
+        connection.setRequestProperty("Content-Type", "image/*");
+        connection.setDoOutput(true);
+        connection.setFixedLengthStreamingMode(image.length());
+
+        try {
+            try (InputStream input = new BufferedInputStream(new FileInputStream(image));
+                 OutputStream output = connection.getOutputStream()) {
+                byte[] buffer = new byte[16 * 1024];
+                int count;
+                while ((count = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, count);
+                }
+            }
+
+            int status = connection.getResponseCode();
+            InputStream responseStream = status >= 200 && status < 300
+                    ? connection.getInputStream() : connection.getErrorStream();
+            String body = readUtf8(responseStream);
+            JSONObject root = new JSONObject(body);
+
+            ClassLoader loader = Haiagaru.class.getClassLoader();
+            Class<?> responseType = Class.forName(
+                    "o.r0ExternalSyntheticLambda13", true, loader);
+            Class<?> dataType = Class.forName(
+                    "o.r0ExternalSyntheticLambda16", true, loader);
+            Object response = responseType.getDeclaredConstructor().newInstance();
+            Object data = dataType.getDeclaredConstructor().newInstance();
+
+            boolean success = root.optBoolean("success", status >= 200 && status < 300);
+            responseType.getSuperclass().getField("b").setBoolean(response, success);
+            responseType.getSuperclass().getField("c").setInt(
+                    response, root.optInt("status", status));
+
+            Object dataValue = root.opt("data");
+            if (dataValue instanceof JSONObject) {
+                JSONObject dataJson = (JSONObject) dataValue;
+                dataType.getField("b").set(data, dataJson.optString("deletehash", null));
+                dataType.getField("c").set(data, dataJson.optString("error", null));
+                dataType.getField("d").set(data, dataJson.optString("link", null));
+            } else if (dataValue != null && dataValue != JSONObject.NULL) {
+                dataType.getField("c").set(data, String.valueOf(dataValue));
+            } else if (!success) {
+                dataType.getField("c").set(data, body);
+            }
+            responseType.getField("d").set(response, data);
+            return response;
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static String readUtf8(InputStream input) throws Exception {
+        if (input == null) return "";
+        try (InputStream stream = input; ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[8 * 1024];
+            int count;
+            while ((count = stream.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+            return new String(output.toByteArray(), StandardCharsets.UTF_8);
+        }
     }
 
     public static void onApplicationCreate(Application application) {
