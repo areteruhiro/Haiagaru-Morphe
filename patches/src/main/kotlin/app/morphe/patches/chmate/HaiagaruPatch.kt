@@ -915,6 +915,21 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompatibility() {
     val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
 
+    // Current ChMate normalizes legacy BE icon hosts before its dedicated
+    // DynamicDrawableSpan fetches them. Port that narrow behavior to 191.
+    mutableClassDefBy("Lo/oa;").methods.single { method ->
+        method.name == "<init>"
+            && method.returnType == "V"
+            && method.parameters.map(CharSequence::toString) ==
+            listOf("Landroid/content/Context;", "Ljava/lang/String;")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p2 .. p2 }, $EXTENSION->normalizeBeIconUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p2
+        """
+    )
+
     urlInfoClass.methods.single { method ->
         method.name == "b"
             && method.returnType == "Ljp/syoboi/a2chMate/client/BBSUrlInfo;"
