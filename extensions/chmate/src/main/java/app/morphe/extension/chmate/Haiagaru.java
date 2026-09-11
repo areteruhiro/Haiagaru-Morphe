@@ -256,6 +256,11 @@ public final class Haiagaru {
         return original.replace("5ch.net", "5ch.io");
     }
 
+    public static String normalizeBeIconUrl(String original) {
+        if (original == null) return null;
+        return original.replace("://img.5ch.net/", "://img.5ch.io/");
+    }
+
     public static boolean is5chHost(String host) {
         if (host == null) return false;
         String normalized = host.toLowerCase(Locale.ROOT);

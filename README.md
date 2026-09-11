@@ -16,6 +16,10 @@ Thank you あかまつ
 
 ## 更新履歴
 
+### 1.2.2
+
+- ChMate `0.8.10.191 dev` のBEアイコン表示を修正
+
 ### 1.2.1
 
 - Android版Morphe Managerで読み込めるDEX形式のパッチバンドルへ修正
