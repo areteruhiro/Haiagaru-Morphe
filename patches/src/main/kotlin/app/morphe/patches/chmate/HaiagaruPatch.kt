@@ -915,6 +915,27 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompatibility() {
     val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
 
+    // The 191 native text parser predates img.5ch.io. Feed only sssp BE tokens
+    // through its known host form so it selects the emoticon-span branch. The
+    // drawable constructor below changes the extracted fetch URL back to .io.
+    mutableClassDefBy("Lo/ocd;").methods.single { method ->
+        method.name == "e"
+            && method.returnType == "V"
+            && method.parameters.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/utils/NativeUtils\$RemoteActionCompatParcelizer;",
+                "Lo/o8;",
+                "Ljava/lang/String;",
+                "Lo/r8lambda0m18vyepBPbBImKp0mAya80YXc8;",
+                "Z"
+            )
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p2
+        """
+    )
+
     // Current ChMate normalizes legacy BE icon hosts before its dedicated
     // DynamicDrawableSpan fetches them. Port that narrow behavior to 191.
     mutableClassDefBy("Lo/oa;").methods.single { method ->

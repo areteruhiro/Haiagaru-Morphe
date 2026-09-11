@@ -261,6 +261,11 @@ public final class Haiagaru {
         return original.replace("://img.5ch.net/", "://img.5ch.io/");
     }
 
+    public static String prepareLegacyBeParsing(String original) {
+        if (original == null || !original.contains("sssp://img.5ch.io/")) return original;
+        return original.replace("sssp://img.5ch.io/", "sssp://img.5ch.net/");
+    }
+
     public static boolean is5chHost(String host) {
         if (host == null) return false;
         String normalized = host.toLowerCase(Locale.ROOT);
