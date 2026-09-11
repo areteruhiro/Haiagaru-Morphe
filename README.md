@@ -86,3 +86,8 @@ https://github.com/Chipppppppppp/Binnosoko
 
 Contribution <br>
 LEINsに対して寄付/ご購入してくださった皆様
+
+<br>
+フォークされる方へ
+<br>
+必須ではありませんが、このリポジトリのURLを貼ってくれると嬉しいです
