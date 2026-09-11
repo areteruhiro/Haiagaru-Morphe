@@ -23,11 +23,24 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 情報提供: あかまつさん
 
+## URV Managerへの追加と更新
+
+パッチソースには次のURLを登録してください。
+
+```text
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
+```
+
+パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
+URV Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r3`）だけを更新します。
+更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
+
 ## 更新履歴
 
 ### 1.2.2
 
 - ChMate `0.8.10.191 dev` のBEアイコン分類と表示を修正
+- URV Managerが1.2.2内の修正版を検出できる配布リビジョンを追加
 
 ### 1.2.1
 
@@ -61,7 +74,7 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 生成物:
 
 ```text
-patches\build\libs\patches-1.2.1.mpp
+patches\build\libs\patches-1.2.2.mpp
 ```
 
 Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
