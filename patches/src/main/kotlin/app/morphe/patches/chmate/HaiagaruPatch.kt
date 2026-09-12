@@ -998,6 +998,27 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         """
     )
 
+    // The old native parser can still report current plain/protocol-relative
+    // img.5ch.io icon URLs as ordinary images. Filter the extractor's final
+    // result as the authoritative guard so those URLs never reach thumbnails.
+    val attachmentReturnIndexes = legacyAttachmentMethod.implementation?.instructions
+        ?.mapIndexedNotNull { index, instruction ->
+            if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+        }
+        .orEmpty()
+    attachmentReturnIndexes.asReversed().forEach { index ->
+        val returnRegister =
+            (legacyAttachmentMethod.implementation!!.instructions[index] as OneRegisterInstruction)
+                .registerA
+        legacyAttachmentMethod.addInstructionsWithLabels(
+            index,
+            """
+                invoke-static/range { v$returnRegister .. v$returnRegister }, $EXTENSION->filterLegacyBeAttachments([Ljava/lang/String;)[Ljava/lang/String;
+                move-result-object v$returnRegister
+            """
+        )
+    }
+
     // Current ChMate normalizes legacy BE icon hosts before its dedicated
     // DynamicDrawableSpan fetches them. Port that narrow behavior to 191.
     mutableClassDefBy("Lo/oa;").methods.single { method ->
