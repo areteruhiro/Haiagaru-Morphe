@@ -28,7 +28,7 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 
 private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
-private val compatibility = Compatibility(
+internal val chMateCompatibility = Compatibility(
     name = "ChMate",
     packageName = "jp.co.airfront.android.a2chMate",
     apkFileType = ApkFileType.APK,
@@ -43,10 +43,6 @@ private val compatibility = Compatibility(
         ),
         AppTarget(
             version = "0.8.10.241",
-            minSdk = 23
-        ),
-        AppTarget(
-            version = "0.8.10.242 dev",
             minSdk = 23
         ),
         AppTarget(
@@ -160,32 +156,6 @@ private fun profileFor(versionName: String) = when (versionName) {
         homeAdClass = "Lo/setUseHandlerThreadForCallbacks;",
         homeAdLoadMethod = "e",
     )
-    "0.8.10.242 dev" -> ChMateProfile(
-        providerClass = "Lo/isConnected;",
-        providerStartupTrapClass = null,
-        settingsViewModelClass = null,
-        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
-        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
-        cookieClearMethod = "e",
-        signatureClass = "Lo/TTRewardExpressVideoActivity${'$'}5;",
-        signatureMethod = "c",
-        signatureDelegateField = "a",
-        signatureDelegateType = "Lo/TTRewardExpressVideoActivity${'$'}read;",
-        signatureDelegateMethod = "c",
-        signatureSuperType =
-            "Lo/TTRewardExpressVideoActivity${'$'}RemoteActionCompatParcelizer;",
-        patchSignatureWrapper = true,
-        signatureDirectWrapperBypass = true,
-        viewModelFactoryClass =
-            "Lo/onInterstitialDismissed${'$'}_init_lambda2${'$'}ComponentActivity;",
-        viewModelDispatchField = "e",
-        viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
-        settingsWindowFeatureDivideTrap = false,
-        hasHiltSettings = true,
-        hasLevelPlayBanner = true,
-        homeAdClass = "Lo/zzbgb;",
-        homeAdLoadMethod = "d",
-    )
     "0.8.10.243 dev" -> ChMateProfile(
         providerClass = "Lo/zzbvh;",
         providerStartupTrapClass = null,
@@ -218,7 +188,7 @@ val haiagaruPatch = bytecodePatch(
     name = "Haiagaru",
     description = "Ports the Haiagaru ChMate module, including its in-app settings.",
 ) {
-    compatibleWith(compatibility)
+    compatibleWith(chMateCompatibility)
     extendWith("extensions/chmate.mpe")
 
     execute {
@@ -247,6 +217,12 @@ val haiagaruPatch = bytecodePatch(
         }.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onApplicationCreate(Landroid/app/Application;)V"
         )
+        if (packageMetadata.versionName == "0.8.10.243 dev") {
+            patchLegacyThreadUrlEntry()
+            patchImageSelectionResult()
+            patchImageSelectionReflectionTrap()
+            patchImageUploadIntegrityComparison()
+        }
         SettingsOnResumeFingerprint.method.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onSettingsResume(Landroid/app/Activity;)V"
         )
@@ -255,9 +231,9 @@ val haiagaruPatch = bytecodePatch(
             patchLegacyImageUploadTempName()
             patchLegacyImageUploadCall()
         } else {
-            // ChMate 0.8.10.242 reuses the p1 register later in onViewCreated. Inject while
-            // p1 is still guaranteed to contain the Fragment root; the extension posts its
-            // scans to the view queue, so child views are inspected after construction.
+            // Inject while p1 is still guaranteed to contain the Fragment root; the
+            // extension posts its scans to the view queue, so child views are inspected
+            // after construction.
             mutableClassDefBy(profile.homeFragmentClass).methods.single { method ->
                 method.name == "onViewCreated"
                     && method.returnType == "V"
@@ -323,6 +299,7 @@ val haiagaruPatch = bytecodePatch(
         patchDistributedIntegrityComparisons(
             includeAllObfuscatedClasses = packageMetadata.versionName == "0.8.10.191 dev"
         )
+        patchCommonAdSdkInitialization()
 
         buildList {
             add("Lcom/amazon/device/ads/DTBAdRequest;")
@@ -336,6 +313,8 @@ val haiagaruPatch = bytecodePatch(
         }
 
         if (profile.hasLevelPlayBanner) {
+            patchLevelPlayTrackerInitialization()
+
             mutableClassDefBy("Lcom/unity3d/mediation/banner/LevelPlayBannerAdView;")
                 .methods
                 .filter { it.name == "<init>" }
@@ -367,6 +346,311 @@ val haiagaruPatch = bytecodePatch(
             patchSetTextCalls()
         }
     }
+}
+
+@Suppress("unused")
+val saveChMateCrashLogsPatch = bytecodePatch(
+    name = "Save ChMate crash logs",
+    description = "Save uncaught ChMate crash logs to Download/Haiagaru.",
+    default = false,
+) {
+    compatibleWith(chMateCompatibility)
+    dependsOn(haiagaruPatch)
+
+    execute {
+        val profile = profileFor(packageMetadata.versionName)
+        mutableClassDefBy(profile.providerClass).methods.single { method ->
+            method.name == "onCreate"
+                && method.returnType == "Z"
+                && method.parameters.isEmpty()
+        }.addInstruction(
+            0,
+            "invoke-static/range { p0 .. p0 }, " +
+                "$EXTENSION->installCrashLogger(Landroid/content/ContentProvider;)V",
+        )
+    }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageSelectionResult() {
+    val method = mutableClassDefBy(
+        "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;"
+    ).methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "V"
+            && candidate.parameters.map(CharSequence::toString) ==
+            listOf(
+                "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;",
+                "Ljava/util/List;",
+            )
+    }
+    val firstInstruction = method.implementation?.instructions?.firstOrNull()
+        ?: error("ChMate image selection callback has no implementation")
+
+    // The stock callback probes the selected URI synchronously to detect the
+    // special 500x250 drawing format. On recent Android photo pickers that
+    // probe can reach a provider with a null result bundle and fail while the
+    // ActivityResult is being delivered. Normal attachments do not need this
+    // probe, so route them directly through the existing upload-setting path.
+    method.addInstructionsWithLabels(
+        0,
+        "if-eqz p1, :haiagaru_image_result_original\n"
+            + "const/4 v0, 0x0\n"
+            + "invoke-virtual {p0, p1, v0}, "
+            + "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;->b(Ljava/util/List;Z)V\n"
+            + "return-void",
+        ExternalLabel("haiagaru_image_result_original", firstInstruction),
+    )
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageSelectionReflectionTrap() {
+    val method = mutableClassDefBy(
+        "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;"
+    ).methods.single { candidate ->
+        candidate.name == "b"
+            && candidate.returnType == "V"
+            && candidate.parameters.map(CharSequence::toString) ==
+            listOf("Ljava/util/List;", "Z")
+    }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate image selection method has no implementation")
+
+    val uploadPathIndex = instructions.indexOfLast { instruction ->
+        if (instruction.opcode != Opcode.CHECK_CAST) return@indexOfLast false
+        val reference = (instruction as? ReferenceInstruction)?.reference as? TypeReference
+            ?: return@indexOfLast false
+        reference.type == "Ljava/util/Collection;"
+    }.takeIf { it >= 0 }
+        ?: error("ChMate image upload array conversion was not found")
+
+    val uploadArrayInstruction = instructions.getOrNull(uploadPathIndex + 1)
+        ?.takeIf { instruction -> instruction.opcode == Opcode.NEW_ARRAY }
+        as? TwoRegisterInstruction
+        ?: error("ChMate image upload Uri array creation was not found")
+    val uploadArraySizeRegister = uploadArrayInstruction.registerB
+    val zeroArraySizeIndex = (0 until uploadPathIndex).lastOrNull { index ->
+        val instruction = instructions[index]
+        (instruction as? OneRegisterInstruction)?.registerA == uploadArraySizeRegister
+            && (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 0
+    } ?: error("ChMate image upload zero-length array initializer was not found")
+
+    // URI MIME/size probing and the reflected image check both run while the
+    // ActivityResult callback is being delivered. The Android photo picker can
+    // return a provider result whose extras bundle is null, which makes that
+    // synchronous validation fail with a NullPointerException. Keep the original
+    // Fragment/context guards and the zero-length Uri[] initializer, then skip only
+    // the validation loop. This also preserves the verifier types expected by the
+    // existing List -> Collection -> Uri[] conversion below.
+    method.addInstructionsWithLabels(
+        zeroArraySizeIndex + 1,
+        "goto/32 :haiagaru_image_upload_path",
+        ExternalLabel("haiagaru_image_upload_path", instructions[uploadPathIndex])
+    )
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegrityComparison() {
+    val method = mutableClassDefBy("Lo/zzbwa;").methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Lo/zzfqa;"
+            && candidate.parameters.isEmpty()
+    }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate image upload task has no implementation")
+
+    val rejectionBranches = instructions.indices.filter { index ->
+        if (instructions[index].opcode != Opcode.IF_NE) return@filter false
+        val window = instructions.subList(maxOf(0, index - 8), index)
+        window.count { it.opcode == Opcode.AGET_OBJECT } >= 2
+            && window.count { it.opcode == Opcode.CHECK_CAST } >= 2
+            && window.count { it.opcode == Opcode.AGET } >= 2
+    }
+    check(rejectionBranches.size == 1) {
+        "Expected one ChMate image upload integrity rejection branch, found " +
+            rejectionBranches.size
+    }
+
+    // The mismatch branch enters a decoy block that eventually executes `throw null`.
+    // Re-signing changes the compared certificate-derived state, so retain the real
+    // upload path by forcing the equality fall-through without changing image math.
+    method.replaceInstruction(rejectionBranches.single(), "nop")
+
+    val tempNameSubstringIndex = instructions.indices.singleOrNull { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@singleOrNull false
+        if (reference.definingClass != "Ljava/lang/String;"
+            || reference.name != "substring"
+            || reference.returnType != "Ljava/lang/String;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf("I")
+            || instructions.getOrNull(index - 1)?.opcode != Opcode.DIV_INT_2ADDR
+        ) {
+            return@singleOrNull false
+        }
+        instructions.subList(index + 1, minOf(index + 7, instructions.size)).any { next ->
+            val nextReference = (next as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@any false
+            nextReference.definingClass == "Ljava/io/File;"
+                && nextReference.name == "<init>"
+                && nextReference.parameterTypes.map(CharSequence::toString) ==
+                listOf("Ljava/io/File;", "Ljava/lang/String;")
+        }
+    } ?: error("ChMate image upload temporary filename decoder was not found")
+    val tempNameResultRegister = (instructions.getOrNull(tempNameSubstringIndex + 1)
+        as? OneRegisterInstruction)?.registerA
+        ?: error("ChMate image upload temporary filename result was not found")
+
+    // The temporary name is encoded as a control-character prefix followed by
+    // "uploading". Its substring index is derived through certificate-sensitive
+    // arithmetic and becomes a zero divisor after re-signing. Keep the actual file
+    // name directly and leave all later image decoding and payload arithmetic intact.
+    method.replaceInstruction(tempNameSubstringIndex - 1, "nop")
+    method.replaceInstruction(
+        tempNameSubstringIndex,
+        "const-string v$tempNameResultRegister, \"uploading\"",
+    )
+    method.replaceInstruction(tempNameSubstringIndex + 1, "nop")
+
+    val dynamicUploaderInvokeIndex = instructions.indices.singleOrNull { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@singleOrNull false
+        reference.definingClass == "Ljava/lang/reflect/Method;"
+            && reference.name == "invoke"
+            && reference.returnType == "Ljava/lang/Object;"
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+            && ((instructions.getOrNull(index + 2) as? ReferenceInstruction)?.reference
+                as? TypeReference)?.type == "Lo/zzfqa;"
+    } ?: error("ChMate dynamic image uploader invocation was not found")
+
+    // The actual uploader is decrypted into an InMemoryDexClassLoader, so it cannot
+    // be edited by the normal APK bytecode patch. Route only this reflected call
+    // through the extension, which repairs the uploader's two cached comparison
+    // values and then invokes the original method unchanged.
+    when (val invocation = instructions[dynamicUploaderInvokeIndex]) {
+        is FiveRegisterInstruction -> method.replaceInstruction(
+            dynamicUploaderInvokeIndex,
+            "invoke-static { v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE} }, $EXTENSION->invokeCurrentImageUploader(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+
+        is RegisterRangeInstruction -> method.replaceInstruction(
+            dynamicUploaderInvokeIndex,
+            "invoke-static/range { v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2} }, " +
+                "$EXTENSION->invokeCurrentImageUploader(Ljava/lang/reflect/Method;" +
+                "Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",
+        )
+
+        else -> error("ChMate dynamic image uploader registers were not found")
+    }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEntry() {
+    mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResListActivity;").methods.single { method ->
+        method.name == "onCreate"
+            && method.returnType == "V"
+            && method.parameters.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
+    }.addInstruction(
+        0,
+        "invoke-static/range { p0 .. p0 }, " +
+            "$EXTENSION->rewriteLegacyThreadIntent(Landroid/app/Activity;)V",
+    )
+}
+
+/**
+ * ChMate initializes both LevelPlay and IronSource Ad Quality while constructing its
+ * banner wrapper, before LevelPlayBannerAdView.loadAd() is reached. Guarding loadAd()
+ * alone therefore still lets the SDK contact i-sdk.mediation.unity3d.com and
+ * i-adq.mediation.unity3d.com. Stop both public initialization paths while ad hiding
+ * is enabled, without tying this patch to the SDK's non-ASCII implementation name.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLevelPlayTrackerInitialization() {
+    val levelPlayInitMethods = mutableClassDefBy("Lcom/unity3d/mediation/LevelPlay;")
+        .methods
+        .filter { method ->
+            method.name == "init"
+                && method.returnType == "V"
+                && method.parameters.firstOrNull()?.toString() == "Landroid/content/Context;"
+        }
+    check(levelPlayInitMethods.isNotEmpty()) {
+        "LevelPlay initialization entry point was not found"
+    }
+    levelPlayInitMethods.forEach { it.addHideAdsGuard() }
+
+    var adQualityInitMethodCount = 0
+    classDefForEach { classDef ->
+        if (classDef.superclass != "Lcom/ironsource/adqualitysdk/sdk/IronSourceAdQuality;") {
+            return@classDefForEach
+        }
+
+        val mutableClass = mutableClassDefBy(classDef)
+        classDef.methods
+            .filter { method ->
+                method.name == "initialize"
+                    && method.returnType == "V"
+                    && method.parameters.take(2).map(CharSequence::toString) == listOf(
+                        "Landroid/content/Context;",
+                        "Ljava/lang/String;",
+                    )
+            }
+            .forEach { method ->
+                mutableClass.findMutableMethodOf(method).addHideAdsGuard()
+                adQualityInitMethodCount++
+            }
+    }
+    check(adQualityInitMethodCount > 0) {
+        "IronSource Ad Quality initialization implementation was not found"
+    }
+
+    mutableClassDefBy("Lcom/unity3d/services/core/configuration/AdsSdkInitializer;")
+        .methods
+        .filter { method ->
+            method.name == "create"
+                && method.returnType == "V"
+                && method.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/content/Context;")
+        }
+        .single()
+        .addHideAdsContextGuard("p1")
+
+    listOf(
+        "Lcom/ironsource/lifecycle/IronsourceLifecycleProvider;",
+        "Lcom/ironsource/lifecycle/LevelPlayActivityLifecycleProvider;",
+    ).forEach { providerType ->
+        mutableClassDefBy(providerType).methods
+            .single { method ->
+                method.name == "onCreate"
+                    && method.returnType == "Z"
+                    && method.parameters.isEmpty()
+            }
+            .addHideAdsContentProviderGuard()
+    }
+}
+
+/**
+ * AppLovin and Google Mobile Ads register manifest ContentProviders in every supported
+ * ChMate build, so they can initialize before any banner load method is called. Keep
+ * the providers inert when ad hiding is enabled while preserving their original path
+ * when the setting is disabled.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchCommonAdSdkInitialization() {
+    mutableClassDefBy("Lcom/applovin/sdk/AppLovinInitProvider;").methods
+        .single { method ->
+            method.name == "onCreate"
+                && method.returnType == "Z"
+                && method.parameters.isEmpty()
+        }
+        .addHideAdsContentProviderGuard()
+
+    mutableClassDefBy("Lcom/google/android/gms/ads/MobileAdsInitProvider;").methods
+        .single { method ->
+            method.name == "attachInfo"
+                && method.returnType == "V"
+                && method.parameters.map(CharSequence::toString) == listOf(
+                    "Landroid/content/Context;",
+                    "Landroid/content/pm/ProviderInfo;",
+                )
+        }
+        .addHideAdsContextGuard("p1")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyFragmentBannerDiscovery() {
@@ -561,9 +845,9 @@ private fun MutableMethod.bypassTamperTrap(profile: ChMateProfile) {
         }
         ViewModelTrapKind.FAILURE_BRANCH -> {
             val failureBranchIndex = instructions.subList(0, dispatchIndex)
-                // 0.8.10.242 compares two values produced by its integrity state and
-                // sends inequality to the RuntimeException(String) block. The normal
-                // fall-through immediately loads the factory discriminator and switches.
+                // The integrity state sends inequality to the RuntimeException(String)
+                // block. The normal fall-through immediately loads the factory
+                // discriminator and switches.
                 .indexOfLast { it.opcode == Opcode.IF_NE }
                 .takeIf { it >= 0 }
                 ?: error("ChMate ViewModel factory failure branch was not found")
@@ -574,8 +858,8 @@ private fun MutableMethod.bypassTamperTrap(profile: ChMateProfile) {
 
 private fun MutableMethod.ignoreSignatureRejection(profile: ChMateProfile) {
     if (profile.signatureDirectWrapperBypass) {
-        // 0.8.10.242 encodes rejection as IF_NE -> null throw in both wrapper layers.
-        // Keep their complete initialization and delegate calls, but force the normal path.
+        // Rejection is encoded as IF_NE -> null throw in both wrapper layers. Keep
+        // their complete initialization and delegate calls, but force the normal path.
         bypassSignatureFailureBranches()
         return
     }
@@ -646,6 +930,39 @@ private fun MutableMethod.addHideAdsGuard() {
             move-result v$freeRegister
             if-eqz v$freeRegister, :show_ads
             return-void
+            :show_ads
+            nop
+        """
+    )
+}
+
+private fun MutableMethod.addHideAdsContextGuard(contextRegister: String) {
+    val freeRegister = findFreeRegister(0)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { $contextRegister }, $EXTENSION->shouldHideAds(Landroid/content/Context;)Z
+            move-result v$freeRegister
+            if-eqz v$freeRegister, :show_ads
+            return-void
+            :show_ads
+            nop
+        """
+    )
+}
+
+private fun MutableMethod.addHideAdsContentProviderGuard() {
+    val freeRegister = findFreeRegister(0)
+    addInstructionsWithLabels(
+        0,
+        """
+            invoke-virtual { p0 }, Landroid/content/ContentProvider;->getContext()Landroid/content/Context;
+            move-result-object v$freeRegister
+            invoke-static { v$freeRegister }, $EXTENSION->shouldHideAds(Landroid/content/Context;)Z
+            move-result v$freeRegister
+            if-eqz v$freeRegister, :show_ads
+            const/4 v$freeRegister, 0x1
+            return v$freeRegister
             :show_ads
             nop
         """

@@ -3,19 +3,28 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
+import android.content.ContentProvider;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Process;
+import android.preference.PreferenceManager;
+import android.provider.MediaStore;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,38 +44,72 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
+    private static final String LOG_TAG = "Haiagaru";
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String BUTTON_TAG = "haiagaru.settings.button";
-
     private static final String DEFAULT_USER_AGENT =
             "Dalvik/2.1.0 (Linux; U; Android 4.0.3; HT-01 Build/XYZ0.123456.789)";
     private static final String DEFAULT_COOKIE_CLASS =
             "com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor";
     private static final String DEFAULT_MONAKEY_FILE = "2chapi";
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
+    private static final String CHMATE_SEARCH_URLS_KEY = "searchUrls1";
+    private static final String ARCHIVE_PRESET_MARKER = "【Haiagaru】";
+    private static final String ARCHIVE_PRESET_URL =
+            "https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/"
+                    + "refs/heads/master/presets/chmate-dat-fallen-search-urls.txt";
+    private static final String ARCHIVE_HOST_MATCH =
+            "{$host[match:\\.[25]ch\\.(?:net|io)$]}";
+    private static final String BUILTIN_ARCHIVE_PRESET =
+            ARCHIVE_HOST_MATCH + ARCHIVE_PRESET_MARKER
+                    + "5ch公式過去ログへ https://kako.5ch.io/test/read.cgi/{$bbs}/{$key}/\n"
+                    + ARCHIVE_HOST_MATCH + ARCHIVE_PRESET_MARKER
+                    + "5ch現在サーバーへ https://itest.5ch.io/test/read.cgi/{$bbs}/{$key}/\n"
+                    + ARCHIVE_HOST_MATCH + ARCHIVE_PRESET_MARKER
+                    + "2ch.scへ https://2ch.sc/test/read.cgi/{$bbs}/{$key}/";
     private static final String AD_CLASS_191 = "o.qheCC";
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
-    private static final String AD_CLASS_242 = "o.zzbgb";
     private static final String AD_CLASS_243 = "o.zzexb";
-    private static final String CHMATE_PACKAGE = "jp.co.airfront.android.a2chMate";
     private static final Pattern LEGACY_BE_ATTACHMENT_TOKEN = Pattern.compile(
             "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+"
                     + "|\\u0003img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+",
             Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
+            "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(?:/.*)?$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern LEGACY_THREAD_DAT_PATH = Pattern.compile(
+            "^/([^/]+)/(?:dat|kako(?:/[^/]+)*)/(\\d{9,10})\\.dat$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern SC_BOARD_LINK = Pattern.compile(
+            "(?i)//([a-z0-9_-]+)\\.2ch\\.sc/([a-z0-9_]+)/"
     );
     private static final String ORIGINAL_CERTIFICATE =
             "MIICZTCCAc6gAwIBAgIETUOudzANBgkqhkiG9w0BAQUFADB2MQswCQYDVQQGEwJK"
@@ -84,7 +127,9 @@ public final class Haiagaru {
             + "9kQy5kSVkF2kCALI9DxTEE3yuzZFKw7f7pKGZzs3wZCyeMCZNCC2MRQ=";
 
     private static volatile Context applicationContext;
+    private static volatile boolean crashLoggerInstalled;
     private static volatile boolean signatureSpoofInstalled;
+    private static volatile String runtimePackageName = originalPackageName();
 
     private Haiagaru() {
     }
@@ -94,6 +139,8 @@ public final class Haiagaru {
     public static synchronized void installSignatureSpoof() {
         if (signatureSpoofInstalled) return;
 
+        runtimePackageName = resolveRuntimePackageName();
+
         final Signature originalSignature = new Signature(
                 Base64.decode(ORIGINAL_CERTIFICATE, Base64.DEFAULT));
         final Parcelable.Creator<PackageInfo> originalCreator = PackageInfo.CREATOR;
@@ -101,7 +148,8 @@ public final class Haiagaru {
             @Override
             public PackageInfo createFromParcel(Parcel source) {
                 PackageInfo info = originalCreator.createFromParcel(source);
-                if (CHMATE_PACKAGE.equals(info.packageName)) {
+                if (originalPackageName().equals(info.packageName)
+                        || runtimePackageName.equals(info.packageName)) {
                     if (info.signatures != null && info.signatures.length > 0) {
                         info.signatures[0] = originalSignature;
                     }
@@ -148,6 +196,18 @@ public final class Haiagaru {
             if (value instanceof Map) ((Map<?, ?>) value).clear();
         } catch (Throwable ignored) {
         }
+    }
+
+    private static String resolveRuntimePackageName() {
+        try {
+            Class<?> activityThread = Class.forName("android.app.ActivityThread");
+            Object value = activityThread.getDeclaredMethod("currentPackageName").invoke(null);
+            if (value instanceof String && !((String) value).isEmpty()) {
+                return (String) value;
+            }
+        } catch (ReflectiveOperationException ignored) {
+        }
+        return originalPackageName();
     }
 
     private static Field findField(Class<?> type, String name) throws NoSuchFieldException {
@@ -239,10 +299,262 @@ public final class Haiagaru {
 
     public static void onApplicationCreate(Application application) {
         applicationContext = application.getApplicationContext();
+        runtimePackageName = application.getPackageName();
+        migrateRestoredPackageReferences(application);
         applyUserAgent();
     }
 
+    /** Installs the optional crash logger before ChMate's startup provider does any work. */
+    public static synchronized void installCrashLogger(ContentProvider provider) {
+        if (crashLoggerInstalled || provider == null) return;
+        Context context = provider.getContext();
+        if (context == null) return;
+        Context appContext = context.getApplicationContext();
+        final Context crashContext = appContext == null ? context : appContext;
+        final Thread.UncaughtExceptionHandler previous =
+                Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
+            try {
+                writeCrashLog(crashContext, thread, error);
+            } catch (Throwable logError) {
+                Log.e(LOG_TAG, "Unable to save crash log", logError);
+            } finally {
+                if (previous != null) {
+                    previous.uncaughtException(thread, error);
+                } else {
+                    Process.killProcess(Process.myPid());
+                    System.exit(10);
+                }
+            }
+        });
+        crashLoggerInstalled = true;
+    }
+
+    private static void writeCrashLog(Context context, Thread thread, Throwable error)
+            throws IOException {
+        Date now = new Date();
+        String timestamp = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+                Locale.US
+        ).format(now);
+        String fileTimestamp = new SimpleDateFormat(
+                "yyyyMMdd-HHmmss-SSS",
+                Locale.US
+        ).format(now);
+        StringWriter stackTrace = new StringWriter();
+        error.printStackTrace(new PrintWriter(stackTrace));
+
+        String versionName = "unknown";
+        long versionCode = -1;
+        try {
+            PackageInfo info = context.getPackageManager().getPackageInfo(
+                    context.getPackageName(),
+                    0
+            );
+            versionName = info.versionName;
+            versionCode = Build.VERSION.SDK_INT >= 28
+                    ? info.getLongVersionCode()
+                    : info.versionCode;
+        } catch (Throwable ignored) {
+        }
+
+        String report = "Haiagaru crash log\n"
+                + "Time: " + timestamp + "\n"
+                + "Package: " + context.getPackageName() + "\n"
+                + "Version: " + versionName + " (" + versionCode + ")\n"
+                + "Android: " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")\n"
+                + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
+                + "Thread: " + thread.getName() + "\n\n"
+                + stackTrace;
+        String fileName = "chmate-crash-" + fileTimestamp + ".txt";
+
+        if (Build.VERSION.SDK_INT >= 29) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
+            values.put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    Environment.DIRECTORY_DOWNLOADS + "/Haiagaru"
+            );
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+            Uri uri = context.getContentResolver().insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                    values
+            );
+            if (uri == null) throw new IOException("Unable to create Downloads log entry");
+            boolean completed = false;
+            try (OutputStream output = context.getContentResolver().openOutputStream(uri)) {
+                if (output == null) throw new IOException("Unable to open Downloads log entry");
+                writeUtf8(output, report);
+                completed = true;
+            } finally {
+                if (completed) {
+                    ContentValues ready = new ContentValues();
+                    ready.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    context.getContentResolver().update(uri, ready, null, null);
+                } else {
+                    context.getContentResolver().delete(uri, null, null);
+                }
+            }
+            return;
+        }
+
+        File directory = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                "Haiagaru"
+        );
+        if (!directory.isDirectory() && !directory.mkdirs()) {
+            throw new IOException("Unable to create " + directory);
+        }
+        try (OutputStream output = new FileOutputStream(new File(directory, fileName))) {
+            writeUtf8(output, report);
+        }
+    }
+
+    private static void writeUtf8(OutputStream output, String text) throws IOException {
+        OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+        writer.write(text);
+        writer.flush();
+    }
+
+    /**
+     * Runs the current image uploader after repairing its certificate-derived cache.
+     *
+     * <p>ChMate 0.8.10.243 loads this uploader from an in-memory DEX. Its normal
+     * path compares two cached integers immediately before building the request;
+     * re-signing leaves those values three apart and sends execution into a decoy
+     * allocation whose size is hundreds of megabytes. Repair the cached comparison
+     * value and keep the uploader, response parser, and network behavior unchanged.</p>
+     */
+    public static Object invokeCurrentImageUploader(
+            Method method,
+            Object receiver,
+            Object[] arguments
+    ) throws Throwable {
+        ClassLoader loader = method.getDeclaringClass().getClassLoader();
+        Class<?> stateClass = Class.forName("o.setHasVideoContent", false, loader);
+        Field stateField = stateClass.getDeclaredField("b");
+        stateField.setAccessible(true);
+        Object[] state = (Object[]) stateField.get(null);
+        if (state != null && state.length > 3
+                && state[2] instanceof int[] && state[3] instanceof int[]) {
+            int[] expected = (int[]) state[2];
+            int[] actual = (int[]) state[3];
+            if (expected.length > 0 && actual.length > 0) {
+                actual[0] = expected[0];
+            }
+        }
+
+        try {
+            return method.invoke(receiver, arguments);
+        } catch (InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            throw cause == null ? error : cause;
+        }
+    }
+
+    /**
+     * ChMate backups contain preference values rather than a package manifest. When a backup
+     * created by the original package contains an absolute app-data path or content URI, remap
+     * that value to the optional renamed package before ChMate reads the restored preferences.
+     */
+    private static void migrateRestoredPackageReferences(Application application) {
+        String originalPackage = originalPackageName();
+        String currentPackage = application.getPackageName();
+        if (originalPackage.equals(currentPackage)) return;
+
+        File preferencesDirectory = new File(application.getApplicationInfo().dataDir, "shared_prefs");
+        File[] preferenceFiles = preferencesDirectory.listFiles((directory, name) ->
+                name != null && name.endsWith(".xml"));
+        if (preferenceFiles == null) return;
+
+        int changedValues = 0;
+        for (File preferenceFile : preferenceFiles) {
+            String fileName = preferenceFile.getName();
+            String preferenceName = fileName.substring(0, fileName.length() - 4);
+            try {
+                SharedPreferences preferences = application.getSharedPreferences(
+                        preferenceName,
+                        Context.MODE_PRIVATE
+                );
+                SharedPreferences.Editor editor = null;
+                for (Map.Entry<String, ?> entry : preferences.getAll().entrySet()) {
+                    Object value = entry.getValue();
+                    if (value instanceof String) {
+                        String rewritten = rewriteRestoredPackageReference(
+                                (String) value,
+                                originalPackage,
+                                currentPackage
+                        );
+                        if (!value.equals(rewritten)) {
+                            if (editor == null) editor = preferences.edit();
+                            editor.putString(entry.getKey(), rewritten);
+                            changedValues++;
+                        }
+                    } else if (value instanceof Set) {
+                        @SuppressWarnings("unchecked")
+                        Set<String> strings = (Set<String>) value;
+                        Set<String> rewritten = new HashSet<>(strings.size());
+                        boolean changed = false;
+                        for (String string : strings) {
+                            String replacement = rewriteRestoredPackageReference(
+                                    string,
+                                    originalPackage,
+                                    currentPackage
+                            );
+                            rewritten.add(replacement);
+                            changed |= !replacement.equals(string);
+                        }
+                        if (changed) {
+                            if (editor == null) editor = preferences.edit();
+                            editor.putStringSet(entry.getKey(), rewritten);
+                            changedValues++;
+                        }
+                    }
+                }
+                if (editor != null) editor.commit();
+            } catch (Throwable error) {
+                Log.w(LOG_TAG, "Unable to normalize restored preferences: " + fileName, error);
+            }
+        }
+        if (changedValues > 0) {
+            Log.i(LOG_TAG, "Normalized " + changedValues + " restored package references");
+        }
+    }
+
+    private static String rewriteRestoredPackageReference(
+            String value,
+            String originalPackage,
+            String currentPackage
+    ) {
+        if (value == null || !value.contains(originalPackage)) return value;
+        return value.replace(originalPackage, currentPackage);
+    }
+
+    /** Keeps ChMate's explicit self-navigation inside an optionally renamed installation. */
+    public static Intent retargetSelfIntent(Intent intent) {
+        if (intent == null) return null;
+        ComponentName component = intent.getComponent();
+        String currentPackage = runtimePackageName;
+        if (component == null || currentPackage == null
+                || originalPackageName().equals(currentPackage)
+                || !originalPackageName().equals(component.getPackageName())
+                || !component.getClassName().startsWith("jp.syoboi.")) {
+            return intent;
+        }
+        intent.setComponent(new ComponentName(currentPackage, component.getClassName()));
+        return intent;
+    }
+
     public static boolean shouldHideAds() {
+        return shouldHideAds(applicationContext);
+    }
+
+    public static boolean shouldHideAds(Context context) {
+        if (context != null) {
+            Context resolvedContext = context.getApplicationContext();
+            applicationContext = resolvedContext == null ? context : resolvedContext;
+        }
         SharedPreferences preferences = preferencesOrNull();
         return preferences == null || preferences.getBoolean("hideAd", true);
     }
@@ -261,6 +573,93 @@ public final class Haiagaru {
     public static String rewrite5chUrl(String original) {
         if (original == null || !isChtoioEnabled()) return original;
         return original.replace("5ch.net", "5ch.io");
+    }
+
+    /**
+     * Converts a thread URL on an obsolete 2ch/5ch server before ChMate creates
+     * BBSUrlInfo. itest is independent of the thread's former server name and has
+     * a dedicated parser in ChMate. The official kako archive and 2ch.sc mirror
+     * remain available through the archived-thread search preset.
+     */
+    public static void rewriteLegacyThreadIntent(Activity activity) {
+        if (activity == null || !isChtoioEnabled()) return;
+        Intent intent = activity.getIntent();
+        if (intent == null || intent.getData() == null) return;
+        String original = intent.getData().toString();
+        String rewritten = rewriteLegacyThreadUrl(original);
+        if (!original.equals(rewritten)) {
+            if (ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
+                Log.i(LOG_TAG, "Handling legacy thread through the local DAT cache: " + original);
+                return;
+            }
+            intent.setData(Uri.parse(rewritten));
+            Log.i(LOG_TAG, "Using browser-compatible fallback URL " + rewritten);
+        }
+    }
+
+    public static String rewriteLegacyThreadUrl(String original) {
+        if (original == null || original.isEmpty() || !isChtoioEnabled()) return original;
+        try {
+            Uri uri = Uri.parse(original);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null) return original;
+            java.util.regex.Matcher matcher = LEGACY_THREAD_READ_PATH.matcher(path);
+            if (!matcher.matches()) {
+                matcher = LEGACY_THREAD_DAT_PATH.matcher(path);
+            }
+            if (!matcher.matches()) return original;
+
+            String normalizedHost = host.toLowerCase(Locale.ROOT);
+            if (!isArchivedThreadCandidate(normalizedHost, matcher.group(2))) {
+                return original;
+            }
+
+            return "https://itest.5ch.io/test/read.cgi/"
+                    + matcher.group(1) + "/" + matcher.group(2) + "/";
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
+            return original;
+        }
+    }
+
+    private static boolean isArchivedThreadCandidate(String host, String threadKey) {
+        if (host.equals("2ch.net") || host.endsWith(".2ch.net")) return true;
+        if (!(host.endsWith(".5ch.net") || host.endsWith(".5ch.io"))) return false;
+
+        int dot = host.indexOf('.');
+        String server = dot > 0 ? host.substring(0, dot) : host;
+        switch (server) {
+            case "ai":
+            case "anago":
+            case "awabi":
+            case "daily":
+            case "fox":
+            case "hayabusa":
+            case "hayabusa2":
+            case "hayabusa3":
+            case "hayabusa5":
+            case "hayabusa6":
+            case "hello":
+            case "hope":
+            case "kanae":
+            case "maguro":
+            case "mastiff":
+            case "peace":
+            case "potato":
+            case "raptor":
+            case "wktk":
+                return true;
+            default:
+                try {
+                    long createdAtSeconds = Long.parseLong(threadKey);
+                    long ninetyDaysAgoSeconds = System.currentTimeMillis() / 1000L
+                            - 90L * 24L * 60L * 60L;
+                    return createdAtSeconds < ninetyDaysAgoSeconds;
+                } catch (NumberFormatException ignored) {
+                    return false;
+                }
+        }
     }
 
     public static String normalizeBeIconUrl(String original) {
@@ -529,6 +928,9 @@ public final class Haiagaru {
                 preferences.getBoolean("chtoio", true)
         );
 
+        addArchiveSearchPresetControl(activity, layout);
+        addPackageMigrationControl(activity, layout);
+
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
 
@@ -554,6 +956,213 @@ public final class Haiagaru {
                     if (!before.equals(after)) restart(activity);
                 })
                 .show();
+    }
+
+    private static void addArchiveSearchPresetControl(Activity activity, LinearLayout layout) {
+        TextView description = new TextView(activity);
+        description.setText(text(
+                "DAT落ちスレ用プリセットをHaiagaru-Morpheから取得します。更新時だけ通信し、通常利用時の追加通信はありません。\n"
+                        + "2ch.sc板一覧: https://menu.2ch.sc/bbsmenu.html",
+                "Downloads the archived-thread preset from Haiagaru-Morphe. "
+                        + "Network access occurs only while updating.\n"
+                        + "2ch.sc board menu: https://menu.2ch.sc/bbsmenu.html"
+        ));
+        description.setTextSize(13);
+        LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        descriptionParams.topMargin = dp(activity, 20);
+        layout.addView(description, descriptionParams);
+
+        Button button = new Button(activity);
+        button.setAllCaps(false);
+        button.setText(text(
+                "GitHubからDAT落ち用プリセットを更新",
+                "Update archived-thread preset from GitHub"
+        ));
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        buttonParams.topMargin = dp(activity, 8);
+        layout.addView(button, buttonParams);
+        button.setOnClickListener(view -> updateArchiveSearchPreset(activity, button));
+    }
+
+    private static void updateArchiveSearchPreset(Activity activity, Button button) {
+        button.setEnabled(false);
+        button.setText(text("更新中…", "Updating..."));
+        new Thread(() -> {
+            boolean downloadedFromGitHub = false;
+            try {
+                String preset;
+                try {
+                    preset = downloadArchiveSearchPreset();
+                    downloadedFromGitHub = true;
+                } catch (IOException downloadError) {
+                    Log.w(LOG_TAG, "Unable to download the archived-thread preset; "
+                            + "using the built-in fallback", downloadError);
+                    preset = validateArchiveSearchPreset(BUILTIN_ARCHIVE_PRESET);
+                }
+                SharedPreferences chMatePreferences =
+                        PreferenceManager.getDefaultSharedPreferences(activity);
+                String existing = chMatePreferences.getString(CHMATE_SEARCH_URLS_KEY, "");
+                String merged = mergeArchiveSearchPreset(existing, preset);
+                if (!chMatePreferences.edit()
+                        .putString(CHMATE_SEARCH_URLS_KEY, merged)
+                        .commit()) {
+                    throw new IOException("Unable to save the ChMate search URL preset");
+                }
+                boolean usedGitHub = downloadedFromGitHub;
+                activity.runOnUiThread(() -> {
+                    resetArchivePresetButton(button);
+                    button.setEnabled(true);
+                    Toast.makeText(
+                            activity,
+                            usedGitHub
+                                    ? text(
+                                            "GitHubからDAT落ち用プリセットを更新しました",
+                                            "Archived-thread preset updated from GitHub"
+                                    )
+                                    : text(
+                                            "GitHubに接続できないため内蔵プリセットを適用しました",
+                                            "GitHub was unavailable; the built-in preset was applied"
+                                    ),
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+            } catch (Throwable error) {
+                Log.e(LOG_TAG, "Unable to update the archived-thread preset", error);
+                activity.runOnUiThread(() -> {
+                    resetArchivePresetButton(button);
+                    button.setEnabled(true);
+                    Toast.makeText(
+                            activity,
+                            text(
+                                    "プリセットを更新できませんでした",
+                                    "Unable to update the archived-thread preset"
+                            ),
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+            }
+        }, "Haiagaru-archive-preset").start();
+    }
+
+    private static void resetArchivePresetButton(Button button) {
+        button.setText(text(
+                "GitHubからDAT落ち用プリセットを更新",
+                "Update archived-thread preset from GitHub"
+        ));
+    }
+
+    private static String downloadArchiveSearchPreset() throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) new URL(ARCHIVE_PRESET_URL)
+                .openConnection();
+        connection.setConnectTimeout(5_000);
+        connection.setReadTimeout(8_000);
+        connection.setInstanceFollowRedirects(true);
+        connection.setRequestProperty("User-Agent", "Haiagaru/1.0");
+        try {
+            int responseCode = connection.getResponseCode();
+            if (responseCode < 200 || responseCode >= 300) {
+                throw new IOException("Haiagaru-Morphe preset returned HTTP " + responseCode);
+            }
+            try (InputStream input = new BufferedInputStream(connection.getInputStream());
+                 ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[16 * 1024];
+                int count;
+                int total = 0;
+                while ((count = input.read(buffer)) != -1) {
+                    total += count;
+                    if (total > 128 * 1024) {
+                        throw new IOException("Haiagaru-Morphe preset is unexpectedly large");
+                    }
+                    output.write(buffer, 0, count);
+                }
+                return validateArchiveSearchPreset(
+                        new String(output.toByteArray(), StandardCharsets.UTF_8)
+                );
+            }
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static String validateArchiveSearchPreset(String preset) throws IOException {
+        String normalized = preset == null
+                ? ""
+                : preset.replace("\uFEFF", "").replace("\r\n", "\n").replace('\r', '\n');
+        StringBuilder validated = new StringBuilder();
+        int ruleCount = 0;
+        boolean hasOfficialArchive = false;
+        for (String rawLine : normalized.split("\n")) {
+            String line = rawLine.trim();
+            if (line.isEmpty()) continue;
+            if (!line.contains(ARCHIVE_PRESET_MARKER)
+                    || !line.contains("{$bbs}")
+                    || !line.contains("{$key}")) {
+                throw new IOException("Invalid archived-thread preset rule");
+            }
+            int urlStart = line.lastIndexOf(" https://");
+            if (urlStart < 0) {
+                throw new IOException("Archived-thread preset rule has no HTTPS URL");
+            }
+            URL destination = new URL(line.substring(urlStart + 1));
+            String host = destination.getHost().toLowerCase(Locale.ROOT);
+            if (!(host.equals("kako.5ch.io")
+                    || host.equals("itest.5ch.io")
+                    || host.equals("2ch.sc")
+                    || host.endsWith(".2ch.sc"))) {
+                throw new IOException("Archived-thread preset uses an unapproved host");
+            }
+            hasOfficialArchive |= host.equals("kako.5ch.io") || host.equals("itest.5ch.io");
+            if (validated.length() > 0) validated.append('\n');
+            validated.append(line);
+            if (++ruleCount > 64) {
+                throw new IOException("Archived-thread preset contains too many rules");
+            }
+        }
+        if (ruleCount < 2 || !hasOfficialArchive) {
+            throw new IOException("Archived-thread preset is incomplete");
+        }
+        Log.i(LOG_TAG, "Validated " + ruleCount + " archived-thread preset rules");
+        return validated.toString();
+    }
+
+    private static String mergeArchiveSearchPreset(String existing, String preset) {
+        StringBuilder merged = new StringBuilder();
+        if (existing != null && !existing.isEmpty()) {
+            for (String line : existing.split("\\r?\\n")) {
+                if (line.contains(ARCHIVE_PRESET_MARKER)) continue;
+                if (line.trim().isEmpty()) continue;
+                if (merged.length() > 0) merged.append('\n');
+                merged.append(line);
+            }
+        }
+        if (merged.length() > 0) merged.append('\n');
+        return merged.append(preset).toString();
+    }
+
+    private static void addPackageMigrationControl(Activity activity, LinearLayout layout) {
+        if (originalPackageName().equals(activity.getPackageName())) return;
+        try {
+            Class.forName("app.morphe.extension.chmate.PackageDataMigration")
+                    .getDeclaredMethod("addControl", Activity.class, LinearLayout.class)
+                    .invoke(null, activity, layout);
+        } catch (ClassNotFoundException ignored) {
+            // The optional package-name patch was not selected.
+        } catch (ReflectiveOperationException error) {
+            Log.e(LOG_TAG, "Unable to add the package-data migration control", error);
+        }
+    }
+
+    /** Built at runtime so package-name post-processing cannot rewrite this compatibility value. */
+    public static String originalPackageName() {
+        return new StringBuilder("jp.co.airfront.android.a2ch")
+                .append("Mate")
+                .toString();
     }
 
     private static void applyUserAgent() {
@@ -611,7 +1220,6 @@ public final class Haiagaru {
         // obfuscated defaults; an explicitly entered custom class is preserved verbatim.
         if ((AD_CLASS_191.equals(savedClass)
                 || AD_CLASS_241.equals(savedClass)
-                || AD_CLASS_242.equals(savedClass)
                 || AD_CLASS_243.equals(savedClass))
                 && !classExists(savedClass)) {
             return defaultAdClass();
@@ -621,7 +1229,6 @@ public final class Haiagaru {
 
     private static String defaultAdClass() {
         if (classExists(AD_CLASS_243)) return AD_CLASS_243;
-        if (classExists(AD_CLASS_242)) return AD_CLASS_242;
         if (classExists(AD_CLASS_241)) return AD_CLASS_241;
         return AD_CLASS_191;
     }
