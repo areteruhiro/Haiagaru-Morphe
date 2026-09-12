@@ -41,6 +41,7 @@ import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 
@@ -284,6 +285,27 @@ public final class Haiagaru {
             linkInfo[5] = 4;
         }
         return found;
+    }
+
+    public static String[] filterLegacyBeAttachments(String[] urls) {
+        if (urls == null || urls.length == 0) return urls;
+
+        int writeIndex = 0;
+        String[] filtered = new String[urls.length];
+        for (String url : urls) {
+            if (!isBeIconUrl(url)) {
+                filtered[writeIndex++] = url;
+            }
+        }
+        if (writeIndex == urls.length) return urls;
+        return writeIndex == 0 ? new String[0] : Arrays.copyOf(filtered, writeIndex);
+    }
+
+    private static boolean isBeIconUrl(String url) {
+        if (url == null) return false;
+        String normalized = url.toLowerCase(Locale.ROOT);
+        return normalized.contains("img.5ch.io/ico/")
+                || normalized.contains("img.5ch.net/ico/");
     }
 
     public static boolean is5chHost(String host) {
