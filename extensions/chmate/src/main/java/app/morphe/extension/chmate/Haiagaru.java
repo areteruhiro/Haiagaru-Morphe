@@ -44,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
@@ -62,6 +63,11 @@ public final class Haiagaru {
     private static final String AD_CLASS_242 = "o.zzbgb";
     private static final String AD_CLASS_243 = "o.zzexb";
     private static final String CHMATE_PACKAGE = "jp.co.airfront.android.a2chMate";
+    private static final Pattern LEGACY_BE_ATTACHMENT_TOKEN = Pattern.compile(
+            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+"
+                    + "|\\u0003img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final String ORIGINAL_CERTIFICATE =
             "MIICZTCCAc6gAwIBAgIETUOudzANBgkqhkiG9w0BAQUFADB2MQswCQYDVQQGEwJK"
             + "UDEOMAwGA1UECBMFVG9reW8xETAPBgNVBAcTCFNldGFnYXlhMRUwEwYDVQQKEwxB"
@@ -265,6 +271,11 @@ public final class Haiagaru {
     public static String prepareLegacyBeParsing(String original) {
         if (original == null || !original.contains("sssp://img.5ch.io/")) return original;
         return original.replace("sssp://img.5ch.io/", "sssp://img.5ch.net/");
+    }
+
+    public static String stripLegacyBeAttachmentTokens(String original) {
+        if (original == null || original.isEmpty()) return original;
+        return LEGACY_BE_ATTACHMENT_TOKEN.matcher(original).replaceAll("");
     }
 
     public static boolean classifyLegacyBeIcon(
