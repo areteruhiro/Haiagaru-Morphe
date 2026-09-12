@@ -217,8 +217,11 @@ val haiagaruPatch = bytecodePatch(
         }.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onApplicationCreate(Landroid/app/Application;)V"
         )
+        // The URL/DAT recovery entry exists in all supported generations, but
+        // 0.8.10.241 and 0.8.10.243 route lifecycle creation through the Hilt
+        // activity base class while 0.8.10.191 keeps it on the concrete activity.
+        patchLegacyThreadUrlEntry(profile)
         if (packageMetadata.versionName == "0.8.10.243 dev") {
-            patchLegacyThreadUrlEntry()
             patchImageSelectionResult()
             patchImageSelectionReflectionTrap()
             patchImageUploadIntegrityComparison()
@@ -544,8 +547,15 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegr
     }
 }
 
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEntry() {
-    mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResListActivity;").methods.single { method ->
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEntry(
+    profile: ChMateProfile,
+) {
+    val activityClass = if (profile.hasHiltSettings) {
+        "Ljp/syoboi/a2chMate/activity/Hilt_ResListActivity;"
+    } else {
+        "Ljp/syoboi/a2chMate/activity/ResListActivity;"
+    }
+    mutableClassDefBy(activityClass).methods.single { method ->
         method.name == "onCreate"
             && method.returnType == "V"
             && method.parameters.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
