@@ -43,6 +43,11 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 ## 更新履歴
 
+### 1.2.2-r6（プレリリース）
+
+- ChMate `0.8.10.191 dev` のレス単体、スレ全体、表示変換の全添付経路からBEアイコンURLを除外
+- `img.5ch.io/ico/marara_tya.gif` と `img.5ch.io/ico/kuma.gif` を含む `img.5ch.io/ico/` / `img.5ch.net/ico/` を対象化
+
 ### 1.2.2-r5（プレリリース）
 
 - ChMate `0.8.10.191 dev` の添付抽出結果からBEアイコンURLを直接除外
