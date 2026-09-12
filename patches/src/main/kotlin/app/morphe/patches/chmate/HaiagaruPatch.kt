@@ -969,8 +969,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     )
 
     // The response model scans the raw body again when it builds the attachment
-    // list. Normalize that parser's private input as well so its existing subtype
-    // 4/5 checks exclude BE icons instead of presenting them as attached GIFs.
+    // list. Remove BE tokens only from this private copy. The original response
+    // remains untouched for the inline emoticon renderer above.
     val legacyAttachmentMethod =
         mutableClassDefBy("Lo/processAdDisplayErrorPostbackForUserError;").methods.single { method ->
             method.name == "d"
@@ -993,7 +993,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     legacyAttachmentMethod.addInstructionsWithLabels(
         parserTextAssignmentIndex,
         """
-            invoke-static/range { v$attachmentTextRegister .. v$attachmentTextRegister }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static/range { v$attachmentTextRegister .. v$attachmentTextRegister }, $EXTENSION->stripLegacyBeAttachmentTokens(Ljava/lang/String;)Ljava/lang/String;
             move-result-object v$attachmentTextRegister
         """
     )
@@ -1029,6 +1029,13 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
                 && method.parameters.map(CharSequence::toString) ==
                 listOf("Ljava/lang/String;", "Z")
         }
+    legacyStaticAttachmentMethod.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->stripLegacyBeAttachmentTokens(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p0
+        """
+    )
     val staticAttachmentReturnIndexes = legacyStaticAttachmentMethod.implementation?.instructions
         ?.mapIndexedNotNull { index, instruction ->
             if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
