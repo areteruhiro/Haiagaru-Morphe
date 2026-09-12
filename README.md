@@ -31,11 +31,21 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
+プレリリースを検証する場合のみ、次の `dev` ソースを登録してください。
+
+```text
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/dev/patches-bundle.json
+```
+
 パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
 URV Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r3`）だけを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r4（プレリリース）
+
+- ChMate `0.8.10.191 dev` のBEアイコンを通常の添付ファイル一覧から除外
 
 ### 1.2.2
 

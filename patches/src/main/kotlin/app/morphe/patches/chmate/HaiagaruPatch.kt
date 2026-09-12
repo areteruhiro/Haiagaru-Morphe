@@ -968,6 +968,36 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         """
     )
 
+    // The response model scans the raw body again when it builds the attachment
+    // list. Normalize that parser's private input as well so its existing subtype
+    // 4/5 checks exclude BE icons instead of presenting them as attached GIFs.
+    val legacyAttachmentMethod =
+        mutableClassDefBy("Lo/processAdDisplayErrorPostbackForUserError;").methods.single { method ->
+            method.name == "d"
+                && method.returnType == "[Ljava/lang/String;"
+                && method.parameters.isEmpty()
+        }
+    val legacyAttachmentInstructions = legacyAttachmentMethod.implementation?.instructions
+        ?: error("ChMate legacy attachment extractor has no implementation")
+    val parserTextAssignmentIndex = legacyAttachmentInstructions.indices.single { index ->
+        val instruction = legacyAttachmentInstructions[index]
+        val reference = (instruction as? ReferenceInstruction)?.reference
+            as? FieldReference ?: return@single false
+        instruction.opcode == Opcode.IPUT_OBJECT
+            && reference.definingClass == legacyLinkParserType
+            && reference.name == "d"
+            && reference.type == "Ljava/lang/String;"
+    }
+    val attachmentTextRegister =
+        (legacyAttachmentInstructions[parserTextAssignmentIndex] as TwoRegisterInstruction).registerA
+    legacyAttachmentMethod.addInstructionsWithLabels(
+        parserTextAssignmentIndex,
+        """
+            invoke-static/range { v$attachmentTextRegister .. v$attachmentTextRegister }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v$attachmentTextRegister
+        """
+    )
+
     // Current ChMate normalizes legacy BE icon hosts before its dedicated
     // DynamicDrawableSpan fetches them. Port that narrow behavior to 191.
     mutableClassDefBy("Lo/oa;").methods.single { method ->
