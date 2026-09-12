@@ -1019,6 +1019,52 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         )
     }
 
+    // ChMate 191 also has a static extractor used by the thread-wide image
+    // collector. It bypasses the per-response d() method above, so filter its
+    // final URL array as well.
+    val legacyStaticAttachmentMethod =
+        mutableClassDefBy("Lo/processAdDisplayErrorPostbackForUserError;").methods.single { method ->
+            method.name == "e"
+                && method.returnType == "[Ljava/lang/String;"
+                && method.parameters.map(CharSequence::toString) ==
+                listOf("Ljava/lang/String;", "Z")
+        }
+    val staticAttachmentReturnIndexes = legacyStaticAttachmentMethod.implementation?.instructions
+        ?.mapIndexedNotNull { index, instruction ->
+            if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+        }
+        .orEmpty()
+    staticAttachmentReturnIndexes.asReversed().forEach { index ->
+        val returnRegister =
+            (legacyStaticAttachmentMethod.implementation!!.instructions[index] as OneRegisterInstruction)
+                .registerA
+        legacyStaticAttachmentMethod.addInstructionsWithLabels(
+            index,
+            """
+                invoke-static/range { v$returnRegister .. v$returnRegister }, $EXTENSION->filterLegacyBeAttachments([Ljava/lang/String;)[Ljava/lang/String;
+                move-result-object v$returnRegister
+            """
+        )
+    }
+
+    // Finally guard the String[] -> display-item conversion. This covers cached
+    // arrays and any other caller that populated the attachment list before the
+    // two extractors above were reached.
+    val legacyAttachmentDisplayMethod =
+        mutableClassDefBy("Lo/processAdDisplayErrorPostbackForUserError;").methods.single { method ->
+            method.name == "c"
+                && method.returnType == "[Ljava/lang/CharSequence;"
+                && method.parameters.map(CharSequence::toString) ==
+                listOf("[Ljava/lang/String;")
+        }
+    legacyAttachmentDisplayMethod.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->filterLegacyBeAttachments([Ljava/lang/String;)[Ljava/lang/String;
+            move-result-object p0
+        """
+    )
+
     // Current ChMate normalizes legacy BE icon hosts before its dedicated
     // DynamicDrawableSpan fetches them. Port that narrow behavior to 191.
     mutableClassDefBy("Lo/oa;").methods.single { method ->
