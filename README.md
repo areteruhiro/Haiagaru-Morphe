@@ -64,10 +64,16 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 ## 更新履歴
 
+### 1.2.2-r9（プレリリース）
+
+- ChMate `0.8.10.191 dev`／`0.8.10.241`／`0.8.10.243 dev` の全対応版でURL自動補正を有効化
+- `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` の自動DAT取得経路をスレッドURL起動時にも適用
+- 191 devは `ResListActivity`、241／243 devは `Hilt_ResListActivity` の構造差に合わせて注入
+
 ### 1.2.2-r8（プレリリース）
 
 - ChMate `0.8.10.243 dev` で画像添付時に発生していたメモリ不足、0除算、null関連のクラッシュを修正
-- DAT落ちスレを `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` から取得するプリセット更新とURL補正を追加
+- DAT落ちスレを `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` から取得するプリセットを更新
 - パッケージ名変更を初期状態で有効化し、アプリ名、PNG/WebPアイコン、versionCodeの変更に対応
 - パッケージ名変更後のバックアップ復元に含まれる旧パッケージ参照を補正
 - Shizukuを使った旧ChMate共有データのコピー補助を追加
