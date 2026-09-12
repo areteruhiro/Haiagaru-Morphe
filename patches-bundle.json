@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-12T14:50:47",
-  "description": "Haiagaru 1.2.2 revision 7 prerelease: ChMate 0.8.10.191 dev の添付解析用テキストからBEアイコントークンを入力段階で除去します。",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r7/haiagaru_patches-1.2.2-r7.mpp",
+  "created_at": "2026-09-12T14:51:07",
+  "description": "Haiagaru 1.2.2 revision 8 prerelease: 243版の画像添付修正、DAT落ちスレ対応、アプリ情報変更、データ移行補助、広告SDK初期化抑制、任意のクラッシュログ保存を追加します。",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r8/haiagaru_patches-1.2.2-r8.mpp",
   "signature_download_url": "",
-  "version": "1.2.2-r7"
+  "version": "1.2.2-r8"
 }

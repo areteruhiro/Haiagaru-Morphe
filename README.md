@@ -1,6 +1,6 @@
 # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
@@ -9,6 +9,14 @@ https://github.com/areteruhiro/Haiagaru
 * Remove ads (including margins)
 * Modify User-Agent
 * Remove MonaKey
+* GitHubから更新できるDAT落ちスレ用検索プリセット
+* パッケージ名・アプリ名・アイコン・versionCodeの変更
+* Morpheで任意に有効化できるクラッシュログ保存
+
+DAT落ちスレ用プリセットは、通常閲覧時ではなく設定画面の更新ボタンを押した時だけ、
+[`presets/chmate-dat-fallen-search-urls.txt`](presets/chmate-dat-fallen-search-urls.txt) を取得します。
+GitHubへ接続できない場合は、同じ取得先を収録した内蔵プリセットを使用します。
+2ch.scの板一覧参照先は [`https://menu.2ch.sc/bbsmenu.html`](https://menu.2ch.sc/bbsmenu.html) です。
 
 ## インストールできない場合
 
@@ -20,6 +28,19 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 4. 必要に応じて、手順1のバックアップからデータを復元します。
 
 アプリデータを削除すると、バックアップしていない設定や履歴は失われます。必ずアンインストール前にバックアップを確認してください。
+
+パッケージ名変更版には、Shizukuを利用して旧ChMateの共有データをコピーする補助機能がありますが、chmate本来のバックアップ/復元を推奨しています。
+
+初期状態で有効なパッチ `Change ChMate package name` では、別アプリとしてインストールするための
+パッケージ名に加えて、アプリ名、PNG/WebPアイコン、versionCodeを設定できます。
+アイコン・versionCodeを未指定にした項目は元の値を保持します。
+新Shizuku APIを含むため、このパッチを有効にしたAPKはAndroid 7.0（API 24）以降が必要です。
+
+備考: パッケージ名の変更により予期せぬエラーが発生する可能性がありますが、
+既存のChMateとは別アプリとして扱われるため、インストール時の競合エラーを抑えられます。
+
+任意パッチ `Save ChMate crash logs` を有効にすると、未処理例外でクラッシュした際に
+`Download/Haiagaru/` へログを保存します。投稿本文、Cookieなどのアプリデータは記録しません。
 
 情報提供: あかまつさん
 
@@ -42,6 +63,17 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r8（プレリリース）
+
+- ChMate `0.8.10.243 dev` で画像添付時に発生していたメモリ不足、0除算、null関連のクラッシュを修正
+- DAT落ちスレを `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` から取得するプリセット更新とURL補正を追加
+- パッケージ名変更を初期状態で有効化し、アプリ名、PNG/WebPアイコン、versionCodeの変更に対応
+- パッケージ名変更後のバックアップ復元に含まれる旧パッケージ参照を補正
+- Shizukuを使った旧ChMate共有データのコピー補助を追加
+- 広告非表示時に広告SDKと計測SDKの初期化を抑制
+- 任意パッチ `Save ChMate crash logs` を追加。クラッシュ時に `Download/Haiagaru/` へログを保存
+- 対応対象から ChMate `0.8.10.242 dev` を削除
 
 ### 1.2.2-r7（プレリリース）
 
@@ -84,7 +116,6 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 - パッケージ: `jp.co.airfront.android.a2chMate`
 - バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
 - バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
-- バージョン: `0.8.10.242 dev`（versionCode 512、minSdk 23）
 - バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
 - 元APKの署名 SHA-256:
   `7dd84d97df4666fbc8188b8d6167ce59314636997f0edae82d685fffda4059d2`
