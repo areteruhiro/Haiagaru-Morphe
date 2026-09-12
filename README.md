@@ -10,6 +10,17 @@ https://github.com/areteruhiro/Haiagaru
 * Modify User-Agent
 * Remove MonaKey
 
+## DAT落ちスレ用プリセット
+
+Haiagaruの設定画面から、次のプリセットを取得できます。
+
+```text
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/presets/chmate-dat-fallen-search-urls.txt
+```
+
+`kako.5ch.io`、`itest.5ch.io`、`2ch.sc` の3経路を収録しています。
+2ch.scの板一覧参照先は https://menu.2ch.sc/bbsmenu.html です。
+
 ## インストールできない場合
 
 ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMateをアンインストールすると、再インストール時に既存のパッケージとの競合が表示される場合があります。
