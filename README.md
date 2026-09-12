@@ -1,7 +1,6 @@
 # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.241`  対応のMorpheパッチです。 <br>
-(/ `0.8.10.242 dev` / `0.8.10.243 dev`)
+ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
@@ -12,6 +11,15 @@ https://github.com/areteruhiro/Haiagaru
 * Remove ads (including margins)
 * Modify User-Agent
 * Remove MonaKey
+* `5ch.net` 表示・検索・書き込みの `5ch.io` 対応
+* ChMate設定画面内のHaiagaru設定UI
+* DAT落ちスレのURL自動補正と自動DAT取得
+* `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` のDAT取得プリセット
+* パッケージ名、アプリ名、アイコン、versionCodeの変更
+* パッケージ名変更後のバックアップ復元補助
+* 任意で有効化できるクラッシュログ保存
+
+設定値はChMate内のHaiagaru設定画面に保存されます。パッチはMorphe上で個別に有効化・無効化できます。
 
 ## DAT落ちスレ用プリセット
 
@@ -24,6 +32,9 @@ https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/
 `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` の3経路を収録しています。
 2ch.scの板一覧参照先は https://menu.2ch.sc/bbsmenu.html です。
 
+対応版では、`anago.5ch.net` など過去サーバーのスレッドURLを起動時に自動補正し、
+`kako.5ch.io`、`itest.5ch.io`、`2ch.sc` の順にDAT取得を試行します。
+
 ## インストールできない場合
 
 ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMateをアンインストールすると、再インストール時に既存のパッケージとの競合が表示される場合があります。
@@ -34,6 +45,13 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 4. 必要に応じて、手順1のバックアップからデータを復元します。
 
 アプリデータを削除すると、バックアップしていない設定や履歴は失われます。必ずアンインストール前にバックアップを確認してください。
+
+`Change ChMate package name` は初期状態で有効です。パッケージ名を変更すると、
+元のChMateとは別アプリとして扱われるため、アプリデータを残したアンインストール後に発生する
+「既存のパッケージとの競合」対策になります。パッケージ名変更により予期せぬエラーが発生する可能性があるため、
+必要なデータをバックアップしてから利用してください。アプリ名、アイコン、versionCodeも同時に変更できます。
+
+パッケージ名変更版にはShizukuを使った共有データコピー補助がありますが、ChMate本来のバックアップ／復元を推奨します。
 
 情報提供: あかまつさん
 
@@ -56,6 +74,11 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r9
+
+- `0.8.10.191 dev`／`0.8.10.241`／`0.8.10.243 dev` でURL自動補正と自動DAT取得を有効化
+- `ResListActivity`／`Hilt_ResListActivity` の構造差に合わせて注入
 
 ### 1.2.2
 
@@ -80,7 +103,6 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 - パッケージ: `jp.co.airfront.android.a2chMate`
 - バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
 - バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
-- バージョン: `0.8.10.242 dev`（versionCode 512、minSdk 23）
 - バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
 - 元APKの署名 SHA-256:
   `7dd84d97df4666fbc8188b8d6167ce59314636997f0edae82d685fffda4059d2`
