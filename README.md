@@ -4,6 +4,8 @@ ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッ�
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
+最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
+
 ## Features
 
 * Remove ads (including margins)
