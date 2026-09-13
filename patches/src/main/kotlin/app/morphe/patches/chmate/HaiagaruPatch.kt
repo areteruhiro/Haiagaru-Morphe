@@ -8,6 +8,7 @@ import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
@@ -25,6 +26,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import org.w3c.dom.Element
 
 private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
@@ -183,11 +185,7 @@ private fun profileFor(versionName: String) = when (versionName) {
     else -> error("Unsupported ChMate version: $versionName")
 }
 
-@Suppress("unused")
-val haiagaruPatch = bytecodePatch(
-    name = "Haiagaru",
-    description = "Ports the Haiagaru ChMate module, including its in-app settings.",
-) {
+private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
     extendWith("extensions/chmate.mpe")
 
@@ -361,13 +359,51 @@ val haiagaruPatch = bytecodePatch(
 }
 
 @Suppress("unused")
+val haiagaruPatch = resourcePatch(
+    name = "Haiagaru",
+    description = "Ports the Haiagaru ChMate module, including its in-app settings.",
+) {
+    compatibleWith(chMateCompatibility)
+    dependsOn(haiagaruBytecodePatch)
+
+    execute {
+        document("AndroidManifest.xml").use { document ->
+            val additions = buildList {
+                val dataElements = document.getElementsByTagName("data")
+                for (index in 0 until dataElements.length) {
+                    val data = dataElements.item(index) as? Element ?: continue
+                    val ioHost = when (data.getAttribute("android:host")) {
+                        "*.5ch.net" -> "*.5ch.io"
+                        "itest.5ch.net" -> "itest.5ch.io"
+                        else -> continue
+                    }
+                    val intentFilter = data.parentNode
+                    val alreadyPresent = (0 until intentFilter.childNodes.length).any { childIndex ->
+                        val sibling = intentFilter.childNodes.item(childIndex) as? Element
+                        sibling?.tagName == "data" &&
+                            sibling.getAttribute("android:host") == ioHost
+                    }
+                    if (!alreadyPresent) add(data to ioHost)
+                }
+            }
+
+            additions.forEach { (source, ioHost) ->
+                val clone = source.cloneNode(true) as Element
+                clone.setAttribute("android:host", ioHost)
+                source.parentNode.insertBefore(clone, source.nextSibling)
+            }
+        }
+    }
+}
+
+@Suppress("unused")
 val saveChMateCrashLogsPatch = bytecodePatch(
     name = "Save ChMate crash logs",
     description = "Save uncaught ChMate crash logs to Download/Haiagaru.",
     default = false,
 ) {
     compatibleWith(chMateCompatibility)
-    dependsOn(haiagaruPatch)
+    dependsOn(haiagaruBytecodePatch)
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
