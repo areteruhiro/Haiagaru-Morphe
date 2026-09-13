@@ -79,6 +79,7 @@ public final class Haiagaru {
     private static final String DEFAULT_MONAKEY_FILE = "2chapi";
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
     private static final String CHMATE_SEARCH_URLS_KEY = "searchUrls1";
+    private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
     private static final String ARCHIVE_PRESET_MARKER = "【Haiagaru】";
     private static final String ARCHIVE_PRESET_URL =
             "https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/"
@@ -92,6 +93,12 @@ public final class Haiagaru {
                     + "5ch現在サーバーへ https://itest.5ch.io/test/read.cgi/{$bbs}/{$key}/\n"
                     + ARCHIVE_HOST_MATCH + ARCHIVE_PRESET_MARKER
                     + "2ch.scへ https://2ch.sc/test/read.cgi/{$bbs}/{$key}/";
+    private static final String DEFAULT_ARCHIVE_ROUTE_TEMPLATES =
+            "dat|https://{$server}.5ch.io/{$bbs}/dat/{$key}.dat\n"
+                    + "kako|https://kako.5ch.io/test/read.cgi/{$bbs}/{$key}/\n"
+                    + "itest|https://itest.5ch.io/public/newapi/client.php?subdomain={$server}"
+                    + "&board={$bbs}&dat={$key}&rand={$rand}\n"
+                    + "dat|https://{$server}.2ch.sc/{$bbs}/dat/{$key}.dat";
     private static final String AD_CLASS_191 = "o.qheCC";
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
     private static final String AD_CLASS_243 = "o.zzexb";
@@ -297,11 +304,37 @@ public final class Haiagaru {
         }
     }
 
+    /**
+     * Runs before ChMate initializes its process-wide preference cache. This is required after
+     * restoring an original-package backup into an optionally renamed installation.
+     */
+    public static void onProviderCreate(ContentProvider provider) {
+        if (provider == null) return;
+        Context context = provider.getContext();
+        if (context == null) return;
+        initializeApplicationContext(context);
+    }
+
+    /** Fallback for processes that do not create ChMate's startup provider. */
+    public static void onApplicationPreCreate(Application application) {
+        if (application == null) return;
+        initializeApplicationContext(application);
+    }
+
     public static void onApplicationCreate(Application application) {
-        applicationContext = application.getApplicationContext();
+        if (application == null) return;
+        Context context = application.getApplicationContext();
+        applicationContext = context == null ? application : context;
         runtimePackageName = application.getPackageName();
-        migrateRestoredPackageReferences(application);
         applyUserAgent();
+    }
+
+    private static void initializeApplicationContext(Context context) {
+        Context resolvedContext = context.getApplicationContext();
+        Context appContext = resolvedContext == null ? context : resolvedContext;
+        applicationContext = appContext;
+        runtimePackageName = appContext.getPackageName();
+        migrateRestoredPackageReferences(appContext);
     }
 
     /** Installs the optional crash logger before ChMate's startup provider does any work. */
@@ -458,15 +491,26 @@ public final class Haiagaru {
      * created by the original package contains an absolute app-data path or content URI, remap
      * that value to the optional renamed package before ChMate reads the restored preferences.
      */
-    private static void migrateRestoredPackageReferences(Application application) {
+    private static synchronized void migrateRestoredPackageReferences(Context application) {
         String originalPackage = originalPackageName();
         String currentPackage = application.getPackageName();
         if (originalPackage.equals(currentPackage)) return;
 
+        int migratedSettings = migrateLegacyDefaultPreferences(
+                application,
+                originalPackage,
+                currentPackage
+        );
         File preferencesDirectory = new File(application.getApplicationInfo().dataDir, "shared_prefs");
         File[] preferenceFiles = preferencesDirectory.listFiles((directory, name) ->
                 name != null && name.endsWith(".xml"));
-        if (preferenceFiles == null) return;
+        if (preferenceFiles == null) {
+            if (migratedSettings > 0) {
+                Log.i(LOG_TAG, "Migrated " + migratedSettings
+                        + " ChMate settings to the renamed package");
+            }
+            return;
+        }
 
         int changedValues = 0;
         for (File preferenceFile : preferenceFiles) {
@@ -520,6 +564,105 @@ public final class Haiagaru {
         if (changedValues > 0) {
             Log.i(LOG_TAG, "Normalized " + changedValues + " restored package references");
         }
+        if (migratedSettings > 0) {
+            Log.i(LOG_TAG, "Migrated " + migratedSettings
+                    + " ChMate settings to the renamed package");
+        }
+    }
+
+    /**
+     * ChMate 191 writes restored default preferences under its original hard-coded package name.
+     * PreferenceManager, however, reads the runtime package name after Morphe renames the app.
+     * Move every supported SharedPreferences value to the runtime default-preference file before
+     * ChMate creates its preference singleton.
+     */
+    private static int migrateLegacyDefaultPreferences(
+            Context application,
+            String originalPackage,
+            String currentPackage
+    ) {
+        String legacyPreferenceName = originalPackage + "_preferences";
+        String currentPreferenceName = currentPackage + "_preferences";
+        File preferencesDirectory = new File(application.getApplicationInfo().dataDir, "shared_prefs");
+        File legacyPreferenceFile = new File(
+                preferencesDirectory,
+                legacyPreferenceName + ".xml"
+        );
+        if (!legacyPreferenceFile.isFile()) return 0;
+
+        try {
+            SharedPreferences legacyPreferences = application.getSharedPreferences(
+                    legacyPreferenceName,
+                    Context.MODE_PRIVATE
+            );
+            Map<String, ?> restoredValues = legacyPreferences.getAll();
+            if (restoredValues.isEmpty()) return 0;
+
+            SharedPreferences.Editor editor = application.getSharedPreferences(
+                    currentPreferenceName,
+                    Context.MODE_PRIVATE
+            ).edit();
+            int migratedValues = 0;
+            for (Map.Entry<String, ?> entry : restoredValues.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (value instanceof Boolean) {
+                    editor.putBoolean(key, (Boolean) value);
+                } else if (value instanceof Integer) {
+                    editor.putInt(key, (Integer) value);
+                } else if (value instanceof Long) {
+                    editor.putLong(key, (Long) value);
+                } else if (value instanceof Float) {
+                    editor.putFloat(key, (Float) value);
+                } else if (value instanceof String) {
+                    editor.putString(
+                            key,
+                            rewriteRestoredPackageReference(
+                                    (String) value,
+                                    originalPackage,
+                                    currentPackage
+                            )
+                    );
+                } else if (value instanceof Set) {
+                    @SuppressWarnings("unchecked")
+                    Set<String> strings = (Set<String>) value;
+                    Set<String> rewritten = new HashSet<>(strings.size());
+                    for (String string : strings) {
+                        rewritten.add(rewriteRestoredPackageReference(
+                                string,
+                                originalPackage,
+                                currentPackage
+                        ));
+                    }
+                    editor.putStringSet(key, rewritten);
+                } else {
+                    Log.w(LOG_TAG, "Skipping unsupported restored setting: " + key);
+                    continue;
+                }
+                migratedValues++;
+            }
+
+            if (migratedValues == 0 || !editor.commit()) return 0;
+
+            boolean deleted = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                deleted = application.deleteSharedPreferences(legacyPreferenceName);
+            }
+            if (!deleted) {
+                legacyPreferences.edit().clear().commit();
+                File backupFile = new File(legacyPreferenceFile.getPath() + ".bak");
+                if (legacyPreferenceFile.exists() && !legacyPreferenceFile.delete()) {
+                    Log.w(LOG_TAG, "Unable to remove migrated legacy preference file");
+                }
+                if (backupFile.exists() && !backupFile.delete()) {
+                    Log.w(LOG_TAG, "Unable to remove migrated legacy preference backup");
+                }
+            }
+            return migratedValues;
+        } catch (Throwable error) {
+            Log.e(LOG_TAG, "Unable to migrate restored ChMate settings", error);
+            return 0;
+        }
     }
 
     private static String rewriteRestoredPackageReference(
@@ -528,7 +671,27 @@ public final class Haiagaru {
             String currentPackage
     ) {
         if (value == null || !value.contains(originalPackage)) return value;
-        return value.replace(originalPackage, currentPackage);
+        if (!currentPackage.startsWith(originalPackage)) {
+            return value.replace(originalPackage, currentPackage);
+        }
+
+        StringBuilder rewritten = null;
+        int copiedUntil = 0;
+        int searchFrom = 0;
+        int match = value.indexOf(originalPackage, searchFrom);
+        while (match >= 0) {
+            if (value.startsWith(currentPackage, match)) {
+                searchFrom = match + currentPackage.length();
+            } else {
+                if (rewritten == null) rewritten = new StringBuilder(value.length() + 16);
+                rewritten.append(value, copiedUntil, match).append(currentPackage);
+                copiedUntil = match + originalPackage.length();
+                searchFrom = copiedUntil;
+            }
+            match = value.indexOf(originalPackage, searchFrom);
+        }
+        if (rewritten == null) return value;
+        return rewritten.append(value, copiedUntil, value.length()).toString();
     }
 
     /** Keeps ChMate's explicit self-navigation inside an optionally renamed installation. */
@@ -695,6 +858,12 @@ public final class Haiagaru {
             linkInfo[5] = 4;
         }
         return found;
+    }
+
+    /** Removes legacy BE tokens when ChMate requests BE icons to be hidden. */
+    public static String filterBeIconText(String original, boolean hideBeIcon, boolean hideEmoticon) {
+        if (!hideBeIcon || original == null || original.isEmpty()) return original;
+        return stripLegacyBeAttachmentTokens(original);
     }
 
     public static String[] filterLegacyBeAttachments(String[] urls) {
@@ -928,6 +1097,14 @@ public final class Haiagaru {
                 preferences.getBoolean("chtoio", true)
         );
 
+        EditText archiveRouteTemplates = addArchiveRouteControl(
+                activity,
+                layout,
+                preferences.getString(
+                        ARCHIVE_ROUTE_TEMPLATES_KEY,
+                        DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                )
+        );
         addArchiveSearchPresetControl(activity, layout);
         addPackageMigrationControl(activity, layout);
 
@@ -950,12 +1127,57 @@ public final class Haiagaru {
                             .putString("prefMonaKeyName", value(monaKeyName))
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
+                            .putString(
+                                    ARCHIVE_ROUTE_TEMPLATES_KEY,
+                                    value(archiveRouteTemplates).trim()
+                            )
                             .commit();
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
                     if (!before.equals(after)) restart(activity);
                 })
                 .show();
+    }
+
+    private static EditText addArchiveRouteControl(
+            Activity activity,
+            LinearLayout layout,
+            String initialValue
+    ) {
+        TextView description = new TextView(activity);
+        description.setText(text(
+                "自動DAT取得経路（上から順に探索）\n"
+                        + "1行1経路で、行を並べ替えると探索順を変更できます。"
+                        + "任意のHTTPS経路も追加できます。\n"
+                        + "書式: auto| / dat| / kako| / itest| のいずれか + URL\n"
+                        + "変数: {$server} {$bbs} {$key} {$rand}",
+                "Automatic DAT routes (tried from top to bottom)\n"
+                        + "Use one route per line. Reorder lines to change priority, or add "
+                        + "another HTTPS route.\n"
+                        + "Format: auto|, dat|, kako|, or itest| followed by a URL\n"
+                        + "Variables: {$server} {$bbs} {$key} {$rand}"
+        ));
+        description.setTextSize(13);
+        layout.addView(description, rowParams(activity));
+
+        EditText editor = new EditText(activity);
+        editor.setSingleLine(false);
+        editor.setMinLines(6);
+        editor.setHorizontallyScrolling(false);
+        editor.setText(initialValue == null || initialValue.trim().isEmpty()
+                ? DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                : initialValue);
+        layout.addView(editor, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        Button reset = new Button(activity);
+        reset.setAllCaps(false);
+        reset.setText(text("標準の探索順に戻す", "Reset archive route order"));
+        reset.setOnClickListener(view -> editor.setText(DEFAULT_ARCHIVE_ROUTE_TEMPLATES));
+        layout.addView(reset, rowParams(activity));
+        return editor;
     }
 
     private static void addArchiveSearchPresetControl(Activity activity, LinearLayout layout) {
@@ -1180,6 +1402,17 @@ public final class Haiagaru {
         return preferences == null || preferences.getBoolean("chtoio", true);
     }
 
+    static String archiveRouteTemplates(Context context) {
+        if (context == null) return DEFAULT_ARCHIVE_ROUTE_TEMPLATES;
+        String configured = preferences(context).getString(
+                ARCHIVE_ROUTE_TEMPLATES_KEY,
+                DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+        );
+        return configured == null || configured.trim().isEmpty()
+                ? DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                : configured;
+    }
+
     private static void rememberAdClass(View view) {
         Context context = view.getContext();
         if (context == null) return;
@@ -1338,6 +1571,7 @@ public final class Haiagaru {
         final String monaKeyName;
         final String adClass;
         final boolean chtoio;
+        final String archiveRouteTemplates;
 
         private ConfigSnapshot(
                 boolean hideAd,
@@ -1348,7 +1582,8 @@ public final class Haiagaru {
                 String monaKeyFile,
                 String monaKeyName,
                 String adClass,
-                boolean chtoio
+                boolean chtoio,
+                String archiveRouteTemplates
         ) {
             this.hideAd = hideAd;
             this.replaceUserAgent = replaceUserAgent;
@@ -1359,6 +1594,7 @@ public final class Haiagaru {
             this.monaKeyName = monaKeyName;
             this.adClass = adClass;
             this.chtoio = chtoio;
+            this.archiveRouteTemplates = archiveRouteTemplates;
         }
 
         static ConfigSnapshot read(SharedPreferences preferences) {
@@ -1371,7 +1607,11 @@ public final class Haiagaru {
                     preferences.getString("prefMonaKeyFile", DEFAULT_MONAKEY_FILE),
                     preferences.getString("prefMonaKeyName", DEFAULT_MONAKEY_KEY),
                     configuredAdClass(preferences),
-                    preferences.getBoolean("chtoio", true)
+                    preferences.getBoolean("chtoio", true),
+                    preferences.getString(
+                            ARCHIVE_ROUTE_TEMPLATES_KEY,
+                            DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                    )
             );
         }
 
@@ -1387,7 +1627,8 @@ public final class Haiagaru {
                     && equal(cookieClass, value.cookieClass)
                     && equal(monaKeyFile, value.monaKeyFile)
                     && equal(monaKeyName, value.monaKeyName)
-                    && equal(adClass, value.adClass);
+                    && equal(adClass, value.adClass)
+                    && equal(archiveRouteTemplates, value.archiveRouteTemplates);
         }
 
         @Override

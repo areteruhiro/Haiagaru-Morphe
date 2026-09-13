@@ -198,9 +198,12 @@ val haiagaruPatch = bytecodePatch(
             method.name == "onCreate"
                 && method.returnType == "Z"
                 && method.parameters.isEmpty()
-        }.addInstruction(
+        }.addInstructionsWithLabels(
             0,
-            "invoke-static { }, $EXTENSION->installSignatureSpoof()V"
+            """
+                invoke-static/range { p0 .. p0 }, $EXTENSION->onProviderCreate(Landroid/content/ContentProvider;)V
+                invoke-static { }, $EXTENSION->installSignatureSpoof()V
+            """
         )
         profile.providerStartupTrapClass?.let { startupTrapClass ->
             mutableClassDefBy(startupTrapClass).methods.single { method ->
@@ -210,11 +213,17 @@ val haiagaruPatch = bytecodePatch(
             }.returnProviderStartupDelegate()
         }
 
-        mutableClassDefBy(profile.applicationClass).methods.single { method ->
+        val applicationOnCreate = mutableClassDefBy(profile.applicationClass).methods.single { method ->
             method.name == "onCreate"
                 && method.returnType == "V"
                 && method.parameters.isEmpty()
-        }.addBeforeEveryReturn(
+        }
+        applicationOnCreate.addInstruction(
+            0,
+            "invoke-static/range { p0 .. p0 }, " +
+                "$EXTENSION->onApplicationPreCreate(Landroid/app/Application;)V"
+        )
+        applicationOnCreate.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onApplicationCreate(Landroid/app/Application;)V"
         )
         // The URL/DAT recovery entry exists in all supported generations, but
@@ -1243,6 +1252,22 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
     val legacyLinkParserType =
         "Ljp/syoboi/utils/NativeUtils\$RemoteActionCompatParcelizer;"
+
+    // The first boolean is ChMate's derived hideBeIcon flag (!showBeIcon).
+    // Filter only the transient display copy when that flag is true. This
+    // covers .io URLs that bypass the native parser's BE span classification.
+    mutableClassDefBy("Lo/processAdDisplayErrorPostbackForUserError;").methods.single { method ->
+        method.name == "c"
+            && method.returnType == "Ljava/lang/String;"
+            && method.parameters.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "Z", "Z")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { p0, p1, p2 }, $EXTENSION->filterBeIconText(Ljava/lang/String;ZZ)Ljava/lang/String;
+            move-result-object p0
+        """
+    )
 
     // The 191 native text parser predates img.5ch.io. Feed only sssp BE tokens
     // through its known host form so it selects the emoticon-span branch. The
