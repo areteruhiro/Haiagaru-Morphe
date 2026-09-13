@@ -44,6 +44,10 @@ internal val chMateCompatibility = Compatibility(
             minSdk = 21
         ),
         AppTarget(
+            version = "0.8.10.226 dev",
+            minSdk = 23
+        ),
+        AppTarget(
             version = "0.8.10.241",
             minSdk = 23
         ),
@@ -78,6 +82,9 @@ private object HiltSettingsOnCreateFingerprint : Fingerprint(
 private data class ChMateProfile(
     val providerClass: String,
     val providerStartupTrapClass: String?,
+    val providerStartupDelegateField: String,
+    val providerStartupDelegateType: String,
+    val providerStartupDelegateMethod: String,
     val settingsViewModelClass: String?,
     val applicationClass: String,
     val homeFragmentClass: String,
@@ -110,6 +117,9 @@ private fun profileFor(versionName: String) = when (versionName) {
     "0.8.10.191 dev" -> ChMateProfile(
         providerClass = "Lo/ndExternalSyntheticLambda7;",
         providerStartupTrapClass = "Lo/mc${'$'}5;",
+        providerStartupDelegateField = "e",
+        providerStartupDelegateType = "Lo/mc${'$'}read;",
+        providerStartupDelegateMethod = "a",
         settingsViewModelClass = "Lo/onAppOpenAdLoadFailed;",
         applicationClass = "Lo/lo;",
         homeFragmentClass = "Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;",
@@ -133,9 +143,39 @@ private fun profileFor(versionName: String) = when (versionName) {
         homeAdClass = "Lo/qheCC;",
         homeAdLoadMethod = null,
     )
+    "0.8.10.226 dev" -> ChMateProfile(
+        providerClass = "Lo/setDither;",
+        providerStartupTrapClass = "Lo/setSourceokhttp\$1;",
+        providerStartupDelegateField = "e",
+        providerStartupDelegateType = "Lo/setSourceokhttp\$ComponentActivity;",
+        providerStartupDelegateMethod = "c",
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/fragment/HomeFragment;",
+        cookieClearMethod = "a",
+        signatureClass = "",
+        signatureMethod = "",
+        signatureDelegateField = "",
+        signatureDelegateType = "",
+        signatureDelegateMethod = "",
+        signatureSuperType = "",
+        patchSignatureWrapper = false,
+        signatureDirectWrapperBypass = true,
+        viewModelFactoryClass = "Lo/isEligibleokhttp\$CheckResult\$write;",
+        viewModelDispatchField = "c",
+        viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
+        settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
+        homeAdClass = "Lo/readByteArray\$RemoteActionCompatParcelizer;",
+        homeAdLoadMethod = null,
+    )
     "0.8.10.241" -> ChMateProfile(
         providerClass = "Lo/Kjv22;",
         providerStartupTrapClass = null,
+        providerStartupDelegateField = "",
+        providerStartupDelegateType = "",
+        providerStartupDelegateMethod = "",
         settingsViewModelClass = null,
         applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
         homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
@@ -161,6 +201,9 @@ private fun profileFor(versionName: String) = when (versionName) {
     "0.8.10.243 dev" -> ChMateProfile(
         providerClass = "Lo/zzbvh;",
         providerStartupTrapClass = null,
+        providerStartupDelegateField = "",
+        providerStartupDelegateType = "",
+        providerStartupDelegateMethod = "",
         settingsViewModelClass = null,
         applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
         homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
@@ -205,10 +248,9 @@ private val haiagaruBytecodePatch = bytecodePatch {
         )
         profile.providerStartupTrapClass?.let { startupTrapClass ->
             mutableClassDefBy(startupTrapClass).methods.single { method ->
-                method.name == "a"
-                    && method.returnType == "Ljava/lang/Object;"
+                method.returnType == "Ljava/lang/Object;"
                     && method.parameters.isEmpty()
-            }.returnProviderStartupDelegate()
+            }.returnProviderStartupDelegate(profile)
         }
 
         val applicationOnCreate = mutableClassDefBy(profile.applicationClass).methods.single { method ->
@@ -350,10 +392,23 @@ private val haiagaruBytecodePatch = bytecodePatch {
             }
         }
 
-        if (packageMetadata.versionName == "0.8.10.191 dev") {
-            patchLegacy5chIoCompatibility()
-        } else {
-            patchSetTextCalls()
+        when (packageMetadata.versionName) {
+            "0.8.10.191 dev" -> patchLegacy5chIoCompatibility()
+            "0.8.10.226 dev" -> {
+                patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
+                patchPreIoImageUploadIntegrityTrap("Lo/fWG1;")
+                patchPreIoImageSettingsIntegrityTrap("Lo/setMaintainOriginalImageBounds;")
+                patchBeAttachmentCompatibility("Lo/BouncyCastleSocketAdapterCompanion;")
+                patchPreIoBeRendering(
+                    parserClass = "Lo/getMaxLine;",
+                    drawableClass = "Lo/getFlexDirection;",
+                )
+                patchPreIoUrlSpanAlignment("Lo/getMaxLine;")
+                patchPreIoDomainCompatibility(
+                    parseMethodName = "c",
+                )
+            }
+            else -> patchSetTextCalls()
         }
     }
 }
@@ -394,6 +449,136 @@ val haiagaruPatch = resourcePatch(
             }
         }
     }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchThreadBannerAdWrapper(
+    wrapperClass: String,
+) {
+    mutableClassDefBy(wrapperClass).methods.forEach { method ->
+        when {
+            method.name == "<init>" -> method.addBeforeEveryReturn(
+                "invoke-static/range { p0 .. p0 }, $EXTENSION->hideAdView(Landroid/view/View;)V",
+            )
+            method.name != "<clinit>"
+                && method.returnType == "V"
+                && method.parameters.isEmpty() ->
+                method.addHideAdsViewGuard()
+        }
+    }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoImageUploadIntegrityTrap(
+    uploadTaskClass: String,
+) {
+    val uploadClass = mutableClassDefBy(uploadTaskClass)
+    val method = uploadClass.methods.single { candidate ->
+        candidate.name == "c"
+            && candidate.returnType == "Ljava/lang/Object;"
+            && candidate.parameters.isEmpty()
+    }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate pre-io image upload task has no implementation")
+    val divideIndex = instructions.indices.single { index ->
+        val divide = instructions[index]
+        if (divide.opcode != Opcode.DIV_INT_2ADDR) return@single false
+        instructions.subList(index + 1, minOf(index + 5, instructions.size)).any { next ->
+            val reference = (next as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@any false
+            reference.definingClass == "Landroid/widget/Toast;"
+                && reference.name == "makeText"
+        }
+    }
+    val resultIndex = (divideIndex + 1 until instructions.size).first { index ->
+        instructions[index].opcode == Opcode.NEW_ARRAY
+    }
+
+    // The divisor is `(n - 1) * n % 2`, which is always zero. The quotient is
+    // used only by a decoy Toast and never by the image result. Skip that whole
+    // block and resume at the original result-array construction.
+    method.addInstructionsWithLabels(
+        divideIndex,
+        "goto/32 :haiagaru_image_upload_result",
+        ExternalLabel("haiagaru_image_upload_result", instructions[resultIndex]),
+    )
+
+    val uploaderMethod = uploadClass.methods.single { candidate ->
+        candidate.name == "g"
+            && candidate.returnType == "Lo/Ad;"
+            && candidate.parameters.isEmpty()
+    }
+    val uploaderInstructions = uploaderMethod.implementation?.instructions
+        ?: error("ChMate pre-io image uploader has no implementation")
+    val dynamicInvokeIndex = uploaderInstructions.indices.singleOrNull { index ->
+        val reference = (uploaderInstructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@singleOrNull false
+        reference.definingClass == "Ljava/lang/reflect/Method;"
+            && reference.name == "invoke"
+            && reference.returnType == "Ljava/lang/Object;"
+            && uploaderInstructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+            && ((uploaderInstructions.getOrNull(index + 2) as? ReferenceInstruction)?.reference
+                as? TypeReference)?.type == "Lo/Ad;"
+    } ?: error("ChMate pre-io dynamic image uploader invocation was not found")
+
+    // The uploader is loaded from an InMemoryDexClassLoader. Its cached integrity
+    // state compares int arrays at indexes 1 and 3, and a mismatch enters a
+    // deliberate `throw null` block before the HTTP request is built. Synchronize
+    // only those cached values and invoke the original uploader unchanged.
+    when (val invocation = uploaderInstructions[dynamicInvokeIndex]) {
+        is FiveRegisterInstruction -> uploaderMethod.replaceInstruction(
+            dynamicInvokeIndex,
+            "invoke-static { v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE} }, $EXTENSION->invokePreIoImageUploader(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+
+        is RegisterRangeInstruction -> uploaderMethod.replaceInstruction(
+            dynamicInvokeIndex,
+            "invoke-static/range { v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2} }, " +
+                "$EXTENSION->invokePreIoImageUploader(Ljava/lang/reflect/Method;" +
+                "Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",
+        )
+
+        else -> error("ChMate pre-io dynamic uploader registers were not found")
+    }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoImageSettingsIntegrityTrap(
+    viewModelClass: String,
+) {
+    val constructor = mutableClassDefBy(viewModelClass).methods.single { candidate ->
+        candidate.name == "<init>"
+            && candidate.returnType == "V"
+            && candidate.parameters.map(CharSequence::toString) ==
+            listOf("Landroid/app/Application;")
+    }
+    val instructions = constructor.implementation?.instructions
+        ?: error("ChMate pre-io image settings constructor has no implementation")
+    val rejectionBranch = instructions.indices.single { index ->
+        if (instructions[index].opcode != Opcode.IF_NE) return@single false
+        val window = instructions.subList(maxOf(0, index - 14), index)
+        window.count { it.opcode == Opcode.AGET_OBJECT } >= 2
+            && window.count { it.opcode == Opcode.CHECK_CAST } >= 2
+            && window.count { it.opcode == Opcode.AGET } >= 2
+    }
+    val deleteRateKeyIndex = instructions.indices.single { index ->
+        ((instructions[index] as? ReferenceInstruction)?.reference
+            as? StringReference)?.string == "deleteRate0"
+    }
+    val defaultDivideIndex = (0 until deleteRateKeyIndex).last { index ->
+        instructions[index].opcode == Opcode.DIV_INT_2ADDR
+    }
+    val defaultRegister = (instructions[defaultDivideIndex] as TwoRegisterInstruction).registerA
+
+    // Re-signing changes the two certificate-derived comparison values. Their
+    // inequality branch ends in `throw null`; equality continues through the
+    // complete preference/LiveData initialization and the normal return.
+    constructor.replaceInstruction(rejectionBranch, "nop")
+    // The certificate-derived arithmetic used to produce the Boolean default can
+    // yield a zero divisor after re-signing. Keep getBoolean() and any stored value,
+    // while supplying its ordinary false default directly.
+    constructor.replaceInstruction(defaultDivideIndex, "const/4 v$defaultRegister, 0x0")
 }
 
 @Suppress("unused")
@@ -656,16 +841,23 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLevelPlayTrackerI
         "IronSource Ad Quality initialization implementation was not found"
     }
 
-    mutableClassDefBy("Lcom/unity3d/services/core/configuration/AdsSdkInitializer;")
-        .methods
-        .filter { method ->
+    // Unity Ads generations before 4.16 do not contain AdsSdkInitializer.
+    // Guard the entry point when present while retaining the LevelPlay and Ad
+    // Quality guards above for older ChMate targets such as 0.8.10.226 dev.
+    classDefForEach { classDef ->
+        if (classDef.type != "Lcom/unity3d/services/core/configuration/AdsSdkInitializer;") {
+            return@classDefForEach
+        }
+        val mutableClass = mutableClassDefBy(classDef)
+        classDef.methods.filter { method ->
             method.name == "create"
                 && method.returnType == "V"
                 && method.parameters.map(CharSequence::toString) ==
                 listOf("Landroid/content/Context;")
+        }.forEach { method ->
+            mutableClass.findMutableMethodOf(method).addHideAdsContextGuard("p1")
         }
-        .single()
-        .addHideAdsContextGuard("p1")
+    }
 
     listOf(
         "Lcom/ironsource/lifecycle/IronsourceLifecycleProvider;",
@@ -733,13 +925,13 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyFragmentBan
     }
 }
 
-private fun MutableMethod.returnProviderStartupDelegate() {
+private fun MutableMethod.returnProviderStartupDelegate(profile: ChMateProfile) {
     addInstructionsWithLabels(
         0,
         """
             move-object/from16 v0, p0
-            iget-object v0, v0, Lo/mc${'$'}5;->e:Lo/mc${'$'}read;
-            invoke-virtual { v0 }, Lo/mc${'$'}read;->a()Ljava/lang/Object;
+            iget-object v0, v0, ${profile.providerStartupTrapClass}->${profile.providerStartupDelegateField}:${profile.providerStartupDelegateType}
+            invoke-virtual { v0 }, ${profile.providerStartupDelegateType}->${profile.providerStartupDelegateMethod}()Ljava/lang/Object;
             move-result-object v0
             return-object v0
         """
@@ -1274,6 +1466,318 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
                         move-result-object v$register
                     """
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Filters BE icon tokens from the response model's attachment projections while
+ * retaining the target generation's native inline icon renderer. The class is
+ * selected by the same field and method shapes used by the 191 response model.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchBeAttachmentCompatibility(
+    responseModelClass: String,
+) {
+    val responseClass = mutableClassDefBy(responseModelClass)
+
+    responseClass.methods.single { method ->
+        method.returnType == "Ljava/lang/String;"
+            && method.parameters.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "Z", "Z")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { p0, p1, p2 }, $EXTENSION->filterBeIconText(Ljava/lang/String;ZZ)Ljava/lang/String;
+            move-result-object p0
+        """,
+    )
+
+    val instanceExtractor = responseClass.methods.single { method ->
+        method.returnType == "[Ljava/lang/String;"
+            && method.parameters.isEmpty()
+    }
+    instanceExtractor.filterBeAttachmentArrayReturns()
+
+    val staticExtractor = responseClass.methods.single { method ->
+        method.returnType == "[Ljava/lang/String;"
+            && method.parameters.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "Z")
+    }
+    staticExtractor.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->stripLegacyBeAttachmentTokens(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p0
+        """,
+    )
+    staticExtractor.filterBeAttachmentArrayReturns()
+
+    responseClass.methods.single { method ->
+        method.returnType == "[Ljava/lang/CharSequence;"
+            && method.parameters.map(CharSequence::toString) == listOf("[Ljava/lang/String;")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->filterLegacyBeAttachments([Ljava/lang/String;)[Ljava/lang/String;
+            move-result-object p0
+        """,
+    )
+}
+
+private fun MutableMethod.filterBeAttachmentArrayReturns() {
+    val returnIndexes = implementation?.instructions
+        ?.mapIndexedNotNull { index, instruction ->
+            if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+        }
+        .orEmpty()
+    returnIndexes.asReversed().forEach { index ->
+        val returnRegister = (implementation!!.instructions[index] as OneRegisterInstruction).registerA
+        addInstructionsWithLabels(
+            index,
+            """
+                invoke-static/range { v$returnRegister .. v$returnRegister }, $EXTENSION->filterLegacyBeAttachments([Ljava/lang/String;)[Ljava/lang/String;
+                move-result-object v$returnRegister
+            """,
+        )
+    }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoBeRendering(
+    parserClass: String,
+    drawableClass: String,
+) {
+    val parserMethod = mutableClassDefBy(parserClass).methods.single { method ->
+        method.returnType == "V"
+            && method.parameters.size == 5
+            && method.parameters[2].toString() == "Ljava/lang/String;"
+            && method.parameters[4].toString() == "Z"
+    }
+    parserMethod.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p2
+        """,
+    )
+
+    val linkParserType = parserMethod.parameters[0].toString()
+    val linkInfoField = mutableClassDefBy(linkParserType).fields.single { field ->
+        field.type == "[I"
+    }.name
+    val parserInstructions = parserMethod.implementation?.instructions
+        ?: error("ChMate pre-io text parser has no implementation")
+    val scanIndex = parserInstructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@mapIndexedNotNull null
+        if (reference.definingClass == linkParserType
+            && reference.returnType == "Z"
+            && reference.parameterTypes.isEmpty()
+        ) index else null
+    }.single()
+    (parserInstructions.getOrNull(scanIndex + 1)
+        ?.takeIf { it.opcode == Opcode.MOVE_RESULT }
+        as? OneRegisterInstruction)?.registerA
+        ?: error("ChMate pre-io text parser result was not found")
+    val linkInfoIndex = parserInstructions.mapIndexedNotNull { index, instruction ->
+        if (index <= scanIndex) return@mapIndexedNotNull null
+        val reference = (instruction as? ReferenceInstruction)?.reference
+            as? FieldReference ?: return@mapIndexedNotNull null
+        if (reference.definingClass == linkParserType
+            && reference.name == linkInfoField
+            && reference.type == "[I"
+        ) index else null
+    }.first()
+    val linkInfoRegister = (parserInstructions[linkInfoIndex] as TwoRegisterInstruction).registerA
+    val textRegister = linkInfoRegister + 1
+    val resultRegister = linkInfoRegister + 2
+    parserMethod.addInstructionsWithLabels(
+        linkInfoIndex + 1,
+        """
+            move-object/from16 v$textRegister, p2
+            const/4 v$resultRegister, 0x1
+            invoke-static { v$textRegister, v$linkInfoRegister, v$resultRegister }, $EXTENSION->classifyLegacyBeIcon(Ljava/lang/String;[IZ)Z
+            move-result v$resultRegister
+        """,
+    )
+
+    mutableClassDefBy(drawableClass).methods.single { method ->
+        method.name == "<init>"
+            && method.returnType == "V"
+            && method.parameters.map(CharSequence::toString) ==
+            listOf("Landroid/content/Context;", "Ljava/lang/String;")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p2 .. p2 }, $EXTENSION->normalizeBeIconUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p2
+        """,
+    )
+}
+
+/**
+ * Ports the 191 URL-range repair to the corresponding pre-io text renderer.
+ * Both renderers can remove display characters before link spans are attached,
+ * so the native parser's original offsets may leave the first character plain
+ * or discard a URL at the end of a response.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoUrlSpanAlignment(
+    parserClass: String,
+) {
+    val parserMethod = mutableClassDefBy(parserClass).methods.single { method ->
+        method.returnType == "V"
+            && method.parameters.size == 5
+            && method.parameters[2].toString() == "Ljava/lang/String;"
+            && method.parameters[4].toString() == "Z"
+    }
+    val builderType = parserMethod.parameters[1].toString()
+    val builderTextField = mutableClassDefBy(builderType).fields.single { field ->
+        field.type == "Ljava/lang/StringBuilder;"
+    }.name
+    val linkSpanType = parserClass.removeSuffix(";") + "\$read;"
+    val linkUrlGetter = mutableClassDefBy(linkSpanType).methods.single { method ->
+        method.returnType == "Ljava/lang/String;" && method.parameters.isEmpty()
+    }.name
+
+    data class LinkSpanInsertion(
+        val index: Int,
+        val builderRegister: Int,
+        val spanRegister: Int,
+        val startRegister: Int,
+        val endRegister: Int,
+    )
+
+    val instructions = parserMethod.implementation?.instructions
+        ?: error("ChMate pre-io text parser has no implementation")
+    val insertions = instructions.mapIndexedNotNull { index, instruction ->
+        val invocation = instruction as? FiveRegisterInstruction
+            ?: return@mapIndexedNotNull null
+        val reference = (instruction as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@mapIndexedNotNull null
+        if (reference.definingClass != builderType
+            || reference.returnType != builderType
+            || reference.parameterTypes.map(CharSequence::toString) !=
+            listOf("Ljava/lang/Object;", "I", "I")
+        ) return@mapIndexedNotNull null
+
+        val spanRegister = invocation.registerD
+        val constructsLinkSpan = instructions
+            .subList(maxOf(0, index - 40), index)
+            .any { preceding ->
+                val precedingInvocation = preceding as? FiveRegisterInstruction
+                    ?: return@any false
+                val precedingReference = (preceding as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@any false
+                preceding.opcode == Opcode.INVOKE_DIRECT
+                    && precedingInvocation.registerC == spanRegister
+                    && precedingReference.definingClass == linkSpanType
+                    && precedingReference.name == "<init>"
+            }
+        if (!constructsLinkSpan) return@mapIndexedNotNull null
+
+        LinkSpanInsertion(
+            index = index,
+            builderRegister = invocation.registerC,
+            spanRegister = spanRegister,
+            startRegister = invocation.registerE,
+            endRegister = invocation.registerF,
+        )
+    }
+    check(insertions.isNotEmpty()) {
+        "ChMate pre-io URL span insertion sites were not found"
+    }
+
+    insertions.asReversed().forEach { insertion ->
+        parserMethod.addInstructionsWithLabels(
+            insertion.index,
+            """
+                iget-object v12, v${insertion.builderRegister}, $builderType->$builderTextField:Ljava/lang/StringBuilder;
+                invoke-virtual { v${insertion.spanRegister} }, $linkSpanType->$linkUrlGetter()Ljava/lang/String;
+                move-result-object v13
+                invoke-static { v12, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
+                move-result-wide v14
+                long-to-int v${insertion.startRegister}, v14
+                const/16 v13, 0x20
+                ushr-long v14, v14, v13
+                long-to-int v${insertion.endRegister}, v14
+            """,
+        )
+    }
+}
+
+/**
+ * Ports the URL-model and fixed endpoint handling used by the legacy 191 route
+ * to later pre-5ch.io builds whose parser implementation has different names.
+ * BE rendering and image upload stay on the target's own newer implementations.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoDomainCompatibility(
+    parseMethodName: String,
+) {
+    val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
+
+    urlInfoClass.methods.single { method ->
+        method.name == parseMethodName
+            && method.returnType == "Ljp/syoboi/a2chMate/client/BBSUrlInfo;"
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    }.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p0 }, $EXTENSION->rewrite5chUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p0
+        """
+    )
+
+    urlInfoClass.methods.filter { it.returnType == "Ljava/lang/String;" }.forEach { method ->
+        val returnIndexes = method.implementation?.instructions
+            ?.mapIndexedNotNull { index, instruction ->
+                if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+            }
+            .orEmpty()
+        returnIndexes.asReversed().forEach { index ->
+            val register = (method.implementation!!.instructions[index] as OneRegisterInstruction)
+                .registerA
+            method.addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->rewrite5chUrl(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v$register
+                """,
+            )
+        }
+    }
+
+    // Update constants used outside BBSUrlInfo as well: board menus, search,
+    // posting, cookies, UPLIFT/BE, and auxiliary 5ch endpoints.
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Ljp/syoboi/") && !classDef.type.startsWith("Lo/")) {
+            return@classDefForEach
+        }
+        val mutableClass by lazy { mutableClassDefBy(classDef) }
+        classDef.methods.forEach { method ->
+            val replacements = method.implementation?.instructions
+                ?.mapIndexedNotNull { index, instruction ->
+                    val string = ((instruction as? ReferenceInstruction)?.reference
+                        as? StringReference)?.string ?: return@mapIndexedNotNull null
+                    if (string.any { it.code !in 0x20..0x7e }) {
+                        return@mapIndexedNotNull null
+                    }
+                    val rewritten = string
+                        .replace("[25]ch\\.net", "(?:2ch\\.net|5ch\\.io)")
+                        .replace("5ch\\.net", "5ch\\.io")
+                        .replace("5ch.net", "5ch.io")
+                    if (rewritten == string) null else Triple(index, instruction, rewritten)
+                }
+                ?.toList()
+                .orEmpty()
+            if (replacements.isEmpty()) return@forEach
+
+            val mutableMethod = mutableClass.findMutableMethodOf(method)
+            replacements.asReversed().forEach { (index, instruction, rewritten) ->
+                val register = (instruction as OneRegisterInstruction).registerA
+                val escaped = rewritten
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                mutableMethod.replaceInstruction(index, "const-string v$register, \"$escaped\"")
             }
         }
     }

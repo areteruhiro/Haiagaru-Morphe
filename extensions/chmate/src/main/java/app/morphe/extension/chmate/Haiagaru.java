@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
@@ -59,6 +61,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Locale;
@@ -484,6 +488,40 @@ public final class Haiagaru {
     }
 
     /**
+     * Runs the pre-5ch.io image uploader after repairing its cached integrity state.
+     *
+     * <p>ChMate 0.8.10.226 decrypts the uploader into an in-memory DEX. The
+     * re-signed package leaves two cached values unequal, which diverts the
+     * otherwise valid upload into a deliberate {@code throw null} branch.</p>
+     */
+    public static Object invokePreIoImageUploader(
+            Method method,
+            Object receiver,
+            Object[] arguments
+    ) throws Throwable {
+        ClassLoader loader = method.getDeclaringClass().getClassLoader();
+        Class<?> stateClass = Class.forName("o.getMethodokhttp", false, loader);
+        Field stateField = stateClass.getDeclaredField("c");
+        stateField.setAccessible(true);
+        Object[] state = (Object[]) stateField.get(null);
+        if (state != null && state.length > 3
+                && state[1] instanceof int[] && state[3] instanceof int[]) {
+            int[] first = (int[]) state[1];
+            int[] second = (int[]) state[3];
+            if (first.length > 0 && second.length > 0) {
+                first[0] = second[0];
+            }
+        }
+
+        try {
+            return method.invoke(receiver, arguments);
+        } catch (InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            throw cause == null ? error : cause;
+        }
+    }
+
+    /**
      * ChMate backups contain preference values rather than a package manifest. When a backup
      * created by the original package contains an absolute app-data path or content URI, remap
      * that value to the optional renamed package before ChMate reads the restored preferences.
@@ -747,13 +785,34 @@ public final class Haiagaru {
         if (intent == null || intent.getData() == null) return;
         String original = intent.getData().toString();
         String rewritten = rewriteLegacyThreadUrl(original);
+        boolean archiveRetry = intent.getBooleanExtra("haiagaru.archive.retry", false);
+        if (!archiveRetry && isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original)
+                && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
+            Log.i(LOG_TAG, "Handling legacy thread through the local DAT cache: " + original);
+            // ChMate would otherwise continue its regular network load while
+            // the importer is fetching the same .io DAT. The importer opens a
+            // retry Activity after publishing the local cache.
+            activity.finish();
+            return;
+        }
         if (!original.equals(rewritten)) {
-            if (ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
-                Log.i(LOG_TAG, "Handling legacy thread through the local DAT cache: " + original);
-                return;
-            }
             intent.setData(Uri.parse(rewritten));
             Log.i(LOG_TAG, "Using browser-compatible fallback URL " + rewritten);
+        }
+    }
+
+    private static boolean isArchivedThreadUrl(String value) {
+        try {
+            Uri uri = Uri.parse(value);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null) return false;
+            java.util.regex.Matcher matcher = LEGACY_THREAD_READ_PATH.matcher(path);
+            if (!matcher.matches()) matcher = LEGACY_THREAD_DAT_PATH.matcher(path);
+            return matcher.matches()
+                    && isArchivedThreadCandidate(host.toLowerCase(Locale.ROOT), matcher.group(2));
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -1051,8 +1110,10 @@ public final class Haiagaru {
         if (activity == null) return;
         applicationContext = activity.getApplicationContext();
 
-        ViewGroup content = activity.findViewById(android.R.id.content);
-        if (content == null || content.findViewWithTag(BUTTON_TAG) != null) return;
+        View decorView = activity.getWindow().getDecorView();
+        if (!(decorView instanceof ViewGroup)) return;
+        ViewGroup overlayHost = (ViewGroup) decorView;
+        if (overlayHost.findViewWithTag(BUTTON_TAG) != null) return;
 
         Button button = new Button(activity);
         button.setTag(BUTTON_TAG);
@@ -1066,7 +1127,15 @@ public final class Haiagaru {
         );
         params.topMargin = statusBarHeight(activity) + dp(activity, 5);
         params.rightMargin = dp(activity, 10);
-        content.addView(button, params);
+        overlayHost.addView(button, params);
+
+        // Some ChMate generations render their toolbar in a sibling with a
+        // higher Z order. Keep the injected entry above it so it remains both
+        // visible and touchable.
+        button.setElevation(dp(activity, 16));
+        button.bringToFront();
+        overlayHost.requestLayout();
+        overlayHost.invalidate();
 
         button.setOnClickListener(view -> showSettingsDialog(activity));
     }
@@ -1123,6 +1192,12 @@ public final class Haiagaru {
                 "chtoio",
                 preferences.getBoolean("chtoio", true)
         );
+        Switch automaticDat = addSwitch(
+                layout,
+                activity,
+                text("自動DAT取得", "Automatic DAT retrieval"),
+                preferences.getBoolean("automaticDat", true)
+        );
 
         EditText archiveRouteTemplates = addArchiveRouteControl(
                 activity,
@@ -1134,6 +1209,7 @@ public final class Haiagaru {
         );
         addArchiveSearchPresetControl(activity, layout);
         addPackageMigrationControl(activity, layout);
+        addBoardDuplicateCleanupControl(activity, layout);
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
@@ -1152,6 +1228,7 @@ public final class Haiagaru {
                             .putString("prefMonaKeyName", value(monaKeyName))
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
+                            .putBoolean("automaticDat", automaticDat.isChecked())
                             .putString(
                                     ARCHIVE_ROUTE_TEMPLATES_KEY,
                                     value(archiveRouteTemplates).trim()
@@ -1405,6 +1482,168 @@ public final class Haiagaru {
         }
     }
 
+    private static void addBoardDuplicateCleanupControl(Activity activity, LinearLayout layout) {
+        TextView description = new TextView(activity);
+        description.setText(text(
+                "5ch.ioの板が「外部板」と「5ch本来の板」の2種類に重複した場合に、ChMate内部の板一覧から片方を一括削除します。"
+                        + "削除する側を選択できます。スレ履歴やDATは削除しません。",
+                "If 5ch.io boards exist both as external boards and native 5ch boards, remove one side in ChMate's internal board list."
+                        + "Choose which side to remove. Thread history and DAT files are not removed."
+        ));
+        description.setTextSize(13);
+        LinearLayout.LayoutParams descriptionParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        descriptionParams.topMargin = dp(activity, 20);
+        layout.addView(description, descriptionParams);
+
+        Button button = new Button(activity);
+        button.setAllCaps(false);
+        button.setText(text(
+                "重複した5ch.io板を内部データから整理",
+                "Clean duplicate 5ch.io boards"
+        ));
+        layout.addView(button, rowParams(activity));
+        button.setOnClickListener(view -> showBoardCleanupChoice(activity));
+    }
+
+    private static void showBoardCleanupChoice(Activity activity) {
+        String[] choices = new String[]{
+                text("外部板扱いの5ch.ioを削除（Haiagaruの5ch板を残す）", "Remove external-board 5ch.io entries (keep Haiagaru native boards)"),
+                text("5ch扱いの5ch.ioを削除（外部板扱いを残す）", "Remove native 5ch 5ch.io entries (keep external-board entries)")
+        };
+        new AlertDialog.Builder(activity)
+                .setTitle(text("削除する板の種類", "Boards to remove"))
+                .setSingleChoiceItems(choices, 0, (dialog, which) -> {
+                    dialog.dismiss();
+                    boolean removeExternal = which == 0;
+                    new AlertDialog.Builder(activity)
+                            .setTitle(text("内部データを変更します", "Modify internal data"))
+                            .setMessage(removeExternal
+                                    ? text("外部板扱いの5ch.ioを板一覧から削除します。スレ履歴とDATは残ります。", "External-board 5ch.io entries will be removed from the board list. Thread history and DAT remain.")
+                                    : text("5ch扱いの5ch.ioを板一覧から削除します。スレ履歴とDATは残ります。", "Native 5ch 5ch.io entries will be removed from the board list. Thread history and DAT remain."))
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .setPositiveButton(text("削除", "Remove"), (confirm, ignored) -> removeDuplicateBoardsAsync(activity, removeExternal))
+                            .show();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private static void removeDuplicateBoardsAsync(Activity activity, boolean removeExternal) {
+        Toast.makeText(activity, text("板一覧を確認中…", "Inspecting board list…"), Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                int removed = removeDuplicateBoards(activity.getApplicationContext(), removeExternal);
+                activity.runOnUiThread(() -> {
+                    if (activity.isFinishing()) return;
+                    Toast.makeText(activity, text(
+                            "5ch.io板を" + removed + "件削除しました。ChMateを再起動してください。",
+                            "Removed " + removed + " 5ch.io board entries. Restart ChMate to refresh the list."
+                    ), Toast.LENGTH_LONG).show();
+                });
+            } catch (Throwable error) {
+                Log.e(LOG_TAG, "Unable to remove duplicate 5ch.io boards", error);
+                activity.runOnUiThread(() -> {
+                    if (activity.isFinishing()) return;
+                    Toast.makeText(activity, text(
+                            "板一覧を変更できませんでした: " + error.getMessage(),
+                            "Unable to update the board list: " + error.getMessage()
+                    ), Toast.LENGTH_LONG).show();
+                });
+            }
+        }, "Haiagaru-board-cleanup").start();
+    }
+
+    private static int removeDuplicateBoards(Context context, boolean removeExternal) throws IOException {
+        File database = context.getDatabasePath("roidon.sqlite");
+        if (database == null || !database.isFile()) {
+            throw new IOException("roidon.sqlite が見つかりません");
+        }
+        SQLiteDatabase db = SQLiteDatabase.openDatabase(
+                database.getAbsolutePath(), null, SQLiteDatabase.OPEN_READWRITE);
+        try {
+            List<String> columns = databaseTableColumns(db, "boards");
+            if (columns.isEmpty()) throw new IOException("boardsテーブルが見つかりません");
+            String idColumn = findDatabaseColumn(columns, "_id", "id");
+            StringBuilder select = new StringBuilder("SELECT ")
+                    .append(idColumn == null ? "rowid" : quoteDatabaseIdentifier(idColumn));
+            for (String column : columns) {
+                select.append(',').append(quoteDatabaseIdentifier(column));
+            }
+            select.append(" FROM boards");
+            ArrayList<String> deleteIds = new ArrayList<>();
+            db.beginTransaction();
+            try (Cursor cursor = db.rawQuery(select.toString(), null)) {
+                while (cursor.moveToNext()) {
+                    ArrayList<String> identity = new ArrayList<>();
+                    for (int index = 0; index < columns.size(); index++) {
+                        String column = columns.get(index).toLowerCase(Locale.ROOT);
+                        if (column.contains("server") || column.contains("board")
+                                || column.contains("bbs") || column.equals("name") || column.contains("url")) {
+                            String value = cursor.getString(index + 1);
+                            if (value != null) identity.add(value);
+                        }
+                    }
+                    boolean io = containsIoBoard(identity);
+                    boolean encoded = containsExternalIoBoard(identity);
+                    if (!io || (removeExternal ? !encoded : encoded)) continue;
+                    deleteIds.add(cursor.getString(0));
+                }
+                String where = (idColumn == null ? "rowid" : quoteDatabaseIdentifier(idColumn)) + "=?";
+                for (String id : deleteIds) db.delete("boards", where, new String[]{id});
+                db.setTransactionSuccessful();
+            } finally {
+                db.endTransaction();
+            }
+            try (Cursor ignored = db.rawQuery("PRAGMA wal_checkpoint(FULL)", null)) {
+                while (ignored.moveToNext()) { /* drain */ }
+            } catch (RuntimeException ignored) {
+                // Non-WAL databases are already flushed by the transaction.
+            }
+            return deleteIds.size();
+        } finally {
+            db.close();
+        }
+    }
+
+    private static List<String> databaseTableColumns(SQLiteDatabase db, String table) throws IOException {
+        ArrayList<String> columns = new ArrayList<>();
+        try (Cursor cursor = db.rawQuery("PRAGMA table_info(" + quoteDatabaseIdentifier(table) + ")", null)) {
+            while (cursor.moveToNext()) columns.add(cursor.getString(1));
+        } catch (RuntimeException error) {
+            throw new IOException("boardsテーブルの構造を読み取れません", error);
+        }
+        return columns;
+    }
+
+    private static boolean containsIoBoard(List<String> values) {
+        for (String value : values) {
+            String normalized = value.toLowerCase(Locale.ROOT);
+            if (normalized.contains("5ch.io") || normalized.contains("5ch%2eio")) return true;
+        }
+        return false;
+    }
+
+    private static boolean containsExternalIoBoard(List<String> values) {
+        for (String value : values) {
+            if (value.toLowerCase(Locale.ROOT).contains("5ch.io%2f")) return true;
+        }
+        return false;
+    }
+
+    private static String findDatabaseColumn(List<String> columns, String... names) {
+        for (String name : names) {
+            for (String column : columns) if (name.equalsIgnoreCase(column)) return column;
+        }
+        return null;
+    }
+
+    private static String quoteDatabaseIdentifier(String value) {
+        return "\"" + value.replace("\"", "\"\"") + "\"";
+    }
+
     /** Built at runtime so package-name post-processing cannot rewrite this compatibility value. */
     public static String originalPackageName() {
         return new StringBuilder("jp.co.airfront.android.a2ch")
@@ -1415,6 +1654,11 @@ public final class Haiagaru {
     private static boolean isChtoioEnabled() {
         SharedPreferences preferences = preferencesOrNull();
         return preferences == null || preferences.getBoolean("chtoio", true);
+    }
+
+    private static boolean isAutomaticDatEnabled(Context context) {
+        if (context == null) return true;
+        return preferences(context).getBoolean("automaticDat", true);
     }
 
     static String archiveRouteTemplates(Context context) {
@@ -1584,6 +1828,7 @@ public final class Haiagaru {
         final String monaKeyName;
         final String adClass;
         final boolean chtoio;
+        final boolean automaticDat;
         final String archiveRouteTemplates;
 
         private ConfigSnapshot(
@@ -1594,6 +1839,7 @@ public final class Haiagaru {
                 String monaKeyName,
                 String adClass,
                 boolean chtoio,
+                boolean automaticDat,
                 String archiveRouteTemplates
         ) {
             this.hideAd = hideAd;
@@ -1603,6 +1849,7 @@ public final class Haiagaru {
             this.monaKeyName = monaKeyName;
             this.adClass = adClass;
             this.chtoio = chtoio;
+            this.automaticDat = automaticDat;
             this.archiveRouteTemplates = archiveRouteTemplates;
         }
 
@@ -1615,6 +1862,7 @@ public final class Haiagaru {
                     preferences.getString("prefMonaKeyName", DEFAULT_MONAKEY_KEY),
                     configuredAdClass(preferences),
                     preferences.getBoolean("chtoio", true),
+                    preferences.getBoolean("automaticDat", true),
                     preferences.getString(
                             ARCHIVE_ROUTE_TEMPLATES_KEY,
                             DEFAULT_ARCHIVE_ROUTE_TEMPLATES
@@ -1629,6 +1877,7 @@ public final class Haiagaru {
             return hideAd == value.hideAd
                     && removeMonaKey == value.removeMonaKey
                     && chtoio == value.chtoio
+                    && automaticDat == value.automaticDat
                     && equal(cookieClass, value.cookieClass)
                     && equal(monaKeyFile, value.monaKeyFile)
                     && equal(monaKeyName, value.monaKeyName)

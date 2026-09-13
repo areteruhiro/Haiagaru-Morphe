@@ -13,6 +13,9 @@ https://github.com/areteruhiro/Haiagaru
 * Remove MonaKey
 * GitHubから更新できるDAT落ちスレ用検索プリセット
 * 自動DAT取得経路の並べ替えと任意HTTPS経路の追加
+* 自動DAT取得のON/OFF切り替え
+* 古いDAT・過去ログの改行保持と`.io` URL直接起動時の自動DAT取得
+* 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * Morpheで任意に有効化できるクラッシュログ保存
 
@@ -75,6 +78,15 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r11（正式版）
+
+- Haiagaru設定画面から、自動DAT取得をON/OFF可能に変更
+- `.io` URLを直接開いた古いスレッドも自動DAT取得の対象に修正
+- 自動DAT取得開始時の「過去ログを取得しています」表示を抑制し、既存DATがある場合はChMate本来の処理へ移行
+- kako HTMLとitest JSONの本文変換で、`<br>`・段落タグ・元改行を保持
+- ChMate内部の`roidon.sqlite`を直接編集し、外部板扱い／5ch扱いの5ch.io板を選択して一括削除できる機能を追加
+- 削除後はChMateの再起動で板一覧を更新
 
 ### 開発版
 

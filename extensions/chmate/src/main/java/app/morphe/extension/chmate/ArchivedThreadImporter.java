@@ -54,7 +54,12 @@ final class ArchivedThreadImporter {
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL
     );
     private static final Pattern TAG = Pattern.compile("<[^>]+>", Pattern.DOTALL);
-    private static final Pattern BREAK = Pattern.compile("(?i)<br\\s*/?>");
+    private static final Pattern BREAK = Pattern.compile("(?i)<br\\b[^>]*>");
+    private static final Pattern BLOCK_BREAK = Pattern.compile(
+            "(?i)</?(?:p|div|li|blockquote|pre|section|article|h[1-6])\\b[^>]*>"
+    );
+    /* A private-use marker survives Html.fromHtml whitespace normalization. */
+    private static final String LINE_BREAK_MARKER = "\uE000";
     private static final Pattern IMAGE = Pattern.compile(
             "(?i)<img[^>]+src=[\"'](?:https?:)?//([^\"']+)[\"'][^>]*>"
     );
@@ -78,13 +83,15 @@ final class ArchivedThreadImporter {
         if (datFile.isFile() && datFile.length() > 0) {
             Log.i(LOG_TAG, "Using existing cached DAT " + datFile.getName()
                     + " (" + datFile.length() + " bytes)");
-            return true;
+            // Let ChMate continue normally when the imported DAT is already
+            // available. Returning false avoids restarting the Activity and
+            // prevents a second retrieval attempt for .io URLs.
+            return false;
         }
 
         String importKey = info.board + ":" + info.thread;
         if (!IN_FLIGHT.add(importKey)) return true;
 
-        Toast.makeText(activity, "過去ログを取得しています…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
                 byte[] dat = fetchArchivedDat(activity, info);
@@ -120,7 +127,6 @@ final class ArchivedThreadImporter {
 
     private static void reopen(Activity activity, String url, String message) {
         activity.runOnUiThread(() -> {
-            if (activity.isFinishing()) return;
             Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
             Intent retry = new Intent(activity.getIntent());
             retry.setData(Uri.parse(url));
@@ -291,7 +297,7 @@ final class ArchivedThreadImporter {
             if (!uid.isEmpty()) dat.append(uid.contains("ID:") ? " " : " ID:").append(uid);
             String be = comment.optString(5, "");
             if (!be.isEmpty()) dat.append(" BE:").append(be);
-            dat.append("<>").append(comment.optString(6, "")).append("<>");
+            dat.append("<>").append(datMessage(comment.optString(6, ""))).append("<>");
             if (index == 0) dat.append(sanitizeField(title));
             dat.append('\n');
         }
@@ -336,7 +342,7 @@ final class ArchivedThreadImporter {
     private static String datMessage(String html) {
         String value = SCRIPT.matcher(html).replaceAll("");
         value = IMAGE.matcher(value).replaceAll("sssp://$1");
-        value = BREAK.matcher(value).replaceAll("\n");
+        value = BREAK.matcher(value).replaceAll(LINE_BREAK_MARKER);
         value = plainText(value);
         return value.replace("\r\n", "\n")
                 .replace('\r', '\n')
@@ -347,7 +353,24 @@ final class ArchivedThreadImporter {
     @SuppressWarnings("deprecation")
     private static String plainText(String html) {
         if (html == null || html.isEmpty()) return "";
-        return Html.fromHtml(TAG.matcher(html).replaceAll("")).toString().trim();
+        String protectedHtml = html.replace("\r\n", "\n").replace('\r', '\n')
+                .replace("\n", LINE_BREAK_MARKER);
+        protectedHtml = BLOCK_BREAK.matcher(protectedHtml).replaceAll(LINE_BREAK_MARKER);
+        protectedHtml = TAG.matcher(protectedHtml).replaceAll("");
+        String value = Html.fromHtml(protectedHtml).toString()
+                .replace(LINE_BREAK_MARKER, "\n");
+        // HTML parsers may add a terminal line break for block elements. Keep
+        // intentional interior breaks while removing only surrounding padding.
+        return trimText(value);
+    }
+
+    private static String trimText(String value) {
+        if (value == null || value.isEmpty()) return "";
+        int start = 0;
+        int end = value.length();
+        while (start < end && Character.isWhitespace(value.charAt(start))) start++;
+        while (end > start && Character.isWhitespace(value.charAt(end - 1))) end--;
+        return value.substring(start, end);
     }
 
     private static String sanitizeField(String value) {
