@@ -21,8 +21,11 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -84,7 +87,7 @@ final class ArchivedThreadImporter {
         Toast.makeText(activity, "過去ログを取得しています…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
-                byte[] dat = fetchArchivedDat(info);
+                byte[] dat = fetchArchivedDat(activity, info);
                 if (!directory.isDirectory() && !directory.mkdirs()) {
                     throw new IOException("Unable to create ChMate DAT directory");
                 }
@@ -127,38 +130,119 @@ final class ArchivedThreadImporter {
         });
     }
 
-    private static byte[] fetchArchivedDat(ThreadInfo info) throws Exception {
-        Throwable kakoFailure;
-        try {
-            return convertKakoHtml(info, request(
-                    "https://kako.5ch.io/test/read.cgi/" + info.board + "/"
-                            + info.thread + "/",
-                    MS932
-            ));
-        } catch (Throwable error) {
-            kakoFailure = error;
-            Log.w(LOG_TAG, "kako route failed", error);
+    private static byte[] fetchArchivedDat(Activity activity, ThreadInfo info) throws Exception {
+        List<ArchiveRoute> routes = parseRoutes(Haiagaru.archiveRouteTemplates(activity));
+        Throwable firstFailure = null;
+        Throwable lastFailure = null;
+        for (int index = 0; index < routes.size(); index++) {
+            ArchiveRoute route = routes.get(index);
+            String url = route.template;
+            try {
+                url = route.resolve(info);
+                byte[] response = requestBytes(url);
+                byte[] dat = convertRouteResponse(route.format, info, response);
+                Log.i(LOG_TAG, "Archive route " + (index + 1) + " succeeded: " + url);
+                return dat;
+            } catch (Throwable error) {
+                if (firstFailure == null) firstFailure = error;
+                lastFailure = error;
+                Log.w(LOG_TAG, "Archive route " + (index + 1) + " failed: " + url, error);
+            }
         }
 
-        try {
-            String endpoint = "https://itest.5ch.io/public/newapi/client.php?subdomain="
-                    + encode(info.server) + "&board=" + encode(info.board)
-                    + "&dat=" + encode(info.thread) + "&rand=" + randomToken();
-            return convertItestJson(request(endpoint, StandardCharsets.UTF_8));
-        } catch (Throwable error) {
-            Log.w(LOG_TAG, "itest route failed", error);
+        if (lastFailure == null) {
+            throw new IOException("No valid archive routes were configured");
         }
+        if (firstFailure != null && firstFailure != lastFailure) {
+            lastFailure.addSuppressed(firstFailure);
+        }
+        if (lastFailure instanceof Exception) throw (Exception) lastFailure;
+        throw new IOException("All archive routes failed", lastFailure);
+    }
 
-        try {
-            String scUrl = "https://" + info.server + ".2ch.sc/" + info.board
-                    + "/dat/" + info.thread + ".dat";
-            byte[] raw = requestBytes(scUrl);
-            if (raw.length < 16) throw new IOException("2ch.sc returned an empty DAT");
-            return raw;
-        } catch (Throwable error) {
-            error.addSuppressed(kakoFailure);
-            throw error;
+    private static List<ArchiveRoute> parseRoutes(String configured) {
+        List<ArchiveRoute> routes = parseRouteLines(configured);
+        if (!routes.isEmpty()) return routes;
+        Log.w(LOG_TAG, "Configured archive routes were invalid; using defaults");
+        return parseRouteLines(Haiagaru.archiveRouteTemplates(null));
+    }
+
+    private static List<ArchiveRoute> parseRouteLines(String configured) {
+        List<ArchiveRoute> routes = new ArrayList<>();
+        if (configured == null) return routes;
+        for (String rawLine : configured.replace('\r', '\n').split("\\n")) {
+            String line = rawLine.trim();
+            if (line.isEmpty() || line.startsWith("#")) continue;
+            if (line.length() > 2_048 || routes.size() >= 32) {
+                Log.w(LOG_TAG, "Skipping oversized or excess archive route");
+                continue;
+            }
+
+            RouteFormat format = RouteFormat.AUTO;
+            String template = line;
+            int separator = line.indexOf('|');
+            if (separator > 0) {
+                RouteFormat parsed = RouteFormat.parse(line.substring(0, separator));
+                if (parsed != null) {
+                    format = parsed;
+                    template = line.substring(separator + 1).trim();
+                }
+            }
+            if (!template.startsWith("https://")
+                    || !template.contains("{$bbs}")
+                    || !template.contains("{$key}")) {
+                Log.w(LOG_TAG, "Skipping invalid archive route template: " + line);
+                continue;
+            }
+            routes.add(new ArchiveRoute(format, template));
         }
+        return routes;
+    }
+
+    private static byte[] convertRouteResponse(
+            RouteFormat format,
+            ThreadInfo info,
+            byte[] response
+    ) throws Exception {
+        switch (format) {
+            case DAT:
+                return validateDat(response);
+            case KAKO:
+                return convertKakoHtml(info, new String(response, MS932));
+            case ITEST:
+                return convertItestJson(new String(response, StandardCharsets.UTF_8));
+            case AUTO:
+            default:
+                String utf8 = new String(response, StandardCharsets.UTF_8).trim();
+                if (utf8.startsWith("{") && utf8.contains("\"comments\"")) {
+                    return convertItestJson(utf8);
+                }
+                String ms932 = new String(response, MS932);
+                if (ms932.toLowerCase(Locale.ROOT).contains("threadtitle")
+                        && ms932.toLowerCase(Locale.ROOT).contains("post-content")) {
+                    return convertKakoHtml(info, ms932);
+                }
+                return validateDat(response);
+        }
+    }
+
+    private static byte[] validateDat(byte[] response) throws IOException {
+        if (response == null || response.length < 16) {
+            throw new IOException("Archive route returned an empty DAT");
+        }
+        String sample = new String(
+                response,
+                0,
+                Math.min(response.length, 8 * 1024),
+                MS932
+        );
+        String normalized = sample.trim().toLowerCase(Locale.ROOT);
+        if (!sample.contains("<>")
+                || normalized.startsWith("<!doctype")
+                || normalized.startsWith("<html")) {
+            throw new IOException("Archive route did not return DAT content");
+        }
+        return response;
     }
 
     private static byte[] convertKakoHtml(ThreadInfo info, String html) throws IOException {
@@ -285,6 +369,40 @@ final class ArchivedThreadImporter {
             token.append(alphabet[RANDOM.nextInt(alphabet.length)]);
         }
         return token.toString();
+    }
+
+    private enum RouteFormat {
+        AUTO,
+        DAT,
+        KAKO,
+        ITEST;
+
+        static RouteFormat parse(String value) {
+            if (value == null) return null;
+            try {
+                return valueOf(value.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+    }
+
+    private static final class ArchiveRoute {
+        final RouteFormat format;
+        final String template;
+
+        ArchiveRoute(RouteFormat format, String template) {
+            this.format = format;
+            this.template = template;
+        }
+
+        String resolve(ThreadInfo info) throws IOException {
+            return template
+                    .replace("{$server}", encode(info.server))
+                    .replace("{$bbs}", encode(info.board))
+                    .replace("{$key}", encode(info.thread))
+                    .replace("{$rand}", randomToken());
+        }
     }
 
     private static final class ThreadInfo {

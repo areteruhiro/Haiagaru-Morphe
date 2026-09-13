@@ -98,6 +98,7 @@ val changeChMatePackageNamePatch = resourcePatch(
     })
 
     execute {
+        val newPackageName = packageNameOption.value!!
         val appName = appNameOption.value?.trim()?.takeIf(String::isNotEmpty)
         val versionCode = versionCodeOption.value?.toString()
         val iconSource = appIconOption.value?.trim()?.takeIf(String::isNotEmpty)?.let(::File)
@@ -117,6 +118,20 @@ val changeChMatePackageNamePatch = resourcePatch(
             )
             "@drawable/haiagaru_custom_icon"
         }
+
+        // Android launches static app shortcuts directly from their resource XML, so the
+        // bytecode Intent hook never sees them. Resource names are obfuscated differently in
+        // every ChMate release; scan decoded XML by attribute shape instead of filename.
+        get("res").walkTopDown()
+            .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+            .forEach { resource ->
+                val original = resource.readText()
+                val rewritten = original.replace(
+                    "android:targetPackage=\"$ORIGINAL_PACKAGE_NAME\"",
+                    "android:targetPackage=\"$newPackageName\"",
+                )
+                if (rewritten != original) resource.writeText(rewritten)
+            }
 
         if (appName != null || iconResource != null || versionCode != null) {
             document("AndroidManifest.xml").use { document ->

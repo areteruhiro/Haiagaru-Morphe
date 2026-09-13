@@ -12,13 +12,23 @@ https://github.com/areteruhiro/Haiagaru
 * Modify User-Agent
 * Remove MonaKey
 * GitHubから更新できるDAT落ちスレ用検索プリセット
+* 自動DAT取得経路の並べ替えと任意HTTPS経路の追加
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * Morpheで任意に有効化できるクラッシュログ保存
 
 DAT落ちスレ用プリセットは、通常閲覧時ではなく設定画面の更新ボタンを押した時だけ、
 [`presets/chmate-dat-fallen-search-urls.txt`](presets/chmate-dat-fallen-search-urls.txt) を取得します。
-GitHubへ接続できない場合は、同じ取得先を収録した内蔵プリセットを使用します。
+GitHubへ接続できない場合は、基本3経路を収録した内蔵プリセットを使用します。
 2ch.scの板一覧参照先は [`https://menu.2ch.sc/bbsmenu.html`](https://menu.2ch.sc/bbsmenu.html) です。
+
+Haiagaru設定の「自動DAT取得経路」は、上の行から順に試行します。
+初期状態では、元スレと同じサーバーの `5ch.io` DAT、`kako.5ch.io`、
+`itest.5ch.io`、同じサーバーの `2ch.sc` DATの順です。
+行を並べ替えると優先順を変更でき、1行追加すると任意のHTTPS経路も追加できます。
+
+各行は `auto|`、`dat|`、`kako|`、`itest|` のいずれかにURLを続けます。
+URLでは `{$server}`、`{$bbs}`、`{$key}`、`{$rand}` を使用できます。
+空行と `#` で始まる行は無視され、無効な設定しかない場合は初期経路へ戻ります。
 
 ## インストールできない場合
 
@@ -65,6 +75,13 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r10（プレリリース）
+
+- 自動DAT取得で現役サーバーのDATを最初に確認する経路を追加
+- `kako`、`itest`、`2ch.sc` を含む取得経路を1行単位で並べ替え可能に変更
+- DAT・kako HTML・itest JSONの形式指定と、任意HTTPS URLテンプレートの追加に対応
+- GitHub配布プリセットへ、`.net`／`.io`対応の板別 `2ch.sc` 14経路を追加
 
 ### 1.2.2-r9（正式版）
 
