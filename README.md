@@ -1,6 +1,6 @@
 # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
@@ -81,6 +81,7 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 ### 1.2.2-r11（正式版）
 
+- 対応対象にChMate `0.8.10.226 dev`（versionCode 494）を追加
 - Haiagaru設定画面から、自動DAT取得をON/OFF可能に変更
 - `.io` URLを直接開いた古いスレッドも自動DAT取得の対象に修正
 - 自動DAT取得開始時の「過去ログを取得しています」表示を抑制し、既存DATがある場合はChMate本来の処理へ移行
@@ -101,7 +102,7 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 ### 1.2.2-r9（正式版）
 
-- ChMate `0.8.10.191 dev`／`0.8.10.241`／`0.8.10.243 dev` の全対応版でURL自動補正を有効化
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev` の全対応版でURL自動補正を有効化
 - `kako.5ch.io`、`itest.5ch.io`、`2ch.sc` の自動DAT取得経路をスレッドURL起動時にも適用
 - 191 devは `ResListActivity`、241／243 devは `Hilt_ResListActivity` の構造差に合わせて注入
 
@@ -156,6 +157,7 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 - パッケージ: `jp.co.airfront.android.a2chMate`
 - バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
+- バージョン: `0.8.10.226 dev`（versionCode 494、minSdk 23）
 - バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
 - バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
 - 元APKの署名 SHA-256:
