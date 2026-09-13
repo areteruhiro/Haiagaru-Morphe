@@ -857,6 +857,48 @@ public final class Haiagaru {
         return found;
     }
 
+    /**
+     * Reconciles the legacy parser's URL offsets with the final rendered text.
+     * ChMate 191 can remove one display character before link parsing completes,
+     * leaving every later URL span shifted right and dropping a URL at end-of-text.
+     */
+    public static long alignLegacyLinkRange(
+            CharSequence renderedText,
+            String url,
+            int originalStart,
+            int originalEnd
+    ) {
+        int start = originalStart;
+        int end = originalEnd;
+        if (renderedText != null && url != null && !url.isEmpty()) {
+            String text = renderedText.toString();
+            boolean alreadyAligned = start >= 0
+                    && end == start + url.length()
+                    && end <= text.length()
+                    && text.regionMatches(start, url, 0, url.length());
+            if (!alreadyAligned) {
+                int searchStart = Math.max(0, start - 8);
+                int searchEnd = Math.min(text.length(), start + 8 + url.length());
+                int candidate = text.indexOf(url, searchStart);
+                int closest = -1;
+                int closestDistance = Integer.MAX_VALUE;
+                while (candidate >= 0 && candidate + url.length() <= searchEnd) {
+                    int distance = Math.abs(candidate - start);
+                    if (distance < closestDistance) {
+                        closest = candidate;
+                        closestDistance = distance;
+                    }
+                    candidate = text.indexOf(url, candidate + 1);
+                }
+                if (closest >= 0) {
+                    start = closest;
+                    end = closest + url.length();
+                }
+            }
+        }
+        return ((long) end << 32) | (start & 0xffffffffL);
+    }
+
     /** Removes legacy BE tokens when ChMate requests BE icons to be hidden. */
     public static String filterBeIconText(String original, boolean hideBeIcon, boolean hideEmoticon) {
         if (!hideBeIcon || original == null || original.isEmpty()) return original;

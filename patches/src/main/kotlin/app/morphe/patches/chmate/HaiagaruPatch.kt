@@ -1356,6 +1356,75 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         """
     )
 
+    // The 191 renderer may remove one display character before this parser runs.
+    // Realign custom URL spans against the actual StringBuilder content. Without
+    // this, the leading "h" stays plain and a URL at end-of-text is discarded by
+    // o8.Vq_() because its end offset exceeds the SpannableString length.
+    val legacyLinkSpanType = "Lo/ocd\$setContentView;"
+    data class LinkSpanInsertion(
+        val index: Int,
+        val builderRegister: Int,
+        val spanRegister: Int,
+        val startRegister: Int,
+        val endRegister: Int
+    )
+    val linkSpanInsertions = legacyTextParserMethod.implementation!!.instructions
+        .mapIndexedNotNull { index, instruction ->
+            val invocation = instruction as? FiveRegisterInstruction
+                ?: return@mapIndexedNotNull null
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass != "Lo/o8;"
+                || reference.name != "c"
+                || reference.returnType != "Lo/o8;"
+                || reference.parameterTypes.map(CharSequence::toString) !=
+                listOf("Ljava/lang/Object;", "I", "I")
+            ) return@mapIndexedNotNull null
+
+            val spanRegister = invocation.registerD
+            val constructsLinkSpan = legacyTextParserMethod.implementation!!.instructions
+                .subList(maxOf(0, index - 40), index)
+                .any { preceding ->
+                    val precedingInvocation = preceding as? FiveRegisterInstruction
+                        ?: return@any false
+                    val precedingReference = (preceding as? ReferenceInstruction)?.reference
+                        as? MethodReference ?: return@any false
+                    preceding.opcode == Opcode.INVOKE_DIRECT
+                        && precedingInvocation.registerC == spanRegister
+                        && precedingReference.definingClass == legacyLinkSpanType
+                        && precedingReference.name == "<init>"
+                }
+            if (!constructsLinkSpan) return@mapIndexedNotNull null
+
+            LinkSpanInsertion(
+                index = index,
+                builderRegister = invocation.registerC,
+                spanRegister = spanRegister,
+                startRegister = invocation.registerE,
+                endRegister = invocation.registerF
+            )
+        }
+
+    check(linkSpanInsertions.isNotEmpty()) {
+        "ChMate 191 URL span insertion sites were not found"
+    }
+    linkSpanInsertions.asReversed().forEach { insertion ->
+        legacyTextParserMethod.addInstructionsWithLabels(
+            insertion.index,
+            """
+                iget-object v12, v${insertion.builderRegister}, Lo/o8;->e:Ljava/lang/StringBuilder;
+                invoke-virtual { v${insertion.spanRegister} }, $legacyLinkSpanType->c()Ljava/lang/String;
+                move-result-object v13
+                invoke-static { v12, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
+                move-result-wide v14
+                long-to-int v${insertion.startRegister}, v14
+                const/16 v13, 0x20
+                ushr-long v14, v14, v13
+                long-to-int v${insertion.endRegister}, v14
+            """
+        )
+    }
+
     // The response model scans the raw body again when it builds the attachment
     // list. Remove BE tokens only from this private copy. The original response
     // remains untouched for the inline emoticon renderer above.
