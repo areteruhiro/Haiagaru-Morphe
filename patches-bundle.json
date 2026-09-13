@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-13T09:00:00Z",
-  "description": "Haiagaru 1.2.2 revision 11: optional automatic DAT retrieval without start notification, direct handling when a DAT already exists, archived-thread line-break preservation, and selectable duplicate 5ch.io board cleanup for ChMate 0.8.10.191 dev, 0.8.10.241, and 0.8.10.243 dev.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r11/haiagaru_patches-1.2.2-r11.mpp",
+  "created_at": "2026-09-13T12:00:00Z",
+  "description": "Haiagaru 1.2.2 revision 12: optional automatic DAT retrieval without start notification, direct handling when a DAT already exists, archived-thread line-break preservation, and selectable duplicate 5ch.io board cleanup for ChMate 0.8.10.191 dev, 0.8.10.226 dev, 0.8.10.241, and 0.8.10.243 dev.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r12/haiagaru_patches-1.2.2-r12.mpp",
   "signature_download_url": "",
-  "version": "1.2.2-r11"
+  "version": "1.2.2-r12"
 }
