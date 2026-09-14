@@ -105,6 +105,9 @@ private data class ChMateProfile(
     val hasLevelPlayBanner: Boolean,
     val homeAdClass: String,
     val homeAdLoadMethod: String?,
+    val legacyPlusDisplayStateClass: String? = null,
+    val legacyPlusDisplayStateMethod: String? = null,
+    val bypassLegacySingleIdEntitlement: Boolean = false,
 )
 
 private enum class ViewModelTrapKind {
@@ -142,6 +145,9 @@ private fun profileFor(versionName: String) = when (versionName) {
         hasLevelPlayBanner = false,
         homeAdClass = "Lo/qheCC;",
         homeAdLoadMethod = null,
+        legacyPlusDisplayStateClass = "Lo/lrb${'$'}RemoteActionCompatParcelizer;",
+        legacyPlusDisplayStateMethod = "d",
+        bypassLegacySingleIdEntitlement = true,
     )
     "0.8.10.226 dev" -> ChMateProfile(
         providerClass = "Lo/setDither;",
@@ -271,6 +277,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
         patchLegacyThreadUrlEntry(profile)
         patchFinishedLegacyThreadLaunchGuard()
+        patchLegacyPlusFeatureActivation(profile)
         if (packageMetadata.versionName == "0.8.10.243 dev") {
             patchImageSelectionResult()
             patchImageSelectionReflectionTrap()
@@ -655,6 +662,59 @@ val saveChMateCrashLogsPatch = bytecodePatch(
                 "$EXTENSION->installCrashLogger(Landroid/content/ContentProvider;)V",
         )
     }
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyPlusFeatureActivation(
+    profile: ChMateProfile,
+) {
+    if (!profile.bypassLegacySingleIdEntitlement) return
+
+    val classType = profile.legacyPlusDisplayStateClass
+        ?: error("ChMate legacy plus display state class is not configured")
+    val methodName = profile.legacyPlusDisplayStateMethod
+        ?: error("ChMate legacy plus display state method is not configured")
+    mutableClassDefBy(classType).methods.single { candidate ->
+        candidate.name == methodName
+            && candidate.returnType == "V"
+            && candidate.parameters.isEmpty()
+    }.bypassLegacySingleIdEntitlement(classType)
+}
+
+private fun MutableMethod.bypassLegacySingleIdEntitlement(ownerType: String) {
+    val instructions = implementation?.instructions
+        ?: error("ChMate legacy plus display state method has no implementation")
+    val getBooleanIndex = instructions.indices.firstOrNull { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@firstOrNull false
+        reference.definingClass == "Landroid/content/SharedPreferences;"
+            && reference.name == "getBoolean"
+            && reference.returnType == "Z"
+            && reference.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "Z")
+            && instructions.subList(maxOf(0, index - 6), index).any { previous ->
+                ((previous as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+                    "abbrevSingleId"
+            }
+    } ?: error("ChMate legacy abbrevSingleId preference read was not found")
+    val falseBranchIndex = (getBooleanIndex + 1 until minOf(getBooleanIndex + 8, instructions.size))
+        .firstOrNull { index ->
+            val opcode = instructions[index].opcode
+            opcode == Opcode.IF_EQZ || opcode == Opcode.IF_EQ
+        } ?: error("ChMate legacy abbrevSingleId false branch was not found")
+    val enabledStoreIndex = (falseBranchIndex + 1 until instructions.size).firstOrNull { index ->
+        val instruction = instructions[index]
+        val reference = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+            ?: return@firstOrNull false
+        instruction.opcode == Opcode.IPUT_BOOLEAN
+            && reference.definingClass == ownerType
+            && reference.type == "Z"
+    } ?: error("ChMate legacy abbrevSingleId enabled store was not found")
+
+    addInstructionsWithLabels(
+        falseBranchIndex + 1,
+        "goto/32 :haiagaru_legacy_single_id_enabled",
+        ExternalLabel("haiagaru_legacy_single_id_enabled", instructions[enabledStoreIndex]),
+    )
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageSelectionResult() {
