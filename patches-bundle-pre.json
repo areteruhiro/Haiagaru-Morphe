@@ -1,0 +1,7 @@
+{
+  "created_at": "2026-09-14T17:02:55",
+  "description": "Haiagaru 1.2.2 revision 17 pre-release: settings-button failures are saved as diagnostic reports in Downloads/Haiagaru, while live-DAT threads continue through normal ChMate handling without the archived-thread notification.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r17/haiagaru_patches-1.2.2-r17.mpp",
+  "signature_download_url": "",
+  "version": "1.2.2-r17"
+}
