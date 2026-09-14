@@ -1513,7 +1513,7 @@ public final class Haiagaru {
                     .getDeclaredMethod("addControl", Activity.class, LinearLayout.class)
                     .invoke(null, activity, layout);
         } catch (ClassNotFoundException ignored) {
-            // The optional package-name patch was not selected.
+            // The optional Shizuku data-migration patch was not selected.
         } catch (ReflectiveOperationException error) {
             Log.e(LOG_TAG, "Unable to add the package-data migration control", error);
         }
