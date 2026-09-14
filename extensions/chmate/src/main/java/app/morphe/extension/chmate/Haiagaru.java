@@ -1291,24 +1291,10 @@ public final class Haiagaru {
         // higher Z order. Keep the injected entry above it so it remains both
         // visible and touchable.
         button.setElevation(dp(activity, 16));
-        button.setTranslationZ(dp(activity, 16));
-        button.setClickable(true);
-        button.setFocusable(true);
         button.bringToFront();
         overlayHost.requestLayout();
         overlayHost.invalidate();
 
-        Runnable raiseButton = () -> {
-            if (button.getParent() == overlayHost) {
-                button.bringToFront();
-                button.setTranslationZ(dp(activity, 16));
-                overlayHost.invalidate();
-            }
-        };
-        overlayHost.post(raiseButton);
-        overlayHost.postDelayed(raiseButton, 100);
-        overlayHost.postDelayed(raiseButton, 500);
-        overlayHost.postDelayed(raiseButton, 1500);
         Log.i(LOG_TAG, "Installed Haiagaru settings button in "
                 + activity.getClass().getName()
                 + " parent=" + overlayHost.getClass().getName()
@@ -1333,9 +1319,6 @@ public final class Haiagaru {
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                     actionName = "DOWN";
-                    if (view.getParent() != null) {
-                        view.getParent().requestDisallowInterceptTouchEvent(true);
-                    }
                     Log.i(LOG_TAG, "Haiagaru settings button touch DOWN"
                             + " target=" + target
                             + " x=" + event.getX()
@@ -1345,9 +1328,6 @@ public final class Haiagaru {
                     break;
                 case MotionEvent.ACTION_UP:
                     actionName = "UP";
-                    if (view.getParent() != null) {
-                        view.getParent().requestDisallowInterceptTouchEvent(false);
-                    }
                     Log.i(LOG_TAG, "Haiagaru settings button touch UP"
                             + " target=" + target
                             + " x=" + event.getX()
@@ -1355,10 +1335,14 @@ public final class Haiagaru {
                     break;
                 case MotionEvent.ACTION_CANCEL:
                     actionName = "CANCEL";
-                    if (view.getParent() != null) {
-                        view.getParent().requestDisallowInterceptTouchEvent(false);
-                    }
                     Log.w(LOG_TAG, "Haiagaru settings button touch CANCEL"
+                            + " target=" + target
+                            + " x=" + event.getX()
+                            + " y=" + event.getY());
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    actionName = "MOVE";
+                    Log.d(LOG_TAG, "Haiagaru settings button touch MOVE"
                             + " target=" + target
                             + " x=" + event.getX()
                             + " y=" + event.getY());
@@ -1391,10 +1375,14 @@ public final class Haiagaru {
             if (action == MotionEvent.ACTION_DOWN) {
                 touchTraceHandler.removeCallbacks(flushTouchTrace);
                 touchTraceHandler.postDelayed(flushTouchTrace, 1500L);
-            } else if (action == MotionEvent.ACTION_UP
-                    || action == MotionEvent.ACTION_CANCEL) {
+            } else if (action == MotionEvent.ACTION_UP) {
                 touchTraceHandler.removeCallbacks(flushTouchTrace);
-                touchTraceHandler.post(flushTouchTrace);
+                // Give Button.onTouchEvent time to dispatch performClick before
+                // persisting the trace, so the file contains CLICK when present.
+                touchTraceHandler.postDelayed(flushTouchTrace, 250L);
+            } else if (action == MotionEvent.ACTION_CANCEL) {
+                touchTraceHandler.removeCallbacks(flushTouchTrace);
+                touchTraceHandler.postDelayed(flushTouchTrace, 50L);
             }
             // Let Button continue its normal pressed-state and click handling.
             return false;
@@ -1412,38 +1400,22 @@ public final class Haiagaru {
                         .append('\n');
             }
             touchTraceHandler.removeCallbacks(flushTouchTrace);
-            touchTraceHandler.post(flushTouchTrace);
+            touchTraceHandler.postDelayed(flushTouchTrace, 250L);
             Log.i(LOG_TAG, "Haiagaru settings button clicked in "
                     + activity.getClass().getName()
                     + " target=" + target);
-            if (activity.isFinishing()
-                    || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
-                logSettingsOpenFailure(activity, "activity is finishing or destroyed", null);
-                return;
+            try {
+                showSettingsDialog(activity);
+                Log.i(LOG_TAG, "Haiagaru settings dialog requested successfully in "
+                        + activity.getClass().getName());
+            } catch (Throwable error) {
+                logSettingsOpenFailure(activity, "dialog creation failed", error);
+                Toast.makeText(
+                        activity,
+                        text("Haiagaru設定を開けませんでした", "Unable to open Haiagaru settings"),
+                        Toast.LENGTH_LONG
+                ).show();
             }
-            view.post(() -> {
-                try {
-                    if (activity.isFinishing()
-                            || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
-                        logSettingsOpenFailure(
-                                activity,
-                                "activity became finishing or destroyed before dialog creation",
-                                null
-                        );
-                        return;
-                    }
-                    showSettingsDialog(activity);
-                    Log.i(LOG_TAG, "Haiagaru settings dialog requested successfully in "
-                            + activity.getClass().getName());
-                } catch (Throwable error) {
-                    logSettingsOpenFailure(activity, "dialog creation failed", error);
-                    Toast.makeText(
-                            activity,
-                            text("Haiagaru設定を開けませんでした", "Unable to open Haiagaru settings"),
-                            Toast.LENGTH_LONG
-                    ).show();
-                }
-            });
         });
     }
 
