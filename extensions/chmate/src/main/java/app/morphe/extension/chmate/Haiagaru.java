@@ -1328,6 +1328,7 @@ public final class Haiagaru {
 
         button.setOnTouchListener((view, event) -> {
             int action = event.getActionMasked();
+            String target = describeView(view);
             String actionName;
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
@@ -1336,6 +1337,7 @@ public final class Haiagaru {
                         view.getParent().requestDisallowInterceptTouchEvent(true);
                     }
                     Log.i(LOG_TAG, "Haiagaru settings button touch DOWN"
+                            + " target=" + target
                             + " x=" + event.getX()
                             + " y=" + event.getY()
                             + " enabled=" + view.isEnabled()
@@ -1347,6 +1349,7 @@ public final class Haiagaru {
                         view.getParent().requestDisallowInterceptTouchEvent(false);
                     }
                     Log.i(LOG_TAG, "Haiagaru settings button touch UP"
+                            + " target=" + target
                             + " x=" + event.getX()
                             + " y=" + event.getY());
                     break;
@@ -1356,12 +1359,14 @@ public final class Haiagaru {
                         view.getParent().requestDisallowInterceptTouchEvent(false);
                     }
                     Log.w(LOG_TAG, "Haiagaru settings button touch CANCEL"
+                            + " target=" + target
                             + " x=" + event.getX()
                             + " y=" + event.getY());
                     break;
                 default:
                     actionName = String.valueOf(action);
-                    Log.d(LOG_TAG, "Haiagaru settings button touch " + actionName);
+                    Log.d(LOG_TAG, "Haiagaru settings button touch " + actionName
+                            + " target=" + target);
                     break;
             }
             synchronized (touchTrace) {
@@ -1371,6 +1376,8 @@ public final class Haiagaru {
                         ).format(new Date()))
                         .append(' ')
                         .append(actionName)
+                        .append(" target=")
+                        .append(target)
                         .append(" x=")
                         .append(event.getX())
                         .append(" y=")
@@ -1394,8 +1401,21 @@ public final class Haiagaru {
         });
 
         button.setOnClickListener(view -> {
+            String target = describeView(view);
+            synchronized (touchTrace) {
+                touchTrace.append(new SimpleDateFormat(
+                                "HH:mm:ss.SSS",
+                                Locale.US
+                        ).format(new Date()))
+                        .append(" CLICK target=")
+                        .append(target)
+                        .append('\n');
+            }
+            touchTraceHandler.removeCallbacks(flushTouchTrace);
+            touchTraceHandler.post(flushTouchTrace);
             Log.i(LOG_TAG, "Haiagaru settings button clicked in "
-                    + activity.getClass().getName());
+                    + activity.getClass().getName()
+                    + " target=" + target);
             if (activity.isFinishing()
                     || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
                 logSettingsOpenFailure(activity, "activity is finishing or destroyed", null);
@@ -1425,6 +1445,33 @@ public final class Haiagaru {
                 }
             });
         });
+    }
+
+    /** Describes only the clicked control, without recording screen or post contents. */
+    private static String describeView(View view) {
+        if (view == null) return "null";
+        String id = "none";
+        try {
+            if (view.getId() != View.NO_ID) {
+                id = view.getResources().getResourceName(view.getId());
+            }
+        } catch (Throwable ignored) {
+            id = String.valueOf(view.getId());
+        }
+        String tag = String.valueOf(view.getTag());
+        String label = "";
+        if (view instanceof TextView) {
+            CharSequence text = ((TextView) view).getText();
+            if (text != null && text.length() > 0) {
+                String value = text.toString();
+                label = value.length() > 64 ? value.substring(0, 64) : value;
+            }
+        }
+        return "class=" + view.getClass().getName()
+                + " id=" + id
+                + " tag=" + tag
+                + " label=" + label
+                + " size=" + view.getWidth() + "x" + view.getHeight();
     }
 
     private static void logSettingsOpenFailure(
