@@ -67,23 +67,30 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
-現在の検証版（r15 pre-release）を取得するパッチソースは次のURLです。
+現在の公式版（1.2.3）を取得するパッチソースは次のURLです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース検証用URLも用意しています。現在は同じr15 pre-releaseを返します。
+プレリリース検証用URLでは、r15 pre-releaseを取得できます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
-URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r14`）を更新します。
+パッチ本体のバージョンは `1.2.3` です。同じバージョン内で修正版を配布する場合は、
+URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.3（正式版）
+
+- Android 16を含む一部端末でHaiagaru設定ボタンを押しても設定画面が開かない問題を修正
+- Haiagaru設定からChMate+互換機能を有効にしても、実際の動作へ反映されない問題を修正
+- ChMate 0.8.10.191 devの単一ID省略設定に残っていた有効化判定を補正
+- ChMate 0.8.10.191 dev、0.8.10.226 dev、0.8.10.241、0.8.10.243 devに対応
 
 ### 1.2.2-r15（プレリリース）
 
