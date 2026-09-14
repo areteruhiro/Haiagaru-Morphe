@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-14T19:50:33",
-  "description": "Haiagaru 1.2.2 revision 15 pre-release: restores the r15 Manager bundle target and fixes ChMate+ compatibility toggles so enabling copy-paste abbreviation 2 and troll abbreviation also enables their required ChMate parent settings, with the 0.8.10.191 dev single-ID abbreviation entitlement gate bypassed when the saved setting is on.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r15/haiagaru_patches-1.2.2-r15.mpp",
+  "created_at": "2026-09-14T20:04:21",
+  "description": "Haiagaru 1.2.3.r1 pre-release: republishes the r15 changes as the first 1.2.3 test revision, including the Haiagaru settings-button fix and ChMate+ compatibility-control activation fixes for supported ChMate versions.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.3.r1/haiagaru_patches-1.2.3.r1.mpp",
   "signature_download_url": "",
-  "version": "1.2.2-r15"
+  "version": "1.2.3.r1"
 }
