@@ -68,22 +68,16 @@ URLでは `{$server}`、`{$bbs}`、`{$key}`、`{$rand}` を使用できます。
 
 ## URV Managerへの追加と更新
 
-パッチソースには次のURLを登録してください。
+正式版（r13）を取得するパッチソースは次のURLです。コミット固定URLを使用すると、CDNの古いキャッシュで別リビジョンへ戻ることを防げます。
 
 ```text
-https://cdn.jsdelivr.net/gh/areteruhiro/Haiagaru-Morphe@master/patches-bundle.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/231a5f3/patches-bundle.json
 ```
 
-GitHub rawを使用する場合は、リリース時点の固定コミットを指定してください。
+プレリリース（r16、設定ボタンの診断ログ対応）を検証する場合のみ、次のURLを登録してください。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/310e8fd/patches-bundle.json
-```
-
-プレリリースを検証する場合のみ、次の `dev` ソースを登録してください。
-
-```text
-https://cdn.jsdelivr.net/gh/areteruhiro/Haiagaru-Morphe@dev/patches-bundle.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/483e8d6/patches-bundle-pre.json
 ```
 
 パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
