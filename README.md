@@ -71,13 +71,19 @@ URLでは `{$server}`、`{$bbs}`、`{$key}`、`{$rand}` を使用できます。
 パッチソースには次のURLを登録してください。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
+https://cdn.jsdelivr.net/gh/areteruhiro/Haiagaru-Morphe@master/patches-bundle.json
+```
+
+GitHub rawを使用する場合は、リリース時点の固定コミットを指定してください。
+
+```text
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/310e8fd/patches-bundle.json
 ```
 
 プレリリースを検証する場合のみ、次の `dev` ソースを登録してください。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/dev/patches-bundle.json
+https://cdn.jsdelivr.net/gh/areteruhiro/Haiagaru-Morphe@dev/patches-bundle.json
 ```
 
 パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
