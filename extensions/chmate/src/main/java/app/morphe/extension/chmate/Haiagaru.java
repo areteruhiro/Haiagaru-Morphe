@@ -383,7 +383,10 @@ public final class Haiagaru {
                 Locale.US
         ).format(now);
         StringWriter stackTrace = new StringWriter();
-        error.printStackTrace(new PrintWriter(stackTrace));
+        Throwable reportError = error == null
+                ? new RuntimeException("Unknown uncaught exception")
+                : error;
+        reportError.printStackTrace(new PrintWriter(stackTrace));
 
         String versionName = "unknown";
         long versionCode = -1;
@@ -407,8 +410,68 @@ public final class Haiagaru {
                 + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
                 + "Thread: " + thread.getName() + "\n\n"
                 + stackTrace;
-        String fileName = "chmate-crash-" + fileTimestamp + ".txt";
+        writeDownloadLog(context, "chmate-crash-" + fileTimestamp + ".txt", report);
+    }
 
+    /** Saves a settings-button failure report beside the optional crash reports. */
+    private static void writeSettingsDiagnosticLog(
+            Context context,
+            String reason,
+            Throwable error
+    ) throws IOException {
+        if (context == null) throw new IOException("No context available for settings log");
+        Date now = new Date();
+        String timestamp = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+                Locale.US
+        ).format(now);
+        String fileTimestamp = new SimpleDateFormat(
+                "yyyyMMdd-HHmmss-SSS",
+                Locale.US
+        ).format(now);
+
+        String versionName = "unknown";
+        long versionCode = -1;
+        try {
+            PackageInfo info = context.getPackageManager().getPackageInfo(
+                    context.getPackageName(),
+                    0
+            );
+            versionName = info.versionName;
+            versionCode = Build.VERSION.SDK_INT >= 28
+                    ? info.getLongVersionCode()
+                    : info.versionCode;
+        } catch (Throwable ignored) {
+        }
+
+        StringBuilder report = new StringBuilder()
+                .append("Haiagaru settings diagnostic log\n")
+                .append("Time: ").append(timestamp).append('\n')
+                .append("Package: ").append(context.getPackageName()).append('\n')
+                .append("Version: ").append(versionName).append(" (").append(versionCode).append(")\n")
+                .append("Android: ").append(Build.VERSION.RELEASE)
+                .append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n")
+                .append("Device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n')
+                .append("Thread: ").append(Thread.currentThread().getName()).append('\n')
+                .append("Reason: ").append(reason == null ? "unknown" : reason).append("\n\n");
+        if (error == null) {
+            report.append("No exception was thrown.\n");
+        } else {
+            StringWriter stackTrace = new StringWriter();
+            error.printStackTrace(new PrintWriter(stackTrace));
+            report.append(stackTrace);
+        }
+        writeDownloadLog(
+                context,
+                "chmate-settings-" + fileTimestamp + ".txt",
+                report.toString()
+        );
+    }
+
+    /** Writes a UTF-8 report to Downloads/Haiagaru on every supported Android release. */
+    private static void writeDownloadLog(Context context, String fileName, String report)
+            throws IOException {
+        if (context == null) throw new IOException("No context available for Downloads log");
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues values = new ContentValues();
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
@@ -1155,7 +1218,7 @@ public final class Haiagaru {
 
         View decorView = activity.getWindow().getDecorView();
         if (!(decorView instanceof ViewGroup)) {
-            Log.e(LOG_TAG, "Unable to install Haiagaru settings button: decor view is not a ViewGroup");
+            logSettingsOpenFailure(activity, "decor view is not a ViewGroup", null);
             return;
         }
         ViewGroup overlayHost = (ViewGroup) decorView;
@@ -1262,6 +1325,21 @@ public final class Haiagaru {
         } else {
             Log.e(LOG_TAG, message, error);
         }
+        Context context = activity == null ? applicationContext : activity.getApplicationContext();
+        if (context == null) context = activity;
+        if (context == null) {
+            Log.w(LOG_TAG, "Unable to save settings diagnostic log: context is null");
+            return;
+        }
+        final Context diagnosticContext = context;
+        new Thread(() -> {
+            try {
+                writeSettingsDiagnosticLog(diagnosticContext, message, error);
+                Log.i(LOG_TAG, "Saved Haiagaru settings diagnostic log to Downloads/Haiagaru");
+            } catch (Throwable logError) {
+                Log.e(LOG_TAG, "Unable to save settings diagnostic log", logError);
+            }
+        }, "Haiagaru-settings-log").start();
     }
 
     private static void showSettingsDialog(Activity activity) {
