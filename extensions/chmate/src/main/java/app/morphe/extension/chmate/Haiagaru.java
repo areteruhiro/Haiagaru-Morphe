@@ -3,6 +3,8 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -28,13 +30,13 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -69,11 +71,14 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
     private static final String LOG_TAG = "Haiagaru";
+    private static final Map<Activity, PopupWindow> SETTINGS_BUTTON_POPUPS =
+            new WeakHashMap<>();
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String BUTTON_TAG = "haiagaru.settings.button";
@@ -412,105 +417,6 @@ public final class Haiagaru {
                 + "Thread: " + thread.getName() + "\n\n"
                 + stackTrace;
         writeDownloadLog(context, "chmate-crash-" + fileTimestamp + ".txt", report);
-    }
-
-    /** Saves a settings-button failure report beside the optional crash reports. */
-    private static void writeSettingsDiagnosticLog(
-            Context context,
-            String reason,
-            Throwable error
-    ) throws IOException {
-        if (context == null) throw new IOException("No context available for settings log");
-        Date now = new Date();
-        String timestamp = new SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-                Locale.US
-        ).format(now);
-        String fileTimestamp = new SimpleDateFormat(
-                "yyyyMMdd-HHmmss-SSS",
-                Locale.US
-        ).format(now);
-
-        String versionName = "unknown";
-        long versionCode = -1;
-        try {
-            PackageInfo info = context.getPackageManager().getPackageInfo(
-                    context.getPackageName(),
-                    0
-            );
-            versionName = info.versionName;
-            versionCode = Build.VERSION.SDK_INT >= 28
-                    ? info.getLongVersionCode()
-                    : info.versionCode;
-        } catch (Throwable ignored) {
-        }
-
-        StringBuilder report = new StringBuilder()
-                .append("Haiagaru settings diagnostic log\n")
-                .append("Time: ").append(timestamp).append('\n')
-                .append("Package: ").append(context.getPackageName()).append('\n')
-                .append("Version: ").append(versionName).append(" (").append(versionCode).append(")\n")
-                .append("Android: ").append(Build.VERSION.RELEASE)
-                .append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n")
-                .append("Device: ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n')
-                .append("Thread: ").append(Thread.currentThread().getName()).append('\n')
-                .append("Reason: ").append(reason == null ? "unknown" : reason).append("\n\n");
-        if (error == null) {
-            report.append("No exception was thrown.\n");
-        } else {
-            StringWriter stackTrace = new StringWriter();
-            error.printStackTrace(new PrintWriter(stackTrace));
-            report.append(stackTrace);
-        }
-        writeDownloadLog(
-                context,
-                "chmate-settings-" + fileTimestamp + ".txt",
-                report.toString()
-        );
-    }
-
-    /** Saves the raw touch sequence used to diagnose a button that only shows a pressed state. */
-    private static void writeSettingsTouchDiagnosticLog(Context context, String trace)
-            throws IOException {
-        if (context == null) throw new IOException("No context available for touch log");
-        Date now = new Date();
-        String timestamp = new SimpleDateFormat(
-                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-                Locale.US
-        ).format(now);
-        String fileTimestamp = new SimpleDateFormat(
-                "yyyyMMdd-HHmmss-SSS",
-                Locale.US
-        ).format(now);
-
-        String versionName = "unknown";
-        long versionCode = -1;
-        try {
-            PackageInfo info = context.getPackageManager().getPackageInfo(
-                    context.getPackageName(),
-                    0
-            );
-            versionName = info.versionName;
-            versionCode = Build.VERSION.SDK_INT >= 28
-                    ? info.getLongVersionCode()
-                    : info.versionCode;
-        } catch (Throwable ignored) {
-        }
-
-        String report = "Haiagaru settings touch diagnostic log\n"
-                + "Time: " + timestamp + "\n"
-                + "Package: " + context.getPackageName() + "\n"
-                + "Version: " + versionName + " (" + versionCode + ")\n"
-                + "Android: " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")\n"
-                + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
-                + "Thread: " + Thread.currentThread().getName() + "\n\n"
-                + "Touch events:\n"
-                + (trace == null ? "none\n" : trace);
-        writeDownloadLog(
-                context,
-                "chmate-settings-touch-" + fileTimestamp + ".txt",
-                report
-        );
     }
 
     /** Writes a UTF-8 report to Downloads/Haiagaru on every supported Android release. */
@@ -1255,253 +1161,65 @@ public final class Haiagaru {
     }
 
     public static void onSettingsResume(Activity activity) {
-        if (activity == null) {
-            Log.w(LOG_TAG, "Unable to install Haiagaru settings button: activity is null");
-            return;
-        }
+        if (activity == null) return;
         applicationContext = activity.getApplicationContext();
+        PopupWindow existing = SETTINGS_BUTTON_POPUPS.get(activity);
+        if (existing != null && existing.isShowing()) return;
 
         View decorView = activity.getWindow().getDecorView();
-        if (!(decorView instanceof ViewGroup)) {
-            logSettingsOpenFailure(activity, "decor view is not a ViewGroup", null);
-            return;
-        }
-        ViewGroup overlayHost = (ViewGroup) decorView;
-        if (overlayHost.findViewWithTag(BUTTON_TAG) != null) {
-            Log.d(LOG_TAG, "Haiagaru settings button already installed in "
-                    + activity.getClass().getName());
-            return;
-        }
+        if (decorView == null) return;
 
         Button button = new Button(activity);
         button.setTag(BUTTON_TAG);
         button.setText("Haiagaru");
         button.setAllCaps(false);
+        button.setOnClickListener(view -> view.post(() -> showSettingsDialog(activity)));
 
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+        PopupWindow popup = new PopupWindow(
+                button,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.END
+                false
         );
-        params.topMargin = statusBarHeight(activity) + dp(activity, 5);
-        params.rightMargin = dp(activity, 10);
-        overlayHost.addView(button, params);
+        popup.setTouchable(true);
+        popup.setOutsideTouchable(false);
+        popup.setClippingEnabled(false);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        if (Build.VERSION.SDK_INT >= 21) {
+            popup.setElevation(dp(activity, 16));
+        }
+        SETTINGS_BUTTON_POPUPS.put(activity, popup);
 
-        // Some ChMate generations render their toolbar in a sibling with a
-        // higher Z order. Keep the injected entry above it so it remains both
-        // visible and touchable.
-        button.setElevation(dp(activity, 16));
-        button.bringToFront();
-        overlayHost.requestLayout();
-        overlayHost.invalidate();
+        decorView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View view) {
+            }
 
-        Log.i(LOG_TAG, "Installed Haiagaru settings button in "
-                + activity.getClass().getName()
-                + " parent=" + overlayHost.getClass().getName()
-                + " size=" + button.getWidth() + "x" + button.getHeight());
-
-        final StringBuilder touchTrace = new StringBuilder();
-        final Handler touchTraceHandler = new Handler(Looper.getMainLooper());
-        final Runnable flushTouchTrace = () -> {
-            String trace;
-            synchronized (touchTrace) {
-                if (touchTrace.length() == 0) return;
-                trace = touchTrace.toString();
-                touchTrace.setLength(0);
+            @Override
+            public void onViewDetachedFromWindow(View view) {
+                PopupWindow stored = SETTINGS_BUTTON_POPUPS.remove(activity);
+                if (stored != null && stored.isShowing()) stored.dismiss();
             }
-            saveSettingsTouchDiagnosticLog(activity, trace);
-        };
-
-        button.setOnTouchListener((view, event) -> {
-            int action = event.getActionMasked();
-            String target = describeView(view);
-            String actionName;
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-                    actionName = "DOWN";
-                    Log.i(LOG_TAG, "Haiagaru settings button touch DOWN"
-                            + " target=" + target
-                            + " x=" + event.getX()
-                            + " y=" + event.getY()
-                            + " enabled=" + view.isEnabled()
-                            + " clickable=" + view.isClickable());
-                    break;
-                case MotionEvent.ACTION_UP:
-                    actionName = "UP";
-                    Log.i(LOG_TAG, "Haiagaru settings button touch UP"
-                            + " target=" + target
-                            + " x=" + event.getX()
-                            + " y=" + event.getY());
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                    actionName = "CANCEL";
-                    Log.w(LOG_TAG, "Haiagaru settings button touch CANCEL"
-                            + " target=" + target
-                            + " x=" + event.getX()
-                            + " y=" + event.getY());
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    actionName = "MOVE";
-                    Log.d(LOG_TAG, "Haiagaru settings button touch MOVE"
-                            + " target=" + target
-                            + " x=" + event.getX()
-                            + " y=" + event.getY());
-                    break;
-                default:
-                    actionName = String.valueOf(action);
-                    Log.d(LOG_TAG, "Haiagaru settings button touch " + actionName
-                            + " target=" + target);
-                    break;
-            }
-            synchronized (touchTrace) {
-                touchTrace.append(new SimpleDateFormat(
-                                "HH:mm:ss.SSS",
-                                Locale.US
-                        ).format(new Date()))
-                        .append(' ')
-                        .append(actionName)
-                        .append(" target=")
-                        .append(target)
-                        .append(" x=")
-                        .append(event.getX())
-                        .append(" y=")
-                        .append(event.getY())
-                        .append(" enabled=")
-                        .append(view.isEnabled())
-                        .append(" clickable=")
-                        .append(view.isClickable())
-                        .append('\n');
-            }
-            if (action == MotionEvent.ACTION_DOWN) {
-                touchTraceHandler.removeCallbacks(flushTouchTrace);
-                touchTraceHandler.postDelayed(flushTouchTrace, 1500L);
-            } else if (action == MotionEvent.ACTION_UP) {
-                touchTraceHandler.removeCallbacks(flushTouchTrace);
-                // Give Button.onTouchEvent time to dispatch performClick before
-                // persisting the trace, so the file contains CLICK when present.
-                touchTraceHandler.postDelayed(flushTouchTrace, 250L);
-            } else if (action == MotionEvent.ACTION_CANCEL) {
-                touchTraceHandler.removeCallbacks(flushTouchTrace);
-                touchTraceHandler.postDelayed(flushTouchTrace, 50L);
-            }
-            // Let Button continue its normal pressed-state and click handling.
-            return false;
         });
-
-        button.setOnClickListener(view -> {
-            String target = describeView(view);
-            synchronized (touchTrace) {
-                touchTrace.append(new SimpleDateFormat(
-                                "HH:mm:ss.SSS",
-                                Locale.US
-                        ).format(new Date()))
-                        .append(" CLICK target=")
-                        .append(target)
-                        .append('\n');
+        decorView.post(() -> {
+            if (activity.isFinishing()
+                    || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
+                SETTINGS_BUTTON_POPUPS.remove(activity);
+                return;
             }
-            touchTraceHandler.removeCallbacks(flushTouchTrace);
-            touchTraceHandler.postDelayed(flushTouchTrace, 250L);
-            Log.i(LOG_TAG, "Haiagaru settings button clicked in "
-                    + activity.getClass().getName()
-                    + " target=" + target);
+            if (popup.isShowing()) return;
             try {
-                showSettingsDialog(activity);
-                Log.i(LOG_TAG, "Haiagaru settings dialog requested successfully in "
-                        + activity.getClass().getName());
+                popup.showAtLocation(
+                        decorView,
+                        Gravity.TOP | Gravity.END,
+                        dp(activity, 10),
+                        statusBarHeight(activity) + dp(activity, 5)
+                );
             } catch (Throwable error) {
-                logSettingsOpenFailure(activity, "dialog creation failed", error);
-                Toast.makeText(
-                        activity,
-                        text("Haiagaru設定を開けませんでした", "Unable to open Haiagaru settings"),
-                        Toast.LENGTH_LONG
-                ).show();
+                SETTINGS_BUTTON_POPUPS.remove(activity);
+                Log.w(LOG_TAG, "Unable to show Haiagaru settings popup button", error);
             }
         });
-    }
-
-    /** Describes only the clicked control, without recording screen or post contents. */
-    private static String describeView(View view) {
-        if (view == null) return "null";
-        String id = "none";
-        try {
-            if (view.getId() != View.NO_ID) {
-                id = view.getResources().getResourceName(view.getId());
-            }
-        } catch (Throwable ignored) {
-            id = String.valueOf(view.getId());
-        }
-        String tag = String.valueOf(view.getTag());
-        String label = "";
-        if (view instanceof TextView) {
-            CharSequence text = ((TextView) view).getText();
-            if (text != null && text.length() > 0) {
-                String value = text.toString();
-                label = value.length() > 64 ? value.substring(0, 64) : value;
-            }
-        }
-        return "class=" + view.getClass().getName()
-                + " id=" + id
-                + " tag=" + tag
-                + " label=" + label
-                + " size=" + view.getWidth() + "x" + view.getHeight();
-    }
-
-    private static void logSettingsOpenFailure(
-            Activity activity,
-            String reason,
-            Throwable error
-    ) {
-        String activityName = activity == null ? "null" : activity.getClass().getName();
-        String packageName = activity == null ? "null" : activity.getPackageName();
-        boolean finishing = activity != null && activity.isFinishing();
-        boolean destroyed = activity != null
-                && Build.VERSION.SDK_INT >= 17
-                && activity.isDestroyed();
-        String message = "Unable to open Haiagaru settings: " + reason
-                + " activity=" + activityName
-                + " package=" + packageName
-                + " finishing=" + finishing
-                + " destroyed=" + destroyed
-                + " sdk=" + Build.VERSION.SDK_INT;
-        if (error == null) {
-            Log.e(LOG_TAG, message);
-        } else {
-            Log.e(LOG_TAG, message, error);
-        }
-        Context context = activity == null ? applicationContext : activity.getApplicationContext();
-        if (context == null) context = activity;
-        if (context == null) {
-            Log.w(LOG_TAG, "Unable to save settings diagnostic log: context is null");
-            return;
-        }
-        final Context diagnosticContext = context;
-        new Thread(() -> {
-            try {
-                writeSettingsDiagnosticLog(diagnosticContext, message, error);
-                Log.i(LOG_TAG, "Saved Haiagaru settings diagnostic log to Downloads/Haiagaru");
-            } catch (Throwable logError) {
-                Log.e(LOG_TAG, "Unable to save settings diagnostic log", logError);
-            }
-        }, "Haiagaru-settings-log").start();
-    }
-
-    private static void saveSettingsTouchDiagnosticLog(Activity activity, String trace) {
-        Context context = activity == null ? applicationContext : activity.getApplicationContext();
-        if (context == null) context = activity;
-        if (context == null) {
-            Log.w(LOG_TAG, "Unable to save settings touch diagnostic log: context is null");
-            return;
-        }
-        final Context diagnosticContext = context;
-        final String diagnosticTrace = trace;
-        new Thread(() -> {
-            try {
-                writeSettingsTouchDiagnosticLog(diagnosticContext, diagnosticTrace);
-                Log.i(LOG_TAG, "Saved Haiagaru settings touch diagnostic log to Downloads/Haiagaru");
-            } catch (Throwable logError) {
-                Log.e(LOG_TAG, "Unable to save settings touch diagnostic log", logError);
-            }
-        }, "Haiagaru-settings-touch-log").start();
     }
 
     private static void showSettingsDialog(Activity activity) {
@@ -1565,54 +1283,80 @@ public final class Haiagaru {
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
-        final boolean legacyPlusSupported = supportsLegacyChMatePlus(activity);
-        if (legacyPlusSupported) {
-            TextView plusDescription = new TextView(activity);
-            plusDescription.setText(text(
-                    "ChMate+互換機能（191/226 dev）\n"
-                            + "旧版に含まれている表示・省略機能をここから切り替えます。",
-                    "ChMate+ compatibility (191/226 dev)\n"
-                            + "Toggle the legacy display and abbreviation features here."
-            ));
-            plusDescription.setTextSize(13);
-            layout.addView(plusDescription, rowParams(activity));
-        }
-        final Switch abbrevSingleId = legacyPlusSupported
-                ? addSwitch(
+
+        boolean legacyPlusSupportedValue = false;
+        Switch abbrevSingleIdValue = null;
+        Switch copipeNg2Value = null;
+        Switch arashiNgValue = null;
+        try {
+            legacyPlusSupportedValue = supportsLegacyChMatePlus(activity);
+            if (legacyPlusSupportedValue) {
+                TextView plusDescription = new TextView(activity);
+                plusDescription.setText(text(
+                        "ChMate+互換機能（191/226 dev）\n"
+                                + "旧版に含まれている表示・省略機能をここから切り替えます。",
+                        "ChMate+ compatibility (191/226 dev)\n"
+                                + "Toggle the legacy display and abbreviation features here."
+                ));
+                plusDescription.setTextSize(13);
+                layout.addView(plusDescription, rowParams(activity));
+                abbrevSingleIdValue = addSwitch(
                         layout,
                         activity,
                         text("単発ID表示を省略", "Abbreviate single-ID display"),
                         chMatePreferences.getBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, false)
-                )
-                : null;
-        final Switch copipeNg2 = legacyPlusSupported
-                ? addSwitch(
+                );
+                copipeNg2Value = addSwitch(
                         layout,
                         activity,
                         text("コピペ省略2", "Copy-paste abbreviation 2"),
                         chMatePreferences.getBoolean(CHMATE_COPIPE_NG2_KEY, false)
-                )
-                : null;
-        final Switch arashiNg = legacyPlusSupported
-                ? addSwitch(
+                );
+                arashiNgValue = addSwitch(
                         layout,
                         activity,
                         text("荒らし省略", "Troll abbreviation"),
                         chMatePreferences.getBoolean(CHMATE_ARASHI_NG_KEY, false)
-                )
-                : null;
+                );
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add ChMate+ compatibility controls", error);
+            legacyPlusSupportedValue = false;
+            abbrevSingleIdValue = null;
+            copipeNg2Value = null;
+            arashiNgValue = null;
+        }
+        final boolean legacyPlusSupported = legacyPlusSupportedValue;
+        final Switch abbrevSingleId = abbrevSingleIdValue;
+        final Switch copipeNg2 = copipeNg2Value;
+        final Switch arashiNg = arashiNgValue;
 
-        EditText archiveRouteTemplates = addArchiveRouteControl(
-                activity,
-                layout,
-                preferences.getString(
-                        ARCHIVE_ROUTE_TEMPLATES_KEY,
-                        DEFAULT_ARCHIVE_ROUTE_TEMPLATES
-                )
+        EditText archiveRouteTemplatesValue = null;
+        try {
+            archiveRouteTemplatesValue = addArchiveRouteControl(
+                    activity,
+                    layout,
+                    preferences.getString(
+                            ARCHIVE_ROUTE_TEMPLATES_KEY,
+                            DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                    )
+            );
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add automatic DAT route controls", error);
+        }
+        final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
+        addOptionalSettingsSection(
+                "archived-thread preset",
+                () -> addArchiveSearchPresetControl(activity, layout)
         );
-        addArchiveSearchPresetControl(activity, layout);
-        addPackageMigrationControl(activity, layout);
-        addBoardDuplicateCleanupControl(activity, layout);
+        addOptionalSettingsSection(
+                "package data migration",
+                () -> addPackageMigrationControl(activity, layout)
+        );
+        addOptionalSettingsSection(
+                "duplicate board cleanup",
+                () -> addBoardDuplicateCleanupControl(activity, layout)
+        );
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
@@ -1661,16 +1405,28 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
-                            .putString(
-                                    ARCHIVE_ROUTE_TEMPLATES_KEY,
-                                    value(archiveRouteTemplates).trim()
-                            )
                             .commit();
+                    if (archiveRouteTemplates != null) {
+                        preferences.edit()
+                                .putString(
+                                        ARCHIVE_ROUTE_TEMPLATES_KEY,
+                                        value(archiveRouteTemplates).trim()
+                                )
+                                .commit();
+                    }
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
                     if (!before.equals(after) || legacyPlusChanged) restart(activity);
                 })
                 .show();
+    }
+
+    private static void addOptionalSettingsSection(String name, Runnable section) {
+        try {
+            section.run();
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add Haiagaru settings section: " + name, error);
+        }
     }
 
     private static EditText addArchiveRouteControl(

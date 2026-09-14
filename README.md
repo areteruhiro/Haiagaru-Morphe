@@ -65,42 +65,33 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 情報提供: あかまつさん
 
-## URV Managerへの追加と更新
+## URV Manager / Morphe Managerへの追加と更新
 
-正式版（r13）を取得するパッチソースは次のURLです。コミット固定URLを使用すると、CDNの古いキャッシュで別リビジョンへ戻ることを防げます。
+正式版（r14）を取得するパッチソースは次のURLです。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/231a5f3/patches-bundle.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース（r17、設定ボタンの診断ログ対応）を検証する場合のみ、次のURLを登録してください。
+プレリリース検証用URLも用意しています。現在は正式版と同じr14を返します。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/2389c98/patches-bundle-pre.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
 パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
-URV Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r3`）だけを更新します。
+URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r14`）を更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
 
-### 1.2.2-r15（正式版）
-
-- URV Manager用のバンドルURLをrefs/heads形式へ変更し、古いraw CDNキャッシュでr3へ戻る問題を回避
-- r15バンドルのcreated_atとダウンロード先を更新
-
-### 1.2.2-r17（プレリリース）
-
-- Haiagaru設定ボタンを開けなかった場合、Activity状態・パッケージ名・SDK・例外情報をLogcatへ出力
-- 同じ診断内容を`Download/Haiagaru/`へ`chmate-settings-*.txt`として非同期保存
-- 現行サーバーのDATが取得できるスレッドは通常のChMate処理へ移行し、過去ログ通知を表示しない
-
 ### 1.2.2-r14（正式版）
 
+- Haiagaru設定ボタンをアプリ内のポップアップ表示へ変更し、Android 16 / Samsung系端末でボタンが表示されても設定画面が開けない問題を修正
+- ChMate+設定、DAT経路、プリセット更新、Shizuku移行、重複板整理の各設定セクションを個別に保護し、追加機能側の失敗で基本設定画面全体が開けなくなる問題を回避
+- 診断用に追加していた設定ボタンのログ保存処理を正式版から削除
 - ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のHaiagaru設定画面にChMate+互換設定を追加
-- 「単発ID表示を省略」「コピペ省略2」「荒らし省略」を既存のChMate設定へ保存できるように修正
-- 設定変更後にChMateを再起動し、191／226それぞれで状態が保持されることを確認
+- DAT取得、URL自動補正、投稿、板整理、パッケージ名・アプリ名・アイコン・versionCode変更機能を維持
 
 ### 1.2.2-r13（正式版）
 

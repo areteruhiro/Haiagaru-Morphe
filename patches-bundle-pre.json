@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-14T17:02:55",
-  "description": "Haiagaru 1.2.2 revision 17 pre-release: settings-button failures are saved as diagnostic reports in Downloads/Haiagaru, while live-DAT threads continue through normal ChMate handling without the archived-thread notification.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r17/haiagaru_patches-1.2.2-r17.mpp",
+  "created_at": "2026-09-14T18:57:16",
+  "description": "Haiagaru 1.2.2 revision 14: fixes the Haiagaru settings button with an app-local popup entry and isolates optional settings sections so the base settings dialog remains available, while keeping DAT retrieval, URL correction, posting, board cleanup, and package customization for ChMate 0.8.10.191 dev, 0.8.10.226 dev, 0.8.10.241, and 0.8.10.243 dev.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r14/haiagaru_patches-1.2.2-r14.mpp",
   "signature_download_url": "",
-  "version": "1.2.2-r17"
+  "version": "1.2.2-r14"
 }
