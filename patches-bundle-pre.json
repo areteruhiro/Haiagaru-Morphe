@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-14T20:04:21",
-  "description": "Haiagaru 1.2.3.r1 pre-release: republishes the r15 changes as the first 1.2.3 test revision, including the Haiagaru settings-button fix and ChMate+ compatibility-control activation fixes for supported ChMate versions.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.3.r1/haiagaru_patches-1.2.3.r1.mpp",
+  "created_at": "2026-09-14T21:18:00",
+  "description": "Haiagaru 1.2.3.r2 pre-release: fixes the ChMate 0.8.10.226 dev settings crash caused by certificate-sensitive setImageAssetsFolder constructor traps, and keeps ad view hiding best-effort during startup and view restoration.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.3.r2/haiagaru_patches-1.2.3.r2.mpp",
   "signature_download_url": "",
-  "version": "1.2.3.r1"
+  "version": "1.2.3.r2"
 }

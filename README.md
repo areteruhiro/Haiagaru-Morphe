@@ -73,17 +73,23 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.3.r1）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版（1.2.3.r2）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.3.r1` です。同じバージョン内で修正版を配布する場合は、
+開発中のパッチ本体のバージョンは `1.2.3.r2` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.3.r2（プレリリース）
+
+- ChMate `0.8.10.226 dev` の設定画面復元時に `o.setImageAssetsFolder.<init>` の署名依存デコイで `divide by zero` が発生する問題を修正
+- 226実機で起動後に `SettingActivity` を開き、同クラッシュが再発しないことを確認
+- 広告View非表示処理で、View復元中の例外がChMate本体のクラッシュへ波及しないように保護
 
 ### 1.2.3.r1（プレリリース）
 
