@@ -18,6 +18,10 @@ https://github.com/areteruhiro/Haiagaru
 * 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * Morpheで任意に有効化できるクラッシュログ保存
+* ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のChMate+互換設定
+  * 単発ID表示を省略
+  * コピペ省略2
+  * 荒らし省略
 
 DAT落ちスレ用プリセットは、通常閲覧時ではなく設定画面の更新ボタンを押した時だけ、
 [`presets/chmate-dat-fallen-search-urls.txt`](presets/chmate-dat-fallen-search-urls.txt) を取得します。
@@ -80,6 +84,12 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r14（正式版）
+
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のHaiagaru設定画面にChMate+互換設定を追加
+- 「単発ID表示を省略」「コピペ省略2」「荒らし省略」を既存のChMate設定へ保存できるように修正
+- 設定変更後にChMateを再起動し、191／226それぞれで状態が保持されることを確認
 
 ### 1.2.2-r13（正式版）
 

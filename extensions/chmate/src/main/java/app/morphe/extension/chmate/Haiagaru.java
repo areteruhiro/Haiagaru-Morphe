@@ -81,6 +81,9 @@ public final class Haiagaru {
     private static final String DEFAULT_MONAKEY_FILE = "2chapi";
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
     private static final String CHMATE_SEARCH_URLS_KEY = "searchUrls1";
+    private static final String CHMATE_ABBREV_SINGLE_ID_KEY = "abbrevSingleId";
+    private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
+    private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
     private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
     private static final String ARCHIVE_PRESET_MARKER = "【Haiagaru】";
     private static final String ARCHIVE_PRESET_URL =
@@ -1236,6 +1239,45 @@ public final class Haiagaru {
                 preferences.getBoolean("automaticDat", true)
         );
 
+        final SharedPreferences chMatePreferences =
+                PreferenceManager.getDefaultSharedPreferences(activity);
+        final boolean legacyPlusSupported = supportsLegacyChMatePlus(activity);
+        if (legacyPlusSupported) {
+            TextView plusDescription = new TextView(activity);
+            plusDescription.setText(text(
+                    "ChMate+互換機能（191/226 dev）\n"
+                            + "旧版に含まれている表示・省略機能をここから切り替えます。",
+                    "ChMate+ compatibility (191/226 dev)\n"
+                            + "Toggle the legacy display and abbreviation features here."
+            ));
+            plusDescription.setTextSize(13);
+            layout.addView(plusDescription, rowParams(activity));
+        }
+        final Switch abbrevSingleId = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("単発ID表示を省略", "Abbreviate single-ID display"),
+                        chMatePreferences.getBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, false)
+                )
+                : null;
+        final Switch copipeNg2 = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("コピペ省略2", "Copy-paste abbreviation 2"),
+                        chMatePreferences.getBoolean(CHMATE_COPIPE_NG2_KEY, false)
+                )
+                : null;
+        final Switch arashiNg = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("荒らし省略", "Troll abbreviation"),
+                        chMatePreferences.getBoolean(CHMATE_ARASHI_NG_KEY, false)
+                )
+                : null;
+
         EditText archiveRouteTemplates = addArchiveRouteControl(
                 activity,
                 layout,
@@ -1257,6 +1299,35 @@ public final class Haiagaru {
                 .setCancelable(false)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
+                    boolean legacyPlusChanged = false;
+                    if (legacyPlusSupported) {
+                        SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
+                        if (abbrevSingleId != null) {
+                            boolean checked = abbrevSingleId.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_ABBREV_SINGLE_ID_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, checked);
+                        }
+                        if (copipeNg2 != null) {
+                            boolean checked = copipeNg2.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_COPIPE_NG2_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_COPIPE_NG2_KEY, checked);
+                        }
+                        if (arashiNg != null) {
+                            boolean checked = arashiNg.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_ARASHI_NG_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_ARASHI_NG_KEY, checked);
+                        }
+                        chMateEditor.commit();
+                    }
                     preferences.edit()
                             .putBoolean("hideAd", hideAd.isChecked())
                             .putBoolean("removeMonaKey", removeMonaKey.isChecked())
@@ -1273,7 +1344,7 @@ public final class Haiagaru {
                             .commit();
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
-                    if (!before.equals(after)) restart(activity);
+                    if (!before.equals(after) || legacyPlusChanged) restart(activity);
                 })
                 .show();
     }
@@ -1754,6 +1825,22 @@ public final class Haiagaru {
             return defaultAdClass();
         }
         return savedClass;
+    }
+
+    private static boolean supportsLegacyChMatePlus(Context context) {
+        if (context == null) return false;
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(
+                    context.getPackageName(),
+                    0
+            );
+            String versionName = packageInfo.versionName;
+            return "0.8.10.191 dev".equals(versionName)
+                    || "0.8.10.226 dev".equals(versionName);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to determine ChMate version for compatibility controls", error);
+            return false;
+        }
     }
 
     private static String defaultAdClass() {
