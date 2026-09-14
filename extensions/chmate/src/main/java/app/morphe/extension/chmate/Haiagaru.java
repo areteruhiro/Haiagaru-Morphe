@@ -3,6 +3,8 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Application;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -34,6 +36,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -68,11 +71,14 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
     private static final String LOG_TAG = "Haiagaru";
+    private static final Map<Activity, PopupWindow> SETTINGS_BUTTON_POPUPS =
+            new WeakHashMap<>();
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String BUTTON_TAG = "haiagaru.settings.button";
@@ -383,7 +389,10 @@ public final class Haiagaru {
                 Locale.US
         ).format(now);
         StringWriter stackTrace = new StringWriter();
-        error.printStackTrace(new PrintWriter(stackTrace));
+        Throwable reportError = error == null
+                ? new RuntimeException("Unknown uncaught exception")
+                : error;
+        reportError.printStackTrace(new PrintWriter(stackTrace));
 
         String versionName = "unknown";
         long versionCode = -1;
@@ -407,8 +416,13 @@ public final class Haiagaru {
                 + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
                 + "Thread: " + thread.getName() + "\n\n"
                 + stackTrace;
-        String fileName = "chmate-crash-" + fileTimestamp + ".txt";
+        writeDownloadLog(context, "chmate-crash-" + fileTimestamp + ".txt", report);
+    }
 
+    /** Writes a UTF-8 report to Downloads/Haiagaru on every supported Android release. */
+    private static void writeDownloadLog(Context context, String fileName, String report)
+            throws IOException {
+        if (context == null) throw new IOException("No context available for Downloads log");
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues values = new ContentValues();
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
@@ -1149,35 +1163,63 @@ public final class Haiagaru {
     public static void onSettingsResume(Activity activity) {
         if (activity == null) return;
         applicationContext = activity.getApplicationContext();
+        PopupWindow existing = SETTINGS_BUTTON_POPUPS.get(activity);
+        if (existing != null && existing.isShowing()) return;
 
         View decorView = activity.getWindow().getDecorView();
-        if (!(decorView instanceof ViewGroup)) return;
-        ViewGroup overlayHost = (ViewGroup) decorView;
-        if (overlayHost.findViewWithTag(BUTTON_TAG) != null) return;
+        if (decorView == null) return;
 
         Button button = new Button(activity);
         button.setTag(BUTTON_TAG);
         button.setText("Haiagaru");
         button.setAllCaps(false);
+        button.setOnClickListener(view -> view.post(() -> showSettingsDialog(activity)));
 
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+        PopupWindow popup = new PopupWindow(
+                button,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.END
+                false
         );
-        params.topMargin = statusBarHeight(activity) + dp(activity, 5);
-        params.rightMargin = dp(activity, 10);
-        overlayHost.addView(button, params);
+        popup.setTouchable(true);
+        popup.setOutsideTouchable(false);
+        popup.setClippingEnabled(false);
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        if (Build.VERSION.SDK_INT >= 21) {
+            popup.setElevation(dp(activity, 16));
+        }
+        SETTINGS_BUTTON_POPUPS.put(activity, popup);
 
-        // Some ChMate generations render their toolbar in a sibling with a
-        // higher Z order. Keep the injected entry above it so it remains both
-        // visible and touchable.
-        button.setElevation(dp(activity, 16));
-        button.bringToFront();
-        overlayHost.requestLayout();
-        overlayHost.invalidate();
+        decorView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View view) {
+            }
 
-        button.setOnClickListener(view -> showSettingsDialog(activity));
+            @Override
+            public void onViewDetachedFromWindow(View view) {
+                PopupWindow stored = SETTINGS_BUTTON_POPUPS.remove(activity);
+                if (stored != null && stored.isShowing()) stored.dismiss();
+            }
+        });
+        decorView.post(() -> {
+            if (activity.isFinishing()
+                    || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
+                SETTINGS_BUTTON_POPUPS.remove(activity);
+                return;
+            }
+            if (popup.isShowing()) return;
+            try {
+                popup.showAtLocation(
+                        decorView,
+                        Gravity.TOP | Gravity.END,
+                        dp(activity, 10),
+                        statusBarHeight(activity) + dp(activity, 5)
+                );
+            } catch (Throwable error) {
+                SETTINGS_BUTTON_POPUPS.remove(activity);
+                Log.w(LOG_TAG, "Unable to show Haiagaru settings popup button", error);
+            }
+        });
     }
 
     private static void showSettingsDialog(Activity activity) {
@@ -1241,54 +1283,80 @@ public final class Haiagaru {
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
-        final boolean legacyPlusSupported = supportsLegacyChMatePlus(activity);
-        if (legacyPlusSupported) {
-            TextView plusDescription = new TextView(activity);
-            plusDescription.setText(text(
-                    "ChMate+互換機能（191/226 dev）\n"
-                            + "旧版に含まれている表示・省略機能をここから切り替えます。",
-                    "ChMate+ compatibility (191/226 dev)\n"
-                            + "Toggle the legacy display and abbreviation features here."
-            ));
-            plusDescription.setTextSize(13);
-            layout.addView(plusDescription, rowParams(activity));
-        }
-        final Switch abbrevSingleId = legacyPlusSupported
-                ? addSwitch(
+
+        boolean legacyPlusSupportedValue = false;
+        Switch abbrevSingleIdValue = null;
+        Switch copipeNg2Value = null;
+        Switch arashiNgValue = null;
+        try {
+            legacyPlusSupportedValue = supportsLegacyChMatePlus(activity);
+            if (legacyPlusSupportedValue) {
+                TextView plusDescription = new TextView(activity);
+                plusDescription.setText(text(
+                        "ChMate+互換機能（191/226 dev）\n"
+                                + "旧版に含まれている表示・省略機能をここから切り替えます。",
+                        "ChMate+ compatibility (191/226 dev)\n"
+                                + "Toggle the legacy display and abbreviation features here."
+                ));
+                plusDescription.setTextSize(13);
+                layout.addView(plusDescription, rowParams(activity));
+                abbrevSingleIdValue = addSwitch(
                         layout,
                         activity,
                         text("単発ID表示を省略", "Abbreviate single-ID display"),
                         chMatePreferences.getBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, false)
-                )
-                : null;
-        final Switch copipeNg2 = legacyPlusSupported
-                ? addSwitch(
+                );
+                copipeNg2Value = addSwitch(
                         layout,
                         activity,
                         text("コピペ省略2", "Copy-paste abbreviation 2"),
                         chMatePreferences.getBoolean(CHMATE_COPIPE_NG2_KEY, false)
-                )
-                : null;
-        final Switch arashiNg = legacyPlusSupported
-                ? addSwitch(
+                );
+                arashiNgValue = addSwitch(
                         layout,
                         activity,
                         text("荒らし省略", "Troll abbreviation"),
                         chMatePreferences.getBoolean(CHMATE_ARASHI_NG_KEY, false)
-                )
-                : null;
+                );
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add ChMate+ compatibility controls", error);
+            legacyPlusSupportedValue = false;
+            abbrevSingleIdValue = null;
+            copipeNg2Value = null;
+            arashiNgValue = null;
+        }
+        final boolean legacyPlusSupported = legacyPlusSupportedValue;
+        final Switch abbrevSingleId = abbrevSingleIdValue;
+        final Switch copipeNg2 = copipeNg2Value;
+        final Switch arashiNg = arashiNgValue;
 
-        EditText archiveRouteTemplates = addArchiveRouteControl(
-                activity,
-                layout,
-                preferences.getString(
-                        ARCHIVE_ROUTE_TEMPLATES_KEY,
-                        DEFAULT_ARCHIVE_ROUTE_TEMPLATES
-                )
+        EditText archiveRouteTemplatesValue = null;
+        try {
+            archiveRouteTemplatesValue = addArchiveRouteControl(
+                    activity,
+                    layout,
+                    preferences.getString(
+                            ARCHIVE_ROUTE_TEMPLATES_KEY,
+                            DEFAULT_ARCHIVE_ROUTE_TEMPLATES
+                    )
+            );
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add automatic DAT route controls", error);
+        }
+        final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
+        addOptionalSettingsSection(
+                "archived-thread preset",
+                () -> addArchiveSearchPresetControl(activity, layout)
         );
-        addArchiveSearchPresetControl(activity, layout);
-        addPackageMigrationControl(activity, layout);
-        addBoardDuplicateCleanupControl(activity, layout);
+        addOptionalSettingsSection(
+                "package data migration",
+                () -> addPackageMigrationControl(activity, layout)
+        );
+        addOptionalSettingsSection(
+                "duplicate board cleanup",
+                () -> addBoardDuplicateCleanupControl(activity, layout)
+        );
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
@@ -1337,16 +1405,28 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
-                            .putString(
-                                    ARCHIVE_ROUTE_TEMPLATES_KEY,
-                                    value(archiveRouteTemplates).trim()
-                            )
                             .commit();
+                    if (archiveRouteTemplates != null) {
+                        preferences.edit()
+                                .putString(
+                                        ARCHIVE_ROUTE_TEMPLATES_KEY,
+                                        value(archiveRouteTemplates).trim()
+                                )
+                                .commit();
+                    }
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
                     if (!before.equals(after) || legacyPlusChanged) restart(activity);
                 })
                 .show();
+    }
+
+    private static void addOptionalSettingsSection(String name, Runnable section) {
+        try {
+            section.run();
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add Haiagaru settings section: " + name, error);
+        }
     }
 
     private static EditText addArchiveRouteControl(
