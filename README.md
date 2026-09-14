@@ -73,6 +73,12 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/231a5f3/patches-bundle.json
 ```
 
+プレリリース（r17、設定ボタンの診断ログ対応）を検証する場合のみ、次のURLを登録してください。
+
+```text
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/2389c98/patches-bundle-pre.json
+```
+
 パッチ本体のバージョンは `1.2.2` です。同じバージョン内で修正版を配布する場合は、
 URV Managerが更新を検出できるようにJSON上の配布リビジョン（例: `1.2.2-r3`）だけを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
@@ -83,6 +89,12 @@ URV Managerが更新を検出できるようにJSON上の配布リビジョン�
 
 - URV Manager用のバンドルURLをrefs/heads形式へ変更し、古いraw CDNキャッシュでr3へ戻る問題を回避
 - r15バンドルのcreated_atとダウンロード先を更新
+
+### 1.2.2-r17（プレリリース）
+
+- Haiagaru設定ボタンを開けなかった場合、Activity状態・パッケージ名・SDK・例外情報をLogcatへ出力
+- 同じ診断内容を`Download/Haiagaru/`へ`chmate-settings-*.txt`として非同期保存
+- 現行サーバーのDATが取得できるスレッドは通常のChMate処理へ移行し、過去ログ通知を表示しない
 
 ### 1.2.2-r14（正式版）
 
