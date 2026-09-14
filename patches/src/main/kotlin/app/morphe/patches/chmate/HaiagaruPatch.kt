@@ -270,6 +270,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // 0.8.10.241 and 0.8.10.243 route lifecycle creation through the Hilt
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
         patchLegacyThreadUrlEntry(profile)
+        patchFinishedLegacyThreadLaunchGuard()
         if (packageMetadata.versionName == "0.8.10.243 dev") {
             patchImageSelectionResult()
             patchImageSelectionReflectionTrap()
@@ -845,6 +846,46 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEn
         0,
         "invoke-static/range { p0 .. p0 }, " +
             "$EXTENSION->rewriteLegacyThreadIntent(Landroid/app/Activity;)V",
+    )
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext
+    .patchFinishedLegacyThreadLaunchGuard() {
+    val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResListActivity;")
+        .methods
+        .single { candidate ->
+            candidate.name == "onCreate"
+                && candidate.returnType == "V"
+                && candidate.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/os/Bundle;")
+        }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate ResListActivity onCreate has no implementation")
+    val superOnCreateIndex = instructions.indices.firstOrNull { index ->
+        if (instructions[index].opcode != Opcode.INVOKE_SUPER) return@firstOrNull false
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@firstOrNull false
+        reference.name == "onCreate"
+            && reference.returnType == "V"
+            && reference.parameterTypes.map(CharSequence::toString) ==
+            listOf("Landroid/os/Bundle;")
+    } ?: error("ChMate ResListActivity super.onCreate call was not found")
+    val freeRegister = method.findFreeRegister(superOnCreateIndex + 1)
+
+    // Automatic DAT import finishes the first Activity and opens a retry Activity
+    // after publishing its local cache. Some Android versions still continue the
+    // concrete onCreate method after finish(), where ChMate assumes its content
+    // views exist and calls View.getTag() on null. Stop only that finished instance.
+    method.addInstructionsWithLabels(
+        superOnCreateIndex + 1,
+        """
+            invoke-virtual { p0 }, Landroid/app/Activity;->isFinishing()Z
+            move-result v$freeRegister
+            if-eqz v$freeRegister, :haiagaru_continue_reslist_create
+            return-void
+            :haiagaru_continue_reslist_create
+            nop
+        """,
     )
 }
 
