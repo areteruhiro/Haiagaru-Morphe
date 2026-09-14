@@ -406,6 +406,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
                 patchPreIoImageUploadIntegrityTrap("Lo/fWG1;")
                 patchPreIoImageSettingsIntegrityTrap("Lo/setMaintainOriginalImageBounds;")
+                patchPreIoSettingsConstructorIntegrityTrap("Lo/setImageAssetsFolder;")
                 patchBeAttachmentCompatibility("Lo/BouncyCastleSocketAdapterCompanion;")
                 patchPreIoBeRendering(
                     parserClass = "Lo/getMaxLine;",
@@ -639,6 +640,50 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoImageSetting
     // yield a zero divisor after re-signing. Keep getBoolean() and any stored value,
     // while supplying its ordinary false default directly.
     constructor.replaceInstruction(defaultDivideIndex, "const/4 v$defaultRegister, 0x0")
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoSettingsConstructorIntegrityTrap(
+    viewModelClass: String,
+) {
+    val constructor = mutableClassDefBy(viewModelClass).methods.single { candidate ->
+        candidate.name == "<init>"
+            && candidate.returnType == "V"
+            && candidate.parameters.isEmpty()
+    }
+    val instructions = constructor.implementation?.instructions
+        ?: error("ChMate pre-io settings constructor has no implementation")
+    val rejectionBranch = instructions.indices.single { index ->
+        if (instructions[index].opcode != Opcode.IF_NE) return@single false
+        val window = instructions.subList(maxOf(0, index - 24), index)
+        window.count { it.opcode == Opcode.AGET_OBJECT } >= 2
+            && window.count { it.opcode == Opcode.CHECK_CAST } >= 2
+            && window.count { it.opcode == Opcode.AGET } >= 2
+            && instructions.subList(index + 1, minOf(index + 14, instructions.size))
+                .any { it.opcode == Opcode.NEW_ARRAY }
+    }
+
+    // The mismatch path is certificate-sensitive dead code. Re-signing can send
+    // the settings ViewModel constructor through a zero-divisor Toast decoy while
+    // the normal path continues with the same state-array shape.
+    constructor.replaceInstruction(rejectionBranch, "nop")
+
+    val coroutineStartIndex = instructions.indices.single { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@single false
+        reference.definingClass == "Lo/RequestConfigurationTagForChildDirectedTreatment;"
+            && reference.name == "c"
+            && reference.returnType == "Lo/getImageOrientation;"
+    }
+    val defaultMaskDivideIndex = instructions.subList(0, coroutineStartIndex)
+        .indexOfLast { it.opcode == Opcode.DIV_INT }
+        .takeIf { it >= 0 }
+        ?.plus(0)
+        ?: error("ChMate pre-io settings constructor coroutine mask divide was not found")
+    val defaultMaskRegister = (instructions[defaultMaskDivideIndex] as ThreeRegisterInstruction).registerA
+
+    // The value is the synthetic default-argument mask for the coroutine launch;
+    // it is not app state. Keep the ordinary two-null-default mask directly.
+    constructor.replaceInstruction(defaultMaskDivideIndex, "const/4 v$defaultMaskRegister, 0x3")
 }
 
 @Suppress("unused")
