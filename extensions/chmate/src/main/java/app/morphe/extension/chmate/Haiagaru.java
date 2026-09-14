@@ -113,6 +113,10 @@ public final class Haiagaru {
             "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(?:/.*)?$",
             Pattern.CASE_INSENSITIVE
     );
+    private static final Pattern ITEST_SERVER_THREAD_READ_PATH = Pattern.compile(
+            "^/([a-z0-9_-]+)/test/read\\.cgi/([^/]+)/(\\d{9,10})(/.*)?$",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern LEGACY_THREAD_DAT_PATH = Pattern.compile(
             "^/([^/]+)/(?:dat|kako(?:/[^/]+)*)/(\\d{9,10})\\.dat$",
             Pattern.CASE_INSENSITIVE
@@ -770,7 +774,39 @@ public final class Haiagaru {
 
     public static String rewrite5chUrl(String original) {
         if (original == null || !isChtoioEnabled()) return original;
-        return original.replace("5ch.net", "5ch.io");
+        String rewritten = original.replace("5ch.net", "5ch.io");
+        try {
+            Uri uri = Uri.parse(rewritten);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null
+                    || !host.equalsIgnoreCase("itest.5ch.io")) {
+                return rewritten;
+            }
+
+            java.util.regex.Matcher matcher = ITEST_SERVER_THREAD_READ_PATH.matcher(path);
+            if (!matcher.matches()) return rewritten;
+
+            String suffix = matcher.group(4);
+            StringBuilder normalized = new StringBuilder()
+                    .append("https://")
+                    .append(matcher.group(1))
+                    .append(".5ch.io/test/read.cgi/")
+                    .append(matcher.group(2))
+                    .append('/')
+                    .append(matcher.group(3))
+                    .append(suffix == null || suffix.isEmpty() ? "/" : suffix);
+            if (uri.getEncodedQuery() != null) {
+                normalized.append('?').append(uri.getEncodedQuery());
+            }
+            if (uri.getEncodedFragment() != null) {
+                normalized.append('#').append(uri.getEncodedFragment());
+            }
+            return normalized.toString();
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize itest thread URL", error);
+            return rewritten;
+        }
     }
 
     /**
@@ -818,27 +854,28 @@ public final class Haiagaru {
 
     public static String rewriteLegacyThreadUrl(String original) {
         if (original == null || original.isEmpty() || !isChtoioEnabled()) return original;
+        String normalized = rewrite5chUrl(original);
         try {
-            Uri uri = Uri.parse(original);
+            Uri uri = Uri.parse(normalized);
             String host = uri.getHost();
             String path = uri.getPath();
-            if (host == null || path == null) return original;
+            if (host == null || path == null) return normalized;
             java.util.regex.Matcher matcher = LEGACY_THREAD_READ_PATH.matcher(path);
             if (!matcher.matches()) {
                 matcher = LEGACY_THREAD_DAT_PATH.matcher(path);
             }
-            if (!matcher.matches()) return original;
+            if (!matcher.matches()) return normalized;
 
             String normalizedHost = host.toLowerCase(Locale.ROOT);
             if (!isArchivedThreadCandidate(normalizedHost, matcher.group(2))) {
-                return original;
+                return normalized;
             }
 
             return "https://itest.5ch.io/test/read.cgi/"
                     + matcher.group(1) + "/" + matcher.group(2) + "/";
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
-            return original;
+            return normalized;
         }
     }
 

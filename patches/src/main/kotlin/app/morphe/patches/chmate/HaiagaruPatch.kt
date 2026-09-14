@@ -447,6 +447,58 @@ val haiagaruPatch = resourcePatch(
                 clone.setAttribute("android:host", ioHost)
                 source.parentNode.insertBefore(clone, source.nextSibling)
             }
+
+            // ChMate's legacy itest filter uses `/*./...`, which only accepts a
+            // single character before `/test/read.cgi`. Correct the simple-glob
+            // pattern so server-prefixed URLs such as `/egg/test/read.cgi/...`
+            // resolve to ResListActivity on every supported ChMate generation.
+            val refreshedDataElements = document.getElementsByTagName("data")
+            for (index in 0 until refreshedDataElements.length) {
+                val data = refreshedDataElements.item(index) as? Element ?: continue
+                val host = data.getAttribute("android:host")
+                if (host !in setOf("itest.2ch.net", "itest.5ch.net", "itest.5ch.io")) continue
+                if (data.getAttribute("android:pathPattern") == "/*./test/read.cgi/.*/.*") {
+                    data.setAttribute("android:pathPattern", "/.*/test/read.cgi/.*/.*")
+                }
+            }
+
+            // Newer manifests dropped the dedicated itest host and only keep
+            // the ordinary `*.5ch.io` + `/test/read.cgi` filter. Add the itest
+            // server-prefix form to that same thread filter so Android can
+            // dispatch it before the extension normalizes the URL.
+            val intentFilters = document.getElementsByTagName("intent-filter")
+            for (index in 0 until intentFilters.length) {
+                val intentFilter = intentFilters.item(index) as? Element ?: continue
+                val dataChildren = (0 until intentFilter.childNodes.length)
+                    .mapNotNull { childIndex ->
+                        (intentFilter.childNodes.item(childIndex) as? Element)
+                            ?.takeIf { it.tagName == "data" }
+                    }
+                val hasFiveChIoHost = dataChildren.any { data ->
+                    data.getAttribute("android:host") in setOf("*.5ch.io", "itest.5ch.io")
+                }
+                val handlesThreads = dataChildren.any { data ->
+                    data.getAttribute("android:pathPrefix").startsWith("/test/read.cgi") ||
+                        data.getAttribute("android:pathPattern").contains("test/read.cgi")
+                }
+                if (!hasFiveChIoHost || !handlesThreads) continue
+
+                if (dataChildren.none { it.getAttribute("android:host") == "itest.5ch.io" }) {
+                    val hostData = document.createElement("data")
+                    hostData.setAttribute("android:host", "itest.5ch.io")
+                    intentFilter.appendChild(hostData)
+                }
+                if (dataChildren.none {
+                        it.getAttribute("android:pathPattern") == "/.*/test/read.cgi/.*/.*"
+                    }) {
+                    val pathData = document.createElement("data")
+                    pathData.setAttribute(
+                        "android:pathPattern",
+                        "/.*/test/read.cgi/.*/.*",
+                    )
+                    intentFilter.appendChild(pathData)
+                }
+            }
         }
     }
 }
