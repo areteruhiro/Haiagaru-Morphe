@@ -1076,11 +1076,11 @@ public final class Haiagaru {
     public static void hideAdView(View view) {
         if (view == null || !shouldHideAds()) return;
 
-        collapseAdView(view);
-        view.post(() -> collapseAdView(view));
-        view.postDelayed(() -> collapseAdView(view), 300);
-        view.postDelayed(() -> collapseAdView(view), 1000);
-        view.postDelayed(() -> collapseAdView(view), 2500);
+        safeCollapseAdView(view);
+        safePostCollapseAdView(view, 0);
+        safePostCollapseAdView(view, 300);
+        safePostCollapseAdView(view, 1000);
+        safePostCollapseAdView(view, 2500);
     }
 
     private static void collapseAdView(View view) {
@@ -1089,6 +1089,26 @@ public final class Haiagaru {
         if (params != null) {
             params.height = 0;
             view.setLayoutParams(params);
+        }
+    }
+
+    private static void safeCollapseAdView(View view) {
+        try {
+            collapseAdView(view);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to collapse ChMate ad view", error);
+        }
+    }
+
+    private static void safePostCollapseAdView(View view, long delayMillis) {
+        try {
+            if (delayMillis <= 0) {
+                view.post(() -> safeCollapseAdView(view));
+            } else {
+                view.postDelayed(() -> safeCollapseAdView(view), delayMillis);
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to schedule ChMate ad view collapse", error);
         }
     }
 
