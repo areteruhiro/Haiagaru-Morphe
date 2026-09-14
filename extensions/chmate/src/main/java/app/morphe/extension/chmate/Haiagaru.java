@@ -1147,13 +1147,23 @@ public final class Haiagaru {
     }
 
     public static void onSettingsResume(Activity activity) {
-        if (activity == null) return;
+        if (activity == null) {
+            Log.w(LOG_TAG, "Unable to install Haiagaru settings button: activity is null");
+            return;
+        }
         applicationContext = activity.getApplicationContext();
 
         View decorView = activity.getWindow().getDecorView();
-        if (!(decorView instanceof ViewGroup)) return;
+        if (!(decorView instanceof ViewGroup)) {
+            Log.e(LOG_TAG, "Unable to install Haiagaru settings button: decor view is not a ViewGroup");
+            return;
+        }
         ViewGroup overlayHost = (ViewGroup) decorView;
-        if (overlayHost.findViewWithTag(BUTTON_TAG) != null) return;
+        if (overlayHost.findViewWithTag(BUTTON_TAG) != null) {
+            Log.d(LOG_TAG, "Haiagaru settings button already installed in "
+                    + activity.getClass().getName());
+            return;
+        }
 
         Button button = new Button(activity);
         button.setTag(BUTTON_TAG);
@@ -1173,11 +1183,85 @@ public final class Haiagaru {
         // higher Z order. Keep the injected entry above it so it remains both
         // visible and touchable.
         button.setElevation(dp(activity, 16));
+        button.setTranslationZ(dp(activity, 16));
+        button.setClickable(true);
+        button.setFocusable(true);
         button.bringToFront();
         overlayHost.requestLayout();
         overlayHost.invalidate();
 
-        button.setOnClickListener(view -> showSettingsDialog(activity));
+        Runnable raiseButton = () -> {
+            if (button.getParent() == overlayHost) {
+                button.bringToFront();
+                button.setTranslationZ(dp(activity, 16));
+                overlayHost.invalidate();
+            }
+        };
+        overlayHost.post(raiseButton);
+        overlayHost.postDelayed(raiseButton, 100);
+        overlayHost.postDelayed(raiseButton, 500);
+        overlayHost.postDelayed(raiseButton, 1500);
+        Log.i(LOG_TAG, "Installed Haiagaru settings button in "
+                + activity.getClass().getName()
+                + " parent=" + overlayHost.getClass().getName()
+                + " size=" + button.getWidth() + "x" + button.getHeight());
+
+        button.setOnClickListener(view -> {
+            Log.i(LOG_TAG, "Haiagaru settings button clicked in "
+                    + activity.getClass().getName());
+            if (activity.isFinishing()
+                    || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
+                logSettingsOpenFailure(activity, "activity is finishing or destroyed", null);
+                return;
+            }
+            view.post(() -> {
+                try {
+                    if (activity.isFinishing()
+                            || (Build.VERSION.SDK_INT >= 17 && activity.isDestroyed())) {
+                        logSettingsOpenFailure(
+                                activity,
+                                "activity became finishing or destroyed before dialog creation",
+                                null
+                        );
+                        return;
+                    }
+                    showSettingsDialog(activity);
+                    Log.i(LOG_TAG, "Haiagaru settings dialog requested successfully in "
+                            + activity.getClass().getName());
+                } catch (Throwable error) {
+                    logSettingsOpenFailure(activity, "dialog creation failed", error);
+                    Toast.makeText(
+                            activity,
+                            text("Haiagaru設定を開けませんでした", "Unable to open Haiagaru settings"),
+                            Toast.LENGTH_LONG
+                    ).show();
+                }
+            });
+        });
+    }
+
+    private static void logSettingsOpenFailure(
+            Activity activity,
+            String reason,
+            Throwable error
+    ) {
+        String activityName = activity == null ? "null" : activity.getClass().getName();
+        String packageName = activity == null ? "null" : activity.getPackageName();
+        boolean finishing = activity != null && activity.isFinishing();
+        boolean destroyed = activity != null
+                && Build.VERSION.SDK_INT >= 17
+                && activity.isDestroyed();
+        String message = "Unable to open Haiagaru settings: " + reason
+                + " activity=" + activityName
+                + " package=" + packageName
+                + " finishing=" + finishing
+                + " destroyed=" + destroyed
+                + " sdk=" + Build.VERSION.SDK_INT;
+        if (error == null) {
+            Log.e(LOG_TAG, message);
+        } else {
+            Log.e(LOG_TAG, message, error);
+        }
     }
 
     private static void showSettingsDialog(Activity activity) {

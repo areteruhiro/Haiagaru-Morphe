@@ -94,6 +94,13 @@ final class ArchivedThreadImporter {
 
         new Thread(() -> {
             try {
+                byte[] liveDat = fetchLiveDatIfAvailable(info);
+                if (liveDat != null) {
+                    Log.i(LOG_TAG, "Live DAT is available; continuing with ChMate network handling: "
+                            + importKey);
+                    reopen(activity, browserFallback, null);
+                    return;
+                }
                 byte[] dat = fetchArchivedDat(activity, info);
                 if (!directory.isDirectory() && !directory.mkdirs()) {
                     throw new IOException("Unable to create ChMate DAT directory");
@@ -127,13 +134,30 @@ final class ArchivedThreadImporter {
 
     private static void reopen(Activity activity, String url, String message) {
         activity.runOnUiThread(() -> {
-            Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+            }
             Intent retry = new Intent(activity.getIntent());
             retry.setData(Uri.parse(url));
             retry.putExtra("haiagaru.archive.retry", true);
             activity.startActivity(retry);
             activity.finish();
         });
+    }
+
+    /**
+     * Current 5ch.io threads must follow ChMate's normal network path. The
+     * archive importer is only needed after the live DAT endpoint has failed.
+     */
+    private static byte[] fetchLiveDatIfAvailable(ThreadInfo info) {
+        try {
+            String url = "https://" + info.server + ".5ch.io/"
+                    + encode(info.board) + "/dat/" + encode(info.thread) + ".dat";
+            byte[] response = requestBytes(url);
+            return validateDat(response);
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private static byte[] fetchArchivedDat(Activity activity, ThreadInfo info) throws Exception {
