@@ -88,6 +88,8 @@ public final class Haiagaru {
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
     private static final String CHMATE_SEARCH_URLS_KEY = "searchUrls1";
     private static final String CHMATE_ABBREV_SINGLE_ID_KEY = "abbrevSingleId";
+    private static final String CHMATE_COPIPE_NG_KEY = "copipeNg";
+    private static final String CHMATE_COPIPE_NG_AR_KEY = "copipeNgAR";
     private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
     private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
     private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
@@ -1385,6 +1387,13 @@ public final class Haiagaru {
                                     false
                             );
                             chMateEditor.putBoolean(CHMATE_COPIPE_NG2_KEY, checked);
+                            if (checked) {
+                                legacyPlusChanged |= !chMatePreferences.getBoolean(
+                                        CHMATE_COPIPE_NG_KEY,
+                                        false
+                                );
+                                chMateEditor.putBoolean(CHMATE_COPIPE_NG_KEY, true);
+                            }
                         }
                         if (arashiNg != null) {
                             boolean checked = arashiNg.isChecked();
@@ -1393,6 +1402,13 @@ public final class Haiagaru {
                                     false
                             );
                             chMateEditor.putBoolean(CHMATE_ARASHI_NG_KEY, checked);
+                            if (checked) {
+                                legacyPlusChanged |= !chMatePreferences.getBoolean(
+                                        CHMATE_COPIPE_NG_AR_KEY,
+                                        false
+                                );
+                                chMateEditor.putBoolean(CHMATE_COPIPE_NG_AR_KEY, true);
+                            }
                         }
                         chMateEditor.commit();
                     }

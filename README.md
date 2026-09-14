@@ -67,13 +67,13 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
-正式版（r14）を取得するパッチソースは次のURLです。
+現在の検証版（r15 pre-release）を取得するパッチソースは次のURLです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース検証用URLも用意しています。現在は正式版と同じr14を返します。
+プレリリース検証用URLも用意しています。現在は同じr15 pre-releaseを返します。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
@@ -84,6 +84,14 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.2-r15（プレリリース）
+
+- `master` / `main` のパッチバンドル混在を解消するため、配布対象を `master` に統一
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のChMate+互換設定で、チェックはONになるが実際の機能が有効にならない問題を修正
+- `コピペ省略2` をONにした場合はChMate本体側の親設定 `copipeNg` もONにするように変更
+- `荒らし省略` をONにした場合はChMate本体側の親設定 `copipeNgAR` もONにするように変更
+- ChMate `0.8.10.191 dev` の `単発ID表示を省略` で、保存済み設定がONのときに追加の有効化ゲートで無効化されないように修正
 
 ### 1.2.2-r14（正式版）
 
