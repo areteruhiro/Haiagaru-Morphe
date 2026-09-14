@@ -28,6 +28,7 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -1268,6 +1269,48 @@ public final class Haiagaru {
                 + activity.getClass().getName()
                 + " parent=" + overlayHost.getClass().getName()
                 + " size=" + button.getWidth() + "x" + button.getHeight());
+
+        button.setOnTouchListener((view, event) -> {
+            int action = event.getActionMasked();
+            String actionName;
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    actionName = "DOWN";
+                    if (view.getParent() != null) {
+                        view.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                    Log.i(LOG_TAG, "Haiagaru settings button touch DOWN"
+                            + " x=" + event.getX()
+                            + " y=" + event.getY()
+                            + " enabled=" + view.isEnabled()
+                            + " clickable=" + view.isClickable());
+                    break;
+                case MotionEvent.ACTION_UP:
+                    actionName = "UP";
+                    if (view.getParent() != null) {
+                        view.getParent().requestDisallowInterceptTouchEvent(false);
+                    }
+                    Log.i(LOG_TAG, "Haiagaru settings button touch UP"
+                            + " x=" + event.getX()
+                            + " y=" + event.getY());
+                    break;
+                case MotionEvent.ACTION_CANCEL:
+                    actionName = "CANCEL";
+                    if (view.getParent() != null) {
+                        view.getParent().requestDisallowInterceptTouchEvent(false);
+                    }
+                    Log.w(LOG_TAG, "Haiagaru settings button touch CANCEL"
+                            + " x=" + event.getX()
+                            + " y=" + event.getY());
+                    break;
+                default:
+                    actionName = String.valueOf(action);
+                    Log.d(LOG_TAG, "Haiagaru settings button touch " + actionName);
+                    break;
+            }
+            // Let Button continue its normal pressed-state and click handling.
+            return false;
+        });
 
         button.setOnClickListener(view -> {
             Log.i(LOG_TAG, "Haiagaru settings button clicked in "
