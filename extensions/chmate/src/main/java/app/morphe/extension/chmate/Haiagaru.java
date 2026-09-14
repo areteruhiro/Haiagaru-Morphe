@@ -469,6 +469,50 @@ public final class Haiagaru {
         );
     }
 
+    /** Saves the raw touch sequence used to diagnose a button that only shows a pressed state. */
+    private static void writeSettingsTouchDiagnosticLog(Context context, String trace)
+            throws IOException {
+        if (context == null) throw new IOException("No context available for touch log");
+        Date now = new Date();
+        String timestamp = new SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+                Locale.US
+        ).format(now);
+        String fileTimestamp = new SimpleDateFormat(
+                "yyyyMMdd-HHmmss-SSS",
+                Locale.US
+        ).format(now);
+
+        String versionName = "unknown";
+        long versionCode = -1;
+        try {
+            PackageInfo info = context.getPackageManager().getPackageInfo(
+                    context.getPackageName(),
+                    0
+            );
+            versionName = info.versionName;
+            versionCode = Build.VERSION.SDK_INT >= 28
+                    ? info.getLongVersionCode()
+                    : info.versionCode;
+        } catch (Throwable ignored) {
+        }
+
+        String report = "Haiagaru settings touch diagnostic log\n"
+                + "Time: " + timestamp + "\n"
+                + "Package: " + context.getPackageName() + "\n"
+                + "Version: " + versionName + " (" + versionCode + ")\n"
+                + "Android: " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")\n"
+                + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
+                + "Thread: " + Thread.currentThread().getName() + "\n\n"
+                + "Touch events:\n"
+                + (trace == null ? "none\n" : trace);
+        writeDownloadLog(
+                context,
+                "chmate-settings-touch-" + fileTimestamp + ".txt",
+                report
+        );
+    }
+
     /** Writes a UTF-8 report to Downloads/Haiagaru on every supported Android release. */
     private static void writeDownloadLog(Context context, String fileName, String report)
             throws IOException {
@@ -1270,6 +1314,18 @@ public final class Haiagaru {
                 + " parent=" + overlayHost.getClass().getName()
                 + " size=" + button.getWidth() + "x" + button.getHeight());
 
+        final StringBuilder touchTrace = new StringBuilder();
+        final Handler touchTraceHandler = new Handler(Looper.getMainLooper());
+        final Runnable flushTouchTrace = () -> {
+            String trace;
+            synchronized (touchTrace) {
+                if (touchTrace.length() == 0) return;
+                trace = touchTrace.toString();
+                touchTrace.setLength(0);
+            }
+            saveSettingsTouchDiagnosticLog(activity, trace);
+        };
+
         button.setOnTouchListener((view, event) -> {
             int action = event.getActionMasked();
             String actionName;
@@ -1307,6 +1363,31 @@ public final class Haiagaru {
                     actionName = String.valueOf(action);
                     Log.d(LOG_TAG, "Haiagaru settings button touch " + actionName);
                     break;
+            }
+            synchronized (touchTrace) {
+                touchTrace.append(new SimpleDateFormat(
+                                "HH:mm:ss.SSS",
+                                Locale.US
+                        ).format(new Date()))
+                        .append(' ')
+                        .append(actionName)
+                        .append(" x=")
+                        .append(event.getX())
+                        .append(" y=")
+                        .append(event.getY())
+                        .append(" enabled=")
+                        .append(view.isEnabled())
+                        .append(" clickable=")
+                        .append(view.isClickable())
+                        .append('\n');
+            }
+            if (action == MotionEvent.ACTION_DOWN) {
+                touchTraceHandler.removeCallbacks(flushTouchTrace);
+                touchTraceHandler.postDelayed(flushTouchTrace, 1500L);
+            } else if (action == MotionEvent.ACTION_UP
+                    || action == MotionEvent.ACTION_CANCEL) {
+                touchTraceHandler.removeCallbacks(flushTouchTrace);
+                touchTraceHandler.post(flushTouchTrace);
             }
             // Let Button continue its normal pressed-state and click handling.
             return false;
@@ -1383,6 +1464,25 @@ public final class Haiagaru {
                 Log.e(LOG_TAG, "Unable to save settings diagnostic log", logError);
             }
         }, "Haiagaru-settings-log").start();
+    }
+
+    private static void saveSettingsTouchDiagnosticLog(Activity activity, String trace) {
+        Context context = activity == null ? applicationContext : activity.getApplicationContext();
+        if (context == null) context = activity;
+        if (context == null) {
+            Log.w(LOG_TAG, "Unable to save settings touch diagnostic log: context is null");
+            return;
+        }
+        final Context diagnosticContext = context;
+        final String diagnosticTrace = trace;
+        new Thread(() -> {
+            try {
+                writeSettingsTouchDiagnosticLog(diagnosticContext, diagnosticTrace);
+                Log.i(LOG_TAG, "Saved Haiagaru settings touch diagnostic log to Downloads/Haiagaru");
+            } catch (Throwable logError) {
+                Log.e(LOG_TAG, "Unable to save settings touch diagnostic log", logError);
+            }
+        }, "Haiagaru-settings-touch-log").start();
     }
 
     private static void showSettingsDialog(Activity activity) {
