@@ -1,7 +1,0 @@
-{
-  "created_at": "2026-09-14T16:35:21",
-  "description": "Haiagaru 1.2.2 revision 16 pre-release: diagnostic logs when the Haiagaru settings button cannot open, and live-DAT detection that keeps current 5ch.io threads on normal ChMate handling without the archived-thread notification.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.2-r16/haiagaru_patches-1.2.2-r16.mpp",
-  "signature_download_url": "",
-  "version": "1.2.2-r16"
-}
