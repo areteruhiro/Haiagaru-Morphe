@@ -270,6 +270,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // 0.8.10.241 and 0.8.10.243 route lifecycle creation through the Hilt
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
         patchLegacyThreadUrlEntry(profile)
+        patchFinishedLegacyThreadLaunchGuard()
         if (packageMetadata.versionName == "0.8.10.243 dev") {
             patchImageSelectionResult()
             patchImageSelectionReflectionTrap()
@@ -446,6 +447,58 @@ val haiagaruPatch = resourcePatch(
                 val clone = source.cloneNode(true) as Element
                 clone.setAttribute("android:host", ioHost)
                 source.parentNode.insertBefore(clone, source.nextSibling)
+            }
+
+            // ChMate's legacy itest filter uses `/*./...`, which only accepts a
+            // single character before `/test/read.cgi`. Correct the simple-glob
+            // pattern so server-prefixed URLs such as `/egg/test/read.cgi/...`
+            // resolve to ResListActivity on every supported ChMate generation.
+            val refreshedDataElements = document.getElementsByTagName("data")
+            for (index in 0 until refreshedDataElements.length) {
+                val data = refreshedDataElements.item(index) as? Element ?: continue
+                val host = data.getAttribute("android:host")
+                if (host !in setOf("itest.2ch.net", "itest.5ch.net", "itest.5ch.io")) continue
+                if (data.getAttribute("android:pathPattern") == "/*./test/read.cgi/.*/.*") {
+                    data.setAttribute("android:pathPattern", "/.*/test/read.cgi/.*/.*")
+                }
+            }
+
+            // Newer manifests dropped the dedicated itest host and only keep
+            // the ordinary `*.5ch.io` + `/test/read.cgi` filter. Add the itest
+            // server-prefix form to that same thread filter so Android can
+            // dispatch it before the extension normalizes the URL.
+            val intentFilters = document.getElementsByTagName("intent-filter")
+            for (index in 0 until intentFilters.length) {
+                val intentFilter = intentFilters.item(index) as? Element ?: continue
+                val dataChildren = (0 until intentFilter.childNodes.length)
+                    .mapNotNull { childIndex ->
+                        (intentFilter.childNodes.item(childIndex) as? Element)
+                            ?.takeIf { it.tagName == "data" }
+                    }
+                val hasFiveChIoHost = dataChildren.any { data ->
+                    data.getAttribute("android:host") in setOf("*.5ch.io", "itest.5ch.io")
+                }
+                val handlesThreads = dataChildren.any { data ->
+                    data.getAttribute("android:pathPrefix").startsWith("/test/read.cgi") ||
+                        data.getAttribute("android:pathPattern").contains("test/read.cgi")
+                }
+                if (!hasFiveChIoHost || !handlesThreads) continue
+
+                if (dataChildren.none { it.getAttribute("android:host") == "itest.5ch.io" }) {
+                    val hostData = document.createElement("data")
+                    hostData.setAttribute("android:host", "itest.5ch.io")
+                    intentFilter.appendChild(hostData)
+                }
+                if (dataChildren.none {
+                        it.getAttribute("android:pathPattern") == "/.*/test/read.cgi/.*/.*"
+                    }) {
+                    val pathData = document.createElement("data")
+                    pathData.setAttribute(
+                        "android:pathPattern",
+                        "/.*/test/read.cgi/.*/.*",
+                    )
+                    intentFilter.appendChild(pathData)
+                }
             }
         }
     }
@@ -793,6 +846,46 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEn
         0,
         "invoke-static/range { p0 .. p0 }, " +
             "$EXTENSION->rewriteLegacyThreadIntent(Landroid/app/Activity;)V",
+    )
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext
+    .patchFinishedLegacyThreadLaunchGuard() {
+    val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResListActivity;")
+        .methods
+        .single { candidate ->
+            candidate.name == "onCreate"
+                && candidate.returnType == "V"
+                && candidate.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/os/Bundle;")
+        }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate ResListActivity onCreate has no implementation")
+    val superOnCreateIndex = instructions.indices.firstOrNull { index ->
+        if (instructions[index].opcode != Opcode.INVOKE_SUPER) return@firstOrNull false
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@firstOrNull false
+        reference.name == "onCreate"
+            && reference.returnType == "V"
+            && reference.parameterTypes.map(CharSequence::toString) ==
+            listOf("Landroid/os/Bundle;")
+    } ?: error("ChMate ResListActivity super.onCreate call was not found")
+    val freeRegister = method.findFreeRegister(superOnCreateIndex + 1)
+
+    // Automatic DAT import finishes the first Activity and opens a retry Activity
+    // after publishing its local cache. Some Android versions still continue the
+    // concrete onCreate method after finish(), where ChMate assumes its content
+    // views exist and calls View.getTag() on null. Stop only that finished instance.
+    method.addInstructionsWithLabels(
+        superOnCreateIndex + 1,
+        """
+            invoke-virtual { p0 }, Landroid/app/Activity;->isFinishing()Z
+            move-result v$freeRegister
+            if-eqz v$freeRegister, :haiagaru_continue_reslist_create
+            return-void
+            :haiagaru_continue_reslist_create
+            nop
+        """,
     )
 }
 

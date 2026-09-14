@@ -81,6 +81,9 @@ public final class Haiagaru {
     private static final String DEFAULT_MONAKEY_FILE = "2chapi";
     private static final String DEFAULT_MONAKEY_KEY = "2chapi_monakey";
     private static final String CHMATE_SEARCH_URLS_KEY = "searchUrls1";
+    private static final String CHMATE_ABBREV_SINGLE_ID_KEY = "abbrevSingleId";
+    private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
+    private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
     private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
     private static final String ARCHIVE_PRESET_MARKER = "【Haiagaru】";
     private static final String ARCHIVE_PRESET_URL =
@@ -111,6 +114,10 @@ public final class Haiagaru {
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
             "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(?:/.*)?$",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern ITEST_SERVER_THREAD_READ_PATH = Pattern.compile(
+            "^/([a-z0-9_-]+)/test/read\\.cgi/([^/]+)/(\\d{9,10})(/.*)?$",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_THREAD_DAT_PATH = Pattern.compile(
@@ -770,7 +777,39 @@ public final class Haiagaru {
 
     public static String rewrite5chUrl(String original) {
         if (original == null || !isChtoioEnabled()) return original;
-        return original.replace("5ch.net", "5ch.io");
+        String rewritten = original.replace("5ch.net", "5ch.io");
+        try {
+            Uri uri = Uri.parse(rewritten);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null
+                    || !host.equalsIgnoreCase("itest.5ch.io")) {
+                return rewritten;
+            }
+
+            java.util.regex.Matcher matcher = ITEST_SERVER_THREAD_READ_PATH.matcher(path);
+            if (!matcher.matches()) return rewritten;
+
+            String suffix = matcher.group(4);
+            StringBuilder normalized = new StringBuilder()
+                    .append("https://")
+                    .append(matcher.group(1))
+                    .append(".5ch.io/test/read.cgi/")
+                    .append(matcher.group(2))
+                    .append('/')
+                    .append(matcher.group(3))
+                    .append(suffix == null || suffix.isEmpty() ? "/" : suffix);
+            if (uri.getEncodedQuery() != null) {
+                normalized.append('?').append(uri.getEncodedQuery());
+            }
+            if (uri.getEncodedFragment() != null) {
+                normalized.append('#').append(uri.getEncodedFragment());
+            }
+            return normalized.toString();
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize itest thread URL", error);
+            return rewritten;
+        }
     }
 
     /**
@@ -818,27 +857,28 @@ public final class Haiagaru {
 
     public static String rewriteLegacyThreadUrl(String original) {
         if (original == null || original.isEmpty() || !isChtoioEnabled()) return original;
+        String normalized = rewrite5chUrl(original);
         try {
-            Uri uri = Uri.parse(original);
+            Uri uri = Uri.parse(normalized);
             String host = uri.getHost();
             String path = uri.getPath();
-            if (host == null || path == null) return original;
+            if (host == null || path == null) return normalized;
             java.util.regex.Matcher matcher = LEGACY_THREAD_READ_PATH.matcher(path);
             if (!matcher.matches()) {
                 matcher = LEGACY_THREAD_DAT_PATH.matcher(path);
             }
-            if (!matcher.matches()) return original;
+            if (!matcher.matches()) return normalized;
 
             String normalizedHost = host.toLowerCase(Locale.ROOT);
             if (!isArchivedThreadCandidate(normalizedHost, matcher.group(2))) {
-                return original;
+                return normalized;
             }
 
             return "https://itest.5ch.io/test/read.cgi/"
                     + matcher.group(1) + "/" + matcher.group(2) + "/";
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
-            return original;
+            return normalized;
         }
     }
 
@@ -1199,6 +1239,45 @@ public final class Haiagaru {
                 preferences.getBoolean("automaticDat", true)
         );
 
+        final SharedPreferences chMatePreferences =
+                PreferenceManager.getDefaultSharedPreferences(activity);
+        final boolean legacyPlusSupported = supportsLegacyChMatePlus(activity);
+        if (legacyPlusSupported) {
+            TextView plusDescription = new TextView(activity);
+            plusDescription.setText(text(
+                    "ChMate+互換機能（191/226 dev）\n"
+                            + "旧版に含まれている表示・省略機能をここから切り替えます。",
+                    "ChMate+ compatibility (191/226 dev)\n"
+                            + "Toggle the legacy display and abbreviation features here."
+            ));
+            plusDescription.setTextSize(13);
+            layout.addView(plusDescription, rowParams(activity));
+        }
+        final Switch abbrevSingleId = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("単発ID表示を省略", "Abbreviate single-ID display"),
+                        chMatePreferences.getBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, false)
+                )
+                : null;
+        final Switch copipeNg2 = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("コピペ省略2", "Copy-paste abbreviation 2"),
+                        chMatePreferences.getBoolean(CHMATE_COPIPE_NG2_KEY, false)
+                )
+                : null;
+        final Switch arashiNg = legacyPlusSupported
+                ? addSwitch(
+                        layout,
+                        activity,
+                        text("荒らし省略", "Troll abbreviation"),
+                        chMatePreferences.getBoolean(CHMATE_ARASHI_NG_KEY, false)
+                )
+                : null;
+
         EditText archiveRouteTemplates = addArchiveRouteControl(
                 activity,
                 layout,
@@ -1220,6 +1299,35 @@ public final class Haiagaru {
                 .setCancelable(false)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
+                    boolean legacyPlusChanged = false;
+                    if (legacyPlusSupported) {
+                        SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
+                        if (abbrevSingleId != null) {
+                            boolean checked = abbrevSingleId.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_ABBREV_SINGLE_ID_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, checked);
+                        }
+                        if (copipeNg2 != null) {
+                            boolean checked = copipeNg2.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_COPIPE_NG2_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_COPIPE_NG2_KEY, checked);
+                        }
+                        if (arashiNg != null) {
+                            boolean checked = arashiNg.isChecked();
+                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
+                                    CHMATE_ARASHI_NG_KEY,
+                                    false
+                            );
+                            chMateEditor.putBoolean(CHMATE_ARASHI_NG_KEY, checked);
+                        }
+                        chMateEditor.commit();
+                    }
                     preferences.edit()
                             .putBoolean("hideAd", hideAd.isChecked())
                             .putBoolean("removeMonaKey", removeMonaKey.isChecked())
@@ -1236,7 +1344,7 @@ public final class Haiagaru {
                             .commit();
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
-                    if (!before.equals(after)) restart(activity);
+                    if (!before.equals(after) || legacyPlusChanged) restart(activity);
                 })
                 .show();
     }
@@ -1476,7 +1584,7 @@ public final class Haiagaru {
                     .getDeclaredMethod("addControl", Activity.class, LinearLayout.class)
                     .invoke(null, activity, layout);
         } catch (ClassNotFoundException ignored) {
-            // The optional package-name patch was not selected.
+            // The optional Shizuku data-migration patch was not selected.
         } catch (ReflectiveOperationException error) {
             Log.e(LOG_TAG, "Unable to add the package-data migration control", error);
         }
@@ -1717,6 +1825,22 @@ public final class Haiagaru {
             return defaultAdClass();
         }
         return savedClass;
+    }
+
+    private static boolean supportsLegacyChMatePlus(Context context) {
+        if (context == null) return false;
+        try {
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(
+                    context.getPackageName(),
+                    0
+            );
+            String versionName = packageInfo.versionName;
+            return "0.8.10.191 dev".equals(versionName)
+                    || "0.8.10.226 dev".equals(versionName);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to determine ChMate version for compatibility controls", error);
+            return false;
+        }
     }
 
     private static String defaultAdClass() {
