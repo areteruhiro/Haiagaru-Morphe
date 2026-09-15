@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-15T10:41:07",
-  "description": "Haiagaru 1.2.3.r4 pre-release: removes the two legacy filter registration gates on ChMate 191 dev while retaining each OFF setting, and exposes the built-in abbreviation controls on 243 dev. Specific reported posts have not yet been verified on device.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.3.r4/haiagaru_patches-1.2.3.r4.mpp",
+  "created_at": "2026-09-15T14:03:06",
+  "description": "Haiagaru 1.2.3.r5 pre-release: fixes 404 errors for Talk boards stored with legacy talk.jp board and thread URLs. ChMate 191 dev now resolves subject.txt through the current compatibility endpoint and imports /board/thread and /test/read.cgi/board/thread URLs through the Talk API. Includes all 1.2.3.r4 changes.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.2.3.r5/haiagaru_patches-1.2.3.r5.mpp",
   "signature_download_url": "",
-  "version": "1.2.3.r4"
+  "version": "1.2.3.r5"
 }

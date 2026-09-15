@@ -15,6 +15,7 @@ https://github.com/areteruhiro/Haiagaru
 * 自動DAT取得経路の並べ替えと任意HTTPS経路の追加
 * 自動DAT取得のON/OFF切り替え
 * 古いDAT・過去ログの改行保持と`.io` URL直接起動時の自動DAT取得
+* Talkの現行・旧形式板URLからの板一覧／スレ取得
 * 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * Morpheで任意に有効化できるクラッシュログ保存
@@ -73,17 +74,30 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.3.r3）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版（1.2.3.r5）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.3.r3` です。同じバージョン内で修正版を配布する場合は、
+開発中のパッチ本体のバージョンは `1.2.3.r5` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.3.r5（プレリリース）
+
+- ChMate `0.8.10.191 dev`で、旧形式のTalk板URLから運用情報板や裏社会板を開くと404になる問題を修正
+- `talk.jp/{板}/subject.txt`などの板情報を2ch互換配信先へ補正
+- `talk.jp/{板}/{スレID}`、`talk.jp/test/read.cgi/{板}/{スレID}`、`talk.jp/boards/{板}/{スレID}`を同じTalk API取得経路で扱うように変更
+- Androidエミュレーター上で運用情報板・裏社会板の一覧表示と、両形式のスレ取得を確認
+
+### 1.2.3.r4（プレリリース）
+
+- ChMate `0.8.10.191 dev`の荒らし省略・コピペ省略2について、設定がONでも判定処理が登録されない内部条件を修正
+- ChMate `0.8.10.243 dev`のHaiagaru設定に、単発ID表示の省略・コピペ省略2・荒らし省略を追加
+- 個別の報告レスが実機で省略されることは未確認
 
 ### 1.2.3.r3（プレリリース）
 
