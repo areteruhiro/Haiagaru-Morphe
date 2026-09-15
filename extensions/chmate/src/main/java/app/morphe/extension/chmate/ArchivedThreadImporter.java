@@ -138,6 +138,14 @@ final class ArchivedThreadImporter {
                 Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
             }
             Intent retry = new Intent(activity.getIntent());
+            // TabletHomeActivity normally keeps thread navigation in-process.
+            // Re-enter through ResListActivity after the asynchronous import so
+            // ChMate can rebuild the standard thread bundle and then forward it
+            // back into the tablet panes with the retry marker intact.
+            retry.setClassName(
+                    activity.getPackageName(),
+                    "jp.syoboi.a2chMate.activity.ResListActivity"
+            );
             retry.setData(Uri.parse(url));
             retry.putExtra("haiagaru.archive.retry", true);
             activity.startActivity(retry);

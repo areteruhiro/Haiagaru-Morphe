@@ -16,6 +16,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.os.Bundle;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
@@ -854,6 +855,33 @@ public final class Haiagaru {
             intent.setData(Uri.parse(rewritten));
             Log.i(LOG_TAG, "Using browser-compatible fallback URL " + rewritten);
         }
+    }
+
+    /**
+     * Applies the legacy-thread recovery path to the in-place tablet navigation
+     * bundle. TabletHomeActivity opens threads without creating ResListActivity,
+     * so its bundle would otherwise retain the obsolete server URL and bypass the
+     * archived-DAT importer entirely.
+     *
+     * @return true when an asynchronous DAT import owns this navigation request
+     */
+    public static boolean rewriteLegacyTabletThreadBundle(Activity activity, Bundle bundle) {
+        if (activity == null || bundle == null || !isChtoioEnabled()) return false;
+        String original = bundle.getString("_data");
+        if (original == null || original.isEmpty()) return false;
+
+        String rewritten = rewriteLegacyThreadUrl(original);
+        boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
+        if (!archiveRetry && isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original)
+                && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
+            Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);
+            return true;
+        }
+        if (!original.equals(rewritten)) {
+            bundle.putString("_data", rewritten);
+            Log.i(LOG_TAG, "Using tablet fallback URL " + rewritten);
+        }
+        return false;
     }
 
     private static boolean isArchivedThreadUrl(String value) {
