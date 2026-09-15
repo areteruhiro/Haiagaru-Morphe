@@ -74,17 +74,23 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.3.r5）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版（1.2.4）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.3.r5` です。同じバージョン内で修正版を配布する場合は、
+開発中のパッチ本体のバージョンは `1.2.4` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.4（プレリリース）
+
+- `1.2.3.r5`のTalk旧形式URL・板一覧・スレ取得修正を収録
+- ChMate `0.8.10.191 dev`／`0.8.10.243 dev`のタブレット二画面表示で、画面内遷移が通常のスレActivityを経由せず自動DAT取得を回避していた問題を修正
+- DAT変換完了後は通常のスレ表示Activityを経由して再表示し、タブレット側にも取得結果を反映
 
 ### 1.2.3.r5（プレリリース）
 
