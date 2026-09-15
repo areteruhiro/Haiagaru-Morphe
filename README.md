@@ -272,13 +272,6 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 191では荒らし・コピペ2の判定処理にも有効化の修正を適用し、各設定がOFFの場合は
 判定処理を登録しません。243は元の判定処理と設定条件を使用します。
 
-191／243の元APKと生成APKに対するバイトコード検査は、
-`scripts/VerifyChMatePlus.java` で実行できます。
-
-```powershell
-java -cp <morphe-desktop-all.jar> scripts/VerifyChMatePlus.java <元191.apk> <生成191.apk> <元243.apk> <生成243.apk>
-```
-
 この検査は191の2箇所の登録制限の除去、設定OFFの分岐の維持、
 243の判定処理の維持を確認します。実際のレスの省略表示は別途実機で確認してください。
 
