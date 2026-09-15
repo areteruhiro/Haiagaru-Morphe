@@ -74,17 +74,23 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.4）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版（1.2.4.r1）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.4` です。同じバージョン内で修正版を配布する場合は、
+開発中のパッチ本体のバージョンは `1.2.4.r1` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.4.r1（プレリリース）
+
+- ChMate `0.8.10.191 dev`のタブレット表示で、板一覧からTalkスレを開くとDAT落ち扱いになる問題を修正
+- タブレット内遷移でもTalkスレを判定し、通常表示と同じTalk APIからDATキャッシュを生成する経路へ統一
+- `5ch.net`からの自動DAT取得設定に依存せず、Talkスレは常にTalk専用処理へ渡すように変更
 
 ### 1.2.4（プレリリース）
 

@@ -918,13 +918,17 @@ public final class Haiagaru {
      * @return true when an asynchronous DAT import owns this navigation request
      */
     public static boolean rewriteLegacyTabletThreadBundle(Activity activity, Bundle bundle) {
-        if (activity == null || bundle == null || !isChtoioEnabled()) return false;
+        if (activity == null || bundle == null) return false;
         String original = bundle.getString("_data");
         if (original == null || original.isEmpty()) return false;
 
-        String rewritten = rewriteLegacyThreadUrl(original);
+        boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
+        if (!talkThread && !isChtoioEnabled()) return false;
+        String rewritten = talkThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
-        if (!archiveRetry && isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original)
+        boolean shouldImport = talkThread
+                || (isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original));
+        if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);
             return true;
