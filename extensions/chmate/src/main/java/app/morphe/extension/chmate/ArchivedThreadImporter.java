@@ -43,8 +43,9 @@ final class ArchivedThreadImporter {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern TALK_THREAD_URL = Pattern.compile(
-            "^https?://(?:www\\.)?talk\\.jp/boards/"
-                    + "([a-zA-Z0-9_-]+)/(\\d{9,10})(?:/.*)?$",
+            "^https?://(?:(?:www\\.)?talk\\.jp|(?:classic\\.)?talk-platform\\.com)/"
+                    + "(?:(?:boards|test/read\\.cgi)/)?"
+                    + "([a-zA-Z0-9_-]+)/(?:dat/)?(\\d{9,10})(?:\\.dat)?(?:/.*)?$",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern TITLE = Pattern.compile(
@@ -136,7 +137,8 @@ final class ArchivedThreadImporter {
     }
 
     static boolean isTalkThreadUrl(String url) {
-        return TALK_THREAD_URL.matcher(url == null ? "" : url).matches();
+        ThreadInfo info = ThreadInfo.parse(url);
+        return info != null && info.talk;
     }
 
     /** Called by ChMate's background downloader while its native DAT lock is held. */
@@ -579,13 +581,13 @@ final class ArchivedThreadImporter {
         }
 
         static ThreadInfo parse(String url) {
-            Matcher matcher = THREAD_URL.matcher(url == null ? "" : url);
+            Matcher matcher = TALK_THREAD_URL.matcher(url == null ? "" : url);
             if (matcher.matches()) {
-                return new ThreadInfo(matcher.group(1), matcher.group(3), matcher.group(4), false);
+                return new ThreadInfo("talk", matcher.group(1), matcher.group(2), true);
             }
-            matcher = TALK_THREAD_URL.matcher(url == null ? "" : url);
+            matcher = THREAD_URL.matcher(url == null ? "" : url);
             if (!matcher.matches()) return null;
-            return new ThreadInfo("talk", matcher.group(1), matcher.group(2), true);
+            return new ThreadInfo(matcher.group(1), matcher.group(3), matcher.group(4), false);
         }
 
         String cacheBoardId() {

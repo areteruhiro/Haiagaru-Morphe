@@ -792,8 +792,10 @@ public final class Haiagaru {
     }
 
     public static String rewrite5chUrl(String original) {
-        if (original == null || !isChtoioEnabled()) return original;
-        String rewritten = original.replace("5ch.net", "5ch.io");
+        if (original == null) return null;
+        String rewritten = rewriteLegacyTalkBoardResource(original);
+        if (!isChtoioEnabled()) return rewritten;
+        rewritten = rewritten.replace("5ch.net", "5ch.io");
         try {
             Uri uri = Uri.parse(rewritten);
             String host = uri.getHost();
@@ -825,6 +827,33 @@ public final class Haiagaru {
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to normalize itest thread URL", error);
             return rewritten;
+        }
+    }
+
+    /**
+     * ChMate can retain pre-web Talk board roots such as {@code talk.jp/operation/}.
+     * The current website serves threads below /boards, while the classic endpoint
+     * remains the 2ch-compatible source for subject.txt and board settings. Rewrite
+     * only those board resources; thread bodies are loaded through the Talk JSON API.
+     */
+    private static String rewriteLegacyTalkBoardResource(String original) {
+        try {
+            Uri uri = Uri.parse(original);
+            String host = uri.getHost();
+            String path = uri.getPath();
+            if (host == null || path == null || !host.equalsIgnoreCase("talk.jp")) {
+                return original;
+            }
+            if (!path.matches("(?i)^/[a-z0-9_-]+/(?:subject\\.txt|setting\\.txt|head\\.txt)$")) {
+                return original;
+            }
+            return uri.buildUpon()
+                    .scheme("https")
+                    .encodedAuthority("classic.talk-platform.com")
+                    .build()
+                    .toString();
+        } catch (Throwable ignored) {
+            return original;
         }
     }
 
