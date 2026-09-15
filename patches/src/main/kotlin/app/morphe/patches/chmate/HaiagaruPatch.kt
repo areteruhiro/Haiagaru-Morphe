@@ -279,8 +279,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
         patchLegacyThreadUrlEntry(profile)
         patchFinishedLegacyThreadLaunchGuard()
-        if (packageMetadata.versionName == "0.8.10.191 dev") {
-            patchLegacyTabletThreadUrlEntry()
+        if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.243 dev")) {
+            patchLegacyTabletThreadUrlEntry(packageMetadata.versionName)
         }
         patchLegacyPlusFeatureActivation(profile)
         if (packageMetadata.versionName == "0.8.10.243 dev") {
@@ -1124,14 +1124,21 @@ private fun app.morphe.patcher.patch.BytecodePatchContext
     )
 }
 
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTabletThreadUrlEntry() {
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTabletThreadUrlEntry(
+    versionName: String,
+) {
+    val (methodName, fragmentType) = when (versionName) {
+        "0.8.10.191 dev" -> "Sq_" to "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
+        "0.8.10.243 dev" -> "c" to "Landroidx/fragment/app/Fragment;"
+        else -> error("Unsupported tablet thread entry version: $versionName")
+    }
     val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
         .methods
         .single { candidate ->
-            candidate.name == "Sq_"
+            candidate.name == methodName
                 && candidate.returnType == "V"
                 && candidate.parameters.map(CharSequence::toString) == listOf(
-                "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;",
+                fragmentType,
                 "I",
                 "Landroid/os/Bundle;",
             )
