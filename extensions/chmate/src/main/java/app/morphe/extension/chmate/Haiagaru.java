@@ -834,16 +834,39 @@ public final class Haiagaru {
      * a dedicated parser in ChMate. The official kako archive and 2ch.sc mirror
      * remain available through the archived-thread search preset.
      */
+    public static boolean loadLiveTalkDat(String url, File destination) throws IOException {
+        return ArchivedThreadImporter.loadLiveTalkDat(url, destination);
+    }
+
     public static void rewriteLegacyThreadIntent(Activity activity) {
-        if (activity == null || !isChtoioEnabled()) return;
+        if (activity == null) return;
         Intent intent = activity.getIntent();
         if (intent == null || intent.getData() == null) return;
         String original = intent.getData().toString();
-        String rewritten = rewriteLegacyThreadUrl(original);
+        boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
+        if (talkThread) {
+            try {
+                if ("0.8.10.243 dev".equals(activity.getPackageManager()
+                        .getPackageInfo(activity.getPackageName(), 0).versionName)) {
+                    // 243 fetches inside the native download lock, including refresh.
+                    return;
+                }
+            } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
+            }
+        }
+        if (!talkThread && !isChtoioEnabled()) return;
+        String rewritten = talkThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = intent.getBooleanExtra("haiagaru.archive.retry", false);
-        if (!archiveRetry && isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original)
+        if (archiveRetry) {
+            // The retry marker is valid only for the Activity opened immediately
+            // after publishing a DAT. Do not let ChMate copy it into later intents.
+            intent.removeExtra("haiagaru.archive.retry");
+        }
+        boolean shouldImport = talkThread
+                || (isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original));
+        if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
-            Log.i(LOG_TAG, "Handling legacy thread through the local DAT cache: " + original);
+            Log.i(LOG_TAG, "Handling thread through the local DAT cache: " + original);
             // ChMate would otherwise continue its regular network load while
             // the importer is fetching the same .io DAT. The importer opens a
             // retry Activity after publishing the local cache.

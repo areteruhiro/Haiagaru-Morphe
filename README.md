@@ -73,17 +73,23 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.3.r2）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版（1.2.3.r3）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.3.r2` です。同じバージョン内で修正版を配布する場合は、
+開発中のパッチ本体のバージョンは `1.2.3.r3` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.2.3.r3（プレリリース）
+
+- ChMate `0.8.10.191 dev`／`0.8.10.243 dev` で、Talkの現行スレを開くと `divide by zero` またはDAT落ちになる問題を修正
+- Talk APIのレスをChMateのDATキャッシュへ変換し、署名変更後に不安定になるTalk専用取得処理より先に読み込むように変更
+- TalkのURL、板情報、書き込み処理はChMate本来の経路を維持
 
 ### 1.2.3.r2（プレリリース）
 
