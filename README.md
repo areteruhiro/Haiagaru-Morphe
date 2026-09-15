@@ -15,7 +15,8 @@ https://github.com/areteruhiro/Haiagaru
 * 自動DAT取得経路の並べ替えと任意HTTPS経路の追加
 * 自動DAT取得のON/OFF切り替え
 * 古いDAT・過去ログの改行保持と`.io` URL直接起動時の自動DAT取得
-* Talkの現行・旧形式板URLからの板一覧／スレ取得
+* Talkの現行・旧形式板URLからの板一覧／スレ取得と書き込み互換処理
+* ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のスレ内広告行の非表示
 * 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * Morpheで任意に有効化できるクラッシュログ保存
@@ -68,23 +69,31 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
-現在の公式版（1.2.3）を取得するパッチソースは次のURLです。
+現在の公式版（1.3.0）を取得するパッチソースは次のURLです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.2.4.r1）を取得するパッチソースは次のURLです。正式版より新しい検証中の変更を含みます。
+プレリリース版を取得するパッチソースは次のURLです。現在は公式版（1.3.0）と同じ内容です。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-開発中のパッチ本体のバージョンは `1.2.4.r1` です。同じバージョン内で修正版を配布する場合は、
+現在のパッチ本体のバージョンは `1.3.0` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.0（正式版）
+
+- ChMate `0.8.10.226 dev`で、Talkの現行スレをTalk APIからDATへ変換して閲覧できるように対応
+- Talk投稿時に動的生成クラスの署名依存比較が不一致となり、`NullPointerException`で失敗する問題を修正
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`のタブレットモードで、取得済みTalk DATを再取得し続ける問題を修正
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`の1レス目と2レス目の間に残る広告行を非表示化
+- 運用情報板・裏社会板を含むTalk板URLの補正、既存の自動DAT取得、URL補正、設定、パッケージカスタマイズを収録
 
 ### 1.2.4.r1（プレリリース）
 
@@ -282,6 +291,9 @@ java -cp <morphe-desktop-all.jar> scripts/VerifyChMatePlus.java <元191.apk> <�
 [Haiagaru サポートチャンネル](https://discord.com/channels/1392057820316303362/1547235153347092572)
 
 ## 寄付
+
+開発の継続を応援していただける場合は、よろしければGitHubのStarだけでもお願いします。励みになります。
+さらにご支援いただける場合は、以下から寄付を受け付けています。
 
 - [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
 - [PayPay](https://qr.paypay.ne.jp/p2p01_RsY3yQavNdvx74da)

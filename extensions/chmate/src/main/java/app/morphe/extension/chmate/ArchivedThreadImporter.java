@@ -88,12 +88,15 @@ final class ArchivedThreadImporter {
         File directory = activity.getExternalFilesDir("2chMate/dat");
         if (directory == null) return false;
         File datFile = new File(directory, info.cacheBoardId() + "_" + info.thread + ".dat");
-        if (!info.talk && datFile.isFile() && datFile.length() > 0) {
+        if (datFile.isFile() && datFile.length() > 0) {
             Log.i(LOG_TAG, "Using existing cached DAT " + datFile.getName()
                     + " (" + datFile.length() + " bytes)");
             // Let ChMate continue normally when the imported DAT is already
             // available. Returning false avoids restarting the Activity and
-            // prevents a second retrieval attempt for .io URLs.
+            // prevents a second retrieval attempt. This is also required for
+            // Talk in tablet mode: the retry marker is not retained when
+            // ResListActivity forwards the request into TabletHomeActivity,
+            // so ignoring an existing Talk DAT would create a reopen loop.
             return false;
         }
 

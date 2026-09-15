@@ -868,6 +868,98 @@ public final class Haiagaru {
         return ArchivedThreadImporter.loadLiveTalkDat(url, destination);
     }
 
+    /**
+     * ChMate 0.8.10.191 restores its Talk client into a dedicated in-memory DEX.
+     * A certificate-derived comparison in that DEX deliberately divides by zero
+     * when the APK is re-signed. Keep the generated request/authentication code,
+     * but normalize only the two comparison values before it is invoked.
+     */
+    public static void normalizeLegacyTalkAuthIntegrity(Object authClient) {
+        if (authClient == null) return;
+        try {
+            ClassLoader loader = authClient.getClass().getClassLoader();
+            Class<?> stateClass = Class.forName("o.fm", false, loader);
+            Field stateField = stateClass.getDeclaredField("e");
+            stateField.setAccessible(true);
+            Object value = stateField.get(null);
+            if (!(value instanceof Object[])) return;
+            Object[] state = (Object[]) value;
+            if (state.length < 2 || !(state[0] instanceof int[]) || !(state[1] instanceof int[])) {
+                return;
+            }
+            int[] actual = (int[]) state[0];
+            int[] expected = (int[]) state[1];
+            if (actual.length == 0 || expected.length == 0) return;
+            expected[0] = actual[0];
+
+            // The generated method refreshes this state after roughly two seconds.
+            // Hold the normalized state for the duration of the authentication call.
+            Field timestampField = stateClass.getDeclaredField("c");
+            timestampField.setAccessible(true);
+            timestampField.setLong(null, System.currentTimeMillis() + 86_400_000L);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize legacy Talk authentication state", error);
+        }
+    }
+
+    /**
+     * Runs ChMate 226's dynamically restored Talk posting method after repairing
+     * only its certificate-derived comparison cache. The generated class throws
+     * null when the two cached integers differ, which surfaces as an unexplained
+     * NullPointerException after the APK has been re-signed.
+     */
+    public static Object invokePreIoTalkPoster(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
+        normalizeGeneratedIntegrityState(target, "o.head", "e", "d");
+        try {
+            return method.invoke(target, arguments);
+        } catch (java.lang.reflect.InvocationTargetException error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error.getCause());
+        } catch (Throwable error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    private static void normalizeGeneratedIntegrityState(
+            Object owner,
+            String className,
+            String stateFieldName,
+            String timestampFieldName
+    ) {
+        if (owner == null) return;
+        try {
+            ClassLoader loader = owner.getClass().getClassLoader();
+            Class<?> stateClass = Class.forName(className, false, loader);
+            Field stateField = stateClass.getDeclaredField(stateFieldName);
+            stateField.setAccessible(true);
+            Object value = stateField.get(null);
+            if (!(value instanceof Object[])) return;
+            Object[] state = (Object[]) value;
+            if (state.length < 2 || !(state[0] instanceof int[]) || !(state[1] instanceof int[])) {
+                return;
+            }
+            int[] first = (int[]) state[0];
+            int[] second = (int[]) state[1];
+            if (first.length == 0 || second.length == 0) return;
+            second[0] = first[0];
+
+            Field timestampField = stateClass.getDeclaredField(timestampFieldName);
+            timestampField.setAccessible(true);
+            timestampField.setLong(null, System.currentTimeMillis() + 86_400_000L);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize generated Talk integrity state", error);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable, T> T throwUnchecked(Throwable error) throws E {
+        throw (E) error;
+    }
+
     public static void rewriteLegacyThreadIntent(Activity activity) {
         if (activity == null) return;
         Intent intent = activity.getIntent();
@@ -1165,6 +1257,24 @@ public final class Haiagaru {
         safePostCollapseAdView(view, 300);
         safePostCollapseAdView(view, 1000);
         safePostCollapseAdView(view, 2500);
+    }
+
+    /** Collapses the inline banner row inserted between the first two responses on 191. */
+    public static void hideLegacyThreadListAd(
+            View view,
+            android.widget.BaseAdapter adapter,
+            int position
+    ) {
+        if (view == null || adapter == null || !shouldHideAds()) return;
+        try {
+            // The legacy response adapter reserves its sixth view type exclusively
+            // for the in-thread banner. Normal responses use type 0.
+            if (adapter.getItemViewType(position) == 5) {
+                hideAdView(view);
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to collapse legacy in-thread ad", error);
+        }
     }
 
     private static void collapseAdView(View view) {
