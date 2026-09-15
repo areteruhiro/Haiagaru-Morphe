@@ -279,6 +279,9 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
         patchLegacyThreadUrlEntry(profile)
         patchFinishedLegacyThreadLaunchGuard()
+        if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchLegacyTabletThreadUrlEntry()
+        }
         patchLegacyPlusFeatureActivation(profile)
         if (packageMetadata.versionName == "0.8.10.243 dev") {
             patchImageSelectionResult()
@@ -1116,6 +1119,32 @@ private fun app.morphe.patcher.patch.BytecodePatchContext
             if-eqz v$freeRegister, :haiagaru_continue_reslist_create
             return-void
             :haiagaru_continue_reslist_create
+            nop
+        """,
+    )
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTabletThreadUrlEntry() {
+    val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
+        .methods
+        .single { candidate ->
+            candidate.name == "Sq_"
+                && candidate.returnType == "V"
+                && candidate.parameters.map(CharSequence::toString) == listOf(
+                "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;",
+                "I",
+                "Landroid/os/Bundle;",
+            )
+        }
+    val freeRegister = method.findFreeRegister(0)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { p0, p3 }, $EXTENSION->rewriteLegacyTabletThreadBundle(Landroid/app/Activity;Landroid/os/Bundle;)Z
+            move-result v$freeRegister
+            if-eqz v$freeRegister, :haiagaru_continue_tablet_thread
+            return-void
+            :haiagaru_continue_tablet_thread
             nop
         """,
     )
