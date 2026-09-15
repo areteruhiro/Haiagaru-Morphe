@@ -25,9 +25,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -76,6 +78,9 @@ final class ArchivedThreadImporter {
     );
     private static final Set<String> IN_FLIGHT =
             Collections.synchronizedSet(new HashSet<>());
+    private static final long TABLET_FAILURE_SUPPRESSION_MILLIS = 60_000L;
+    private static final Map<String, Long> RECENT_FAILURES =
+            Collections.synchronizedMap(new HashMap<>());
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private ArchivedThreadImporter() {
@@ -101,6 +106,15 @@ final class ArchivedThreadImporter {
         }
 
         String importKey = info.board + ":" + info.thread;
+        if (isTabletActivity(activity) && consumeRecentFailure(importKey)) {
+            // ResListActivity's retry extra is not copied into TabletHomeActivity's
+            // in-process navigation bundle. Without this one-shot guard, a failed
+            // import re-enters the same asynchronous request and displays its
+            // failure toast forever. Consume the guard here so a later user retry
+            // can still start a fresh import normally.
+            Log.i(LOG_TAG, "Skipping repeated tablet import after failure: " + importKey);
+            return false;
+        }
         if (!IN_FLIGHT.add(importKey)) return true;
 
         new Thread(() -> {
@@ -131,12 +145,26 @@ final class ArchivedThreadImporter {
                 reopen(activity, originalUrl, "過去ログを取得しました");
             } catch (Throwable error) {
                 Log.e(LOG_TAG, "Unable to import archived thread " + importKey, error);
+                RECENT_FAILURES.put(importKey, System.currentTimeMillis());
                 reopen(activity, browserFallback, "過去ログを自動取得できませんでした");
             } finally {
                 IN_FLIGHT.remove(importKey);
             }
         }, "Haiagaru-archive-import").start();
         return true;
+    }
+
+    private static boolean isTabletActivity(Activity activity) {
+        return activity.getClass().getName().endsWith(".TabletHomeActivity");
+    }
+
+    private static boolean consumeRecentFailure(String importKey) {
+        Long failedAt;
+        synchronized (RECENT_FAILURES) {
+            failedAt = RECENT_FAILURES.remove(importKey);
+        }
+        return failedAt != null
+                && System.currentTimeMillis() - failedAt <= TABLET_FAILURE_SUPPRESSION_MILLIS;
     }
 
     static boolean isTalkThreadUrl(String url) {
