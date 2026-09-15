@@ -108,6 +108,7 @@ private data class ChMateProfile(
     val legacyPlusDisplayStateClass: String? = null,
     val legacyPlusDisplayStateMethod: String? = null,
     val bypassLegacySingleIdEntitlement: Boolean = false,
+    val legacyPlusFilterClass: String? = null,
 )
 
 private enum class ViewModelTrapKind {
@@ -148,6 +149,7 @@ private fun profileFor(versionName: String) = when (versionName) {
         legacyPlusDisplayStateClass = "Lo/lrb${'$'}RemoteActionCompatParcelizer;",
         legacyPlusDisplayStateMethod = "d",
         bypassLegacySingleIdEntitlement = true,
+        legacyPlusFilterClass = "Lo/m9ExternalSyntheticLambda1;",
     )
     "0.8.10.226 dev" -> ChMateProfile(
         providerClass = "Lo/setDither;",
@@ -723,6 +725,33 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyPlusFeature
             && candidate.returnType == "V"
             && candidate.parameters.isEmpty()
     }.bypassLegacySingleIdEntitlement(classType)
+
+    profile.legacyPlusFilterClass?.let { filterClass ->
+        val method = mutableClassDefBy(filterClass).methods.single {
+            it.name == "c" && it.returnType == "V"
+                && it.parameters.map(CharSequence::toString) == listOf("Z")
+        }
+        val instructions = method.implementation!!.instructions
+        // Both filters have an entitlement branch immediately before their
+        // preference read. Preserve the preference branches and stock detectors.
+        val gates = listOf("b", "A").map { fieldName ->
+            val preferenceIndex = instructions.indices.single { index ->
+                val ref = (instructions[index] as? ReferenceInstruction)?.reference
+                    as? FieldReference
+                instructions[index].opcode == Opcode.SGET_OBJECT
+                    && ref?.definingClass == "Ljp/syoboi/a2chMate/Prefs;"
+                    && ref.name == fieldName && ref.type == "Lo/m1b\$read;"
+            }
+            val gate = preferenceIndex - 1
+            check(gate >= 0 && instructions[gate].opcode == Opcode.IF_EQZ) {
+                "ChMate legacy $fieldName filter entitlement branch was not found"
+            }
+            gate
+        }
+        check(gates.map { (instructions[it] as OneRegisterInstruction).registerA }
+            .distinct().size == 1) { "ChMate legacy filter entitlement registers differ" }
+        gates.forEach { method.replaceInstruction(it, "nop") }
+    }
 }
 
 private fun MutableMethod.bypassLegacySingleIdEntitlement(ownerType: String) {

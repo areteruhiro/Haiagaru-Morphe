@@ -1315,10 +1315,10 @@ public final class Haiagaru {
             if (legacyPlusSupportedValue) {
                 TextView plusDescription = new TextView(activity);
                 plusDescription.setText(text(
-                        "ChMate+互換機能（191/226 dev）\n"
-                                + "旧版に含まれている表示・省略機能をここから切り替えます。",
-                        "ChMate+ compatibility (191/226 dev)\n"
-                                + "Toggle the legacy display and abbreviation features here."
+                        "ChMate+互換機能（191/226/243 dev）\n"
+                                + "アプリに含まれている表示・省略機能をここから切り替えます。",
+                        "ChMate+ compatibility (191/226/243 dev)\n"
+                                + "Toggle the built-in display and abbreviation features here."
                 ));
                 plusDescription.setTextSize(13);
                 layout.addView(plusDescription, rowParams(activity));
@@ -1952,7 +1952,8 @@ public final class Haiagaru {
             );
             String versionName = packageInfo.versionName;
             return "0.8.10.191 dev".equals(versionName)
-                    || "0.8.10.226 dev".equals(versionName);
+                    || "0.8.10.226 dev".equals(versionName)
+                    || "0.8.10.243 dev".equals(versionName);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to determine ChMate version for compatibility controls", error);
             return false;
