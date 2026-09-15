@@ -310,6 +310,8 @@ https://github.com/Chipppppppppp/Binnosoko
 Contribution <br>
 Haiagaru Contribution<br>
 yujirox 様 <br>
+
+LEINs Contribution<br>
 LEINsに対して寄付/ご購入してくださった皆様
 
 <br>
