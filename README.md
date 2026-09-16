@@ -95,23 +95,30 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
-現在の公式版（1.3.0）を取得するパッチソースは次のURLです。
+現在の公式版（1.3.1）を取得するパッチソースは次のURLです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版を取得するパッチソースは次のURLです。現在は公式版（1.3.0）と同じ内容です。
+プレリリース版を取得するパッチソースは次のURLです。現在は公式版（1.3.1）と同じ内容です。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在のパッチ本体のバージョンは `1.3.0` です。同じバージョン内で修正版を配布する場合は、
+現在のパッチ本体のバージョンは `1.3.1` です。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.1（正式版）
+
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev` のエッヂ板で、記者ID付きスレタイを表示
+- エッヂの `subject.txt` を記者ID付き `subject-metadent.txt` へ切り替える設定を追加（初期値ON）
+- アプリ内のHTTP通信（画像取得を含む）をHTTPSへ切り替える設定を追加（初期値OFF）
+- 1.3.0のTalk対応、タブレット再取得ループ修正、広告行非表示を継承
 
 ### 1.3.0（正式版）
 
