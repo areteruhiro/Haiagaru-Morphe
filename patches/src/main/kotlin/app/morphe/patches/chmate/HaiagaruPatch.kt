@@ -474,6 +474,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchLegacyTalkAuthIntegrity()
             }
             "0.8.10.226 dev" -> {
+                patchProgrammableNg226()
                 patchPreIoHissiMenu()
                 patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
                 patchLegacyThreadListAd("Lo/listener;")
@@ -493,6 +494,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 )
             }
             "0.8.10.243 dev" -> {
+                patchProgrammableNgModern("Lo/zzdic;", "a", "c")
                 patchSetTextCalls()
                 patchModernThreadListAd()
                 patchModernTalkDatLoading()
@@ -500,6 +502,9 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchModernTalkIntegrityPrimitives()
             }
             else -> patchSetTextCalls()
+        }
+        if (packageMetadata.versionName == "0.8.10.241") {
+            patchProgrammableNgModern("Lo/RewardedInterstitialAdLoadCallback;", "a", "a")
         }
         patchTabletThreadHeaderAdSpace(packageMetadata.versionName)
         when (packageMetadata.versionName) {
