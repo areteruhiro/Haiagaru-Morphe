@@ -463,6 +463,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> {
+                patchProgrammableNg191()
                 patchPreIoHissiMenu(
                     "Lo/setExtraParameter;", "d",
                     "Lo/processAdDisplayErrorPostbackForUserError;",
@@ -887,6 +888,40 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTalkAuthInt
         "invoke-static {v$authClientRegister}, " +
             "$EXTENSION->normalizeLegacyTalkAuthIntegrity(Ljava/lang/Object;)V",
     )
+    // The generated client may refresh its static integrity cache after construction.
+    // Route the reflected authenticator through a one-shot recovery wrapper so that
+    // the cache is normalized at the actual invocation boundary as well.
+    val invokes = method.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Ljava/lang/reflect/Method;"
+            && reference.name == "invoke"
+            && reference.returnType == "Ljava/lang/Object;"
+            && reference.parameterTypes.map(CharSequence::toString) == listOf(
+                "Ljava/lang/Object;", "[Ljava/lang/Object;"
+            )
+        ) index else null
+    }
+    check(invokes.isNotEmpty()) { "ChMate legacy Talk authenticator invocation was not found" }
+    invokes.asReversed().forEach { index ->
+        when (val invocation = method.implementation!!.instructions[index]) {
+            is FiveRegisterInstruction -> method.replaceInstruction(
+                index,
+                "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                    "v${invocation.registerE}}, $EXTENSION->invokeLegacyTalkAuthenticator(" +
+                    "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                    "Ljava/lang/Object;",
+            )
+            is RegisterRangeInstruction -> method.replaceInstruction(
+                index,
+                "invoke-static/range {v${invocation.startRegister} .. " +
+                    "v${invocation.startRegister + 2}}, $EXTENSION->invokeLegacyTalkAuthenticator(" +
+                    "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                    "Ljava/lang/Object;",
+            )
+            else -> error("ChMate legacy Talk authenticator registers were not found")
+        }
+    }
 }
 
 @Suppress("unused")
@@ -1775,6 +1810,30 @@ private fun MutableMethod.bypassSettingsTamperTrap(profile: ChMateProfile) {
     val instructions = implementation?.instructions
         ?: error("ChMate settings onCreate has no implementation")
     if (profile.settingsWindowFeatureDivideTrap) {
+        // 0.8.10.241 also has a certificate-dependent settings decoy before
+        // the real Activity setup.  Its `(n - 1) * n % 2` expression is
+        // unconditionally zero, and the resulting remainder is only used to
+        // select a Toast resource.  The previous patch covered the later
+        // DIV_INT traps but not this REM_INT trap, so Android 17 reached this
+        // block while opening Settings and crashed at the reported line 312.
+        val toastRemainderIndex = instructions.indices.singleOrNull { index ->
+            if (instructions[index].opcode != Opcode.REM_INT_2ADDR) return@singleOrNull false
+            instructions.subList(index + 1, minOf(index + 6, instructions.size)).any { next ->
+                val reference = (next as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@any false
+                reference.definingClass == "Landroid/widget/Toast;"
+                    && reference.name == "makeText"
+            }
+        } ?: error("ChMate settings Toast remainder trap was not found")
+        val realSetupIndex = (toastRemainderIndex + 1 until instructions.size).firstOrNull { index ->
+            instructions[index].opcode == Opcode.NEW_ARRAY
+        } ?: error("ChMate settings setup after Toast remainder trap was not found")
+        addInstructionsWithLabels(
+            toastRemainderIndex,
+            "goto/32 :haiagaru_settings_after_toast_trap",
+            ExternalLabel("haiagaru_settings_after_toast_trap", instructions[realSetupIndex]),
+        )
+
         // 0.8.10.241 derives FEATURE_NO_TITLE through an integrity-dependent divisor.
         // Re-signing can make that divisor zero, so retain the normal value directly.
         val requestWindowFeatureIndex = instructions.indexOfFirst { instruction ->
@@ -3222,16 +3281,17 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
             method.addInstructionsWithLabels(index + 2, """
                 invoke-static/range {v$list .. v$list}, $runtime->pending(Ljava/lang/Object;)V
                 invoke-static/range {v$urlRegister .. v$urlRegister}, $runtime->capturePending(Ljava/lang/Object;)V
+                ${if (version == "0.8.10.191 dev") "" else """
+                invoke-static/range {v$list .. v$list}, Lapp/morphe/extension/chmate/ProgrammableNgController;->pendingSubjectList(Ljava/lang/Object;)V
+                invoke-static/range {v$urlRegister .. v$urlRegister}, Lapp/morphe/extension/chmate/ProgrammableNgController;->filterPendingSubjectList(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$list
+                """}
             """)
             captures++
         }
     }
     check(captures > 0) { "Subject metadata capture missing: $version" }
-    if (version == "0.8.10.191 dev") {
-        mutableClassDefBy("Lo/MaxFullscreenAdImplExternalSyntheticLambda4;").methods.single {
-            it.name == "onViewCreated"
-        }.addBeforeEveryReturn("invoke-static {p0, p1}, $runtime->addLegacyButton(Ljava/lang/Object;Landroid/view/View;)V")
-    } else {
+    if (version != "0.8.10.191 dev") {
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"
             "0.8.10.241" -> "Lo/TTRewardVideoActivity2;"
