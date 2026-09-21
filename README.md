@@ -115,16 +115,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-`1.3.3`はプレリリースのため、パッチソース設定の「Pre-release patches」をONにしてください。
+通常版・プレリリース版のどちらを選択しても`1.3.3`を取得できます。
 Morphe Desktop 1.16.0で、上記リポジトリから`1.3.3`のMPPを取得できることを確認しています。
 
-現在は1.3.3プレリリースを取得するパッチソースです。
+現在の公式版（1.3.3）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース版（1.3.3）を取得するパッチソースは次のURLです。
+プレリリース設定向けにも同じ1.3.3を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
@@ -136,7 +136,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 ## 更新履歴
 
-### 1.3.3（プレリリース）
+### 1.3.3（正式版）
 
 - エッヂの記者IDをスレ履歴へ保持し、既読スレや再起動後でも取得済みの記者IDをNGThreadへ登録できるように修正
 - ChMate `0.8.10.191 dev`／`0.8.10.226 dev`で、5ch.io移行後も必死チェッカーのメニューを利用できるように修正
