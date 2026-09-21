@@ -115,7 +115,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版のどちらを選択しても`1.3.3`を取得できます。
+通常版は正式Release `v1.3.3`、プレリリース版はPre-release `1.3.3`から、同じパッチ本体を取得します。
 Morphe Desktop 1.16.0で、上記リポジトリから`1.3.3`のMPPを取得できることを確認しています。
 
 現在の公式版（1.3.3）を取得するパッチソースです。
