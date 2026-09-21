@@ -105,7 +105,7 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
-現在の公式版（1.3.2）を取得するパッチソースは次のURLです。
+現在は1.3.3プレリリースを取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
@@ -117,7 +117,7 @@ https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在の公式版は `1.3.2`、プレリリース版は `1.3.3` です。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版の両方で `1.3.3` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
