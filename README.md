@@ -105,6 +105,19 @@ ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMate�
 
 ## URV Manager / Morphe Managerへの追加と更新
 
+### Morpheへリポジトリとして追加
+
+Morpheのパッチソースには、次のGitHubリポジトリURLをそのまま登録できます。
+
+```text
+https://github.com/areteruhiro/Haiagaru-Morphe/
+```
+
+[MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
+
+`1.3.3`はプレリリースのため、パッチソース設定の「Pre-release patches」をONにしてください。
+Morphe Desktop 1.16.0で、上記リポジトリから`1.3.3`のMPPを取得できることを確認しています。
+
 現在は1.3.3プレリリースを取得するパッチソースです。
 
 ```text
