@@ -75,6 +75,9 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
     private static final String LOG_TAG = "Haiagaru";
@@ -926,11 +929,18 @@ public final class Haiagaru {
             Object[] arguments
     ) {
         if (method == null) throw new NullPointerException("method");
+        // The generated Talk client can refresh its certificate-derived cache
+        // after construction.  Repair it at the actual invocation boundary as
+        // well, rather than relying solely on the constructor hook.
+        normalizeLegacyTalkAuthIntegrity(method.getDeclaringClass().getClassLoader());
         try {
             return method.invoke(target, arguments);
         } catch (java.lang.reflect.InvocationTargetException error) {
             Throwable cause = error.getCause();
-            if (!(cause instanceof ArithmeticException)) {
+            // Depending on the generated DEX revision the failed integrity
+            // comparison is expressed either as divide-by-zero or throw-null.
+            if (!(cause instanceof ArithmeticException)
+                    && !(cause instanceof NullPointerException)) {
                 return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
             }
             // The generated client can replace its static certificate cache between
@@ -994,6 +1004,187 @@ public final class Haiagaru {
             return Haiagaru.<RuntimeException, Object>throwUnchecked(error.getCause());
         } catch (Throwable error) {
             return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    /** Compatibility wrapper for 0.8.10.241's generated Talk authenticator. */
+    public static Object invokeIoTalkPoster(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
+        if ("o.setTimeUpdate".equals(method.getDeclaringClass().getName())
+                && "e".equals(method.getName())
+                && arguments != null && arguments.length == 5) {
+            try {
+                applyIoTalkPostHeaders(arguments);
+                return null;
+            } catch (Throwable error) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+            }
+        }
+        normalizeIoTalkIntegrity(method.getDeclaringClass(), target);
+        try {
+            return method.invoke(target, arguments);
+        } catch (java.lang.reflect.InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            if (!isGeneratedIntegrityFailure(cause)) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
+            }
+            normalizeIoTalkIntegrity(method.getDeclaringClass(), target);
+            try {
+                return method.invoke(target, arguments);
+            } catch (java.lang.reflect.InvocationTargetException retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError.getCause());
+            } catch (Throwable retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError);
+            }
+        } catch (Throwable error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    /** Recreates 241's two Talk headers without entering its re-signing trap. */
+    private static void applyIoTalkPostHeaders(Object[] arguments) throws Exception {
+        Object requestBuilder = arguments[0];
+        String writeSourceKey = String.valueOf(arguments[1]);
+        String writeKey = String.valueOf(arguments[3]);
+        Object parameters = arguments[4];
+
+        java.util.HashMap<String, String> values = new java.util.HashMap<>();
+        if (parameters instanceof Iterable) {
+            for (Object entry : (Iterable<?>) parameters) {
+                if (entry == null) continue;
+                Field nameField = entry.getClass().getDeclaredField("c");
+                Field valueField = entry.getClass().getDeclaredField("a");
+                nameField.setAccessible(true);
+                valueField.setAccessible(true);
+                Object name = nameField.get(entry);
+                Object value = valueField.get(entry);
+                if (name != null) values.put(String.valueOf(name), value == null ? "" : String.valueOf(value));
+            }
+        }
+        String timestamp = String.valueOf(System.currentTimeMillis() / 1000L);
+        String payload = valueOrEmpty(values, "bbs") + "<>"
+                + valueOrEmpty(values, "key") + "<>"
+                + valueOrEmpty(values, "mail") + "<>"
+                + valueOrEmpty(values, "MESSAGE") + "<>"
+                + timestamp + "<>"
+                + writeSourceKey + "<>";
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(
+                "eaGheElQLJ6QJNOKHLxWL15GvgLkVn".getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256"));
+        byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte item : digest) hex.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+
+        Object headerBuilder = null;
+        for (Field field : requestBuilder.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            Object value = field.get(requestBuilder);
+            if (value != null && value.getClass().getName().contains("Headers$ComponentActivity")) {
+                headerBuilder = value;
+                break;
+            }
+        }
+        if (headerBuilder == null) throw new IllegalStateException("Talk header builder was not found");
+        Method addHeader = null;
+        for (Method candidate : headerBuilder.getClass().getDeclaredMethods()) {
+            if ("c".equals(candidate.getName())
+                    && candidate.getParameterTypes().length == 2
+                    && candidate.getParameterTypes()[0] == String.class
+                    && candidate.getParameterTypes()[1] == String.class) {
+                addHeader = candidate;
+                break;
+            }
+        }
+        if (addHeader == null) throw new IllegalStateException("Talk header method was not found");
+        addHeader.setAccessible(true);
+        addHeader.invoke(headerBuilder, "X-Write-Token", hex.toString());
+        addHeader.invoke(headerBuilder, "X-Write-Key", writeKey);
+
+        Method setParameter = parameters.getClass().getDeclaredMethod(
+                "a", String.class, String.class);
+        setParameter.setAccessible(true);
+        setParameter.invoke(parameters, "time", timestamp);
+        setParameter.invoke(parameters, "appkey", "KkaD9iXqKv9lp2luO9SuaTL8lmvRPj");
+        setParameter.invoke(parameters, "sid", writeSourceKey);
+    }
+
+    private static String valueOrEmpty(java.util.Map<String, String> values, String key) {
+        String value = values.get(key);
+        return value == null ? "" : value;
+    }
+
+    private static boolean isGeneratedIntegrityFailure(Throwable error) {
+        if (error instanceof ArithmeticException || error instanceof NullPointerException) return true;
+        if (!(error instanceof RuntimeException)) return false;
+        String message = error.getMessage();
+        return message != null && message.matches("-?\\d+");
+    }
+
+    private static void normalizeIoTalkIntegrity(Class<?> generatedClass, Object target) {
+        normalizeIntegrityFields(generatedClass, null);
+        if (target != null) normalizeIntegrityFields(target.getClass(), target);
+        ClassLoader loader = generatedClass == null ? null : generatedClass.getClassLoader();
+        normalizeIoTalkStateClass(loader, "o._JvmPlatformKt");
+        normalizeIoTalkStateClass(loader, "o.canonicalizeInternal");
+    }
+
+    private static void normalizeIoTalkStateClass(ClassLoader loader, String className) {
+        if (loader == null) return;
+        try {
+            Class<?> stateClass = Class.forName(className, false, loader);
+            for (Field field : stateClass.getDeclaredFields()) {
+                if (!java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                        || field.getType() != Object[].class) continue;
+                field.setAccessible(true);
+                Object value = field.get(null);
+                if (!(value instanceof Object[])) continue;
+                Object[] state = (Object[]) value;
+                if (state.length < 2 || !(state[0] instanceof int[])
+                        || !(state[1] instanceof int[])) continue;
+                int[] actual = (int[]) state[0];
+                int[] expected = (int[]) state[1];
+                if (actual.length != 0 && expected.length != 0) {
+                    expected[0] = actual[0];
+                }
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize ChMate 241 Talk state " + className, error);
+        }
+    }
+
+    private static void normalizeIntegrityFields(Class<?> type, Object owner) {
+        if (type == null) return;
+        try {
+            for (Field field : type.getDeclaredFields()) {
+                boolean isStatic = java.lang.reflect.Modifier.isStatic(field.getModifiers());
+                if (!isStatic && owner == null) continue;
+                field.setAccessible(true);
+                Object receiver = isStatic ? null : owner;
+                if (field.getType() == long.class && isStatic) {
+                    field.setLong(null, System.currentTimeMillis() + 86_400_000L);
+                    continue;
+                }
+                Object value = field.get(receiver);
+                if (!(value instanceof Object[])) continue;
+                Object[] state = (Object[]) value;
+                int[][] integers = new int[3][];
+                int count = 0;
+                for (Object item : state) {
+                    if (item instanceof int[] && ((int[]) item).length != 0 && count < integers.length) {
+                        integers[count++] = (int[]) item;
+                    }
+                }
+                if (count >= 2) integers[1][0] = integers[0][0];
+                if (count >= 3) integers[2][0] = -1531869433;
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize ChMate 241 Talk integrity state", error);
         }
     }
 
@@ -1643,6 +1834,22 @@ public final class Haiagaru {
                 text("自動DAT取得", "Automatic DAT retrieval"),
                 preferences.getBoolean("automaticDat", true)
         );
+        Switch bypassPostPreflight = addSwitch(
+                layout,
+                activity,
+                text("投稿前の本文チェックを無効化",
+                        "Disable the local post body check"),
+                preferences.getBoolean("bypassPostPreflight", true)
+        );
+        TextView bypassPostPreflightDescription = new TextView(activity);
+        bypassPostPreflightDescription.setText(text(
+                "ONにすると、空欄・端末情報のみかどうかの判定を投稿先サーバーに任せます。"
+                        + " 誤判定される場合はON、ChMate本来の確認を使う場合はOFFにしてください。",
+                "When enabled, empty-body and device-info-only validation is left to the server. "
+                        + "Enable this if ChMate rejects non-empty text; disable it to restore ChMate's check."
+        ));
+        bypassPostPreflightDescription.setTextSize(13);
+        layout.addView(bypassPostPreflightDescription, rowParams(activity));
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
@@ -1828,6 +2035,7 @@ public final class Haiagaru {
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
                             .putBoolean("forceHttps", forceHttps.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
+                            .putBoolean("bypassPostPreflight", bypassPostPreflight.isChecked())
                             .commit();
                     if (archiveRouteTemplates != null) {
                         preferences.edit()
@@ -2280,6 +2488,12 @@ public final class Haiagaru {
     private static boolean isAutomaticDatEnabled(Context context) {
         if (context == null) return true;
         return preferences(context).getBoolean("automaticDat", true);
+    }
+
+    /** Whether ChMate's local empty/device-info-only post gate should be skipped. */
+    public static boolean bypassPostPreflightValidation() {
+        SharedPreferences preferences = preferencesOrNull();
+        return preferences == null || preferences.getBoolean("bypassPostPreflight", true);
     }
 
     static String archiveRouteTemplates(Context context) {
