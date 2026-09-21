@@ -46,13 +46,13 @@ ChMate設定 → Haiagaru →「高度なNGルール（条件・スクリプト�
 エラーや上限超過時はその判定をNGにせず、設定画面へ理由を表示します。
 設定と判定対象は外部へ送信しません。
 
-スレ一覧の判定は `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／
-`0.8.10.243 dev` に対応します。191 devではレス本文の判定にも対応し、
-ほかのバージョンの本文判定は安全なNGフラグ生成箇所を確認後に順次対応します。
+スレ一覧とレス本文の判定は `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／
+`0.8.10.243 dev` に対応します。レス本文の一致結果は各バージョンの標準NGWordフラグへ統合します。
 
 この機能はGPLv3の派生リポジトリ
 [`testuser0123-web/Haiagaru-Morphe`](https://github.com/testuser0123-web/Haiagaru-Morphe)
 の設計を参考に、現行コード構成と複数バージョン向け共通フックへ書き直したものです。
+参考実装の作者アカウント: [`testuser0123-web`](https://github.com/testuser0123-web)
 詳細な著作権・ライセンス表示は [`LICENSE`](LICENSE) と [`NOTICE`](NOTICE) を参照してください。
 
 ### エッヂの記者ID表示
@@ -143,8 +143,8 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `v1.3.3`、プレリリース版はPre-release `1.3.4`から取得します。
-1.3.4の配布物はAndroid拡張を内包したMPPです。
+通常版は正式Release `v1.3.3`、プレリリース版はPre-release `1.3.5`から取得します。
+1.3.5の配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.3.3）を取得するパッチソースです。
 
@@ -152,17 +152,23 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース設定では1.3.4を配布しています。
+プレリリース設定では1.3.5を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在は通常版で `1.3.3`、プレリリース版で `1.3.4` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版で `1.3.3`、プレリリース版で `1.3.5` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.5（プレリリース）
+
+- 「高度なNGルール」のレス本文判定を191 dev／226 dev／241／243 devの全対応バージョンへ拡張
+- 判定結果を各バージョンの標準NGWordフラグへ統合し、既存のNG処理と表示設定を維持
+- 1.3.4の機能・修正を継承し、参考実装の作者 [`testuser0123-web`](https://github.com/testuser0123-web) を明記
 
 ### 1.3.4（プレリリース）
 
