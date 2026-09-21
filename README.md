@@ -117,26 +117,35 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `v1.3.3`、プレリリース版はPre-release `1.3.5`から取得します。
-1.3.5の配布物はAndroid拡張を内包したMPPです。
+通常版・プレリリース版ともに正式Release `1.3.6`から取得します。
+1.3.6の配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.3.3）を取得するパッチソースです。
+現在の公式版（1.3.6）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース設定では1.3.5を配布しています。
+プレリリース設定でも1.3.6を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在は通常版で `1.3.3`、プレリリース版で `1.3.5` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版ともに `1.3.6` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.6（正式版）
+
+- ChMate `0.8.10.241`でTalkスレ取得時に数値エラーが発生する問題を修正し、Talk APIの応答をDATへ変換する経路を追加
+- ChMate `0.8.10.241`のTalk投稿で署名依存トラップにより`222`などの数値エラーが発生する問題を修正
+- ChMate `0.8.10.191 dev`のTalk認証状態が更新された場合に発生する`divide by zero`／`NullPointerException`への補正を強化
+- 「投稿前の本文チェックを無効化」をHaiagaru設定へ追加し、226 dev／241で空欄ではない投稿が誤判定される問題を回避可能に変更
+- 高度なNGのスレ一覧フィルターで、ARTが`Object`と具体型の不一致を検出する問題を修正
+- ChMate `0.8.10.241`を実機へ導入し、Talkスレの閲覧と投稿を確認
 
 ### 1.3.5（プレリリース）
 
