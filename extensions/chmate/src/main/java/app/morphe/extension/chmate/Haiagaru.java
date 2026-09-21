@@ -95,6 +95,10 @@ public final class Haiagaru {
     private static final String CHMATE_COPIPE_NG_AR_KEY = "copipeNgAR";
     private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
     private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
+    /** ChMate's own bounded post-history store (postDataList.json). */
+    private static final String CHMATE_POST_DATA_LIST_COUNT_KEY = "postDataListCount";
+    private static final int DEFAULT_CHMATE_POST_DATA_LIST_COUNT = 100;
+    private static final int MAX_CHMATE_POST_DATA_LIST_COUNT = 10_000;
     private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
     private static final String ARCHIVE_PRESET_MARKER = "【Haiagaru】";
     private static final String ARCHIVE_PRESET_URL =
@@ -354,6 +358,7 @@ public final class Haiagaru {
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
         EdgeReporterHistory.initialize(appContext);
+        ProgrammableNgController.initialize(appContext);
         runtimePackageName = appContext.getPackageName();
         migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
@@ -911,8 +916,41 @@ public final class Haiagaru {
      */
     public static void normalizeLegacyTalkAuthIntegrity(Object authClient) {
         if (authClient == null) return;
+        normalizeLegacyTalkAuthIntegrity(authClient.getClass().getClassLoader());
+    }
+
+    /** Invokes the 191 generated Talk authenticator and repairs its refreshed cache once. */
+    public static Object invokeLegacyTalkAuthenticator(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
         try {
-            ClassLoader loader = authClient.getClass().getClassLoader();
+            return method.invoke(target, arguments);
+        } catch (java.lang.reflect.InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            if (!(cause instanceof ArithmeticException)) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
+            }
+            // The generated client can replace its static certificate cache between
+            // construction and this reflected call.  Repair that refreshed state and
+            // retry only the authentication calculation once.
+            normalizeLegacyTalkAuthIntegrity(method.getDeclaringClass().getClassLoader());
+            try {
+                return method.invoke(target, arguments);
+            } catch (java.lang.reflect.InvocationTargetException retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError.getCause());
+            } catch (Throwable retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError);
+            }
+        } catch (Throwable error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    private static void normalizeLegacyTalkAuthIntegrity(ClassLoader loader) {
+        try {
             Class<?> stateClass = Class.forName("o.fm", false, loader);
             Field stateField = stateClass.getDeclaredField("e");
             stateField.setAccessible(true);
@@ -1608,6 +1646,25 @@ public final class Haiagaru {
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
+        EditText postDataListCount = addTextField(
+                layout,
+                activity,
+                text("書き込み履歴に残す件数（0で残さない）",
+                        "Posts to keep in post history (0 keeps none)"),
+                Integer.toString(chMatePreferences.getInt(
+                        CHMATE_POST_DATA_LIST_COUNT_KEY,
+                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
+                ))
+        );
+        TextView postDataListCountDescription = new TextView(activity);
+        postDataListCountDescription.setText(text(
+                "書き込み履歴の古い項目から削除します。設定変更時にもすぐ整理されます。"
+                        + " 1〜10000、または0を指定できます。",
+                "Oldest post-history entries are removed first, including immediately after changing "
+                        + "this setting. Choose 0 to 10000."
+        ));
+        postDataListCountDescription.setTextSize(13);
+        layout.addView(postDataListCountDescription, rowParams(activity));
 
         boolean legacyPlusSupportedValue = false;
         Switch abbrevSingleIdValue = null;
@@ -1682,6 +1739,10 @@ public final class Haiagaru {
                 "duplicate board cleanup",
                 () -> addBoardDuplicateCleanupControl(activity, layout)
         );
+        addOptionalSettingsSection(
+                "programmable NG",
+                () -> ProgrammableNgController.addSettingsButton(layout, activity)
+        );
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
@@ -1695,6 +1756,14 @@ public final class Haiagaru {
                     boolean legacyPlusChanged = false;
                     if (legacyPlusSupported) {
                         SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
+                        int postHistoryCount = parsePostHistoryCount(
+                                value(postDataListCount),
+                                chMatePreferences.getInt(
+                                        CHMATE_POST_DATA_LIST_COUNT_KEY,
+                                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
+                                )
+                        );
+                        chMateEditor.putInt(CHMATE_POST_DATA_LIST_COUNT_KEY, postHistoryCount);
                         if (abbrevSingleId != null) {
                             boolean checked = abbrevSingleId.isChecked();
                             legacyPlusChanged |= checked != chMatePreferences.getBoolean(
@@ -1734,6 +1803,17 @@ public final class Haiagaru {
                             }
                         }
                         chMateEditor.commit();
+                    } else {
+                        int postHistoryCount = parsePostHistoryCount(
+                                value(postDataListCount),
+                                chMatePreferences.getInt(
+                                        CHMATE_POST_DATA_LIST_COUNT_KEY,
+                                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
+                                )
+                        );
+                        chMatePreferences.edit()
+                                .putInt(CHMATE_POST_DATA_LIST_COUNT_KEY, postHistoryCount)
+                                .commit();
                     }
                     preferences.edit()
                             .putBoolean("hideAd", hideAd.isChecked())
@@ -2361,6 +2441,15 @@ public final class Haiagaru {
 
     private static String value(EditText editText) {
         return editText.getText() == null ? "" : editText.getText().toString();
+    }
+
+    private static int parsePostHistoryCount(String rawValue, int fallback) {
+        try {
+            int value = Integer.parseInt(rawValue.trim());
+            if (value >= 0 && value <= MAX_CHMATE_POST_DATA_LIST_COUNT) return value;
+        } catch (RuntimeException ignored) {
+        }
+        return Math.max(0, Math.min(fallback, MAX_CHMATE_POST_DATA_LIST_COUNT));
     }
 
     private static String text(String japanese, String english) {
