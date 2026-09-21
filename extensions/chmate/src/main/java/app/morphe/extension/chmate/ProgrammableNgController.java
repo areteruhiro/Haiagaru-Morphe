@@ -28,9 +28,13 @@ public final class ProgrammableNgController {
     static final String ENABLED_KEY = "enabled";
     private static final Pattern URL_INFO = Pattern.compile("server:([^,}]+),\\s*name:([^,}]+)");
     private static final Pattern REPORTER = Pattern.compile("\\s+\\[([^\\[\\]\\s]+)★\\]\\s*$");
+    private static final String UNKNOWN_BOARD = "https://unknown.invalid/board/";
     private static final Map<Object, Set<Integer>> LEGACY_RESPONSE_MATCHES =
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final ThreadLocal<Object> PENDING_SUBJECT_LIST = new ThreadLocal<>();
+    private static final ThreadLocal<Object> PENDING_RESPONSE_LIST = new ThreadLocal<>();
+    private static final Map<Object, Boolean> MODERN_RESPONSE_MATCHES =
+            Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<String, ProgrammableNgScript.Input> THREAD_METADATA =
             Collections.synchronizedMap(new LinkedHashMap<String, ProgrammableNgScript.Input>(128, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<String, ProgrammableNgScript.Input> eldest) {
@@ -44,6 +48,7 @@ public final class ProgrammableNgController {
     private static volatile List<ProgrammableNgScript.Input> lastTitles = Collections.emptyList();
     private static volatile List<ProgrammableNgScript.Input> lastBodies = Collections.emptyList();
     private static volatile String runtimeError = "";
+    private static volatile String lastBoardUrl;
 
     private ProgrammableNgController() {}
 
@@ -71,6 +76,7 @@ public final class ProgrammableNgController {
             report("設定読込", error);
         }
         LEGACY_RESPONSE_MATCHES.clear();
+        MODERN_RESPONSE_MATCHES.clear();
     }
 
     static ProgrammableNgRuleSet currentRules() {
@@ -141,6 +147,7 @@ public final class ProgrammableNgController {
         if (!(result instanceof List) || context == null) return result;
         String board = boardUrl(urlOrArguments);
         if (board == null) return result;
+        lastBoardUrl = board;
         List<?> values = (List<?>) result;
         ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(values.size());
         for (Object value : values) inputs.add(threadInput(value, board));
@@ -176,6 +183,7 @@ public final class ProgrammableNgController {
             Object urlInfo = field(fragment, "e");
             String board = boardUrl(urlInfo);
             if (board == null) return candidates;
+            lastBoardUrl = board;
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>();
             for (Object row : candidates) {
                 Object data = field(row, "a");
@@ -213,6 +221,7 @@ public final class ProgrammableNgController {
             Object state = field(adapter, "M");
             String board = boardUrl(field(state, "f"));
             if (board == null) return;
+            lastBoardUrl = board;
             Object responseList = field(adapter, "K");
             if (!(responseList instanceof List)) return;
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>();
@@ -253,6 +262,110 @@ public final class ProgrammableNgController {
             report("191レスフラグ", error);
         }
         return original;
+    }
+
+    /** Keeps the response list in a range-encodable register for modern renderers. */
+    public static void pendingModernResponses(Object responses) {
+        PENDING_RESPONSE_LIST.set(responses);
+    }
+
+    /** Adds standard NGWord flags to the map consumed by 241/243 row composition. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void applyPendingModernResponseFlags(Object flags) {
+        Object pending = PENDING_RESPONSE_LIST.get();
+        PENDING_RESPONSE_LIST.remove();
+        if (!(pending instanceof List) || !(flags instanceof Map) || context == null) return;
+        try {
+            String board = lastBoardUrl == null ? UNKNOWN_BOARD : lastBoardUrl;
+            List<?> responses = (List<?>) pending;
+            ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(responses.size());
+            ArrayList<Integer> numbers = new ArrayList<>(responses.size());
+            for (Object response : responses) {
+                ResponseData data = responseData(response);
+                inputs.add(data.input(board, ""));
+                numbers.add(data.number);
+            }
+            lastBodies = inputs;
+            if (!enabled || inputs.isEmpty()) return;
+            boolean[] matches = rules.evaluate(inputs);
+            Map map = (Map) flags;
+            for (int index = 0; index < matches.length; index++) {
+                if (!matches[index]) continue;
+                Integer number = numbers.get(index);
+                Object previous = map.get(number);
+                int original = previous instanceof Number ? ((Number) previous).intValue() : 0;
+                map.put(number, original | 0x10);
+            }
+        } catch (Exception error) {
+            report("レス一覧", error);
+        }
+    }
+
+    /** Adds the same NGWord bit at the per-response boundary used by 226 dev. */
+    public static int mergeModernResponseFlags(Object owner, Object response, int original) {
+        if (context == null || response == null) return original;
+        try {
+            Boolean cached = MODERN_RESPONSE_MATCHES.get(response);
+            if (cached == null) {
+                String board = findBoardUrl(owner, 3, new java.util.IdentityHashMap<>());
+                if (board == null) board = lastBoardUrl;
+                if (board == null) board = UNKNOWN_BOARD;
+                ResponseData data = responseData(response);
+                ProgrammableNgScript.Input input = data.input(board, "");
+                lastBodies = Collections.singletonList(input);
+                cached = enabled && rules.evaluate(Collections.singletonList(input))[0];
+                MODERN_RESPONSE_MATCHES.put(response, cached);
+            }
+            return cached ? original | 0x10 : original;
+        } catch (Exception error) {
+            report("226レスフラグ", error);
+            return original;
+        }
+    }
+
+    private static ResponseData responseData(Object response) throws ReflectiveOperationException {
+        String name = response.getClass().getSimpleName();
+        if ("BouncyCastleSocketAdapterCompanion".equals(name)) {
+            return new ResponseData(response, "l", "j", "m", "g", "t", "d");
+        }
+        if ("setDislikeWidth".equals(name)) {
+            return new ResponseData(response, "e", "i", "d", "b", "c", "a");
+        }
+        if ("zzabv".equals(name)) {
+            return new ResponseData(response, "n", "h", "o", "g", "p", "j");
+        }
+        throw new IllegalArgumentException("未対応のレス型: " + name);
+    }
+
+    private static final class ResponseData {
+        final int number;
+        final Object responseId;
+        final String name;
+        final Object mail;
+        final Object date;
+        final String body;
+
+        ResponseData(Object response, String numberField, String idField, String nameField,
+                     String mailField, String dateField, String bodyField)
+                throws ReflectiveOperationException {
+            number = ((Number) field(response, numberField)).intValue();
+            responseId = field(response, idField);
+            name = plain(stringField(response, nameField));
+            mail = field(response, mailField);
+            date = field(response, dateField);
+            body = plain(stringField(response, bodyField));
+        }
+
+        ProgrammableNgScript.Input input(String board, String title) {
+            Map<String, Object> values = baseValues("body", board);
+            values.put("responseNumber", number);
+            values.put("responseId", responseId);
+            values.put("threadTitle", title);
+            values.put("name", name);
+            values.put("mail", mail);
+            values.put("dateText", date);
+            return new ProgrammableNgScript.Input(body, values);
+        }
     }
 
     private static ProgrammableNgScript.Input threadInput(Object item, String board) {
@@ -347,6 +460,26 @@ public final class ProgrammableNgController {
         if (!matcher.find()) return null;
         String result = "https://" + matcher.group(1).trim() + "/" + matcher.group(2).trim() + "/";
         return ProgrammableNgRuleSet.canonicalBoard(result) == null ? null : result;
+    }
+
+    private static String findBoardUrl(Object value, int depth, java.util.IdentityHashMap<Object, Boolean> seen) {
+        if (value == null || depth < 0 || seen.put(value, Boolean.TRUE) != null) return null;
+        String direct = boardUrl(value);
+        if (direct != null) return direct;
+        Class<?> type = value.getClass();
+        String packageName = type.getName();
+        if (packageName.startsWith("java.") || packageName.startsWith("android.")) return null;
+        for (Field candidate : allFields(type)) {
+            if (Modifier.isStatic(candidate.getModifiers()) || candidate.getType().isPrimitive()) continue;
+            try {
+                candidate.setAccessible(true);
+                String found = findBoardUrl(candidate.get(value), depth - 1, seen);
+                if (found != null) return found;
+            } catch (Exception ignored) {
+                // Obfuscated optional state is best-effort; the last opened board remains the fallback.
+            }
+        }
+        return null;
     }
 
     private static Object field(Object owner, String name) throws ReflectiveOperationException {
