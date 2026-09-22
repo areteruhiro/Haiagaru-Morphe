@@ -117,26 +117,34 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版ともに正式Release `1.3.8`から取得します。
-1.3.8の配布物はAndroid拡張を内包したMPPです。
+通常版・プレリリース版ともに正式Release `1.3.9`から取得します。
+1.3.9の配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.3.8）を取得するパッチソースです。
+現在の公式版（1.3.9）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース設定でも1.3.8を配布しています。
+プレリリース設定でも1.3.9を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
 ```
 
-現在は通常版・プレリリース版ともに `1.3.8` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版ともに `1.3.9` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.9（正式版）
+
+- `1.3.7`／`1.3.8`からアプリデータを残して更新した際、古いTalk書き込みキーが残って`divide by zero`になる問題を修正
+- ChMate本体の同じversionNameではなくAPKの更新時刻を使用し、パッチ済みAPKの更新ごとにTalk書き込みセッションを一度だけ安全に再生成
+- Talkスレ更新時にDAT全体とIDXを作り直さず、不足したレスだけを追記して「自分の書き込み」印を保持
+- Talkテストスレへ実投稿し、別画面へ移動後に再度開いても投稿レスと自分の書き込み印が残ることを実機で確認
+- 191 dev／226 dev／241／243 devの全対応APKへパッチできることを確認
 
 ### 1.3.8（正式版）
 
