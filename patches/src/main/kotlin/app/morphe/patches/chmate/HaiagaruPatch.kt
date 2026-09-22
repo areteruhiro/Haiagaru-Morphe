@@ -2950,8 +2950,11 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoDomainCompat
  */
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompatibility() {
     // The 191 Talk menu adapter converts classic.talk-platform.com entries to
-    // talk.jp/boards/<board>. Its legacy BBSUrlInfo parser only accepts the
-    // root form talk.jp/<board>, so every parsed board is otherwise discarded.
+    // talk.jp/boards/<board>. Keep that form: the legacy BBSUrlInfo parser
+    // recognizes /boards/<board> as Talk type 4, while talk.jp/<board> returns
+    // null and causes BBSMenuUpdateWork to reject an otherwise valid menu as
+    // containing zero boards. Validate the structural site so a future target
+    // change fails during patching instead of silently disabling Talk menus.
     val talkMenuAdapter = mutableClassDefBy("Lo/setRequestLatencyMillis;")
     val talkBoardPrefixSites = talkMenuAdapter.methods.flatMap { method ->
         method.implementation?.instructions.orEmpty().mapIndexedNotNull { index, instruction ->
@@ -2967,9 +2970,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     check(talkBoardPrefixSites.size == 1) {
         "ChMate 191 Talk board URL prefix site was not uniquely identified"
     }
-    talkBoardPrefixSites.single().let { (method, index, register) ->
-        method.replaceInstruction(index, "const-string v$register, \"https://talk.jp/\"")
-    }
+    talkBoardPrefixSites.single()
 
     val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
     val legacyLinkParserType =
@@ -3604,7 +3605,22 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         }
     }
     check(captures > 0) { "Subject metadata capture missing: $version" }
-    if (version != "0.8.10.191 dev") {
+    if (version == "0.8.10.191 dev") {
+        // 1.3.4 moved the legacy editor bridge to a fragment-only API so it can
+        // resolve the current view after recreation, but accidentally removed
+        // the bytecode call site at the same time.  Without this hook, captured
+        // reporter IDs still reach history while the NG editor never exposes
+        // the reporter-ID choices.  Invoke it after onViewCreated has completed;
+        // EdgeReporterHistory resolves getView() and preserves the stock editor.
+        mutableClassDefBy("Lo/MaxFullscreenAdImplExternalSyntheticLambda4;").methods.single {
+            it.name == "onViewCreated"
+                && it.returnType == "V"
+                && it.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/view/View;", "Landroid/os/Bundle;")
+        }.addBeforeEveryReturn(
+            "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V"
+        )
+    } else {
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"
             "0.8.10.241" -> "Lo/TTRewardVideoActivity2;"
