@@ -123,13 +123,13 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 現在の公式版（1.3.8）を取得するパッチソースです。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
 プレリリース設定でも1.3.8を配布しています。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
 ```
 
 現在は通常版・プレリリース版ともに `1.3.8` を配布しています。同じバージョン内で修正版を配布する場合は、
