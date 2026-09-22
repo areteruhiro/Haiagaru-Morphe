@@ -87,7 +87,7 @@ public final class Haiagaru {
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String LEGACY_TALK_PREFS_NAME = "talk";
     private static final String LEGACY_TALK_SESSION_REPAIR_KEY =
-            "legacyTalkSessionRepairVersionV1";
+            "legacyTalkSessionRepairLastUpdateV2";
     private static final String BUTTON_TAG = "haiagaru.settings.button";
     private static final String DEFAULT_USER_AGENT =
             "Dalvik/2.1.0 (Linux; U; Android 4.0.3; HT-01 Build/XYZ0.123456.789)";
@@ -926,16 +926,25 @@ public final class Haiagaru {
         Context context = applicationContext;
         if (context == null) return;
         SharedPreferences haiagaru = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String version = "unknown";
+        long installedAt = 1L;
         try {
             PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            if (info.versionName != null) version = info.versionName;
+            if (info.lastUpdateTime > 0) installedAt = info.lastUpdateTime;
         } catch (Throwable ignored) {
+            try {
+                long modified = new File(context.getApplicationInfo().sourceDir).lastModified();
+                if (modified > 0) installedAt = modified;
+            } catch (Throwable ignoredAgain) {
+            }
         }
-        if (version.equals(haiagaru.getString(LEGACY_TALK_SESSION_REPAIR_KEY, ""))) return;
+        if (installedAt == haiagaru.getLong(LEGACY_TALK_SESSION_REPAIR_KEY, Long.MIN_VALUE)) return;
         clearLegacyTalkWriteSession(context);
-        haiagaru.edit().putString(LEGACY_TALK_SESSION_REPAIR_KEY, version).commit();
-        Log.i(LOG_TAG, "Repaired legacy Talk write session left by an earlier patch");
+        haiagaru.edit()
+                .putLong(LEGACY_TALK_SESSION_REPAIR_KEY, installedAt)
+                .remove("legacyTalkSessionRepairVersionV1")
+                .remove("legacyTalkSessionRepairV1")
+                .commit();
+        Log.i(LOG_TAG, "Repaired legacy Talk write session after APK update");
     }
 
     /** Drops only 191's renewable Talk write credentials after confirmation is cancelled. */
