@@ -40,8 +40,8 @@ https://github.com/areteruhiro/Haiagaru
 履歴タイトルの保存・読み込み時に補完するため、DAT落ち後や再起動後も取得済みの記者IDからNG登録できます。
 導入後に一度エッヂの板一覧を更新してください。既にDAT落ちしており記者IDを一度も取得していないスレッドのIDは復元できません。
 
-記者ID付きスレッドからNGThread追加を開くと、226 dev・241・243 devでは「記者IDだけをNG」を選択できます。
-191 devでは標準のNGThread編集画面を使用します。
+記者ID付きスレッドからNGThread追加を開くと、191 dev・226 dev・241・243 devの全対応版で
+「記者IDだけをNG」を選択できます。191 devでは標準のNGThread編集画面へこの操作を追加します。
 スレタイを手作業で削除する必要はなく、記者ID部分（`[xxxxxxxx★]`）を通常のNGThreadとして保存します。
 登録内容の確認・削除は従来のNGThread設定で行えます。
 
@@ -117,26 +117,34 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版ともに正式Release `1.3.7`から取得します。
-1.3.7の配布物はAndroid拡張を内包したMPPです。
+通常版・プレリリース版ともに正式Release `1.3.8`から取得します。
+1.3.8の配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.3.7）を取得するパッチソースです。
+現在の公式版（1.3.8）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース設定でも1.3.7を配布しています。
+プレリリース設定でも1.3.8を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在は通常版・プレリリース版ともに `1.3.7` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版ともに `1.3.8` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.8（正式版）
+
+- ChMate `0.8.10.191 dev`でTalk板一覧のURLから`/boards/`が失われ、板一覧を取得できなくなる回帰を修正
+- ChMate `0.8.10.191 dev`のNGThread編集画面へ「記者IDだけをNG」を復旧
+- Talk投稿直後に読み取りAPIが一世代古い場合、画面遷移後に投稿レスが消えないよう新しいローカルDATを保持
+- 読み取りAPIが追いついた後は通常どおり新しいDATへ更新されることを実機で確認
+- 191 dev／226 dev／241／243 devの全対応APKへパッチできることを確認
 
 ### 1.3.7（正式版）
 
