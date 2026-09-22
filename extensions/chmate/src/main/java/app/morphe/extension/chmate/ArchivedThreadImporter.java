@@ -181,6 +181,11 @@ final class ArchivedThreadImporter {
         }
         try {
             byte[] dat = fetchTalkDat(info);
+            if (keepLongerLocalTalkDat(destination, dat)) {
+                Log.i(LOG_TAG, "Keeping newer local Talk DAT while the API catches up: "
+                        + info.board + ":" + info.thread);
+                return true;
+            }
             publishDat(destination.getParentFile(), destination, info, dat);
             Log.i(LOG_TAG, "Loaded live Talk DAT: " + info.board + ":" + info.thread
                     + " (" + dat.length + " bytes)");
@@ -190,6 +195,51 @@ final class ArchivedThreadImporter {
         } catch (Exception error) {
             throw new IOException("Unable to load Talk thread", error);
         }
+    }
+
+    /**
+     * ChMate appends a successful post to its local DAT immediately, while the
+     * Talk read API can briefly return the preceding revision.  Replacing the
+     * cache with that shorter response makes the user's post disappear after a
+     * screen transition.  Keep the longer valid DAT until the API reaches at
+     * least the same response count.
+     */
+    private static boolean keepLongerLocalTalkDat(File destination, byte[] downloaded) {
+        if (destination == null || !destination.isFile() || destination.length() <= 0
+                || destination.length() > MAX_RESPONSE_BYTES) {
+            return false;
+        }
+        try {
+            byte[] existing = readFile(destination);
+            validateDat(existing);
+            return datLineCount(existing) > datLineCount(downloaded);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to compare the local Talk DAT", error);
+            return false;
+        }
+    }
+
+    private static byte[] readFile(File file) throws IOException {
+        try (BufferedInputStream input = new BufferedInputStream(
+                new java.io.FileInputStream(file));
+             ByteArrayOutputStream output = new ByteArrayOutputStream(
+                     (int) Math.min(file.length(), 64 * 1024L))) {
+            byte[] buffer = new byte[16 * 1024];
+            int total = 0;
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                total += count;
+                if (total > MAX_RESPONSE_BYTES) throw new IOException("DAT was too large");
+                output.write(buffer, 0, count);
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static int datLineCount(byte[] dat) {
+        int lines = 0;
+        for (byte value : dat) if (value == '\n') lines++;
+        return lines + (dat.length > 0 && dat[dat.length - 1] != '\n' ? 1 : 0);
     }
 
     private static void publishDat(

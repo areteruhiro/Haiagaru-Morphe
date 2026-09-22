@@ -117,26 +117,35 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版ともに正式Release `1.3.6`から取得します。
-1.3.6の配布物はAndroid拡張を内包したMPPです。
+通常版・プレリリース版ともに正式Release `1.3.7`から取得します。
+1.3.7の配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.3.6）を取得するパッチソースです。
+現在の公式版（1.3.7）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle.json
 ```
 
-プレリリース設定でも1.3.6を配布しています。
+プレリリース設定でも1.3.7を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/refs/heads/master/patches-bundle-pre.json
 ```
 
-現在は通常版・プレリリース版ともに `1.3.6` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版ともに `1.3.7` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.3.7（正式版）
+
+- ChMate `0.8.10.191 dev`で、過去のパッチや確認画面のキャンセルにより不整合になったTalk書き込みキーを、アプリデータを削除せず修復する処理を追加
+- Talkの書き込み確認画面を戻る操作で閉じた場合、次回投稿用のセッションだけを安全に再生成するよう修正
+- Talkへの投稿直後、読み取りAPIの反映が遅れていてもローカルの新しいレスを短いDATで上書きしないよう修正
+- ChMate `0.8.10.226 dev`で、Talk投稿前の生成キー処理に発生する`NullPointerException`対策を追加
+- ChMate `0.8.10.241`で、Talkキー保持オブジェクトと投稿処理の署名依存経路を保護
+- 191 dev／226 dev／241／243 devの全対応APKへ静的にパッチできることと、生成APKの署名を確認
 
 ### 1.3.6（正式版）
 
