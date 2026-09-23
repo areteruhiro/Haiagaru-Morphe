@@ -1133,6 +1133,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkDatLoading(
 
 /** 241 uses the same generated Talk authenticator behind a differently obfuscated caller. */
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkPostIntegrity() {
+    patchIoTalkAuthentication()
     val networkClass = mutableClassDefBy("Lo/VLj;")
     val candidates = networkClass.methods.flatMap { method ->
         val instructions = method.implementation?.instructions ?: return@flatMap emptyList()
@@ -1222,6 +1223,53 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkPostIntegri
                 "Ljava/lang/Object;",
         )
         else -> error("ChMate 241 Talk key invocation registers were not found")
+    }
+}
+
+/** Replaces 241's generated Talk login digest invocation with the stable extension path. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkAuthentication() {
+    val authClass = mutableClassDefBy("Lo/updateRenderInfoForVideo;")
+    val authMethod = authClass.methods.singleOrNull { method ->
+        method.name == "d"
+            && method.parameterTypes.map(CharSequence::toString) == listOf("Lo/VLj;")
+            && method.returnType == "Ljava/lang/String;"
+    } ?: error("ChMate 241 Talk authentication method was not found")
+    val instructions = authMethod.implementation?.instructions
+        ?: error("ChMate 241 Talk authentication implementation was not found")
+    val candidates = instructions.indices.filter { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@filter false
+        if (reference.definingClass != "Ljava/lang/reflect/Method;"
+            || reference.name != "invoke"
+            || reference.returnType != "Ljava/lang/Object;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                "Ljava/lang/Object;", "[Ljava/lang/Object;"
+            )
+        ) return@filter false
+        instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+            && (instructions.getOrNull(index + 2) as? ReferenceInstruction)
+                ?.reference?.toString() == "Ljava/lang/String;"
+    }
+    check(candidates.size == 1) {
+        "Expected one ChMate 241 Talk authentication invocation, found ${candidates.size}"
+    }
+    val index = candidates.single()
+    when (val invocation = instructions[index]) {
+        is FiveRegisterInstruction -> authMethod.replaceInstruction(
+            index,
+            "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE}}, $EXTENSION->invokeIoTalkAuth(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        is RegisterRangeInstruction -> authMethod.replaceInstruction(
+            index,
+            "invoke-static/range {v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2}}, $EXTENSION->invokeIoTalkAuth(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        else -> error("ChMate 241 Talk authentication invocation registers were not found")
     }
 }
 
@@ -1773,14 +1821,19 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEn
     } else {
         "Ljp/syoboi/a2chMate/activity/ResListActivity;"
     }
-    mutableClassDefBy(activityClass).methods.single { method ->
+    val method = mutableClassDefBy(activityClass).methods.single { method ->
         method.name == "onCreate"
             && method.returnType == "V"
             && method.parameters.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
-    }.addInstruction(
+    }
+    method.addInstruction(
         0,
         "invoke-static/range { p0 .. p0 }, " +
             "$EXTENSION->rewriteLegacyThreadIntent(Landroid/app/Activity;)V",
+    )
+    method.addBeforeEveryReturn(
+        "invoke-static/range { p0 .. p0 }, " +
+            "$EXTENSION->hideTalkThreadBlankRows(Landroid/app/Activity;)V",
     )
 }
 
@@ -3546,6 +3599,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostPreflightVali
     version: String,
 ) {
     var patched = 0
+    if (version == "0.8.10.191 dev") {
+        patchLegacy191PostPreflightValidation()
+        patched++
+    }
     classDefForEach { classDef ->
         if (!classDef.type.contains("/feature/resedit/ResEditFragment;")) {
             return@classDefForEach
@@ -3584,13 +3641,42 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostPreflightVali
     }
 
     val expected = when (version) {
-        "0.8.10.226 dev", "0.8.10.241" -> 1
-        "0.8.10.191 dev", "0.8.10.243 dev" -> 0
+        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241" -> 1
+        "0.8.10.243 dev" -> 0
         else -> error("Unsupported ChMate version: $version")
     }
     check(patched == expected) {
         "Unexpected ChMate post preflight gates for $version: $patched (expected $expected)"
     }
+}
+
+/**
+ * ChMate 191 keeps the editor gate in its obfuscated Fragment rather than in
+ * the newer feature/resedit package.  It also removes the device-information
+ * footer with a version-specific regular expression, so the generic matcher
+ * above cannot identify it.  Bypass this method at the same point as the
+ * newer versions, while retaining the stock behavior when the setting is OFF.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy191PostPreflightValidation() {
+    val method = mutableClassDefBy("Lo/p9ExternalSyntheticLambda6;").methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Z"
+            && candidate.parameterTypes.isEmpty()
+    }
+    val firstInstruction = method.implementation?.instructions?.firstOrNull()
+        ?: error("ChMate 191 post preflight gate has no implementation")
+    val resultRegister = method.findFreeRegister(0)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $EXTENSION->bypassPostPreflightValidation()Z
+            move-result v$resultRegister
+            if-eqz v$resultRegister, :haiagaru_stock_191_post_preflight
+            const/4 v$resultRegister, 0x1
+            return v$resultRegister
+        """.trimIndent(),
+        ExternalLabel("haiagaru_stock_191_post_preflight", firstInstruction),
+    )
 }
 
 /** Hooks use stable parameter types; obfuscated owners are validated for each supported APK. */
