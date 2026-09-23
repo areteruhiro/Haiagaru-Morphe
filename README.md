@@ -117,26 +117,31 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版ともに正式Release `1.3.9`から取得します。
-1.3.9の配布物はAndroid拡張を内包したMPPです。
+通常版・プレリリース版ともに正式Release `1.4.0`から取得します。
+1.4.0の配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.3.9）を取得するパッチソースです。
+現在の公式版（1.4.0）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース設定でも1.3.9を配布しています。
+プレリリース設定でも1.4.0を配布しています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
 ```
 
-現在は通常版・プレリリース版ともに `1.3.9` を配布しています。同じバージョン内で修正版を配布する場合は、
+現在は通常版・プレリリース版ともに `1.4.0` を配布しています。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.4.0（正式版）
+
+- ChMate `0.8.10.226 dev`でモバイル回線固定の書き込み時に、失効直後のnetwork IDを再利用して`Binding socket to network ... failed: EPERM`になる問題を修正
+- モバイル回線固定の投稿では毎回Androidの`requestNetwork()`で有効なセルラー回線を取得し、投稿完了まで`NetworkCallback`を維持するよう変更
 
 ### 1.3.9（正式版）
 
