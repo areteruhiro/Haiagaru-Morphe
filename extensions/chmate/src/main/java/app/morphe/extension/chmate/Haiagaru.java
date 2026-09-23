@@ -27,6 +27,10 @@ import android.os.Process;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -61,6 +65,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.Socket;
+import javax.net.SocketFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -74,6 +81,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.regex.Pattern;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -913,6 +922,190 @@ public final class Haiagaru {
      */
     public static boolean loadLiveTalkDat(String url, File destination) throws IOException {
         return ArchivedThreadImporter.loadLiveTalkDat(url, destination);
+    }
+
+    /**
+     * Creates a socket on the currently usable cellular network. ChMate's
+     * cellular-only client keeps one Network.SocketFactory, but Android 16 can
+     * invalidate that Network while a post is being assembled. Resolve the
+     * network again for every new socket and retry the current candidates before
+     * falling back to ChMate's original factory.
+     */
+    public static Socket createCellularSocket(SocketFactory fallback, String host, int port)
+            throws IOException {
+        IOException last = null;
+        for (Network network : currentCellularNetworks()) {
+            try {
+                return network.getSocketFactory().createSocket(host, port);
+            } catch (IOException error) {
+                last = error;
+            }
+        }
+        Socket refreshed = createRequestedCellularSocket(host, port, null, 0);
+        if (refreshed != null) return refreshed;
+        try {
+            return fallback.createSocket(host, port);
+        } catch (IOException error) {
+            if (last != null) error.addSuppressed(last);
+            throw error;
+        }
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, String host, int port, InetAddress localAddress, int localPort)
+            throws IOException {
+        IOException last = null;
+        for (Network network : currentCellularNetworks()) {
+            try {
+                return network.getSocketFactory().createSocket(host, port, localAddress, localPort);
+            } catch (IOException error) {
+                last = error;
+            }
+        }
+        Socket refreshed = createRequestedCellularSocket(host, port, localAddress, localPort);
+        if (refreshed != null) return refreshed;
+        try {
+            return fallback.createSocket(host, port, localAddress, localPort);
+        } catch (IOException error) {
+            if (last != null) error.addSuppressed(last);
+            throw error;
+        }
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, InetAddress address, int port) throws IOException {
+        IOException last = null;
+        for (Network network : currentCellularNetworks()) {
+            try {
+                return network.getSocketFactory().createSocket(address, port);
+            } catch (IOException error) {
+                last = error;
+            }
+        }
+        Socket refreshed = createRequestedCellularSocket(address, port, null, 0);
+        if (refreshed != null) return refreshed;
+        try {
+            return fallback.createSocket(address, port);
+        } catch (IOException error) {
+            if (last != null) error.addSuppressed(last);
+            throw error;
+        }
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, InetAddress address, int port,
+            InetAddress localAddress, int localPort) throws IOException {
+        IOException last = null;
+        for (Network network : currentCellularNetworks()) {
+            try {
+                return network.getSocketFactory().createSocket(
+                        address, port, localAddress, localPort);
+            } catch (IOException error) {
+                last = error;
+            }
+        }
+        Socket refreshed = createRequestedCellularSocket(
+                address, port, localAddress, localPort);
+        if (refreshed != null) return refreshed;
+        try {
+            return fallback.createSocket(address, port, localAddress, localPort);
+        } catch (IOException error) {
+            if (last != null) error.addSuppressed(last);
+            throw error;
+        }
+    }
+
+    private static List<Network> currentCellularNetworks() {
+        Context context = applicationContext;
+        if (context == null) return java.util.Collections.emptyList();
+        try {
+            ConnectivityManager manager = (ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) return java.util.Collections.emptyList();
+            List<Network> validated = new ArrayList<>();
+            List<Network> available = new ArrayList<>();
+            for (Network network : manager.getAllNetworks()) {
+                NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
+                if (capabilities == null || !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                        || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+                    continue;
+                }
+                if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                    validated.add(network);
+                } else {
+                    available.add(network);
+                }
+            }
+            validated.addAll(available);
+            return validated;
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to enumerate current cellular networks", error);
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    private static Socket createRequestedCellularSocket(
+            String host, int port, InetAddress localAddress, int localPort) {
+        Network network = requestCellularNetwork();
+        if (network == null) return null;
+        try {
+            if (localAddress == null) {
+                return network.getSocketFactory().createSocket(host, port);
+            }
+            return network.getSocketFactory().createSocket(host, port, localAddress, localPort);
+        } catch (IOException error) {
+            Log.w(LOG_TAG, "Requested cellular network socket failed", error);
+            return null;
+        }
+    }
+
+    private static Socket createRequestedCellularSocket(
+            InetAddress address, int port, InetAddress localAddress, int localPort) {
+        Network network = requestCellularNetwork();
+        if (network == null) return null;
+        try {
+            if (localAddress == null) {
+                return network.getSocketFactory().createSocket(address, port);
+            }
+            return network.getSocketFactory().createSocket(
+                    address, port, localAddress, localPort);
+        } catch (IOException error) {
+            Log.w(LOG_TAG, "Requested cellular network socket failed", error);
+            return null;
+        }
+    }
+
+    private static Network requestCellularNetwork() {
+        Context context = applicationContext;
+        if (context == null) return null;
+        try {
+            ConnectivityManager manager = (ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) return null;
+            CountDownLatch ready = new CountDownLatch(1);
+            Network[] result = new Network[1];
+            ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    result[0] = network;
+                    ready.countDown();
+                }
+            };
+            NetworkRequest request = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    .build();
+            manager.requestNetwork(request, callback);
+            ready.await(3L, TimeUnit.SECONDS);
+            try {
+                manager.unregisterNetworkCallback(callback);
+            } catch (Throwable ignored) {
+            }
+            return result[0];
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to request a fresh cellular network", error);
+            return null;
+        }
     }
 
     /**
