@@ -483,6 +483,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.226 dev" -> {
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
+                patchPreIoCellularNetworkSelection()
                 patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
                 patchLegacyThreadListAd("Lo/listener;")
                 patchPreIoTalkDatLoading()
@@ -534,6 +535,50 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchEdgeReporterHistory(packageMetadata.versionName)
         patchHttpsTransport()
     }
+}
+
+/**
+ * ChMate 226 normally reuses the first cellular [android.net.Network] returned by
+ * ConnectivityManager.getAllNetworks().  Android can leave a just-lost network in
+ * that snapshot briefly; the SocketFactory created from it then fails with
+ * "Binding socket to network N failed: EPERM".  A thread refresh happens to avoid
+ * the race by rebuilding the client, which is why posting succeeds afterwards.
+ *
+ * Make the existing code take its requestNetwork() branch for every cellular post.
+ * That branch waits for onAvailable and retains the NetworkCallback until the HTTP
+ * operation finishes, so the selected network remains current and requested for
+ * the lifetime of the post.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoCellularNetworkSelection() {
+    val selector = mutableClassDefBy("Lo/accessisAvailablecp;").methods.single { method ->
+        method.name == "d"
+            && method.returnType == "Lo/zzdE;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf("Lo/zzdE;")
+    }
+    val instructions = selector.implementation?.instructions
+        ?: error("ChMate 226 cellular network selector has no implementation")
+    val snapshotCalls = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Landroid/net/ConnectivityManager;"
+            && reference.name == "getAllNetworks"
+            && reference.returnType == "[Landroid/net/Network;"
+            && reference.parameterTypes.isEmpty()
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        ) index else null
+    }
+    check(snapshotCalls.size == 1) {
+        "Expected one ChMate 226 cellular network snapshot, found ${snapshotCalls.size}"
+    }
+    val resultRegister = (instructions[snapshotCalls.single() + 1] as OneRegisterInstruction).registerA
+    val sizeRegister = selector.findFreeRegister(snapshotCalls.single() + 2)
+    selector.addInstructionsWithLabels(
+        snapshotCalls.single() + 2,
+        """
+            const/4 v$sizeRegister, 0x0
+            new-array v$resultRegister, v$sizeRegister, [Landroid/net/Network;
+        """.trimIndent(),
+    )
 }
 
 /** Rewrite at expansion time so existing user menu settings are repaired as well. */
