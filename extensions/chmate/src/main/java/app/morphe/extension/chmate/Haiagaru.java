@@ -1760,17 +1760,17 @@ public final class Haiagaru {
     public static String normalizeBeIconUrl(String original) {
         if (original == null) return null;
         return original
-                .replace("://img.5ch.net/ico/premium/", "://img.5ch.io/premium/")
+                .replace("://img.5ch.net/ico/_be_", "://img.5ch.io/premium/")
+                .replace("://img.5ch.net/ico/_be", "://img.5ch.io/premium/")
                 .replace("://img.5ch.net/", "://img.5ch.io/");
     }
 
     public static String prepareLegacyBeParsing(String original) {
-        if (original == null
-                || (!original.contains("sssp://img.5ch.io/")
-                && !original.contains("sssp://img.5ch.net/"))) return original;
+        if (original == null) return null;
         return original
-                .replace("://img.5ch.io/", "://img.5ch.net/")
-                .replace("://img.5ch.net/premium/", "://img.5ch.net/ico/premium/");
+                .replace("sssp://img.5ch.io/premium/", "sssp://img.5ch.net/ico/_be")
+                .replace("sssp://img.5ch.net/premium/", "sssp://img.5ch.net/ico/_be_")
+                .replace("sssp://img.5ch.io/", "sssp://img.5ch.net/");
     }
 
     public static String stripLegacyBeAttachmentTokens(String original) {
