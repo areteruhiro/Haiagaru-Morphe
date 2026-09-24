@@ -485,6 +485,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchLegacy5chIoCompatibility()
                 patchLegacyTalkDatLoading()
                 patchLegacyTalkAuthIntegrity()
+                patchLegacyCellularNetworkSelection()
+                patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
                 patchProgrammableNg226()
@@ -586,8 +588,58 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoCellularNetw
     selector.addInstructionsWithLabels(
         snapshotCalls.single() + 2,
         """
+            invoke-static {}, $EXTENSION->isCellularNetworkRefreshEnabled()Z
+            move-result v$sizeRegister
+            if-eqz v$sizeRegister, :haiagaru_keep_226_networks
             const/4 v$sizeRegister, 0x0
             new-array v$resultRegister, v$sizeRegister, [Landroid/net/Network;
+            :haiagaru_keep_226_networks
+            nop
+        """.trimIndent(),
+    )
+}
+
+/**
+ * 191 has the same stale getAllNetworks() preference, but in the older
+ * createDefault network builder. Keep the workaround runtime-toggleable so
+ * disabling it restores the stock path without requiring a new patch.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyCellularNetworkSelection() {
+    val selector = mutableClassDefBy("Lo/createDefault;").methods.single { method ->
+        method.name == "b"
+            && method.returnType == "Lo/r8lambdaz0gPFulMuhJ_LGn4qb5HDvuDsis;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf(
+                "Lo/r8lambdaz0gPFulMuhJ_LGn4qb5HDvuDsis;"
+            )
+    }
+    val instructions = selector.implementation?.instructions
+        ?: error("ChMate 191 cellular network selector has no implementation")
+    val snapshotCalls = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Landroid/net/ConnectivityManager;"
+            && reference.name == "getAllNetworks"
+            && reference.returnType == "[Landroid/net/Network;"
+            && reference.parameterTypes.isEmpty()
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        ) index else null
+    }
+    check(snapshotCalls.size == 1) {
+        "Expected one ChMate 191 cellular network snapshot, found ${snapshotCalls.size}"
+    }
+    val snapshotIndex = snapshotCalls.single()
+    val resultRegister = (instructions[snapshotIndex + 1] as OneRegisterInstruction).registerA
+    val scratchRegister = selector.findFreeRegister(snapshotIndex + 2)
+    selector.addInstructionsWithLabels(
+        snapshotIndex + 2,
+        """
+            invoke-static {}, $EXTENSION->isCellularNetworkRefreshEnabled()Z
+            move-result v$scratchRegister
+            if-eqz v$scratchRegister, :haiagaru_keep_191_networks
+            const/4 v$scratchRegister, 0x0
+            new-array v$resultRegister, v$scratchRegister, [Landroid/net/Network;
+            :haiagaru_keep_191_networks
+            nop
         """.trimIndent(),
     )
 }
@@ -661,6 +713,61 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoCellularSock
         move-result-object p1
         return-object p1
     """.trimIndent())
+}
+
+/** Refresh the five cellular socket overloads in 191's older wrapper. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyCellularSocketRefresh() {
+    val factory = mutableClassDefBy("Lo/createDefault\$setContentView;")
+    val methods = factory.methods.filter { method ->
+        method.name == "createSocket" && method.returnType == "Ljava/net/Socket;"
+    }
+    check(methods.size == 5) {
+        "Expected five ChMate 191 cellular socket methods, found ${methods.size}"
+    }
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "I", "Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;ILjava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/InetAddress;", "I", "Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/net/InetAddress;ILjava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/Socket;", "Ljava/lang/String;", "I", "Z") }
+        .addInstructionsWithLabels(0, """
+            iget-object p1, p0, Lo/createDefault${'$'}setContentView;->a:Ljavax/net/ssl/SSLSocketFactory;
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p2, p3}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+            move-result-object v0
+            invoke-virtual {p1, v0, p2, p3, p4}, Ljavax/net/ssl/SSLSocketFactory;->createSocket(
+                Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
 }
 
 /** Rewrite at expansion time so existing user menu settings are repaired as well. */
