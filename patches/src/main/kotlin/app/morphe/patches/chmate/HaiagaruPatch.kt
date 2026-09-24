@@ -7,8 +7,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
@@ -27,6 +29,9 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import org.w3c.dom.Element
+import org.w3c.dom.Document
+import java.net.URI
+import java.util.Locale
 
 private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
@@ -1397,6 +1402,81 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoThreadRefreshCa
     )
 }
 
+private const val ANDROID_XML_NAMESPACE = "http://schemas.android.com/apk/res/android"
+private const val OPEN_URL_ACTIVITY = "app.morphe.extension.chmate.OpenUrlActivity"
+
+private data class OpenUrlPattern(
+    val scheme: String,
+    val host: String,
+    val port: Int?,
+    val path: String?,
+    val prefix: Boolean,
+)
+
+private fun parseAdditionalOpenUrls(value: String): List<OpenUrlPattern> {
+    val entries = value.split(Regex("[,\\r\\n]+"))
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+    if (entries.size > 32) {
+        throw PatchException("追加できるURLは32件までです。")
+    }
+    return entries.map { entry ->
+        val prefix = entry.endsWith("/*")
+        val url = if (prefix) entry.dropLast(1) else entry
+        val uri = try {
+            URI(url)
+        } catch (_: Exception) {
+            throw PatchException("URLの形式が正しくありません: $entry")
+        }
+        val scheme = uri.scheme?.lowercase(Locale.ROOT)
+        val host = uri.host?.lowercase(Locale.ROOT)
+        if (scheme !in setOf("http", "https") || host.isNullOrBlank()
+            || uri.userInfo != null || uri.query != null || uri.fragment != null
+            || uri.port == 0 || uri.port > 65535 || uri.path?.contains('*') == true
+        ) {
+            throw PatchException("http(s)のURLを指定してください（クエリ・#・途中の*は不可）: $entry")
+        }
+        OpenUrlPattern(
+            scheme = requireNotNull(scheme),
+            host = host,
+            port = uri.port.takeIf { it >= 0 },
+            path = uri.path?.takeIf(String::isNotEmpty),
+            prefix = prefix,
+        )
+    }.distinct()
+}
+
+private fun Document.addOpenUrlFilter(
+    activity: Element,
+    schemes: List<String>,
+    host: String,
+    port: Int? = null,
+    path: String? = null,
+    pathAttribute: String = "android:path",
+) {
+    val filter = createElement("intent-filter")
+    filter.appendChild(createElement("action").apply {
+        setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", "android.intent.action.VIEW")
+    })
+    listOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE")
+        .forEach { categoryName ->
+            filter.appendChild(createElement("category").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", categoryName)
+            })
+        }
+    schemes.forEach { scheme ->
+        filter.appendChild(createElement("data").apply {
+            setAttributeNS(ANDROID_XML_NAMESPACE, "android:scheme", scheme)
+        })
+    }
+    filter.appendChild(createElement("data").apply {
+        setAttributeNS(ANDROID_XML_NAMESPACE, "android:host", host)
+        port?.let { setAttributeNS(ANDROID_XML_NAMESPACE, "android:port", it.toString()) }
+        path?.let { setAttributeNS(ANDROID_XML_NAMESPACE, pathAttribute, it) }
+    })
+    activity.appendChild(filter)
+}
+
 @Suppress("unused")
 val haiagaruPatch = resourcePatch(
     name = "Haiagaru",
@@ -1405,7 +1485,15 @@ val haiagaruPatch = resourcePatch(
     compatibleWith(chMateCompatibility)
     dependsOn(haiagaruBytecodePatch)
 
+    val additionalOpenUrls = stringOption(
+        key = "additionalOpenUrls",
+        default = "",
+        title = "アプリで開くURLを追加",
+        description = "http(s)://から始まるURLをカンマ区切りで指定。末尾/*は配下も対象です。ChMateが解析できる板・スレURLに使用してください。",
+    )
+
     execute {
+        val customUrls = parseAdditionalOpenUrls(additionalOpenUrls.value.orEmpty())
         document("AndroidManifest.xml").use { document ->
             val additions = buildList {
                 val dataElements = document.getElementsByTagName("data")
@@ -1483,6 +1571,45 @@ val haiagaruPatch = resourcePatch(
                     intentFilter.appendChild(pathData)
                 }
             }
+
+            val application = document.getElementsByTagName("application").item(0) as Element
+            val openUrlActivity = document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", OPEN_URL_ACTIVITY)
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Translucent.NoTitleBar",
+                )
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:excludeFromRecents", "true")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:noHistory", "true")
+            }
+
+            // One routing Activity avoids competing board/thread Activity matches.
+            // Separate filters keep custom hosts and paths from being combined.
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/boards/", pathAttribute = "android:pathPrefix",
+            )
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/test/read.cgi/", pathAttribute = "android:pathPrefix",
+            )
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/.*/", pathAttribute = "android:pathPattern",
+            )
+            customUrls.forEach { url ->
+                document.addOpenUrlFilter(
+                    activity = openUrlActivity,
+                    schemes = listOf(url.scheme),
+                    host = url.host,
+                    port = url.port,
+                    path = url.path,
+                    pathAttribute = if (url.prefix) "android:pathPrefix" else "android:path",
+                )
+            }
+            application.appendChild(openUrlActivity)
         }
     }
 }
