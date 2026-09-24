@@ -90,6 +90,17 @@ import javax.crypto.spec.SecretKeySpec;
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
     private static final String LOG_TAG = "Haiagaru";
+    /**
+     * A cellular Network requested for a post must remain requested while the
+     * HTTP client is using its socket.  Releasing the callback immediately
+     * after onAvailable() lets Android tear down the request underneath the
+     * socket and can reproduce "Binding socket to network N failed: EPERM".
+     * ChMate closes its sockets inside generated code, so the extension keeps
+     * the lease for a bounded post window instead of guessing at a close hook.
+     */
+    private static final long CELLULAR_NETWORK_LEASE_MILLIS = 120_000L;
+    private static final Handler CELLULAR_NETWORK_LEASE_HANDLER =
+            new Handler(Looper.getMainLooper());
     private static final Map<Activity, PopupWindow> SETTINGS_BUTTON_POPUPS =
             new WeakHashMap<>();
     private static final String PREFS_NAME =
@@ -941,153 +952,92 @@ public final class Haiagaru {
      */
     public static Socket createCellularSocket(SocketFactory fallback, String host, int port)
             throws IOException {
-        IOException last = null;
-        for (Network network : currentCellularNetworks()) {
-            try {
-                return network.getSocketFactory().createSocket(host, port);
-            } catch (IOException error) {
-                last = error;
-            }
-        }
-        Socket refreshed = createRequestedCellularSocket(host, port, null, 0);
-        if (refreshed != null) return refreshed;
-        try {
-            return fallback.createSocket(host, port);
-        } catch (IOException error) {
-            if (last != null) error.addSuppressed(last);
-            throw error;
-        }
+        if (!isCellularNetworkRefreshEnabled()) return fallback.createSocket(host, port);
+        return createRequestedCellularSocket(host, port, null, 0);
     }
 
     public static Socket createCellularSocket(
             SocketFactory fallback, String host, int port, InetAddress localAddress, int localPort)
             throws IOException {
-        IOException last = null;
-        for (Network network : currentCellularNetworks()) {
-            try {
-                return network.getSocketFactory().createSocket(host, port, localAddress, localPort);
-            } catch (IOException error) {
-                last = error;
-            }
-        }
-        Socket refreshed = createRequestedCellularSocket(host, port, localAddress, localPort);
-        if (refreshed != null) return refreshed;
-        try {
+        if (!isCellularNetworkRefreshEnabled()) {
             return fallback.createSocket(host, port, localAddress, localPort);
-        } catch (IOException error) {
-            if (last != null) error.addSuppressed(last);
-            throw error;
         }
+        return createRequestedCellularSocket(host, port, localAddress, localPort);
     }
 
     public static Socket createCellularSocket(
             SocketFactory fallback, InetAddress address, int port) throws IOException {
-        IOException last = null;
-        for (Network network : currentCellularNetworks()) {
-            try {
-                return network.getSocketFactory().createSocket(address, port);
-            } catch (IOException error) {
-                last = error;
-            }
-        }
-        Socket refreshed = createRequestedCellularSocket(address, port, null, 0);
-        if (refreshed != null) return refreshed;
-        try {
-            return fallback.createSocket(address, port);
-        } catch (IOException error) {
-            if (last != null) error.addSuppressed(last);
-            throw error;
-        }
+        if (!isCellularNetworkRefreshEnabled()) return fallback.createSocket(address, port);
+        return createRequestedCellularSocket(address, port, null, 0);
     }
 
     public static Socket createCellularSocket(
             SocketFactory fallback, InetAddress address, int port,
             InetAddress localAddress, int localPort) throws IOException {
+        if (!isCellularNetworkRefreshEnabled()) {
+            return fallback.createSocket(address, port, localAddress, localPort);
+        }
+        return createRequestedCellularSocket(address, port, localAddress, localPort);
+    }
+
+    private static Socket createRequestedCellularSocket(
+            String host, int port, InetAddress localAddress, int localPort) throws IOException {
         IOException last = null;
-        for (Network network : currentCellularNetworks()) {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            CellularNetworkLease lease = requestCellularNetwork();
+            if (lease == null) continue;
             try {
-                return network.getSocketFactory().createSocket(
-                        address, port, localAddress, localPort);
+                Socket socket = localAddress == null
+                        ? lease.network.getSocketFactory().createSocket(host, port)
+                        : lease.network.getSocketFactory().createSocket(
+                                host, port, localAddress, localPort);
+                retainCellularNetworkLease(lease);
+                Log.i(LOG_TAG, "Using requested cellular network " + lease.network
+                        + " for post socket");
+                return socket;
             } catch (IOException error) {
                 last = error;
+                lease.release();
+                Log.w(LOG_TAG, "Requested cellular network socket failed on attempt "
+                        + (attempt + 1), error);
             }
         }
-        Socket refreshed = createRequestedCellularSocket(
-                address, port, localAddress, localPort);
-        if (refreshed != null) return refreshed;
-        try {
-            return fallback.createSocket(address, port, localAddress, localPort);
-        } catch (IOException error) {
-            if (last != null) error.addSuppressed(last);
-            throw error;
-        }
-    }
-
-    private static List<Network> currentCellularNetworks() {
-        Context context = applicationContext;
-        if (context == null) return java.util.Collections.emptyList();
-        try {
-            ConnectivityManager manager = (ConnectivityManager)
-                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (manager == null) return java.util.Collections.emptyList();
-            List<Network> validated = new ArrayList<>();
-            List<Network> available = new ArrayList<>();
-            for (Network network : manager.getAllNetworks()) {
-                NetworkCapabilities capabilities = manager.getNetworkCapabilities(network);
-                if (capabilities == null || !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                        || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
-                    continue;
-                }
-                if (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-                    validated.add(network);
-                } else {
-                    available.add(network);
-                }
-            }
-            validated.addAll(available);
-            return validated;
-        } catch (Throwable error) {
-            Log.w(LOG_TAG, "Unable to enumerate current cellular networks", error);
-            return java.util.Collections.emptyList();
-        }
+        throw last != null ? last : new IOException("No cellular network available for post");
     }
 
     private static Socket createRequestedCellularSocket(
-            String host, int port, InetAddress localAddress, int localPort) {
-        Network network = requestCellularNetwork();
-        if (network == null) return null;
-        try {
-            if (localAddress == null) {
-                return network.getSocketFactory().createSocket(host, port);
+            InetAddress address, int port, InetAddress localAddress, int localPort)
+            throws IOException {
+        IOException last = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            CellularNetworkLease lease = requestCellularNetwork();
+            if (lease == null) continue;
+            try {
+                Socket socket = localAddress == null
+                        ? lease.network.getSocketFactory().createSocket(address, port)
+                        : lease.network.getSocketFactory().createSocket(
+                                address, port, localAddress, localPort);
+                retainCellularNetworkLease(lease);
+                Log.i(LOG_TAG, "Using requested cellular network " + lease.network
+                        + " for post socket");
+                return socket;
+            } catch (IOException error) {
+                last = error;
+                lease.release();
+                Log.w(LOG_TAG, "Requested cellular network socket failed on attempt "
+                        + (attempt + 1), error);
             }
-            return network.getSocketFactory().createSocket(host, port, localAddress, localPort);
-        } catch (IOException error) {
-            Log.w(LOG_TAG, "Requested cellular network socket failed", error);
-            return null;
         }
+        throw last != null ? last : new IOException("No cellular network available for post");
     }
 
-    private static Socket createRequestedCellularSocket(
-            InetAddress address, int port, InetAddress localAddress, int localPort) {
-        Network network = requestCellularNetwork();
-        if (network == null) return null;
-        try {
-            if (localAddress == null) {
-                return network.getSocketFactory().createSocket(address, port);
-            }
-            return network.getSocketFactory().createSocket(
-                    address, port, localAddress, localPort);
-        } catch (IOException error) {
-            Log.w(LOG_TAG, "Requested cellular network socket failed", error);
-            return null;
-        }
-    }
-
-    private static Network requestCellularNetwork() {
+    private static CellularNetworkLease requestCellularNetwork() {
         Context context = applicationContext;
         if (context == null) return null;
+        ConnectivityManager manager = null;
+        CellularNetworkLease lease = null;
         try {
-            ConnectivityManager manager = (ConnectivityManager)
+            manager = (ConnectivityManager)
                     context.getSystemService(Context.CONNECTIVITY_SERVICE);
             if (manager == null) return null;
             CountDownLatch ready = new CountDownLatch(1);
@@ -1098,21 +1048,58 @@ public final class Haiagaru {
                     result[0] = network;
                     ready.countDown();
                 }
+
             };
             NetworkRequest request = new NetworkRequest.Builder()
                     .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                     .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
                     .build();
             manager.requestNetwork(request, callback);
-            ready.await(3L, TimeUnit.SECONDS);
+            lease = new CellularNetworkLease(manager, callback);
+            if (!ready.await(5L, TimeUnit.SECONDS) || result[0] == null) {
+                lease.release();
+                return null;
+            }
+            lease.network = result[0];
+            return lease;
+        } catch (Throwable error) {
+            if (lease != null) lease.release();
+            Log.w(LOG_TAG, "Unable to request a fresh cellular network", error);
+            return null;
+        }
+    }
+
+    private static void retainCellularNetworkLease(final CellularNetworkLease lease) {
+        CELLULAR_NETWORK_LEASE_HANDLER.postDelayed(
+                lease::release, CELLULAR_NETWORK_LEASE_MILLIS);
+    }
+
+    /** Whether the user enabled the fresh-cellular-network workaround. */
+    public static boolean isCellularNetworkRefreshEnabled() {
+        SharedPreferences preferences = preferencesOrNull();
+        return preferences == null || preferences.getBoolean("refreshCellularNetwork", true);
+    }
+
+    private static final class CellularNetworkLease {
+        private final ConnectivityManager manager;
+        private final ConnectivityManager.NetworkCallback callback;
+        private volatile Network network;
+        private boolean released;
+
+        private CellularNetworkLease(
+                ConnectivityManager manager,
+                ConnectivityManager.NetworkCallback callback) {
+            this.manager = manager;
+            this.callback = callback;
+        }
+
+        private synchronized void release() {
+            if (released) return;
+            released = true;
             try {
                 manager.unregisterNetworkCallback(callback);
             } catch (Throwable ignored) {
             }
-            return result[0];
-        } catch (Throwable error) {
-            Log.w(LOG_TAG, "Unable to request a fresh cellular network", error);
-            return null;
         }
     }
 
@@ -2320,6 +2307,21 @@ public final class Haiagaru {
                 text("自動DAT取得", "Automatic DAT retrieval"),
                 preferences.getBoolean("automaticDat", true)
         );
+        Switch refreshCellularNetwork = addSwitch(
+                layout,
+                activity,
+                text("投稿時にモバイル回線を再取得する", "Refresh the cellular network before posting"),
+                preferences.getBoolean("refreshCellularNetwork", true)
+        );
+        TextView refreshCellularNetworkDescription = new TextView(activity);
+        refreshCellularNetworkDescription.setText(text(
+                "ON（推奨）では、古いNetwork IDを使わず投稿前にセルラー回線を再要求します。"
+                        + " OFFにするとChMate本来の接続選択へ戻ります。",
+                "ON (recommended) requests a fresh cellular network before posting instead of reusing "
+                        + "a stale Network ID. OFF restores ChMate's original selection."
+        ));
+        refreshCellularNetworkDescription.setTextSize(13);
+        layout.addView(refreshCellularNetworkDescription, rowParams(activity));
         Switch bypassPostPreflight = addSwitch(
                 layout,
                 activity,
@@ -2521,6 +2523,7 @@ public final class Haiagaru {
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
                             .putBoolean("forceHttps", forceHttps.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
+                            .putBoolean("refreshCellularNetwork", refreshCellularNetwork.isChecked())
                             .putBoolean("bypassPostPreflight", bypassPostPreflight.isChecked())
                             .commit();
                     if (archiveRouteTemplates != null) {
@@ -3180,6 +3183,7 @@ public final class Haiagaru {
         final boolean edgeReporterId;
         final boolean forceHttps;
         final boolean automaticDat;
+        final boolean refreshCellularNetwork;
         final String archiveRouteTemplates;
 
         private ConfigSnapshot(
@@ -3195,6 +3199,7 @@ public final class Haiagaru {
                 boolean edgeReporterId,
                 boolean forceHttps,
                 boolean automaticDat,
+                boolean refreshCellularNetwork,
                 String archiveRouteTemplates
         ) {
             this.hideAd = hideAd;
@@ -3209,6 +3214,7 @@ public final class Haiagaru {
             this.edgeReporterId = edgeReporterId;
             this.forceHttps = forceHttps;
             this.automaticDat = automaticDat;
+            this.refreshCellularNetwork = refreshCellularNetwork;
             this.archiveRouteTemplates = archiveRouteTemplates;
         }
 
@@ -3226,6 +3232,7 @@ public final class Haiagaru {
                     preferences.getBoolean("edgeReporterId", true),
                     preferences.getBoolean("forceHttps", false),
                     preferences.getBoolean("automaticDat", true),
+                    preferences.getBoolean("refreshCellularNetwork", true),
                     preferences.getString(
                             ARCHIVE_ROUTE_TEMPLATES_KEY,
                             DEFAULT_ARCHIVE_ROUTE_TEMPLATES
@@ -3244,6 +3251,7 @@ public final class Haiagaru {
                     && edgeReporterId == value.edgeReporterId
                     && forceHttps == value.forceHttps
                     && automaticDat == value.automaticDat
+                    && refreshCellularNetwork == value.refreshCellularNetwork
                     && equal(userAgent, value.userAgent)
                     && equal(cookieClass, value.cookieClass)
                     && equal(monaKeyFile, value.monaKeyFile)

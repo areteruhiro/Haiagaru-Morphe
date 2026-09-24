@@ -17,6 +17,7 @@ https://github.com/areteruhiro/Haiagaru
 * 自動DAT取得のON/OFF切り替え
 * 古いDAT・過去ログの改行保持と`.io` URL直接起動時の自動DAT取得
 * Talkの現行・旧形式板URLからの板一覧／スレ取得と書き込み互換処理
+* モバイル回線固定時の投稿で失効したNetwork IDを再利用しない接続更新（Haiagaru設定でON/OFF、初期値ON）
 * ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.243 dev` のスレ内広告行の非表示
 * 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
@@ -142,6 +143,9 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 - BEアイコンと「本文内の5chスレURLにスレ立て日を表示」を併用した際の、アイコンの二重表示やURL認識のずれを修正
 - 191 devのスレ立て確認処理で本文などの入力内容が失われる問題を修正
+- 191 dev／226 devのモバイル回線固定投稿で、`getAllNetworks()`由来の失効Network／SocketFactoryを使わず、投稿ごとに新しいセルラーNetworkを要求するよう修正
+- Android 16でNetworkが投稿中に切り替わる場合は、別のNetworkを再要求してから接続を再試行するよう修正
+- Haiagaru設定に「投稿時にモバイル回線を再取得する」を追加（初期値ON、OFFでChMate本来の接続選択へ戻す）
 - 対応バージョン：ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev`
 
 ### 1.4.2（プレリリース）
