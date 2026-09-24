@@ -3111,6 +3111,49 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchBbsMenuUrl(
             move-result-object p1
         """,
     )
+
+    // ChMate leaves URL 1 empty on a fresh install. The worker above can only
+    // migrate a URL that already exists, so give its first menu preference a
+    // default without changing any explicitly saved user value.
+    val menuDefaults = mutableListOf<Pair<MutableMethod, Int>>()
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Ljp/syoboi/") && !classDef.type.startsWith("Lo/")) {
+            return@classDefForEach
+        }
+        classDef.methods.filter { it.name == "<clinit>" }.forEach { method ->
+            val index = method.implementation?.instructions?.indexOfFirst { instruction ->
+                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+                    "bbsMenuUrl"
+            } ?: -1
+            if (index >= 0) {
+                menuDefaults += mutableClassDefBy(classDef).findMutableMethodOf(method) to index
+            }
+        }
+    }
+    check(menuDefaults.size <= 1) { "ChMate has multiple first BBS menu preferences" }
+    if (menuDefaults.isEmpty()) return
+    val (initializer, menuKeyIndex) = menuDefaults.single()
+    val instructions = initializer.implementation!!.instructions
+    val constructorIndex = (menuKeyIndex + 1 until minOf(menuKeyIndex + 5, instructions.size))
+        .firstOrNull { index ->
+            val instruction = instructions[index]
+            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            instruction.opcode == Opcode.INVOKE_DIRECT
+                && instruction is FiveRegisterInstruction
+                && instruction.registerCount == 3
+                && reference?.name == "<init>"
+                && reference.parameterTypes.map(CharSequence::toString) ==
+                    listOf("Ljava/lang/String;", "Ljava/lang/String;")
+        } ?: error("ChMate's first BBS menu default constructor was not found")
+    val defaultRegister = (instructions[constructorIndex] as FiveRegisterInstruction).registerE
+    initializer.addInstructionsWithLabels(
+        constructorIndex + 1,
+        "const-string v$defaultRegister, \"\"",
+    )
+    initializer.addInstructionsWithLabels(
+        constructorIndex,
+        "const-string v$defaultRegister, \"https://menu.5ch.io/bbsmenu.html\"",
+    )
 }
 
 /**
