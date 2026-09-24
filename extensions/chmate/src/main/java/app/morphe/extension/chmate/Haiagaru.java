@@ -1355,9 +1355,10 @@ public final class Haiagaru {
 
     private static String requestIoTalkAuth(String id, String password, long suppliedTime)
             throws Exception {
-        // Keep ChMate 241's wire format: the caller supplies epoch seconds and
-        // the generated authenticator reduces it once more before sending CT.
-        long authTime = suppliedTime / 1000L;
+        // ChMate 241 passes epoch seconds here.  Do not convert the value a
+        // second time: using milliseconds-to-seconds conversion again changes
+        // the HMAC input and makes Talk reject the write token.
+        long authTime = suppliedTime;
         String appKey = "KkaD9iXqKv9lp2luO9SuaTL8lmvRPj";
         String digestInput = id + password + appKey + authTime;
 
@@ -1936,6 +1937,15 @@ public final class Haiagaru {
     /** Removes empty inline slots left between Talk response rows. */
     public static void hideTalkThreadBlankRows(Activity activity) {
         if (activity == null || !shouldHideAds()) return;
+        // This hook is installed on ResListActivity, which is also used for
+        // ordinary 5ch threads.  Their response container can still be empty
+        // while the first network load is in progress.  Treating that
+        // container as an ad slot hides the whole thread on its first open.
+        Intent intent = activity.getIntent();
+        if (intent == null || intent.getData() == null
+                || !ArchivedThreadImporter.isTalkThreadUrl(intent.getData().toString())) {
+            return;
+        }
         View root = activity.getWindow() == null
                 ? null : activity.getWindow().getDecorView();
         if (!(root instanceof ViewGroup)) return;
