@@ -3863,9 +3863,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
             }
 
             // The old implementation parses and merges the confirmation form but
-            // then restores its form parameter before retrying. Store the parsed
-            // server form in that existing parameter immediately while its type is
-            // known, so the original retry edge naturally sends it unchanged.
+            // then restores its form parameter before retrying. Keep the original
+            // form in p4 throughout the merge: replacing it with the parsed form
+            // before the iterator runs loses MESSAGE and can modify the collection
+            // being iterated. Only assign the merged form after that loop finishes.
             val confirmationParserIndexes = instructions.mapIndexedNotNull { index, instruction ->
                 val reference = (instruction as? ReferenceInstruction)?.reference
                     as? MethodReference ?: return@mapIndexedNotNull null
@@ -3884,8 +3885,19 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
                 ?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT }
                 as? OneRegisterInstruction)?.registerA
                 ?: error("ChMate legacy parsed confirmation form was not found")
+            val confirmationMergeEndIndex = instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (index > parserIndex
+                    && reference.definingClass == "Lo/getJsonData;"
+                    && reference.name == "e"
+                    && reference.returnType == "Z"
+                    && reference.parameterTypes.map(CharSequence::toString) ==
+                    listOf("Ljava/lang/String;")
+                ) index else null
+            }.singleOrNull() ?: error("ChMate legacy confirmation merge end was not found")
             method.addInstruction(
-                parserIndex + 2,
+                confirmationMergeEndIndex,
                 "move-object/from16 p4, v$parsedFormRegister"
             )
         }

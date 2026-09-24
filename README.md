@@ -117,26 +117,40 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版・プレリリース版ともに正式Release `1.4.1`から取得します。
-1.4.1の配布物はAndroid拡張を内包したMPPです。
+通常版は正式Release `1.4.0`、プレリリース版は `1.4.7` から取得します。
+配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.4.1）を取得するパッチソースです。
+現在の公式版（1.4.0）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース設定でも1.4.1を配布しています。
+プレリリース版（1.4.7）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
 ```
 
-現在は通常版・プレリリース版ともに `1.4.1` を配布しています。同じバージョン内で修正版を配布する場合は、
+通常版とプレリリース版は別々に更新します。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.4.7（プレリリース）
+
+- BEアイコンと「本文内の5chスレURLにスレ立て日を表示」を併用した際の、アイコンの二重表示やURL認識のずれを修正
+- 191 devのスレ立て確認処理で本文などの入力内容が失われる問題を修正
+- 対応バージョン：ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev`
+
+### 1.4.2（プレリリース）
+
+- Talk 以外の掲示板で、スレを初めて開いたときに本文が白くなり表示されない問題を修正
+- Talk の投稿認証時刻を正しい単位で扱うよう修正
+- Talk DAT 変換時に絵文字バリエーションセレクタを適切に処理
+- Talkスレ内の広告予約枠による大きな空欄を、対応バージョン共通のView構造判定で削除
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev`向けMPPを更新
 
 ### 1.4.1（正式版）
 
