@@ -841,6 +841,14 @@ public final class Haiagaru {
         );
     }
 
+    /** Rewrites a stored legacy board-menu endpoint to the canonical 5ch.io host. */
+    public static String rewriteBbsMenuUrl(String original) {
+        if (original == null || !isChtoioEnabled()) return original;
+        return original
+                .replace("https://menu.5ch.net", "https://menu.5ch.io")
+                .replace("http://menu.5ch.net", "https://menu.5ch.io");
+    }
+
     public static String rewrite5chUrl(String original) {
         if (original == null) return null;
         String rewritten = rewriteLegacyTalkBoardResource(original);
