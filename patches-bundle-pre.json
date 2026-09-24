@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-09-25T01:46:23",
-  "description": "Haiagaru 1.4.7 pre-release: refreshes cellular networks before mobile-line posts on ChMate 191 dev and 226 dev, retries a fresh network after stale-socket failures, and adds an ON/OFF setting while retaining the previous BE icon, URL, and post-confirmation fixes.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.4.7/haiagaru_patches-1.4.7.mpp",
+  "created_at": "2026-09-25T08:32:11",
+  "description": "Haiagaru 1.4.8 pre-release: normalizes https, protocol-relative, and sssp img.5ch.io/ico/... BE icon URLs so thread-date display does not create duplicate icons, broken links, or image attachments.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.4.8/haiagaru_patches-1.4.8.mpp",
   "signature_download_url": "",
-  "version": "1.4.7"
+  "version": "1.4.8"
 }

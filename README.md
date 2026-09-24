@@ -118,7 +118,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.4.0`、プレリリース版は `1.4.7` から取得します。
+通常版は正式Release `1.4.0`、プレリリース版は `1.4.8` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.4.0）を取得するパッチソースです。
@@ -127,7 +127,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.4.7）を取得するパッチソースです。
+プレリリース版（1.4.8）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -138,6 +138,12 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.4.8（プレリリース）
+
+- `https://img.5ch.io/ico/...gif`、プロトコル相対URL、`sssp://`形式のBEアイコンを既存のアイコン描画経路へ正規化
+- 「本文内の5chスレURLにスレ立て日を表示」と併用した際のBEアイコン二重表示、URL認識ずれ、画像添付化を修正
+- 1.4.7までの投稿、Talk、広告、URL補正、BEアイコン修正を継承
 
 ### 1.4.7（プレリリース）
 
