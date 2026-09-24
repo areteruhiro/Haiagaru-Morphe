@@ -138,8 +138,8 @@ public final class Haiagaru {
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
     private static final String AD_CLASS_243 = "o.zzexb";
     private static final Pattern LEGACY_BE_ATTACHMENT_TOKEN = Pattern.compile(
-            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+"
-                    + "|\\u0003img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+",
+            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/(?:ico|premium)/[^\\s<\\u0003\\u3000]+"
+                    + "|\\u0003img\\.5ch\\.(?:io|net)/(?:ico|premium)/[^\\s<\\u0003\\u3000]+",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
@@ -1784,8 +1784,7 @@ public final class Haiagaru {
         if (start >= end) return found;
 
         String candidate = text.substring(start, end).toLowerCase(Locale.ROOT);
-        if (candidate.contains("img.5ch.io/ico/")
-                || candidate.contains("img.5ch.net/ico/")) {
+        if (isBeIconUrl(candidate)) {
             linkInfo[3] = 0;
             linkInfo[5] = 4;
         }
@@ -1858,7 +1857,9 @@ public final class Haiagaru {
         if (url == null) return false;
         String normalized = url.toLowerCase(Locale.ROOT);
         return normalized.contains("img.5ch.io/ico/")
-                || normalized.contains("img.5ch.net/ico/");
+                || normalized.contains("img.5ch.net/ico/")
+                || normalized.contains("img.5ch.io/premium/")
+                || normalized.contains("img.5ch.net/premium/");
     }
 
     public static boolean is5chHost(String host) {
