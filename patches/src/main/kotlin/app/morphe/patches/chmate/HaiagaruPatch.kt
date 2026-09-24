@@ -514,6 +514,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchSetTextCalls()
                 patchIoTalkDatLoading()
                 patchIoTalkPostIntegrity()
+                patchIoThreadRefreshCache()
             }
             else -> patchSetTextCalls()
         }
@@ -1343,6 +1344,53 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkAuthenticat
         )
         else -> error("ChMate 241 Talk authentication invocation registers were not found")
     }
+}
+
+/**
+ * 241 sends the cached DAT ETag on every normal thread refresh.  Immediately
+ * after a successful post the server can still expose the preceding ETag, so
+ * the refresh returns 304 and ChMate reports "no update" while the local post
+ * is not rendered.  Skip only this conditional header in 241's downloader;
+ * the normal response and local index handling remain unchanged.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoThreadRefreshCache() {
+    val networkClass = mutableClassDefBy("Lo/VLj;")
+    val downloader = networkClass.methods.singleOrNull { method ->
+        method.name == "e"
+            && method.returnType == "Lo/VLj\$RemoteActionCompatParcelizer;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+                "Z",
+                "Lo/GNk17;",
+            )
+    } ?: error("ChMate 241 thread downloader was not found")
+    val instructions = downloader.implementation?.instructions
+        ?: error("ChMate 241 thread downloader has no implementation")
+    val etagNames = instructions.indices.filter { index ->
+        ((instructions[index] as? ReferenceInstruction)?.reference as? StringReference)
+            ?.string == "If-None-Match"
+    }
+    check(etagNames.size == 1) {
+        "Expected one ChMate 241 If-None-Match header, found ${etagNames.size}"
+    }
+    val nameIndex = etagNames.single()
+    val headerCall = instructions.indices.firstOrNull { index ->
+        index > nameIndex
+            && ((instructions[index] as? ReferenceInstruction)?.reference as? MethodReference)
+                ?.let { reference ->
+                    reference.definingClass == "Lokhttp3/Headers\$ComponentActivity;"
+                        && reference.name == "c"
+                        && reference.parameterTypes.map(CharSequence::toString) ==
+                            listOf("Ljava/lang/String;", "Ljava/lang/String;")
+                } == true
+    } ?: error("ChMate 241 If-None-Match header call was not found")
+    val resume = instructions.getOrNull(headerCall + 1)
+        ?: error("ChMate 241 If-None-Match header has no continuation")
+    downloader.addInstructionsWithLabels(
+        headerCall,
+        "goto :haiagaru_241_skip_etag",
+        ExternalLabel("haiagaru_241_skip_etag", resume),
+    )
 }
 
 @Suppress("unused")
