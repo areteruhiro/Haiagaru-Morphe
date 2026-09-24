@@ -476,6 +476,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                     "Lo/processAdDisplayErrorPostbackForUserError;",
                     "Lo/setExtraParameter\$RemoteActionCompatParcelizer;",
                 )
+                patchBbsMenuUrl("a", "Lo/a7a\$read;")
                 patchLegacy5chIoCompatibility()
                 patchLegacyTalkDatLoading()
                 patchLegacyTalkAuthIntegrity()
@@ -483,6 +484,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.226 dev" -> {
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
+                patchBbsMenuUrl("a", "Lo/isInlineAdaptiveAdView\$read;")
                 patchPreIoCellularNetworkSelection()
                 patchPreIoCellularSocketRefresh()
                 patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
@@ -505,6 +507,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> {
                 patchProgrammableNgModern("Lo/zzdic;", "a", "c")
                 patchSetTextCalls()
+                patchBbsMenuUrl("b", "Lo/StandardAndroidSocketAdapterCompanion\$RemoteActionCompatParcelizer;")
                 patchModernThreadListAd()
                 patchModernTalkDatLoading()
                 patchModernTalkPostIntegrity()
@@ -512,6 +515,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             }
             "0.8.10.241" -> {
                 patchSetTextCalls()
+                patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
                 patchIoTalkDatLoading()
                 patchIoTalkPostIntegrity()
                 patchIoThreadRefreshCache()
@@ -3081,6 +3085,32 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoUrlSpanAlign
             """,
         )
     }
+}
+
+/**
+ * Rewrite the board-menu endpoint at the point where ChMate starts its menu
+ * download.  The URL is persisted in ChMate preferences, so replacing only
+ * string constants does not repair installations that still store
+ * menu.5ch.net.  The method signatures differ across the supported builds;
+ * callers provide the stable return type for the corresponding worker.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchBbsMenuUrl(
+    methodName: String,
+    returnType: String,
+) {
+    val worker = mutableClassDefBy("Ljp/syoboi/a2chMate/bbs/BBSMenuUpdateWork;")
+    val fetch = worker.methods.singleOrNull { method ->
+        method.name == methodName
+            && method.returnType == returnType
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    } ?: error("ChMate BBS menu download method was not found: $methodName $returnType")
+    fetch.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p1 .. p1 }, $EXTENSION->rewriteBbsMenuUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p1
+        """,
+    )
 }
 
 /**
