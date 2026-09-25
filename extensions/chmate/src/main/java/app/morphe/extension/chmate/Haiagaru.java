@@ -154,11 +154,11 @@ public final class Haiagaru {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_PREMIUM_BE_URL = Pattern.compile(
-            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/premium/([^\\s<\\u0003\\u3000]+)",
+            "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/premium/([^\\s<\\u0003\\u3000]+)",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_BE_ICO_URL = Pattern.compile(
-            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/ico/([^\\s<\\u0003\\u3000]+)",
+            "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/ico/([^\\s<\\u0003\\u3000]+)",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
@@ -1764,7 +1764,8 @@ public final class Haiagaru {
         if (original == null) return null;
         // The 191 parser only routes sssp://img.5ch.net/ico/... through its
         // inline icon renderer. Normalize every public spelling, including
-        // ordinary https:// and protocol-relative /ico/ URLs. This matters when
+        // ordinary https://, protocol-relative, and control-character encoded
+        // /ico/ URLs. This matters when
         // the optional thread-date renderer inserts text before the URL: leaving
         // the image as a normal link makes the span offsets and attachment pass
         // disagree, which produces duplicate icons or a broken link.
