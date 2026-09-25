@@ -118,7 +118,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.4.0`、プレリリース版は `1.4.9` から取得します。
+通常版は正式Release `1.4.0`、プレリリース版は `1.4.10` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.4.0）を取得するパッチソースです。
@@ -127,7 +127,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.4.9）を取得するパッチソースです。
+プレリリース版（1.4.10）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -138,6 +138,12 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.4.10（プレリリース）
+
+- ChMateの「本文内の5chスレURLにスレ立て日を表示」でURLを板名・日付へ置換する削除範囲を補正
+- `hニュー速(嫌儲)/2026-09-14 23:29:15` のようにURL先頭の`h`が残る表示を修正
+- 1.4.9までのBEアイコン、投稿、Talk、広告、URL補正を継承
 
 ### 1.4.9（プレリリース）
 

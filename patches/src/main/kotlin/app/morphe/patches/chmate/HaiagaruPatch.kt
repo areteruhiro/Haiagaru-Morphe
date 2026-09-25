@@ -3568,6 +3568,35 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         """
     )
 
+    // When the optional 5ch thread-date display is enabled, ChMate replaces
+    // the matched URL with "board/date" before creating the link span. A BE
+    // icon earlier in the response can shift the native parser's coordinates
+    // by one character. Fix the deletion position while the original URL is
+    // still present; correcting only the later span leaves its first "h" in
+    // the displayed text ("hニュー速(嫌儲)/2026-...").
+    val legacyDateReplacementIndex = legacyTextParserMethod.implementation!!.instructions
+        .mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass == "Ljava/lang/StringBuilder;"
+                && reference.name == "delete"
+                && reference.parameterTypes.map(CharSequence::toString) == listOf("I", "I")
+                && reference.returnType == "Ljava/lang/StringBuilder;"
+            ) index else null
+        }.singleOrNull() ?: error("ChMate 191 thread-date URL replacement was not found")
+    legacyTextParserMethod.addInstructionsWithLabels(
+        legacyDateReplacementIndex,
+        """
+            move v13, v8
+            invoke-static { v12, v5, v8, v11 }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
+            move-result-wide v14
+            long-to-int v8, v14
+            sub-int v13, v8, v13
+            add-int/2addr v11, v13
+            add-int/2addr v4, v13
+        """
+    )
+
     // The 191 renderer may remove one display character before this parser runs.
     // Realign custom URL spans against the actual StringBuilder content. Without
     // this, the leading "h" stays plain and a URL at end-of-text is discarded by
