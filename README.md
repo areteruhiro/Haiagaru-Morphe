@@ -119,7 +119,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.4.0`、プレリリース版は `1.4.10` から取得します。
+通常版は正式Release `1.4.0`、プレリリース版は `1.4.11` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.4.0）を取得するパッチソースです。
@@ -128,7 +128,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.4.10）を取得するパッチソースです。
+プレリリース版（1.4.11）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -139,6 +139,12 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.4.11（プレリリース）
+
+- 既読のEdgeスレッドで履歴を削除しなくても、NGThreadから記者IDを登録できるよう修正
+- スレッド番号に加えて履歴タイトルの記者ID情報も保存し、NGThread操作時に復元
+- ChMate 0.8.10.191 dev / 0.8.10.226 dev / 0.8.10.241 / 0.8.10.243 devに共通対応
 
 ### 1.4.10（プレリリース）
 
