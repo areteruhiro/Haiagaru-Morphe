@@ -28,6 +28,7 @@ https://github.com/areteruhiro/Haiagaru
   * 荒らし省略
 * 191 dev／226 dev／241／243 devのエッヂ板でスレタイ末尾に記者IDを表示（初期値ON、Haiagaru設定から切り替え）
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」
+* NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、4対応版共通）
 
 
 ### エッヂの記者ID表示
@@ -141,6 +142,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 ### 1.4.10（プレリリース）
 
+- NGワード・NG ID・NG名前などの保存上限を、Haiagaru設定から0（無制限）〜100000件で指定できるように変更
 - ChMateの「本文内の5chスレURLにスレ立て日を表示」でURLを板名・日付へ置換する削除範囲を補正
 - `hニュー速(嫌儲)/2026-09-14 23:29:15` のようにURL先頭の`h`が残る表示を修正
 - 1.4.9までのBEアイコン、投稿、Talk、広告、URL補正を継承
