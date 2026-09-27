@@ -165,7 +165,10 @@ public final class Haiagaru {
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
-            "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(?:/.*)?$",
+            // Keep the optional response number separate from any trailing
+            // path.  ChMate uses this suffix to position the thread at the
+            // requested response after an archived DAT has been imported.
+            "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(/\\d+)?(?:/.*)?$",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern ITEST_SERVER_THREAD_READ_PATH = Pattern.compile(
@@ -1719,8 +1722,23 @@ public final class Haiagaru {
                 return normalized;
             }
 
-            return "https://itest.5ch.io/test/read.cgi/"
-                    + matcher.group(1) + "/" + matcher.group(2) + "/";
+            String responseSuffix = matcher.groupCount() >= 3
+                    ? matcher.group(3) : null;
+            StringBuilder rewrittenUrl = new StringBuilder()
+                    .append("https://itest.5ch.io/test/read.cgi/")
+                    .append(matcher.group(1)).append('/').append(matcher.group(2));
+            if (responseSuffix != null && !responseSuffix.isEmpty()) {
+                rewrittenUrl.append(responseSuffix);
+            } else {
+                rewrittenUrl.append('/');
+            }
+            if (uri.getEncodedQuery() != null) {
+                rewrittenUrl.append('?').append(uri.getEncodedQuery());
+            }
+            if (uri.getEncodedFragment() != null) {
+                rewrittenUrl.append('#').append(uri.getEncodedFragment());
+            }
+            return rewrittenUrl.toString();
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
             return normalized;
