@@ -37,7 +37,11 @@ public final class HissiMenuActivity extends Activity {
         Uri incoming = getIntent() == null ? null : getIntent().getData();
         sourceHost = incoming == null ? null : incoming.getQueryParameter("haiagaru_host");
         sourceBoard = incoming == null ? null : boardFromMenuPath(incoming);
-        boolean useKyodemo = sourceHost != null && !is5chHost(sourceHost);
+        int checkerMode = incoming == null ? 0 : parseCheckerMode(incoming.getQueryParameter("haiagaru_mode"));
+        boolean useKyodemo = checkerMode == 2 || (checkerMode == 0
+                && sourceHost != null && !is5chHost(sourceHost));
+        String alternateTarget = checkerMode == 3
+                ? (useKyodemo ? toHttpsUrl(incoming) : toKyodemoUrl(incoming, sourceHost)) : null;
         String target = useKyodemo ? toKyodemoUrl(incoming, sourceHost) : toHttpsUrl(incoming);
         if (target == null) {
             TextView error = new TextView(this);
@@ -64,7 +68,6 @@ public final class HissiMenuActivity extends Activity {
         title.setOnClickListener(view -> finish());
         layout.addView(title, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 56 * getResources().getDisplayMetrics().densityDpi / 160));
-
         WebView webView = new WebView(this);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(false);
@@ -151,6 +154,16 @@ public final class HissiMenuActivity extends Activity {
                 return true;
             }
         });
+        if (alternateTarget != null) {
+            TextView alternate = new TextView(this);
+            alternate.setText(useKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
+            alternate.setTextColor(Color.BLUE);
+            alternate.setGravity(Gravity.CENTER);
+            alternate.setPadding(20, 12, 20, 12);
+            alternate.setOnClickListener(view -> webView.loadUrl(alternateTarget));
+            layout.addView(alternate, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, 52 * getResources().getDisplayMetrics().densityDpi / 160));
+        }
         webView.loadUrl(target);
         layout.addView(webView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
@@ -221,5 +234,14 @@ public final class HissiMenuActivity extends Activity {
         return host.equals("2ch.net") || host.endsWith(".2ch.net")
                 || host.equals("5ch.net") || host.endsWith(".5ch.net")
                 || host.equals("5ch.io") || host.endsWith(".5ch.io");
+    }
+
+    private static int parseCheckerMode(String value) {
+        try {
+            int mode = Integer.parseInt(value);
+            return mode < 0 || mode > 3 ? 0 : mode;
+        } catch (RuntimeException ignored) {
+            return 0;
+        }
     }
 }

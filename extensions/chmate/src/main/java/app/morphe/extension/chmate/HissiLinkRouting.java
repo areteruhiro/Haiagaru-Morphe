@@ -44,6 +44,10 @@ public final class HissiLinkRouting {
             }
             return !parts[3].isEmpty() && isThreadId(parts[4]);
         }
+        if ("pinkdarker.com".equals(host) && parts.length >= 4
+                && "t".equals(parts[1]) && "topic".equals(parts[2])) {
+            return isThreadId(parts[3]);
+        }
         return parts.length >= 6 && "itest.5ch.io".equals(host)
                 && "test".equals(parts[2]) && "read.cgi".equals(parts[3])
                 && !parts[4].isEmpty() && isThreadId(parts[5]);

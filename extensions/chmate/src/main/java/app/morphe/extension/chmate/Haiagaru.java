@@ -44,6 +44,8 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.Switch;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -122,6 +124,7 @@ public final class Haiagaru {
     private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
     private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
     private static final String NG_REGISTRATION_LIMIT_KEY = "ngRegistrationLimit";
+    private static final String HISSI_CHECKER_MODE_KEY = "hissiCheckerMode";
     private static final int DEFAULT_NG_REGISTRATION_LIMIT = 300;
     private static final int MAX_NG_REGISTRATION_LIMIT = 100_000;
     /** ChMate's own bounded post-history store (postDataList.json). */
@@ -2345,6 +2348,18 @@ public final class Haiagaru {
                 "chtoio",
                 preferences.getBoolean("chtoio", true)
         );
+        Spinner hissiCheckerMode = addSpinner(
+                layout,
+                activity,
+                text("ID長押しの必死チェッカー", "ID long-press checker"),
+                new String[]{
+                        text("自動（5chはhissi.org／外部板はKyodemo）", "Automatic (hissi.org for 5ch, Kyodemo for external boards)"),
+                        text("hissi.orgを使用", "Use hissi.org"),
+                        text("Kyodemoを使用", "Use Kyodemo"),
+                        text("両方（画面上で切り替え）", "Both (switch on the checker screen)")
+                },
+                preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
+        );
         Switch edgeReporterId = addSwitch(
                 layout,
                 activity,
@@ -2605,6 +2620,7 @@ public final class Haiagaru {
                             .putString("prefMonaKeyName", value(monaKeyName))
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
+                            .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
                             .putBoolean("forceHttps", forceHttps.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
@@ -3201,6 +3217,24 @@ public final class Haiagaru {
         return editText;
     }
 
+    private static Spinner addSpinner(
+            LinearLayout layout,
+            Context context,
+            String title,
+            String[] values,
+            int selected
+    ) {
+        TextView label = new TextView(context);
+        label.setText(title);
+        layout.addView(label, rowParams(context));
+        Spinner spinner = new Spinner(context);
+        spinner.setAdapter(new ArrayAdapter<>(context,
+                android.R.layout.simple_spinner_dropdown_item, values));
+        spinner.setSelection(Math.max(0, Math.min(selected, values.length - 1)));
+        layout.addView(spinner, rowParams(context));
+        return spinner;
+    }
+
     private static LinearLayout.LayoutParams rowParams(Context context) {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -3272,6 +3306,14 @@ public final class Haiagaru {
     private static SharedPreferences preferencesOrNull() {
         Context context = applicationContext;
         return context == null ? null : preferences(context);
+    }
+
+    /** 0=automatic, 1=hissi.org, 2=Kyodemo. Shared by all supported ChMate versions. */
+    public static int hissiCheckerMode() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return 0;
+        int mode = prefs.getInt(HISSI_CHECKER_MODE_KEY, 0);
+        return mode < 0 || mode > 2 ? 0 : mode;
     }
 
     private static final class ConfigSnapshot {
