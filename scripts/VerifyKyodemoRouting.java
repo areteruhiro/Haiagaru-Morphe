@@ -17,12 +17,20 @@ public class VerifyKyodemoRouting {
                 "Open2ch board");
         check("v_news4ssr".equals(KyodemoRouting.boardSlug("ex14.vip2ch.com", "news4ssr")),
                 "VIP service board");
-        check("p_3shuchaku".equals(KyodemoRouting.boardSlug("aoi.bbspink.com", "3shuchaku")),
+        check("3shuchaku".equals(KyodemoRouting.boardSlug("aoi.bbspink.com", "3shuchaku")),
                 "BBSPINK board");
+        check("https://www.kyodemo.net/sdemo/b/pinkplus/?hi=OS74kLJn&key=1790301489&date=20260927"
+                        .equals(KyodemoRouting.idSearchUrl("phoebe.bbspink.com", "pinkplus",
+                                "OS74kLJn", "1790301489", "20260927")),
+                "BBSPINK result must use Kyodemo's unprefixed board URL");
         check("i_5chnewsplus".equals(KyodemoRouting.boardSlug("5chan.jp", "5ch_newsplus")),
                 "ItsuMo ch board");
         check("e_y_yaruzatsu01".equals(KyodemoRouting.boardSlug(
                 "yaruozatsudan.com", "yaruzatsu01")), "Yaruo board");
+        check("e_e_edge".equals(KyodemoRouting.boardSlug("v1ch.cc", "edge")),
+                "V1ch edge board");
+        check("e_n_dartkakuni".equals(KyodemoRouting.boardSlug("pinkdarker.com", "dartkakuni")),
+                "Pinkdarker board");
         check("https://5chan.jp/test/read.cgi/5ch_newsplus/1684812738/1/".equals(
                 KyodemoRouting.sourceThreadUrl("5chan.jp", "5ch_newsplus",
                         "https://www.kyodemo.net/sdemo/r/i_5chnewsplus/1684812738/1")),
@@ -31,6 +39,10 @@ public class VerifyKyodemoRouting {
                 KyodemoRouting.sourceThreadUrl("jbbs.shitaraba.net", "anime/11177",
                         "https://www.kyodemo.net/sdemo/r/s_anime_11177/1707378532/")),
                 "Shitaraba result should use its original URL shape");
+        check("https://pinkdarker.com/t/topic/451/3".equals(
+                KyodemoRouting.sourceThreadUrl("pinkdarker.com", "dartkakuni",
+                        "https://www.kyodemo.net/sdemo/r/e_n_dartkakuni/451/3")),
+                "Discourse result should use its original URL shape");
         check(KyodemoRouting.sourceThreadUrl("5chan.jp", "5ch_newsplus",
                 "https://evil.example/sdemo/r/i_5chnewsplus/1684812738/") == null,
                 "External lookalike result links must not be rewritten");

@@ -32,14 +32,22 @@ public final class KyodemoRouting {
     }
 
     private static String prefixForHost(String host) {
-        if (isHostOrSubdomain(host, "bbspink.com")) return "p_";
+        // Kyodemo uses the ordinary ChMate board name for 5ch/2ch boards.
+        if (isHostOrSubdomain(host, "5ch.net") || isHostOrSubdomain(host, "5ch.io")
+                || isHostOrSubdomain(host, "2ch.net")) return "";
+        // BBSPINK is grouped under p_ in Kyodemo's category menu, but its
+        // actual board URLs use the unprefixed board ID (e.g. /b/pinkplus/).
+        if (isHostOrSubdomain(host, "bbspink.com")) return "";
         if (isHostOrSubdomain(host, "open2ch.net")) return "o_";
         if (isHostOrSubdomain(host, "machi.to")) return "m_";
         if (isHostOrSubdomain(host, "vip2ch.com")) return "v_";
         if (isHostOrSubdomain(host, "5chan.jp")) return "i_";
         if ("jbbs.shitaraba.net".equals(host)) return "s_";
         if ("bbs.eddibb.cc".equals(host)) return "e_e_";
+        if ("v1ch.cc".equals(host)) return "e_e_";
         if ("yaruozatsudan.com".equals(host)) return "e_y_";
+        if ("yaruoshelter.com".equals(host) || "yarumakai.com".equals(host)) return "e_y_";
+        if ("pinkdarker.com".equals(host)) return "e_n_";
         if ("bbs.punipuni.eu".equals(host)) return "e_p_";
         if ("bbs.kamemushi.com".equals(host)) return "e_k_";
         if ("bbs.jpnkn.com".equals(host)) return "e_j_";
@@ -73,13 +81,18 @@ public final class KyodemoRouting {
         String[] path = result.getPath().split("/");
         if (path.length < 5 || !"sdemo".equals(path[1])
                 || !"r".equals(path[2]) || !slug.equals(path[3])
-                || !path[4].matches("[0-9]{9,}")) return null;
+                || !("pinkdarker.com".equals(sourceHost.toLowerCase(Locale.ROOT))
+                    ? path[4].matches("[0-9]+") : path[4].matches("[0-9]{9,}"))) return null;
         String response = "";
         if (path.length > 5 && !path[5].isEmpty()) {
             if (!path[5].matches("[0-9]+")) return null;
             response = path[5] + '/';
         }
         String host = sourceHost.toLowerCase(Locale.ROOT);
+        if ("pinkdarker.com".equals(host)) {
+            return "https://" + host + "/t/topic/" + path[4]
+                    + (response.isEmpty() ? "" : "/" + response.substring(0, response.length() - 1));
+        }
         String prefix = "jbbs.shitaraba.net".equals(host) || isHostOrSubdomain(host, "machi.to")
                 ? "/bbs/read.cgi/" : "/test/read.cgi/";
         return "https://" + host + prefix + board + '/' + path[4] + '/' + response;
