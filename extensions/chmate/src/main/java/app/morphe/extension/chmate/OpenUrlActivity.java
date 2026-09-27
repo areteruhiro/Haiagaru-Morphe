@@ -45,6 +45,11 @@ public final class OpenUrlActivity extends Activity {
                 && "read.cgi".equals(path.get(1))) {
             return true;
         }
+        if ("itest.5ch.io".equalsIgnoreCase(uri.getHost()) && path.size() >= 5
+                && "test".equals(path.get(1)) && "read.cgi".equals(path.get(2))
+                && isThreadId(path.get(4))) {
+            return true;
+        }
         if (path.size() >= 3 && "boards".equals(path.get(0))
                 && isThreadId(path.get(2))) {
             return true;
