@@ -11,19 +11,14 @@ final class TalkDatEncoding {
 
     static byte[] encode(String value) {
         CharsetEncoder encoder = MS932.newEncoder();
-        if (encoder.canEncode(value)) return value.getBytes(MS932);
+        // Android canEncode() may still map these format characters to a
+        // visible middle dot, even when the entire input looks encodable.
+        if (value.indexOf('\uFE0F') < 0 && value.indexOf('\u200D') < 0
+                && encoder.canEncode(value)) return value.getBytes(MS932);
 
         StringBuilder escaped = new StringBuilder(value.length() + 32);
         for (int offset = 0; offset < value.length();) {
             int codePoint = value.codePointAt(offset);
-            // A standalone variation selector is intentionally omitted for
-            // legacy ChMate rendering, but it is part of the grapheme when it
-            // participates in a zero-width-joiner sequence. Dropping it turns
-            // 👁️‍🗨️ into separate glyphs (and can produce U+FFFD).
-            if (codePoint == 0xFE0F && !belongsToJoinedEmoji(value, offset)) {
-                offset += Character.charCount(codePoint);
-                continue;
-            }
             // Android's MS932 encoder reports these as encodable, but maps
             // them to a visible middle dot.  Preserve the actual code points
             // as HTML entities before the charset encoder can replace them.
@@ -41,18 +36,5 @@ final class TalkDatEncoding {
             offset += Character.charCount(codePoint);
         }
         return escaped.toString().getBytes(MS932);
-    }
-
-    private static boolean belongsToJoinedEmoji(String value, int offset) {
-        int next = offset + Character.charCount(value.codePointAt(offset));
-        if (next < value.length() && value.codePointAt(next) == 0x200D) return true;
-        int cursor = offset;
-        while (cursor > 0) {
-            int previous = value.codePointBefore(cursor);
-            cursor -= Character.charCount(previous);
-            if (previous == 0x200D) return true;
-            if (Character.isWhitespace(previous) || Character.isLetterOrDigit(previous)) break;
-        }
-        return false;
     }
 }
