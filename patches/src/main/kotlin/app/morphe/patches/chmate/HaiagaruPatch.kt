@@ -558,6 +558,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             }
             "0.8.10.243 dev" -> {
                 patchProgrammableNgModern("Lo/zzdic;", "a", "c")
+                patchPreIoHissiMenu("Lo/zzacz;", "c", "Lo/zzabv;", "Lo/zzacz\$write;")
                 patchSetTextCalls()
                 patchBbsMenuUrl("b", "Lo/StandardAndroidSocketAdapterCompanion\$RemoteActionCompatParcelizer;")
                 patchModernThreadListAd()
@@ -566,6 +567,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchModernTalkIntegrityPrimitives()
             }
             "0.8.10.241" -> {
+                patchPreIoHissiMenu("Lo/lhA1;", "d", "Lo/setDislikeWidth;", "Lo/lhA1\$write;")
                 patchSetTextCalls()
                 patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
                 patchIoTalkDatLoading()
@@ -1556,6 +1558,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoThreadRefreshCa
 
 private const val ANDROID_XML_NAMESPACE = "http://schemas.android.com/apk/res/android"
 private const val OPEN_URL_ACTIVITY = "app.morphe.extension.chmate.OpenUrlActivity"
+private const val HISSI_MENU_ACTIVITY = "app.morphe.extension.chmate.HissiMenuActivity"
 
 private data class OpenUrlPattern(
     val scheme: String,
@@ -1805,6 +1808,24 @@ val haiagaruPatch = resourcePatch(
                 )
             }
             application.appendChild(openUrlActivity)
+
+            val hissiActivity = document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar",
+                )
+            }
+            document.addOpenUrlFilter(
+                hissiActivity,
+                listOf("haiagaru-hissi", "haiagaru-hissis"),
+                "hissi.org",
+                path = "/read.php/",
+                pathAttribute = "android:pathPrefix",
+            )
+            application.appendChild(hissiActivity)
         }
     }
 }
