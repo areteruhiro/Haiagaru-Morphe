@@ -24,6 +24,14 @@ final class TalkDatEncoding {
                 offset += Character.charCount(codePoint);
                 continue;
             }
+            // Android's MS932 encoder reports these as encodable, but maps
+            // them to a visible middle dot.  Preserve the actual code points
+            // as HTML entities before the charset encoder can replace them.
+            if (codePoint == 0xFE0F || codePoint == 0x200D) {
+                escaped.append("&#").append(codePoint).append(';');
+                offset += Character.charCount(codePoint);
+                continue;
+            }
             String character = new String(Character.toChars(codePoint));
             if (encoder.canEncode(character)) {
                 escaped.append(character);
