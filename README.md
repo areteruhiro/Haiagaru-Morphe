@@ -119,16 +119,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.5.1`、プレリリース版は `1.5.1` から取得します。
+通常版は正式Release `1.5.2`、プレリリース版は `1.5.2` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.5.1）を取得するパッチソースです。
+現在の公式版（1.5.2）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.1）を取得するパッチソースです。
+プレリリース版（1.5.2）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -139,6 +139,11 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.5.2（公式／プレリリース）
+
+- Android向けMPPを配布し、Morphe Managerで`Patch bundle is missing dex entries`となる問題を修正しました。
+- パッチの機能は1.5.1と同じです。版番号を更新し、登録済みの1.5.1から更新できるようにしました。
 
 ### 1.5.1（公式／プレリリース）
 
@@ -456,8 +461,10 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 生成物:
 
 ```text
-patches\build\libs\patches-1.2.2.mpp
+patches\build\libs\patches-1.5.2.mpp
 ```
+
+公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
 
 Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
 APKは再署名されるため、Play版など署名が異なるChMateとはそのまま上書きできません。
