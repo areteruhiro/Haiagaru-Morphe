@@ -1,11 +1,16 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Message;
+import android.util.Log;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceError;
 import android.webkit.WebSettings;
@@ -16,6 +21,7 @@ import android.widget.TextView;
 
 /** Displays the Hissi menu destination inside ChMate's task. */
 public final class HissiMenuActivity extends Activity {
+    private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
 
@@ -51,7 +57,18 @@ public final class HissiMenuActivity extends Activity {
         settings.setJavaScriptEnabled(false);
         settings.setDomStorageEnabled(false);
         settings.setLoadsImagesAutomatically(true);
+        settings.setSupportMultipleWindows(true);
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return request.isForMainFrame() && openThreadInChMate(request.getUrl().toString());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return openThreadInChMate(url);
+            }
+
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) {
@@ -59,10 +76,85 @@ public final class HissiMenuActivity extends Activity {
                 }
             }
         });
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onCreateWindow(WebView source, boolean isDialog,
+                    boolean isUserGesture, Message resultMsg) {
+                if (!isUserGesture) return false;
+                WebView.HitTestResult hit = source.getHitTestResult();
+                String selectedUrl = hit == null ? null : hit.getExtra();
+                if (selectedUrl != null && !selectedUrl.isEmpty()) {
+                    if (!openThreadInChMate(selectedUrl)) source.loadUrl(selectedUrl);
+                    return false;
+                }
+                if (resultMsg == null || !(resultMsg.obj instanceof WebView.WebViewTransport)) {
+                    return false;
+                }
+
+                // Some WebView builds omit the hit-test URL for target=_blank.
+                // Receive that first navigation in a temporary hidden window.
+                WebView popup = new WebView(HissiMenuActivity.this);
+                popup.setVisibility(View.INVISIBLE);
+                layout.addView(popup, new LinearLayout.LayoutParams(1, 1));
+                popup.setWebViewClient(new WebViewClient() {
+                    private boolean dispatched;
+
+                    private void dispatch(String url) {
+                        if (dispatched) return;
+                        dispatched = true;
+                        if (!openThreadInChMate(url)) source.loadUrl(url);
+                        popup.post(() -> {
+                            layout.removeView(popup);
+                            popup.destroy();
+                        });
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                        if (request.isForMainFrame()) dispatch(request.getUrl().toString());
+                        return true;
+                    }
+
+                    @Override
+                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                        dispatch(url);
+                        return true;
+                    }
+
+                    @Override
+                    public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                        dispatch(url);
+                    }
+                });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(popup);
+                resultMsg.sendToTarget();
+                popup.postDelayed(() -> {
+                    if (popup.getParent() != null) {
+                        layout.removeView(popup);
+                        popup.destroy();
+                    }
+                }, 10000);
+                return true;
+            }
+        });
         webView.loadUrl(target);
         layout.addView(webView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         setContentView(layout);
+    }
+
+    private boolean openThreadInChMate(String url) {
+        if (!HissiLinkRouting.isThreadUrl(url)) return false;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.setClass(this, OpenUrlActivity.class);
+            startActivity(intent);
+            return true;
+        } catch (RuntimeException error) {
+            Log.e(LOG_TAG, "Could not open Hissi thread link in ChMate: " + url, error);
+            return false;
+        }
     }
 
     private static String toHttpsUrl(Uri uri) {
