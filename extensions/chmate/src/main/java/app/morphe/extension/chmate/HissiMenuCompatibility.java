@@ -5,12 +5,17 @@ public final class HissiMenuCompatibility {
     private HissiMenuCompatibility() {}
 
     public static String rewriteTemplate(String template) {
-        if (template == null || !template.contains("://hissi.org/read.php/")) {
+        if (template == null || !(template.contains("://hissi.org/read.php/"))) {
             return template;
         }
         String stockFilter = "{$host[match:[25]ch.net$]}";
-        String compatibleFilter = "{$host[match:(^|\\.)(2ch\\.net|5ch\\.(net|io))$]}";
-        if (!template.contains(stockFilter) && !template.contains(compatibleFilter)) {
+        String oldFilter = "{$host[match:(^|\\.)(2ch\\.net|5ch\\.(net|io))$]}";
+        String supportedFilter = "{$host[match:(?:^|\\.)(?:2ch\\.net|5ch\\.(?:net|io)|"
+                + "bbspink\\.com|open2ch\\.net|machi\\.to|vip2ch\\.com|5chan\\.jp)$|"
+                + "^(?:jbbs\\.shitaraba\\.net|bbs\\.eddibb\\.cc|bbs\\.punipuni\\.eu|"
+                + "bbs\\.kamemushi\\.com|bbs\\.jpnkn\\.com|bbs\\.3chan\\.cc|"
+                + "refugee-chan\\.mobi|yaruozatsudan\\.com)$]}";
+        if (!template.contains(stockFilter) && !template.contains(oldFilter)) {
             return template;
         }
         // Keep the old hosts working, including when domain conversion is disabled.
@@ -19,6 +24,8 @@ public final class HissiMenuCompatibility {
                 "haiagaru-hissi://hissi.org/read.php/")
                 .replace("https://hissi.org/read.php/",
                         "haiagaru-hissis://hissi.org/read.php/");
-        return rewritten.replace(stockFilter, compatibleFilter);
+        String sourceFilter = rewritten.contains(stockFilter) ? stockFilter : oldFilter;
+        return rewritten.replace(sourceFilter,
+                "?haiagaru_host={$host}&haiagaru_key={$key}" + supportedFilter);
     }
 }

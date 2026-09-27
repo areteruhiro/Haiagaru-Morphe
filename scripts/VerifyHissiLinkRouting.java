@@ -14,6 +14,11 @@ public class VerifyHissiLinkRouting {
                 "http://aoi.bbspink.com/test/read.cgi/3shuchaku/1427347314/19",
                 "https://talk.jp/boards/newsplus/1789378339",
                 "https://itest.5ch.io/egg/test/read.cgi/android/1781182873/",
+                "https://bbs.eddibb.cc/test/read.cgi/liveedge/1707378532/47",
+                "https://jbbs.shitaraba.net/bbs/read.cgi/anime/11177/1551207927/3",
+                "https://tokyo.machi.to/bbs/read.cgi/tokyo/1690890202/3",
+                "https://5chan.jp/test/read.cgi/5ch_newsplus/1684812738/1/",
+                "https://yaruozatsudan.com/test/read.cgi/yaruzatsu01/1789778159/",
         }) {
             check(HissiLinkRouting.isThreadUrl(url), "Expected ChMate thread: " + url);
         }
@@ -24,6 +29,7 @@ public class VerifyHissiLinkRouting {
                 "https://evil5ch.io/test/read.cgi/android/1781182873/",
                 "https://egg.5ch.io.example/test/read.cgi/android/1781182873/",
                 "https://user@egg.5ch.io/test/read.cgi/android/1781182873/",
+                "https://evil.bbs.eddibb.cc/test/read.cgi/liveedge/1707378532/",
                 "javascript:alert(1)",
                 null,
         }) {
