@@ -29,6 +29,13 @@ public final class VerifyTalkDatEncoding {
         require(encodedJoined.contains("&#128488;&#65039;"));
         require(decodeNumericEntities(encodedJoined).contains("👁️‍🗨️"));
 
+        String writer = "🫷👁️👄👁️‍🗨️🫸<> <>2026/09/26<>本文<>\n";
+        String encodedWriter = new String(TalkDatEncoding.encode(writer), MS932);
+        require(encodedWriter.contains("&#128065;&#65039;&#8205;&#128488;&#65039;"));
+        require(decodeNumericEntities(encodedWriter).contains("👁️‍🗨️"));
+        require(!encodedWriter.contains("・"));
+        require(!encodedWriter.contains("�"));
+
         System.out.println("Talk DAT Unicode encoding verification passed");
     }
 
