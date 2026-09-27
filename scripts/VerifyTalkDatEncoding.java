@@ -23,6 +23,12 @@ public final class VerifyTalkDatEncoding {
         require(encodedSmile.equals("日本国　貧困弁当が流行る&#9786;"));
         require(!encodedSmile.contains("�"));
 
+        String joined = "🫷👁️👄👁️‍🗨️🫸";
+        String encodedJoined = new String(TalkDatEncoding.encode(joined), MS932);
+        require(encodedJoined.contains("&#65039;&#8205;"));
+        require(encodedJoined.contains("&#128488;&#65039;"));
+        require(decodeNumericEntities(encodedJoined).contains("👁️‍🗨️"));
+
         System.out.println("Talk DAT Unicode encoding verification passed");
     }
 
