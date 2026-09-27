@@ -119,7 +119,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.4.0`、プレリリース版は `1.4.11` から取得します。
+通常版は正式Release `1.4.0`、プレリリース版は `1.5.0` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.4.0）を取得するパッチソースです。
@@ -128,7 +128,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.4.11）を取得するパッチソースです。
+プレリリース版（1.5.0）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -139,6 +139,19 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.5.0（プレリリース）
+
+- 過去ログのレス番号付きURL（例: `/test/read.cgi/android/1744849408/3`）を、DAT取得後も保持して指定レスへ移動できるよう修正
+- `itest.5ch.io` への過去ログURL補正時に、レス番号・クエリ・フラグメントを維持
+- TalkのDAT変換でゼロ幅接合子（ZWJ）を含む複合絵文字のバリエーションセレクタを保持
+- Talk／過去ログのDAT取得完了時、タブレットの既存ペインを再利用して検索結果・スクロール位置・未読状態を保持
+- ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev`に共通適用
+
+#### ユーザー向けメモ
+
+過去ログURLを開いたときに先頭へ戻る場合があった問題と、タブレットモードでDAT取得後に開いていたタブが再読み込みされる問題を修正しました。
+また、Talkの複合絵文字が崩れるケースを修正しています。プレリリースのため、既存の設定やバックアップを確認したうえでお試しください。
 
 ### 1.4.11（プレリリース）
 
