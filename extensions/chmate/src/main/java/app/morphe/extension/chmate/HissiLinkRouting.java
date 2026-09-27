@@ -36,6 +36,14 @@ public final class HissiLinkRouting {
         if (parts.length >= 4 && "boards".equals(parts[1])) {
             return !parts[2].isEmpty() && isThreadId(parts[3]);
         }
+        if (parts.length >= 5 && "bbs".equals(parts[1])
+                && "read.cgi".equals(parts[2])) {
+            if ("jbbs.shitaraba.net".equals(host)) {
+                return parts.length >= 6 && !parts[3].isEmpty()
+                        && !parts[4].isEmpty() && isThreadId(parts[5]);
+            }
+            return !parts[3].isEmpty() && isThreadId(parts[4]);
+        }
         return parts.length >= 6 && "itest.5ch.io".equals(host)
                 && "test".equals(parts[2]) && "read.cgi".equals(parts[3])
                 && !parts[4].isEmpty() && isThreadId(parts[5]);
@@ -47,7 +55,8 @@ public final class HissiLinkRouting {
                 || isHostOrSubdomain(host, "2ch.net")
                 || isHostOrSubdomain(host, "2ch.sc")
                 || isHostOrSubdomain(host, "bbspink.com")
-                || isHostOrSubdomain(host, "talk.jp");
+                || isHostOrSubdomain(host, "talk.jp")
+                || KyodemoRouting.supportsHost(host);
     }
 
     private static boolean isHostOrSubdomain(String host, String domain) {

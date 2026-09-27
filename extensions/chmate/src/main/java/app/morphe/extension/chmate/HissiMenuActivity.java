@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Message;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -19,20 +20,30 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 /** Displays the Hissi menu destination inside ChMate's task. */
 public final class HissiMenuActivity extends Activity {
     private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
+    private String sourceHost;
+    private String sourceBoard;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         Uri incoming = getIntent() == null ? null : getIntent().getData();
-        String target = toHttpsUrl(incoming);
+        sourceHost = incoming == null ? null : incoming.getQueryParameter("haiagaru_host");
+        sourceBoard = incoming == null ? null : boardFromMenuPath(incoming);
+        boolean useKyodemo = sourceHost != null && !is5chHost(sourceHost);
+        String target = useKyodemo ? toKyodemoUrl(incoming, sourceHost) : toHttpsUrl(incoming);
         if (target == null) {
             TextView error = new TextView(this);
-            error.setText("必死チェッカーのURLを開けませんでした");
+            error.setText(useKyodemo
+                    ? "この板のID検索先を特定できませんでした"
+                    : "必死チェッカーのURLを開けませんでした");
             error.setTextColor(Color.WHITE);
             error.setPadding(32, 32, 32, 32);
             setContentView(error);
@@ -43,7 +54,9 @@ public final class HissiMenuActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setBackgroundColor(Color.WHITE);
         TextView title = new TextView(this);
-        title.setText("‹   必死チェッカーもどき  ·  ChMate内表示");
+        title.setText(useKyodemo
+                ? "‹   ID検索（kyodemo） · ChMate内表示"
+                : "‹   必死チェッカーもどき  ·  ChMate内表示");
         title.setTextColor(Color.BLACK);
         title.setTextSize(18);
         title.setGravity(Gravity.CENTER_VERTICAL);
@@ -145,6 +158,8 @@ public final class HissiMenuActivity extends Activity {
     }
 
     private boolean openThreadInChMate(String url) {
+        String original = KyodemoRouting.sourceThreadUrl(sourceHost, sourceBoard, url);
+        if (original != null) url = original;
         if (!HissiLinkRouting.isThreadUrl(url)) return false;
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -166,7 +181,45 @@ public final class HissiMenuActivity extends Activity {
         String scheme = HISSI_SECURE_SCHEME.equalsIgnoreCase(uri.getScheme())
                 ? "https" : "http";
         StringBuilder result = new StringBuilder(scheme).append("://hissi.org").append(path);
-        if (uri.getEncodedQuery() != null) result.append('?').append(uri.getEncodedQuery());
+        if (uri.getEncodedQuery() != null && uri.getQueryParameter("haiagaru_host") == null) {
+            result.append('?').append(uri.getEncodedQuery());
+        }
         return result.toString();
+    }
+
+    private static String toKyodemoUrl(Uri uri, String sourceHost) {
+        if (uri == null || !"hissi.org".equalsIgnoreCase(uri.getHost())) return null;
+        List<String> path = uri.getPathSegments();
+        if (path.size() < 4 || !"read.php".equals(path.get(0))) return null;
+        String encodedId = path.get(path.size() - 1);
+        if (!encodedId.endsWith(".html")) return null;
+        encodedId = encodedId.substring(0, encodedId.length() - 5);
+        String id;
+        try {
+            id = new String(Base64.decode(encodedId, Base64.URL_SAFE | Base64.NO_WRAP),
+                    StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException error) {
+            return null;
+        }
+        return KyodemoRouting.idSearchUrl(sourceHost, boardFromMenuPath(uri), id,
+                uri.getQueryParameter("haiagaru_key"), path.get(path.size() - 2));
+    }
+
+    private static String boardFromMenuPath(Uri uri) {
+        List<String> path = uri.getPathSegments();
+        if (path.size() < 4 || !"read.php".equals(path.get(0))) return null;
+        StringBuilder board = new StringBuilder();
+        for (int index = 1; index < path.size() - 2; index++) {
+            if (board.length() > 0) board.append('/');
+            board.append(path.get(index));
+        }
+        return board.toString();
+    }
+
+    private static boolean is5chHost(String sourceHost) {
+        String host = sourceHost.toLowerCase(java.util.Locale.ROOT);
+        return host.equals("2ch.net") || host.endsWith(".2ch.net")
+                || host.equals("5ch.net") || host.endsWith(".5ch.net")
+                || host.equals("5ch.io") || host.endsWith(".5ch.io");
     }
 }
