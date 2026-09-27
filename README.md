@@ -119,16 +119,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.4.0`、プレリリース版は `1.5.0` から取得します。
+通常版は正式Release `1.5.1`、プレリリース版は `1.5.1` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の公式版（1.4.0）を取得するパッチソースです。
+現在の公式版（1.5.1）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.0）を取得するパッチソースです。
+プレリリース版（1.5.1）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -140,13 +140,17 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 ## 更新履歴
 
-### 1.5.0（プレリリース）
+### 1.5.1（公式／プレリリース）
 
 - 過去ログのレス番号付きURL（例: `/test/read.cgi/android/1744849408/3`）を、DAT取得後も保持して指定レスへ移動できるよう修正
 - `itest.5ch.io` への過去ログURL補正時に、レス番号・クエリ・フラグメントを維持
 - TalkのDAT変換でゼロ幅接合子（ZWJ）を含む複合絵文字のバリエーションセレクタを保持
 - Talk／過去ログのDAT取得完了時、タブレットの既存ペインを再利用して検索結果・スクロール位置・未読状態を保持
 - ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／`0.8.10.243 dev`に共通適用
+- Talkの名前・本文に含まれる端末未対応絵文字を同梱フォントで補完し、画面更新・行再利用後も再適用
+- 絵文字適用範囲を`missing`（未対応のみ）／`all`（全絵文字）／`off`から選択可能
+- パッチ時に任意のTTF/OTF絵文字フォントを指定可能
+- 226版では検証エラーを避けるため、レス行アダプタ経由で安全に適用
 
 #### ユーザー向けメモ
 
