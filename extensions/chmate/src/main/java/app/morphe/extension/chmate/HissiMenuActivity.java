@@ -17,6 +17,7 @@ import android.webkit.WebResourceError;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.CookieManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -37,7 +38,9 @@ public final class HissiMenuActivity extends Activity {
         Uri incoming = getIntent() == null ? null : getIntent().getData();
         sourceHost = incoming == null ? null : incoming.getQueryParameter("haiagaru_host");
         sourceBoard = incoming == null ? null : boardFromMenuPath(incoming);
-        int checkerMode = incoming == null ? 0 : parseCheckerMode(incoming.getQueryParameter("haiagaru_mode"));
+        // Read the current setting again here. ChMate may cache an expanded
+        // menu template, so the mode embedded in its URL can be stale.
+        int checkerMode = Haiagaru.hissiCheckerMode();
         boolean useKyodemo = checkerMode == 2 || (checkerMode == 0
                 && sourceHost != null && !is5chHost(sourceHost));
         String alternateTarget = checkerMode == 3
@@ -70,10 +73,16 @@ public final class HissiMenuActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, 56 * getResources().getDisplayMetrics().densityDpi / 160));
         WebView webView = new WebView(this);
         WebSettings settings = webView.getSettings();
-        settings.setJavaScriptEnabled(false);
-        settings.setDomStorageEnabled(false);
+        // Kyodemo's analysis and screenshot actions are implemented by its
+        // same-origin fetch handlers. Hissi's static pages do not need JS.
+        settings.setJavaScriptEnabled(useKyodemo || checkerMode == 3);
+        settings.setDomStorageEnabled(useKyodemo || checkerMode == 3);
         settings.setLoadsImagesAutomatically(true);
         settings.setSupportMultipleWindows(true);
+        if (useKyodemo || checkerMode == 3) {
+            CookieManager.getInstance().setAcceptCookie(true);
+            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+        }
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {

@@ -3308,7 +3308,7 @@ public final class Haiagaru {
         return context == null ? null : preferences(context);
     }
 
-    /** 0=automatic, 1=hissi.org, 2=Kyodemo. Shared by all supported ChMate versions. */
+    /** 0=automatic, 1=hissi.org, 2=Kyodemo, 3=both. Shared by all supported ChMate versions. */
     public static int hissiCheckerMode() {
         SharedPreferences prefs = preferencesOrNull();
         if (prefs == null) return 0;
