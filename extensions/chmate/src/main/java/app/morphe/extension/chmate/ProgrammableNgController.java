@@ -169,10 +169,13 @@ public final class ProgrammableNgController {
         PENDING_SUBJECT_LIST.set(result);
     }
 
-    public static Object filterPendingSubjectList(Object urlOrArguments) {
+    public static void filterPendingSubjectList(Object urlOrArguments) {
         Object result = PENDING_SUBJECT_LIST.get();
         PENDING_SUBJECT_LIST.remove();
-        return filterSubjectList(result, urlOrArguments);
+        // filterSubjectList mutates ChMate's original list in place.  Do not
+        // return it as Object: newer ChMate versions keep this value in a
+        // precisely typed register and ART rejects an Object move-result.
+        filterSubjectList(result, urlOrArguments);
     }
 
     /** 191 dev keeps its native hidden-list behavior, so excluded rows remain revealable. */

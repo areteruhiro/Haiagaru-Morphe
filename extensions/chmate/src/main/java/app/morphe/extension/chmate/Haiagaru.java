@@ -27,6 +27,10 @@ import android.os.Process;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.net.Uri;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -40,6 +44,8 @@ import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.Switch;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,6 +67,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.Socket;
+import javax.net.SocketFactory;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -74,14 +83,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.regex.Pattern;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /** Runtime component of the Haiagaru patch, embedded in ChMate. */
 public final class Haiagaru {
     private static final String LOG_TAG = "Haiagaru";
+    /**
+     * A cellular Network requested for a post must remain requested while the
+     * HTTP client is using its socket.  Releasing the callback immediately
+     * after onAvailable() lets Android tear down the request underneath the
+     * socket and can reproduce "Binding socket to network N failed: EPERM".
+     * ChMate closes its sockets inside generated code, so the extension keeps
+     * the lease for a bounded post window instead of guessing at a close hook.
+     */
+    private static final long CELLULAR_NETWORK_LEASE_MILLIS = 120_000L;
+    private static final Handler CELLULAR_NETWORK_LEASE_HANDLER =
+            new Handler(Looper.getMainLooper());
     private static final Map<Activity, PopupWindow> SETTINGS_BUTTON_POPUPS =
             new WeakHashMap<>();
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
+    private static final String LEGACY_TALK_PREFS_NAME = "talk";
+    private static final String LEGACY_TALK_SESSION_REPAIR_KEY =
+            "legacyTalkSessionRepairLastUpdateV2";
     private static final String BUTTON_TAG = "haiagaru.settings.button";
     private static final String DEFAULT_USER_AGENT =
             "Dalvik/2.1.0 (Linux; U; Android 4.0.3; HT-01 Build/XYZ0.123456.789)";
@@ -95,6 +123,13 @@ public final class Haiagaru {
     private static final String CHMATE_COPIPE_NG_AR_KEY = "copipeNgAR";
     private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
     private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
+    private static final String NG_REGISTRATION_LIMIT_KEY = "ngRegistrationLimit";
+    private static final String HISSI_CHECKER_MODE_KEY = "hissiCheckerMode";
+    private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
+    private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
+    private static final String HISSI_VIEWER_FULLSCREEN_KEY = "hissiViewerFullscreen";
+    private static final int DEFAULT_NG_REGISTRATION_LIMIT = 300;
+    private static final int MAX_NG_REGISTRATION_LIMIT = 100_000;
     /** ChMate's own bounded post-history store (postDataList.json). */
     private static final String CHMATE_POST_DATA_LIST_COUNT_KEY = "postDataListCount";
     private static final int DEFAULT_CHMATE_POST_DATA_LIST_COUNT = 100;
@@ -123,12 +158,23 @@ public final class Haiagaru {
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
     private static final String AD_CLASS_243 = "o.zzexb";
     private static final Pattern LEGACY_BE_ATTACHMENT_TOKEN = Pattern.compile(
-            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+"
-                    + "|\\u0003img\\.5ch\\.(?:io|net)/ico/[^\\s<\\u0003\\u3000]+",
+            "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/(?:ico|premium)/[^\\s<\\u0003\\u3000]+"
+                    + "|\\u0003img\\.5ch\\.(?:io|net)/(?:ico|premium)/[^\\s<\\u0003\\u3000]+",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern LEGACY_PREMIUM_BE_URL = Pattern.compile(
+            "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/premium/([^\\s<\\u0003\\u3000]+)",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern LEGACY_BE_ICO_URL = Pattern.compile(
+            "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/ico/([^\\s<\\u0003\\u3000]+)",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
-            "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(?:/.*)?$",
+            // Keep the optional response number separate from any trailing
+            // path.  ChMate uses this suffix to position the thread at the
+            // requested response after an archived DAT has been imported.
+            "^/test/read\\.cgi/([^/]+)/(\\d{9,10})(/\\d+)?(?:/.*)?$",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern ITEST_SERVER_THREAD_READ_PATH = Pattern.compile(
@@ -337,20 +383,45 @@ public final class Haiagaru {
         Context context = provider.getContext();
         if (context == null) return;
         initializeApplicationContext(context);
+        EmojiFontFallback.initialize(context);
     }
 
     /** Fallback for processes that do not create ChMate's startup provider. */
     public static void onApplicationPreCreate(Application application) {
         if (application == null) return;
         initializeApplicationContext(application);
+        EmojiFontFallback.initialize(application);
     }
 
     public static void onApplicationCreate(Application application) {
         if (application == null) return;
-        Context context = application.getApplicationContext();
-        applicationContext = context == null ? application : context;
-        runtimePackageName = application.getPackageName();
-        applyUserAgent();
+        // Keep the same process-wide application context used by the provider
+        // hook.  The provider runs before ChMate creates its HTTP clients, so
+        // applying the UA there is required for the first request after restart.
+        initializeApplicationContext(application);
+        EmojiFontFallback.register(application);
+    }
+
+    /** Applies the bundled emoji fallback while preserving the original text. */
+    public static CharSequence processEmojiText(CharSequence source) {
+        return EmojiFontFallback.processText(source);
+    }
+
+    /** Leaves the editor/history intact and adapts only the outgoing post copy. */
+    public static Object prepareExternalEmojiPost(Object postData) {
+        return ExternalEmojiPost.prepare(postData);
+    }
+
+    /** 191 constructs its outgoing post directly from editor strings. */
+    public static String prepareExternalEmojiBody(String url, String body) {
+        return ExternalEmojiPost.prepareBody(url, body);
+    }
+
+    /** The legacy constructor passes nine adjacent strings; keep a range invoke valid. */
+    public static String prepareExternalEmojiBodyFromPostFields(
+            String url, String first, String second, String third, String body,
+            String fifth, String sixth, String seventh, String eighth) {
+        return ExternalEmojiPost.prepareBody(url, body);
     }
 
     private static void initializeApplicationContext(Context context) {
@@ -362,6 +433,7 @@ public final class Haiagaru {
         runtimePackageName = appContext.getPackageName();
         migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
+        applyUserAgent();
     }
 
     /** Installs the optional crash logger before ChMate's startup provider does any work. */
@@ -825,6 +897,14 @@ public final class Haiagaru {
         );
     }
 
+    /** Rewrites a stored legacy board-menu endpoint to the canonical 5ch.io host. */
+    public static String rewriteBbsMenuUrl(String original) {
+        if (original == null || !isChtoioEnabled()) return original;
+        return original
+                .replace("https://menu.5ch.net", "https://menu.5ch.io")
+                .replace("http://menu.5ch.net", "https://menu.5ch.io");
+    }
+
     public static String rewrite5chUrl(String original) {
         if (original == null) return null;
         String rewritten = rewriteLegacyTalkBoardResource(original);
@@ -909,6 +989,226 @@ public final class Haiagaru {
     }
 
     /**
+     * Creates a socket on the currently usable cellular network. ChMate's
+     * cellular-only client keeps one Network.SocketFactory, but Android 16 can
+     * invalidate that Network while a post is being assembled. Resolve the
+     * network again for every new socket and retry the current candidates before
+     * falling back to ChMate's original factory.
+     */
+    public static Socket createCellularSocket(SocketFactory fallback, String host, int port)
+            throws IOException {
+        if (!isCellularNetworkRefreshEnabled()) return fallback.createSocket(host, port);
+        return createRequestedCellularSocket(host, port, null, 0);
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, String host, int port, InetAddress localAddress, int localPort)
+            throws IOException {
+        if (!isCellularNetworkRefreshEnabled()) {
+            return fallback.createSocket(host, port, localAddress, localPort);
+        }
+        return createRequestedCellularSocket(host, port, localAddress, localPort);
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, InetAddress address, int port) throws IOException {
+        if (!isCellularNetworkRefreshEnabled()) return fallback.createSocket(address, port);
+        return createRequestedCellularSocket(address, port, null, 0);
+    }
+
+    public static Socket createCellularSocket(
+            SocketFactory fallback, InetAddress address, int port,
+            InetAddress localAddress, int localPort) throws IOException {
+        if (!isCellularNetworkRefreshEnabled()) {
+            return fallback.createSocket(address, port, localAddress, localPort);
+        }
+        return createRequestedCellularSocket(address, port, localAddress, localPort);
+    }
+
+    private static Socket createRequestedCellularSocket(
+            String host, int port, InetAddress localAddress, int localPort) throws IOException {
+        IOException last = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            CellularNetworkLease lease = requestCellularNetwork();
+            if (lease == null) continue;
+            try {
+                Socket socket = localAddress == null
+                        ? lease.network.getSocketFactory().createSocket(host, port)
+                        : lease.network.getSocketFactory().createSocket(
+                                host, port, localAddress, localPort);
+                retainCellularNetworkLease(lease);
+                Log.i(LOG_TAG, "Using requested cellular network " + lease.network
+                        + " for post socket");
+                return socket;
+            } catch (IOException error) {
+                last = error;
+                lease.release();
+                Log.w(LOG_TAG, "Requested cellular network socket failed on attempt "
+                        + (attempt + 1), error);
+            }
+        }
+        throw last != null ? last : new IOException("No cellular network available for post");
+    }
+
+    private static Socket createRequestedCellularSocket(
+            InetAddress address, int port, InetAddress localAddress, int localPort)
+            throws IOException {
+        IOException last = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            CellularNetworkLease lease = requestCellularNetwork();
+            if (lease == null) continue;
+            try {
+                Socket socket = localAddress == null
+                        ? lease.network.getSocketFactory().createSocket(address, port)
+                        : lease.network.getSocketFactory().createSocket(
+                                address, port, localAddress, localPort);
+                retainCellularNetworkLease(lease);
+                Log.i(LOG_TAG, "Using requested cellular network " + lease.network
+                        + " for post socket");
+                return socket;
+            } catch (IOException error) {
+                last = error;
+                lease.release();
+                Log.w(LOG_TAG, "Requested cellular network socket failed on attempt "
+                        + (attempt + 1), error);
+            }
+        }
+        throw last != null ? last : new IOException("No cellular network available for post");
+    }
+
+    private static CellularNetworkLease requestCellularNetwork() {
+        Context context = applicationContext;
+        if (context == null) return null;
+        ConnectivityManager manager = null;
+        CellularNetworkLease lease = null;
+        try {
+            manager = (ConnectivityManager)
+                    context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) return null;
+            CountDownLatch ready = new CountDownLatch(1);
+            Network[] result = new Network[1];
+            ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    result[0] = network;
+                    ready.countDown();
+                }
+
+            };
+            NetworkRequest request = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+                    .build();
+            manager.requestNetwork(request, callback);
+            lease = new CellularNetworkLease(manager, callback);
+            if (!ready.await(5L, TimeUnit.SECONDS) || result[0] == null) {
+                lease.release();
+                return null;
+            }
+            lease.network = result[0];
+            return lease;
+        } catch (Throwable error) {
+            if (lease != null) lease.release();
+            Log.w(LOG_TAG, "Unable to request a fresh cellular network", error);
+            return null;
+        }
+    }
+
+    private static void retainCellularNetworkLease(final CellularNetworkLease lease) {
+        CELLULAR_NETWORK_LEASE_HANDLER.postDelayed(
+                lease::release, CELLULAR_NETWORK_LEASE_MILLIS);
+    }
+
+    /** Whether the user enabled the fresh-cellular-network workaround. */
+    public static boolean isCellularNetworkRefreshEnabled() {
+        SharedPreferences preferences = preferencesOrNull();
+        return preferences == null || preferences.getBoolean("refreshCellularNetwork", true);
+    }
+
+    /**
+     * Returns the maximum number of locally persisted NG entries for each
+     * ChMate NG category. Zero means unlimited; the stock value is 300.
+     */
+    public static int getNgRegistrationLimit() {
+        SharedPreferences preferences = preferencesOrNull();
+        if (preferences == null) return DEFAULT_NG_REGISTRATION_LIMIT;
+        int value = preferences.getInt(NG_REGISTRATION_LIMIT_KEY, DEFAULT_NG_REGISTRATION_LIMIT);
+        return value <= 0 ? Integer.MAX_VALUE : Math.min(value, MAX_NG_REGISTRATION_LIMIT);
+    }
+
+    private static final class CellularNetworkLease {
+        private final ConnectivityManager manager;
+        private final ConnectivityManager.NetworkCallback callback;
+        private volatile Network network;
+        private boolean released;
+
+        private CellularNetworkLease(
+                ConnectivityManager manager,
+                ConnectivityManager.NetworkCallback callback) {
+            this.manager = manager;
+            this.callback = callback;
+        }
+
+        private synchronized void release() {
+            if (released) return;
+            released = true;
+            try {
+                manager.unregisterNetworkCallback(callback);
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /**
+     * Repairs the write session left by older 191 patches once, without touching
+     * the rest of ChMate's data.  The stock Talk flow stores a replacement
+     * {@code x-write-key} before showing its confirmation dialog.  If that dialog
+     * is cancelled, the matching one-shot extend token is discarded while the
+     * replacement key remains in {@code talk.xml}.  Every later post then reuses
+     * an impossible key/token pair until all app data is cleared.
+     */
+    public static void prepareLegacyTalkPostSession() {
+        Context context = applicationContext;
+        if (context == null) return;
+        SharedPreferences haiagaru = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        long installedAt = 1L;
+        try {
+            PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            if (info.lastUpdateTime > 0) installedAt = info.lastUpdateTime;
+        } catch (Throwable ignored) {
+            try {
+                long modified = new File(context.getApplicationInfo().sourceDir).lastModified();
+                if (modified > 0) installedAt = modified;
+            } catch (Throwable ignoredAgain) {
+            }
+        }
+        if (installedAt == haiagaru.getLong(LEGACY_TALK_SESSION_REPAIR_KEY, Long.MIN_VALUE)) return;
+        clearLegacyTalkWriteSession(context);
+        haiagaru.edit()
+                .putLong(LEGACY_TALK_SESSION_REPAIR_KEY, installedAt)
+                .remove("legacyTalkSessionRepairVersionV1")
+                .remove("legacyTalkSessionRepairV1")
+                .commit();
+        Log.i(LOG_TAG, "Repaired legacy Talk write session after APK update");
+    }
+
+    /** Drops only 191's renewable Talk write credentials after confirmation is cancelled. */
+    public static void resetLegacyTalkPostSession() {
+        Context context = applicationContext;
+        if (context == null) return;
+        clearLegacyTalkWriteSession(context);
+        Log.i(LOG_TAG, "Reset legacy Talk write session after cancelled confirmation");
+    }
+
+    private static void clearLegacyTalkWriteSession(Context context) {
+        context.getSharedPreferences(LEGACY_TALK_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove("talk_write_key")
+                .remove("talk_created")
+                .commit();
+    }
+
+    /**
      * ChMate 0.8.10.191 restores its Talk client into a dedicated in-memory DEX.
      * A certificate-derived comparison in that DEX deliberately divides by zero
      * when the APK is re-signed. Keep the generated request/authentication code,
@@ -926,11 +1226,18 @@ public final class Haiagaru {
             Object[] arguments
     ) {
         if (method == null) throw new NullPointerException("method");
+        // The generated Talk client can refresh its certificate-derived cache
+        // after construction.  Repair it at the actual invocation boundary as
+        // well, rather than relying solely on the constructor hook.
+        normalizeLegacyTalkAuthIntegrity(method.getDeclaringClass().getClassLoader());
         try {
             return method.invoke(target, arguments);
         } catch (java.lang.reflect.InvocationTargetException error) {
             Throwable cause = error.getCause();
-            if (!(cause instanceof ArithmeticException)) {
+            // Depending on the generated DEX revision the failed integrity
+            // comparison is expressed either as divide-by-zero or throw-null.
+            if (!(cause instanceof ArithmeticException)
+                    && !(cause instanceof NullPointerException)) {
                 return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
             }
             // The generated client can replace its static certificate cache between
@@ -994,6 +1301,313 @@ public final class Haiagaru {
             return Haiagaru.<RuntimeException, Object>throwUnchecked(error.getCause());
         } catch (Throwable error) {
             return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    /**
+     * Invokes 226's generated Talk session/key builder after repairing the same
+     * certificate-derived state used by its private string encoder.  This call
+     * runs before the posting method, so repairing only invokePreIoTalkPoster is
+     * too late: the encoder otherwise deliberately throws a bare NPE.
+     */
+    public static Object invokePreIoTalkAuthenticator(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
+        normalizeGeneratedIntegrityState(target, "o.head", "e", "d");
+        try {
+            return method.invoke(target, arguments);
+        } catch (java.lang.reflect.InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            if (!isGeneratedIntegrityFailure(cause)) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
+            }
+            normalizeGeneratedIntegrityState(target, "o.head", "e", "d");
+            try {
+                return method.invoke(target, arguments);
+            } catch (java.lang.reflect.InvocationTargetException retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError.getCause());
+            } catch (Throwable retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError);
+            }
+        } catch (Throwable error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    /** Compatibility wrapper for 0.8.10.241's generated Talk authenticator. */
+    public static Object invokeIoTalkPoster(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
+        if ("o.setTimeUpdate".equals(method.getDeclaringClass().getName())
+                && "e".equals(method.getName())
+                && arguments != null && arguments.length == 5) {
+            try {
+                applyIoTalkPostHeaders(arguments);
+                return null;
+            } catch (Throwable error) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+            }
+        }
+        normalizeIoTalkIntegrity(method.getDeclaringClass(), target);
+        try {
+            return method.invoke(target, arguments);
+        } catch (java.lang.reflect.InvocationTargetException error) {
+            Throwable cause = error.getCause();
+            if (!isGeneratedIntegrityFailure(cause)) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(cause);
+            }
+            normalizeIoTalkIntegrity(method.getDeclaringClass(), target);
+            try {
+                return method.invoke(target, arguments);
+            } catch (java.lang.reflect.InvocationTargetException retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError.getCause());
+            } catch (Throwable retryError) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(retryError);
+            }
+        } catch (Throwable error) {
+            return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+        }
+    }
+
+    /**
+     * Recreates 0.8.10.241's Talk authentication request without entering the
+     * generated digest routine.  That routine derives the correct HMAC but can
+     * throw a numeric integrity exception before returning it after an update.
+     */
+    public static Object invokeIoTalkAuth(
+            java.lang.reflect.Method method,
+            Object target,
+            Object[] arguments
+    ) {
+        if (method == null) throw new NullPointerException("method");
+        if ("o.setTimeUpdate".equals(method.getDeclaringClass().getName())
+                && "b".equals(method.getName())
+                && arguments != null && arguments.length == 4
+                && arguments[1] instanceof String
+                && arguments[2] instanceof String
+                && arguments[3] instanceof Number) {
+            try {
+                return requestIoTalkAuth(
+                        (String) arguments[1],
+                        (String) arguments[2],
+                        ((Number) arguments[3]).longValue());
+            } catch (Throwable error) {
+                return Haiagaru.<RuntimeException, Object>throwUnchecked(error);
+            }
+        }
+        return invokeIoTalkPoster(method, target, arguments);
+    }
+
+    private static String requestIoTalkAuth(String id, String password, long suppliedTime)
+            throws Exception {
+        // ChMate 241 passes epoch seconds here.  Do not convert the value a
+        // second time: using milliseconds-to-seconds conversion again changes
+        // the HMAC input and makes Talk reject the write token.
+        long authTime = suppliedTime;
+        String appKey = "KkaD9iXqKv9lp2luO9SuaTL8lmvRPj";
+        String digestInput = id + password + appKey + authTime;
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(
+                "eaGheElQLJ6QJNOKHLxWL15GvgLkVn".getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256"));
+        byte[] digest = mac.doFinal(digestInput.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte item : digest) hex.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+
+        String form = "ID=" + java.net.URLEncoder.encode(id, "UTF-8")
+                + "&PW=" + java.net.URLEncoder.encode(password, "UTF-8")
+                + "&KY=" + java.net.URLEncoder.encode(appKey, "UTF-8")
+                + "&CT=" + authTime
+                + "&HB=" + hex;
+        byte[] body = form.getBytes(StandardCharsets.UTF_8);
+        java.net.HttpURLConnection connection = (java.net.HttpURLConnection)
+                new java.net.URL("https://api.talk-platform.com/v1/auth/").openConnection();
+        connection.setConnectTimeout(15000);
+        connection.setReadTimeout(15000);
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        connection.setRequestProperty(
+                "Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+        connection.setFixedLengthStreamingMode(body.length);
+        try {
+            java.io.OutputStream output = connection.getOutputStream();
+            output.write(body);
+            output.close();
+            int status = connection.getResponseCode();
+            java.io.InputStream input = status >= 400
+                    ? connection.getErrorStream() : connection.getInputStream();
+            String response = readUtf8Response(input);
+            String firstLine = response == null ? "" : response.split("[\\r\\n]", 2)[0];
+            if (status < 200 || status >= 300 || firstLine.length() <= 26) {
+                throw new java.io.IOException(
+                        "Talk authentication failed (HTTP " + status + "): " + firstLine);
+            }
+            return firstLine.substring(26);
+        } finally {
+            connection.disconnect();
+        }
+    }
+
+    private static String readUtf8Response(java.io.InputStream input) throws java.io.IOException {
+        if (input == null) return "";
+        java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int count;
+        try {
+            while ((count = input.read(buffer)) >= 0) output.write(buffer, 0, count);
+        } finally {
+            input.close();
+        }
+        return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    /** Recreates 241's two Talk headers without entering its re-signing trap. */
+    private static void applyIoTalkPostHeaders(Object[] arguments) throws Exception {
+        Object requestBuilder = arguments[0];
+        String writeSourceKey = String.valueOf(arguments[1]);
+        String writeKey = String.valueOf(arguments[3]);
+        Object parameters = arguments[4];
+
+        java.util.HashMap<String, String> values = new java.util.HashMap<>();
+        if (parameters instanceof Iterable) {
+            for (Object entry : (Iterable<?>) parameters) {
+                if (entry == null) continue;
+                Field nameField = entry.getClass().getDeclaredField("c");
+                Field valueField = entry.getClass().getDeclaredField("a");
+                nameField.setAccessible(true);
+                valueField.setAccessible(true);
+                Object name = nameField.get(entry);
+                Object value = valueField.get(entry);
+                if (name != null) values.put(String.valueOf(name), value == null ? "" : String.valueOf(value));
+            }
+        }
+        String timestamp = String.valueOf(System.currentTimeMillis() / 1000L);
+        String payload = valueOrEmpty(values, "bbs") + "<>"
+                + valueOrEmpty(values, "key") + "<>"
+                + valueOrEmpty(values, "mail") + "<>"
+                + valueOrEmpty(values, "MESSAGE") + "<>"
+                + timestamp + "<>"
+                + writeSourceKey + "<>";
+
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(
+                "eaGheElQLJ6QJNOKHLxWL15GvgLkVn".getBytes(StandardCharsets.UTF_8),
+                "HmacSHA256"));
+        byte[] digest = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte item : digest) hex.append(String.format(Locale.ROOT, "%02x", item & 0xff));
+
+        Object headerBuilder = null;
+        for (Field field : requestBuilder.getClass().getDeclaredFields()) {
+            field.setAccessible(true);
+            Object value = field.get(requestBuilder);
+            if (value != null && value.getClass().getName().contains("Headers$ComponentActivity")) {
+                headerBuilder = value;
+                break;
+            }
+        }
+        if (headerBuilder == null) throw new IllegalStateException("Talk header builder was not found");
+        Method addHeader = null;
+        for (Method candidate : headerBuilder.getClass().getDeclaredMethods()) {
+            if ("c".equals(candidate.getName())
+                    && candidate.getParameterTypes().length == 2
+                    && candidate.getParameterTypes()[0] == String.class
+                    && candidate.getParameterTypes()[1] == String.class) {
+                addHeader = candidate;
+                break;
+            }
+        }
+        if (addHeader == null) throw new IllegalStateException("Talk header method was not found");
+        addHeader.setAccessible(true);
+        addHeader.invoke(headerBuilder, "X-Write-Token", hex.toString());
+        addHeader.invoke(headerBuilder, "X-Write-Key", writeKey);
+
+        Method setParameter = parameters.getClass().getDeclaredMethod(
+                "a", String.class, String.class);
+        setParameter.setAccessible(true);
+        setParameter.invoke(parameters, "time", timestamp);
+        setParameter.invoke(parameters, "appkey", "KkaD9iXqKv9lp2luO9SuaTL8lmvRPj");
+        setParameter.invoke(parameters, "sid", writeSourceKey);
+    }
+
+    private static String valueOrEmpty(java.util.Map<String, String> values, String key) {
+        String value = values.get(key);
+        return value == null ? "" : value;
+    }
+
+    private static boolean isGeneratedIntegrityFailure(Throwable error) {
+        if (error instanceof ArithmeticException || error instanceof NullPointerException) return true;
+        if (!(error instanceof RuntimeException)) return false;
+        String message = error.getMessage();
+        return message != null && message.matches("-?\\d+");
+    }
+
+    private static void normalizeIoTalkIntegrity(Class<?> generatedClass, Object target) {
+        normalizeIntegrityFields(generatedClass, null);
+        if (target != null) normalizeIntegrityFields(target.getClass(), target);
+        ClassLoader loader = generatedClass == null ? null : generatedClass.getClassLoader();
+        normalizeIoTalkStateClass(loader, "o._JvmPlatformKt");
+        normalizeIoTalkStateClass(loader, "o.canonicalizeInternal");
+    }
+
+    private static void normalizeIoTalkStateClass(ClassLoader loader, String className) {
+        if (loader == null) return;
+        try {
+            Class<?> stateClass = Class.forName(className, false, loader);
+            for (Field field : stateClass.getDeclaredFields()) {
+                if (!java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                        || field.getType() != Object[].class) continue;
+                field.setAccessible(true);
+                Object value = field.get(null);
+                if (!(value instanceof Object[])) continue;
+                Object[] state = (Object[]) value;
+                if (state.length < 2 || !(state[0] instanceof int[])
+                        || !(state[1] instanceof int[])) continue;
+                int[] actual = (int[]) state[0];
+                int[] expected = (int[]) state[1];
+                if (actual.length != 0 && expected.length != 0) {
+                    expected[0] = actual[0];
+                }
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize ChMate 241 Talk state " + className, error);
+        }
+    }
+
+    private static void normalizeIntegrityFields(Class<?> type, Object owner) {
+        if (type == null) return;
+        try {
+            for (Field field : type.getDeclaredFields()) {
+                boolean isStatic = java.lang.reflect.Modifier.isStatic(field.getModifiers());
+                if (!isStatic && owner == null) continue;
+                field.setAccessible(true);
+                Object receiver = isStatic ? null : owner;
+                if (field.getType() == long.class && isStatic) {
+                    field.setLong(null, System.currentTimeMillis() + 86_400_000L);
+                    continue;
+                }
+                Object value = field.get(receiver);
+                if (!(value instanceof Object[])) continue;
+                Object[] state = (Object[]) value;
+                int[][] integers = new int[3][];
+                int count = 0;
+                for (Object item : state) {
+                    if (item instanceof int[] && ((int[]) item).length != 0 && count < integers.length) {
+                        integers[count++] = (int[]) item;
+                    }
+                }
+                if (count >= 2) integers[1][0] = integers[0][0];
+                if (count >= 3) integers[2][0] = -1531869433;
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize ChMate 241 Talk integrity state", error);
         }
     }
 
@@ -1139,8 +1753,23 @@ public final class Haiagaru {
                 return normalized;
             }
 
-            return "https://itest.5ch.io/test/read.cgi/"
-                    + matcher.group(1) + "/" + matcher.group(2) + "/";
+            String responseSuffix = matcher.groupCount() >= 3
+                    ? matcher.group(3) : null;
+            StringBuilder rewrittenUrl = new StringBuilder()
+                    .append("https://itest.5ch.io/test/read.cgi/")
+                    .append(matcher.group(1)).append('/').append(matcher.group(2));
+            if (responseSuffix != null && !responseSuffix.isEmpty()) {
+                rewrittenUrl.append(responseSuffix);
+            } else {
+                rewrittenUrl.append('/');
+            }
+            if (uri.getEncodedQuery() != null) {
+                rewrittenUrl.append('?').append(uri.getEncodedQuery());
+            }
+            if (uri.getEncodedFragment() != null) {
+                rewrittenUrl.append('#').append(uri.getEncodedFragment());
+            }
+            return rewrittenUrl.toString();
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
             return normalized;
@@ -1188,12 +1817,25 @@ public final class Haiagaru {
 
     public static String normalizeBeIconUrl(String original) {
         if (original == null) return null;
-        return original.replace("://img.5ch.net/", "://img.5ch.io/");
+        return original
+                .replace("://img.5ch.net/ico/_be_", "://img.5ch.io/premium/")
+                .replace("://img.5ch.net/ico/_be", "://img.5ch.io/premium/")
+                .replace("://img.5ch.net/", "://img.5ch.io/");
     }
 
     public static String prepareLegacyBeParsing(String original) {
-        if (original == null || !original.contains("sssp://img.5ch.io/")) return original;
-        return original.replace("sssp://img.5ch.io/", "sssp://img.5ch.net/");
+        if (original == null) return null;
+        // The 191 parser only routes sssp://img.5ch.net/ico/... through its
+        // inline icon renderer. Normalize every public spelling, including
+        // ordinary https://, protocol-relative, and control-character encoded
+        // /ico/ URLs. This matters when
+        // the optional thread-date renderer inserts text before the URL: leaving
+        // the image as a normal link makes the span offsets and attachment pass
+        // disagree, which produces duplicate icons or a broken link.
+        String prepared = LEGACY_PREMIUM_BE_URL.matcher(original)
+                .replaceAll("sssp://img.5ch.net/ico/_be$1");
+        return LEGACY_BE_ICO_URL.matcher(prepared)
+                .replaceAll("sssp://img.5ch.net/ico/$1");
     }
 
     public static String stripLegacyBeAttachmentTokens(String original) {
@@ -1213,8 +1855,7 @@ public final class Haiagaru {
         if (start >= end) return found;
 
         String candidate = text.substring(start, end).toLowerCase(Locale.ROOT);
-        if (candidate.contains("img.5ch.io/ico/")
-                || candidate.contains("img.5ch.net/ico/")) {
+        if (isBeIconUrl(candidate)) {
             linkInfo[3] = 0;
             linkInfo[5] = 4;
         }
@@ -1287,7 +1928,9 @@ public final class Haiagaru {
         if (url == null) return false;
         String normalized = url.toLowerCase(Locale.ROOT);
         return normalized.contains("img.5ch.io/ico/")
-                || normalized.contains("img.5ch.net/ico/");
+                || normalized.contains("img.5ch.net/ico/")
+                || normalized.contains("img.5ch.io/premium/")
+                || normalized.contains("img.5ch.net/premium/");
     }
 
     public static boolean is5chHost(String host) {
@@ -1338,7 +1981,15 @@ public final class Haiagaru {
             android.widget.BaseAdapter adapter,
             int position
     ) {
-        if (view == null || adapter == null || !shouldHideAds()) return;
+        if (view == null || adapter == null) return;
+        // This adapter hook runs for every bound response, including when ad
+        // hiding is disabled. Keep emoji fallback independent of that setting.
+        try {
+            EmojiFontFallback.applyToRow(view);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to apply emoji font fallback", error);
+        }
+        if (!shouldHideAds()) return;
         try {
             // 191 reserves the tablet banner above the filter buttons as top padding on
             // the first adapter row. It is not an ad View, so collapsing SDK Views alone
@@ -1371,20 +2022,119 @@ public final class Haiagaru {
         safePostCollapseAdView(view, 2500);
     }
 
-    private static void collapseAdView(View view) {
-        collapseView(view);
-        collapseAdContainer(view);
+    /** Removes empty inline slots left between Talk response rows. */
+    public static void hideTalkThreadBlankRows(Activity activity) {
+        if (activity == null || !shouldHideAds()) return;
+        // This hook is installed on ResListActivity, which is also used for
+        // ordinary 5ch threads.  Their response container can still be empty
+        // while the first network load is in progress.  Treating that
+        // container as an ad slot hides the whole thread on its first open.
+        Intent intent = activity.getIntent();
+        if (intent == null || intent.getData() == null
+                || !ArchivedThreadImporter.isTalkThreadUrl(intent.getData().toString())) {
+            return;
+        }
+        View root = activity.getWindow() == null
+                ? null : activity.getWindow().getDecorView();
+        if (!(root instanceof ViewGroup)) return;
+        ViewGroup group = (ViewGroup) root;
+        Runnable scan = () -> collapseTalkBlankRows(group);
+        group.post(scan);
+        group.postDelayed(scan, 300);
+        group.postDelayed(scan, 1000);
+        group.postDelayed(scan, 2500);
     }
 
-    private static void collapseAdContainer(View adView) {
-        if (!(adView.getParent() instanceof ViewGroup)) return;
-
-        ViewGroup container = (ViewGroup) adView.getParent();
-        // The tablet thread layout reserves a fixed-height wrapper for the banner. Collapse
-        // only a wrapper whose sole child is the ad, leaving normal content containers intact.
-        if (container.getChildCount() == 1 && container.getChildAt(0) == adView) {
-            collapseView(container);
+    private static void collapseTalkBlankRows(View view) {
+        if (!(view instanceof ViewGroup)) return;
+        ViewGroup group = (ViewGroup) view;
+        String name = group.getClass().getName();
+        if (name.contains("RecyclerView") || name.contains("AbsListView")
+                || name.contains("ScrollView")) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                collapseTalkBlankRows(group.getChildAt(i));
+            }
+            return;
         }
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            // 0.8.10.241 leaves its inline-ad slot as a large childless
+            // ViewGroup. Do not recursively classify arbitrary UI containers as
+            // empty here: ChMate's bottom bar uses custom-drawn Views that have
+            // no text/background and would otherwise be mistaken for spacers.
+            if (child.getVisibility() == View.VISIBLE
+                    && child instanceof ViewGroup
+                    && ((ViewGroup) child).getChildCount() == 0
+                    && child.getHeight() >= dp(child.getContext(), 160)) {
+                collapseView(child);
+                continue;
+            }
+            collapseTalkBlankRows(child);
+        }
+    }
+
+    private static void collapseAdView(View view) {
+        boolean wasLaidOut = view != null && view.getHeight() > 0;
+        collapseView(view);
+        collapseAdContainer(view, wasLaidOut);
+    }
+
+    private static void collapseAdContainer(View adView, boolean wasLaidOut) {
+        // onViewCreated can reach the ad before measure/layout. At that point every
+        // sibling also has height 0; walking upward would incorrectly collapse the
+        // whole HomeActivity root and leave a black screen on launch.
+        if (adView == null || !wasLaidOut) return;
+        View current = adView;
+        // Talk's inline slot is sometimes wrapped in a FrameLayout containing a second,
+        // already-empty spacer. The old sole-child check left that wrapper at its reserved
+        // height, producing a large blank row between two responses. Walk only the small
+        // wrapper chain and collapse a parent after every child has become empty or hidden.
+        for (int depth = 0; depth < 4 && current.getParent() instanceof ViewGroup; depth++) {
+            ViewGroup container = (ViewGroup) current.getParent();
+            String name = container.getClass().getName();
+            if (name.contains("RecyclerView") || name.contains("AbsListView")
+                    || name.contains("ScrollView")) {
+                return;
+            }
+            boolean hasVisibleChild = false;
+            for (int i = 0; i < container.getChildCount(); i++) {
+                View child = container.getChildAt(i);
+                if (child.getVisibility() == View.VISIBLE && child.getHeight() > 0
+                        && !isEmptySpacer(child)) {
+                    hasVisibleChild = true;
+                    break;
+                }
+            }
+            if (hasVisibleChild) return;
+            collapseView(container);
+            current = container;
+        }
+    }
+
+    private static boolean isEmptySpacer(View view) {
+        if (view == null || view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) {
+            return true;
+        }
+        if (view instanceof TextView) {
+            CharSequence text = ((TextView) view).getText();
+            return (text == null || text.length() == 0)
+                    && view.getBackground() == null;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            // Talk 241 places the inline ad in a childless FrameLayout. The SDK
+            // background remains attached even after the ad has no content, so
+            // background presence alone cannot make this a non-empty row.
+            if (group.getChildCount() == 0
+                    && view.getHeight() >= dp(view.getContext(), 160)) {
+                return true;
+            }
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (!isEmptySpacer(group.getChildAt(i))) return false;
+            }
+            return view.getBackground() == null;
+        }
+        return view.getBackground() == null;
     }
 
     private static void collapseView(View view) {
@@ -1618,6 +2368,42 @@ public final class Haiagaru {
                 "chtoio",
                 preferences.getBoolean("chtoio", true)
         );
+        Spinner hissiCheckerMode = addSpinner(
+                layout,
+                activity,
+                text("ID長押しの必死チェッカー", "ID long-press checker"),
+                new String[]{
+                        text("自動（5chはhissi.org／外部板はKyodemo）", "Automatic (hissi.org for 5ch, Kyodemo for external boards)"),
+                        text("hissi.orgを使用", "Use hissi.org"),
+                        text("Kyodemoを使用", "Use Kyodemo"),
+                        text("両方（画面上で切り替え）", "Both (switch on the checker screen)")
+                },
+                preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
+        );
+        Spinner hissiViewerTheme = addSpinner(
+                layout,
+                activity,
+                text("必死チェッカーの表示テーマ", "Checker viewer theme"),
+                new String[]{
+                        text("端末設定に合わせる", "Follow system"),
+                        text("ダーク", "Dark"),
+                        text("AMOLEDブラック", "AMOLED black")
+                },
+                preferences.getInt(HISSI_VIEWER_THEME_KEY, 0)
+        );
+        Spinner hissiViewerTextZoom = addSpinner(
+                layout,
+                activity,
+                text("必死チェッカーの文字サイズ", "Checker viewer text size"),
+                new String[]{"100%", "115%", "130%"},
+                viewerTextZoomIndex(preferences.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100))
+        );
+        Switch hissiViewerFullscreen = addSwitch(
+                layout,
+                activity,
+                text("必死チェッカーを全画面で表示", "Fullscreen checker viewer"),
+                preferences.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false)
+        );
         Switch edgeReporterId = addSwitch(
                 layout,
                 activity,
@@ -1643,6 +2429,37 @@ public final class Haiagaru {
                 text("自動DAT取得", "Automatic DAT retrieval"),
                 preferences.getBoolean("automaticDat", true)
         );
+        Switch refreshCellularNetwork = addSwitch(
+                layout,
+                activity,
+                text("投稿時にモバイル回線を再取得する", "Refresh the cellular network before posting"),
+                preferences.getBoolean("refreshCellularNetwork", true)
+        );
+        TextView refreshCellularNetworkDescription = new TextView(activity);
+        refreshCellularNetworkDescription.setText(text(
+                "ON（推奨）では、古いNetwork IDを使わず投稿前にセルラー回線を再要求します。"
+                        + " OFFにするとChMate本来の接続選択へ戻ります。",
+                "ON (recommended) requests a fresh cellular network before posting instead of reusing "
+                        + "a stale Network ID. OFF restores ChMate's original selection."
+        ));
+        refreshCellularNetworkDescription.setTextSize(13);
+        layout.addView(refreshCellularNetworkDescription, rowParams(activity));
+        Switch bypassPostPreflight = addSwitch(
+                layout,
+                activity,
+                text("投稿前の本文チェックを無効化",
+                        "Disable the local post body check"),
+                preferences.getBoolean("bypassPostPreflight", true)
+        );
+        TextView bypassPostPreflightDescription = new TextView(activity);
+        bypassPostPreflightDescription.setText(text(
+                "ONにすると、空欄・端末情報のみかどうかの判定を投稿先サーバーに任せます。"
+                        + " 誤判定される場合はON、ChMate本来の確認を使う場合はOFFにしてください。",
+                "When enabled, empty-body and device-info-only validation is left to the server. "
+                        + "Enable this if ChMate rejects non-empty text; disable it to restore ChMate's check."
+        ));
+        bypassPostPreflightDescription.setTextSize(13);
+        layout.addView(bypassPostPreflightDescription, rowParams(activity));
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
@@ -1665,6 +2482,28 @@ public final class Haiagaru {
         ));
         postDataListCountDescription.setTextSize(13);
         layout.addView(postDataListCountDescription, rowParams(activity));
+
+        EditText ngRegistrationLimit = addTextField(
+                layout,
+                activity,
+                text("NG登録上限（ワード・ID・名前など、0で無制限）",
+                        "NG registration limit (words, IDs, names; 0 is unlimited)"),
+                Integer.toString(preferences.getInt(
+                        NG_REGISTRATION_LIMIT_KEY,
+                        DEFAULT_NG_REGISTRATION_LIMIT
+                ))
+        );
+        TextView ngRegistrationLimitDescription = new TextView(activity);
+        ngRegistrationLimitDescription.setText(text(
+                "NGワード・NG ID・NG名前など、各NG保存カテゴリの上限です。"
+                        + "上限を下げても既存項目はその場で削除せず、次回保存時に古い項目から整理します。"
+                        + "1〜100000、または0（無制限）を指定できます。",
+                "Sets the per-category limit for NG words, IDs, names, and similar entries. "
+                        + "Lowering the value does not delete existing entries immediately; older entries "
+                        + "are trimmed on the next save. Choose 1 to 100000, or 0 for unlimited."
+        ));
+        ngRegistrationLimitDescription.setTextSize(13);
+        layout.addView(ngRegistrationLimitDescription, rowParams(activity));
 
         boolean legacyPlusSupportedValue = false;
         Switch abbrevSingleIdValue = null;
@@ -1825,9 +2664,27 @@ public final class Haiagaru {
                             .putString("prefMonaKeyName", value(monaKeyName))
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
+                            .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
+                            .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
+                            .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
+                                    Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
+                            ])
+                            .putBoolean(HISSI_VIEWER_FULLSCREEN_KEY, hissiViewerFullscreen.isChecked())
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
                             .putBoolean("forceHttps", forceHttps.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
+                            .putBoolean("refreshCellularNetwork", refreshCellularNetwork.isChecked())
+                            .putBoolean("bypassPostPreflight", bypassPostPreflight.isChecked())
+                            .putInt(
+                                    NG_REGISTRATION_LIMIT_KEY,
+                                    parseNgRegistrationLimit(
+                                            value(ngRegistrationLimit),
+                                            preferences.getInt(
+                                                    NG_REGISTRATION_LIMIT_KEY,
+                                                    DEFAULT_NG_REGISTRATION_LIMIT
+                                            )
+                                    )
+                            )
                             .commit();
                     if (archiveRouteTemplates != null) {
                         preferences.edit()
@@ -2282,6 +3139,12 @@ public final class Haiagaru {
         return preferences(context).getBoolean("automaticDat", true);
     }
 
+    /** Whether ChMate's local empty/device-info-only post gate should be skipped. */
+    public static boolean bypassPostPreflightValidation() {
+        SharedPreferences preferences = preferencesOrNull();
+        return preferences == null || preferences.getBoolean("bypassPostPreflight", true);
+    }
+
     static String archiveRouteTemplates(Context context) {
         if (context == null) return DEFAULT_ARCHIVE_ROUTE_TEMPLATES;
         String configured = preferences(context).getString(
@@ -2403,6 +3266,24 @@ public final class Haiagaru {
         return editText;
     }
 
+    private static Spinner addSpinner(
+            LinearLayout layout,
+            Context context,
+            String title,
+            String[] values,
+            int selected
+    ) {
+        TextView label = new TextView(context);
+        label.setText(title);
+        layout.addView(label, rowParams(context));
+        Spinner spinner = new Spinner(context);
+        spinner.setAdapter(new ArrayAdapter<>(context,
+                android.R.layout.simple_spinner_dropdown_item, values));
+        spinner.setSelection(Math.max(0, Math.min(selected, values.length - 1)));
+        layout.addView(spinner, rowParams(context));
+        return spinner;
+    }
+
     private static LinearLayout.LayoutParams rowParams(Context context) {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -2452,6 +3333,15 @@ public final class Haiagaru {
         return Math.max(0, Math.min(fallback, MAX_CHMATE_POST_DATA_LIST_COUNT));
     }
 
+    private static int parseNgRegistrationLimit(String rawValue, int fallback) {
+        try {
+            int value = Integer.parseInt(rawValue.trim());
+            if (value >= 0 && value <= MAX_NG_REGISTRATION_LIMIT) return value;
+        } catch (RuntimeException ignored) {
+        }
+        return Math.max(0, Math.min(fallback, MAX_NG_REGISTRATION_LIMIT));
+    }
+
     private static String text(String japanese, String english) {
         return Locale.JAPANESE.getLanguage().equals(Locale.getDefault().getLanguage())
                 ? japanese
@@ -2467,6 +3357,68 @@ public final class Haiagaru {
         return context == null ? null : preferences(context);
     }
 
+    /** 0=automatic, 1=hissi.org, 2=Kyodemo, 3=both. Shared by all supported ChMate versions. */
+    public static int hissiCheckerMode() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return 0;
+        int mode = prefs.getInt(HISSI_CHECKER_MODE_KEY, 0);
+        return mode < 0 || mode > 3 ? 0 : mode;
+    }
+
+    /** Returns whether the patch-time dedicated checker Activity was registered. */
+    public static boolean dedicatedCheckerViewerAvailable() {
+        Context context = applicationContext;
+        if (context == null) return false;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("haiagaru-hissi://hissi.org/read.php/test/1/1.html"));
+            intent.setPackage(context.getPackageName());
+            return context.getPackageManager().resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null;
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to detect the dedicated checker viewer", error);
+            return false;
+        }
+    }
+
+    static Context applicationContextForExtension() {
+        return applicationContext;
+    }
+
+    public static int hissiViewerTheme() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return 0;
+        int value = prefs.getInt(HISSI_VIEWER_THEME_KEY, 0);
+        return value < 0 || value > 2 ? 0 : value;
+    }
+
+    public static void setHissiViewerTheme(int value) {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs != null) prefs.edit().putInt(HISSI_VIEWER_THEME_KEY,
+                Math.max(0, Math.min(2, value))).apply();
+    }
+
+    public static int hissiViewerTextZoom() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return 100;
+        int value = prefs.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100);
+        return value == 115 || value == 130 ? value : 100;
+    }
+
+    public static void setHissiViewerTextZoom(int value) {
+        SharedPreferences prefs = preferencesOrNull();
+        int zoom = value == 115 || value == 130 ? value : 100;
+        if (prefs != null) prefs.edit().putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, zoom).apply();
+    }
+
+    public static boolean hissiViewerFullscreen() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false);
+    }
+
+    private static int viewerTextZoomIndex(int zoom) {
+        return zoom == 115 ? 1 : zoom == 130 ? 2 : 0;
+    }
+
     private static final class ConfigSnapshot {
         final boolean hideAd;
         final boolean replaceUserAgent;
@@ -2480,6 +3432,7 @@ public final class Haiagaru {
         final boolean edgeReporterId;
         final boolean forceHttps;
         final boolean automaticDat;
+        final boolean refreshCellularNetwork;
         final String archiveRouteTemplates;
 
         private ConfigSnapshot(
@@ -2495,6 +3448,7 @@ public final class Haiagaru {
                 boolean edgeReporterId,
                 boolean forceHttps,
                 boolean automaticDat,
+                boolean refreshCellularNetwork,
                 String archiveRouteTemplates
         ) {
             this.hideAd = hideAd;
@@ -2509,6 +3463,7 @@ public final class Haiagaru {
             this.edgeReporterId = edgeReporterId;
             this.forceHttps = forceHttps;
             this.automaticDat = automaticDat;
+            this.refreshCellularNetwork = refreshCellularNetwork;
             this.archiveRouteTemplates = archiveRouteTemplates;
         }
 
@@ -2526,6 +3481,7 @@ public final class Haiagaru {
                     preferences.getBoolean("edgeReporterId", true),
                     preferences.getBoolean("forceHttps", false),
                     preferences.getBoolean("automaticDat", true),
+                    preferences.getBoolean("refreshCellularNetwork", true),
                     preferences.getString(
                             ARCHIVE_ROUTE_TEMPLATES_KEY,
                             DEFAULT_ARCHIVE_ROUTE_TEMPLATES
@@ -2544,6 +3500,7 @@ public final class Haiagaru {
                     && edgeReporterId == value.edgeReporterId
                     && forceHttps == value.forceHttps
                     && automaticDat == value.automaticDat
+                    && refreshCellularNetwork == value.refreshCellularNetwork
                     && equal(userAgent, value.userAgent)
                     && equal(cookieClass, value.cookieClass)
                     && equal(monaKeyFile, value.monaKeyFile)
