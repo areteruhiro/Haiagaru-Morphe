@@ -525,6 +525,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> {
+                patchLegacyBeResponseBody(
+                    "Lo/processAdDisplayErrorPostbackForUserError;", "c")
                 patchProgrammableNg191()
                 patchPreIoHissiMenu(
                     "Lo/setExtraParameter;", "d",
@@ -539,6 +541,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
+                patchLegacyBeResponseBody("Lo/BouncyCastleSocketAdapterCompanion;", "d")
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
                 patchBbsMenuUrl("a", "Lo/isInlineAdaptiveAdView\$read;")
@@ -562,6 +565,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 )
             }
             "0.8.10.243 dev" -> {
+                patchLegacyBeResponseBody("Lo/zzabv;", "j")
                 patchProgrammableNgModern("Lo/zzdic;", "a", "c")
                 patchPreIoHissiMenu("Lo/zzacz;", "c", "Lo/zzabv;", "Lo/zzacz\$write;")
                 patchSetTextCalls()
@@ -572,6 +576,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchModernTalkIntegrityPrimitives()
             }
             "0.8.10.241" -> {
+                patchLegacyBeResponseBody("Lo/setDislikeWidth;", "g")
                 patchPreIoHissiMenu("Lo/lhA1;", "d", "Lo/setDislikeWidth;", "Lo/lhA1\$write;")
                 patchSetTextCalls()
                 patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
@@ -3344,6 +3349,44 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
             }
         }
     }
+}
+
+/**
+ * Older DAT rows contain sssp://img.5ch.net/premium/... while current rows
+ * contain the same BE token on img.5ch.io. Normalize the stored response body
+ * as it is constructed, before both the inline renderer and the copy-paste/NG
+ * and attachment projections read it. The exact token keeps ordinary URLs intact.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseBody(
+    responseModelClass: String,
+    bodyField: String,
+) {
+    val responseClass = mutableClassDefBy(responseModelClass)
+    var assignments = 0
+    responseClass.methods.filter { it.name == "<init>" }.forEach { constructor ->
+        val sites = constructor.implementation?.instructions
+            ?.mapIndexedNotNull { index, instruction ->
+                val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    ?: return@mapIndexedNotNull null
+                if (instruction.opcode != Opcode.IPUT_OBJECT
+                    || field.definingClass != responseModelClass
+                    || field.name != bodyField
+                    || field.type != "Ljava/lang/String;"
+                ) return@mapIndexedNotNull null
+                index to (instruction as TwoRegisterInstruction).registerA
+            }.orEmpty()
+        sites.asReversed().forEach { (index, register) ->
+            constructor.addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->normalizeLegacyBeBody(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v$register
+                """,
+            )
+            assignments++
+        }
+    }
+    check(assignments > 0) { "BE response body assignment missing: $responseModelClass" }
 }
 
 /**
