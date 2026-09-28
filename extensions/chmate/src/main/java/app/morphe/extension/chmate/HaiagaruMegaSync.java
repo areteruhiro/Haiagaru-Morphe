@@ -1,6 +1,8 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -51,6 +53,8 @@ final class HaiagaruMegaSync {
             "書き込み履歴 (postDataList.json)", "書き込みメモ (kakikomi.txt)"
     };
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
+    private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
+    private static volatile Activity foreground;
 
     private HaiagaruMegaSync() {}
 
@@ -67,34 +71,29 @@ final class HaiagaruMegaSync {
     }
 
     static void maybeBackupOnStartup(Context context) {
-        SharedPreferences options = options(context);
-        if (!options.getBoolean(AUTO, false) || !HaiagaruMegaSession.hasSession(context)) return;
-        if (System.currentTimeMillis() - options.getLong(LAST, 0) < intervalMillis(options)) return;
-        if (!RUNNING.compareAndSet(false, true)) return;
-        Context app = context.getApplicationContext();
-        new Thread(() -> {
-            try {
-                int categories = options.getInt(CATEGORIES, HaiagaruSyncSnapshot.ALL);
-                if (categories == 0) return;
-                int mode = options.getInt(MODE, MODE_BIDIRECTIONAL);
-                try {
-                    runConfiguredSync(app, categories, mode);
-                } catch (IOException missingRemote) {
-                    // A first two-way run has no remote state yet: publish the
-                    // local side and let the next run perform a merge.
-                    if (mode != MODE_BIDIRECTIONAL
-                            || !String.valueOf(missingRemote.getMessage()).contains("バックアップがありません")) {
-                        throw missingRemote;
-                    }
-                    HaiagaruMegaClient.upload(app, HaiagaruSyncSnapshot.capture(app, categories));
-                }
-                options.edit().putLong(LAST, System.currentTimeMillis()).apply();
-            } catch (Exception ignored) {
-                // The next launch retries. Never log session keys or private snapshot data.
-            } finally {
-                RUNNING.set(false);
+        // A process can also be started by a service. Register here, but never
+        // transfer or restore until a real Activity is resumed.
+        if (!(context instanceof Application) || !REGISTERED.compareAndSet(false, true)) return;
+        ((Application) context).registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+            private boolean checked;
+            @Override public void onActivityResumed(Activity activity) {
+                foreground = activity;
+                if (checked) return;
+                checked = true;
+                SharedPreferences prefs = options(activity);
+                if (!prefs.getBoolean(AUTO, false) || !HaiagaruMegaSession.hasSession(activity)) return;
+                long elapsed = System.currentTimeMillis() - prefs.getLong(LAST, 0);
+                if (elapsed >= 0 && elapsed < intervalMillis(prefs)) return;
+                int categories = prefs.getInt(CATEGORIES, HaiagaruSyncSnapshot.ALL);
+                if (categories != 0) startSync(activity, categories, false);
             }
-        }, "Haiagaru-MEGA-backup").start();
+            @Override public void onActivityPaused(Activity activity) { if (foreground == activity) foreground = null; }
+            @Override public void onActivityCreated(Activity a, Bundle b) {}
+            @Override public void onActivityStarted(Activity a) {}
+            @Override public void onActivityStopped(Activity a) {}
+            @Override public void onActivitySaveInstanceState(Activity a, Bundle b) {}
+            @Override public void onActivityDestroyed(Activity a) { if (foreground == a) foreground = null; }
+        });
     }
 
     private static void showDialog(Activity activity) {
@@ -227,35 +226,14 @@ final class HaiagaruMegaSync {
                 message(activity, "同期する項目を選択してください");
                 return;
             }
-            run(activity, "同期中", () -> {
-                String result = runConfiguredSync(activity.getApplicationContext(), flags,
-                        options.getInt(MODE, MODE_BIDIRECTIONAL));
-                options.edit().putLong(LAST, System.currentTimeMillis()).apply();
-                return result;
-            });
+            startSync(activity, flags, false);
         });
         content.addView(sync);
 
         Button restore = new Button(activity);
         restore.setText("MEGAの最新バックアップを確認して復元");
         restore.setOnClickListener(view -> {
-            if (!RUNNING.compareAndSet(false, true)) {
-                message(activity, "ほかの同期処理が進行中です");
-                return;
-            }
-            new Thread(() -> {
-                try {
-                    HaiagaruMegaClient.MegaFile file = HaiagaruMegaClient.latest(activity);
-                    JSONObject snapshot = HaiagaruSyncSnapshot.validate(
-                            HaiagaruMegaClient.download(activity, file));
-                    activity.runOnUiThread(() -> confirmRestore(activity, file, snapshot,
-                            chosen(choices)));
-                } catch (Exception error) {
-                    activity.runOnUiThread(() -> showError(activity, error));
-                } finally {
-                    RUNNING.set(false);
-                }
-            }, "Haiagaru-MEGA-preview").start();
+            startSync(activity, chosen(choices), true);
         });
         content.addView(restore);
 
@@ -263,7 +241,7 @@ final class HaiagaruMegaSync {
         note.setText("MEGA上に「Haiagaru」フォルダを作成します。復元は確認後に実行し、"
                 + "復元前の端末データをアプリ内へ退避します。復元後はChMateを再起動してください。"
                 + " 双方向同期は既存の項目を残して不足分だけ追加します。"
-                + " 自動同期はアプリ起動時に実行され、省電力設定により遅れる場合があります。"
+                + " 自動同期は起動して画面を表示した時だけ確認します。終了中・バックグラウンドでは予約実行しません。"
                 + " この機能はAndroid 7以降が必要です。");
         note.setTextSize(13);
         content.addView(note);
@@ -301,6 +279,7 @@ final class HaiagaruMegaSync {
             throws Exception {
         SharedPreferences options = options(context);
         if (mode == MODE_LOCAL_TO_REMOTE) {
+            requireForeground();
             String name = HaiagaruMegaClient.upload(context,
                     HaiagaruSyncSnapshot.capture(context, categories));
             return "この端末のデータをMEGAへ保存しました: " + name;
@@ -315,16 +294,97 @@ final class HaiagaruMegaSync {
             if (createdAt > 0 && createdAt <= applied) {
                 return "MEGAに新しいバックアップはありません";
             }
+            if (!approveChanges(context, snapshot, categories, false)) return "復元を保留しました";
+            requireForeground();
             HaiagaruSyncSnapshot.restore(context, snapshot, categories);
             options.edit().putLong(LAST_REMOTE, createdAt).apply();
             return "MEGAの最新バックアップを復元しました。ChMateを再起動してください";
         }
 
+        if (!approveChanges(context, snapshot, categories, true)) return "同期を保留しました";
+        requireForeground();
         HaiagaruSyncSnapshot.mergeMissing(context, snapshot, categories);
         String name = HaiagaruMegaClient.upload(context,
                 HaiagaruSyncSnapshot.capture(context, categories));
         options.edit().putLong(LAST_REMOTE, createdAt).apply();
         return "双方向同期が完了しました。不足分を統合してMEGAへ保存しました: " + name;
+    }
+
+    private static void requireForeground() throws IOException {
+        Activity activity = foreground;
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+            throw new IOException("画面が閉じられたため同期を保留しました。次回起動時に再確認してください");
+        }
+    }
+
+    private static boolean approveChanges(Context context, JSONObject snapshot,
+                                          int categories, boolean merge) throws Exception {
+        requireForeground();
+        if (!options(context).getBoolean(SHOW_DIFF, true)) return true;
+        Activity activity = foreground;
+        String summary = HaiagaruSyncSnapshot.describeChanges(context, snapshot, categories, merge);
+        java.util.concurrent.CountDownLatch decision = new java.util.concurrent.CountDownLatch(1);
+        AtomicBoolean approved = new AtomicBoolean();
+        activity.runOnUiThread(() -> {
+            if (foreground != activity || activity.isFinishing() || activity.isDestroyed()) {
+                decision.countDown();
+                return;
+            }
+            new AlertDialog.Builder(activity).setTitle("適用する変更を確認")
+                    .setMessage(summary + (merge ? "\n既存の値は保持します。" : "\n選択した設定・履歴ファイルは復元元の値を使用します。"))
+                    .setNegativeButton("今回は見送る", (d, w) -> decision.countDown())
+                    .setPositiveButton("適用", (d, w) -> { approved.set(true); decision.countDown(); })
+                    .setOnCancelListener(d -> decision.countDown())
+                    .setOnDismissListener(d -> decision.countDown()).show();
+        });
+        while (!decision.await(1, java.util.concurrent.TimeUnit.SECONDS)) {
+            if (foreground != activity) return false;
+        }
+        return approved.get() && foreground == activity;
+    }
+
+    private static void startSync(Activity activity, int categories, boolean preview) {
+        if (categories == 0) {
+            message(activity, "同期する項目を選択してください");
+            return;
+        }
+        if (!RUNNING.compareAndSet(false, true)) {
+            message(activity, "ほかの同期処理が進行中です");
+            return;
+        }
+        SharedPreferences prefs = options(activity);
+        message(activity, preview ? "MEGAのバックアップを確認中" : "同期中");
+        new Thread(() -> {
+            try {
+                if (preview) {
+                    HaiagaruMegaClient.MegaFile file = HaiagaruMegaClient.latest(activity);
+                    JSONObject snapshot = HaiagaruSyncSnapshot.validate(
+                            HaiagaruMegaClient.download(activity, file));
+                    activity.runOnUiThread(() -> confirmRestore(activity, file, snapshot, categories));
+                } else {
+                    int mode = prefs.getInt(MODE, MODE_BIDIRECTIONAL);
+                    String result;
+                    try {
+                        result = runConfiguredSync(activity.getApplicationContext(), categories, mode);
+                    } catch (IOException missingRemote) {
+                        if (mode != MODE_BIDIRECTIONAL
+                                || !String.valueOf(missingRemote.getMessage()).contains("バックアップがありません")) {
+                            throw missingRemote;
+                        }
+                        String name = HaiagaruMegaClient.upload(activity,
+                                HaiagaruSyncSnapshot.capture(activity, categories));
+                        result = "MEGAに初回バックアップを保存しました: " + name;
+                    }
+                    prefs.edit().putLong(LAST, System.currentTimeMillis()).apply();
+                    final String completed = result;
+                    activity.runOnUiThread(() -> message(activity, completed));
+                }
+            } catch (Exception error) {
+                activity.runOnUiThread(() -> showError(activity, error));
+            } finally {
+                RUNNING.set(false);
+            }
+        }, preview ? "Haiagaru-MEGA-preview" : "Haiagaru-MEGA-operation").start();
     }
 
     private static void showLoginDialog(Activity activity) {
@@ -421,6 +481,8 @@ final class HaiagaruMegaSync {
                     }
                     final int restoreFlags = flags;
                     run(activity, "復元中", () -> {
+                        if (!approveChanges(activity, snapshot, restoreFlags, false)) return "復元を保留しました";
+                        requireForeground();
                         HaiagaruSyncSnapshot.restore(activity.getApplicationContext(),
                                 snapshot, restoreFlags);
                         return "復元しました。ChMateを再起動してください";

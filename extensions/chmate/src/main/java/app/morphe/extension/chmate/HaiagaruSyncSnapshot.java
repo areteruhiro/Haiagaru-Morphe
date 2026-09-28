@@ -40,6 +40,54 @@ final class HaiagaruSyncSnapshot {
 
     private HaiagaruSyncSnapshot() {}
 
+    static String describeChanges(Context context, JSONObject remote, int categories, boolean merge)
+            throws Exception {
+        JSONObject local = validate(capture(context, categories));
+        StringBuilder result = new StringBuilder();
+        if ((categories & BOOKMARKS) != 0) {
+            Set<String> keys = new HashSet<>();
+            JSONArray current = local.optJSONArray("bookmarks");
+            for (int i = 0; current != null && i < current.length(); i++) {
+                JSONObject row = current.getJSONObject(i);
+                keys.add(row.optString("name") + ":" + row.optLong("created"));
+            }
+            int count = 0;
+            JSONArray rows = remote.optJSONArray("bookmarks");
+            for (int i = 0; rows != null && i < rows.length(); i++) {
+                JSONObject row = rows.getJSONObject(i);
+                if (keys.add(row.optString("name") + ":" + row.optLong("created"))) count++;
+            }
+            result.append("お気に入り・閲覧履歴: 追加 ").append(count).append("件\n");
+        }
+        if ((categories & SETTINGS) != 0) {
+            JSONObject files = remote.optJSONObject("settings");
+            int added = 0, changed = 0;
+            for (Iterator<String> names = files.keys(); names.hasNext();) {
+                String name = names.next();
+                String target = name.equals(remote.optString("sourcePackage") + "_preferences")
+                        ? context.getPackageName() + "_preferences" : name;
+                JSONObject values = files.getJSONObject(name);
+                Map<String, ?> existing = context.getSharedPreferences(target, Context.MODE_PRIVATE).getAll();
+                for (Iterator<String> keys = values.keys(); keys.hasNext();) {
+                    String key = keys.next();
+                    if (!safePreferenceKey(key)) continue;
+                    if (!existing.containsKey(key)) added++;
+                    else if (!merge && !values.getJSONObject(key).toString().equals(
+                            String.valueOf(encodePreference(existing.get(key))))) changed++;
+                }
+            }
+            result.append("設定: 追加 ").append(added).append("項目、更新 ").append(changed).append("項目\n");
+        }
+        if ((categories & NG) != 0) result.append("NG設定: 重複を除いて追加\n");
+        if ((categories & POST_HISTORY) != 0) result.append("書き込み履歴: ")
+                .append(java.util.Objects.equals(local.opt("postDataList"), remote.opt("postDataList"))
+                        ? "変更なし" : merge ? "重複を除いて追加" : "ファイルを更新").append('\n');
+        if ((categories & KAKIKOMI) != 0) result.append("書き込みメモ: ")
+                .append(java.util.Objects.equals(local.opt("kakikomi"), remote.opt("kakikomi"))
+                        ? "変更なし" : merge ? "不足する記録を追加" : "ファイルを更新").append('\n');
+        return result.toString();
+    }
+
     static byte[] capture(Context context, int categories) throws Exception {
         JSONObject snapshot = new JSONObject();
         snapshot.put("schema", SCHEMA);
@@ -394,18 +442,16 @@ final class HaiagaruSyncSnapshot {
     }
 
     private static void mergeTextFile(File target, byte[] remote) throws Exception {
-        LinkedHashSet<String> lines = new LinkedHashSet<>();
         String local = readUtf8(target);
-        if (local != null) for (String line : local.split("\\R", -1)) if (!line.isEmpty()) lines.add(line);
         String incoming = new String(remote, StandardCharsets.UTF_8);
-        for (String line : incoming.split("\\R", -1)) if (!line.isEmpty()) lines.add(line);
-        StringBuilder output = new StringBuilder();
-        for (String line : lines) {
-            if (output.length() > 0) output.append('\n');
-            output.append(line);
+        // Preserve line order, blank lines and repeated body text. Never dedupe
+        // individual lines: they are not independent posting records.
+        if (local == null || local.isEmpty()) writeAtomic(target, remote);
+        else if (!incoming.isEmpty() && !local.contains(incoming)) {
+            if (incoming.startsWith(local)) writeAtomic(target, remote);
+            else writeAtomic(target, (local + (local.endsWith("\n") ? "" : "\n")
+                    + incoming).getBytes(StandardCharsets.UTF_8));
         }
-        if (output.length() > 0) output.append('\n');
-        writeAtomic(target, output.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     private static String readUtf8(File file) throws IOException {
