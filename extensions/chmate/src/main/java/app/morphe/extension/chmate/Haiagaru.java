@@ -82,6 +82,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -400,6 +401,7 @@ public final class Haiagaru {
         // applying the UA there is required for the first request after restart.
         initializeApplicationContext(application);
         EmojiFontFallback.register(application);
+        HaiagaruMegaSync.maybeBackupOnStartup(application);
     }
 
     /** Applies the bundled emoji fallback while preserving the original text. */
@@ -1835,6 +1837,14 @@ public final class Haiagaru {
 
     public static String prepareLegacyBeParsing(String original) {
         if (original == null) return null;
+        // ChMate 191 parses the same legacy row twice: once for the compact
+        // header and once for the expanded body. The expanded pass contains
+        // the complete row (including links) and would draw the BE token a
+        // second time. Keep the compact token and suppress only that repeated
+        // long-body token; ordinary short posts still use the native icon.
+        if (original.length() > 80 && LEGACY_PREMIUM_BE_URL.matcher(original).find()) {
+            original = LEGACY_PREMIUM_BE_URL.matcher(original).replaceAll("");
+        }
         // The 191 parser only routes sssp://img.5ch.net/ico/... through its
         // inline icon renderer. Normalize every public spelling, including
         // ordinary https://, protocol-relative, and control-character encoded
@@ -1846,6 +1856,70 @@ public final class Haiagaru {
                 .replaceAll("sssp://img.5ch.net/ico/_be$1");
         return LEGACY_BE_ICO_URL.matcher(prepared)
                 .replaceAll("sssp://img.5ch.net/ico/$1");
+    }
+
+    /** Avoid drawing the same legacy BE icon twice when the row already owns its span. */
+    public static String prepareLegacyBeParsing(Object renderBuffer, String original) {
+        if (original == null || renderBuffer == null || !LEGACY_PREMIUM_BE_URL.matcher(original).find()) {
+            return prepareLegacyBeParsing(original);
+        }
+        if (original.length() > 80) return prepareLegacyBeParsing(original);
+        Matcher matcher = LEGACY_PREMIUM_BE_URL.matcher(original);
+        StringBuffer unique = null;
+        while (matcher.find()) {
+            if (!hasMatchingBeIconSpan(renderBuffer, matcher.group(1))) continue;
+            if (unique == null) unique = new StringBuffer(original.length());
+            matcher.appendReplacement(unique, "");
+        }
+        if (unique == null) return prepareLegacyBeParsing(original);
+        matcher.appendTail(unique);
+        return prepareLegacyBeParsing(unique.toString());
+    }
+
+    private static boolean hasMatchingBeIconSpan(Object renderBuffer, String fileName) {
+        String bufferClass = renderBuffer.getClass().getName();
+        String listField;
+        String spanField;
+        String iconClass;
+        String urlField;
+        if ("o.o8".equals(bufferClass)) {
+            listField = "b";
+            spanField = "d";
+            iconClass = "o.oa";
+            urlField = "e";
+        } else if ("o.getFlexLinesInternal".equals(bufferClass)) {
+            listField = "a";
+            spanField = "a";
+            iconClass = "o.getFlexDirection";
+            urlField = "b";
+        } else {
+            return false;
+        }
+        try {
+            Field recordsField = renderBuffer.getClass().getDeclaredField(listField);
+            recordsField.setAccessible(true);
+            Object records = recordsField.get(renderBuffer);
+            if (!(records instanceof List<?>)) return false;
+            String target = fileName.toLowerCase(Locale.ROOT);
+            for (Object record : (List<?>) records) {
+                if (record == null) continue;
+                Field drawableField = record.getClass().getDeclaredField(spanField);
+                drawableField.setAccessible(true);
+                Object drawable = drawableField.get(record);
+                if (drawable == null || !iconClass.equals(drawable.getClass().getName())) continue;
+                Field iconUrlField = drawable.getClass().getDeclaredField(urlField);
+                iconUrlField.setAccessible(true);
+                Object value = iconUrlField.get(drawable);
+                if (!(value instanceof String)) continue;
+                String url = ((String) value).toLowerCase(Locale.ROOT);
+                if (url.endsWith("/premium/" + target)
+                        || url.endsWith("/ico/_be" + target)
+                        || url.endsWith("/ico/_be_" + target)) return true;
+            }
+        } catch (ReflectiveOperationException | SecurityException ignored) {
+            return false;
+        }
+        return false;
     }
 
     public static String stripLegacyBeAttachmentTokens(String original) {
@@ -2591,6 +2665,10 @@ public final class Haiagaru {
         addOptionalSettingsSection(
                 "programmable NG",
                 () -> ProgrammableNgController.addSettingsButton(layout, activity)
+        );
+        addOptionalSettingsSection(
+                "MEGA backup",
+                () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
 
         ScrollView scrollView = new ScrollView(activity);
