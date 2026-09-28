@@ -7,8 +7,11 @@ import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
 import app.morphe.patcher.patch.Compatibility
+import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
@@ -27,8 +30,53 @@ import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import org.w3c.dom.Element
+import org.w3c.dom.Document
+import java.net.URI
+import java.io.File
+import java.util.Locale
 
 private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
+
+private object EmojiFontResourceMarker
+
+/**
+ * ChMate stores ordinary NG entries and shared NG-ID entries with separate
+ * counters.  All supported builds used the same hard-coded 300-entry cap in
+ * the NGWord save routine.  Replace those two literals with the Haiagaru
+ * setting while keeping the surrounding retention and timestamp logic intact.
+ */
+private fun BytecodePatchContext.patchNgRegistrationLimit() {
+    val ngWord = mutableClassDefBy("Ljp/syoboi/a2chMate/ng/NGWord;")
+    val candidates = ngWord.methods.filter { method ->
+        method.returnType == "V"
+            && method.parameters.map(CharSequence::toString).singleOrNull() ==
+                "Ljava/util/ArrayList;"
+            && method.implementation?.instructions?.count { instruction ->
+                instruction.opcode == Opcode.CONST_16
+                    && (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 300
+            } == 1
+    }
+    check(candidates.size == 1) {
+        "Unable to identify ChMate NGWord save routine (found ${candidates.size})"
+    }
+    val saveMethod = candidates.single()
+    val limitConstants = saveMethod.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.CONST_16
+            && (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 300) {
+            index to (instruction as OneRegisterInstruction).registerA
+        } else {
+            null
+        }
+    }
+    check(limitConstants.size == 1) { "ChMate NGWord save limit anchor changed" }
+    limitConstants.asReversed().forEach { (index, register) ->
+        saveMethod.replaceInstruction(
+            index,
+            "invoke-static {}, $EXTENSION->getNgRegistrationLimit()I"
+        )
+        saveMethod.addInstructionsWithLabels(index + 1, "move-result v$register")
+    }
+}
 
 internal val chMateCompatibility = Compatibility(
     name = "ChMate",
@@ -288,6 +336,20 @@ private val haiagaruBytecodePatch = bytecodePatch {
     execute {
         val profile = profileFor(packageMetadata.versionName)
 
+        patchNgRegistrationLimit()
+
+        // ChMate 226/241 remove the device-info footer with a greedy regular
+        // expression before deciding whether the user wrote any other text.
+        // Text appended after the footer is swallowed as well, so a non-empty
+        // post can be rejected as "device information only".  Let the posting
+        // endpoint perform the authoritative body validation instead.
+        patchPostPreflightValidation(packageMetadata.versionName)
+        if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchLegacyExternalEmojiPostBody()
+        } else {
+            patchExternalEmojiPostCopy(packageMetadata.versionName)
+        }
+
         mutableClassDefBy(profile.providerClass).methods.single { method ->
             method.name == "onCreate"
                 && method.returnType == "Z"
@@ -469,13 +531,19 @@ private val haiagaruBytecodePatch = bytecodePatch {
                     "Lo/processAdDisplayErrorPostbackForUserError;",
                     "Lo/setExtraParameter\$RemoteActionCompatParcelizer;",
                 )
+                patchBbsMenuUrl("a", "Lo/a7a\$read;")
                 patchLegacy5chIoCompatibility()
                 patchLegacyTalkDatLoading()
                 patchLegacyTalkAuthIntegrity()
+                patchLegacyCellularNetworkSelection()
+                patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
+                patchBbsMenuUrl("a", "Lo/isInlineAdaptiveAdView\$read;")
+                patchPreIoCellularNetworkSelection()
+                patchPreIoCellularSocketRefresh()
                 patchThreadBannerAdWrapper("Lo/TTVideoLandingPageLink2Activity1;")
                 patchLegacyThreadListAd("Lo/listener;")
                 patchPreIoTalkDatLoading()
@@ -495,11 +563,21 @@ private val haiagaruBytecodePatch = bytecodePatch {
             }
             "0.8.10.243 dev" -> {
                 patchProgrammableNgModern("Lo/zzdic;", "a", "c")
+                patchPreIoHissiMenu("Lo/zzacz;", "c", "Lo/zzabv;", "Lo/zzacz\$write;")
                 patchSetTextCalls()
+                patchBbsMenuUrl("b", "Lo/StandardAndroidSocketAdapterCompanion\$RemoteActionCompatParcelizer;")
                 patchModernThreadListAd()
                 patchModernTalkDatLoading()
                 patchModernTalkPostIntegrity()
                 patchModernTalkIntegrityPrimitives()
+            }
+            "0.8.10.241" -> {
+                patchPreIoHissiMenu("Lo/lhA1;", "d", "Lo/setDislikeWidth;", "Lo/lhA1\$write;")
+                patchSetTextCalls()
+                patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
+                patchIoTalkDatLoading()
+                patchIoTalkPostIntegrity()
+                patchIoThreadRefreshCache()
             }
             else -> patchSetTextCalls()
         }
@@ -520,8 +598,288 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
+        patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
+}
+
+/** Rewrites only the temporary PostData copy passed to the posting engine. */
+private fun BytecodePatchContext.patchExternalEmojiPostCopy(version: String) {
+    val postType = if (version == "0.8.10.226 dev")
+        "Lo/setBorderWidth;" else "Ljp/syoboi/a2chMate/postdata/PostData;"
+    val copyName = if (version == "0.8.10.226 dev") "a" else "e"
+    val editor = mutableClassDefBy("Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
+    var patched = 0
+    editor.methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        val matches = instructions.indices.filter { index ->
+            val reference = (instructions[index] as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@filter false
+            reference.definingClass == postType && reference.name == copyName
+                && reference.returnType == postType
+                && reference.parameterTypes.firstOrNull() == postType
+                && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        }
+        matches.asReversed().forEach { index ->
+            val register = (instructions[index + 1] as OneRegisterInstruction).registerA
+            method.addInstructionsWithLabels(index + 2, """
+                invoke-static/range { v$register .. v$register }, $EXTENSION->prepareExternalEmojiPost(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$register
+                check-cast v$register, $postType
+            """.trimIndent())
+            patched++
+        }
+    }
+    check(patched == 1) { "Expected one external post-copy boundary for $version, found $patched" }
+}
+
+/** 191 passes the URL and body as the first and fifth n7a constructor values. */
+private fun BytecodePatchContext.patchLegacyExternalEmojiPostBody() {
+    val editor = mutableClassDefBy("Lo/p9ExternalSyntheticLambda6;")
+    var patched = 0
+    editor.methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        val matches = instructions.indices.filter { index ->
+            val reference = (instructions[index] as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@filter false
+            reference.definingClass == "Lo/n7a;" && reference.name == "<init>"
+                && reference.parameterTypes == List(9) { "Ljava/lang/String;" }
+        }
+        matches.asReversed().forEach { index ->
+            val invocation = instructions[index] as? RegisterRangeInstruction
+                ?: error("191 external post constructor did not use a register range")
+            val bodyRegister = invocation.startRegister + 5
+            // The source registers can exceed v15, so pass the existing adjacent
+            // constructor arguments with invoke-static/range instead of the
+            // four-bit non-range form.
+            method.addInstructionsWithLabels(index, """
+                invoke-static/range { v${invocation.startRegister + 1} .. v${invocation.startRegister + 9} }, $EXTENSION->prepareExternalEmojiBodyFromPostFields(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+                move-result-object v$bodyRegister
+            """.trimIndent())
+            patched++
+        }
+    }
+    check(patched == 1) { "Expected one 191 external post constructor, found $patched" }
+}
+
+/**
+ * ChMate 226 normally reuses the first cellular [android.net.Network] returned by
+ * ConnectivityManager.getAllNetworks().  Android can leave a just-lost network in
+ * that snapshot briefly; the SocketFactory created from it then fails with
+ * "Binding socket to network N failed: EPERM".  A thread refresh happens to avoid
+ * the race by rebuilding the client, which is why posting succeeds afterwards.
+ *
+ * Make the existing code take its requestNetwork() branch for every cellular post.
+ * That branch waits for onAvailable and retains the NetworkCallback until the HTTP
+ * operation finishes, so the selected network remains current and requested for
+ * the lifetime of the post.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoCellularNetworkSelection() {
+    val selector = mutableClassDefBy("Lo/accessisAvailablecp;").methods.single { method ->
+        method.name == "d"
+            && method.returnType == "Lo/zzdE;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf("Lo/zzdE;")
+    }
+    val instructions = selector.implementation?.instructions
+        ?: error("ChMate 226 cellular network selector has no implementation")
+    val snapshotCalls = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Landroid/net/ConnectivityManager;"
+            && reference.name == "getAllNetworks"
+            && reference.returnType == "[Landroid/net/Network;"
+            && reference.parameterTypes.isEmpty()
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        ) index else null
+    }
+    check(snapshotCalls.size == 1) {
+        "Expected one ChMate 226 cellular network snapshot, found ${snapshotCalls.size}"
+    }
+    val resultRegister = (instructions[snapshotCalls.single() + 1] as OneRegisterInstruction).registerA
+    val sizeRegister = selector.findFreeRegister(snapshotCalls.single() + 2)
+    selector.addInstructionsWithLabels(
+        snapshotCalls.single() + 2,
+        """
+            invoke-static {}, $EXTENSION->isCellularNetworkRefreshEnabled()Z
+            move-result v$sizeRegister
+            if-eqz v$sizeRegister, :haiagaru_keep_226_networks
+            const/4 v$sizeRegister, 0x0
+            new-array v$resultRegister, v$sizeRegister, [Landroid/net/Network;
+            :haiagaru_keep_226_networks
+            nop
+        """.trimIndent(),
+    )
+}
+
+/**
+ * 191 has the same stale getAllNetworks() preference, but in the older
+ * createDefault network builder. Keep the workaround runtime-toggleable so
+ * disabling it restores the stock path without requiring a new patch.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyCellularNetworkSelection() {
+    val selector = mutableClassDefBy("Lo/createDefault;").methods.single { method ->
+        method.name == "b"
+            && method.returnType == "Lo/r8lambdaz0gPFulMuhJ_LGn4qb5HDvuDsis;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf(
+                "Lo/r8lambdaz0gPFulMuhJ_LGn4qb5HDvuDsis;"
+            )
+    }
+    val instructions = selector.implementation?.instructions
+        ?: error("ChMate 191 cellular network selector has no implementation")
+    val snapshotCalls = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Landroid/net/ConnectivityManager;"
+            && reference.name == "getAllNetworks"
+            && reference.returnType == "[Landroid/net/Network;"
+            && reference.parameterTypes.isEmpty()
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        ) index else null
+    }
+    check(snapshotCalls.size == 1) {
+        "Expected one ChMate 191 cellular network snapshot, found ${snapshotCalls.size}"
+    }
+    val snapshotIndex = snapshotCalls.single()
+    val resultRegister = (instructions[snapshotIndex + 1] as OneRegisterInstruction).registerA
+    val scratchRegister = selector.findFreeRegister(snapshotIndex + 2)
+    selector.addInstructionsWithLabels(
+        snapshotIndex + 2,
+        """
+            invoke-static {}, $EXTENSION->isCellularNetworkRefreshEnabled()Z
+            move-result v$scratchRegister
+            if-eqz v$scratchRegister, :haiagaru_keep_191_networks
+            const/4 v$scratchRegister, 0x0
+            new-array v$resultRegister, v$scratchRegister, [Landroid/net/Network;
+            :haiagaru_keep_191_networks
+            nop
+        """.trimIndent(),
+    )
+}
+
+/**
+ * The selector fix above still leaves the returned Network.SocketFactory fixed
+ * for the complete request. Refresh that factory at each socket creation too;
+ * Android 16 may invalidate the selected cellular Network between those points.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoCellularSocketRefresh() {
+    val factory = mutableClassDefBy(
+        "Lo/accessisAvailablecp\$RemoteActionCompatParcelizer;"
+    )
+    val methods = factory.methods.filter { method ->
+        method.name == "createSocket" && method.returnType == "Ljava/net/Socket;"
+    }
+    check(methods.size == 5) {
+        "Expected five ChMate 226 cellular socket methods, found ${methods.size}"
+    }
+    methods.single { method ->
+        method.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "I")
+    }.addInstructionsWithLabels(0, """
+        iget-object v0, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->d:Ljavax/net/SocketFactory;
+        invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+            Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+        move-result-object p1
+        return-object p1
+    """.trimIndent())
+    methods.single { method ->
+        method.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "I", "Ljava/net/InetAddress;", "I")
+    }.addInstructionsWithLabels(0, """
+        iget-object v0, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->d:Ljavax/net/SocketFactory;
+        invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+            Ljavax/net/SocketFactory;Ljava/lang/String;ILjava/net/InetAddress;I)Ljava/net/Socket;
+        move-result-object p1
+        return-object p1
+    """.trimIndent())
+    methods.single { method ->
+        method.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/net/InetAddress;", "I")
+    }.addInstructionsWithLabels(0, """
+        iget-object v0, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->d:Ljavax/net/SocketFactory;
+        invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+            Ljavax/net/SocketFactory;Ljava/net/InetAddress;I)Ljava/net/Socket;
+        move-result-object p1
+        return-object p1
+    """.trimIndent())
+    methods.single { method ->
+        method.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/net/InetAddress;", "I", "Ljava/net/InetAddress;", "I")
+    }.addInstructionsWithLabels(0, """
+        iget-object v0, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->d:Ljavax/net/SocketFactory;
+        invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+            Ljavax/net/SocketFactory;Ljava/net/InetAddress;ILjava/net/InetAddress;I)Ljava/net/Socket;
+        move-result-object p1
+        return-object p1
+    """.trimIndent())
+    methods.single { method ->
+        method.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/net/Socket;", "Ljava/lang/String;", "I", "Z")
+    }.addInstructionsWithLabels(0, """
+        iget-object p1, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->c:Ljavax/net/ssl/SSLSocketFactory;
+        iget-object v0, p0, Lo/accessisAvailablecp${'$'}RemoteActionCompatParcelizer;->d:Ljavax/net/SocketFactory;
+        invoke-static {v0, p2, p3}, $EXTENSION->createCellularSocket(
+            Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+        move-result-object v0
+        invoke-virtual {p1, v0, p2, p3, p4}, Ljavax/net/ssl/SSLSocketFactory;->createSocket(
+            Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;
+        move-result-object p1
+        return-object p1
+    """.trimIndent())
+}
+
+/** Refresh the five cellular socket overloads in 191's older wrapper. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyCellularSocketRefresh() {
+    val factory = mutableClassDefBy("Lo/createDefault\$setContentView;")
+    val methods = factory.methods.filter { method ->
+        method.name == "createSocket" && method.returnType == "Ljava/net/Socket;"
+    }
+    check(methods.size == 5) {
+        "Expected five ChMate 191 cellular socket methods, found ${methods.size}"
+    }
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "I", "Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;ILjava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/InetAddress;", "I", "Ljava/net/InetAddress;", "I") }
+        .addInstructionsWithLabels(0, """
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p1, p2, p3, p4}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/net/InetAddress;ILjava/net/InetAddress;I)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
+    methods.single { it.parameterTypes.map(CharSequence::toString) == listOf("Ljava/net/Socket;", "Ljava/lang/String;", "I", "Z") }
+        .addInstructionsWithLabels(0, """
+            iget-object p1, p0, Lo/createDefault${'$'}setContentView;->a:Ljavax/net/ssl/SSLSocketFactory;
+            iget-object v0, p0, Lo/createDefault${'$'}setContentView;->e:Ljavax/net/SocketFactory;
+            invoke-static {v0, p2, p3}, $EXTENSION->createCellularSocket(
+                Ljavax/net/SocketFactory;Ljava/lang/String;I)Ljava/net/Socket;
+            move-result-object v0
+            invoke-virtual {p1, v0, p2, p3, p4}, Ljavax/net/ssl/SSLSocketFactory;->createSocket(
+                Ljava/net/Socket;Ljava/lang/String;IZ)Ljava/net/Socket;
+            move-result-object p1
+            return-object p1
+        """.trimIndent())
 }
 
 /** Rewrite at expansion time so existing user menu settings are repaired as well. */
@@ -548,6 +906,56 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
             move-result-object p0
         """,
     )
+}
+
+/**
+ * The response long-press route may skip the menu-template expander. Intercept
+ * the external activity launch itself and make only Hissi checker intents
+ * explicit to this patched app. This also avoids an Android resolver chooser
+ * when several ChMate test builds are installed.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalIntentBoundaries() {
+    var patched = 0
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith("Lapp/morphe/extension/")) return@classDefForEach
+        val mutableClass = mutableClassDefBy(classDef)
+        classDef.methods.forEach methodLoop@ { method ->
+            val instructions = method.implementation?.instructions?.toList()
+                ?: return@methodLoop
+            instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (reference.name != "startActivity"
+                    || reference.returnType != "V"
+                    || reference.parameterTypes.map(CharSequence::toString) !=
+                        listOf("Landroid/content/Intent;")
+                    || reference.definingClass !in setOf(
+                        "Landroid/content/Context;", "Landroid/app/Activity;",
+                        "Landroidx/fragment/app/Fragment;",
+                    )
+                ) return@mapIndexedNotNull null
+                val register = when (instruction) {
+                    is FiveRegisterInstruction -> instruction.registerD
+                    is RegisterRangeInstruction -> {
+                        if (instruction.registerCount != 2) return@mapIndexedNotNull null
+                        instruction.startRegister + 1
+                    }
+                    else -> return@mapIndexedNotNull null
+                }
+                index to register
+            }.asReversed().forEach { (index, register) ->
+                mutableClass.findMutableMethodOf(method).addInstructionsWithLabels(
+                    index,
+                    "invoke-static/range {v$register .. v$register}, " +
+                        "Lapp/morphe/extension/chmate/HissiMenuCompatibility;->prepareExternalIntent(" +
+                        "Landroid/content/Intent;)V",
+                )
+                patched++
+            }
+        }
+    }
+    check(patched > 0) { "ChMate external activity launch boundary was not found" }
+    println("Hissi external intent boundaries: $patched")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoading() {
@@ -811,6 +1219,57 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoTalkPostInte
         )
         else -> error("ChMate 226 Talk posting invocation registers were not found")
     }
+
+    val sessionMethod = mutableClassDefBy("Lo/getSelectedProtocol;").methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Ljava/lang/String;"
+            && candidate.parameterTypes.map(CharSequence::toString) ==
+                listOf("Lo/OpenJSSEPlatformCompanion;")
+    }
+    val sessionInstructions = sessionMethod.implementation?.instructions
+        ?: error("ChMate 226 Talk session method has no implementation")
+    val sessionInvocations = sessionInstructions.indices.filter { sessionIndex ->
+        val reference = (sessionInstructions[sessionIndex] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@filter false
+        if (reference.definingClass != "Ljava/lang/reflect/Method;"
+            || reference.name != "invoke"
+            || reference.returnType != "Ljava/lang/Object;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                "Ljava/lang/Object;", "[Ljava/lang/Object;"
+            )
+            || sessionInstructions.getOrNull(sessionIndex + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT
+        ) return@filter false
+        val cast = sessionInstructions.getOrNull(sessionIndex + 2) as? ReferenceInstruction
+            ?: return@filter false
+        cast.opcode == Opcode.CHECK_CAST && cast.reference.toString() == "Ljava/lang/String;"
+    }
+    check(sessionInvocations.size == 1) {
+        "Expected one ChMate 226 Talk session invocation, found ${sessionInvocations.size}"
+    }
+    val sessionIndex = sessionInvocations.single()
+    when (val invocation = sessionInstructions[sessionIndex]) {
+        is FiveRegisterInstruction -> sessionMethod.replaceInstruction(
+            sessionIndex,
+            "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE}}, $EXTENSION->invokePreIoTalkAuthenticator(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        is RegisterRangeInstruction -> sessionMethod.replaceInstruction(
+            sessionIndex,
+            "invoke-static/range {v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2}}, " +
+                "$EXTENSION->invokePreIoTalkAuthenticator(Ljava/lang/reflect/Method;" +
+                "Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",
+        )
+        else -> error("ChMate 226 Talk session invocation registers were not found")
+    }
+
+    // Unlike 191, 226 resolves its generated write key before the reflected
+    // poster is invoked. Removing talk_write_key at method entry makes that
+    // resolver throw NullPointerException before the integrity wrapper can run.
+    // Keep 226's persisted session intact and repair only o.head at the exact
+    // reflected invocation boundary, which is the proven 1.3.0 behavior.
 }
 
 /**
@@ -927,6 +1386,365 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTalkAuthInt
             else -> error("ChMate legacy Talk authenticator registers were not found")
         }
     }
+
+    val postMethod = mutableClassDefBy("Lo/getLabel;").methods.single { candidate ->
+        candidate.name == "b"
+            && candidate.returnType == "Lo/getMediatedNetwork;"
+            && candidate.parameterTypes.map(CharSequence::toString) == listOf(
+                "Lo/r8lambdaz0gPFulMuhJ_LGn4qb5HDvuDsis;",
+                "Lo/getCredentials\$write;",
+                "Lo/getLabel\$read;",
+            )
+    }
+    postMethod.addInstruction(
+        0,
+        "invoke-static {}, $EXTENSION->prepareLegacyTalkPostSession()V",
+    )
+
+    // The 401 confirmation flow persists x-write-key before asking the user.
+    // Cancelling drops the matching one-shot extend token, so discard only the
+    // renewable Talk write session before the original error path continues.
+    val postInstructions = postMethod.implementation?.instructions?.toList()
+        ?: error("ChMate legacy Talk post method has no implementation")
+    val confirmationCallbacks = postInstructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.definingClass == "Lo/getLabel\$read;"
+            && reference.name == "e"
+            && reference.returnType == "Z"
+            && reference.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+            && postInstructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT
+        ) index else null
+    }
+    check(confirmationCallbacks.size == 1) {
+        "Expected one ChMate legacy Talk confirmation callback, found ${confirmationCallbacks.size}"
+    }
+    val callbackIndex = confirmationCallbacks.single()
+    val acceptedRegister = (postInstructions[callbackIndex + 1] as OneRegisterInstruction).registerA
+    postMethod.addInstructionsWithLabels(
+        callbackIndex + 2,
+        """
+            if-nez v$acceptedRegister, :haiagaru_talk_confirmation_accepted
+            invoke-static {}, $EXTENSION->resetLegacyTalkPostSession()V
+            :haiagaru_talk_confirmation_accepted
+            nop
+        """.trimIndent(),
+    )
+}
+
+/** Bypass 241's generated signature gate by publishing the Talk JSON as DAT. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkDatLoading() {
+    val networkClass = mutableClassDefBy("Lo/VLj;")
+    val method = networkClass.methods.singleOrNull { candidate ->
+        candidate.name == "e"
+            && candidate.returnType == "Lo/VLj\$RemoteActionCompatParcelizer;"
+            && candidate.parameterTypes.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+                "Z",
+                "Lo/GNk17;",
+            )
+    } ?: error("ChMate 241 Talk DAT request method was not found")
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate 241 Talk DAT request method has no implementation")
+    val candidates = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (reference.returnType != "Ljava/io/File;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+            )
+            || instructions.getOrNull(index + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT
+        ) return@mapIndexedNotNull null
+        index
+    }
+    check(candidates.size == 1) {
+        "Expected one ChMate 241 Talk cache invocation, found ${candidates.size}"
+    }
+    val cacheCall = candidates.single()
+    val invocation = instructions[cacheCall] as FiveRegisterInstruction
+    val urlInfoRegister = invocation.registerD
+    val cacheFileRegister = (instructions[cacheCall + 1] as OneRegisterInstruction).registerA
+    val scratchRegister = method.findFreeRegister(cacheCall + 2)
+    method.addInstructionsWithLabels(
+        cacheCall + 2,
+        """
+            invoke-virtual {v$urlInfoRegister}, Ljp/syoboi/a2chMate/client/BBSUrlInfo;->D()Ljava/lang/String;
+            move-result-object v$scratchRegister
+            invoke-static {v$scratchRegister, v$cacheFileRegister}, $EXTENSION->loadLiveTalkDat(Ljava/lang/String;Ljava/io/File;)Z
+            move-result v$scratchRegister
+            if-eqz v$scratchRegister, :haiagaru_241_normal_download
+            new-instance v$scratchRegister, Lo/VLj${'$'}RemoteActionCompatParcelizer;
+            invoke-direct {v$scratchRegister, v$cacheFileRegister, v$urlInfoRegister}, Lo/VLj${'$'}RemoteActionCompatParcelizer;-><init>(Ljava/io/File;Ljp/syoboi/a2chMate/client/BBSUrlInfo;)V
+            return-object v$scratchRegister
+            :haiagaru_241_normal_download
+            nop
+        """.trimIndent(),
+    )
+}
+
+/** 241 uses the same generated Talk authenticator behind a differently obfuscated caller. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkPostIntegrity() {
+    patchIoTalkAuthentication()
+    val networkClass = mutableClassDefBy("Lo/VLj;")
+    val candidates = networkClass.methods.flatMap { method ->
+        val instructions = method.implementation?.instructions ?: return@flatMap emptyList()
+        instructions.mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass != "Ljava/lang/reflect/Method;"
+                || reference.name != "invoke"
+                || reference.returnType != "Ljava/lang/Object;"
+                // The first reflection call reads a String used as a request field.
+                // The generated Talk poster is the subsequent void-style invocation.
+                || instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+                || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                    "Ljava/lang/Object;",
+                    "[Ljava/lang/Object;",
+                )
+            ) return@mapIndexedNotNull null
+            val isTalkPost = instructions.subList(maxOf(0, index - 260), index).any { previous ->
+                ((previous as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+                    "https://api.talk-platform.com/v1/bbs.cgi"
+            }
+            if (isTalkPost) method to index else null
+        }
+    }
+    check(candidates.size == 1) {
+        "Expected one ChMate 241 Talk posting invocation, found ${candidates.size}"
+    }
+    val (method, index) = candidates.single()
+    when (val invocation = method.implementation!!.instructions[index]) {
+        is FiveRegisterInstruction -> method.replaceInstruction(
+            index,
+            "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE}}, $EXTENSION->invokeIoTalkPoster(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        is RegisterRangeInstruction -> method.replaceInstruction(
+            index,
+            "invoke-static/range {v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2}}, $EXTENSION->invokeIoTalkPoster(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        else -> error("ChMate 241 Talk posting invocation registers were not found")
+    }
+
+    // 241 resolves the renewable Talk key through another generated method
+    // immediately before the poster. The reflected call returns a small holder
+    // whose `c` field contains the key, rather than returning String directly.
+    // Protect that invocation as well; otherwise stale/signature-derived state
+    // can fail before the already-wrapped header builder is reached.
+    val currentInstructions = method.implementation!!.instructions
+    val keyInvocations = currentInstructions.indices.filter { keyIndex ->
+        if (keyIndex >= index) return@filter false
+        val reference = (currentInstructions[keyIndex] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@filter false
+        if (reference.definingClass != "Ljava/lang/reflect/Method;"
+            || reference.name != "invoke"
+            || reference.returnType != "Ljava/lang/Object;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                "Ljava/lang/Object;", "[Ljava/lang/Object;"
+            )
+            || currentInstructions.getOrNull(keyIndex + 1)?.opcode != Opcode.MOVE_RESULT_OBJECT
+        ) return@filter false
+        val cast = currentInstructions.getOrNull(keyIndex + 2) as? ReferenceInstruction
+            ?: return@filter false
+        cast.opcode == Opcode.CHECK_CAST
+            && cast.reference.toString() == "Lo/setTimeUpdate\$RemoteActionCompatParcelizer;"
+    }
+    check(keyInvocations.size == 1) {
+        "Expected one ChMate 241 Talk key invocation, found ${keyInvocations.size}"
+    }
+    val keyIndex = keyInvocations.single()
+    when (val invocation = currentInstructions[keyIndex]) {
+        is FiveRegisterInstruction -> method.replaceInstruction(
+            keyIndex,
+            "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE}}, $EXTENSION->invokeIoTalkPoster(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        is RegisterRangeInstruction -> method.replaceInstruction(
+            keyIndex,
+            "invoke-static/range {v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2}}, $EXTENSION->invokeIoTalkPoster(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        else -> error("ChMate 241 Talk key invocation registers were not found")
+    }
+}
+
+/** Replaces 241's generated Talk login digest invocation with the stable extension path. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoTalkAuthentication() {
+    val authClass = mutableClassDefBy("Lo/updateRenderInfoForVideo;")
+    val authMethod = authClass.methods.singleOrNull { method ->
+        method.name == "d"
+            && method.parameterTypes.map(CharSequence::toString) == listOf("Lo/VLj;")
+            && method.returnType == "Ljava/lang/String;"
+    } ?: error("ChMate 241 Talk authentication method was not found")
+    val instructions = authMethod.implementation?.instructions
+        ?: error("ChMate 241 Talk authentication implementation was not found")
+    val candidates = instructions.indices.filter { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference
+            as? MethodReference ?: return@filter false
+        if (reference.definingClass != "Ljava/lang/reflect/Method;"
+            || reference.name != "invoke"
+            || reference.returnType != "Ljava/lang/Object;"
+            || reference.parameterTypes.map(CharSequence::toString) != listOf(
+                "Ljava/lang/Object;", "[Ljava/lang/Object;"
+            )
+        ) return@filter false
+        instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+            && (instructions.getOrNull(index + 2) as? ReferenceInstruction)
+                ?.reference?.toString() == "Ljava/lang/String;"
+    }
+    check(candidates.size == 1) {
+        "Expected one ChMate 241 Talk authentication invocation, found ${candidates.size}"
+    }
+    val index = candidates.single()
+    when (val invocation = instructions[index]) {
+        is FiveRegisterInstruction -> authMethod.replaceInstruction(
+            index,
+            "invoke-static {v${invocation.registerC}, v${invocation.registerD}, " +
+                "v${invocation.registerE}}, $EXTENSION->invokeIoTalkAuth(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        is RegisterRangeInstruction -> authMethod.replaceInstruction(
+            index,
+            "invoke-static/range {v${invocation.startRegister} .. " +
+                "v${invocation.startRegister + 2}}, $EXTENSION->invokeIoTalkAuth(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)" +
+                "Ljava/lang/Object;",
+        )
+        else -> error("ChMate 241 Talk authentication invocation registers were not found")
+    }
+}
+
+/**
+ * 241 sends the cached DAT ETag on every normal thread refresh.  Immediately
+ * after a successful post the server can still expose the preceding ETag, so
+ * the refresh returns 304 and ChMate reports "no update" while the local post
+ * is not rendered.  Skip only this conditional header in 241's downloader;
+ * the normal response and local index handling remain unchanged.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoThreadRefreshCache() {
+    val networkClass = mutableClassDefBy("Lo/VLj;")
+    val downloader = networkClass.methods.singleOrNull { method ->
+        method.name == "e"
+            && method.returnType == "Lo/VLj\$RemoteActionCompatParcelizer;"
+            && method.parameterTypes.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+                "Z",
+                "Lo/GNk17;",
+            )
+    } ?: error("ChMate 241 thread downloader was not found")
+    val instructions = downloader.implementation?.instructions
+        ?: error("ChMate 241 thread downloader has no implementation")
+    val etagNames = instructions.indices.filter { index ->
+        ((instructions[index] as? ReferenceInstruction)?.reference as? StringReference)
+            ?.string == "If-None-Match"
+    }
+    check(etagNames.size == 1) {
+        "Expected one ChMate 241 If-None-Match header, found ${etagNames.size}"
+    }
+    val nameIndex = etagNames.single()
+    val headerCall = instructions.indices.firstOrNull { index ->
+        index > nameIndex
+            && ((instructions[index] as? ReferenceInstruction)?.reference as? MethodReference)
+                ?.let { reference ->
+                    reference.definingClass == "Lokhttp3/Headers\$ComponentActivity;"
+                        && reference.name == "c"
+                        && reference.parameterTypes.map(CharSequence::toString) ==
+                            listOf("Ljava/lang/String;", "Ljava/lang/String;")
+                } == true
+    } ?: error("ChMate 241 If-None-Match header call was not found")
+    val resume = instructions.getOrNull(headerCall + 1)
+        ?: error("ChMate 241 If-None-Match header has no continuation")
+    downloader.addInstructionsWithLabels(
+        headerCall,
+        "goto :haiagaru_241_skip_etag",
+        ExternalLabel("haiagaru_241_skip_etag", resume),
+    )
+}
+
+private const val ANDROID_XML_NAMESPACE = "http://schemas.android.com/apk/res/android"
+private const val OPEN_URL_ACTIVITY = "app.morphe.extension.chmate.OpenUrlActivity"
+private const val HISSI_MENU_ACTIVITY = "app.morphe.extension.chmate.HissiMenuActivity"
+
+private data class OpenUrlPattern(
+    val scheme: String,
+    val host: String,
+    val port: Int?,
+    val path: String?,
+    val prefix: Boolean,
+)
+
+private fun parseAdditionalOpenUrls(value: String): List<OpenUrlPattern> {
+    val entries = value.split(Regex("[,\\r\\n]+"))
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+    if (entries.size > 32) {
+        throw PatchException("追加できるURLは32件までです。")
+    }
+    return entries.map { entry ->
+        val prefix = entry.endsWith("/*")
+        val url = if (prefix) entry.dropLast(1) else entry
+        val uri = try {
+            URI(url)
+        } catch (_: Exception) {
+            throw PatchException("URLの形式が正しくありません: $entry")
+        }
+        val scheme = uri.scheme?.lowercase(Locale.ROOT)
+        val host = uri.host?.lowercase(Locale.ROOT)
+        if (scheme !in setOf("http", "https") || host.isNullOrBlank()
+            || uri.userInfo != null || uri.query != null || uri.fragment != null
+            || uri.port == 0 || uri.port > 65535 || uri.path?.contains('*') == true
+        ) {
+            throw PatchException("http(s)のURLを指定してください（クエリ・#・途中の*は不可）: $entry")
+        }
+        OpenUrlPattern(
+            scheme = requireNotNull(scheme),
+            host = host,
+            port = uri.port.takeIf { it >= 0 },
+            path = uri.path?.takeIf(String::isNotEmpty),
+            prefix = prefix,
+        )
+    }.distinct()
+}
+
+private fun Document.addOpenUrlFilter(
+    activity: Element,
+    schemes: List<String>,
+    host: String,
+    port: Int? = null,
+    path: String? = null,
+    pathAttribute: String = "android:path",
+) {
+    val filter = createElement("intent-filter")
+    filter.appendChild(createElement("action").apply {
+        setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", "android.intent.action.VIEW")
+    })
+    listOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE")
+        .forEach { categoryName ->
+            filter.appendChild(createElement("category").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", categoryName)
+            })
+        }
+    schemes.forEach { scheme ->
+        filter.appendChild(createElement("data").apply {
+            setAttributeNS(ANDROID_XML_NAMESPACE, "android:scheme", scheme)
+        })
+    }
+    filter.appendChild(createElement("data").apply {
+        setAttributeNS(ANDROID_XML_NAMESPACE, "android:host", host)
+        port?.let { setAttributeNS(ANDROID_XML_NAMESPACE, "android:port", it.toString()) }
+        path?.let { setAttributeNS(ANDROID_XML_NAMESPACE, pathAttribute, it) }
+    })
+    activity.appendChild(filter)
 }
 
 @Suppress("unused")
@@ -937,7 +1755,73 @@ val haiagaruPatch = resourcePatch(
     compatibleWith(chMateCompatibility)
     dependsOn(haiagaruBytecodePatch)
 
+    val additionalOpenUrls = stringOption(
+        key = "additionalOpenUrls",
+        default = "",
+        title = "アプリで開くURLを追加",
+        description = "http(s)://から始まるURLをカンマ区切りで指定。末尾/*は配下も対象です。ChMateが解析できる板・スレURLに使用してください。",
+    )
+
+    val emojiMode = stringOption(
+        key = "emojiMode",
+        default = "missing",
+        title = "絵文字フォントの適用範囲",
+        description = "missing=端末にない絵文字だけ（推奨）、all=全絵文字、off=無効。",
+    )
+
+    val emojiFontPath = stringOption(
+        key = "emojiFontPath",
+        default = "",
+        title = "任意の絵文字フォント（任意）",
+        description = "パッチ実行PC上のTTF/OTFファイルの絶対パス。空欄なら内蔵Noto Color Emojiを使用します。",
+    )
+
+    val dedicatedCheckerViewer = stringOption(
+        key = "dedicatedCheckerViewer",
+        default = "true",
+        title = "必死チェッカー専用ビュワー",
+        description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
+    )
+
     execute {
+        val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
+        bundledEmojiFont.parentFile.mkdirs()
+        val requestedEmojiMode = emojiMode.value.orEmpty().trim().lowercase(Locale.ROOT)
+        if (requestedEmojiMode !in setOf("missing", "all", "off")) {
+            throw PatchException("emojiModeは missing / all / off のいずれかを指定してください: $requestedEmojiMode")
+        }
+        val requestedFontPath = emojiFontPath.value.orEmpty().trim()
+        val dedicatedViewerEnabled = when (dedicatedCheckerViewer.value.orEmpty().trim().lowercase(Locale.ROOT)) {
+            "true", "1", "yes", "on" -> true
+            "false", "0", "no", "off" -> false
+            else -> throw PatchException(
+                "dedicatedCheckerViewerは true / false のいずれかを指定してください: "
+                    + dedicatedCheckerViewer.value
+            )
+        }
+        if (requestedFontPath.isBlank()) {
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+                "/chmate/emoji/NotoColorEmoji.ttf",
+            )) {
+                "Bundled Noto Color Emoji font is missing from the Haiagaru patch bundle"
+            }.use { source ->
+                bundledEmojiFont.outputStream().use(source::copyTo)
+            }
+        } else {
+            val customFont = File(requestedFontPath)
+            if (!customFont.isFile || !customFont.canRead()) {
+                throw PatchException("emojiFontPathのフォントファイルを読み込めません: $requestedFontPath")
+            }
+            customFont.inputStream().use { source ->
+                bundledEmojiFont.outputStream().use(source::copyTo)
+            }
+        }
+        bundledEmojiFont.parentFile.resolve("emoji.properties").writeText(
+            "mode=$requestedEmojiMode\n",
+            Charsets.UTF_8,
+        )
+
+        val customUrls = parseAdditionalOpenUrls(additionalOpenUrls.value.orEmpty())
         document("AndroidManifest.xml").use { document ->
             val additions = buildList {
                 val dataElements = document.getElementsByTagName("data")
@@ -1014,6 +1898,81 @@ val haiagaruPatch = resourcePatch(
                     )
                     intentFilter.appendChild(pathData)
                 }
+            }
+
+            val application = document.getElementsByTagName("application").item(0) as Element
+            val openUrlActivity = document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", OPEN_URL_ACTIVITY)
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Translucent.NoTitleBar",
+                )
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:excludeFromRecents", "true")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:noHistory", "true")
+            }
+
+            // One routing Activity avoids competing board/thread Activity matches.
+            // Separate filters keep custom hosts and paths from being combined.
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/boards/", pathAttribute = "android:pathPrefix",
+            )
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/test/read.cgi/", pathAttribute = "android:pathPrefix",
+            )
+            document.addOpenUrlFilter(
+                openUrlActivity, listOf("http", "https"), "talk.jp",
+                path = "/.*/", pathAttribute = "android:pathPattern",
+            )
+            customUrls.forEach { url ->
+                document.addOpenUrlFilter(
+                    activity = openUrlActivity,
+                    schemes = listOf(url.scheme),
+                    host = url.host,
+                    port = url.port,
+                    path = url.path,
+                    pathAttribute = if (url.prefix) "android:pathPrefix" else "android:path",
+                )
+            }
+            application.appendChild(openUrlActivity)
+
+            if (dedicatedViewerEnabled) {
+                val hissiActivity = document.createElement("activity").apply {
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                    setAttributeNS(
+                        ANDROID_XML_NAMESPACE,
+                        "android:theme",
+                        "@android:style/Theme.Material.Light.NoActionBar",
+                    )
+                }
+                document.addOpenUrlFilter(
+                    hissiActivity,
+                    listOf("haiagaru-hissi", "haiagaru-hissis"),
+                    "hissi.org",
+                    path = "/read.php/",
+                    pathAttribute = "android:pathPrefix",
+                )
+                // The long-press action in older ChMate builds bypasses the
+                // configurable menu template and emits a normal http(s)
+                // Hissi URL. Route that form to the same dedicated viewer so
+                // both entry points behave identically.
+                document.addOpenUrlFilter(
+                    hissiActivity,
+                    listOf("http", "https"),
+                    "hissi.org",
+                    path = "/read.php/",
+                    pathAttribute = "android:pathPrefix",
+                )
+                application.appendChild(hissiActivity)
+                application.setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:usesCleartextTraffic",
+                    "true",
+                )
             }
         }
     }
@@ -1477,14 +2436,19 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadUrlEn
     } else {
         "Ljp/syoboi/a2chMate/activity/ResListActivity;"
     }
-    mutableClassDefBy(activityClass).methods.single { method ->
+    val method = mutableClassDefBy(activityClass).methods.single { method ->
         method.name == "onCreate"
             && method.returnType == "V"
             && method.parameters.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
-    }.addInstruction(
+    }
+    method.addInstruction(
         0,
         "invoke-static/range { p0 .. p0 }, " +
             "$EXTENSION->rewriteLegacyThreadIntent(Landroid/app/Activity;)V",
+    )
+    method.addBeforeEveryReturn(
+        "invoke-static/range { p0 .. p0 }, " +
+            "$EXTENSION->hideTalkThreadBlankRows(Landroid/app/Activity;)V",
     )
 }
 
@@ -2373,6 +3337,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
                     """
                         invoke-static/range { v$register .. v$register }, $EXTENSION->replace5chDomain(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
                         move-result-object v$register
+                        invoke-static/range { v$register .. v$register }, $EXTENSION->processEmojiText(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+                        move-result-object v$register
                     """
                 )
             }
@@ -2615,6 +3581,75 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoUrlSpanAlign
 }
 
 /**
+ * Rewrite the board-menu endpoint at the point where ChMate starts its menu
+ * download.  The URL is persisted in ChMate preferences, so replacing only
+ * string constants does not repair installations that still store
+ * menu.5ch.net.  The method signatures differ across the supported builds;
+ * callers provide the stable return type for the corresponding worker.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchBbsMenuUrl(
+    methodName: String,
+    returnType: String,
+) {
+    val worker = mutableClassDefBy("Ljp/syoboi/a2chMate/bbs/BBSMenuUpdateWork;")
+    val fetch = worker.methods.singleOrNull { method ->
+        method.name == methodName
+            && method.returnType == returnType
+            && method.parameters.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    } ?: error("ChMate BBS menu download method was not found: $methodName $returnType")
+    fetch.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p1 .. p1 }, $EXTENSION->rewriteBbsMenuUrl(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p1
+        """,
+    )
+
+    // ChMate leaves URL 1 empty on a fresh install. The worker above can only
+    // migrate a URL that already exists, so give its first menu preference a
+    // default without changing any explicitly saved user value.
+    val menuDefaults = mutableListOf<Pair<MutableMethod, Int>>()
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Ljp/syoboi/") && !classDef.type.startsWith("Lo/")) {
+            return@classDefForEach
+        }
+        classDef.methods.filter { it.name == "<clinit>" }.forEach { method ->
+            val index = method.implementation?.instructions?.indexOfFirst { instruction ->
+                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+                    "bbsMenuUrl"
+            } ?: -1
+            if (index >= 0) {
+                menuDefaults += mutableClassDefBy(classDef).findMutableMethodOf(method) to index
+            }
+        }
+    }
+    check(menuDefaults.size <= 1) { "ChMate has multiple first BBS menu preferences" }
+    if (menuDefaults.isEmpty()) return
+    val (initializer, menuKeyIndex) = menuDefaults.single()
+    val instructions = initializer.implementation!!.instructions
+    val constructorIndex = (menuKeyIndex + 1 until minOf(menuKeyIndex + 5, instructions.size))
+        .firstOrNull { index ->
+            val instruction = instructions[index]
+            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            instruction.opcode == Opcode.INVOKE_DIRECT
+                && instruction is FiveRegisterInstruction
+                && instruction.registerCount == 3
+                && reference?.name == "<init>"
+                && reference.parameterTypes.map(CharSequence::toString) ==
+                    listOf("Ljava/lang/String;", "Ljava/lang/String;")
+        } ?: error("ChMate's first BBS menu default constructor was not found")
+    val defaultRegister = (instructions[constructorIndex] as FiveRegisterInstruction).registerE
+    initializer.addInstructionsWithLabels(
+        constructorIndex + 1,
+        "const-string v$defaultRegister, \"\"",
+    )
+    initializer.addInstructionsWithLabels(
+        constructorIndex,
+        "const-string v$defaultRegister, \"https://menu.5ch.io/bbsmenu.html\"",
+    )
+}
+
+/**
  * Ports the URL-model and fixed endpoint handling used by the legacy 191 route
  * to later pre-5ch.io builds whose parser implementation has different names.
  * BE rendering and image upload stay on the target's own newer implementations.
@@ -2699,8 +3734,11 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoDomainCompat
  */
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompatibility() {
     // The 191 Talk menu adapter converts classic.talk-platform.com entries to
-    // talk.jp/boards/<board>. Its legacy BBSUrlInfo parser only accepts the
-    // root form talk.jp/<board>, so every parsed board is otherwise discarded.
+    // talk.jp/boards/<board>. Keep that form: the legacy BBSUrlInfo parser
+    // recognizes /boards/<board> as Talk type 4, while talk.jp/<board> returns
+    // null and causes BBSMenuUpdateWork to reject an otherwise valid menu as
+    // containing zero boards. Validate the structural site so a future target
+    // change fails during patching instead of silently disabling Talk menus.
     val talkMenuAdapter = mutableClassDefBy("Lo/setRequestLatencyMillis;")
     val talkBoardPrefixSites = talkMenuAdapter.methods.flatMap { method ->
         method.implementation?.instructions.orEmpty().mapIndexedNotNull { index, instruction ->
@@ -2716,9 +3754,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     check(talkBoardPrefixSites.size == 1) {
         "ChMate 191 Talk board URL prefix site was not uniquely identified"
     }
-    talkBoardPrefixSites.single().let { (method, index, register) ->
-        method.replaceInstruction(index, "const-string v$register, \"https://talk.jp/\"")
-    }
+    talkBoardPrefixSites.single()
 
     val urlInfoClass = mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
     val legacyLinkParserType =
@@ -2788,6 +3824,35 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
             iget-object v7, v7, $legacyLinkParserType->e:[I
             invoke-static { v6, v7, v$linkFoundRegister }, $EXTENSION->classifyLegacyBeIcon(Ljava/lang/String;[IZ)Z
             move-result v$linkFoundRegister
+        """
+    )
+
+    // When the optional 5ch thread-date display is enabled, ChMate replaces
+    // the matched URL with "board/date" before creating the link span. A BE
+    // icon earlier in the response can shift the native parser's coordinates
+    // by one character. Fix the deletion position while the original URL is
+    // still present; correcting only the later span leaves its first "h" in
+    // the displayed text ("hニュー速(嫌儲)/2026-...").
+    val legacyDateReplacementIndex = legacyTextParserMethod.implementation!!.instructions
+        .mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass == "Ljava/lang/StringBuilder;"
+                && reference.name == "delete"
+                && reference.parameterTypes.map(CharSequence::toString) == listOf("I", "I")
+                && reference.returnType == "Ljava/lang/StringBuilder;"
+            ) index else null
+        }.singleOrNull() ?: error("ChMate 191 thread-date URL replacement was not found")
+    legacyTextParserMethod.addInstructionsWithLabels(
+        legacyDateReplacementIndex,
+        """
+            move v13, v8
+            invoke-static { v12, v5, v8, v11 }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
+            move-result-wide v14
+            long-to-int v8, v14
+            sub-int v13, v8, v13
+            add-int/2addr v11, v13
+            add-int/2addr v4, v13
         """
     )
 
@@ -3193,9 +4258,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
             }
 
             // The old implementation parses and merges the confirmation form but
-            // then restores its form parameter before retrying. Store the parsed
-            // server form in that existing parameter immediately while its type is
-            // known, so the original retry edge naturally sends it unchanged.
+            // then restores its form parameter before retrying. Keep the original
+            // form in p4 throughout the merge: replacing it with the parsed form
+            // before the iterator runs loses MESSAGE and can modify the collection
+            // being iterated. Only assign the merged form after that loop finishes.
             val confirmationParserIndexes = instructions.mapIndexedNotNull { index, instruction ->
                 val reference = (instruction as? ReferenceInstruction)?.reference
                     as? MethodReference ?: return@mapIndexedNotNull null
@@ -3214,8 +4280,19 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
                 ?.takeIf { it.opcode == Opcode.MOVE_RESULT_OBJECT }
                 as? OneRegisterInstruction)?.registerA
                 ?: error("ChMate legacy parsed confirmation form was not found")
+            val confirmationMergeEndIndex = instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (index > parserIndex
+                    && reference.definingClass == "Lo/getJsonData;"
+                    && reference.name == "e"
+                    && reference.returnType == "Z"
+                    && reference.parameterTypes.map(CharSequence::toString) ==
+                    listOf("Ljava/lang/String;")
+                ) index else null
+            }.singleOrNull() ?: error("ChMate legacy confirmation merge end was not found")
             method.addInstruction(
-                parserIndex + 2,
+                confirmationMergeEndIndex,
                 "move-object/from16 p4, v$parsedFormRegister"
             )
         }
@@ -3236,6 +4313,97 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
         }
 
     }
+}
+
+/**
+ * Disable only the stock editor's local body gate.
+ *
+ * The affected implementations are found by their device-information removal
+ * expression instead of their obfuscated method name.  191 and 243 do not ship
+ * this gate, while 226 and 241 each contain exactly one copy.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostPreflightValidation(
+    version: String,
+) {
+    var patched = 0
+    if (version == "0.8.10.191 dev") {
+        patchLegacy191PostPreflightValidation()
+        patched++
+    }
+    classDefForEach { classDef ->
+        if (!classDef.type.contains("/feature/resedit/ResEditFragment;")) {
+            return@classDefForEach
+        }
+        classDef.methods.forEach { method ->
+            if (method.returnType != "Z" || method.parameterTypes.isNotEmpty()) {
+                return@forEach
+            }
+            val instructions = method.implementation?.instructions ?: return@forEach
+            val hasDeviceInfoGate = instructions.any { instruction ->
+                val text = ((instruction as? ReferenceInstruction)?.reference as? StringReference)
+                    ?.string ?: return@any false
+                text.startsWith("[ \t\n]|2chMate ") && text.contains("(/[^/]+)+")
+            }
+            if (!hasDeviceInfoGate) {
+                return@forEach
+            }
+
+            val mutableMethod = mutableClassDefBy(classDef).findMutableMethodOf(method)
+            val resultRegister = mutableMethod.findFreeRegister(0)
+            val originalStart = mutableMethod.implementation?.instructions?.firstOrNull()
+                ?: error("ChMate post preflight gate has no implementation")
+            mutableMethod.addInstructionsWithLabels(
+                0,
+                """
+                    invoke-static { }, $EXTENSION->bypassPostPreflightValidation()Z
+                    move-result v$resultRegister
+                    if-eqz v$resultRegister, :haiagaru_stock_post_preflight
+                    const/4 v$resultRegister, 0x1
+                    return v$resultRegister
+                """,
+                ExternalLabel("haiagaru_stock_post_preflight", originalStart)
+            )
+            patched++
+        }
+    }
+
+    val expected = when (version) {
+        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241" -> 1
+        "0.8.10.243 dev" -> 0
+        else -> error("Unsupported ChMate version: $version")
+    }
+    check(patched == expected) {
+        "Unexpected ChMate post preflight gates for $version: $patched (expected $expected)"
+    }
+}
+
+/**
+ * ChMate 191 keeps the editor gate in its obfuscated Fragment rather than in
+ * the newer feature/resedit package.  It also removes the device-information
+ * footer with a version-specific regular expression, so the generic matcher
+ * above cannot identify it.  Bypass this method at the same point as the
+ * newer versions, while retaining the stock behavior when the setting is OFF.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy191PostPreflightValidation() {
+    val method = mutableClassDefBy("Lo/p9ExternalSyntheticLambda6;").methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Z"
+            && candidate.parameterTypes.isEmpty()
+    }
+    val firstInstruction = method.implementation?.instructions?.firstOrNull()
+        ?: error("ChMate 191 post preflight gate has no implementation")
+    val resultRegister = method.findFreeRegister(0)
+    method.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static { }, $EXTENSION->bypassPostPreflightValidation()Z
+            move-result v$resultRegister
+            if-eqz v$resultRegister, :haiagaru_stock_191_post_preflight
+            const/4 v$resultRegister, 0x1
+            return v$resultRegister
+        """.trimIndent(),
+        ExternalLabel("haiagaru_stock_191_post_preflight", firstInstruction),
+    )
 }
 
 /** Hooks use stable parameter types; obfuscated owners are validated for each supported APK. */
@@ -3288,15 +4456,29 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
                 invoke-static/range {v$urlRegister .. v$urlRegister}, $runtime->capturePending(Ljava/lang/Object;)V
                 ${if (version == "0.8.10.191 dev") "" else """
                 invoke-static/range {v$list .. v$list}, Lapp/morphe/extension/chmate/ProgrammableNgController;->pendingSubjectList(Ljava/lang/Object;)V
-                invoke-static/range {v$urlRegister .. v$urlRegister}, Lapp/morphe/extension/chmate/ProgrammableNgController;->filterPendingSubjectList(Ljava/lang/Object;)Ljava/lang/Object;
-                move-result-object v$list
+                invoke-static/range {v$urlRegister .. v$urlRegister}, Lapp/morphe/extension/chmate/ProgrammableNgController;->filterPendingSubjectList(Ljava/lang/Object;)V
                 """}
             """)
             captures++
         }
     }
     check(captures > 0) { "Subject metadata capture missing: $version" }
-    if (version != "0.8.10.191 dev") {
+    if (version == "0.8.10.191 dev") {
+        // 1.3.4 moved the legacy editor bridge to a fragment-only API so it can
+        // resolve the current view after recreation, but accidentally removed
+        // the bytecode call site at the same time.  Without this hook, captured
+        // reporter IDs still reach history while the NG editor never exposes
+        // the reporter-ID choices.  Invoke it after onViewCreated has completed;
+        // EdgeReporterHistory resolves getView() and preserves the stock editor.
+        mutableClassDefBy("Lo/MaxFullscreenAdImplExternalSyntheticLambda4;").methods.single {
+            it.name == "onViewCreated"
+                && it.returnType == "V"
+                && it.parameters.map(CharSequence::toString) ==
+                listOf("Landroid/view/View;", "Landroid/os/Bundle;")
+        }.addBeforeEveryReturn(
+            "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V"
+        )
+    } else {
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"
             "0.8.10.241" -> "Lo/TTRewardVideoActivity2;"

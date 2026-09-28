@@ -3,6 +3,7 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.widget.Toast;
@@ -15,6 +16,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -155,7 +157,9 @@ final class ArchivedThreadImporter {
     }
 
     private static boolean isTabletActivity(Activity activity) {
-        return activity.getClass().getName().endsWith(".TabletHomeActivity");
+        String name = activity.getClass().getName();
+        return name.endsWith(".TabletHomeActivity")
+                || name.endsWith(".Hilt_TabletHomeActivity");
     }
 
     private static boolean consumeRecentFailure(String importKey) {
@@ -181,9 +185,7 @@ final class ArchivedThreadImporter {
         }
         try {
             byte[] dat = fetchTalkDat(info);
-            publishDat(destination.getParentFile(), destination, info, dat);
-            Log.i(LOG_TAG, "Loaded live Talk DAT: " + info.board + ":" + info.thread
-                    + " (" + dat.length + " bytes)");
+            updateLiveTalkDat(destination, info, dat);
             return true;
         } catch (IOException error) {
             throw error;
@@ -192,11 +194,116 @@ final class ArchivedThreadImporter {
         }
     }
 
+    /**
+     * Updates a live Talk DAT without invalidating ChMate's IDX. The IDX stores
+     * per-response state such as the user's own-post mark; deleting it after a
+     * refresh makes that mark disappear even though postDataList.json still
+     * lists the thread. Existing lines therefore remain byte-for-byte stable and
+     * only response lines that are not present locally are appended.
+     *
+     * ChMate also appends a successful post before the Talk read API catches up.
+     * Keeping an equal-or-longer local DAT prevents that fresh response from
+     * being replaced with the preceding server revision.
+     */
+    private static void updateLiveTalkDat(
+            File destination,
+            ThreadInfo info,
+            byte[] downloaded
+    ) throws IOException {
+        if (destination == null || !destination.isFile() || destination.length() <= 0
+                || destination.length() > MAX_RESPONSE_BYTES) {
+            publishDat(destination.getParentFile(), destination, info, downloaded);
+            Log.i(LOG_TAG, "Loaded initial live Talk DAT: " + info.board + ":" + info.thread
+                    + " (" + downloaded.length + " bytes)");
+            return;
+        }
+        try {
+            byte[] existing = readFile(destination);
+            validateDat(existing);
+            int existingLines = datLineCount(existing);
+            int downloadedLines = datLineCount(downloaded);
+            if (existingLines >= downloadedLines) {
+                Log.i(LOG_TAG, "Keeping local Talk DAT/IDX while the API catches up: "
+                        + info.board + ":" + info.thread + " (local=" + existingLines
+                        + ", api=" + downloadedLines + ")");
+                return;
+            }
+
+            byte[] merged = appendMissingDatLines(existing, downloaded, existingLines);
+            publishDat(destination.getParentFile(), destination, info, merged, false);
+            Log.i(LOG_TAG, "Appended " + (downloadedLines - existingLines)
+                    + " live Talk responses while preserving IDX: "
+                    + info.board + ":" + info.thread);
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to merge the local Talk DAT; rebuilding it", error);
+            publishDat(destination.getParentFile(), destination, info, downloaded);
+            Log.i(LOG_TAG, "Rebuilt live Talk DAT: " + info.board + ":" + info.thread
+                    + " (" + downloaded.length + " bytes)");
+        }
+    }
+
+    private static byte[] appendMissingDatLines(
+            byte[] existing,
+            byte[] downloaded,
+            int existingLines
+    ) throws IOException {
+        int line = 0;
+        int offset = 0;
+        while (offset < downloaded.length && line < existingLines) {
+            if (downloaded[offset++] == '\n') line++;
+        }
+        if (line != existingLines || offset >= downloaded.length) {
+            throw new IOException("Unable to locate new Talk DAT lines");
+        }
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream(
+                Math.min(MAX_RESPONSE_BYTES, existing.length + downloaded.length - offset + 1));
+        output.write(existing);
+        if (existing.length > 0 && existing[existing.length - 1] != '\n') output.write('\n');
+        output.write(downloaded, offset, downloaded.length - offset);
+        byte[] merged = output.toByteArray();
+        if (merged.length > MAX_RESPONSE_BYTES) throw new IOException("DAT was too large");
+        return validateDat(merged);
+    }
+
+    private static byte[] readFile(File file) throws IOException {
+        try (BufferedInputStream input = new BufferedInputStream(
+                new java.io.FileInputStream(file));
+             ByteArrayOutputStream output = new ByteArrayOutputStream(
+                     (int) Math.min(file.length(), 64 * 1024L))) {
+            byte[] buffer = new byte[16 * 1024];
+            int total = 0;
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                total += count;
+                if (total > MAX_RESPONSE_BYTES) throw new IOException("DAT was too large");
+                output.write(buffer, 0, count);
+            }
+            return output.toByteArray();
+        }
+    }
+
+    private static int datLineCount(byte[] dat) {
+        int lines = 0;
+        for (byte value : dat) if (value == '\n') lines++;
+        return lines + (dat.length > 0 && dat[dat.length - 1] != '\n' ? 1 : 0);
+    }
+
     private static void publishDat(
             File directory,
             File datFile,
             ThreadInfo info,
             byte[] dat
+    ) throws IOException {
+        publishDat(directory, datFile, info, dat, true);
+    }
+
+    private static void publishDat(
+            File directory,
+            File datFile,
+            ThreadInfo info,
+            byte[] dat,
+            boolean invalidateIndex
     ) throws IOException {
         if (!directory.isDirectory() && !directory.mkdirs()) {
             throw new IOException("Unable to create ChMate DAT directory");
@@ -212,9 +319,11 @@ final class ArchivedThreadImporter {
         if (!temporary.renameTo(datFile)) {
             throw new IOException("Unable to publish imported ChMate DAT");
         }
-        File index = new File(directory, info.cacheBoardId() + "_" + info.thread + ".idx");
-        if (index.exists() && !index.delete()) {
-            Log.w(LOG_TAG, "Unable to remove stale index " + index.getName());
+        if (invalidateIndex) {
+            File index = new File(directory, info.cacheBoardId() + "_" + info.thread + ".idx");
+            if (index.exists() && !index.delete()) {
+                Log.w(LOG_TAG, "Unable to remove stale index " + index.getName());
+            }
         }
     }
 
@@ -223,6 +332,20 @@ final class ArchivedThreadImporter {
             if (message != null && !message.isEmpty()) {
                 Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
             }
+
+            // TabletHomeActivity owns all panes in one task.  Starting a new
+            // ResListActivity here makes its tablet forwarding path recreate
+            // TabletHomeActivity, which reloads every open tab and loses search
+            // state, scroll positions, and unread markers.  Feed the completed
+            // DAT back through the existing tablet navigation method instead.
+            if (isTabletActivity(activity)) {
+                Bundle retry = new Bundle();
+                retry.putString("_data", url);
+                retry.putBoolean("haiagaru.archive.retry", true);
+                if (openTabletThreadInPlace(activity, retry)) return;
+                Log.w(LOG_TAG, "Unable to reopen imported thread in the existing tablet panes");
+            }
+
             Intent retry = new Intent(activity.getIntent());
             // TabletHomeActivity normally keeps thread navigation in-process.
             // Re-enter through ResListActivity after the asynchronous import so
@@ -237,6 +360,47 @@ final class ArchivedThreadImporter {
             activity.startActivity(retry);
             activity.finish();
         });
+    }
+
+    /**
+     * Invokes TabletHomeActivity's existing in-process thread router.  The
+     * method is obfuscated differently in supported generations (191: Sq_,
+     * 226: d, 243: c), so the signature is validated before invocation.
+     */
+    private static boolean openTabletThreadInPlace(Activity activity, Bundle bundle) {
+        String[] candidates = {"Sq_", "d", "c"};
+        Class<?> type = activity.getClass();
+        while (type != null) {
+            for (Method method : type.getDeclaredMethods()) {
+                if (!java.lang.reflect.Modifier.isPublic(method.getModifiers())
+                        || method.getReturnType() != void.class
+                        || method.getParameterTypes().length != 3
+                        || method.getParameterTypes()[1] != int.class
+                        || method.getParameterTypes()[2] != Bundle.class) {
+                    continue;
+                }
+                boolean nameMatches = false;
+                for (String candidate : candidates) {
+                    if (candidate.equals(method.getName())) {
+                        nameMatches = true;
+                        break;
+                    }
+                }
+                if (!nameMatches) continue;
+                try {
+                    method.setAccessible(true);
+                    method.invoke(activity, null, 0, bundle);
+                    Log.i(LOG_TAG, "Reopened imported thread in existing tablet panes via "
+                            + method.getName());
+                    return true;
+                } catch (Throwable error) {
+                    Log.w(LOG_TAG, "Tablet in-place thread navigation failed via "
+                            + method.getName(), error);
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return false;
     }
 
     /**
@@ -480,7 +644,7 @@ final class ArchivedThreadImporter {
         }
         Log.i(LOG_TAG, "Converted " + comments.length() + " Talk posts for "
                 + info.board + ":" + info.thread);
-        return dat.toString().getBytes(MS932);
+        return TalkDatEncoding.encode(dat.toString());
     }
 
     private static String request(String url, Charset charset) throws IOException {
