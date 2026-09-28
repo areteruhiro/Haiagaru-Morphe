@@ -344,6 +344,11 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // post can be rejected as "device information only".  Let the posting
         // endpoint perform the authoritative body validation instead.
         patchPostPreflightValidation(packageMetadata.versionName)
+        if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchLegacyExternalEmojiPostBody()
+        } else {
+            patchExternalEmojiPostCopy(packageMetadata.versionName)
+        }
 
         mutableClassDefBy(profile.providerClass).methods.single { method ->
             method.name == "onCreate"
@@ -593,8 +598,68 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
+        patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
+}
+
+/** Rewrites only the temporary PostData copy passed to the posting engine. */
+private fun BytecodePatchContext.patchExternalEmojiPostCopy(version: String) {
+    val postType = if (version == "0.8.10.226 dev")
+        "Lo/setBorderWidth;" else "Ljp/syoboi/a2chMate/postdata/PostData;"
+    val copyName = if (version == "0.8.10.226 dev") "a" else "e"
+    val editor = mutableClassDefBy("Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
+    var patched = 0
+    editor.methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        val matches = instructions.indices.filter { index ->
+            val reference = (instructions[index] as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@filter false
+            reference.definingClass == postType && reference.name == copyName
+                && reference.returnType == postType
+                && reference.parameterTypes.firstOrNull() == postType
+                && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+        }
+        matches.asReversed().forEach { index ->
+            val register = (instructions[index + 1] as OneRegisterInstruction).registerA
+            method.addInstructionsWithLabels(index + 2, """
+                invoke-static/range { v$register .. v$register }, $EXTENSION->prepareExternalEmojiPost(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$register
+                check-cast v$register, $postType
+            """.trimIndent())
+            patched++
+        }
+    }
+    check(patched == 1) { "Expected one external post-copy boundary for $version, found $patched" }
+}
+
+/** 191 passes the URL and body as the first and fifth n7a constructor values. */
+private fun BytecodePatchContext.patchLegacyExternalEmojiPostBody() {
+    val editor = mutableClassDefBy("Lo/p9ExternalSyntheticLambda6;")
+    var patched = 0
+    editor.methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        val matches = instructions.indices.filter { index ->
+            val reference = (instructions[index] as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@filter false
+            reference.definingClass == "Lo/n7a;" && reference.name == "<init>"
+                && reference.parameterTypes == List(9) { "Ljava/lang/String;" }
+        }
+        matches.asReversed().forEach { index ->
+            val invocation = instructions[index] as? RegisterRangeInstruction
+                ?: error("191 external post constructor did not use a register range")
+            val bodyRegister = invocation.startRegister + 5
+            // The source registers can exceed v15, so pass the existing adjacent
+            // constructor arguments with invoke-static/range instead of the
+            // four-bit non-range form.
+            method.addInstructionsWithLabels(index, """
+                invoke-static/range { v${invocation.startRegister + 1} .. v${invocation.startRegister + 9} }, $EXTENSION->prepareExternalEmojiBodyFromPostFields(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+                move-result-object v$bodyRegister
+            """.trimIndent())
+            patched++
+        }
+    }
+    check(patched == 1) { "Expected one 191 external post constructor, found $patched" }
 }
 
 /**
@@ -841,6 +906,56 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
             move-result-object p0
         """,
     )
+}
+
+/**
+ * The response long-press route may skip the menu-template expander. Intercept
+ * the external activity launch itself and make only Hissi checker intents
+ * explicit to this patched app. This also avoids an Android resolver chooser
+ * when several ChMate test builds are installed.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalIntentBoundaries() {
+    var patched = 0
+    classDefForEach { classDef ->
+        if (classDef.type.startsWith("Lapp/morphe/extension/")) return@classDefForEach
+        val mutableClass = mutableClassDefBy(classDef)
+        classDef.methods.forEach methodLoop@ { method ->
+            val instructions = method.implementation?.instructions?.toList()
+                ?: return@methodLoop
+            instructions.mapIndexedNotNull { index, instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference
+                    as? MethodReference ?: return@mapIndexedNotNull null
+                if (reference.name != "startActivity"
+                    || reference.returnType != "V"
+                    || reference.parameterTypes.map(CharSequence::toString) !=
+                        listOf("Landroid/content/Intent;")
+                    || reference.definingClass !in setOf(
+                        "Landroid/content/Context;", "Landroid/app/Activity;",
+                        "Landroidx/fragment/app/Fragment;",
+                    )
+                ) return@mapIndexedNotNull null
+                val register = when (instruction) {
+                    is FiveRegisterInstruction -> instruction.registerD
+                    is RegisterRangeInstruction -> {
+                        if (instruction.registerCount != 2) return@mapIndexedNotNull null
+                        instruction.startRegister + 1
+                    }
+                    else -> return@mapIndexedNotNull null
+                }
+                index to register
+            }.asReversed().forEach { (index, register) ->
+                mutableClass.findMutableMethodOf(method).addInstructionsWithLabels(
+                    index,
+                    "invoke-static/range {v$register .. v$register}, " +
+                        "Lapp/morphe/extension/chmate/HissiMenuCompatibility;->prepareExternalIntent(" +
+                        "Landroid/content/Intent;)V",
+                )
+                patched++
+            }
+        }
+    }
+    check(patched > 0) { "ChMate external activity launch boundary was not found" }
+    println("Hissi external intent boundaries: $patched")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoading() {
@@ -1661,6 +1776,13 @@ val haiagaruPatch = resourcePatch(
         description = "パッチ実行PC上のTTF/OTFファイルの絶対パス。空欄なら内蔵Noto Color Emojiを使用します。",
     )
 
+    val dedicatedCheckerViewer = stringOption(
+        key = "dedicatedCheckerViewer",
+        default = "true",
+        title = "必死チェッカー専用ビュワー",
+        description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
+    )
+
     execute {
         val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
         bundledEmojiFont.parentFile.mkdirs()
@@ -1669,6 +1791,14 @@ val haiagaruPatch = resourcePatch(
             throw PatchException("emojiModeは missing / all / off のいずれかを指定してください: $requestedEmojiMode")
         }
         val requestedFontPath = emojiFontPath.value.orEmpty().trim()
+        val dedicatedViewerEnabled = when (dedicatedCheckerViewer.value.orEmpty().trim().lowercase(Locale.ROOT)) {
+            "true", "1", "yes", "on" -> true
+            "false", "0", "no", "off" -> false
+            else -> throw PatchException(
+                "dedicatedCheckerViewerは true / false のいずれかを指定してください: "
+                    + dedicatedCheckerViewer.value
+            )
+        }
         if (requestedFontPath.isBlank()) {
             checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
                 "/chmate/emoji/NotoColorEmoji.ttf",
@@ -1809,23 +1939,41 @@ val haiagaruPatch = resourcePatch(
             }
             application.appendChild(openUrlActivity)
 
-            val hissiActivity = document.createElement("activity").apply {
-                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
-                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
-                setAttributeNS(
+            if (dedicatedViewerEnabled) {
+                val hissiActivity = document.createElement("activity").apply {
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                    setAttributeNS(
+                        ANDROID_XML_NAMESPACE,
+                        "android:theme",
+                        "@android:style/Theme.Material.Light.NoActionBar",
+                    )
+                }
+                document.addOpenUrlFilter(
+                    hissiActivity,
+                    listOf("haiagaru-hissi", "haiagaru-hissis"),
+                    "hissi.org",
+                    path = "/read.php/",
+                    pathAttribute = "android:pathPrefix",
+                )
+                // The long-press action in older ChMate builds bypasses the
+                // configurable menu template and emits a normal http(s)
+                // Hissi URL. Route that form to the same dedicated viewer so
+                // both entry points behave identically.
+                document.addOpenUrlFilter(
+                    hissiActivity,
+                    listOf("http", "https"),
+                    "hissi.org",
+                    path = "/read.php/",
+                    pathAttribute = "android:pathPrefix",
+                )
+                application.appendChild(hissiActivity)
+                application.setAttributeNS(
                     ANDROID_XML_NAMESPACE,
-                    "android:theme",
-                    "@android:style/Theme.Material.Light.NoActionBar",
+                    "android:usesCleartextTraffic",
+                    "true",
                 )
             }
-            document.addOpenUrlFilter(
-                hissiActivity,
-                listOf("haiagaru-hissi", "haiagaru-hissis"),
-                "hissi.org",
-                path = "/read.php/",
-                pathAttribute = "android:pathPrefix",
-            )
-            application.appendChild(hissiActivity)
         }
     }
 }
