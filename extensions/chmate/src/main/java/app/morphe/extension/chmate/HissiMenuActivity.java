@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.content.Context;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.graphics.Color;
@@ -43,6 +44,7 @@ public final class HissiMenuActivity extends Activity {
     private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
+    private static final String CHECKER_CHOICE_PREFS = "haiagaru_checker_choice";
     private String sourceHost;
     private String sourceBoard;
     private Uri incomingUri;
@@ -62,8 +64,10 @@ public final class HissiMenuActivity extends Activity {
         // Read the current setting again here. ChMate may cache an expanded
         // menu template, so the mode embedded in its URL can be stale.
         int checkerMode = Haiagaru.hissiCheckerMode();
-        currentUsesKyodemo = checkerMode == 2 || (checkerMode == 0
-                && sourceHost != null && !is5chHost(sourceHost));
+        boolean automaticKyodemo = sourceHost != null && !isHissiHost(sourceHost);
+        currentUsesKyodemo = checkerMode == 2 || (checkerMode == 0 && automaticKyodemo)
+                || (checkerMode == 3 && getSharedPreferences(CHECKER_CHOICE_PREFS,
+                        Context.MODE_PRIVATE).getBoolean(choiceKey(), automaticKyodemo));
         hissiTarget = toHttpsUrl(incoming);
         kyodemoTarget = toKyodemoUrl(incoming, sourceHost);
         if (currentUsesKyodemo && kyodemoTarget == null && hissiTarget != null) {
@@ -260,6 +264,8 @@ public final class HissiMenuActivity extends Activity {
                     return;
                 }
                 currentUsesKyodemo = nextUsesKyodemo;
+                getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
+                        .edit().putBoolean(choiceKey(), currentUsesKyodemo).apply();
                 alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
                 title.setText(currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
@@ -554,7 +560,11 @@ public final class HissiMenuActivity extends Activity {
             String bg = theme == 2 ? "#000000" : dark ? "#1e1e20" : "#ffffff";
             String fg = dark ? "#ebebf0" : "#1e1e1e";
             String link = dark ? "#8ab4f8" : "#1558a6";
-            String script = "javascript:(function(){var s=document.getElementById('haiagaru-viewer-style');"
+            String script = "javascript:(function(){var hissi=location.hostname==='hissi.org'||location.hostname==='www.hissi.org';"
+                    + "if(hissi){document.body.setAttribute('data-haiagaru-hissi','');"
+                    + "if(!document.querySelector('meta[name=viewport]')){var m=document.createElement('meta');"
+                    + "m.name='viewport';m.content='width=device-width,initial-scale=1';document.head.appendChild(m);}}"
+                    + "var s=document.getElementById('haiagaru-viewer-style');"
                     + "if(!s){s=document.createElement('style');s.id='haiagaru-viewer-style';document.head.appendChild(s);}"
                     + "s.textContent='html,body{background:" + bg + " !important;color:" + fg + " !important;"
                     + "font-family:sans-serif;font-size:16px;line-height:1.55;padding:0 6px;}"
@@ -571,6 +581,27 @@ public final class HissiMenuActivity extends Activity {
                     + ".clid{font-weight:700;} #rlist .clmess,.clmess{font-size:16px;line-height:1.65;margin-top:6px;word-break:break-word;}"
                     + "[class*=id],[id*=id]{font-weight:700;letter-spacing:.03em;}"
                     + "button,input,select{border-radius:6px;}"
+                    + "body[data-haiagaru-hissi]{box-sizing:border-box;width:100%;max-width:100vw;overflow-x:hidden;}"
+                    + "body[data-haiagaru-hissi] table{max-width:100%;}"
+                    + "body[data-haiagaru-hissi] td,body[data-haiagaru-hissi] th,"
+                    + "body[data-haiagaru-hissi] dl,body[data-haiagaru-hissi] dt,"
+                    + "body[data-haiagaru-hissi] dd{overflow-wrap:anywhere;word-break:normal;white-space:normal;}"
+                    + "body[data-haiagaru-hissi] dd{margin-left:12px;}"
+                    + "body[data-haiagaru-hissi] > table:last-of-type,"
+                    + "body[data-haiagaru-hissi] > table:last-of-type table{width:100% !important;table-layout:fixed;}"
+                    + "@media(max-width:600px){body[data-haiagaru-hissi] > table:first-of-type,"
+                    + "body[data-haiagaru-hissi] > table:first-of-type table{width:100% !important;table-layout:fixed;}"
+                    + "body[data-haiagaru-hissi] > table:first-of-type td{width:auto !important;"
+                    + "padding:0 !important;font-size:9px !important;letter-spacing:-.04em;}"
+                    + "body[data-haiagaru-hissi] > table:first-of-type font{font-size:11px !important;}"
+                    + "body[data-haiagaru-hissi] > table:first-of-type td[rowspan]{width:48px !important;}"
+                    + "body[data-haiagaru-hissi] > table:first-of-type td[bgcolor]{max-width:38px;}"
+                    + "}"
+                    + (dark ? "body[data-haiagaru-hissi] table,body[data-haiagaru-hissi] tr,"
+                    + "body[data-haiagaru-hissi] td,body[data-haiagaru-hissi] th{background:#24272b !important;"
+                    + "color:#ebebf0 !important;border-color:#41454c !important;}"
+                    + "body[data-haiagaru-hissi] tr:nth-child(even) td{background:#1b1d21 !important;}"
+                    + "body[data-haiagaru-hissi] font[color]{color:#ebebf0 !important;}" : "")
                     + "#ad,.ad,.ads,.advertisement,.advertising,.banner,.sponsor,.sponsored,"
                     + ".google-auto-placed,.adsbygoogle,[data-ad],[data-ad-slot],[aria-label*=広告],"
                     + "iframe[src*=doubleclick],iframe[src*=googlesyndication],iframe[src*=adservice],"
@@ -694,11 +725,17 @@ public final class HissiMenuActivity extends Activity {
         return board.toString();
     }
 
-    private static boolean is5chHost(String sourceHost) {
+    private String choiceKey() {
+        return (sourceHost == null ? "" : sourceHost.toLowerCase(java.util.Locale.ROOT))
+                + "/" + (sourceBoard == null ? "" : sourceBoard);
+    }
+
+    private static boolean isHissiHost(String sourceHost) {
         String host = sourceHost.toLowerCase(java.util.Locale.ROOT);
         return host.equals("2ch.net") || host.endsWith(".2ch.net")
                 || host.equals("5ch.net") || host.endsWith(".5ch.net")
-                || host.equals("5ch.io") || host.endsWith(".5ch.io");
+                || host.equals("5ch.io") || host.endsWith(".5ch.io")
+                || host.equals("bbspink.com") || host.endsWith(".bbspink.com");
     }
 
     private static int parseCheckerMode(String value) {

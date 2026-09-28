@@ -1823,6 +1823,16 @@ public final class Haiagaru {
                 .replace("://img.5ch.net/", "://img.5ch.io/");
     }
 
+    /** Normalize only the retired BE token before ChMate builds its text and attachment models. */
+    public static String normalizeLegacyBeBody(String original) {
+        if (original == null || !original.contains("sssp://img.5ch.net/premium/")) {
+            return original;
+        }
+        return original.replace(
+                "sssp://img.5ch.net/premium/",
+                "sssp://img.5ch.io/premium/");
+    }
+
     public static String prepareLegacyBeParsing(String original) {
         if (original == null) return null;
         // The 191 parser only routes sssp://img.5ch.net/ico/... through its

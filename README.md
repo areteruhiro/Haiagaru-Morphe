@@ -147,16 +147,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URL・プレリリースURLともに、現在の配布版 `1.5.5` を取得します（1.5.5はプレリリースです）。
+通常版URL・プレリリースURLともに、現在の配布版 `1.5.6` を取得します（1.5.6はプレリリースです）。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の配布版（1.5.5）を取得するパッチソースです。
+現在の配布版（1.5.6）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.5）を取得するパッチソースです。
+プレリリース版（1.5.6）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -174,6 +174,14 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 - 検索結果のスレ・レス番号リンクを元の掲示板URLへ戻し、ChMateで開くようにします。
 - Haiagaru設定でID長押しの検索先を「自動」「hissi.org」「Kyodemo」「両方（画面で切替）」から選択できます。
 - ふたばちゃんねるなど、ChMateのIDメニューと元スレURLが対応しない形式は対象外です。まちBBSではサイト間でID形式が異なる場合、結果が一致しないことがあります。
+
+### 1.5.6（プレリリース）
+
+- 古いレスのBEアイコンURLを現在の配信先に補正し、アイコンが表示されない問題を修正
+- ID検索の自動選択でBBSPINKをhissi.orgへ接続し、両方表示モードでは板ごとに前回の検索先を記憶
+- hissi.orgのダークモードで文字と表を読みやすくし、スマホ縦持ち時の順位表・レス本文の横幅を調整
+- 専用ビューアを無効にしてもID長押しの検索メニューを残し、hissi.orgの結果をChMate内のWebViewで表示
+- 191 dev／226 dev／241／243 devに共通対応
 
 ### 1.5.5（プレリリース）
 

@@ -18,10 +18,7 @@ public final class HissiMenuCompatibility {
         if (template == null || !template.contains("hissi.org/read.php")) {
             return template;
         }
-        // The patch option can deliberately omit the in-app Activity. In that
-        // build keep ChMate's original template instead of emitting an
-        // unhandled haiagaru-hissi:// URI.
-        if (!Haiagaru.dedicatedCheckerViewerAvailable()) return template;
+        boolean dedicatedViewer = Haiagaru.dedicatedCheckerViewerAvailable();
         String stockFilter = "{$host[match:[25]ch.net$]}";
         String oldFilter = "{$host[match:(^|\\.)(2ch\\.net|5ch\\.(net|io))$]}";
         String supportedFilter = "{$host[match:(?:^|\\.)(?:2ch\\.net|5ch\\.(?:net|io)|"
@@ -33,6 +30,14 @@ public final class HissiMenuCompatibility {
         if (!template.contains(stockFilter) && !template.contains(oldFilter)
                 && !template.contains("haiagaru_mode=")) {
             return template;
+        }
+        // Keep the expanded long-press menu on all supported boards even when
+        // the optional viewer is absent. Only its destination changes.
+        if (!dedicatedViewer) {
+            return template.replace(stockFilter, supportedFilter)
+                    .replace(oldFilter, supportedFilter)
+                    .replace("haiagaru-hissi://", "http://")
+                    .replace("haiagaru-hissis://", "https://");
         }
         // Keep the old hosts working, including when domain conversion is disabled.
         // Do not change the destination, ID/date expansion, or the menu preference.
@@ -98,6 +103,11 @@ public final class HissiMenuCompatibility {
             // dedicatedCheckerViewer=false deliberately uses ChMate's own
             // WebViewActivity rather than the Haiagaru viewer. This keeps the
             // result in the app and avoids handing the checker to a browser.
+            if ("haiagaru-hissi".equalsIgnoreCase(scheme)
+                    || "haiagaru-hissis".equalsIgnoreCase(scheme)) {
+                intent.setData(uri.buildUpon().scheme("haiagaru-hissis".equalsIgnoreCase(scheme)
+                        ? "https" : "http").build());
+            }
             intent.setClassName(context, CHMATE_WEB_VIEW_ACTIVITY);
         }
     }
