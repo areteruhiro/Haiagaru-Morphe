@@ -541,6 +541,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
+                patchAboutLogoThemeColor226()
+                patchPreIoS2mSettingActivityIntegrityTrap()
                 patchLegacyBeResponseBody("Lo/BouncyCastleSocketAdapterCompanion;", "d")
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
@@ -606,6 +608,75 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
+}
+
+/**
+ * The 226 About screen renders its large ChMate wordmark with an explicit
+ * zero color. Its copyright label already asks the active Compose theme for
+ * foreground text color; use the same source for the wordmark so 夜 stays legible.
+ */
+private fun BytecodePatchContext.patchAboutLogoThemeColor226() {
+    val about = mutableClassDefBy("Lo/getAdShowTime;")
+    val method = about.methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Lo/Ff11;"
+            && candidate.implementation?.instructions?.any { instruction ->
+                (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 0x7f100048
+            } == true
+    }
+    val calls = method.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (reference?.definingClass == "Lo/DtbSharedPreferences;"
+            && reference.name == "d"
+            && reference.returnType == "V"
+        ) index else null
+    }
+    check(calls.size == 1) { "ChMate 226 About wordmark text call changed" }
+    method.addInstructionsWithLabels(calls.single(), """
+        invoke-static/range { p1 .. p1 }, Lo/setUrl;->c(Lo/getValue;)Lo/getLocation;
+        move-result-object v2
+        invoke-virtual { v2 }, Lo/getLocation;->P()J
+        move-result-wide v2
+    """.trimIndent())
+}
+
+/**
+ * 226's paid-option sync screen contains a certificate-dependent arithmetic
+ * decoy in S2MSettingActivity's generated dispatch method.  After Morphe
+ * re-signing, its divisor becomes zero immediately before the first sync
+ * listener is created, so the user is returned to Home instead of reaching
+ * the key-registration screen.  Match the stable divide/allocation boundary
+ * rather than generated callback class names.
+ */
+private fun BytecodePatchContext.patchPreIoS2mSettingActivityIntegrityTrap() {
+    val activity = mutableClassDefBy(
+        "Ljp/syoboi/chmate2/ui/s2msetting/S2MSettingActivity;",
+    )
+    val method = activity.methods.single { candidate ->
+        candidate.name == "e"
+            && candidate.returnType == "Ljava/lang/Object;"
+            && candidate.parameters.map(CharSequence::toString) ==
+            listOf("[Ljava/lang/Object;")
+    }
+    val instructions = method.implementation?.instructions?.toList()
+        ?: error("ChMate 226 S2MSettingActivity dispatch method has no implementation")
+    // The integrity block ends with the calculated divisor immediately before
+    // the first callback object is allocated.  Matching that stable instruction
+    // boundary is more reliable than matching Yhp19/setTextClassifier, whose
+    // generated names and constructor references are rewritten between APK
+    // builds.  Keep a small window for dex writers that insert a move or nop.
+    val divideIndex = instructions.indices.lastOrNull { index ->
+        val opcode = instructions[index].opcode.name
+        if (!opcode.startsWith("div-int")) {
+            return@lastOrNull false
+        }
+        instructions.subList(index + 1, minOf(index + 4, instructions.size))
+            .any { it.opcode.name == "new-instance" }
+    } ?: error("ChMate 226 S2MSettingActivity sync divide trap was not found")
+
+    val resultRegister = (instructions[divideIndex] as? ThreeRegisterInstruction)?.registerA
+        ?: error("ChMate 226 S2MSettingActivity divide registers were not found")
+    method.replaceInstruction(divideIndex, "const/4 v$resultRegister, 0x0")
 }
 
 /** Rewrites only the temporary PostData copy passed to the posting engine. */
@@ -1944,16 +2015,26 @@ val haiagaruPatch = resourcePatch(
             }
             application.appendChild(openUrlActivity)
 
+            // Keep the archive page in the same lightweight WebView activity as
+            // the checker.  It is declared even when the optional Hissi viewer
+            // is disabled, because Edge archives are an independent feature.
+            val hissiActivity = document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar",
+                )
+            }
+            document.addOpenUrlFilter(
+                hissiActivity,
+                listOf("haiagaru-eddi", "http", "https"),
+                "eddiarchive3rd.boy.jp",
+                path = "/",
+                pathAttribute = "android:pathPrefix",
+            )
             if (dedicatedViewerEnabled) {
-                val hissiActivity = document.createElement("activity").apply {
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
-                    setAttributeNS(
-                        ANDROID_XML_NAMESPACE,
-                        "android:theme",
-                        "@android:style/Theme.Material.Light.NoActionBar",
-                    )
-                }
                 document.addOpenUrlFilter(
                     hissiActivity,
                     listOf("haiagaru-hissi", "haiagaru-hissis"),
@@ -1978,6 +2059,8 @@ val haiagaruPatch = resourcePatch(
                     "android:usesCleartextTraffic",
                     "true",
                 )
+            } else {
+                application.appendChild(hissiActivity)
             }
         }
     }
@@ -3474,7 +3557,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoBeRendering(
     parserMethod.addInstructionsWithLabels(
         0,
         """
-            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static/range { p1 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;
             move-result-object p2
         """,
     )
@@ -3836,7 +3919,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     legacyTextParserMethod.addInstructionsWithLabels(
         0,
         """
-            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static/range { p1 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;
             move-result-object p2
         """
     )

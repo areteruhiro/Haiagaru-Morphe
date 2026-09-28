@@ -37,7 +37,8 @@ IDを長押ししたときの検索先は、Haiagaru設定の「ID長押しの�
 検索画面で切り替える設定も選べます。Kyodemoの検索結果は元の板・スレURLへ戻してChMateで開きます。
 
 パッチ適用時のオプション「必死チェッカー専用ビュワー」は初期値ONです。OFFにすると、
-専用画面へのURL変換とActivity登録を省き、ChMateが元から使うブラウザ動作を維持します。
+必死チェッカー／Kyodemoの専用画面へのURL変換を省き、ChMateが元から使う動作を維持します。
+エッヂ過去ログの専用画面はこの設定とは独立して利用できます。
 ONの場合はhissi.orgとKyodemoの結果をChMate内で表示し、URLコピー、表示中テキストのコピー、
 日付選択、文字サイズ変更、端末設定／ダーク／AMOLEDブラックの表示を利用できます。
 操作ボタンは丸みのあるチップ型にまとめ、日付・文字サイズ・配色を画面上からすぐ変更できます。
@@ -49,6 +50,12 @@ ONの場合はhissi.orgとKyodemoの結果をChMate内で表示し、URLコピ�
 
 検索先ごとに必要な通信のため、hissi.orgはHTTPを使う場合があります。これは専用ビュワーを
 有効にしたAPKのみに平文通信を許可する設定です。KyodemoはHTTPSで開きます。
+
+エッヂの過去ログは、\`https://eddiarchive3rd.boy.jp/\` をChMate内の同じ専用ビュワーで開けます。
+キーワード、AND/OR、除外語、曖昧検索、レス数、並び順、期間を指定して検索でき、結果の
+\`bbs.eddibb.cc\` スレッドをタップするとChMateのスレ画面へ戻ります。検索サイトを外部ブラウザへ
+渡さず、ダーク／ライト配色、文字サイズ、広告要素の除去もID検索ビューと共通で適用します。
+エッヂ過去ログのURLを「アプリで開く」から起動した場合も、この画面へ直接入ります。
 
 この画面はAndroid標準のActivityとWebViewで組み直しており、参照先アプリのAPKやソースコードは
 同梱していません。画面機能の要件整理には[Desperate-checker-droidの公開説明](https://github.com/Kdroidwin/Desperate-checker-droid-by-kdroidwin)
@@ -107,6 +114,30 @@ WebView内部のサブリソースやネイティブライブラリ独自の通�
 全ソケットのHTTP遮断を保証する機能ではありません。
 242 devは現在のHaiagaru対応一覧に含まれず、この変更で対応版を追加していません。
 
+## MEGAバックアップ（開発中）
+
+ChMate設定 → Haiagaru →「MEGAにバックアップ・復元」から、
+「お気に入り・閲覧履歴」「NG設定」「ChMate・Haiagaruの設定」
+「書き込み履歴（postDataList.json）」「書き込みメモ（kakikomi.txt）」を個別に選べます。
+バックアップ時は選択項目だけを保存し、復元時にも対象を再確認します。
+「MEGA → この端末」「この端末 → MEGA」の片方向同期と、双方の不足分だけを追加する
+双方向同期を選択できます。復元前には変更候補を表示でき、設定から表示を省略できます。
+双方向同期では既存の設定・履歴・NG・書き込みメモを消さず、不足している値だけを追加します。
+自動同期は初期OFFで、分・時間・日単位の間隔を指定できます。自動同期はバックグラウンドでは
+実行せず、アプリ起動時に前回の同期から指定間隔が経過していれば実行します。復元先では
+MEGA側のバックアップが前回適用したものより新しい場合だけ復元します。
+
+利用者自身のMEGAアカウントでログインします。Google CloudやOAuth Playgroundは不要です。
+パスワードと2段階認証コードは保存せず、ログイン後のセッションだけをAndroid Keystoreで
+暗号化して端末内に保存します。セッションを含むスクリーンショットやログは共有しないでください。
+MEGA同期にはAndroid 7以降が必要です（ChMate本体の対応範囲は変更しません）。
+
+MEGA上に`Haiagaru`フォルダを作成し、選択した項目のスナップショットを保存します。
+別の端末からは同じMEGAアカウントでログインして復元できます。MEGAの暗号化通信を
+使用しますが、ChMateの認証情報やCookieはスナップショットに含めません。
+この試験機能は[MEGA用Kotlinライブラリ](https://github.com/acarlsen/kmp-mega)を使用します。
+Cookie・ログイン情報・OAuth情報は設定同期の対象外です。
+
 ## インストールできない場合
 
 ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMateをアンインストールすると、再インストール時に既存のパッケージとの競合が表示される場合があります。
@@ -147,16 +178,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URL・プレリリースURLともに、現在の配布版 `1.5.6` を取得します（1.5.6はプレリリースです）。
+通常版URL・プレリリースURLともに、現在の配布版 `1.5.7` を取得します（1.5.7はプレリリースです）。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の配布版（1.5.6）を取得するパッチソースです。
+現在の配布版（1.5.7）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.6）を取得するパッチソースです。
+プレリリース版（1.5.7）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -170,10 +201,20 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 ### 開発中（未リリース）
 
+- エッヂ過去ログ（\`eddiarchive3rd.boy.jp\`）をChMate内の専用ビューアで検索・閲覧し、検索結果から元のエッヂスレをChMateで開けるようにしました。
 - 5ch以外のID検索をKyodemoの板別検索へ接続。いつもch、BBSPINK、したらば、まちBBS、VIPサービス、おーぷん2ch、エッヂ、やる夫雑談所など、元URLから板IDを特定できる掲示板に対応します。
 - 検索結果のスレ・レス番号リンクを元の掲示板URLへ戻し、ChMateで開くようにします。
 - Haiagaru設定でID長押しの検索先を「自動」「hissi.org」「Kyodemo」「両方（画面で切替）」から選択できます。
 - ふたばちゃんねるなど、ChMateのIDメニューと元スレURLが対応しない形式は対象外です。まちBBSではサイト間でID形式が異なる場合、結果が一致しないことがあります。
+
+### 1.5.7（プレリリース）
+
+- MEGA同期に「MEGA → この端末」「この端末 → MEGA」の片方向同期を追加
+- 双方向同期では既存の設定・履歴・NG・書き込みメモを保持し、不足分だけを追加
+- 自動同期の間隔を分・時間・日で指定可能化。アプリ起動時だけ実行
+- MEGA側のバックアップが前回適用分より新しい場合だけ復元
+- 復元前の変更候補を表示し、表示の省略も設定可能
+- 191 dev／226 dev／241／243 devに共通対応
 
 ### 1.5.6（プレリリース）
 

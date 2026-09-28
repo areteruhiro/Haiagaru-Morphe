@@ -8,6 +8,8 @@ import android.net.Uri;
 public final class HissiMenuCompatibility {
     private static final String CHMATE_WEB_VIEW_ACTIVITY =
             "jp.syoboi.a2chMate.activity.WebViewActivity";
+    private static final String EDDI_ARCHIVE_HOST = "eddiarchive3rd.boy.jp";
+    private static final String EDDI_SCHEME = "haiagaru-eddi";
     private HissiMenuCompatibility() {}
 
     public static String rewriteTemplate(String template) {
@@ -82,6 +84,13 @@ public final class HissiMenuCompatibility {
             return "haiagaru-hissi://hissi.org/read.php/" + url.substring(
                     "//hissi.org/read.php/".length());
         }
+        if (isEddiArchiveUrl(url)) {
+            Uri uri = Uri.parse(url);
+            if ("http".equalsIgnoreCase(uri.getScheme())
+                    || "https".equalsIgnoreCase(uri.getScheme())) {
+                return uri.buildUpon().scheme(EDDI_SCHEME).build().toString();
+            }
+        }
         return url;
     }
 
@@ -89,6 +98,13 @@ public final class HissiMenuCompatibility {
     public static void prepareExternalIntent(Intent intent) {
         if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
         Uri uri = intent.getData();
+        if (isEddiArchiveUri(uri)) {
+            Context context = Haiagaru.applicationContextForExtension();
+            if (context != null) {
+                intent.setClassName(context, HissiMenuActivity.class.getName());
+            }
+            return;
+        }
         if (uri == null || !"hissi.org".equalsIgnoreCase(uri.getHost())
                 || uri.getPath() == null || !uri.getPath().startsWith("/read.php/")) return;
         String scheme = uri.getScheme();
@@ -110,5 +126,24 @@ public final class HissiMenuCompatibility {
             }
             intent.setClassName(context, CHMATE_WEB_VIEW_ACTIVITY);
         }
+    }
+
+    private static boolean isEddiArchiveUrl(String value) {
+        if (value == null) return false;
+        try {
+            return isEddiArchiveUri(Uri.parse(value));
+        } catch (RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean isEddiArchiveUri(Uri uri) {
+        if (uri == null) return false;
+        String scheme = uri.getScheme();
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)
+                && !EDDI_SCHEME.equalsIgnoreCase(scheme)) return false;
+        String host = uri.getHost();
+        return host != null && (EDDI_ARCHIVE_HOST.equalsIgnoreCase(host)
+                || host.toLowerCase(java.util.Locale.ROOT).endsWith("." + EDDI_ARCHIVE_HOST));
     }
 }

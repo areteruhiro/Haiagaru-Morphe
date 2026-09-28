@@ -10,6 +10,7 @@ import android.content.ClipboardManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Base64;
@@ -17,6 +18,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceError;
@@ -44,14 +46,19 @@ public final class HissiMenuActivity extends Activity {
     private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
+    /** Internal scheme used when ChMate hands the Edge archive to this viewer. */
+    private static final String EDDI_SCHEME = "haiagaru-eddi";
+    private static final String EDDI_ARCHIVE_HOST = "eddiarchive3rd.boy.jp";
     private static final String CHECKER_CHOICE_PREFS = "haiagaru_checker_choice";
     private String sourceHost;
     private String sourceBoard;
     private Uri incomingUri;
+    private boolean eddiArchiveMode;
     private String hissiTarget;
     private String kyodemoTarget;
     private boolean currentUsesKyodemo;
     private LinearLayout rootLayout;
+    private TextView threadStartCountView;
     private long lastPostDialogAt;
 
     @Override
@@ -59,23 +66,34 @@ public final class HissiMenuActivity extends Activity {
         super.onCreate(state);
         Uri incoming = getIntent() == null ? null : getIntent().getData();
         incomingUri = incoming;
+        eddiArchiveMode = isEddiArchiveUri(incoming);
         sourceHost = incoming == null ? null : incoming.getQueryParameter("haiagaru_host");
         sourceBoard = incoming == null ? null : boardFromMenuPath(incoming);
         // Read the current setting again here. ChMate may cache an expanded
         // menu template, so the mode embedded in its URL can be stale.
         int checkerMode = Haiagaru.hissiCheckerMode();
-        boolean automaticKyodemo = sourceHost != null && !isHissiHost(sourceHost);
-        currentUsesKyodemo = checkerMode == 2 || (checkerMode == 0 && automaticKyodemo)
-                || (checkerMode == 3 && getSharedPreferences(CHECKER_CHOICE_PREFS,
-                        Context.MODE_PRIVATE).getBoolean(choiceKey(), automaticKyodemo));
-        hissiTarget = toHttpsUrl(incoming);
-        kyodemoTarget = toKyodemoUrl(incoming, sourceHost);
-        if (currentUsesKyodemo && kyodemoTarget == null && hissiTarget != null) {
+        String target;
+        if (eddiArchiveMode) {
+            // The archive is a normal HTML search site. Keep its query intact
+            // so a saved search can be opened directly in ChMate as well.
             currentUsesKyodemo = false;
-        } else if (!currentUsesKyodemo && hissiTarget == null && kyodemoTarget != null) {
-            currentUsesKyodemo = true;
+            hissiTarget = null;
+            kyodemoTarget = null;
+            target = toEddiArchiveUrl(incoming);
+        } else {
+            boolean automaticKyodemo = sourceHost != null && !isHissiHost(sourceHost);
+            currentUsesKyodemo = checkerMode == 2 || (checkerMode == 0 && automaticKyodemo)
+                    || (checkerMode == 3 && getSharedPreferences(CHECKER_CHOICE_PREFS,
+                            Context.MODE_PRIVATE).getBoolean(choiceKey(), automaticKyodemo));
+            hissiTarget = toHttpsUrl(incoming);
+            kyodemoTarget = toKyodemoUrl(incoming, sourceHost);
+            if (currentUsesKyodemo && kyodemoTarget == null && hissiTarget != null) {
+                currentUsesKyodemo = false;
+            } else if (!currentUsesKyodemo && hissiTarget == null && kyodemoTarget != null) {
+                currentUsesKyodemo = true;
+            }
+            target = currentUsesKyodemo ? kyodemoTarget : hissiTarget;
         }
-        String target = currentUsesKyodemo ? kyodemoTarget : hissiTarget;
         if (target == null) {
             TextView error = new TextView(this);
             error.setText(currentUsesKyodemo
@@ -90,18 +108,30 @@ public final class HissiMenuActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         rootLayout = layout;
-        if (Haiagaru.hissiViewerFullscreen()) {
+        boolean fullscreen = Haiagaru.hissiViewerFullscreen();
+        if (fullscreen) {
             getWindow().setFlags(
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN,
                     android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN
             );
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 15+ places activity content behind system bars. Own the
+            // insets here so the viewer toolbar never overlaps the clock.
+            getWindow().setDecorFitsSystemWindows(false);
+            layout.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                view.setPadding(0, bars.top, 0, bars.bottom);
+                return insets;
+            });
         }
         applyViewerTheme(layout, null, Haiagaru.hissiViewerTheme());
         boolean darkViewer = isDarkTheme(Haiagaru.hissiViewerTheme());
         TextView title = new TextView(this);
-        title.setText(currentUsesKyodemo
-                ? "‹   ID検索  ·  Kyodemoビュー"
-                : "‹   必死チェッカー  ·  ChMateビュー");
+        title.setText(eddiArchiveMode
+                ? "‹   エッヂ過去ログ  ·  ChMateビュー"
+                : currentUsesKyodemo
+                        ? "‹   ID検索  ·  Kyodemoビュー"
+                        : "‹   必死チェッカー  ·  ChMateビュー");
         title.setTextColor(darkViewer ? Color.WHITE : Color.rgb(30, 30, 30));
         title.setTextSize(18);
         title.setGravity(Gravity.CENTER_VERTICAL);
@@ -110,11 +140,21 @@ public final class HissiMenuActivity extends Activity {
         layout.addView(title, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 56 * getResources().getDisplayMetrics().densityDpi / 160));
         TextView hint = new TextView(this);
-        hint.setText("IDごとの投稿を見やすく整理。リンクはChMateでそのまま開けます。");
+        hint.setText(eddiArchiveMode
+                ? "エッヂの過去ログを検索できます。スレをタップするとChMateで開きます。"
+                : "IDごとの投稿を見やすく整理。リンクはChMateでそのまま開けます。");
         hint.setTextColor(darkViewer ? Color.rgb(190, 190, 198) : Color.rgb(90, 90, 100));
         hint.setTextSize(12);
         hint.setPadding(24, 0, 24, 8);
         layout.addView(hint, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView countView = new TextView(this);
+        threadStartCountView = countView;
+        countView.setTextSize(12);
+        countView.setTextColor(darkViewer ? Color.rgb(190, 190, 198) : Color.rgb(90, 90, 100));
+        countView.setPadding(24, 0, 24, 8);
+        countView.setVisibility(View.GONE);
+        layout.addView(countView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         WebView webView = new WebView(this);
         webView.addJavascriptInterface(new ViewerBridge(), "HaiagaruBridge");
@@ -139,7 +179,7 @@ public final class HissiMenuActivity extends Activity {
         settings.setDomStorageEnabled(true);
         settings.setLoadsImagesAutomatically(true);
         settings.setSupportMultipleWindows(true);
-        if (currentUsesKyodemo || checkerMode == 3) {
+        if (!eddiArchiveMode && (currentUsesKyodemo || checkerMode == 3)) {
             CookieManager.getInstance().setAcceptCookie(true);
             CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
         }
@@ -181,6 +221,12 @@ public final class HissiMenuActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 applyViewerTheme(rootLayout, view, Haiagaru.hissiViewerTheme());
+                updateThreadStartCount(view);
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap icon) {
+                threadStartCountView.setVisibility(View.GONE);
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -250,7 +296,7 @@ public final class HissiMenuActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 48 * getResources().getDisplayMetrics().densityDpi / 160
         ));
-        if (checkerMode == 3) {
+        if (!eddiArchiveMode && checkerMode == 3) {
             TextView alternate = new TextView(this);
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
@@ -264,6 +310,7 @@ public final class HissiMenuActivity extends Activity {
                     return;
                 }
                 currentUsesKyodemo = nextUsesKyodemo;
+                threadStartCountView.setVisibility(View.GONE);
                 getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                         .edit().putBoolean(choiceKey(), currentUsesKyodemo).apply();
                 alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
@@ -282,6 +329,9 @@ public final class HissiMenuActivity extends Activity {
         layout.addView(webView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         setContentView(layout);
+        if (!fullscreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            layout.requestApplyInsets();
+        }
     }
 
     private LinearLayout createViewerToolbar(final WebView webView) {
@@ -416,6 +466,56 @@ public final class HissiMenuActivity extends Activity {
         public void copyPost(String data) {
             runOnUiThread(() -> showPostCopyDialog(data));
         }
+
+        @JavascriptInterface
+        public void reportThreadStartCount(int count, int postCount) {
+            runOnUiThread(() -> {
+                if (threadStartCountView == null) return;
+                if (postCount <= 0) {
+                    threadStartCountView.setVisibility(View.GONE);
+                    return;
+                }
+                threadStartCountView.setText("スレ立て (" + Math.max(0, count)
+                        + ") · 表示中の日付の検索結果から集計");
+                threadStartCountView.setVisibility(View.VISIBLE);
+            });
+        }
+    }
+
+    /** Counts distinct threads whose first response belongs to the displayed ID. */
+    private void updateThreadStartCount(WebView webView) {
+        String script = "(function(){var h=location.hostname,p=location.pathname;"
+                + "var isHissi=/(^|\\.)hissi\\.org$/.test(h)&&p.indexOf('/read.php/')===0;"
+                + "var isKyodemo=h==='www.kyodemo.net'&&p.indexOf('/sdemo/b/')===0"
+                + "&&new URLSearchParams(location.search).has('hi');if(!isHissi&&!isKyodemo)return;"
+                + "if(isKyodemo){var wanted=new URLSearchParams(location.search).get('hi')||'';"
+                + "var links=[],seenLinks={};document.querySelectorAll('#blist article a[href*=\"/sdemo/r/\"]').forEach(function(a){"
+                + "var u=new URL(a.href,location.href).href;if(!seenLinks[u]){seenLinks[u]=true;links.push(u);}});"
+                + "Promise.all(links.slice(0,50).map(function(u){return fetch(u,{credentials:'same-origin'}).then(function(r){return r.text();})"
+                + ".then(function(t){var d=new DOMParser().parseFromString(t,'text/html'),first=d.querySelector('#rlist .post .clid');"
+                + "return first&&(first.textContent||'').trim()===wanted?1:0;}).catch(function(){return 0;});}))"
+                + ".then(function(values){if(window.HaiagaruBridge)window.HaiagaruBridge.reportThreadStartCount(values.reduce(function(a,b){return a+b;},0),links.length);});return;}"
+                + "function count(){var seen={},posts=0;"
+                + "document.querySelectorAll('#rlist .post,.post,dl').forEach(function(n){"
+                + "if(n.tagName==='DL'&&n.closest('.post'))return;"
+                + "var head=n.querySelector('.r-head,dt');if(!head)return;"
+                + "var numberNode=n.querySelector('.r-head strong');"
+                + "var text=numberNode?(numberNode.textContent||''):(head.innerText||head.textContent||'');"
+                + "var match=numberNode?text.match(/^\\s*#?(\\d+)/):text.match(/(?:^|\\n)\\s*(\\d+)\\s*[:：]/);"
+                + "if(!match)return;posts++;if(match[1]!=='1')return;"
+                + "var link=head.querySelector('a[href*=\"read.cgi\"],a[href*=\"/sdemo/r/\"]');"
+                + "if(!link)link=n.querySelector('a[href*=\"read.cgi\"],a[href*=\"/sdemo/r/\"]');"
+                + "if(!link)return;var path=link.pathname||'';"
+                + "var key=path.match(/\\/(?:test|bbs)\\/read\\.cgi\\/[^/]+\\/(\\d{9,})(?:\\/|$)/)"
+                + "||path.match(/\\/sdemo\\/r\\/[^/]+\\/(\\d{9,})(?:\\/|$)/);"
+                + "if(key)seen[key[1]]=true;});"
+                + "if(window.HaiagaruBridge)window.HaiagaruBridge.reportThreadStartCount(Object.keys(seen).length,posts);"
+                + "}var timer;function schedule(){clearTimeout(timer);timer=setTimeout(count,150);}"
+                + "if(window.haiagaruThreadCountObserver)window.haiagaruThreadCountObserver.disconnect();"
+                + "window.haiagaruThreadCountObserver=new MutationObserver(schedule);"
+                + "window.haiagaruThreadCountObserver.observe(document.body,{childList:true,subtree:true});"
+                + "schedule();})()";
+        webView.evaluateJavascript(script, null);
     }
 
     private void showPostCopyDialog(String data) {
@@ -561,9 +661,13 @@ public final class HissiMenuActivity extends Activity {
             String fg = dark ? "#ebebf0" : "#1e1e1e";
             String link = dark ? "#8ab4f8" : "#1558a6";
             String script = "javascript:(function(){var hissi=location.hostname==='hissi.org'||location.hostname==='www.hissi.org';"
+                    + "var eddi=location.hostname==='eddiarchive3rd.boy.jp'||location.hostname.endsWith('.eddiarchive3rd.boy.jp');"
                     + "if(hissi){document.body.setAttribute('data-haiagaru-hissi','');"
                     + "if(!document.querySelector('meta[name=viewport]')){var m=document.createElement('meta');"
                     + "m.name='viewport';m.content='width=device-width,initial-scale=1';document.head.appendChild(m);}}"
+                    + "if(eddi){document.body.setAttribute('data-haiagaru-eddi','');"
+                    + "if(!document.querySelector('meta[name=viewport]')){var m2=document.createElement('meta');"
+                    + "m2.name='viewport';m2.content='width=device-width,initial-scale=1';document.head.appendChild(m2);}}"
                     + "var s=document.getElementById('haiagaru-viewer-style');"
                     + "if(!s){s=document.createElement('style');s.id='haiagaru-viewer-style';document.head.appendChild(s);}"
                     + "s.textContent='html,body{background:" + bg + " !important;color:" + fg + " !important;"
@@ -597,6 +701,26 @@ public final class HissiMenuActivity extends Activity {
                     + "body[data-haiagaru-hissi] > table:first-of-type td[rowspan]{width:48px !important;}"
                     + "body[data-haiagaru-hissi] > table:first-of-type td[bgcolor]{max-width:38px;}"
                     + "}"
+                    + "body[data-haiagaru-eddi]{box-sizing:border-box;width:100%;max-width:760px;"
+                    + "margin:0 auto;overflow-x:hidden;}"
+                    + "body[data-haiagaru-eddi] #myForm{box-sizing:border-box;width:100% !important;"
+                    + "max-width:720px;margin:10px auto 14px !important;padding:12px !important;"
+                    + "border:1px solid " + (dark ? "#41454c" : "#d8d8de") + " !important;"
+                    + "border-radius:12px;background:" + (dark ? "#24272b" : "#f7f7fa") + " !important;}"
+                    + "body[data-haiagaru-eddi] #myForm input[type=text],body[data-haiagaru-eddi] #myForm input[type=number],"
+                    + "body[data-haiagaru-eddi] #myForm input[type=date],body[data-haiagaru-eddi] #myForm select{"
+                    + "box-sizing:border-box;min-height:38px;padding:7px 9px;margin:3px 0;max-width:100%;"
+                    + "background:" + (dark ? "#1c1c1f" : "#ffffff") + ";color:" + fg + ";"
+                    + "border:1px solid " + (dark ? "#525761" : "#c9c9d0") + ";border-radius:8px;}"
+                    + "body[data-haiagaru-eddi] #searchButton{min-height:40px;padding:7px 18px;"
+                    + "border:0;border-radius:9px;background:" + (dark ? "#477bb5" : "#2d6cdf") + ";"
+                    + "color:#fff;font-weight:700;}"
+                    + "body[data-haiagaru-eddi] a[href*='bbs.eddibb.cc']{display:block;"
+                    + "padding:10px 12px;margin:7px 0;border:1px solid " + (dark ? "#363b43" : "#e1e1e6") + ";"
+                    + "border-radius:10px;background:" + (dark ? "#1c1c1f" : "#f7f7fa") + ";"
+                    + "text-decoration:none;line-height:1.5;}"
+                    + "body[data-haiagaru-eddi] a[href*='bbs.eddibb.cc']:active{background:"
+                    + (dark ? "#30343b" : "#e9eefb") + ";}"
                     + (dark ? "body[data-haiagaru-hissi] table,body[data-haiagaru-hissi] tr,"
                     + "body[data-haiagaru-hissi] td,body[data-haiagaru-hissi] th{background:#24272b !important;"
                     + "color:#ebebf0 !important;border-color:#41454c !important;}"
@@ -660,6 +784,7 @@ public final class HissiMenuActivity extends Activity {
     }
 
     private boolean openThreadInChMate(String url) {
+        if (openEddiThreadInChMate(url)) return true;
         String original = KyodemoRouting.sourceThreadUrl(sourceHost, sourceBoard, url);
         if (original != null) url = original;
         if (!HissiLinkRouting.isThreadUrl(url)) return false;
@@ -670,6 +795,25 @@ public final class HissiMenuActivity extends Activity {
             return true;
         } catch (RuntimeException error) {
             Log.e(LOG_TAG, "Could not open Hissi thread link in ChMate: " + url, error);
+            return false;
+        }
+    }
+
+    /**
+     * The Edge archive links point at bbs.eddibb.cc.  HissiLinkRouting already
+     * knows that host as a board source, so keeping this method small avoids
+     * duplicating its URL grammar while making the intent explicit in this
+     * viewer.
+     */
+    private boolean openEddiThreadInChMate(String url) {
+        if (!eddiArchiveMode || !HissiLinkRouting.isThreadUrl(url)) return false;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.setClass(this, OpenUrlActivity.class);
+            startActivity(intent);
+            return true;
+        } catch (RuntimeException error) {
+            Log.e(LOG_TAG, "Could not open Edge archive thread in ChMate: " + url, error);
             return false;
         }
     }
@@ -689,6 +833,30 @@ public final class HissiMenuActivity extends Activity {
             result.append('?').append(uri.getEncodedQuery());
         }
         return result.toString();
+    }
+
+    private static String toEddiArchiveUrl(Uri uri) {
+        if (!isEddiArchiveUri(uri)) return null;
+        String path = uri.getEncodedPath();
+        if (path == null || path.isEmpty()) path = "/";
+        StringBuilder result = new StringBuilder("https://")
+                .append(EDDI_ARCHIVE_HOST).append(path);
+        if (uri.getEncodedQuery() != null && !uri.getEncodedQuery().isEmpty()) {
+            result.append('?').append(uri.getEncodedQuery());
+        }
+        if (uri.getEncodedFragment() != null && !uri.getEncodedFragment().isEmpty()) {
+            result.append('#').append(uri.getEncodedFragment());
+        }
+        return result.toString();
+    }
+
+    private static boolean isEddiArchiveUri(Uri uri) {
+        if (uri == null || (!EDDI_SCHEME.equalsIgnoreCase(uri.getScheme())
+                && !"http".equalsIgnoreCase(uri.getScheme())
+                && !"https".equalsIgnoreCase(uri.getScheme()))) return false;
+        String host = uri.getHost();
+        return host != null && (EDDI_ARCHIVE_HOST.equalsIgnoreCase(host)
+                || host.toLowerCase(java.util.Locale.ROOT).endsWith("." + EDDI_ARCHIVE_HOST));
     }
 
     private static String toKyodemoUrl(Uri uri, String sourceHost) {
