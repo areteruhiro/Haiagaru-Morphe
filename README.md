@@ -147,7 +147,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版は正式Release `1.5.2`、プレリリース版は `1.5.3` から取得します。
+通常版は正式Release `1.5.2`、プレリリース版は `1.5.4` から取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の公式版（1.5.2）を取得するパッチソースです。
@@ -156,7 +156,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.3）を取得するパッチソースです。
+プレリリース版（1.5.4）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -174,6 +174,13 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 - 検索結果のスレ・レス番号リンクを元の掲示板URLへ戻し、ChMateで開くようにします。
 - Haiagaru設定でID長押しの検索先を「自動」「hissi.org」「Kyodemo」「両方（画面で切替）」から選択できます。
 - ふたばちゃんねるなど、ChMateのIDメニューと元スレURLが対応しない形式は対象外です。まちBBSではサイト間でID形式が異なる場合、結果が一致しないことがあります。
+
+### 1.5.4（プレリリース）
+
+- Hissi／Kyodemo専用ビューアのレス長押しから、レス番号・名前・ID・本文・レスURL・ヘッダー＋本文を個別にコピー可能化
+- 「選択」からレス本文の任意範囲を選択してコピー可能化
+- 外部板投稿時の絵文字結合子・異体字セレクタ補正を追加
+- 191 dev／226 dev／241／243 devに共通対応
 
 ### 1.5.3（プレリリース）
 
