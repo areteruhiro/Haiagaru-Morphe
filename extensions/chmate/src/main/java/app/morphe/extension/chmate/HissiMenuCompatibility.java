@@ -6,6 +6,8 @@ import android.net.Uri;
 
 /** Repairs the stock Hissi host filter before ChMate expands menu templates. */
 public final class HissiMenuCompatibility {
+    private static final String CHMATE_WEB_VIEW_ACTIVITY =
+            "jp.syoboi.a2chMate.activity.WebViewActivity";
     private HissiMenuCompatibility() {}
 
     public static String rewriteTemplate(String template) {
@@ -80,8 +82,7 @@ public final class HissiMenuCompatibility {
 
     /** Keep the checker inside this installed ChMate, even if browsers or old test builds also match. */
     public static void prepareExternalIntent(Intent intent) {
-        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())
-                || !Haiagaru.dedicatedCheckerViewerAvailable()) return;
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
         Uri uri = intent.getData();
         if (uri == null || !"hissi.org".equalsIgnoreCase(uri.getHost())
                 || uri.getPath() == null || !uri.getPath().startsWith("/read.php/")) return;
@@ -90,6 +91,14 @@ public final class HissiMenuCompatibility {
                 && !"haiagaru-hissi".equalsIgnoreCase(scheme)
                 && !"haiagaru-hissis".equalsIgnoreCase(scheme)) return;
         Context context = Haiagaru.applicationContextForExtension();
-        if (context != null) intent.setClassName(context, HissiMenuActivity.class.getName());
+        if (context == null) return;
+        if (Haiagaru.dedicatedCheckerViewerAvailable()) {
+            intent.setClassName(context, HissiMenuActivity.class.getName());
+        } else {
+            // dedicatedCheckerViewer=false deliberately uses ChMate's own
+            // WebViewActivity rather than the Haiagaru viewer. This keeps the
+            // result in the app and avoids handing the checker to a browser.
+            intent.setClassName(context, CHMATE_WEB_VIEW_ACTIVITY);
+        }
     }
 }
