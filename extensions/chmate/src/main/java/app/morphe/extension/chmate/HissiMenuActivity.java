@@ -556,6 +556,7 @@ public final class HissiMenuActivity extends Activity {
                     + "if(!s){s=document.createElement('style');s.id='haiagaru-viewer-style';document.head.appendChild(s);}"
                     + "s.textContent='html,body{background:" + bg + " !important;color:" + fg + " !important;"
                     + "font-family:sans-serif;font-size:16px;line-height:1.55;padding:0 6px;}"
+                    + "#rlist,#rlist *,.post,.post *,dl,dt,dd{color:" + fg + " !important;}"
                     + "a{color:" + link + " !important;}"
                     + "header,.navbar,.footer,.right-column,.d-panel{display:none !important;}"
                     + "#rlist{padding:8px 4px !important;}"
