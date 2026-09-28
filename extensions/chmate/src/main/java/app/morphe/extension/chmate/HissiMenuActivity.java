@@ -291,17 +291,19 @@ public final class HissiMenuActivity extends Activity {
 
         Button copyAll = toolbarButton("全レス");
         copyAll.setOnClickListener(view -> webView.evaluateJavascript(
-                "(function(){var a=document.querySelectorAll('#rlist .clmess,.post .clmess,article .res,article .response,.res-body');"
-                        + "if(a.length){return Array.prototype.map.call(a,function(e){return e.innerText||e.textContent||'';}).join('\\n\\n');}"
-                        + "return document.body ? document.body.innerText : '';})()",
-                value -> copyToClipboard("レス本文", decodeJavascriptString(value))
+                "(function(){var a=document.querySelectorAll('#rlist .clmess,.post .clmess,article .res,article .response,.res-body,dl dd');"
+                        + "if(!a.length)a=document.querySelectorAll('#rlist .post,.post,article,dl');"
+                        + "var out=Array.prototype.map.call(a,function(e){return (e.innerText||e.textContent||'').trim();})"
+                        + ".filter(function(e){return e.length>0;});return out.join('\\n\\n');})()",
+                value -> copyToClipboard("全レス本文", decodeJavascriptString(value))
         ));
         toolbar.addView(copyAll, buttonParams());
 
         Button copyBody = toolbarButton("本文");
         copyBody.setOnClickListener(view -> webView.evaluateJavascript(
-                "(function(){return document.body ? document.body.innerText : '';})()",
-                value -> copyToClipboard("本文", decodeJavascriptString(value))
+                "(function(){var e=document.querySelector('#rlist,main,.content');"
+                        + "return e ? (e.innerText||e.textContent||'') : (document.body ? document.body.innerText : '');})()",
+                value -> copyToClipboard("一覧本文", decodeJavascriptString(value))
         ));
         toolbar.addView(copyBody, buttonParams());
 
