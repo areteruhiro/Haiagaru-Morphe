@@ -672,8 +672,12 @@ public final class HissiMenuActivity extends Activity {
                     + "if(!s){s=document.createElement('style');s.id='haiagaru-viewer-style';document.head.appendChild(s);}"
                     + "s.textContent='html,body{background:" + bg + " !important;color:" + fg + " !important;"
                     + "font-family:sans-serif;font-size:16px;line-height:1.55;padding:0 6px;}"
-                    + "#rlist,#rlist *,.post,.post *,dl,dt,dd{color:" + fg + " !important;}"
-                    + "a{color:" + link + " !important;}"
+                    // Hissi's older pages put the response text directly in table
+                    // cells and <font> nodes rather than under #rlist.  Applying
+                    // the foreground to every descendant prevents an inline
+                    // light-theme color from winning when the viewer is dark.
+                    + "body[data-haiagaru-hissi] *,#rlist,#rlist *,.post,.post *,dl,dt,dd{color:" + fg + " !important;}"
+                    + "body[data-haiagaru-hissi] a,a{color:" + link + " !important;}"
                     + "header,.navbar,.footer,.right-column,.d-panel{display:none !important;}"
                     + "#rlist{padding:8px 4px !important;}"
                     + "#rlist .post,.post{background:" + (dark ? "#1c1c1f" : "#f7f7fa") + ";"
