@@ -605,7 +605,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
-        patchEdgeReporterTitleCopy()
+        patchEdgeReporterTitleCopy(packageMetadata.versionName)
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
@@ -4642,29 +4642,26 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
 }
 
 /** Remove the cached Edge reporter suffix only when a title reaches the clipboard. */
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterTitleCopy() {
-    var patched = 0
-    classDefForEach { classDef ->
-        if (!classDef.type.startsWith("Lo/")) return@classDefForEach
-        val candidates = classDef.methods.filter { method ->
-            method.returnType == "V"
-                && method.parameterTypes.map(CharSequence::toString) ==
-                listOf("Landroid/content/Context;", "Ljava/lang/String;", "Z")
-                && method.implementation?.instructions?.any { instruction ->
-                    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                    reference?.definingClass == "Landroid/content/ClipData;"
-                        && reference.name == "newPlainText"
-                } == true
-        }
-        if (candidates.isEmpty()) return@classDefForEach
-        val owner = mutableClassDefBy(classDef)
-        candidates.forEach { method ->
-            owner.findMutableMethodOf(method).addInstructionsWithLabels(0, """
-                invoke-static/range { p1 .. p1 }, Lapp/morphe/extension/chmate/EdgeReporterHistory;->copyTitle(Ljava/lang/String;)Ljava/lang/String;
-                move-result-object p1
-            """)
-            patched++
-        }
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterTitleCopy(version: String) {
+    val owner = when (version) {
+        "0.8.10.191 dev" -> "Lo/o8ExternalSyntheticLambda0;"
+        "0.8.10.226 dev" -> "Lo/getFlexItemCount;"
+        "0.8.10.241" -> "Lo/RDh41;"
+        "0.8.10.243 dev" -> "Lo/zzbwr;"
+        else -> error("Unsupported clipboard title path: $version")
     }
-    check(patched == 1) { "ChMate clipboard title path changed: $patched matches" }
+    val method = mutableClassDefBy(owner).methods.single { candidate ->
+        candidate.returnType == "V"
+            && candidate.parameterTypes.map(CharSequence::toString) ==
+            listOf("Landroid/content/Context;", "Ljava/lang/String;", "Z")
+            && candidate.implementation?.instructions?.any { instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                reference?.definingClass == "Landroid/content/ClipData;"
+                    && reference.name == "newPlainText"
+            } == true
+    }
+    method.addInstructionsWithLabels(0, """
+        invoke-static/range { p1 .. p1 }, Lapp/morphe/extension/chmate/EdgeReporterHistory;->copyTitle(Ljava/lang/String;)Ljava/lang/String;
+        move-result-object p1
+    """)
 }
