@@ -72,6 +72,15 @@ public final class EdgeReporterHistory {
         return EdgeReporterId.restore(title, prefs.getString(titleKey(title), null));
     }
 
+    /** Keep reporter metadata on screen, but copy the original thread title. */
+    public static String copyTitle(String text) {
+        String suffix = EdgeReporterId.suffix(text);
+        SharedPreferences prefs = cache;
+        if (suffix == null || prefs == null
+                || !suffix.equals(prefs.getString(titleKey(text), null))) return text;
+        return text.substring(0, text.length() - suffix.length()).trim();
+    }
+
     private static String titleKey(String title) {
         String base = title;
         String suffix = EdgeReporterId.suffix(title);
