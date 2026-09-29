@@ -993,7 +993,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalIntentBoundaries() {
     var patched = 0
     classDefForEach { classDef ->
-        if (classDef.type.startsWith("Lapp/morphe/extension/")) return@classDefForEach
+        if (classDef.type.startsWith("Lapp/morphe/extension/")
+            || (!classDef.type.startsWith("Ljp/syoboi/")
+                && !classDef.type.startsWith("Lo/"))) return@classDefForEach
         val mutableClass = mutableClassDefBy(classDef)
         classDef.methods.forEach methodLoop@ { method ->
             val instructions = method.implementation?.instructions?.toList()
@@ -1104,6 +1106,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoTalkDatLoadi
     loader.addInstructionsWithLabels(
         cacheCall + 2,
         """
+            invoke-static {v$urlInfoRegister}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V
             invoke-virtual {v$urlInfoRegister}, Ljp/syoboi/a2chMate/client/BBSUrlInfo;->G()Ljava/lang/String;
             move-result-object v$scratchRegister
             invoke-static {v$scratchRegister, v$cacheFileRegister}, $EXTENSION->loadLiveTalkDat(Ljava/lang/String;Ljava/io/File;)Z
@@ -1364,6 +1367,13 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTalkDatLoad
             && method.parameters[1].toString() == "Z"
             && method.parameters[2].toString() == "Z"
     }
+    // The URL classifier is not the only constructor used by 191.  Normalize
+    // the transport immediately before the downloader reads BBSUrlInfo so a
+    // Talk request cannot fall through to the re-signed type-4 authenticator.
+    method.addInstruction(
+        0,
+        "invoke-static {p1}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V",
+    )
     val instructions = method.implementation?.instructions?.toList()
         ?: error("ChMate legacy thread loader has no implementation")
     val cachePathIndex = instructions.indexOfFirst { instruction ->
@@ -3390,7 +3400,12 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUpload
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
     classDefForEach { classDef ->
-        if (classDef.type.startsWith("Lapp/morphe/extension/chmate/")) {
+        // setText is only patched in ChMate's own obfuscated/application
+        // classes. Walking every bundled AndroidX/ad-SDK class made 226/241/
+        // 243 patching needlessly expensive and touched unrelated widgets.
+        if (classDef.type.startsWith("Lapp/morphe/extension/chmate/")
+            || (!classDef.type.startsWith("Ljp/syoboi/")
+                && !classDef.type.startsWith("Lo/"))) {
             return@classDefForEach
         }
 

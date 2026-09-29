@@ -991,6 +991,45 @@ public final class Haiagaru {
     }
 
     /**
+     * Keeps the 191 downloader on the ordinary DAT reader for Talk URLs.  The
+     * stock type-4 branch invokes a dynamically restored signer; after a
+     * Morphe rebuild that signer is the source of the divide-by-zero trap.
+     * ChMate's URL-info class is app-owned, so use its stable no-arg URL
+     * accessor and the integer transport field reflectively.
+     */
+    public static void normalizeLegacyTalkTransport(Object urlInfo) {
+        if (urlInfo == null) return;
+        try {
+            String url = null;
+            for (String accessor : new String[]{"o", "G", "H", "D"}) {
+                try {
+                    java.lang.reflect.Method method = urlInfo.getClass().getDeclaredMethod(accessor);
+                    if (method.getReturnType() == String.class) {
+                    method.setAccessible(true);
+                    Object value = method.invoke(urlInfo);
+                    if (value instanceof String && ArchivedThreadImporter.isTalkThreadUrl((String) value)) {
+                        url = (String) value;
+                        break;
+                    }
+                    }
+                } catch (NoSuchMethodException ignored) {
+                }
+            }
+            if (url == null) return;
+            for (java.lang.reflect.Field field : urlInfo.getClass().getDeclaredFields()) {
+                if (field.getType() == int.class && (field.getName().equals("g")
+                        || field.getName().equals("type") || field.getName().equals("kind"))) {
+                    field.setAccessible(true);
+                    field.setInt(urlInfo, 1);
+                    return;
+                }
+            }
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to normalize legacy Talk transport", error);
+        }
+    }
+
+    /**
      * Creates a socket on the currently usable cellular network. ChMate's
      * cellular-only client keeps one Network.SocketFactory, but Android 16 can
      * invalidate that Network while a post is being assembled. Resolve the
@@ -1854,26 +1893,49 @@ public final class Haiagaru {
         // disagree, which produces duplicate icons or a broken link.
         String prepared = LEGACY_PREMIUM_BE_URL.matcher(original)
                 .replaceAll("sssp://img.5ch.net/ico/_be$1");
-        return LEGACY_BE_ICO_URL.matcher(prepared)
+        prepared = LEGACY_BE_ICO_URL.matcher(prepared)
                 .replaceAll("sssp://img.5ch.net/ico/$1");
+        return deduplicateBeIcons(prepared);
+    }
+
+    /** Keep one inline icon per BE filename even when the legacy parser visits a row twice. */
+    private static String deduplicateBeIcons(String text) {
+        Matcher matcher = LEGACY_BE_ICO_URL.matcher(text);
+        java.util.HashSet<String> seen = new java.util.HashSet<>();
+        StringBuffer output = null;
+        while (matcher.find()) {
+            String key = matcher.group(1).toLowerCase(Locale.ROOT);
+            if (seen.add(key)) continue;
+            if (output == null) output = new StringBuffer(text.length());
+            matcher.appendReplacement(output, "");
+        }
+        if (output == null) return text;
+        matcher.appendTail(output);
+        return output.toString();
     }
 
     /** Avoid drawing the same legacy BE icon twice when the row already owns its span. */
     public static String prepareLegacyBeParsing(Object renderBuffer, String original) {
-        if (original == null || renderBuffer == null || !LEGACY_PREMIUM_BE_URL.matcher(original).find()) {
+        if (original == null || renderBuffer == null
+                || (!LEGACY_PREMIUM_BE_URL.matcher(original).find()
+                && !LEGACY_BE_ICO_URL.matcher(original).find())) {
             return prepareLegacyBeParsing(original);
         }
-        if (original.length() > 80) return prepareLegacyBeParsing(original);
-        Matcher matcher = LEGACY_PREMIUM_BE_URL.matcher(original);
-        StringBuffer unique = null;
-        while (matcher.find()) {
-            if (!hasMatchingBeIconSpan(renderBuffer, matcher.group(1))) continue;
-            if (unique == null) unique = new StringBuffer(original.length());
-            matcher.appendReplacement(unique, "");
+        String prepared = original;
+        for (Pattern tokenPattern : new Pattern[]{LEGACY_PREMIUM_BE_URL, LEGACY_BE_ICO_URL}) {
+            Matcher matcher = tokenPattern.matcher(prepared);
+            StringBuffer unique = null;
+            while (matcher.find()) {
+                if (!hasMatchingBeIconSpan(renderBuffer, matcher.group(1))) continue;
+                if (unique == null) unique = new StringBuffer(prepared.length());
+                matcher.appendReplacement(unique, "");
+            }
+            if (unique != null) {
+                matcher.appendTail(unique);
+                prepared = unique.toString();
+            }
         }
-        if (unique == null) return prepareLegacyBeParsing(original);
-        matcher.appendTail(unique);
-        return prepareLegacyBeParsing(unique.toString());
+        return prepareLegacyBeParsing(prepared);
     }
 
     private static boolean hasMatchingBeIconSpan(Object renderBuffer, String fileName) {
