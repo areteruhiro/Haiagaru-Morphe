@@ -605,6 +605,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
+        patchEdgeReporterTitleCopy()
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
@@ -4638,4 +4639,32 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
             nop
         """)
     }
+}
+
+/** Remove the cached Edge reporter suffix only when a title reaches the clipboard. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterTitleCopy() {
+    var patched = 0
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Lo/")) return@classDefForEach
+        val candidates = classDef.methods.filter { method ->
+            method.returnType == "V"
+                && method.parameterTypes.map(CharSequence::toString) ==
+                listOf("Landroid/content/Context;", "Ljava/lang/String;", "Z")
+                && method.implementation?.instructions?.any { instruction ->
+                    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                    reference?.definingClass == "Landroid/content/ClipData;"
+                        && reference.name == "newPlainText"
+                } == true
+        }
+        if (candidates.isEmpty()) return@classDefForEach
+        val owner = mutableClassDefBy(classDef)
+        candidates.forEach { method ->
+            owner.findMutableMethodOf(method).addInstructionsWithLabels(0, """
+                invoke-static/range { p1 .. p1 }, Lapp/morphe/extension/chmate/EdgeReporterHistory;->copyTitle(Ljava/lang/String;)Ljava/lang/String;
+                move-result-object p1
+            """)
+            patched++
+        }
+    }
+    check(patched == 1) { "ChMate clipboard title path changed: $patched matches" }
 }
