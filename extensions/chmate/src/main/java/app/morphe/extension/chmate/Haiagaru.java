@@ -171,6 +171,11 @@ public final class Haiagaru {
             "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/ico/([^\\s<\\u0003\\u3000]+)",
             Pattern.CASE_INSENSITIVE
     );
+    /** Any legacy BE image spelling, used only for duplicate detection. */
+    private static final Pattern LEGACY_BE_ANY_URL = Pattern.compile(
+            "(?:(?:(?:sssp|https?):)?//|\\u0003)img\\.5ch\\.(?:io|net)/(?:premium|ico)/([^\\s<\\u0003\\u3000]+)",
+            Pattern.CASE_INSENSITIVE
+    );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
             // Keep the optional response number separate from any trailing
             // path.  ChMate uses this suffix to position the thread at the
@@ -1866,12 +1871,19 @@ public final class Haiagaru {
 
     /** Normalize only the retired BE token before ChMate builds its text and attachment models. */
     public static String normalizeLegacyBeBody(String original) {
-        if (original == null || !original.contains("sssp://img.5ch.net/premium/")) {
+        if (original == null || !LEGACY_BE_ANY_URL.matcher(original).find()) {
             return original;
         }
-        return original.replace(
-                "sssp://img.5ch.net/premium/",
-                "sssp://img.5ch.io/premium/");
+        // The pre-io DAT format appears as sssp://, https://, or a control
+        // character prefix. Normalize the host in all forms before the 226
+        // response model builds its attachment projection.
+        String normalized = original
+                .replace("img.5ch.net/", "img.5ch.io/")
+                .replace("img.5ch.NET/", "img.5ch.io/");
+        // 226 builds both the response model and the attachment projection
+        // from this field. Deduplicate here as well as in the renderer so a
+        // legacy row cannot produce one inline icon plus a second attachment.
+        return deduplicateBeIcons(normalized);
     }
 
     public static String prepareLegacyBeParsing(String original) {
@@ -1900,11 +1912,13 @@ public final class Haiagaru {
 
     /** Keep one inline icon per BE filename even when the legacy parser visits a row twice. */
     private static String deduplicateBeIcons(String text) {
-        Matcher matcher = LEGACY_BE_ICO_URL.matcher(text);
+        Matcher matcher = LEGACY_BE_ANY_URL.matcher(text);
         java.util.HashSet<String> seen = new java.util.HashSet<>();
         StringBuffer output = null;
         while (matcher.find()) {
             String key = matcher.group(1).toLowerCase(Locale.ROOT);
+            if (key.startsWith("_be_")) key = key.substring(4);
+            else if (key.startsWith("_be")) key = key.substring(3);
             if (seen.add(key)) continue;
             if (output == null) output = new StringBuffer(text.length());
             matcher.appendReplacement(output, "");
