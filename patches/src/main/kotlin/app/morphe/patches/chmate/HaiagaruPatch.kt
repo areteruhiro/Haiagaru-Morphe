@@ -1371,9 +1371,11 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTalkDatLoad
     // The URL classifier is not the only constructor used by 191.  Normalize
     // the transport immediately before the downloader reads BBSUrlInfo so a
     // Talk request cannot fall through to the re-signed type-4 authenticator.
+    // p1 lives above v15 in this large method. The non-range invoke cannot
+    // encode it, so keep the existing parameter register via invoke-range.
     method.addInstruction(
         0,
-        "invoke-static {p1}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V",
+        "invoke-static/range {p1 .. p1}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V",
     )
     val instructions = method.implementation?.instructions?.toList()
         ?: error("ChMate legacy thread loader has no implementation")
