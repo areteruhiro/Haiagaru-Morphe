@@ -333,6 +333,7 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
     profile: ChMateProfile,
     versionName: String,
 ) {
+    val legacyToolbar = versionName == "0.8.10.191 dev"
     val toolbarModelType = if (versionName == "0.8.10.191 dev") {
         "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
     } else {
@@ -366,6 +367,25 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
     }
     homeToolbarMethods.forEach { method ->
         mutableClassDefBy(profile.homeFragmentClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
+    // A board's thread list owns a separate toolbar model.  Patching the
+    // home model alone makes the choice disappear as soon as a board opens.
+    val threadListClass = when (versionName) {
+        "0.8.10.191 dev" -> "Lo/r8lambdaGCnF6WpW_bFarRe7yCX2B6KzQ;"
+        "0.8.10.226 dev" -> "Lo/Yhp5;"
+        else -> "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListFragment;"
+    }
+    val threadToolbarMethods = mutableClassDefBy(threadListClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null &&
+            (if (legacyToolbar || versionName == "0.8.10.226 dev") method.parameters.isEmpty() else
+                method.parameters.map { it.type } == listOf(threadListClass))
+    }
+    if (threadToolbarMethods.isEmpty()) {
+        throw PatchException("板のスレ一覧ツールバーを特定できません: $versionName")
+    }
+    threadToolbarMethods.forEach { method ->
+        mutableClassDefBy(threadListClass).findMutableMethodOf(method).wrapModelReturns()
     }
 
     // In 0.8.10.191 this separate model catalog powers the toolbar customization
@@ -416,6 +436,30 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
                 return v$resultRegister
             """.trimIndent(),
             ExternalLabel("haiagaru_edge_toolbar_continue", originalFirstInstruction),
+        )
+    }
+
+    val threadClickMethods = mutableClassDefBy(threadListClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation?.instructions?.isNotEmpty() == true &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (threadClickMethods.isEmpty()) {
+        throw PatchException("板のスレ一覧ツールバー操作を特定できません: $versionName")
+    }
+    threadClickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(threadListClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_thread_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_thread_toolbar_continue", originalFirstInstruction),
         )
     }
 }
