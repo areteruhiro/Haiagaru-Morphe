@@ -106,6 +106,7 @@ public final class Haiagaru {
             new Handler(Looper.getMainLooper());
     private static final Map<Activity, PopupWindow> SETTINGS_BUTTON_POPUPS =
             new WeakHashMap<>();
+    private static final int EDDI_ARCHIVE_TOOLBAR_ID = 0x7e000001;
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String LEGACY_TALK_PREFS_NAME = "talk";
@@ -129,6 +130,7 @@ public final class Haiagaru {
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
     private static final String HISSI_VIEWER_FULLSCREEN_KEY = "hissiViewerFullscreen";
+    private static final String KYODEMO_ENHANCED_VIEWER_KEY = "kyodemoEnhancedViewer";
     private static final int DEFAULT_NG_REGISTRATION_LIMIT = 300;
     private static final int MAX_NG_REGISTRATION_LIMIT = 100_000;
     /** ChMate's own bounded post-history store (postDataList.json). */
@@ -407,6 +409,134 @@ public final class Haiagaru {
         initializeApplicationContext(application);
         EmojiFontFallback.register(application);
         HaiagaruMegaSync.maybeBackupOnStartup(application);
+    }
+
+    /** Adds the archive action to ChMate's own home-toolbar customization model. */
+    public static Object addEdgeArchiveToolbarChoice(Object toolbarModel) {
+        if (toolbarModel == null) return null;
+        try {
+            Context context = applicationContext;
+            if (context == null) return toolbarModel;
+            int titleId = context.getResources().getIdentifier(
+                    "search_go", "string", "android");
+            if (titleId == 0) return toolbarModel;
+            if (toolbarModel instanceof List) {
+                List<?> source = (List<?>) toolbarModel;
+                if (containsToolbarChoice(source)) return toolbarModel;
+                @SuppressWarnings("unchecked")
+                List<Object> buttons = (List<Object>) source;
+                Class<?> itemClass = Class.forName("o.r8lambda98incQ33GAiiY2082BMi9yDa3l0");
+                Object item = itemClass.getConstructor(int.class, int.class, int.class,
+                        int.class, boolean.class).newInstance(
+                        EDDI_ARCHIVE_TOOLBAR_ID, 0, titleId, titleId, false);
+                buttons.add(item);
+                return toolbarModel;
+            }
+
+            Field listField = null;
+            for (Field field : toolbarModel.getClass().getDeclaredFields()) {
+                if (List.class.isAssignableFrom(field.getType())) {
+                    listField = field;
+                    break;
+                }
+            }
+            if (listField == null) return toolbarModel;
+            listField.setAccessible(true);
+            List<?> original = (List<?>) listField.get(toolbarModel);
+            if (original == null || containsToolbarChoice(original)) return toolbarModel;
+            ArrayList<Object> buttons = new ArrayList<>(original);
+            ClassLoader loader = toolbarModel.getClass().getClassLoader();
+            Class<?> specClass = Class.forName(
+                    "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
+            Object item = specClass.getConstructor(int.class, int.class, int.class,
+                    int.class, boolean.class).newInstance(
+                    EDDI_ARCHIVE_TOOLBAR_ID, 0, titleId, titleId, false);
+            buttons.add(item);
+
+            ArrayList<Field> modelFields = new ArrayList<>();
+            for (Field field : toolbarModel.getClass().getDeclaredFields()) {
+                if (java.lang.reflect.Modifier.isStatic(field.getModifiers())
+                        || field == listField) continue;
+                field.setAccessible(true);
+                modelFields.add(field);
+            }
+            java.lang.reflect.Constructor<?> selected = null;
+            for (java.lang.reflect.Constructor<?> constructor
+                    : toolbarModel.getClass().getDeclaredConstructors()) {
+                Class<?>[] parameterTypes = constructor.getParameterTypes();
+                if (parameterTypes.length == modelFields.size() + 1
+                        && List.class.isAssignableFrom(parameterTypes[parameterTypes.length - 1])
+                        && parameterTypes[0] == String.class) {
+                    selected = constructor;
+                    break;
+                }
+            }
+            if (selected == null) return toolbarModel;
+            ArrayList<Object> constructorArgs = new ArrayList<>();
+            Class<?>[] parameterTypes = selected.getParameterTypes();
+            Field titleField = null;
+            for (Field field : modelFields) {
+                if (field.getType() == String.class) {
+                    titleField = field;
+                    break;
+                }
+            }
+            if (titleField == null) return toolbarModel;
+            constructorArgs.add(titleField.get(toolbarModel));
+            ArrayList<Field> remainingFields = new ArrayList<>(modelFields);
+            remainingFields.remove(titleField);
+            for (int parameterIndex = 1; parameterIndex < parameterTypes.length - 1;
+                    parameterIndex++) {
+                Field match = null;
+                for (Field field : remainingFields) {
+                    if (parameterTypes[parameterIndex].isAssignableFrom(field.getType())
+                            || field.getType().isAssignableFrom(parameterTypes[parameterIndex])) {
+                        match = field;
+                        break;
+                    }
+                }
+                if (match == null) return toolbarModel;
+                constructorArgs.add(match.get(toolbarModel));
+                remainingFields.remove(match);
+            }
+            constructorArgs.add(buttons);
+            selected.setAccessible(true);
+            return selected.newInstance(constructorArgs.toArray());
+        } catch (Throwable error) {
+            Log.w(LOG_TAG, "Unable to add Edge archive toolbar choice", error);
+            return toolbarModel;
+        }
+    }
+
+    private static boolean containsToolbarChoice(List<?> buttons) {
+        for (Object button : buttons) {
+            if (button == null) continue;
+            for (Field id : button.getClass().getDeclaredFields()) {
+                if (id.getType() != int.class) continue;
+                try {
+                    id.setAccessible(true);
+                    if (id.getInt(button) == EDDI_ARCHIVE_TOOLBAR_ID) return true;
+                } catch (Throwable ignored) { }
+            }
+        }
+        return false;
+    }
+
+    /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
+    public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if (itemId != EDDI_ARCHIVE_TOOLBAR_ID || fragment == null) return false;
+        try {
+            Object activity = fragment.getClass().getMethod("getActivity").invoke(fragment);
+            if (!(activity instanceof Activity)) return false;
+            Intent intent = new Intent((Activity) activity, HissiMenuActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            ((Activity) activity).startActivity(intent);
+            return true;
+        } catch (Throwable error) {
+            Log.e(LOG_TAG, "Unable to open Edge archive search from ChMate toolbar", error);
+            return false;
+        }
     }
 
     /** Applies the bundled emoji fallback while preserving the original text. */
@@ -2023,6 +2153,47 @@ public final class Haiagaru {
     }
 
     /**
+     * The pre-io renderer calculates an image span from the expanded sssp URL,
+     * but its displayed text still contains the shorter DAT token. A span that
+     * reaches the following newline is drawn on both lines as two BE icons.
+     */
+    public static int correctLegacyBeSpanEnd(
+            CharSequence text, Object span, int start, int end
+    ) {
+        if (text == null || span == null || start < 0 || start >= text.length()) return end;
+        int candidate = Math.min(end, text.length());
+        int newline = -1;
+        for (int i = start; i < candidate; i++) {
+            if (text.charAt(i) == '\n') {
+                newline = i;
+                break;
+            }
+        }
+        if (newline < 0 && end <= text.length()) return end;
+
+        String className = span.getClass().getName();
+        String urlField;
+        if ("o.oa".equals(className)) urlField = "e";
+        else if ("o.getFlexDirection".equals(className)) urlField = "b";
+        else return end;
+        try {
+            Field field = span.getClass().getDeclaredField(urlField);
+            field.setAccessible(true);
+            Object value = field.get(span);
+            if (!(value instanceof String)) return end;
+            String url = ((String) value).toLowerCase(Locale.ROOT);
+            if (!url.contains("img.5ch.io/premium/")
+                    && !url.contains("img.5ch.net/premium/")
+                    && !url.contains("img.5ch.io/ico/_be")
+                    && !url.contains("img.5ch.net/ico/_be")) return end;
+            int corrected = newline >= 0 ? newline : candidate;
+            return corrected > start ? corrected : end;
+        } catch (ReflectiveOperationException | SecurityException ignored) {
+            return end;
+        }
+    }
+
+    /**
      * Reconciles the legacy parser's URL offsets with the final rendered text.
      * ChMate 191 can remove one display character before link parsing completes,
      * leaving every later URL span shifted right and dropping a URL at end-of-text.
@@ -2547,7 +2718,8 @@ public final class Haiagaru {
                 new String[]{
                         text("端末設定に合わせる", "Follow system"),
                         text("ダーク", "Dark"),
-                        text("AMOLEDブラック", "AMOLED black")
+                        text("AMOLEDブラック", "AMOLED black"),
+                        text("ライト", "Light")
                 },
                 preferences.getInt(HISSI_VIEWER_THEME_KEY, 0)
         );
@@ -2563,6 +2735,12 @@ public final class Haiagaru {
                 activity,
                 text("必死チェッカーを全画面で表示", "Fullscreen checker viewer"),
                 preferences.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false)
+        );
+        Switch kyodemoEnhancedViewer = addSwitch(
+                layout,
+                activity,
+                text("KyodemoのID/ﾜｯﾁｮｲ検索を専用表示", "Enhanced Kyodemo ID/Wacchoi viewer"),
+                preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
         );
         Switch edgeReporterId = addSwitch(
                 layout,
@@ -2727,6 +2905,10 @@ public final class Haiagaru {
         }
         final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
         addOptionalSettingsSection(
+                "Edge archive search",
+                () -> addEddiArchiveSearchControl(activity, layout)
+        );
+        addOptionalSettingsSection(
                 "archived-thread preset",
                 () -> addArchiveSearchPresetControl(activity, layout)
         );
@@ -2834,6 +3016,7 @@ public final class Haiagaru {
                                     Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
                             ])
                             .putBoolean(HISSI_VIEWER_FULLSCREEN_KEY, hissiViewerFullscreen.isChecked())
+                            .putBoolean(KYODEMO_ENHANCED_VIEWER_KEY, kyodemoEnhancedViewer.isChecked())
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
                             .putBoolean("forceHttps", forceHttps.isChecked())
                             .putBoolean("automaticDat", automaticDat.isChecked())
@@ -2912,6 +3095,19 @@ public final class Haiagaru {
         reset.setOnClickListener(view -> editor.setText(DEFAULT_ARCHIVE_ROUTE_TEMPLATES));
         layout.addView(reset, rowParams(activity));
         return editor;
+    }
+
+    private static void addEddiArchiveSearchControl(Activity activity, LinearLayout layout) {
+        Button button = new Button(activity);
+        button.setAllCaps(false);
+        button.setText(text("エッヂの過去ログを検索", "Search archived Edge threads"));
+        button.setOnClickListener(view -> {
+            Intent intent = new Intent(activity, HissiMenuActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            activity.startActivity(intent);
+        });
+        layout.addView(button, rowParams(activity));
     }
 
     private static void addArchiveSearchPresetControl(Activity activity, LinearLayout layout) {
@@ -3552,13 +3748,13 @@ public final class Haiagaru {
         SharedPreferences prefs = preferencesOrNull();
         if (prefs == null) return 0;
         int value = prefs.getInt(HISSI_VIEWER_THEME_KEY, 0);
-        return value < 0 || value > 2 ? 0 : value;
+        return value < 0 || value > 3 ? 0 : value;
     }
 
     public static void setHissiViewerTheme(int value) {
         SharedPreferences prefs = preferencesOrNull();
         if (prefs != null) prefs.edit().putInt(HISSI_VIEWER_THEME_KEY,
-                Math.max(0, Math.min(2, value))).apply();
+                Math.max(0, Math.min(3, value))).apply();
     }
 
     public static int hissiViewerTextZoom() {
@@ -3577,6 +3773,11 @@ public final class Haiagaru {
     public static boolean hissiViewerFullscreen() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false);
+    }
+
+    public static boolean kyodemoEnhancedViewer() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false);
     }
 
     private static int viewerTextZoomIndex(int zoom) {

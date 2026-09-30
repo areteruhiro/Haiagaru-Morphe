@@ -35,12 +35,18 @@ https://github.com/areteruhiro/Haiagaru
 IDを長押ししたときの検索先は、Haiagaru設定の「ID長押しの必死チェッカー」で選べます。
 自動では5ch系の板にhissi.org、対応する外部板にKyodemoを使います。片方への固定や、
 検索画面で切り替える設定も選べます。Kyodemoの検索結果は元の板・スレURLへ戻してChMateで開きます。
+KyodemoへのID検索は、同サイトの「ID/ﾜｯﾁｮｲ」検索経路を使用します。専用ビュワーの
+「ID/ﾜｯﾁｮｲ」ボタンから任意のID・ﾜｯﾁｮｲも検索できます。Haiagaru設定の
+「KyodemoのID/ﾜｯﾁｮｲ検索を専用表示」をONにすると、検索結果をレス／スレ／名前の
+タブで切り替え、レスのコピー操作を利用できます。初期値はOFFで、従来の表示を維持します。
+Kyodemoはハイフン付きﾜｯﾁｮｲ全文を受け付けないため、その形式では前半4文字で検索します。
+同じ前半を持つ別の投稿が結果に混ざることがあります。
 
 パッチ適用時のオプション「必死チェッカー専用ビュワー」は初期値ONです。OFFにすると、
 必死チェッカー／Kyodemoの専用画面へのURL変換を省き、ChMateが元から使う動作を維持します。
 エッヂ過去ログの専用画面はこの設定とは独立して利用できます。
 ONの場合はhissi.orgとKyodemoの結果をChMate内で表示し、URLコピー、表示中テキストのコピー、
-日付選択、文字サイズ変更、端末設定／ダーク／AMOLEDブラックの表示を利用できます。
+日付選択、文字サイズ変更、端末設定／ライト／ダーク／AMOLEDブラックの表示を利用できます。
 操作ボタンは丸みのあるチップ型にまとめ、日付・文字サイズ・配色を画面上からすぐ変更できます。
 「全レスをコピー」は表示ページのレス本文をまとめてクリップボードへ保存します。
 各レスの長押しでは、レス番号・名前・ID・本文・レスのURL・ヘッダー＋本文を個別にコピーできます。
@@ -51,13 +57,16 @@ ONの場合はhissi.orgとKyodemoの結果をChMate内で表示し、URLコピ�
 検索先ごとに必要な通信のため、hissi.orgはHTTPを使う場合があります。これは専用ビュワーを
 有効にしたAPKのみに平文通信を許可する設定です。KyodemoはHTTPSで開きます。
 
-エッヂの過去ログは、\`https://eddiarchive3rd.boy.jp/\` をChMate内の同じ専用ビュワーで開けます。
-キーワード、AND/OR、除外語、曖昧検索、レス数、並び順、期間を指定して検索でき、結果の
-\`bbs.eddibb.cc\` スレッドをタップするとChMateのスレ画面へ戻ります。検索サイトを外部ブラウザへ
-渡さず、ダーク／ライト配色、文字サイズ、広告要素の除去もID検索ビューと共通で適用します。
-エッヂ過去ログのURLを「アプリで開く」から起動した場合も、この画面へ直接入ります。
+エッヂの過去ログは、Haiagaru設定の「エッヂの過去ログを検索」または
+\`https://eddiarchive3rd.boy.jp/\` を「アプリで開く」から起動できます。
+また、ChMate標準のホームツールバー設定に「検索」項目を追加します。
+必要な場合はツールバー編集画面から有効化・配置してください（初期状態では追加項目は無効で、押すとエッヂ過去ログ検索が開きます）。
+ChMate内の検索画面でキーワード、AND/OR、除外語、曖昧検索、レス数、並び順、期間を指定できます。
+検索結果のスレをタップすると、元の \`bbs.eddibb.cc\` スレをChMateで開きます。
+検索結果は過去ログサイトから取得します。サイトの形式が変わって結果を表示できなくなった場合は、
+「元サイトの表示に切り替える」から従来のWeb表示を利用できます。
 
-この画面はAndroid標準のActivityとWebViewで組み直しており、参照先アプリのAPKやソースコードは
+ID検索ビューはAndroid標準のActivityとWebView、エッヂ検索はネイティブUIで構成しており、参照先アプリのAPKやソースコードは
 同梱していません。画面機能の要件整理には[Desperate-checker-droidの公開説明](https://github.com/Kdroidwin/Desperate-checker-droid-by-kdroidwin)
 を参照しています。
 * ID長押しの検索先をhissi.org／Kyodemoから選択し、ChMate内の専用ビュワーで開く（4対応版共通）
@@ -178,7 +187,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URL・プレリリースURLともに、現在の配布版 `1.5.7` を取得します（1.5.7はプレリリースです）。
+通常版URLは `1.5.7`、プレリリースURLは `1.5.8` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の配布版（1.5.7）を取得するパッチソースです。
@@ -187,7 +196,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.7）を取得するパッチソースです。
+プレリリース版（1.5.8）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -199,13 +208,15 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 
 ## 更新履歴
 
-### 開発中（未リリース）
+### 1.5.8（プレリリース）
 
-- エッヂ過去ログ（\`eddiarchive3rd.boy.jp\`）をChMate内の専用ビューアで検索・閲覧し、検索結果から元のエッヂスレをChMateで開けるようにしました。
-- 5ch以外のID検索をKyodemoの板別検索へ接続。いつもch、BBSPINK、したらば、まちBBS、VIPサービス、おーぷん2ch、エッヂ、やる夫雑談所など、元URLから板IDを特定できる掲示板に対応します。
-- 検索結果のスレ・レス番号リンクを元の掲示板URLへ戻し、ChMateで開くようにします。
-- Haiagaru設定でID長押しの検索先を「自動」「hissi.org」「Kyodemo」「両方（画面で切替）」から選択できます。
-- ふたばちゃんねるなど、ChMateのIDメニューと元スレURLが対応しない形式は対象外です。まちBBSではサイト間でID形式が異なる場合、結果が一致しないことがあります。
+- エッヂ過去ログをChMate内の検索画面から探せるようにし、ホームツールバーの編集項目にも追加
+- KyodemoのID／ﾜｯﾁｮｲ検索画面を追加（設定で有効化）。検索結果のレス・スレURLを元の掲示板で開く動作も改善
+- Hissiの暗色テーマで本文を読みやすくし、AA表示用フォントを追加
+- 191 dev／226 devの古いBEアイコンが改行をまたいで二重に描かれる問題を修正
+- Talk通信経路とエッヂの記者ID付きスレタイをコピーした際の表示を修正
+- パッチ時の全クラス探索を対象クラス指定に変更し、特に226 dev／241／243 devの適用負荷を軽減
+- 191 dev／226 dev／241／243 devへのパッチ適用を確認
 
 ### 1.5.7（プレリリース）
 

@@ -329,12 +329,105 @@ private fun profileFor(versionName: String) = when (versionName) {
     else -> error("Unsupported ChMate version: $versionName")
 }
 
+private fun BytecodePatchContext.patchEdgeArchiveToolbar(
+    profile: ChMateProfile,
+    versionName: String,
+) {
+    val toolbarModelType = if (versionName == "0.8.10.191 dev") {
+        "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
+    } else {
+        "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
+    }
+
+    fun MutableMethod.wrapModelReturns() {
+        val indexes = implementation?.instructions
+            ?.withIndex()
+            ?.filter { it.value.opcode == Opcode.RETURN_OBJECT }
+            ?.map { it.index }
+            .orEmpty()
+        for (index in indexes.asReversed()) {
+            val register = (implementation!!.instructions[index] as OneRegisterInstruction).registerA
+            addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->addEdgeArchiveToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
+                    move-result-object v$register
+                check-cast v$register, $toolbarModelType
+                """.trimIndent(),
+            )
+        }
+    }
+
+    val homeToolbarMethods = mutableClassDefBy(profile.homeFragmentClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null
+    }
+    if (homeToolbarMethods.isEmpty()) {
+        throw PatchException("ホームツールバーの生成メソッドを特定できません: $versionName")
+    }
+    homeToolbarMethods.forEach { method ->
+        mutableClassDefBy(profile.homeFragmentClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
+    // In 0.8.10.191 this separate model catalog powers the toolbar customization
+    // screen; patch it as well as the default home model so the new choice is
+    // available for users to enable without changing the current toolbar.
+    if (versionName == "0.8.10.191 dev") {
+        val catalogDescriptor = "Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;"
+        val catalogMethods = mutableClassDefBy(catalogDescriptor).methods.filter { method ->
+            method.returnType == toolbarModelType && method.implementation != null
+        }
+        if (catalogMethods.isEmpty()) {
+            throw PatchException("ツールバー項目一覧の生成メソッドを特定できません: $versionName")
+        }
+        catalogMethods.forEach { method ->
+            mutableClassDefBy(catalogDescriptor).findMutableMethodOf(method).wrapModelReturns()
+        }
+    }
+
+    val dispatcherClass = if (versionName == "0.8.10.191 dev") {
+        "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
+    } else {
+        profile.homeFragmentClass
+    }
+    val clickMethods = mutableClassDefBy(dispatcherClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation != null &&
+            method.implementation!!.instructions.isNotEmpty() &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (clickMethods.isEmpty()) {
+        val candidates = mutableClassDefBy(dispatcherClass).methods
+            .filter { it.returnType == "Z" && it.parameters.map { parameter -> parameter.type } ==
+                listOf("I", "Ljava/lang/Object;") }
+        throw PatchException(
+            "ホームツールバーのクリック処理を特定できません: $versionName; candidates=$candidates",
+        )
+    }
+    clickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(dispatcherClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_toolbar_continue", originalFirstInstruction),
+        )
+    }
+}
+
 private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
     extendWith("extensions/chmate.mpe")
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
+
+        patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
 
         patchNgRegistrationLimit()
 
@@ -535,6 +628,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 )
                 patchBbsMenuUrl("a", "Lo/a7a\$read;")
                 patchLegacy5chIoCompatibility()
+                patchLegacyBeSpanBoundary("Lo/o8;")
                 patchLegacyTalkDatLoading()
                 patchLegacyTalkAuthIntegrity()
                 patchLegacyCellularNetworkSelection()
@@ -561,6 +655,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                     parserClass = "Lo/getMaxLine;",
                     drawableClass = "Lo/getFlexDirection;",
                 )
+                patchLegacyBeSpanBoundary("Lo/getFlexLinesInternal;")
                 patchPreIoUrlSpanAlignment("Lo/getMaxLine;")
                 patchPreIoDomainCompatibility(
                     parseMethodName = "c",
@@ -1909,6 +2004,16 @@ val haiagaruPatch = resourcePatch(
             "mode=$requestedEmojiMode\n",
             Charsets.UTF_8,
         )
+        if (dedicatedViewerEnabled) {
+            val monaFont = get("assets").resolve("haiagaru/MonaLite.ttf")
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+                "/chmate/fonts/MonaLite.ttf",
+            )) {
+                "MonaLite font is missing from the Haiagaru Android patch bundle"
+            }.use { source ->
+                monaFont.outputStream().use(source::copyTo)
+            }
+        }
 
         val customUrls = parseAdditionalOpenUrls(additionalOpenUrls.value.orEmpty())
         document("AndroidManifest.xml").use { document ->
@@ -3560,6 +3665,34 @@ private fun MutableMethod.filterBeAttachmentArrayReturns() {
             """,
         )
     }
+}
+
+/** Keep a legacy BE image span on the DAT-token line, not across the next newline. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeSpanBoundary(
+    bufferClass: String,
+) {
+    val spanBuilder = mutableClassDefBy(bufferClass).methods.single { method ->
+        method.returnType == "Landroid/text/SpannableString;"
+            && method.parameters.isEmpty()
+    }
+    val spanSite = spanBuilder.implementation?.instructions
+        ?.mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass == "Landroid/text/SpannableString;"
+                && reference.name == "setSpan"
+                && reference.parameterTypes.map(CharSequence::toString) ==
+                listOf("Ljava/lang/Object;", "I", "I", "I")
+            ) index to (instruction as FiveRegisterInstruction) else null
+        }?.singleOrNull() ?: error("BE span builder was not found: $bufferClass")
+    val (index, invocation) = spanSite
+    spanBuilder.addInstructionsWithLabels(
+        index,
+        """
+            invoke-static { v${invocation.registerC}, v${invocation.registerD}, v${invocation.registerE}, v${invocation.registerF} }, $EXTENSION->correctLegacyBeSpanEnd(Ljava/lang/CharSequence;Ljava/lang/Object;II)I
+            move-result v${invocation.registerF}
+        """,
+    )
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoBeRendering(

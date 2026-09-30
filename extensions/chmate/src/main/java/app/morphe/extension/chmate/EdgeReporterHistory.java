@@ -75,9 +75,13 @@ public final class EdgeReporterHistory {
     /** Keep reporter metadata on screen, but copy the original thread title. */
     public static String copyTitle(String text) {
         String suffix = EdgeReporterId.suffix(text);
+        if (suffix == null || text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) return text;
         SharedPreferences prefs = cache;
-        if (suffix == null || prefs == null
-                || !suffix.equals(prefs.getString(titleKey(text), null))) return text;
+        String stored = prefs == null ? null : prefs.getString(titleKey(text), null);
+        // A title copied from a freshly fetched subject may not have reached the
+        // history cache yet.  Its single-line reporter suffix is still display
+        // metadata, so remove it at the clipboard boundary too.
+        if (stored != null && !suffix.equals(stored)) return text;
         return text.substring(0, text.length() - suffix.length()).trim();
     }
 
