@@ -1968,6 +1968,17 @@ val haiagaruPatch = resourcePatch(
     )
 
     execute {
+        // Mega constructs Ktor's default client before we can replace it.
+        // Preserve the ServiceLoader entry in the host APK so initialization
+        // can select the bundled OkHttp engine on Android.
+        val ktorEngineService = get("META-INF").resolve(
+            "services/io.ktor.client.HttpClientEngineContainer",
+        )
+        ktorEngineService.parentFile.mkdirs()
+        ktorEngineService.writeText(
+            "io.ktor.client.engine.okhttp.OkHttpEngineContainer\n",
+            Charsets.UTF_8,
+        )
         val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
         bundledEmojiFont.parentFile.mkdirs()
         val requestedEmojiMode = emojiMode.value.orEmpty().trim().lowercase(Locale.ROOT)
