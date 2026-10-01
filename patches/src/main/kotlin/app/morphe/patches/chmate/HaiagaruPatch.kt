@@ -2191,10 +2191,9 @@ val haiagaruPatch = resourcePatch(
             iconTarget.parentFile.mkdirs()
             iconSource.copyTo(iconTarget, overwrite = true)
         }
-        // Mega's constructor creates Ktor's default HttpClient before the
-        // extension can replace it with the explicit OkHttp client. Android
-        // integrations contain DEX classes but do not carry dependency JAR
-        // service files, so retain the engine registration in the host APK.
+        // Mega constructs Ktor's default client before we can replace it.
+        // Preserve the ServiceLoader entry in the host APK so initialization
+        // can select the bundled OkHttp engine on Android.
         val ktorEngineService = get("META-INF").resolve(
             "services/io.ktor.client.HttpClientEngineContainer",
         )
