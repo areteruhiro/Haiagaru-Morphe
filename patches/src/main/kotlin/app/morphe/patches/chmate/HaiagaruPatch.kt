@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.resource.PublicXmlManager
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
@@ -100,6 +101,10 @@ internal val chMateCompatibility = Compatibility(
             minSdk = 23
         ),
         AppTarget(
+            version = "0.8.10.242 dev",
+            minSdk = 23
+        ),
+        AppTarget(
             version = "0.8.10.243 dev",
             minSdk = 24
         )
@@ -167,6 +172,14 @@ private object EdgeThreadMenu191Fingerprint : Fingerprint(
 private object EdgeSubjectUrl241Fingerprint : Fingerprint(
     definingClass = "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
     name = "B",
+    returnType = "Ljava/lang/String;",
+    parameters = emptyList(),
+    strings = listOf("/subject.txt")
+)
+
+private object EdgeSubjectUrl242Fingerprint : Fingerprint(
+    definingClass = "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+    name = "C",
     returnType = "Ljava/lang/String;",
     parameters = emptyList(),
     strings = listOf("/subject.txt")
@@ -299,6 +312,33 @@ private fun profileFor(versionName: String) = when (versionName) {
         homeAdClass = "Lo/setUseHandlerThreadForCallbacks;",
         homeAdLoadMethod = "e",
     )
+    "0.8.10.242 dev" -> ChMateProfile(
+        providerClass = "Lo/isConnected;",
+        providerStartupTrapClass = null,
+        providerStartupDelegateField = "",
+        providerStartupDelegateType = "",
+        providerStartupDelegateMethod = "",
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
+        cookieClearMethod = "e",
+        signatureClass = "Lo/TTRewardExpressVideoActivity${'$'}5;",
+        signatureMethod = "c",
+        signatureDelegateField = "a",
+        signatureDelegateType = "Lo/TTRewardExpressVideoActivity${'$'}read;",
+        signatureDelegateMethod = "c",
+        signatureSuperType = "Lo/TTRewardExpressVideoActivity${'$'}RemoteActionCompatParcelizer;",
+        patchSignatureWrapper = true,
+        signatureDirectWrapperBypass = true,
+        viewModelFactoryClass = "Lo/onInterstitialDismissed${'$'}_init_lambda2${'$'}ComponentActivity;",
+        viewModelDispatchField = "e",
+        viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
+        settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
+        homeAdClass = "Lo/zzbgb;",
+        homeAdLoadMethod = "d",
+    )
     "0.8.10.243 dev" -> ChMateProfile(
         providerClass = "Lo/zzbvh;",
         providerStartupTrapClass = null,
@@ -388,6 +428,27 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
         mutableClassDefBy(threadListClass).findMutableMethodOf(method).wrapModelReturns()
     }
 
+    // BoardList2Activity displays board categories through its own fragment.
+    // Its toolbar catalog is distinct from both the home and thread-list catalogs.
+    val boardCategoryClass = when (versionName) {
+        "0.8.10.191 dev" -> "Lo/AdControlButtona;"
+        "0.8.10.226 dev" -> "Lo/setDeployments;"
+        "0.8.10.241" -> "Lo/bea4;"
+        "0.8.10.242 dev" -> "Lo/clearDefaultAccountAndReconnect;"
+        else -> "Lo/zzbya;"
+    }
+    val boardCategoryMethods = mutableClassDefBy(boardCategoryClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null &&
+            (if (legacyToolbar || versionName == "0.8.10.226 dev") method.parameters.isEmpty() else
+                method.parameters.map { it.type } == listOf(boardCategoryClass))
+    }
+    if (boardCategoryMethods.isEmpty()) {
+        throw PatchException("板カテゴリ一覧のツールバーを特定できません: $versionName")
+    }
+    boardCategoryMethods.forEach { method ->
+        mutableClassDefBy(boardCategoryClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
     // In 0.8.10.191 this separate model catalog powers the toolbar customization
     // screen; patch it as well as the default home model so the new choice is
     // available for users to enable without changing the current toolbar.
@@ -462,6 +523,30 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
             ExternalLabel("haiagaru_edge_thread_toolbar_continue", originalFirstInstruction),
         )
     }
+
+    val boardCategoryClickMethods = mutableClassDefBy(boardCategoryClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation?.instructions?.isNotEmpty() == true &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (boardCategoryClickMethods.isEmpty()) {
+        throw PatchException("板カテゴリ一覧のツールバー操作を特定できません: $versionName")
+    }
+    boardCategoryClickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(boardCategoryClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_board_category_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_board_category_toolbar_continue", originalFirstInstruction),
+        )
+    }
 }
 
 private val haiagaruBytecodePatch = bytecodePatch {
@@ -526,6 +611,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         if (packageMetadata.versionName in setOf(
                 "0.8.10.191 dev",
                 "0.8.10.226 dev",
+                "0.8.10.242 dev",
                 "0.8.10.243 dev",
             )
         ) {
@@ -725,6 +811,16 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchIoTalkPostIntegrity()
                 patchIoThreadRefreshCache()
             }
+            "0.8.10.242 dev" -> {
+                patchLegacyBeResponseBody("Lo/KeJ11;", "h")
+                patchProgrammableNgModern("Lo/emptyToNull;", "c", "c")
+                patchPreIoHissiMenu("Lo/kUGNk2;", "c", "Lo/KeJ11;", "Lo/kUGNk2\$ComponentActivity;")
+                patchSetTextCalls()
+                patchBbsMenuUrl("c", "Lo/getPlayProviderFactory\$ComponentActivity;")
+                patchModernTalkDatLoading242()
+                patchModernTalkPostIntegrity("Lo/getTopCountDown;")
+                patchImageUploadIntegrity242()
+            }
             else -> patchSetTextCalls()
         }
         if (packageMetadata.versionName == "0.8.10.241") {
@@ -741,6 +837,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 EdgeThreadMenu226Fingerprint.method.preserveEdgeReporterTitle("Lo/MessageInflater;", "m")
             }
             "0.8.10.241" -> EdgeSubjectUrl241Fingerprint.method.rewriteEdgeSubjectUrl()
+            "0.8.10.242 dev" -> EdgeSubjectUrl242Fingerprint.method.rewriteEdgeSubjectUrl()
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
@@ -823,7 +920,11 @@ private fun BytecodePatchContext.patchPreIoS2mSettingActivityIntegrityTrap() {
 private fun BytecodePatchContext.patchExternalEmojiPostCopy(version: String) {
     val postType = if (version == "0.8.10.226 dev")
         "Lo/setBorderWidth;" else "Ljp/syoboi/a2chMate/postdata/PostData;"
-    val copyName = if (version == "0.8.10.226 dev") "a" else "e"
+    val copyName = when (version) {
+        "0.8.10.226 dev" -> "a"
+        "0.8.10.242 dev" -> "d"
+        else -> "e"
+    }
     val editor = mutableClassDefBy("Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
     var patched = 0
     editor.methods.forEach { method ->
@@ -1211,6 +1312,37 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoad
     """.trimIndent())
 }
 
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoading242() {
+    val loader = mutableClassDefBy("Lo/getHostAppName;").methods.single { method ->
+        method.name == "e" && method.returnType == "Lo/getBackImage\$read;"
+            && method.parameters.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;", "Z", "Lo/onTooManyRedirects;"
+            )
+    }
+    val instructions = loader.implementation!!.instructions.toList()
+    val cacheCall = instructions.indexOfFirst {
+        val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
+        reference?.returnType == "Ljava/io/File;"
+            && reference.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
+    }.takeIf { it >= 0 } ?: error("ChMate 242 thread cache builder was not found")
+    val urlRegister = (instructions[cacheCall] as FiveRegisterInstruction).registerD
+    val cacheRegister = (instructions[cacheCall + 1] as OneRegisterInstruction).registerA
+    val scratch = loader.findFreeRegister(cacheCall + 2)
+    loader.addInstructionsWithLabels(cacheCall + 2, """
+        invoke-virtual {v$urlRegister}, Ljp/syoboi/a2chMate/client/BBSUrlInfo;->A()Ljava/lang/String;
+        move-result-object v$scratch
+        invoke-static {v$scratch, v$cacheRegister}, $EXTENSION->loadLiveTalkDat(Ljava/lang/String;Ljava/io/File;)Z
+        move-result v$scratch
+        if-eqz v$scratch, :haiagaru_242_normal_download
+        new-instance v$scratch, Lo/getBackImage${'$'}read;
+        invoke-direct {v$scratch, v$cacheRegister, v$urlRegister}, Lo/getBackImage${'$'}read;-><init>(Ljava/io/File;Ljp/syoboi/a2chMate/client/BBSUrlInfo;)V
+        return-object v$scratch
+        :haiagaru_242_normal_download
+        nop
+    """.trimIndent())
+}
+
 /**
  * 226 has the same native Talk type-4 URL model as 243, but its downloader uses
  * the pre-io class layout. Publish the current Talk JSON as a normal DAT as soon
@@ -1268,8 +1400,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoTalkDatLoadi
  * the extension so the generated request construction itself remains unchanged.
  */
 /** 243's generated token builder keeps its integrity cache in o.setExtras. */
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkPostIntegrity() {
-    val networkClass = mutableClassDefBy("Lo/zzaat;")
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkPostIntegrity(
+    networkOwner: String = "Lo/zzaat;",
+) {
+    val networkClass = mutableClassDefBy(networkOwner)
     val candidates = networkClass.methods.flatMap { method ->
         val instructions = method.implementation?.instructions ?: return@flatMap emptyList()
         instructions.mapIndexedNotNull { index, instruction ->
@@ -1330,6 +1464,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchTabletThreadHeade
         "0.8.10.191 dev" -> return
         "0.8.10.226 dev" -> "Lo/writeWindowUpdateLaterokhttp;"
         "0.8.10.241" -> "Lo/getRewardItem;"
+        "0.8.10.242 dev" -> "Lo/isAtLeastS;"
         "0.8.10.243 dev" -> "Lo/zzdhn;"
         else -> return
     }
@@ -2011,7 +2146,63 @@ val haiagaruPatch = resourcePatch(
         description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
     )
 
+    val edgeArchiveToolbarIconPath = stringOption(
+        key = "edgeArchiveToolbarIconPath",
+        default = "",
+        title = "エッジ過去ログのツールバー画像（任意）",
+        description = "パッチ実行端末上のPNG/WebP画像の絶対パス。空欄なら内蔵アイコンを使用します。",
+    )
+
     execute {
+        document("res/values/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_edge_archive")
+            entry.textContent = "エッジ過去ログ"
+            strings.documentElement.appendChild(entry)
+        }
+        document("res/values-en/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_edge_archive")
+            entry.textContent = "Edge archive"
+            strings.documentElement.appendChild(entry)
+        }
+        PublicXmlManager(get("res/values/public.xml")).use { publicResources ->
+            publicResources.createPublicId("string", "haiagaru_edge_archive")
+            publicResources.createPublicId("drawable", "haiagaru_edge_archive")
+        }
+        val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
+        if (iconSourcePath.isEmpty()) {
+            val iconTarget = get("res").resolve("drawable/haiagaru_edge_archive.xml")
+            iconTarget.parentFile.mkdirs()
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+                "/chmate/drawable/haiagaru_edge_archive.xml",
+            )) { "Bundled Edge archive toolbar icon is missing" }.use { source ->
+                iconTarget.outputStream().use(source::copyTo)
+            }
+        } else {
+            val iconSource = File(iconSourcePath)
+            if (!iconSource.isFile || !iconSource.canRead() ||
+                iconSource.extension.lowercase(Locale.ROOT) !in setOf("png", "webp")) {
+                throw PatchException("edgeArchiveToolbarIconPathは読み込み可能なPNG/WebP画像を指定してください")
+            }
+            val iconTarget = get("res").resolve(
+                "drawable-nodpi/haiagaru_edge_archive.${iconSource.extension.lowercase(Locale.ROOT)}",
+            )
+            iconTarget.parentFile.mkdirs()
+            iconSource.copyTo(iconTarget, overwrite = true)
+        }
+        // Mega's constructor creates Ktor's default HttpClient before the
+        // extension can replace it with the explicit OkHttp client. Android
+        // integrations contain DEX classes but do not carry dependency JAR
+        // service files, so retain the engine registration in the host APK.
+        val ktorEngineService = get("META-INF").resolve(
+            "services/io.ktor.client.HttpClientEngineContainer",
+        )
+        ktorEngineService.parentFile.mkdirs()
+        ktorEngineService.writeText(
+            "io.ktor.client.engine.okhttp.OkHttpEngineContainer\n",
+            Charsets.UTF_8,
+        )
         val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
         bundledEmojiFont.parentFile.mkdirs()
         val requestedEmojiMode = emojiMode.value.orEmpty().trim().lowercase(Locale.ROOT)
@@ -2581,6 +2772,34 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageSelectionRef
     )
 }
 
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegrity242() {
+    val method = mutableClassDefBy("Lo/ApiMetadataBuilder;").methods.single {
+        it.name == "c" && it.parameters.isEmpty() && it.returnType == "Lo/zzbtj;"
+    }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate 242 image upload implementation missing")
+    val comparison = instructions.indices.single { index ->
+        if (instructions[index].opcode != Opcode.IF_NE || index < 6) return@single false
+        val window = instructions.subList(index - 6, index)
+        window.map { it.opcode } == listOf(
+            Opcode.AGET_OBJECT, Opcode.CHECK_CAST, Opcode.AGET,
+            Opcode.AGET_OBJECT, Opcode.CHECK_CAST, Opcode.AGET,
+        )
+    }
+    val first = instructions[comparison - 6] as ThreeRegisterInstruction
+    val second = instructions[comparison - 3] as ThreeRegisterInstruction
+    check(first.registerB == second.registerB) { "ChMate 242 integrity arrays differ" }
+    // Normalize at the comparison, after either cached or freshly generated state
+    // has been selected. Unlike the diagnostic hook this requires no clock/cache
+    // manipulation and also works on the first upload after a process restart.
+    val register = first.registerB
+    method.addInstruction(
+        comparison - 6,
+        "invoke-static/range { v$register .. v$register }, " +
+            "$EXTENSION->normalizeImageUploadIntegrity242([Ljava/lang/Object;)V",
+    )
+}
+
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegrityComparison() {
     val method = mutableClassDefBy("Lo/zzbwa;").methods.single { candidate ->
         candidate.name == "d"
@@ -2748,7 +2967,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTabletThrea
     val (methodName, fragmentType) = when (versionName) {
         "0.8.10.191 dev" -> "Sq_" to "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
         "0.8.10.226 dev" -> "d" to "Landroidx/fragment/app/Fragment;"
-        "0.8.10.243 dev" -> "c" to "Landroidx/fragment/app/Fragment;"
+        "0.8.10.242 dev", "0.8.10.243 dev" -> "c" to "Landroidx/fragment/app/Fragment;"
         else -> error("Unsupported tablet thread entry version: $versionName")
     }
     val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
@@ -4689,7 +4908,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostPreflightVali
     }
 
     val expected = when (version) {
-        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241" -> 1
+        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev" -> 1
         "0.8.10.243 dev" -> 0
         else -> error("Unsupported ChMate version: $version")
     }
@@ -4736,6 +4955,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         "0.8.10.191 dev" -> listOf("Lo/r8lambdaEBvvDaQDWIaS7WUoordU_4sxR3Y;", "Lo/isReady;", "Lo/getLabel;")
         "0.8.10.226 dev" -> listOf("Lo/TrustRootIndex;", "Lo/MessageInflater;", "Lo/OpenJSSEPlatformCompanion;")
         "0.8.10.241" -> listOf("Lo/tul11;", "Lo/changeVideoState;", "Lo/VLj;")
+        "0.8.10.242 dev" -> listOf("Lo/initView;", "Lo/TopLayoutDislike22;", "Lo/getImageView;")
         else -> listOf("Lo/zzaA;", "Lo/zzaC;", "Lo/zzaaq;")
     }
     val writes = mutableClassDefBy(owners[0]).methods.filter {
@@ -4764,7 +4984,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         val sites = instructions.indices.filter { index ->
             val ref = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
             ref != null && (ref.definingClass == "Ljp/syoboi/a2chMate/data/BBSThreadList;"
-                    || ref.definingClass == "Lo/zzadh;") && ref.parameterTypes.firstOrNull() == "Ljava/io/InputStream;"
+                    || ref.definingClass == "Lo/zzadh;"
+                    || ref.definingClass == "Lo/setSkipEnable;") && ref.parameterTypes.firstOrNull() == "Ljava/io/InputStream;"
                     && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
         }
         sites.asReversed().forEach { index ->
@@ -4803,6 +5024,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"
             "0.8.10.241" -> "Lo/TTRewardVideoActivity2;"
+            "0.8.10.242 dev" -> "Lo/getLandscapeInlineAdaptiveBannerAdSize;"
             else -> "Lo/zzawg;"
         }
         val entry = mutableClassDefBy(owner).methods.single {
@@ -4826,6 +5048,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterTitle
         "0.8.10.191 dev" -> "Lo/o8ExternalSyntheticLambda0;"
         "0.8.10.226 dev" -> "Lo/getFlexItemCount;"
         "0.8.10.241" -> "Lo/RDh41;"
+        "0.8.10.242 dev" -> "Lo/setDataOwnerProductId;"
         "0.8.10.243 dev" -> "Lo/zzbwr;"
         else -> error("Unsupported clipboard title path: $version")
     }
