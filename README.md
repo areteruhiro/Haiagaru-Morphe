@@ -1,6 +1,6 @@
 # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
@@ -59,8 +59,9 @@ ONの場合はhissi.orgとKyodemoの結果をChMate内で表示し、URLコピ�
 
 エッヂの過去ログは、Haiagaru設定の「エッヂの過去ログを検索」または
 \`https://eddiarchive3rd.boy.jp/\` を「アプリで開く」から起動できます。
-また、ChMate標準のホームツールバー設定に「検索」項目を追加します。
+また、ChMate標準のホーム／板カテゴリ一覧／板のスレ一覧ツールバー設定に「エッジ過去ログ」項目を追加します。
 必要な場合はツールバー編集画面から有効化・配置してください（初期状態では追加項目は無効で、押すとエッヂ過去ログ検索が開きます）。
+標準のアーカイブ画像を表示します。別の画像を使う場合は、パッチ適用時の「エッジ過去ログのツールバー画像」にPNG/WebPファイルの絶対パスを指定してください。
 ChMate内の検索画面でキーワード、AND/OR、除外語、曖昧検索、レス数、並び順、期間を指定できます。
 検索結果のスレをタップすると、元の \`bbs.eddibb.cc\` スレをChMateで開きます。
 検索結果は過去ログサイトから取得します。サイトの形式が変わって結果を表示できなくなった場合は、
@@ -187,7 +188,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは `1.5.7`、プレリリースURLは `1.5.8` を取得します。
+通常版URLは `1.5.7`、プレリリースURLは `1.6.0` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の配布版（1.5.7）を取得するパッチソースです。
@@ -196,7 +197,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.5.8）を取得するパッチソースです。
+プレリリース版（1.6.0）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -207,6 +208,18 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.6.0（プレリリース）
+
+- エッヂ過去ログ検索を板カテゴリ一覧・板のスレ一覧のツールバーにも追加。ツールバー用画像を選択可能
+- ChMate 0.8.10.242 devへの対応を追加
+- ID／ﾜｯﾁｮｲ検索でIDの引き継ぎと表記ゆれへの対応を改善
+- 必死チェッカー専用ビューアーを戻る操作で閉じた後、遅延したレスコピー処理がクラッシュを起こさないよう修正
+- MEGA同期のAndroid実行時クラッシュを修正
+
+### 1.5.9（プレリリース）
+
+- MEGA同期に必要なHTTPエンジン登録を追加し、コルーチン実行環境をChMate本体から分離
 
 ### 1.5.8（プレリリース）
 
