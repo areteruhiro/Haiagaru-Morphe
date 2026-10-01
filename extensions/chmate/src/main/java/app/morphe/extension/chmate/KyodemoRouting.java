@@ -71,14 +71,29 @@ public final class KyodemoRouting {
 
     public static String wacchoiSearchUrl(String host, String board, String wacchoi) {
         if (wacchoi == null) return null;
-        String value = wacchoi.trim().replaceFirst("^(?:ﾜｯﾁｮｲ|ワッチョイ)\\s*", "");
-        if (value.matches("[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}")) {
+        String value = stripWacchoiLabel(wacchoi);
+        java.util.regex.Matcher token = wacchoiTokenMatcher(value);
+        if (token.matches()) {
             // Kyodemo's ID/ﾜｯﾁｮｲ endpoint rejects the hyphenated full token.
             // Search its four-character prefix, which is a broader match.
-            value = value.substring(0, 4);
+            value = token.group(1);
         }
         if (value.isEmpty() || value.length() > 80) return null;
         return idSearchUrl(host, board, value, null, null);
+    }
+
+    public static boolean isWacchoiToken(String query) {
+        return query != null && wacchoiTokenMatcher(stripWacchoiLabel(query)).matches();
+    }
+
+    private static String stripWacchoiLabel(String value) {
+        return value.trim().replaceFirst(
+                "(?i)^(?:ﾜｯﾁｮｲw?|ワッチョイ)\\s*[:：]?\\s*", "");
+    }
+
+    private static java.util.regex.Matcher wacchoiTokenMatcher(String value) {
+        return java.util.regex.Pattern.compile(
+                "(?i)^([a-z0-9]{4})[-‐‑–—][a-z0-9]{4,}$").matcher(value);
     }
 
     /** Restores a result link for the current board to its original ChMate URL. */
