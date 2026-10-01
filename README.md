@@ -576,6 +576,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 - バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
 - バージョン: `0.8.10.226 dev`（versionCode 494、minSdk 23）
 - バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
+- バージョン: `0.8.10.242 dev`（versionCode 512、minSdk 23）
 - バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
 - 元APKの署名 SHA-256:
   `7dd84d97df4666fbc8188b8d6167ce59314636997f0edae82d685fffda4059d2`
@@ -589,7 +590,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 生成物:
 
 ```text
-patches\build\libs\patches-1.5.3.mpp
+patches\build\libs\patches-1.6.0.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
