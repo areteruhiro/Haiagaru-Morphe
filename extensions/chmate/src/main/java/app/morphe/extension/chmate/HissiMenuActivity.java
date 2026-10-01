@@ -402,7 +402,7 @@ public final class HissiMenuActivity extends Activity {
         date.setOnClickListener(view -> showDatePicker(webView));
         toolbar.addView(date, buttonParams());
 
-        if (!eddiArchiveMode && kyodemoTarget != null && Haiagaru.kyodemoEnhancedViewer()) {
+        if (!eddiArchiveMode && kyodemoTarget != null) {
             Button search = toolbarButton("ID/ﾜｯﾁｮｲ");
             search.setOnClickListener(view -> showKyodemoSearch(webView));
             toolbar.addView(search, buttonParams());
@@ -455,6 +455,13 @@ public final class HissiMenuActivity extends Activity {
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setHint("IDまたはﾜｯﾁｮｲ");
+        String selectedId = incomingUri == null ? null
+                : incomingUri.getQueryParameter("haiagaru_id");
+        if ((selectedId == null || selectedId.trim().isEmpty()) && incomingUri != null) {
+            List<String> path = incomingUri.getPathSegments();
+            if (!path.isEmpty()) selectedId = decodeHissiId(path.get(path.size() - 1));
+        }
+        if (selectedId != null && !selectedId.trim().isEmpty()) input.setText(selectedId);
         int padding = (int) (20 * getResources().getDisplayMetrics().density);
         input.setPadding(padding, input.getPaddingTop(), padding, input.getPaddingBottom());
         new AlertDialog.Builder(this)
@@ -469,8 +476,7 @@ public final class HissiMenuActivity extends Activity {
                         Toast.makeText(this, "ID/ﾜｯﾁｮｲと板を確認してください", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    if (query.replaceFirst("^(?:ﾜｯﾁｮｲ|ワッチョイ)\\s*", "")
-                            .matches("[A-Za-z0-9]{4}-[A-Za-z0-9]{4,}")) {
+                    if (KyodemoRouting.isWacchoiToken(query)) {
                         Toast.makeText(this, "Kyodemoはﾜｯﾁｮｲ前半4文字で検索します。結果に別の投稿が混ざる場合があります。",
                                 Toast.LENGTH_LONG).show();
                     }
@@ -733,6 +739,10 @@ public final class HissiMenuActivity extends Activity {
     }
 
     private void showPostCopyDialog(String data) {
+        // WebView JavaScript callbacks can arrive after Back has finished this
+        // Activity. Do not try to attach a dialog to a window whose token has
+        // already been removed from WindowManager.
+        if (!canShowViewerDialog()) return;
         if (data == null || data.trim().isEmpty()) return;
         long now = System.currentTimeMillis();
         if (now - lastPostDialogAt < 700) return;
@@ -768,7 +778,7 @@ public final class HissiMenuActivity extends Activity {
         labels.add("選択");
         final String selectableText = full;
         final String postUrl = url;
-        new AlertDialog.Builder(this)
+        AlertDialog postCopyDialog = new AlertDialog.Builder(this)
                 .setTitle("レスをコピー")
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> {
                     if (which < copyCount) {
@@ -788,7 +798,23 @@ public final class HissiMenuActivity extends Activity {
                     }
                 })
                 .setNegativeButton("キャンセル", null)
-                .show();
+                .create();
+        // The lifecycle may change between parsing the WebView payload and
+        // building the dialog. Check again on the UI thread and keep a final
+        // BadTokenException guard for OEM window-manager races.
+        if (!canShowViewerDialog()) return;
+        try {
+            postCopyDialog.show();
+        } catch (android.view.WindowManager.BadTokenException invalidWindowToken) {
+            Log.w(LOG_TAG, "Skip post-copy dialog after viewer window was detached",
+                    invalidWindowToken);
+        }
+    }
+
+    private boolean canShowViewerDialog() {
+        if (isFinishing() || isDestroyed()) return false;
+        android.view.Window window = getWindow();
+        return window != null && window.getDecorView().isAttachedToWindow();
     }
 
     private static void addCopyChoice(List<String> labels, List<String> values,
@@ -1156,19 +1182,23 @@ public final class HissiMenuActivity extends Activity {
         if (uri == null || !"hissi.org".equalsIgnoreCase(uri.getHost())) return null;
         List<String> path = uri.getPathSegments();
         if (path.size() < 4 || !"read.php".equals(path.get(0))) return null;
-        String encodedId = path.get(path.size() - 1);
-        if (!encodedId.endsWith(".html")) return null;
-        encodedId = encodedId.substring(0, encodedId.length() - 5);
-        String id;
+        String id = uri.getQueryParameter("haiagaru_id");
+        if (id == null || id.trim().isEmpty()) id = decodeHissiId(path.get(path.size() - 1));
+        if (id == null || id.trim().isEmpty()) return null;
+        return KyodemoRouting.idSearchUrl(sourceHost, boardFromMenuPath(uri), id,
+                uri.getQueryParameter("haiagaru_key"), dateOverride == null
+                        ? path.get(path.size() - 2) : dateOverride);
+    }
+
+    private static String decodeHissiId(String pathSegment) {
+        if (pathSegment == null || !pathSegment.endsWith(".html")) return null;
+        String encoded = pathSegment.substring(0, pathSegment.length() - 5);
         try {
-            id = new String(Base64.decode(encodedId, Base64.URL_SAFE | Base64.NO_WRAP),
+            return new String(Base64.decode(encoded, Base64.URL_SAFE | Base64.NO_WRAP),
                     StandardCharsets.UTF_8);
         } catch (IllegalArgumentException error) {
             return null;
         }
-        return KyodemoRouting.idSearchUrl(sourceHost, boardFromMenuPath(uri), id,
-                uri.getQueryParameter("haiagaru_key"), dateOverride == null
-                        ? path.get(path.size() - 2) : dateOverride);
     }
 
     private static String boardFromMenuPath(Uri uri) {

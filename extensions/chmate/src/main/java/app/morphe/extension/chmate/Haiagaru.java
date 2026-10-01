@@ -159,6 +159,7 @@ public final class Haiagaru {
                     + "dat|https://{$server}.2ch.sc/{$bbs}/dat/{$key}.dat";
     private static final String AD_CLASS_191 = "o.qheCC";
     private static final String AD_CLASS_241 = "o.setUseHandlerThreadForCallbacks";
+    private static final String AD_CLASS_242 = "o.zzbgb";
     private static final String AD_CLASS_243 = "o.zzexb";
     private static final Pattern LEGACY_BE_ATTACHMENT_TOKEN = Pattern.compile(
             "(?:(?:sssp|https?):)?//img\\.5ch\\.(?:io|net)/(?:ico|premium)/[^\\s<\\u0003\\u3000]+"
@@ -418,8 +419,10 @@ public final class Haiagaru {
             Context context = applicationContext;
             if (context == null) return toolbarModel;
             int titleId = context.getResources().getIdentifier(
-                    "search_go", "string", "android");
-            if (titleId == 0) return toolbarModel;
+                    "haiagaru_edge_archive", "string", context.getPackageName());
+            int iconId = context.getResources().getIdentifier(
+                    "haiagaru_edge_archive", "drawable", context.getPackageName());
+            if (titleId == 0 || iconId == 0) return toolbarModel;
             if (toolbarModel instanceof List) {
                 List<?> source = (List<?>) toolbarModel;
                 if (containsToolbarChoice(source)) return toolbarModel;
@@ -428,7 +431,7 @@ public final class Haiagaru {
                 Class<?> itemClass = Class.forName("o.r8lambda98incQ33GAiiY2082BMi9yDa3l0");
                 Object item = itemClass.getConstructor(int.class, int.class, int.class,
                         int.class, boolean.class).newInstance(
-                        EDDI_ARCHIVE_TOOLBAR_ID, 0, titleId, titleId, false);
+                        EDDI_ARCHIVE_TOOLBAR_ID, iconId, titleId, titleId, false);
                 buttons.add(item);
                 return toolbarModel;
             }
@@ -450,7 +453,18 @@ public final class Haiagaru {
                     "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
             Object item = specClass.getConstructor(int.class, int.class, int.class,
                     int.class, boolean.class).newInstance(
-                    EDDI_ARCHIVE_TOOLBAR_ID, 0, titleId, titleId, false);
+                    EDDI_ARCHIVE_TOOLBAR_ID, iconId, titleId, titleId, false);
+            // Modern ToolbarDefault keeps a mutable button list. Extending that
+            // list preserves its position and configuration objects; rebuilding
+            // the model can silently lose the new choice on some versions.
+            try {
+                @SuppressWarnings("unchecked")
+                List<Object> mutableButtons = (List<Object>) original;
+                mutableButtons.add(item);
+                return toolbarModel;
+            } catch (UnsupportedOperationException ignored) {
+                // Fall through for immutable toolbar catalogs.
+            }
             buttons.add(item);
 
             ArrayList<Field> modelFields = new ArrayList<>();
@@ -694,14 +708,23 @@ public final class Haiagaru {
         writer.flush();
     }
 
+    /** Repairs only the certificate comparison before 242's image upload pipeline. */
+    public static void normalizeImageUploadIntegrity242(Object[] state) {
+        if (state == null || state.length < 2
+                || !(state[0] instanceof int[]) || !(state[1] instanceof int[])) {
+            throw new IllegalStateException("Unexpected ChMate 242 image integrity state");
+        }
+        int[] actual = (int[]) state[0];
+        int[] expected = (int[]) state[1];
+        if (actual.length == 0 || expected.length == 0) {
+            throw new IllegalStateException("Empty ChMate 242 image integrity state");
+        }
+        expected[0] = actual[0];
+    }
+
     /**
-     * Runs the current image uploader after repairing its certificate-derived cache.
-     *
-     * <p>ChMate 0.8.10.243 loads this uploader from an in-memory DEX. Its normal
-     * path compares two cached integers immediately before building the request;
-     * re-signing leaves those values three apart and sends execution into a decoy
-     * allocation whose size is hundreds of megabytes. Repair the cached comparison
-     * value and keep the uploader, response parser, and network behavior unchanged.</p>
+     * Repairs 243's generated uploader cache without changing its request or parser.
+     * A mismatched comparison otherwise enters a decoy allocation of hundreds of MB.
      */
     public static Object invokeCurrentImageUploader(
             Method method,
@@ -1831,9 +1854,11 @@ public final class Haiagaru {
         boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
         if (talkThread) {
             try {
-                if ("0.8.10.243 dev".equals(activity.getPackageManager()
-                        .getPackageInfo(activity.getPackageName(), 0).versionName)) {
-                    // 243 fetches inside the native download lock, including refresh.
+                String version = activity.getPackageManager()
+                        .getPackageInfo(activity.getPackageName(), 0).versionName;
+                if ("0.8.10.243 dev".equals(version)) {
+                    // 243 refreshes the first render after its native download.
+                    // 242 does not, so let the importer populate the DAT before launch.
                     return;
                 }
             } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
@@ -2380,6 +2405,15 @@ public final class Haiagaru {
         if (!(view instanceof ViewGroup)) return;
         ViewGroup group = (ViewGroup) view;
         String name = group.getClass().getName();
+        // ChMate 242 uses a dedicated empty, childless view as the large inline
+        // Talk ad slot between consecutive responses. Identify that class by
+        // name, while still requiring the Talk thread guard in the caller.
+        if ("o.zzbiczzabzza".equals(name)
+                && view.getVisibility() == View.VISIBLE
+                && view.getHeight() >= dp(view.getContext(), 160)) {
+            collapseView(view);
+            return;
+        }
         if (name.contains("RecyclerView") || name.contains("AbsListView")
                 || name.contains("ScrollView")) {
             for (int i = 0; i < group.getChildCount(); i++) {
@@ -3556,6 +3590,7 @@ public final class Haiagaru {
         // obfuscated defaults; an explicitly entered custom class is preserved verbatim.
         if ((AD_CLASS_191.equals(savedClass)
                 || AD_CLASS_241.equals(savedClass)
+                || AD_CLASS_242.equals(savedClass)
                 || AD_CLASS_243.equals(savedClass))
                 && !classExists(savedClass)) {
             return defaultAdClass();
@@ -3573,6 +3608,7 @@ public final class Haiagaru {
             String versionName = packageInfo.versionName;
             return "0.8.10.191 dev".equals(versionName)
                     || "0.8.10.226 dev".equals(versionName)
+                    || "0.8.10.242 dev".equals(versionName)
                     || "0.8.10.243 dev".equals(versionName);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to determine ChMate version for compatibility controls", error);
@@ -3582,6 +3618,7 @@ public final class Haiagaru {
 
     private static String defaultAdClass() {
         if (classExists(AD_CLASS_243)) return AD_CLASS_243;
+        if (classExists(AD_CLASS_242)) return AD_CLASS_242;
         if (classExists(AD_CLASS_241)) return AD_CLASS_241;
         return AD_CLASS_191;
     }
