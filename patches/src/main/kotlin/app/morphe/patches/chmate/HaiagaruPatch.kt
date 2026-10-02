@@ -636,20 +636,29 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
         if-eqz v0, :original_filter_dispatch
         return v0
     """.trimIndent(), ExternalLabel("original_filter_dispatch", first))
-    if (version == "0.8.10.242 dev") {
-        val header = mutableClassDefBy("Lo/isAtLeastS;").methods.single { it.name == "invoke" }
+    val quickFilterComposeRow = when (version) {
+        "0.8.10.226 dev" -> "Lo/writeWindowUpdateLaterokhttp;" to "Lo/Ff11;"
+        "0.8.10.241" -> "Lo/getRewardItem;" to "Lo/zzagp;"
+        "0.8.10.242 dev" -> "Lo/isAtLeastS;" to "Lo/zzbwq;"
+        "0.8.10.243 dev" -> "Lo/zzdhn;" to "Lo/zzftg;"
+        else -> null
+    }
+    if (quickFilterComposeRow != null) {
+        val (rowType, unitType) = quickFilterComposeRow
+        val header = mutableClassDefBy(rowType).methods.single {
+            it.name == "invoke" && it.parameters.size == 2 && it.returnType == "Ljava/lang/Object;"
+        }
         val original = header.implementation!!.instructions.first()
         header.addInstructionsWithLabels(0, """
             invoke-static {}, $EXTENSION->compactQuickFilters()Z
             move-result v0
             if-eqz v0, :original_quick_filter_header
-            sget-object v0, Lo/zzbwq;->INSTANCE:Lo/zzbwq;
+            sget-object v0, $unitType->INSTANCE:$unitType
             return-object v0
         """.trimIndent(), ExternalLabel("original_quick_filter_header", original))
     }
-    // These releases compose their quick-filter row from version-specific
-    // lambdas. Keep the original row intact until a verified owner is known;
-    // the toolbar entry itself remains opt-in and invokes the same VM action.
+    // Keep the original filter state and handlers; only omit each version's
+    // Compose row while the compact toolbar option is enabled.
 }
 
 private val haiagaruBytecodePatch = bytecodePatch {
@@ -2697,6 +2706,20 @@ val haiagaruPatch = resourcePatch(
                 )
             }
             application.appendChild(openUrlActivity)
+
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:name",
+                    "app.morphe.extension.chmate.HaiagaruLocalBackupActivity",
+                )
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar",
+                )
+            })
 
             // Keep the archive page in the same lightweight WebView activity as
             // the checker.  It is declared even when the optional Hissi viewer
