@@ -1526,10 +1526,13 @@ public final class Haiagaru {
             expected[0] = actual[0];
 
             // The generated method refreshes this state after roughly two seconds.
-            // Hold the normalized state for the duration of the authentication call.
+            // Every wrapped call renews the cache, but other generated paths may
+            // reuse it after a day has passed. Avoid that arbitrary expiration for
+            // the lifetime of this process. Half of Long.MAX_VALUE leaves room for
+            // timestamp arithmetic in the generated method.
             Field timestampField = stateClass.getDeclaredField("c");
             timestampField.setAccessible(true);
-            timestampField.setLong(null, System.currentTimeMillis() + 86_400_000L);
+            timestampField.setLong(null, Long.MAX_VALUE / 2);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to normalize legacy Talk authentication state", error);
         }
