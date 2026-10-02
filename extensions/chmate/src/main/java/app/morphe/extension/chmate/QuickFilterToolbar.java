@@ -99,14 +99,18 @@ public final class QuickFilterToolbar {
                 Toast.makeText(activity, "Haiagaru設定でクイックフィルターをONにしてください", Toast.LENGTH_LONG).show();
                 return true;
             }
-            Object root = fragment.getClass().getMethod("getView").invoke(fragment);
-            if (!(root instanceof android.view.View)) throw new IllegalStateException("Legacy response view unavailable");
-            Object binding = findLegacyFilterBinding((android.view.View) root);
+            // The filter panel is owned by the activity layout, outside the
+            // response fragment's own view on ChMate 191.
+            Object binding = findLegacyFilterBinding(activity.getWindow().getDecorView());
             ToggleButton[] buttons = legacyFilterButtons(binding);
             if (buttons == null) throw new IllegalStateException("Legacy quick-filter buttons unavailable");
             String[] labels = {"人気レス", "リンク", "画像", "動画"};
-            new AlertDialog.Builder(activity).setTitle("フィルタ（再選択で解除）")
-                    .setItems(labels, (dialog, which) -> buttons[which].performClick())
+            boolean[] checked = new boolean[buttons.length];
+            for (int index = 0; index < buttons.length; index++) checked[index] = buttons[index].isChecked();
+            new AlertDialog.Builder(activity).setTitle("フィルタ")
+                    .setMultiChoiceItems(labels, checked, (dialog, which, enabled) -> {
+                        if (buttons[which].isChecked() != enabled) buttons[which].performClick();
+                    })
                     .setNegativeButton("閉じる", null).show();
         } catch (Exception error) {
             Log.e("Haiagaru", "Unable to open legacy quick filters", error);
@@ -137,13 +141,15 @@ public final class QuickFilterToolbar {
         return result;
     }
 
-    /** Hide only the legacy filter row; its ToggleButtons still handle menu selections. */
+    /** Hide the entire legacy panel, including its heading and padding. */
     public static void hideLegacyFilterRow(Object binding) {
         if (binding == null || !Haiagaru.compactQuickFilters()) return;
         try {
-            java.lang.reflect.Field row = binding.getClass().getDeclaredField("o");
-            row.setAccessible(true);
-            Object view = row.get(binding);
+            Class<?> rootBinding = Class.forName("o.getMraidName", false,
+                    binding.getClass().getClassLoader());
+            java.lang.reflect.Field root = rootBinding.getDeclaredField("a");
+            root.setAccessible(true);
+            Object view = root.get(binding);
             if (view instanceof android.view.View) {
                 ((android.view.View) view).setVisibility(android.view.View.GONE);
             }
