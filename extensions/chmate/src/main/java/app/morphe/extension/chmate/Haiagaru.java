@@ -554,14 +554,26 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
-        if (itemId != EDDI_ARCHIVE_TOOLBAR_ID || fragment == null) return false;
+        if (itemId != EDDI_ARCHIVE_TOOLBAR_ID) return false;
         try {
-            Object activity = fragment.getClass().getMethod("getActivity").invoke(fragment);
-            if (!(activity instanceof Activity)) return false;
-            Intent intent = new Intent((Activity) activity, HissiMenuActivity.class);
+            Activity activity = null;
+            if (fragment instanceof Activity) {
+                activity = (Activity) fragment;
+            } else if (fragment != null) {
+                try {
+                    Object owner = fragment.getClass().getMethod("getActivity").invoke(fragment);
+                    if (owner instanceof Activity) activity = (Activity) owner;
+                } catch (ReflectiveOperationException ignored) {
+                    // Older toolbar dispatchers do not always pass a Fragment.
+                }
+            }
+            Context context = activity != null ? activity : applicationContext;
+            if (context == null) return false;
+            Intent intent = new Intent(context, HissiMenuActivity.class);
             intent.setAction(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
-            ((Activity) activity).startActivity(intent);
+            if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
             return true;
         } catch (Throwable error) {
             Log.e(LOG_TAG, "Unable to open Edge archive search from ChMate toolbar", error);
