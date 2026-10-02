@@ -42,10 +42,14 @@ public final class QuickFilterToolbar {
                 Toast.makeText(activity, "Haiagaru設定で「クイックフィルターをツールバーにまとめる」をONにしてください", Toast.LENGTH_LONG).show();
                 return true;
             }
-            Object model = findResponseViewModel(fragment);
-            if (model == null) throw new IllegalStateException("Response view model unavailable");
             String version = activity.getPackageManager()
                     .getPackageInfo(activity.getPackageName(), 0).versionName;
+            if ("0.8.10.226 dev".equals(version)) {
+                show226FilterDialog(fragment, activity);
+                return true;
+            }
+            Object model = findResponseViewModel(fragment);
+            if (model == null) throw new IllegalStateException("Response view model unavailable");
             String actionName = "0.8.10.241".equals(version) ? "d"
                     : "0.8.10.242 dev".equals(version) ? "b"
                     : "0.8.10.243 dev".equals(version) ? "e" : "d";
@@ -90,6 +94,45 @@ public final class QuickFilterToolbar {
             if (activity != null) Toast.makeText(activity, "フィルタを開けませんでした", Toast.LENGTH_LONG).show();
         }
         return true;
+    }
+
+    /** 226 stores its model in a lazy provider and uses a Kotlin callback to toggle a filter. */
+    private static void show226FilterDialog(Object fragment, Activity activity) throws Exception {
+        java.lang.reflect.Field providerField = fragment.getClass().getDeclaredField("H");
+        providerField.setAccessible(true);
+        Object provider = providerField.get(fragment);
+        if (provider == null) throw new IllegalStateException("226 response model provider unavailable");
+        Method get = provider.getClass().getMethod("e");
+        Object model = get.invoke(provider);
+        if (model == null || !model.getClass().getName().equals("o.getImgAcceptedHeight")) {
+            throw new IllegalStateException("226 response model unavailable");
+        }
+        ClassLoader loader = fragment.getClass().getClassLoader();
+        Class<?> kind = Class.forName("o.setLastGoodStreamIdokhttp", false, loader);
+        Class<?> callbackType = Class.forName("o.listener$setContentView$ComponentActivity", false, loader);
+        java.lang.reflect.Constructor<?> constructor = callbackType.getDeclaredConstructor(Object.class);
+        constructor.setAccessible(true);
+        Object callback = constructor.newInstance(model);
+        Method invoke = callbackType.getDeclaredMethod("invoke", Object.class);
+        invoke.setAccessible(true);
+        String[] names = {"POPULAR", "LINK", "IMAGE", "MOVIE"};
+        Object[] options = kind.getEnumConstants();
+        Object[] values = new Object[names.length];
+        for (int i = 0; i < names.length; i++) {
+            for (Object option : options) {
+                if (((Enum<?>) option).name().equals(names[i])) values[i] = option;
+            }
+            if (values[i] == null) throw new IllegalStateException("226 filter missing: " + names[i]);
+        }
+        new AlertDialog.Builder(activity).setTitle("フィルタ（再選択で解除）")
+                .setItems(new String[]{"人気レス", "リンク", "画像", "動画"}, (dialog, which) -> {
+                    try {
+                        invoke.invoke(callback, values[which]);
+                    } catch (Exception error) {
+                        Log.e("Haiagaru", "226 quick filter failed", error);
+                        Toast.makeText(activity, "フィルタを切り替えられませんでした", Toast.LENGTH_LONG).show();
+                    }
+                }).setNegativeButton("閉じる", null).show();
     }
 
     /** Legacy 191 keeps its four quick filters as data-bound ToggleButtons. */
