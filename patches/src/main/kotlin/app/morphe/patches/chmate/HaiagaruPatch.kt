@@ -2542,6 +2542,14 @@ val haiagaruPatch = resourcePatch(
             "io.ktor.client.engine.okhttp.OkHttpEngineContainer\n",
             Charsets.UTF_8,
         )
+        val cryptoProviderService = get("META-INF").resolve(
+            "services/dev.whyoleg.cryptography.CryptographyProviderContainer",
+        )
+        cryptoProviderService.parentFile.mkdirs()
+        cryptoProviderService.writeText(
+            "dev.whyoleg.cryptography.providers.jdk.JdkCryptographyProviderContainer\n",
+            Charsets.UTF_8,
+        )
         val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
         bundledEmojiFont.parentFile.mkdirs()
         val requestedEmojiMode = emojiMode.value.orEmpty().trim().lowercase(Locale.ROOT)
