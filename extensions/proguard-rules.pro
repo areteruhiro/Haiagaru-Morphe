@@ -1,10 +1,16 @@
--dontobfuscate
+-repackageclasses app.morphe.extension.isolated
 -dontoptimize
 -keepattributes *
 -keep class app.morphe.extension.chmate.** {
     *;
 }
+-keep class dev.carlsen.mega.Mega { *; }
+-keep class io.ktor.client.engine.okhttp.OkHttpEngineContainer { *; }
+-keep class io.ktor.client.HttpClientEngineContainer { *; }
 -keep class rikka.shizuku.** {
+    *;
+}
+-keep class rikka.sui.** {
     *;
 }
 
