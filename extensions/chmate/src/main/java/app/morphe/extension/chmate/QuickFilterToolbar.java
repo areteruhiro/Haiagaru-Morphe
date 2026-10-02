@@ -3,15 +3,19 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.util.Log;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 
 /** Uses the selected fragment's own filter state, never a global active-tab callback. */
 public final class QuickFilterToolbar {
     public static final int ID = 0x7e000002;
+    private static final ArrayList<WeakReference<Object>> legacyBindings = new ArrayList<>();
     private QuickFilterToolbar() {}
 
     public static boolean supported(Context context) {
@@ -102,6 +106,7 @@ public final class QuickFilterToolbar {
             // The filter panel is owned by the activity layout, outside the
             // response fragment's own view on ChMate 191.
             Object binding = findLegacyFilterBinding(activity.getWindow().getDecorView());
+            if (binding == null) binding = rememberedLegacyBinding(activity);
             ToggleButton[] buttons = legacyFilterButtons(binding);
             if (buttons == null) throw new IllegalStateException("Legacy quick-filter buttons unavailable");
             String[] labels = {"人気レス", "リンク", "画像", "動画"};
@@ -145,6 +150,7 @@ public final class QuickFilterToolbar {
     public static void hideLegacyFilterRow(Object binding) {
         if (binding == null || !Haiagaru.compactQuickFilters()) return;
         try {
+            rememberLegacyBinding(binding);
             Class<?> rootBinding = Class.forName("o.getMraidName", false,
                     binding.getClass().getClassLoader());
             java.lang.reflect.Field root = rootBinding.getDeclaredField("a");
@@ -156,6 +162,47 @@ public final class QuickFilterToolbar {
         } catch (Exception error) {
             Log.e("Haiagaru", "Unable to hide legacy quick-filter row", error);
         }
+    }
+
+    private static synchronized void rememberLegacyBinding(Object binding) {
+        legacyBindings.removeIf(reference -> reference.get() == null || reference.get() == binding);
+        legacyBindings.add(new WeakReference<>(binding));
+    }
+
+    private static synchronized Object rememberedLegacyBinding(Activity activity) {
+        android.view.View decor = activity.getWindow().getDecorView();
+        for (int index = legacyBindings.size() - 1; index >= 0; index--) {
+            Object binding = legacyBindings.get(index).get();
+            if (binding == null) {
+                legacyBindings.remove(index);
+                continue;
+            }
+            try {
+                Class<?> rootType = Class.forName("o.getMraidName", false,
+                        binding.getClass().getClassLoader());
+                java.lang.reflect.Field root = rootType.getDeclaredField("a");
+                root.setAccessible(true);
+                Object view = root.get(binding);
+                if (view instanceof android.view.View) {
+                    android.view.View panel = (android.view.View) view;
+                    if (panel.getRootView() == decor || belongsToActivity(panel.getContext(), activity)) {
+                        return binding;
+                    }
+                }
+            } catch (Exception ignored) { }
+        }
+        return null;
+    }
+
+    private static boolean belongsToActivity(Context context, Activity activity) {
+        for (int depth = 0; context != null && depth < 8; depth++) {
+            if (context == activity) return true;
+            if (!(context instanceof ContextWrapper)) break;
+            Context base = ((ContextWrapper) context).getBaseContext();
+            if (base == context) break;
+            context = base;
+        }
+        return false;
     }
 
     private static Object findLegacyFilterBinding(android.view.View view) {

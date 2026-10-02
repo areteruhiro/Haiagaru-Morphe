@@ -424,7 +424,8 @@ public final class Haiagaru {
     }
 
     public static Object addQuickFilterToolbarChoice(Object toolbarModel) {
-        if (!compactQuickFilters()) return toolbarModel;
+        // Keep the action in ChMate's toolbar catalog even while the feature is
+        // off, so users of every supported version can add it before enabling it.
         return addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
     }
 
