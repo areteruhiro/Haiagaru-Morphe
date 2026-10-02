@@ -11,6 +11,7 @@ import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
+import app.morphe.patcher.resource.PublicXmlManager
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
@@ -100,6 +101,10 @@ internal val chMateCompatibility = Compatibility(
             minSdk = 23
         ),
         AppTarget(
+            version = "0.8.10.242 dev",
+            minSdk = 23
+        ),
+        AppTarget(
             version = "0.8.10.243 dev",
             minSdk = 24
         )
@@ -167,6 +172,14 @@ private object EdgeThreadMenu191Fingerprint : Fingerprint(
 private object EdgeSubjectUrl241Fingerprint : Fingerprint(
     definingClass = "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
     name = "B",
+    returnType = "Ljava/lang/String;",
+    parameters = emptyList(),
+    strings = listOf("/subject.txt")
+)
+
+private object EdgeSubjectUrl242Fingerprint : Fingerprint(
+    definingClass = "Ljp/syoboi/a2chMate/client/BBSUrlInfo;",
+    name = "C",
     returnType = "Ljava/lang/String;",
     parameters = emptyList(),
     strings = listOf("/subject.txt")
@@ -299,6 +312,33 @@ private fun profileFor(versionName: String) = when (versionName) {
         homeAdClass = "Lo/setUseHandlerThreadForCallbacks;",
         homeAdLoadMethod = "e",
     )
+    "0.8.10.242 dev" -> ChMateProfile(
+        providerClass = "Lo/isConnected;",
+        providerStartupTrapClass = null,
+        providerStartupDelegateField = "",
+        providerStartupDelegateType = "",
+        providerStartupDelegateMethod = "",
+        settingsViewModelClass = null,
+        applicationClass = "Ljp/syoboi/a2chMate/RoidonApp;",
+        homeFragmentClass = "Ljp/syoboi/a2chMate/ui/home/HomeFragment;",
+        cookieClearMethod = "e",
+        signatureClass = "Lo/TTRewardExpressVideoActivity${'$'}5;",
+        signatureMethod = "c",
+        signatureDelegateField = "a",
+        signatureDelegateType = "Lo/TTRewardExpressVideoActivity${'$'}read;",
+        signatureDelegateMethod = "c",
+        signatureSuperType = "Lo/TTRewardExpressVideoActivity${'$'}RemoteActionCompatParcelizer;",
+        patchSignatureWrapper = true,
+        signatureDirectWrapperBypass = true,
+        viewModelFactoryClass = "Lo/onInterstitialDismissed${'$'}_init_lambda2${'$'}ComponentActivity;",
+        viewModelDispatchField = "e",
+        viewModelTrapKind = ViewModelTrapKind.FAILURE_BRANCH,
+        settingsWindowFeatureDivideTrap = false,
+        hasHiltSettings = true,
+        hasLevelPlayBanner = true,
+        homeAdClass = "Lo/zzbgb;",
+        homeAdLoadMethod = "d",
+    )
     "0.8.10.243 dev" -> ChMateProfile(
         providerClass = "Lo/zzbvh;",
         providerStartupTrapClass = null,
@@ -329,12 +369,298 @@ private fun profileFor(versionName: String) = when (versionName) {
     else -> error("Unsupported ChMate version: $versionName")
 }
 
+private fun BytecodePatchContext.patchEdgeArchiveToolbar(
+    profile: ChMateProfile,
+    versionName: String,
+) {
+    val legacyToolbar = versionName == "0.8.10.191 dev"
+    val toolbarModelType = if (versionName == "0.8.10.191 dev") {
+        "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
+    } else {
+        "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
+    }
+
+    fun MutableMethod.wrapModelReturns() {
+        val indexes = implementation?.instructions
+            ?.withIndex()
+            ?.filter { it.value.opcode == Opcode.RETURN_OBJECT }
+            ?.map { it.index }
+            .orEmpty()
+        for (index in indexes.asReversed()) {
+            val register = (implementation!!.instructions[index] as OneRegisterInstruction).registerA
+            addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->addEdgeArchiveToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
+                    move-result-object v$register
+                check-cast v$register, $toolbarModelType
+                """.trimIndent(),
+            )
+        }
+    }
+
+    val homeToolbarMethods = mutableClassDefBy(profile.homeFragmentClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null
+    }
+    if (homeToolbarMethods.isEmpty()) {
+        throw PatchException("ホームツールバーの生成メソッドを特定できません: $versionName")
+    }
+    homeToolbarMethods.forEach { method ->
+        mutableClassDefBy(profile.homeFragmentClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
+    // A board's thread list owns a separate toolbar model.  Patching the
+    // home model alone makes the choice disappear as soon as a board opens.
+    val threadListClass = when (versionName) {
+        "0.8.10.191 dev" -> "Lo/r8lambdaGCnF6WpW_bFarRe7yCX2B6KzQ;"
+        "0.8.10.226 dev" -> "Lo/Yhp5;"
+        else -> "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListFragment;"
+    }
+    val threadToolbarMethods = mutableClassDefBy(threadListClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null &&
+            (if (legacyToolbar || versionName == "0.8.10.226 dev") method.parameters.isEmpty() else
+                method.parameters.map { it.type } == listOf(threadListClass))
+    }
+    if (threadToolbarMethods.isEmpty()) {
+        throw PatchException("板のスレ一覧ツールバーを特定できません: $versionName")
+    }
+    threadToolbarMethods.forEach { method ->
+        mutableClassDefBy(threadListClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
+    // BoardList2Activity displays board categories through its own fragment.
+    // Its toolbar catalog is distinct from both the home and thread-list catalogs.
+    val boardCategoryClass = when (versionName) {
+        "0.8.10.191 dev" -> "Lo/AdControlButtona;"
+        "0.8.10.226 dev" -> "Lo/setDeployments;"
+        "0.8.10.241" -> "Lo/bea4;"
+        "0.8.10.242 dev" -> "Lo/clearDefaultAccountAndReconnect;"
+        else -> "Lo/zzbya;"
+    }
+    val boardCategoryMethods = mutableClassDefBy(boardCategoryClass).methods.filter { method ->
+        method.returnType == toolbarModelType && method.implementation != null &&
+            (if (legacyToolbar || versionName == "0.8.10.226 dev") method.parameters.isEmpty() else
+                method.parameters.map { it.type } == listOf(boardCategoryClass))
+    }
+    if (boardCategoryMethods.isEmpty()) {
+        throw PatchException("板カテゴリ一覧のツールバーを特定できません: $versionName")
+    }
+    boardCategoryMethods.forEach { method ->
+        mutableClassDefBy(boardCategoryClass).findMutableMethodOf(method).wrapModelReturns()
+    }
+
+    // In 0.8.10.191 this separate model catalog powers the toolbar customization
+    // screen; patch it as well as the default home model so the new choice is
+    // available for users to enable without changing the current toolbar.
+    if (versionName == "0.8.10.191 dev") {
+        val catalogDescriptor = "Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;"
+        val catalogMethods = mutableClassDefBy(catalogDescriptor).methods.filter { method ->
+            method.returnType == toolbarModelType && method.implementation != null
+        }
+        if (catalogMethods.isEmpty()) {
+            throw PatchException("ツールバー項目一覧の生成メソッドを特定できません: $versionName")
+        }
+        catalogMethods.forEach { method ->
+            mutableClassDefBy(catalogDescriptor).findMutableMethodOf(method).wrapModelReturns()
+        }
+    }
+
+    val dispatcherClass = if (versionName == "0.8.10.191 dev") {
+        "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
+    } else {
+        profile.homeFragmentClass
+    }
+    val clickMethods = mutableClassDefBy(dispatcherClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation != null &&
+            method.implementation!!.instructions.isNotEmpty() &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (clickMethods.isEmpty()) {
+        val candidates = mutableClassDefBy(dispatcherClass).methods
+            .filter { it.returnType == "Z" && it.parameters.map { parameter -> parameter.type } ==
+                listOf("I", "Ljava/lang/Object;") }
+        throw PatchException(
+            "ホームツールバーのクリック処理を特定できません: $versionName; candidates=$candidates",
+        )
+    }
+    clickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(dispatcherClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_toolbar_continue", originalFirstInstruction),
+        )
+    }
+
+    val threadClickMethods = mutableClassDefBy(threadListClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation?.instructions?.isNotEmpty() == true &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (threadClickMethods.isEmpty()) {
+        throw PatchException("板のスレ一覧ツールバー操作を特定できません: $versionName")
+    }
+    threadClickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(threadListClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_thread_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_thread_toolbar_continue", originalFirstInstruction),
+        )
+    }
+
+    val boardCategoryClickMethods = mutableClassDefBy(boardCategoryClass).methods.filter { method ->
+        method.returnType == "Z" && method.implementation?.instructions?.isNotEmpty() == true &&
+            method.parameters.map { it.type } == listOf("I", "Ljava/lang/Object;")
+    }
+    if (boardCategoryClickMethods.isEmpty()) {
+        throw PatchException("板カテゴリ一覧のツールバー操作を特定できません: $versionName")
+    }
+    boardCategoryClickMethods.forEach { method ->
+        val mutableMethod = mutableClassDefBy(boardCategoryClass).findMutableMethodOf(method)
+        val resultRegister = mutableMethod.findFreeRegister(0)
+        val originalFirstInstruction = mutableMethod.implementation!!.instructions.first()
+        mutableMethod.addInstructionsWithLabels(
+            0,
+            """
+                invoke-static { p0, p1 }, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
+                move-result v$resultRegister
+                if-eqz v$resultRegister, :haiagaru_edge_board_category_toolbar_continue
+                const/4 v$resultRegister, 0x1
+                return v$resultRegister
+            """.trimIndent(),
+            ExternalLabel("haiagaru_edge_board_category_toolbar_continue", originalFirstInstruction),
+        )
+    }
+}
+
+private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
+    if (version == "0.8.10.191 dev") {
+        val toolbarModelType = "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
+        val builder = mutableClassDefBy("Lo/pa;").methods.single {
+            it.name == "j" && it.returnType == toolbarModelType && it.parameters.isEmpty()
+        }
+        val returnSites = builder.implementation!!.instructions.withIndex()
+            .filter { it.value.opcode == Opcode.RETURN_OBJECT }
+        check(returnSites.isNotEmpty()) { "191 response toolbar return sites missing" }
+        returnSites.asReversed().forEach { (index, instruction) ->
+            val register = (instruction as OneRegisterInstruction).registerA
+            builder.addInstructionsWithLabels(index, """
+                invoke-static/range {v$register .. v$register}, $EXTENSION->addQuickFilterToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v$register
+                check-cast v$register, $toolbarModelType
+            """.trimIndent())
+        }
+        val dispatcherClass = "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
+        val dispatchers = mutableClassDefBy(dispatcherClass).methods.filter {
+            it.returnType == "Z" && it.parameters.map(CharSequence::toString) ==
+                listOf("I", "Ljava/lang/Object;") && it.implementation?.instructions?.isNotEmpty() == true
+        }
+        check(dispatchers.isNotEmpty()) { "191 response toolbar dispatcher missing" }
+        dispatchers.forEach { method ->
+            val mutable = mutableClassDefBy(dispatcherClass).findMutableMethodOf(method)
+            val first = mutable.implementation!!.instructions.first()
+            val result = mutable.findFreeRegister(0)
+            mutable.addInstructionsWithLabels(0, """
+                invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->clickLegacy(Ljava/lang/Object;I)Z
+                move-result v$result
+                if-eqz v$result, :legacy_filter_dispatch
+                const/4 v$result, 0x1
+                return v$result
+            """.trimIndent(), ExternalLabel("legacy_filter_dispatch", first))
+        }
+        val filterBinding = mutableClassDefBy("Lo/j4;").methods.single {
+            it.name == "<init>" && it.parameters.map(CharSequence::toString) ==
+                listOf("Lo/executeOnMainThread;", "Landroid/view/View;")
+        }
+        val constructorReturn = filterBinding.implementation!!.instructions.indexOfLast {
+            it.opcode == Opcode.RETURN_VOID
+        }
+        check(constructorReturn >= 0) { "191 filter binding constructor return missing" }
+        filterBinding.addInstructionsWithLabels(constructorReturn, """
+            invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->hideLegacyFilterRow(Ljava/lang/Object;)V
+        """.trimIndent())
+        return
+    }
+    if (version !in setOf("0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev", "0.8.10.243 dev")) return
+    val fragment = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;"
+    val model = "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
+    val catalog = when (version) {
+        "0.8.10.226 dev" -> "Lo/AdSlot;"
+        "0.8.10.241" -> "Lo/PackageSignatureVerifier;"
+        "0.8.10.242 dev" -> "Lo/zzaB;"
+        else -> "Lo/zzdow;"
+    }
+    // These small catalogs provide both the default and tablet response toolbars.
+    val builders = mutableClassDefBy(catalog).methods.filter {
+        it.returnType == model && it.implementation != null
+    }
+    check(builders.isNotEmpty()) { "242 response toolbar catalog missing" }
+    builders.forEach { builder ->
+    val returns = builder.implementation!!.instructions.withIndex()
+        .filter { it.value.opcode == Opcode.RETURN_OBJECT }.toList().asReversed()
+    returns.forEach { (index, instruction) ->
+        val register = (instruction as OneRegisterInstruction).registerA
+        builder.addInstructionsWithLabels(index, """
+            invoke-static/range {v$register .. v$register}, $EXTENSION->addQuickFilterToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
+            move-result-object v$register
+            check-cast v$register, $model
+        """.trimIndent())
+    }
+    }
+    val dispatchers = mutableClassDefBy(fragment).methods.filter {
+        it.returnType == "Z" && it.parameters.map(CharSequence::toString) ==
+            listOf("I", "Ljava/lang/Object;") && it.implementation?.instructions?.isNotEmpty() == true
+    }
+    check(dispatchers.size == 1) { "$version response-toolbar dispatcher count=${dispatchers.size}" }
+    val dispatcher = dispatchers.single()
+    val first = dispatcher.implementation!!.instructions.first()
+    dispatcher.addInstructionsWithLabels(0, """
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->click(Ljava/lang/Object;I)Z
+        move-result v0
+        if-eqz v0, :original_filter_dispatch
+        return v0
+    """.trimIndent(), ExternalLabel("original_filter_dispatch", first))
+    if (version == "0.8.10.242 dev") {
+        val header = mutableClassDefBy("Lo/isAtLeastS;").methods.single { it.name == "invoke" }
+        val original = header.implementation!!.instructions.first()
+        header.addInstructionsWithLabels(0, """
+            invoke-static {}, $EXTENSION->compactQuickFilters()Z
+            move-result v0
+            if-eqz v0, :original_quick_filter_header
+            sget-object v0, Lo/zzbwq;->INSTANCE:Lo/zzbwq;
+            return-object v0
+        """.trimIndent(), ExternalLabel("original_quick_filter_header", original))
+    }
+    // These releases compose their quick-filter row from version-specific
+    // lambdas. Keep the original row intact until a verified owner is known;
+    // the toolbar entry itself remains opt-in and invokes the same VM action.
+}
+
 private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
     extendWith("extensions/chmate.mpe")
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
+
+        patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
+        patchQuickFilterToolbar(packageMetadata.versionName)
 
         patchNgRegistrationLimit()
 
@@ -389,6 +715,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         if (packageMetadata.versionName in setOf(
                 "0.8.10.191 dev",
                 "0.8.10.226 dev",
+                "0.8.10.242 dev",
                 "0.8.10.243 dev",
             )
         ) {
@@ -525,6 +852,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> {
+                patchLegacyBeResponseBody(
+                    "Lo/processAdDisplayErrorPostbackForUserError;", "c")
                 patchProgrammableNg191()
                 patchPreIoHissiMenu(
                     "Lo/setExtraParameter;", "d",
@@ -533,12 +862,16 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 )
                 patchBbsMenuUrl("a", "Lo/a7a\$read;")
                 patchLegacy5chIoCompatibility()
+                patchLegacyBeSpanBoundary("Lo/o8;")
                 patchLegacyTalkDatLoading()
                 patchLegacyTalkAuthIntegrity()
                 patchLegacyCellularNetworkSelection()
                 patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
+                patchAboutLogoThemeColor226()
+                patchPreIoS2mSettingActivityIntegrityTrap()
+                patchLegacyBeResponseBody("Lo/BouncyCastleSocketAdapterCompanion;", "d")
                 patchProgrammableNg226()
                 patchPreIoHissiMenu()
                 patchBbsMenuUrl("a", "Lo/isInlineAdaptiveAdView\$read;")
@@ -556,12 +889,14 @@ private val haiagaruBytecodePatch = bytecodePatch {
                     parserClass = "Lo/getMaxLine;",
                     drawableClass = "Lo/getFlexDirection;",
                 )
+                patchLegacyBeSpanBoundary("Lo/getFlexLinesInternal;")
                 patchPreIoUrlSpanAlignment("Lo/getMaxLine;")
                 patchPreIoDomainCompatibility(
                     parseMethodName = "c",
                 )
             }
             "0.8.10.243 dev" -> {
+                patchLegacyBeResponseBody("Lo/zzabv;", "j")
                 patchProgrammableNgModern("Lo/zzdic;", "a", "c")
                 patchPreIoHissiMenu("Lo/zzacz;", "c", "Lo/zzabv;", "Lo/zzacz\$write;")
                 patchSetTextCalls()
@@ -572,12 +907,23 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchModernTalkIntegrityPrimitives()
             }
             "0.8.10.241" -> {
+                patchLegacyBeResponseBody("Lo/setDislikeWidth;", "g")
                 patchPreIoHissiMenu("Lo/lhA1;", "d", "Lo/setDislikeWidth;", "Lo/lhA1\$write;")
                 patchSetTextCalls()
                 patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
                 patchIoTalkDatLoading()
                 patchIoTalkPostIntegrity()
                 patchIoThreadRefreshCache()
+            }
+            "0.8.10.242 dev" -> {
+                patchLegacyBeResponseBody("Lo/KeJ11;", "h")
+                patchProgrammableNgModern("Lo/emptyToNull;", "c", "c")
+                patchPreIoHissiMenu("Lo/kUGNk2;", "c", "Lo/KeJ11;", "Lo/kUGNk2\$ComponentActivity;")
+                patchSetTextCalls()
+                patchBbsMenuUrl("c", "Lo/getPlayProviderFactory\$ComponentActivity;")
+                patchModernTalkDatLoading242()
+                patchModernTalkPostIntegrity("Lo/getTopCountDown;")
+                patchImageUploadIntegrity242()
             }
             else -> patchSetTextCalls()
         }
@@ -595,19 +941,95 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 EdgeThreadMenu226Fingerprint.method.preserveEdgeReporterTitle("Lo/MessageInflater;", "m")
             }
             "0.8.10.241" -> EdgeSubjectUrl241Fingerprint.method.rewriteEdgeSubjectUrl()
+            "0.8.10.242 dev" -> EdgeSubjectUrl242Fingerprint.method.rewriteEdgeSubjectUrl()
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
+        patchEdgeReporterTitleCopy(packageMetadata.versionName)
+        patchWacchoiLongPressMenu(packageMetadata.versionName)
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
+}
+
+/**
+ * The 226 About screen renders its large ChMate wordmark with an explicit
+ * zero color. Its copyright label already asks the active Compose theme for
+ * foreground text color; use the same source for the wordmark so 夜 stays legible.
+ */
+private fun BytecodePatchContext.patchAboutLogoThemeColor226() {
+    val about = mutableClassDefBy("Lo/getAdShowTime;")
+    val method = about.methods.single { candidate ->
+        candidate.name == "d"
+            && candidate.returnType == "Lo/Ff11;"
+            && candidate.implementation?.instructions?.any { instruction ->
+                (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 0x7f100048
+            } == true
+    }
+    val calls = method.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (reference?.definingClass == "Lo/DtbSharedPreferences;"
+            && reference.name == "d"
+            && reference.returnType == "V"
+        ) index else null
+    }
+    check(calls.size == 1) { "ChMate 226 About wordmark text call changed" }
+    method.addInstructionsWithLabels(calls.single(), """
+        invoke-static/range { p1 .. p1 }, Lo/setUrl;->c(Lo/getValue;)Lo/getLocation;
+        move-result-object v2
+        invoke-virtual { v2 }, Lo/getLocation;->P()J
+        move-result-wide v2
+    """.trimIndent())
+}
+
+/**
+ * 226's paid-option sync screen contains a certificate-dependent arithmetic
+ * decoy in S2MSettingActivity's generated dispatch method.  After Morphe
+ * re-signing, its divisor becomes zero immediately before the first sync
+ * listener is created, so the user is returned to Home instead of reaching
+ * the key-registration screen.  Match the stable divide/allocation boundary
+ * rather than generated callback class names.
+ */
+private fun BytecodePatchContext.patchPreIoS2mSettingActivityIntegrityTrap() {
+    val activity = mutableClassDefBy(
+        "Ljp/syoboi/chmate2/ui/s2msetting/S2MSettingActivity;",
+    )
+    val method = activity.methods.single { candidate ->
+        candidate.name == "e"
+            && candidate.returnType == "Ljava/lang/Object;"
+            && candidate.parameters.map(CharSequence::toString) ==
+            listOf("[Ljava/lang/Object;")
+    }
+    val instructions = method.implementation?.instructions?.toList()
+        ?: error("ChMate 226 S2MSettingActivity dispatch method has no implementation")
+    // The integrity block ends with the calculated divisor immediately before
+    // the first callback object is allocated.  Matching that stable instruction
+    // boundary is more reliable than matching Yhp19/setTextClassifier, whose
+    // generated names and constructor references are rewritten between APK
+    // builds.  Keep a small window for dex writers that insert a move or nop.
+    val divideIndex = instructions.indices.lastOrNull { index ->
+        val opcode = instructions[index].opcode.name
+        if (!opcode.startsWith("div-int")) {
+            return@lastOrNull false
+        }
+        instructions.subList(index + 1, minOf(index + 4, instructions.size))
+            .any { it.opcode.name == "new-instance" }
+    } ?: error("ChMate 226 S2MSettingActivity sync divide trap was not found")
+
+    val resultRegister = (instructions[divideIndex] as? ThreeRegisterInstruction)?.registerA
+        ?: error("ChMate 226 S2MSettingActivity divide registers were not found")
+    method.replaceInstruction(divideIndex, "const/4 v$resultRegister, 0x0")
 }
 
 /** Rewrites only the temporary PostData copy passed to the posting engine. */
 private fun BytecodePatchContext.patchExternalEmojiPostCopy(version: String) {
     val postType = if (version == "0.8.10.226 dev")
         "Lo/setBorderWidth;" else "Ljp/syoboi/a2chMate/postdata/PostData;"
-    val copyName = if (version == "0.8.10.226 dev") "a" else "e"
+    val copyName = when (version) {
+        "0.8.10.226 dev" -> "a"
+        "0.8.10.242 dev" -> "d"
+        else -> "e"
+    }
     val editor = mutableClassDefBy("Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
     var patched = 0
     editor.methods.forEach { method ->
@@ -908,6 +1330,217 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
     )
 }
 
+/** Install the Wacchoi item alongside ChMate's custom response-menu actions. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressMenu(
+    versionName: String,
+) {
+    if (versionName == "0.8.10.242 dev") {
+        val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
+        val method = mutableClassDefBy(owner).methods.single { method ->
+            method.returnType == "V" && method.parameters.map(CharSequence::toString) == listOf(
+                owner, "Lo/isDataValid;", "Ljp/syoboi/a2chMate/client/BoardID;", "Ljava/lang/String;",
+            ) && method.implementation?.instructions?.any {
+                ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "NGName"
+            } == true
+        }
+        mutableClassDefBy(owner).findMutableMethodOf(method).addInstructionsWithLabels(0, """
+            invoke-static/range {p0 .. p3}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendNameSheet(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V
+        """.trimIndent())
+        println("Wacchoi name-sheet hook: ${method.name}")
+        return
+    }
+    if (versionName == "0.8.10.191 dev") {
+        patchLegacyWacchoiLongPressMenu()
+        return
+    }
+
+    val owner = "Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;"
+    val candidates = mutableClassDefBy(owner).methods.filter { method ->
+        method.parameters.isEmpty()
+            && method.returnType != "V"
+            && method.implementation?.instructions?.any { instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                reference?.name == "findItem"
+                    && reference.parameterTypes.map(CharSequence::toString) == listOf("I")
+            } == true
+            && method.implementation?.instructions?.any { instruction ->
+                (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 70
+            } == true
+            && method.implementation?.instructions?.any { instruction ->
+                val literal = (instruction as? NarrowLiteralInstruction)?.narrowLiteral
+                literal == 74 || literal == 75
+            } == true
+            && method.implementation?.instructions?.any { it.opcode == Opcode.RETURN_OBJECT } == true
+    }
+    check(candidates.size == 1) {
+        "Expected one ${versionName} response context-menu builder, found ${candidates.size}"
+    }
+    val builder = candidates.single()
+    val builderInstructions = builder.implementation!!.instructions.toList()
+    val returns = builderInstructions.mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.RETURN_OBJECT) {
+            index to (instruction as OneRegisterInstruction).registerA
+        } else null
+    }.asReversed()
+    val mutableBuilder = mutableClassDefBy(owner).findMutableMethodOf(builder)
+    returns.forEach { (index, register) ->
+        mutableBuilder.addInstructionsWithLabels(index, """
+            invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendForCurrentDialog(Ljava/lang/Object;)V
+        """.trimIndent())
+    }
+    mutableBuilder.addInstructionsWithLabels(0, """
+        invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->captureDialog(Ljava/lang/Object;)V
+    """.trimIndent())
+
+    var dispatcherCount = 0
+    classDefForEach { classDef ->
+        classDef.methods.forEach methodLoop@ { method ->
+            if (method.returnType != "Z") return@methodLoop
+            val instructions = method.implementation?.instructions?.toList()
+                ?: return@methodLoop
+            if (instructions.none { instruction ->
+                    val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                    reference?.definingClass == "Landroid/view/MenuItem;"
+                        && reference.name == "getItemId"
+                        && reference.returnType == "I"
+                        && reference.parameterTypes.isEmpty()
+                }) return@methodLoop
+
+            val upperBounds = instructions.mapIndexedNotNull { index, instruction ->
+                val literal = (instruction as? NarrowLiteralInstruction)?.narrowLiteral
+                if (literal != 74 && literal != 75) return@mapIndexedNotNull null
+                val prior = instructions.subList(maxOf(0, index - 12), index)
+                if (prior.any { (it as? NarrowLiteralInstruction)?.narrowLiteral == 70 }) {
+                    index to literal
+                } else null
+            }
+            if (upperBounds.isEmpty()) return@methodLoop
+            val mutableMethod = mutableClassDefBy(classDef).findMutableMethodOf(method)
+            upperBounds.forEach { (index, literal) ->
+                val register = (instructions[index] as OneRegisterInstruction).registerA
+                val expandedBoundary = if (literal == 74) 75 else 76
+                mutableMethod.replaceInstruction(index,
+                    "const/16 v$register, 0x${expandedBoundary.toString(16)}")
+                dispatcherCount++
+            }
+        }
+    }
+    check(dispatcherCount == 1) {
+        "Expected one ${versionName} custom response-menu dispatcher, patched $dispatcherCount"
+    }
+    println("Wacchoi response-menu hook: builder=${builder.name}, dispatcher=$dispatcherCount")
+}
+
+/**
+ * ChMate 191 builds its response long-press popup from a Menu inflated inside
+ * the legacy ResListFragment callback, then dispatches MenuItems carrying an
+ * Intent directly. Add the same board-aware action at that inflation point.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLongPressMenu() {
+    val owner = "Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;"
+    val candidates = mutableClassDefBy(owner).methods.filter { method ->
+        method.name == "e"
+            && method.returnType == "Z"
+            && method.parameters.map(CharSequence::toString) == listOf(
+                "I",
+                "Ljava/lang/Object;",
+            )
+            && method.implementation?.instructions?.withIndex()?.any { indexed ->
+                val index = indexed.index
+                val instruction = indexed.value
+                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                reference?.definingClass == "Landroid/view/MenuInflater;"
+                    && reference.name == "inflate"
+                    && reference.parameterTypes.map(CharSequence::toString) == listOf(
+                        "I",
+                        "Landroid/view/Menu;",
+                    )
+                    && method.implementation!!.instructions.subList(maxOf(0, index - 3), index)
+                        .any { (it as? NarrowLiteralInstruction)?.narrowLiteral == 0x7f0e0006 }
+            } == true
+    }
+    check(candidates.size == 1) {
+        "Expected one ChMate 191 response long-press menu callback, found ${candidates.size}"
+    }
+
+    val callback = candidates.single()
+    val implementation = callback.implementation!!
+    val instructions = implementation.instructions.toList()
+    val parameterWords = 1 + callback.parameters.sumOf { parameter ->
+        if (parameter.type == "J" || parameter.type == "D") 2 else 1
+    }
+    val firstParameterRegister = implementation.registerCount - parameterWords
+    val receiverRegister = firstParameterRegister
+    val targetRegister = firstParameterRegister + 2
+    val receiverLocal = instructions.mapIndexedNotNull { _, instruction ->
+        if (instruction.opcode !in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)) {
+            return@mapIndexedNotNull null
+        }
+        val move = instruction as? TwoRegisterInstruction ?: return@mapIndexedNotNull null
+        if (move.registerB == receiverRegister) move.registerA else null
+    }.firstOrNull()
+    val targetLocal = instructions.mapIndexedNotNull { _, instruction ->
+        if (instruction.opcode !in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)) {
+            return@mapIndexedNotNull null
+        }
+        val move = instruction as? TwoRegisterInstruction ?: return@mapIndexedNotNull null
+        if (move.registerB == targetRegister) move.registerA else null
+    }.firstOrNull()
+    check(receiverLocal != null && targetLocal != null && receiverLocal < 16 && targetLocal < 16) {
+        "ChMate 191 long-press callback register aliases changed"
+    }
+
+    val menuInflate = instructions.mapIndexedNotNull { index, instruction ->
+        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (reference?.definingClass != "Landroid/view/MenuInflater;"
+            || reference.name != "inflate"
+            || instructions.subList(maxOf(0, index - 3), index)
+                .none { (it as? NarrowLiteralInstruction)?.narrowLiteral == 0x7f0e0006 }) {
+            return@mapIndexedNotNull null
+        }
+        val registers = when (instruction) {
+            is FiveRegisterInstruction -> when (instruction.registerCount) {
+                3 -> listOf(instruction.registerC, instruction.registerD, instruction.registerE)
+                4 -> listOf(instruction.registerC, instruction.registerD, instruction.registerE, instruction.registerF)
+                5 -> listOf(instruction.registerC, instruction.registerD, instruction.registerE,
+                    instruction.registerF, instruction.registerG)
+                else -> emptyList()
+            }
+            is RegisterRangeInstruction -> (instruction.startRegister until
+                    instruction.startRegister + instruction.registerCount).toList()
+            else -> emptyList()
+        }
+        if (registers.size != 3) return@mapIndexedNotNull null
+        index to registers.last()
+    }
+    check(menuInflate.size == 1) { "ChMate 191 response menu inflater anchor changed" }
+    val (inflateIndex, menuRegister) = menuInflate.single()
+    check(menuRegister < 16) { "ChMate 191 response Menu register cannot use invoke-static" }
+
+    val mutableCallback = mutableClassDefBy(owner).findMutableMethodOf(callback)
+    mutableCallback.addInstructionsWithLabels(
+        inflateIndex + 1,
+        """
+            invoke-static { v$receiverLocal, v$menuRegister, v$targetLocal }, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendLegacyForView(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+        """.trimIndent(),
+    )
+    // Legacy popup selection forwards MenuItem.getItemId() and the MenuItem
+    // to e(ILjava/lang/Object;). Handle only our new ID and let every existing
+    // branch keep its original dispatch behavior.
+    mutableCallback.addInstructionsWithLabels(
+        0,
+        """
+            invoke-static/range { p0 .. p2 }, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->dispatchLegacyMenuItem(Ljava/lang/Object;ILjava/lang/Object;)Z
+            move-result v0
+            if-eqz v0, :legacy_wacchoi_continue
+            const/4 v0, 0x1
+            return v0
+        """.trimIndent(),
+        ExternalLabel("legacy_wacchoi_continue", instructions.first()),
+    )
+    println("Wacchoi response-menu hook: legacy ChMate 191 Menu inflation")
+}
+
 /**
  * The response long-press route may skip the menu-template expander. Intercept
  * the external activity launch itself and make only Hissi checker intents
@@ -917,7 +1550,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalIntentBoundaries() {
     var patched = 0
     classDefForEach { classDef ->
-        if (classDef.type.startsWith("Lapp/morphe/extension/")) return@classDefForEach
+        if (classDef.type.startsWith("Lapp/morphe/extension/")
+            || (!classDef.type.startsWith("Ljp/syoboi/")
+                && !classDef.type.startsWith("Lo/"))) return@classDefForEach
         val mutableClass = mutableClassDefBy(classDef)
         classDef.methods.forEach methodLoop@ { method ->
             val instructions = method.implementation?.instructions?.toList()
@@ -993,6 +1628,37 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoad
     """.trimIndent())
 }
 
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoading242() {
+    val loader = mutableClassDefBy("Lo/getHostAppName;").methods.single { method ->
+        method.name == "e" && method.returnType == "Lo/getBackImage\$read;"
+            && method.parameters.map(CharSequence::toString) == listOf(
+                "Ljp/syoboi/a2chMate/client/BBSUrlInfo;", "Z", "Lo/onTooManyRedirects;"
+            )
+    }
+    val instructions = loader.implementation!!.instructions.toList()
+    val cacheCall = instructions.indexOfFirst {
+        val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
+        reference?.returnType == "Ljava/io/File;"
+            && reference.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
+    }.takeIf { it >= 0 } ?: error("ChMate 242 thread cache builder was not found")
+    val urlRegister = (instructions[cacheCall] as FiveRegisterInstruction).registerD
+    val cacheRegister = (instructions[cacheCall + 1] as OneRegisterInstruction).registerA
+    val scratch = loader.findFreeRegister(cacheCall + 2)
+    loader.addInstructionsWithLabels(cacheCall + 2, """
+        invoke-virtual {v$urlRegister}, Ljp/syoboi/a2chMate/client/BBSUrlInfo;->A()Ljava/lang/String;
+        move-result-object v$scratch
+        invoke-static {v$scratch, v$cacheRegister}, $EXTENSION->loadLiveTalkDat(Ljava/lang/String;Ljava/io/File;)Z
+        move-result v$scratch
+        if-eqz v$scratch, :haiagaru_242_normal_download
+        new-instance v$scratch, Lo/getBackImage${'$'}read;
+        invoke-direct {v$scratch, v$cacheRegister, v$urlRegister}, Lo/getBackImage${'$'}read;-><init>(Ljava/io/File;Ljp/syoboi/a2chMate/client/BBSUrlInfo;)V
+        return-object v$scratch
+        :haiagaru_242_normal_download
+        nop
+    """.trimIndent())
+}
+
 /**
  * 226 has the same native Talk type-4 URL model as 243, but its downloader uses
  * the pre-io class layout. Publish the current Talk JSON as a normal DAT as soon
@@ -1028,6 +1694,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoTalkDatLoadi
     loader.addInstructionsWithLabels(
         cacheCall + 2,
         """
+            invoke-static {v$urlInfoRegister}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V
             invoke-virtual {v$urlInfoRegister}, Ljp/syoboi/a2chMate/client/BBSUrlInfo;->G()Ljava/lang/String;
             move-result-object v$scratchRegister
             invoke-static {v$scratchRegister, v$cacheFileRegister}, $EXTENSION->loadLiveTalkDat(Ljava/lang/String;Ljava/io/File;)Z
@@ -1049,8 +1716,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoTalkDatLoadi
  * the extension so the generated request construction itself remains unchanged.
  */
 /** 243's generated token builder keeps its integrity cache in o.setExtras. */
-private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkPostIntegrity() {
-    val networkClass = mutableClassDefBy("Lo/zzaat;")
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkPostIntegrity(
+    networkOwner: String = "Lo/zzaat;",
+) {
+    val networkClass = mutableClassDefBy(networkOwner)
     val candidates = networkClass.methods.flatMap { method ->
         val instructions = method.implementation?.instructions ?: return@flatMap emptyList()
         instructions.mapIndexedNotNull { index, instruction ->
@@ -1111,6 +1780,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchTabletThreadHeade
         "0.8.10.191 dev" -> return
         "0.8.10.226 dev" -> "Lo/writeWindowUpdateLaterokhttp;"
         "0.8.10.241" -> "Lo/getRewardItem;"
+        "0.8.10.242 dev" -> "Lo/isAtLeastS;"
         "0.8.10.243 dev" -> "Lo/zzdhn;"
         else -> return
     }
@@ -1288,6 +1958,15 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTalkDatLoad
             && method.parameters[1].toString() == "Z"
             && method.parameters[2].toString() == "Z"
     }
+    // The URL classifier is not the only constructor used by 191.  Normalize
+    // the transport immediately before the downloader reads BBSUrlInfo so a
+    // Talk request cannot fall through to the re-signed type-4 authenticator.
+    // p1 lives above v15 in this large method. The non-range invoke cannot
+    // encode it, so keep the existing parameter register via invoke-range.
+    method.addInstruction(
+        0,
+        "invoke-static/range {p1 .. p1}, $EXTENSION->normalizeLegacyTalkTransport(Ljava/lang/Object;)V",
+    )
     val instructions = method.implementation?.instructions?.toList()
         ?: error("ChMate legacy thread loader has no implementation")
     val cachePathIndex = instructions.indexOfFirst { instruction ->
@@ -1783,7 +2462,77 @@ val haiagaruPatch = resourcePatch(
         description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
     )
 
+    val edgeArchiveToolbarIconPath = stringOption(
+        key = "edgeArchiveToolbarIconPath",
+        default = "",
+        title = "エッジ過去ログのツールバー画像（任意）",
+        description = "パッチ実行端末上のPNG/WebP画像の絶対パス。空欄なら内蔵アイコンを使用します。",
+    )
+
     execute {
+        document("res/values/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_edge_archive")
+            entry.textContent = "エッジ過去ログ"
+            strings.documentElement.appendChild(entry)
+        }
+        document("res/values-en/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_edge_archive")
+            entry.textContent = "Edge archive"
+            strings.documentElement.appendChild(entry)
+        }
+        PublicXmlManager(get("res/values/public.xml")).use { publicResources ->
+            publicResources.createPublicId("string", "haiagaru_edge_archive")
+            publicResources.createPublicId("drawable", "haiagaru_edge_archive")
+        }
+        document("res/values/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_quick_filter")
+            entry.textContent = "フィルタ"
+            strings.documentElement.appendChild(entry)
+        }
+        PublicXmlManager(get("res/values/public.xml")).use {
+            it.createPublicId("string", "haiagaru_quick_filter")
+            it.createPublicId("drawable", "haiagaru_quick_filter")
+        }
+        get("res").resolve("drawable/haiagaru_quick_filter.xml").writeText("""
+            <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                <path android:fillColor="#FFFFFFFF" android:pathData="M3,4h18l-7,8v7l-4,2V12z"/>
+            </vector>
+        """.trimIndent())
+        val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
+        if (iconSourcePath.isEmpty()) {
+            val iconTarget = get("res").resolve("drawable/haiagaru_edge_archive.xml")
+            iconTarget.parentFile.mkdirs()
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+                "/chmate/drawable/haiagaru_edge_archive.xml",
+            )) { "Bundled Edge archive toolbar icon is missing" }.use { source ->
+                iconTarget.outputStream().use(source::copyTo)
+            }
+        } else {
+            val iconSource = File(iconSourcePath)
+            if (!iconSource.isFile || !iconSource.canRead() ||
+                iconSource.extension.lowercase(Locale.ROOT) !in setOf("png", "webp")) {
+                throw PatchException("edgeArchiveToolbarIconPathは読み込み可能なPNG/WebP画像を指定してください")
+            }
+            val iconTarget = get("res").resolve(
+                "drawable-nodpi/haiagaru_edge_archive.${iconSource.extension.lowercase(Locale.ROOT)}",
+            )
+            iconTarget.parentFile.mkdirs()
+            iconSource.copyTo(iconTarget, overwrite = true)
+        }
+        // Mega constructs Ktor's default client before we can replace it.
+        // Preserve the ServiceLoader entry in the host APK so initialization
+        // can select the bundled OkHttp engine on Android.
+        val ktorEngineService = get("META-INF").resolve(
+            "services/io.ktor.client.HttpClientEngineContainer",
+        )
+        ktorEngineService.parentFile.mkdirs()
+        ktorEngineService.writeText(
+            "io.ktor.client.engine.okhttp.OkHttpEngineContainer\n",
+            Charsets.UTF_8,
+        )
         val bundledEmojiFont = get("assets").resolve("haiagaru/NotoColorEmoji.ttf")
         bundledEmojiFont.parentFile.mkdirs()
         val requestedEmojiMode = emojiMode.value.orEmpty().trim().lowercase(Locale.ROOT)
@@ -1820,6 +2569,16 @@ val haiagaruPatch = resourcePatch(
             "mode=$requestedEmojiMode\n",
             Charsets.UTF_8,
         )
+        if (dedicatedViewerEnabled) {
+            val monaFont = get("assets").resolve("haiagaru/MonaLite.ttf")
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+                "/chmate/fonts/MonaLite.ttf",
+            )) {
+                "MonaLite font is missing from the Haiagaru Android patch bundle"
+            }.use { source ->
+                monaFont.outputStream().use(source::copyTo)
+            }
+        }
 
         val customUrls = parseAdditionalOpenUrls(additionalOpenUrls.value.orEmpty())
         document("AndroidManifest.xml").use { document ->
@@ -1939,16 +2698,26 @@ val haiagaruPatch = resourcePatch(
             }
             application.appendChild(openUrlActivity)
 
+            // Keep the archive page in the same lightweight WebView activity as
+            // the checker.  It is declared even when the optional Hissi viewer
+            // is disabled, because Edge archives are an independent feature.
+            val hissiActivity = document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
+                setAttributeNS(
+                    ANDROID_XML_NAMESPACE,
+                    "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar",
+                )
+            }
+            document.addOpenUrlFilter(
+                hissiActivity,
+                listOf("haiagaru-eddi", "http", "https"),
+                "eddiarchive3rd.boy.jp",
+                path = "/",
+                pathAttribute = "android:pathPrefix",
+            )
             if (dedicatedViewerEnabled) {
-                val hissiActivity = document.createElement("activity").apply {
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", HISSI_MENU_ACTIVITY)
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
-                    setAttributeNS(
-                        ANDROID_XML_NAMESPACE,
-                        "android:theme",
-                        "@android:style/Theme.Material.Light.NoActionBar",
-                    )
-                }
                 document.addOpenUrlFilter(
                     hissiActivity,
                     listOf("haiagaru-hissi", "haiagaru-hissis"),
@@ -1973,6 +2742,8 @@ val haiagaruPatch = resourcePatch(
                     "android:usesCleartextTraffic",
                     "true",
                 )
+            } else {
+                application.appendChild(hissiActivity)
             }
         }
     }
@@ -2331,6 +3102,34 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageSelectionRef
     )
 }
 
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegrity242() {
+    val method = mutableClassDefBy("Lo/ApiMetadataBuilder;").methods.single {
+        it.name == "c" && it.parameters.isEmpty() && it.returnType == "Lo/zzbtj;"
+    }
+    val instructions = method.implementation?.instructions
+        ?: error("ChMate 242 image upload implementation missing")
+    val comparison = instructions.indices.single { index ->
+        if (instructions[index].opcode != Opcode.IF_NE || index < 6) return@single false
+        val window = instructions.subList(index - 6, index)
+        window.map { it.opcode } == listOf(
+            Opcode.AGET_OBJECT, Opcode.CHECK_CAST, Opcode.AGET,
+            Opcode.AGET_OBJECT, Opcode.CHECK_CAST, Opcode.AGET,
+        )
+    }
+    val first = instructions[comparison - 6] as ThreeRegisterInstruction
+    val second = instructions[comparison - 3] as ThreeRegisterInstruction
+    check(first.registerB == second.registerB) { "ChMate 242 integrity arrays differ" }
+    // Normalize at the comparison, after either cached or freshly generated state
+    // has been selected. Unlike the diagnostic hook this requires no clock/cache
+    // manipulation and also works on the first upload after a process restart.
+    val register = first.registerB
+    method.addInstruction(
+        comparison - 6,
+        "invoke-static/range { v$register .. v$register }, " +
+            "$EXTENSION->normalizeImageUploadIntegrity242([Ljava/lang/Object;)V",
+    )
+}
+
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageUploadIntegrityComparison() {
     val method = mutableClassDefBy("Lo/zzbwa;").methods.single { candidate ->
         candidate.name == "d"
@@ -2498,7 +3297,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyTabletThrea
     val (methodName, fragmentType) = when (versionName) {
         "0.8.10.191 dev" -> "Sq_" to "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
         "0.8.10.226 dev" -> "d" to "Landroidx/fragment/app/Fragment;"
-        "0.8.10.243 dev" -> "c" to "Landroidx/fragment/app/Fragment;"
+        "0.8.10.242 dev", "0.8.10.243 dev" -> "c" to "Landroidx/fragment/app/Fragment;"
         else -> error("Unsupported tablet thread entry version: $versionName")
     }
     val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
@@ -3302,7 +4101,12 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUpload
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
     classDefForEach { classDef ->
-        if (classDef.type.startsWith("Lapp/morphe/extension/chmate/")) {
+        // setText is only patched in ChMate's own obfuscated/application
+        // classes. Walking every bundled AndroidX/ad-SDK class made 226/241/
+        // 243 patching needlessly expensive and touched unrelated widgets.
+        if (classDef.type.startsWith("Lapp/morphe/extension/chmate/")
+            || (!classDef.type.startsWith("Ljp/syoboi/")
+                && !classDef.type.startsWith("Lo/"))) {
             return@classDefForEach
         }
 
@@ -3344,6 +4148,44 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
             }
         }
     }
+}
+
+/**
+ * Older DAT rows contain sssp://img.5ch.net/premium/... while current rows
+ * contain the same BE token on img.5ch.io. Normalize the stored response body
+ * as it is constructed, before both the inline renderer and the copy-paste/NG
+ * and attachment projections read it. The exact token keeps ordinary URLs intact.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseBody(
+    responseModelClass: String,
+    bodyField: String,
+) {
+    val responseClass = mutableClassDefBy(responseModelClass)
+    var assignments = 0
+    responseClass.methods.filter { it.name == "<init>" }.forEach { constructor ->
+        val sites = constructor.implementation?.instructions
+            ?.mapIndexedNotNull { index, instruction ->
+                val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    ?: return@mapIndexedNotNull null
+                if (instruction.opcode != Opcode.IPUT_OBJECT
+                    || field.definingClass != responseModelClass
+                    || field.name != bodyField
+                    || field.type != "Ljava/lang/String;"
+                ) return@mapIndexedNotNull null
+                index to (instruction as TwoRegisterInstruction).registerA
+            }.orEmpty()
+        sites.asReversed().forEach { (index, register) ->
+            constructor.addInstructionsWithLabels(
+                index,
+                """
+                    invoke-static/range { v$register .. v$register }, $EXTENSION->normalizeLegacyBeBody(Ljava/lang/String;)Ljava/lang/String;
+                    move-result-object v$register
+                """,
+            )
+            assignments++
+        }
+    }
+    check(assignments > 0) { "BE response body assignment missing: $responseModelClass" }
 }
 
 /**
@@ -3418,6 +4260,34 @@ private fun MutableMethod.filterBeAttachmentArrayReturns() {
     }
 }
 
+/** Keep a legacy BE image span on the DAT-token line, not across the next newline. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeSpanBoundary(
+    bufferClass: String,
+) {
+    val spanBuilder = mutableClassDefBy(bufferClass).methods.single { method ->
+        method.returnType == "Landroid/text/SpannableString;"
+            && method.parameters.isEmpty()
+    }
+    val spanSite = spanBuilder.implementation?.instructions
+        ?.mapIndexedNotNull { index, instruction ->
+            val reference = (instruction as? ReferenceInstruction)?.reference
+                as? MethodReference ?: return@mapIndexedNotNull null
+            if (reference.definingClass == "Landroid/text/SpannableString;"
+                && reference.name == "setSpan"
+                && reference.parameterTypes.map(CharSequence::toString) ==
+                listOf("Ljava/lang/Object;", "I", "I", "I")
+            ) index to (instruction as FiveRegisterInstruction) else null
+        }?.singleOrNull() ?: error("BE span builder was not found: $bufferClass")
+    val (index, invocation) = spanSite
+    spanBuilder.addInstructionsWithLabels(
+        index,
+        """
+            invoke-static { v${invocation.registerC}, v${invocation.registerD}, v${invocation.registerE}, v${invocation.registerF} }, $EXTENSION->correctLegacyBeSpanEnd(Ljava/lang/CharSequence;Ljava/lang/Object;II)I
+            move-result v${invocation.registerF}
+        """,
+    )
+}
+
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoBeRendering(
     parserClass: String,
     drawableClass: String,
@@ -3431,7 +4301,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoBeRendering(
     parserMethod.addInstructionsWithLabels(
         0,
         """
-            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static/range { p1 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;
             move-result-object p2
         """,
     )
@@ -3793,7 +4663,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
     legacyTextParserMethod.addInstructionsWithLabels(
         0,
         """
-            invoke-static/range { p2 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/String;)Ljava/lang/String;
+            invoke-static/range { p1 .. p2 }, $EXTENSION->prepareLegacyBeParsing(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;
             move-result-object p2
         """
     )
@@ -4368,7 +5238,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostPreflightVali
     }
 
     val expected = when (version) {
-        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241" -> 1
+        "0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev" -> 1
         "0.8.10.243 dev" -> 0
         else -> error("Unsupported ChMate version: $version")
     }
@@ -4415,6 +5285,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         "0.8.10.191 dev" -> listOf("Lo/r8lambdaEBvvDaQDWIaS7WUoordU_4sxR3Y;", "Lo/isReady;", "Lo/getLabel;")
         "0.8.10.226 dev" -> listOf("Lo/TrustRootIndex;", "Lo/MessageInflater;", "Lo/OpenJSSEPlatformCompanion;")
         "0.8.10.241" -> listOf("Lo/tul11;", "Lo/changeVideoState;", "Lo/VLj;")
+        "0.8.10.242 dev" -> listOf("Lo/initView;", "Lo/TopLayoutDislike22;", "Lo/getImageView;")
         else -> listOf("Lo/zzaA;", "Lo/zzaC;", "Lo/zzaaq;")
     }
     val writes = mutableClassDefBy(owners[0]).methods.filter {
@@ -4443,7 +5314,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         val sites = instructions.indices.filter { index ->
             val ref = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
             ref != null && (ref.definingClass == "Ljp/syoboi/a2chMate/data/BBSThreadList;"
-                    || ref.definingClass == "Lo/zzadh;") && ref.parameterTypes.firstOrNull() == "Ljava/io/InputStream;"
+                    || ref.definingClass == "Lo/zzadh;"
+                    || ref.definingClass == "Lo/setSkipEnable;") && ref.parameterTypes.firstOrNull() == "Ljava/io/InputStream;"
                     && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
         }
         sites.asReversed().forEach { index ->
@@ -4482,6 +5354,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"
             "0.8.10.241" -> "Lo/TTRewardVideoActivity2;"
+            "0.8.10.242 dev" -> "Lo/getLandscapeInlineAdaptiveBannerAdSize;"
             else -> "Lo/zzawg;"
         }
         val entry = mutableClassDefBy(owner).methods.single {
@@ -4497,4 +5370,30 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
             nop
         """)
     }
+}
+
+/** Remove the cached Edge reporter suffix only when a title reaches the clipboard. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterTitleCopy(version: String) {
+    val owner = when (version) {
+        "0.8.10.191 dev" -> "Lo/o8ExternalSyntheticLambda0;"
+        "0.8.10.226 dev" -> "Lo/getFlexItemCount;"
+        "0.8.10.241" -> "Lo/RDh41;"
+        "0.8.10.242 dev" -> "Lo/setDataOwnerProductId;"
+        "0.8.10.243 dev" -> "Lo/zzbwr;"
+        else -> error("Unsupported clipboard title path: $version")
+    }
+    val method = mutableClassDefBy(owner).methods.single { candidate ->
+        candidate.returnType == "V"
+            && candidate.parameterTypes.map(CharSequence::toString) ==
+            listOf("Landroid/content/Context;", "Ljava/lang/String;", "Z")
+            && candidate.implementation?.instructions?.any { instruction ->
+                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                reference?.definingClass == "Landroid/content/ClipData;"
+                    && reference.name == "newPlainText"
+            } == true
+    }
+    method.addInstructionsWithLabels(0, """
+        invoke-static/range { p1 .. p1 }, Lapp/morphe/extension/chmate/EdgeReporterHistory;->copyTitle(Ljava/lang/String;)Ljava/lang/String;
+        move-result-object p1
+    """)
 }
