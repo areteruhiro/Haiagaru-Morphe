@@ -190,7 +190,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは `1.5.7`、プレリリースURLは `1.6.3` を取得します。
+通常版URLは `1.5.7`、プレリリースURLは `1.6.4` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の配布版（1.5.7）を取得するパッチソースです。
@@ -199,7 +199,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.6.3）を取得するパッチソースです。
+プレリリース版（1.6.4）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -210,6 +210,14 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.6.4（検証用プレリリース）
+
+- 242 devの画像添付でアップロード用一時ファイル名の計算がゼロ除算になる問題を修正
+- 226 devのスレ起動クラッシュとツールバーのフィルタを開けない問題を修正
+- 191 devのエッヂ次スレ判定で、スレタイ末尾の記者IDを比較対象から除外
+
+226 devのスレ起動は修正版で確認済みです。画像添付、フィルタ操作、エッヂ次スレの自動お気に入り追加は実機での最終確認が必要です。利用前のバックアップを推奨します。
 
 ### 1.6.3（検証用プレリリース）
 
@@ -618,7 +626,7 @@ MEGAログインとTalkのゼロ除算は実機での解消を未確認です。
 生成物:
 
 ```text
-patches\build\libs\patches-1.6.3.mpp
+patches\build\libs\patches-1.6.4.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
