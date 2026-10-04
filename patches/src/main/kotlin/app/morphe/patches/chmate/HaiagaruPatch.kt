@@ -889,6 +889,19 @@ private val haiagaruBytecodePatch = bytecodePatch {
     execute {
         val profile = profileFor(packageMetadata.versionName)
 
+        val readManager = when (packageMetadata.versionName) {
+            "0.8.10.241" -> "Lo/hLn11;"
+            "0.8.10.242 dev" -> "Lo/VN21;"
+            else -> null
+        }
+        readManager?.let { type ->
+            mutableClassDefBy(type).methods.single {
+                it.name == "<init>" && it.parameters.isEmpty()
+            }.addBeforeEveryReturn(
+                "invoke-static/range { p0 .. p0 }, $EXTENSION->captureReadCountManager(Ljava/lang/Object;)V"
+            )
+        }
+
         patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
         patchQuickFilterToolbar(packageMetadata.versionName)
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {

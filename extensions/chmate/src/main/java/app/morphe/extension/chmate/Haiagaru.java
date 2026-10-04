@@ -641,10 +641,19 @@ public final class Haiagaru {
                 .setPositiveButton(text("既読にする", "Mark read"), (dialog, which) ->
                         new Thread(() -> {
                             try {
-                                int changed = markAllBookmarksRead(activity.getApplicationContext());
+                                MarkReadResult result = markAllBookmarksRead(activity.getApplicationContext());
                                 activity.runOnUiThread(() -> {
-                                    Toast.makeText(activity, text(changed + "件の未読を0にしました。",
-                                            "Marked " + changed + " threads read."), Toast.LENGTH_LONG).show();
+                                    try {
+                                        refreshMarkedReadMemory(activity, result.rows);
+                                        notifyMarkedThreadsRead(result.changed);
+                                    } catch (Exception error) {
+                                        Log.e(LOG_TAG, "Unable to refresh marked-read board badges", error);
+                                        Toast.makeText(activity, text("既読数を保存しましたが、一覧表示を更新できませんでした。",
+                                                "Read counts were saved, but the list could not be refreshed."), Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                    Toast.makeText(activity, text(result.changed.size() + "件の未読を0にしました。",
+                                            "Marked " + result.changed.size() + " threads read."), Toast.LENGTH_LONG).show();
                                     // Do not recreate the current ChMate activity here. In
                                     // Edge's thread list the restored board state can be lost
                                     // during recreation, leaving an empty list until manual
@@ -662,7 +671,30 @@ public final class Haiagaru {
                 .show();
     }
 
-    private static int markAllBookmarksRead(Context context) throws IOException {
+    private static final class ReadSnapshot {
+        final String board;
+        final long created;
+        final int count;
+        ReadSnapshot(String board, long created, int count) {
+            this.board = board;
+            this.created = created;
+            this.count = count;
+        }
+    }
+
+    private static final class MarkReadResult {
+        final List<long[]> changed = new ArrayList<>();
+        final List<ReadSnapshot> rows = new ArrayList<>();
+    }
+
+    private static volatile java.lang.ref.WeakReference<Object> readCountManager =
+            new java.lang.ref.WeakReference<>(null);
+
+    public static void captureReadCountManager(Object manager) {
+        readCountManager = new java.lang.ref.WeakReference<>(manager);
+    }
+
+    private static MarkReadResult markAllBookmarksRead(Context context) throws IOException {
         File database = context.getDatabasePath("roidon.sqlite");
         if (database == null || !database.isFile()) {
             throw new IOException("roidon.sqlite が見つかりません");
@@ -675,25 +707,103 @@ public final class Haiagaru {
                     || !columns.contains("server_res_count")) {
                 throw new IOException("未読数のデータ構造が一致しません");
             }
-            int changed;
+            MarkReadResult result = new MarkReadResult();
             db.beginTransaction();
             try {
-                try (Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM bookmarks WHERE "
+                try (Cursor cursor = db.rawQuery("SELECT _id, MAX(read_count, res_count, server_res_count) "
+                        + "FROM bookmarks WHERE "
                         + "read_count < MAX(res_count, server_res_count)", null)) {
-                    cursor.moveToFirst();
-                    changed = cursor.getInt(0);
+                    while (cursor.moveToNext()) {
+                        result.changed.add(new long[]{cursor.getLong(0), cursor.getLong(1)});
+                    }
                 }
                 db.execSQL("UPDATE bookmarks SET read_count = "
                         + "MAX(read_count, res_count, server_res_count) WHERE "
                         + "read_count < MAX(res_count, server_res_count)");
+                // Include already-read rows to repair stale caches left by older patches.
+                try (Cursor cursor = db.rawQuery("SELECT name, created, read_count FROM bookmarks", null)) {
+                    while (cursor.moveToNext()) {
+                        result.rows.add(new ReadSnapshot(cursor.getString(0), cursor.getLong(1), cursor.getInt(2)));
+                    }
+                }
                 db.setTransactionSuccessful();
             } finally {
                 db.endTransaction();
             }
-            return changed;
+            return result;
         } finally {
             db.close();
         }
+    }
+
+    /** Board badges prefer MemReadCountManager over the persisted read_count. */
+    private static void refreshMarkedReadMemory(Activity activity, List<ReadSnapshot> rows) throws Exception {
+            String version = chMateVersion();
+            Object manager;
+            String boardsName;
+            String setter;
+            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)) {
+                boolean legacy = "0.8.10.191 dev".equals(version);
+                Class<?> type = Class.forName(legacy ? "o.onUserRewarded" : "o.splitDomain", false, activity.getClassLoader());
+                Field instanceField = type.getDeclaredField("d");
+                instanceField.setAccessible(true);
+                manager = instanceField.get(null);
+                boardsName = legacy ? "a" : "e";
+                setter = "e";
+            } else if ("0.8.10.241".equals(version) || "0.8.10.242 dev".equals(version)) {
+                manager = readCountManager.get();
+                boardsName = "0.8.10.241".equals(version) ? "e" : "a";
+                setter = "0.8.10.241".equals(version) ? "b" : "c";
+            } else {
+                // Keep the existing database-only behavior for other versions.
+                return;
+            }
+            if (manager == null) throw new IllegalStateException("Read-count manager is unavailable");
+            Field boardsField = manager.getClass().getDeclaredField(boardsName);
+            boardsField.setAccessible(true);
+            Map<?, ?> boards = (Map<?, ?>) boardsField.get(manager);
+                for (ReadSnapshot row : rows) {
+                    Object board = boards.get(row.board);
+                    if (board != null) {
+                        board.getClass().getMethod(setter, long.class, int.class)
+                                .invoke(board, row.created, row.count);
+                    }
+                }
+    }
+
+    /** Mirror ChMate's ThreadChanged event after the direct database update. */
+    private static void notifyMarkedThreadsRead(List<long[]> changed) throws Exception {
+        if (changed.isEmpty()) return;
+        ClassLoader loader = Haiagaru.class.getClassLoader();
+        Class<?> eventType;
+        Object bus;
+        Method publish;
+        Field readCount;
+        if ("0.8.10.226 dev".equals(chMateVersion())) {
+            Class<?> events = Class.forName("o.getFormatOpcode", false, loader);
+            eventType = Class.forName("o.RealWebSocketinitReaderAndWriterlambda3inlinedschedule1", false, loader);
+            bus = events.getMethod("l").invoke(null);
+            publish = bus.getClass().getMethod("e", Object.class);
+        } else if ("0.8.10.191 dev".equals(chMateVersion())) {
+            Class<?> events = Class.forName("o.setRequestListener", false, loader);
+            eventType = Class.forName("o.cExternalSyntheticLambda0", false, loader);
+            bus = events.getField("x").get(null);
+            publish = bus.getClass().getMethod("b", Object.class);
+        } else {
+            return;
+        }
+        readCount = eventType.getField("d");
+        java.lang.reflect.Constructor<?> constructor = eventType.getConstructor(long.class);
+        for (long[] row : changed) {
+            Object event = constructor.newInstance(row[0]);
+            readCount.set(event, (int) row[1]);
+            publish.invoke(bus, event);
+        }
+    }
+
+    private static String chMateVersion() throws PackageManager.NameNotFoundException {
+        Context context = applicationContext;
+        return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
     }
 
     /** Applies the bundled emoji fallback while preserving the original text. */
