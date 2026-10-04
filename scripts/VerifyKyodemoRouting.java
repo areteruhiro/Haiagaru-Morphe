@@ -7,6 +7,13 @@ public class VerifyKyodemoRouting {
     }
 
     public static void main(String[] args) {
+        check("L20 njHQ-49Od".equals(KyodemoRouting.edgeWacchoiInText(
+                "エッヂの名無し (L20 njHQ-49Od)")), "Keep Edge level and case");
+        check("https://www.kyodemo.net/sdemo/b/e_e_liveedge/?bs=hi&k=L20+njHQ-49Od"
+                .equals(KyodemoRouting.wacchoiSearchUrl("bbs.eddibb.cc", "liveedge",
+                        "(L20 njHQ-49Od)")), "Reported Edge response must use its actual name");
+        check("L7 abcd-EFGH".equals(KyodemoRouting.edgeWacchoiInText("L7 abcd–EFGH")),
+                "Normalize hyphen without replacing the level");
         check("e_e_liveedge".equals(KyodemoRouting.boardSlug("bbs.eddibb.cc", "liveedge")),
                 "Edge board");
         check("s_anime_11177".equals(KyodemoRouting.boardSlug(
