@@ -326,6 +326,8 @@ public final class HissiMenuActivity extends Activity {
                 applyViewerTheme(rootLayout, view, Haiagaru.hissiViewerTheme());
                 if (kyodemoAnalysisButton != null) {
                     kyodemoAnalysisButton.setVisibility(isKyodemoAnalysisUrl(url)
+                            && Haiagaru.hissiViewerToolbarButtonVisible(
+                                    Haiagaru.HISSI_TOOLBAR_ANALYSIS)
                             ? View.VISIBLE : View.GONE);
                     kyodemoAnalysisButton.setText("分析");
                 }
@@ -463,6 +465,8 @@ public final class HissiMenuActivity extends Activity {
         toolbar.setBackgroundColor(Haiagaru.hissiViewerTheme() == 2 ? Color.BLACK : Color.TRANSPARENT);
 
         Button refresh = toolbarButton("更新");
+        refresh.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_REFRESH) ? View.VISIBLE : View.GONE);
         refresh.setContentDescription("表示中のページを再読み込み");
         refresh.setOnClickListener(view -> {
             if (webView.getUrl() != null) webView.reload();
@@ -470,10 +474,14 @@ public final class HissiMenuActivity extends Activity {
         toolbar.addView(refresh, buttonParams());
 
         Button copyUrl = toolbarButton("URL");
+        copyUrl.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_COPY_URL) ? View.VISIBLE : View.GONE);
         copyUrl.setOnClickListener(view -> copyToClipboard("URL", webView.getUrl()));
         toolbar.addView(copyUrl, buttonParams());
 
         Button copyAll = toolbarButton("全レス");
+        copyAll.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_COPY_ALL) ? View.VISIBLE : View.GONE);
         copyAll.setOnClickListener(view -> webView.evaluateJavascript(
                 "(function(){var a=document.querySelectorAll('#rlist .clmess,.post .clmess,article .res,article .response,.res-body,dl dd');"
                         + "if(!a.length)a=document.querySelectorAll('#rlist .post,.post,article,dl');"
@@ -484,6 +492,8 @@ public final class HissiMenuActivity extends Activity {
         toolbar.addView(copyAll, buttonParams());
 
         Button copyBody = toolbarButton("本文");
+        copyBody.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_COPY_BODY) ? View.VISIBLE : View.GONE);
         copyBody.setOnClickListener(view -> webView.evaluateJavascript(
                 "(function(){var e=document.querySelector('#rlist,main,.content');"
                         + "return e ? (e.innerText||e.textContent||'') : (document.body ? document.body.innerText : '');})()",
@@ -492,27 +502,39 @@ public final class HissiMenuActivity extends Activity {
         toolbar.addView(copyBody, buttonParams());
 
         Button date = toolbarButton("日付");
+        date.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_DATE) ? View.VISIBLE : View.GONE);
         date.setOnClickListener(view -> showDatePicker(webView));
         toolbar.addView(date, buttonParams());
 
         if (!eddiArchiveMode && kyodemoTarget != null) {
             Button search = toolbarButton("ID/ﾜｯﾁｮｲ");
+            search.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                    Haiagaru.HISSI_TOOLBAR_SEARCH) ? View.VISIBLE : View.GONE);
             search.setOnClickListener(view -> showKyodemoSearch(webView, null));
             toolbar.addView(search, buttonParams());
         }
         if (!eddiArchiveMode) {
             Button analysis = toolbarButton("分析");
             kyodemoAnalysisButton = analysis;
-            analysis.setContentDescription("Kyodemoの投稿分析を表示・非表示");
             analysis.setVisibility(View.GONE);
+            analysis.setContentDescription("Kyodemoの投稿分析を表示・非表示");
             analysis.setOnClickListener(view -> webView.evaluateJavascript(
                     "(function(){if(location.hostname!=='www.kyodemo.net'"
                             + "||!location.pathname.startsWith('/sdemo/b/'))return 'unavailable';"
                             + "var panel=document.querySelector('#b>.right-column');"
-                            + "if(!panel||!panel.querySelector('#wt'))return 'unavailable';"
+                            + "var chart=document.querySelector('#blist .d-myChart');"
+                            + "var inline=!!chart;"
+                            + "if(!inline&&(!panel||!panel.querySelector('#wt')))return 'unavailable';"
                             + "var opened=document.body.hasAttribute('data-haiagaru-analysis');"
                             + "if(opened)document.body.removeAttribute('data-haiagaru-analysis');"
-                            + "else document.body.setAttribute('data-haiagaru-analysis','');"
+                            + "else document.body.setAttribute('data-haiagaru-analysis',inline?'inline':'sidebar');"
+                            + "if(inline){var summary=document.getElementById('haiagaru-analysis-summary');"
+                            + "var source=document.getElementById('copy-mess');"
+                            + "if(!summary&&source){summary=document.createElement('pre');"
+                            + "summary.id='haiagaru-analysis-summary';summary.textContent=source.value;"
+                            + "chart.parentNode.insertBefore(summary,chart.nextSibling);}"
+                            + "requestAnimationFrame(function(){if(window.myChart&&typeof window.myChart.resize==='function')window.myChart.resize();});}"
                             + "window.scrollTo(0,0);return opened?'closed':'opened';})()",
                     result -> {
                         if ("\"unavailable\"".equals(result)) {
@@ -526,6 +548,8 @@ public final class HissiMenuActivity extends Activity {
         }
 
         Button zoom = toolbarButton("文字");
+        zoom.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_TEXT_ZOOM) ? View.VISIBLE : View.GONE);
         zoom.setOnClickListener(view -> {
             int current = webView.getSettings().getTextZoom();
             int next = current < 110 ? 115 : current < 125 ? 130 : 100;
@@ -537,6 +561,8 @@ public final class HissiMenuActivity extends Activity {
         toolbar.addView(zoom, buttonParams());
 
         Button theme = toolbarButton("配色");
+        theme.setVisibility(Haiagaru.hissiViewerToolbarButtonVisible(
+                Haiagaru.HISSI_TOOLBAR_THEME) ? View.VISIBLE : View.GONE);
         theme.setOnClickListener(view -> {
             int next = (Haiagaru.hissiViewerTheme() + 1) % 4;
             Haiagaru.setHissiViewerTheme(next);
@@ -571,7 +597,8 @@ public final class HissiMenuActivity extends Activity {
     private void showKyodemoSearch(WebView webView, String initialValue) {
         EditText input = new EditText(this);
         input.setSingleLine(true);
-        input.setHint("IDまたはﾜｯﾁｮｲ");
+        input.setHint("bbs.eddibb.cc".equals(sourceHost)
+                ? "IDまたは L20 abcd-EFGH のような表記" : "IDまたはﾜｯﾁｮｲ");
         String selectedId = selectedCheckerId(incomingUri);
         if ((selectedId == null || selectedId.trim().isEmpty()) && incomingUri != null) {
             List<String> path = incomingUri.getPathSegments();
@@ -1096,6 +1123,13 @@ public final class HissiMenuActivity extends Activity {
                     + (dark ? "#1c1c1f" : "#f7f7fa") + " !important;color:" + fg
                     + " !important;border:1px solid " + (dark ? "#36363b" : "#e1e1e6")
                     + " !important;border-radius:12px;}"
+                    + "#haiagaru-analysis-summary{display:none;white-space:pre-wrap;overflow-wrap:anywhere;}"
+                    + "body[data-haiagaru-analysis='inline'] #b>.right-column{display:none !important;}"
+                    + "body[data-haiagaru-analysis='inline'] #b>.left-column{display:block !important;width:100%;}"
+                    + "body[data-haiagaru-analysis='inline'] #blist>*{display:none !important;}"
+                    + "body[data-haiagaru-analysis='inline'] #blist>.d-myChart,"
+                    + "body[data-haiagaru-analysis='inline'] #haiagaru-analysis-summary{display:block !important;"
+                    + "background:" + bg + " !important;color:" + fg + " !important;max-width:100%;}"
                     // Kyodemo puts empty-result and request errors in this header.
                     + "#b>.left-column>header{display:block !important;}"
                     + "#b>.left-column>header>.breadcrumb{display:none !important;}"
@@ -1178,6 +1212,20 @@ public final class HissiMenuActivity extends Activity {
                     + "body[data-haiagaru-eddi] *{color:" + fg + " !important;"
                     + "border-color:" + (dark ? "#41454c" : "#d8d8de") + " !important;}"
                     + "body[data-haiagaru-eddi] a,body[data-haiagaru-eddi] a *{color:" + link + " !important;}"
+                    // The archive's .thread wrapper keeps its fixed #f5f5f5
+                    // background in dark mode. The global foreground override
+                    // then makes its .date nearly white on white. Theme the
+                    // whole result card, not just the title link.
+                    + "body[data-haiagaru-eddi] #threadContainer .thread{background:"
+                    + (dark ? "#24272b" : "#f7f7fa") + " !important;"
+                    + "border:1px solid " + (dark ? "#41454c" : "#d8d8de")
+                    + " !important;border-radius:10px;padding:10px 12px;margin:8px 0;}"
+                    + "body[data-haiagaru-eddi] #threadContainer .thread .title{display:block;"
+                    + "background:transparent !important;border:0 !important;"
+                    + "padding:0 !important;margin:0 !important;max-width:100%;}"
+                    + "body[data-haiagaru-eddi] #threadContainer .thread .date{color:"
+                    + (dark ? "#b9bcc6" : "#5f636c") + " !important;"
+                    + "margin:5px 0 0;font-size:12px;}"
                     + "body[data-haiagaru-eddi] input,body[data-haiagaru-eddi] select,"
                     + "body[data-haiagaru-eddi] textarea{background:" + (dark ? "#1c1c1f" : "#ffffff")
                     + " !important;color:" + fg + " !important;}"
@@ -1205,6 +1253,8 @@ public final class HissiMenuActivity extends Activity {
                     + "if(!body)return '';var number='',name='',id='',url='',wacchoi='';"
                     + "var wm=(header+' '+body).match(/(?:ﾜｯﾁｮｲW?|ワッチョイ)\\s*[:：]?\\s*([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})/i);"
                     + "if(wm)wacchoi=wm[1];"
+                    + "var em=header.match(/\\bL([0-9]+)\\s+([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})/i);"
+                    + "if(em)wacchoi='L'+em[1]+' '+em[2];"
                     + "if(n.tagName==='DL'){var m=header.match(/(?:^|\\n)\\s*(\\d+)\\s*[：:]/);number=m?m[1]:'';"
                     + "var first=h.querySelector('b');name=first?(first.innerText||first.textContent||'').trim():'';"
                     + "m=header.match(/ID:([^\\s]+)/i);id=m?m[1]:'';"
