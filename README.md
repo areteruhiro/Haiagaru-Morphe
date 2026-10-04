@@ -191,7 +191,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは `1.5.7`、プレリリースURLは `1.6.5` を取得します。
+通常版URLは `1.5.7`、プレリリースURLは `1.6.6` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の配布版（1.5.7）を取得するパッチソースです。
@@ -200,7 +200,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.6.5）を取得するパッチソースです。
+プレリリース版（1.6.6）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -211,6 +211,16 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.6.6（プレリリース）
+
+- 必死チェッカー専用ビュワー上部の「更新」「URL」「全レス」「本文」「日付」「ID/ﾜｯﾁｮｲ」「分析」「文字」「配色」を個別に表示・非表示に設定できます。初期状態ではすべて表示します。
+- 191／226／241／242で、上部フィルタを隠した後にListViewへ残る古い行高を更新し、設定を戻した場合は元の高さを復元します。
+- エッヂ過去ログ専用ビュワーに、専用ビュワーと同じ左右スワイプ設定を適用します。先頭ページで「戻る」操作をした場合はビュワーを閉じます。
+- エッヂのワッチョイ検索で `L20 abcd-EFGH` のような階層表記を検索文字列に含めます。
+- 5ch.io移行前のBEアイコンURL（`img.5ch.net`／`img.2ch.net`）を正規化し、レス表示で同じアイコンが重複しないよう補正します。
+- 「既読スレを上に」の対象を、すべての既読スレ／新着レスがある既読スレから選べるようにします。短いスレ一覧の上詰め表示もレイアウト後に位置を調整します。
+- 板のスレ一覧ツールバーにも「未読をすべて0にする」を追加します。
 
 ### 1.6.5（プレリリース）
 
@@ -639,7 +649,7 @@ MEGAログインとTalkのゼロ除算は実機での解消を未確認です。
 生成物:
 
 ```text
-patches\build\libs\patches-1.6.5.mpp
+patches\build\libs\patches-1.6.6.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。

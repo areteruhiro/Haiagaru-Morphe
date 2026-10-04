@@ -71,6 +71,12 @@ public final class KyodemoRouting {
 
     public static String wacchoiSearchUrl(String host, String board, String wacchoi) {
         if (wacchoi == null) return null;
+        String edgeSlip = edgeWacchoiInText(wacchoi);
+        if (edgeSlip != null) {
+            String slug = boardSlug(host, board);
+            return slug == null ? null : "https://www.kyodemo.net/sdemo/b/" + slug
+                    + "/?bs=hi&k=" + encode(edgeSlip);
+        }
         String value = stripWacchoiLabel(wacchoi);
         java.util.regex.Matcher token = wacchoiTokenMatcher(value);
         if (token.matches()) {
@@ -90,7 +96,18 @@ public final class KyodemoRouting {
     }
 
     public static boolean isWacchoiToken(String query) {
-        return query != null && wacchoiTokenMatcher(stripWacchoiLabel(query)).matches();
+        return query != null && (edgeWacchoiInText(query) != null
+                || wacchoiTokenMatcher(stripWacchoiLabel(query)).matches());
+    }
+
+    /** Edge's level is part of Kyodemo's indexed name, not a replaceable SLIP label. */
+    public static String edgeWacchoiInText(String text) {
+        if (text == null) return null;
+        java.util.regex.Matcher match = java.util.regex.Pattern.compile(
+                "(?i)(?<![a-z0-9])L([0-9]+)\\s+([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})(?![a-z0-9])")
+                .matcher(text);
+        return match.find() ? "L" + match.group(1) + " "
+                + match.group(2).replaceAll("[‐‑–—]", "-") : null;
     }
 
     private static String stripWacchoiLabel(String value) {
