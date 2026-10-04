@@ -1,5 +1,10 @@
 # Haiagaru changelog
 
+## 1.6.8 (Pre-release)
+
+- Prevent startup crashes from incompatible package names by requiring ChMate's original package name as the prefix.
+- Keep the current thread-list screen alive after marking all unread counts as read instead of recreating the activity.
+
 ## 1.6.7 (Pre-release)
 
 - Fix ChMate 0.8.10.242 dev crashing when the filter row is displayed. Do not measure a ComposeView before it is attached to a window; request layout from the parent instead.
