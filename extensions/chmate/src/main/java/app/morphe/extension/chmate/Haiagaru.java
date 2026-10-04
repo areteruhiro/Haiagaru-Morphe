@@ -645,9 +645,12 @@ public final class Haiagaru {
                                 activity.runOnUiThread(() -> {
                                     Toast.makeText(activity, text(changed + "件の未読を0にしました。",
                                             "Marked " + changed + " threads read."), Toast.LENGTH_LONG).show();
-                                    if (changed > 0 && !activity.isFinishing()) {
-                                        activity.recreate();
-                                    }
+                                    // Do not recreate the current ChMate activity here. In
+                                    // Edge's thread list the restored board state can be lost
+                                    // during recreation, leaving an empty list until manual
+                                    // refresh. The read counts are already persisted; let the
+                                    // current screen stay alive and update through its normal
+                                    // refresh/reactive path.
                                 });
                             } catch (Throwable error) {
                                 Log.e(LOG_TAG, "Unable to mark all threads read", error);

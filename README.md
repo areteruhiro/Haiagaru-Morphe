@@ -191,7 +191,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは `1.5.7`、プレリリースURLは `1.6.7` を取得します。
+通常版URLは `1.5.7`、プレリリースURLは `1.6.8` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の配布版（1.5.7）を取得するパッチソースです。
@@ -200,7 +200,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.6.7）を取得するパッチソースです。
+プレリリース版（1.6.8）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -211,6 +211,11 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
 
 ## 更新履歴
+
+### 1.6.8（プレリリース）
+
+- 「未読をすべて0にする」実行後に画面を再生成せず、開いているスレ一覧の状態を保つようにしました。
+- パッケージ名変更時はChMate本来のパッケージ名を先頭に含む値だけを受け付け、起動時のクラス名復号に起因するクラッシュを防ぎます。
 
 ### 1.6.7（プレリリース）
 
@@ -653,7 +658,7 @@ MEGAログインとTalkのゼロ除算は実機での解消を未確認です。
 生成物:
 
 ```text
-patches\build\libs\patches-1.6.7.mpp
+patches\build\libs\patches-1.6.8.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。

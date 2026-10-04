@@ -43,10 +43,12 @@ val changeChMatePackageNamePatch = resourcePatch(
         key = "packageName",
         default = DEFAULT_PACKAGE_NAME,
         title = "Package name",
-        description = "Package name for the separate Haiagaru installation.",
+        description = "Use the original ChMate package name as the prefix, followed by a custom suffix, to keep ChMate's startup class-name decoding compatible.",
         required = true,
     ) { value ->
-        value != null && value.matches(Regex("^[a-z]\\w*(\\.[a-z]\\w*)+$"))
+        value != null
+            && value.matches(Regex("^[a-z]\\w*(\\.[a-z]\\w*)+$"))
+            && value.startsWith("$ORIGINAL_PACKAGE_NAME.")
     }
 
     val appNameOption = stringOption(
