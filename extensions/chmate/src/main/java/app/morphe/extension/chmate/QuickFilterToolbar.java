@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 public final class QuickFilterToolbar {
     public static final int ID = 0x7e000002;
     private static final ArrayList<WeakReference<Object>> legacyBindings = new ArrayList<>();
+    private static final java.util.WeakHashMap<android.view.View, Integer> legacyRowHeights =
+            new java.util.WeakHashMap<>();
     private QuickFilterToolbar() {}
 
     public static boolean supported(Context context) {
@@ -93,6 +95,7 @@ public final class QuickFilterToolbar {
         Object provider = providerField.get(fragment);
         if (provider == null) throw new IllegalStateException("226 response model provider unavailable");
         Method get = provider.getClass().getMethod("e");
+        get.setAccessible(true);
         Object model = get.invoke(provider);
         if (model == null || !model.getClass().getName().equals("o.getImgAcceptedHeight")) {
             throw new IllegalStateException("226 response model unavailable");
@@ -156,7 +159,9 @@ public final class QuickFilterToolbar {
         field.setAccessible(true);
         Object flow = field.get(model);
         if (flow == null) return null;
-        Object state = flow.getClass().getMethod(getterName).invoke(flow);
+        Method getter = flow.getClass().getMethod(getterName);
+        getter.setAccessible(true);
+        Object state = getter.invoke(flow);
         if (state == null) return null;
         String description = state.toString();
         if (!description.startsWith("FilterBarStates(popular=")) return null;
@@ -270,50 +275,45 @@ public final class QuickFilterToolbar {
         return result;
     }
 
-    /** Hide the entire legacy panel, including its heading and padding. */
+    /** Retain the binding; collapse only after the adapter has finished binding. */
     public static void hideLegacyFilterRow(Object binding) {
-        if (binding == null || !Haiagaru.compactQuickFilters()) return;
-        try {
-            rememberLegacyBinding(binding);
-            Class<?> rootBinding = Class.forName("o.getMraidName", false,
-                    binding.getClass().getClassLoader());
-            java.lang.reflect.Field root = rootBinding.getDeclaredField("a");
-            root.setAccessible(true);
-            Object view = root.get(binding);
-            if (view instanceof android.view.View) {
-                android.view.View panel = (android.view.View) view;
-                panel.setVisibility(android.view.View.GONE);
-                android.view.ViewGroup.LayoutParams params = panel.getLayoutParams();
-                if (params != null) {
-                    params.height = 0;
-                    panel.setLayoutParams(params);
-                }
-                // The binding constructor runs before the row is attached.
-                // A dedicated ListView header wrapper may still reserve space.
-                panel.addOnAttachStateChangeListener(new android.view.View.OnAttachStateChangeListener() {
-                    @Override public void onViewAttachedToWindow(android.view.View view) {
-                        collapseLegacyWrapper(view);
-                    }
-                    @Override public void onViewDetachedFromWindow(android.view.View view) { }
-                });
-                collapseLegacyWrapper(panel);
-            }
-        } catch (Exception error) {
-            Log.e("Haiagaru", "Unable to hide legacy quick-filter row", error);
-        }
+        if (binding == null) return;
+        rememberLegacyBinding(binding);
     }
 
-    private static void collapseLegacyWrapper(android.view.View panel) {
-        android.view.ViewParent parent = panel.getParent();
-        if (!(parent instanceof android.view.ViewGroup)) return;
-        android.view.ViewGroup holder = (android.view.ViewGroup) parent;
-        if (holder.getChildCount() != 1 || holder instanceof android.widget.AdapterView
-                || !(holder.getParent() instanceof android.widget.AdapterView)) return;
-        holder.setVisibility(android.view.View.GONE);
-        android.view.ViewGroup.LayoutParams params = holder.getLayoutParams();
-        if (params != null) {
+    /** Runs after binding, before ListView consumes the row's measured height. */
+    public static void prepareLegacyFilterRow(android.view.View row) {
+        if (row == null) return;
+        Object binding = row.getTag(0x7f0a0106);
+        if (binding == null || !"o.j4".equals(binding.getClass().getName())) return;
+        prepareFilterRow(row);
+    }
+
+    /** Called only for the dedicated filter container, after its content is bound. */
+    public static void prepareFilterRow(android.view.View row) {
+        if (row == null) return;
+        android.view.ViewGroup.LayoutParams params = row.getLayoutParams();
+        if (params == null) {
+            params = new android.widget.AbsListView.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+        if (Haiagaru.compactQuickFilters()) {
+            if (!legacyRowHeights.containsKey(row)) legacyRowHeights.put(row, params.height);
             params.height = 0;
-            holder.setLayoutParams(params);
+            row.setLayoutParams(params);
+            row.setVisibility(android.view.View.VISIBLE);
+            row.forceLayout();
+            row.measure(android.view.View.MeasureSpec.makeMeasureSpec(Math.max(0, row.getWidth()),
+                            android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.EXACTLY));
+        } else {
+            Integer height = legacyRowHeights.remove(row);
+            if (height != null) {
+                params.height = height;
+                row.setLayoutParams(params);
+                row.forceLayout();
+            }
         }
     }
 
@@ -390,6 +390,7 @@ public final class QuickFilterToolbar {
                 if (accessor.getParameterTypes().length != 0
                         || !accessor.getName().equals("getValue")) continue;
                 try {
+                    accessor.setAccessible(true);
                     Object resolved = accessor.invoke(value);
                     if (resolved != null && resolved.getClass().getName()
                             .contains("ResListFragmentViewModel")) return resolved;
