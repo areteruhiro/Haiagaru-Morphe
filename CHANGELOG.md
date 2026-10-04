@@ -1,5 +1,10 @@
 # Haiagaru changelog
 
+## 1.6.7 (Pre-release)
+
+- Fix ChMate 0.8.10.242 dev crashing when the filter row is displayed. Do not measure a ComposeView before it is attached to a window; request layout from the parent instead.
+- Includes the Haiagaru 1.6.6 pre-release changes.
+
 ## 1.6.6 (Pre-release)
 
 - Make Hissi checker viewer toolbar buttons individually configurable.
