@@ -304,16 +304,23 @@ public final class QuickFilterToolbar {
             row.setLayoutParams(params);
             row.setVisibility(android.view.View.VISIBLE);
             row.forceLayout();
-            row.measure(android.view.View.MeasureSpec.makeMeasureSpec(Math.max(0, row.getWidth()),
-                            android.view.View.MeasureSpec.EXACTLY),
-                    android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.EXACTLY));
+            requestRowLayout(row);
         } else {
             Integer height = legacyRowHeights.remove(row);
             if (height != null) {
                 params.height = height;
                 row.setLayoutParams(params);
                 row.forceLayout();
+                requestRowLayout(row);
             }
+        }
+    }
+
+    private static void requestRowLayout(android.view.View row) {
+        row.requestLayout();
+        android.view.ViewParent parent = row.getParent();
+        if (parent instanceof android.view.View) {
+            ((android.view.View) parent).requestLayout();
         }
     }
 
