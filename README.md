@@ -2,7 +2,7 @@
 ◆9qrWgYJJCo
  # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` 対応のMorpheパッチです。 <br>
 
 **0.8.10.243 devは非推奨です。一部実装していない機能があります。** パッチ適用は引き続き可能ですが、利用する機能に応じて191 dev／226 dev／241／242 devをご検討ください。
 
@@ -10,6 +10,19 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` / `
 https://github.com/areteruhiro/Haiagaru
 
 最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
+
+### 1.7.0（正式版）
+
+1.5.2以降の先行版で追加・改善した機能をまとめた正式版です。
+詳細は[1.7.0の更新内容](release-notes-1.7.0.md)をご覧ください。
+
+- hissi.org／Kyodemo専用ビュワー、外部板・ワッチョイ検索、コピー・配色・ジェスチャーを改善
+- MEGA／ローカルのバックアップ・復元、項目選択、起動時の同期と復元前の変更確認を追加
+- エッヂ過去ログ検索、ツールバーのフィルター、未読・新着バッジ、投稿・起動互換処理を改善
+- 191／226のBEアイコンとリンク下線のずれを修正
+- 191／226／241／242に外部TXTによる本文の文字列置換を追加（初期状態OFF）
+
+更新時は元のChMate APKにパッチを適用し、事前にバックアップしてください。
 
 ### 1.6.11（プレリリース）
 
@@ -54,7 +67,10 @@ KyodemoへのID検索は、同サイトの「ID/ﾜｯﾁｮｲ」検索経路�
 「ID/ﾜｯﾁｮｲ」ボタンから任意のID・ﾜｯﾁｮｲも検索できます。Haiagaru設定の
 「KyodemoのID/ﾜｯﾁｮｲ検索を専用表示」をONにすると、検索結果をレス／スレ／名前の
 タブで切り替え、レスのコピー操作を利用できます。初期値はOFFで、従来の表示を維持します。
-Kyodemoはハイフン付きﾜｯﾁｮｲ全文を受け付けないため、その形式では前半4文字で検索します。
+ワッチョイは前半4文字に省略せず、選択したレスのラベル・全文・大小文字・記号を保持して検索します。
+固定の桁数や英数字への制限は設けません。通常はShift_JIS、表現できない文字を含む場合はUTF-8で
+URLエンコードし、`+`、`/`、`&` 等も検索文字として渡します。検索結果の有無やUTF-8検索への対応は
+Kyodemo側の仕様・取得状況に依存します。括弧・空白等のヘッダー区切り、制御文字・入力長の上限は維持します。
 同じ前半を持つ別の投稿が結果に混ざることがあります。
 
 パッチ適用時のオプション「必死チェッカー専用ビュワー」は初期値ONです。OFFにすると、
@@ -203,16 +219,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは `1.5.7`、プレリリースURLは `1.6.8` を取得します。
+通常版URLとプレ版用URLは、どちらも正式版 `1.7.0` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の配布版（1.5.7）を取得するパッチソースです。
+現在の正式版（1.7.0）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレリリース版（1.6.8）を取得するパッチソースです。
+プレ版用のパッチソースです。今回は正式版1.7.0に揃えています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -670,7 +686,7 @@ MEGAログインとTalkのゼロ除算は実機での解消を未確認です。
 生成物:
 
 ```text
-patches\build\libs\patches-1.6.8.mpp
+patches\build\libs\patches-1.7.0.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
@@ -708,6 +724,13 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 
 - [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
 - [PayPay](https://qr.paypay.ne.jp/p2p01_Cc1k5WqxClWy8HCG)
+
+### 謝辞
+
+ﾜｯﾁｮｲ 8f01-uDul 様、UPLIFT利用料のご支援をありがとうございます。
+
+ご寄付いただいた toya0717 様、MUMEI 様、無名 様、本当にありがとうございます。
+皆様からのご報告・検証・ご支援が開発の励みになっています。
 
 ## 構成
 
@@ -749,6 +772,35 @@ ChMate設定 → Haiagaru →「高度なNGルール（条件・スクリプト�
 
 
 
+
+### 本文の文字列置換（外部TXT）
+
+191 dev／226 dev／241／242 dev向け。243 devは対象外です。
+Haiagaru設定 →「本文の文字列置換（外部TXT）」でON/OFF、サンプルの作成、
+TXTの選択、再読み込みを行います。初期状態はOFFです。
+
+サンプルは `Download/Haiagaru/ReplaceStr.txt` に作成します。既存のファイルは上書きしません。
+外部のテキストエディタでUTF-8・タブ区切りに編集し、再読み込み後にスレを開き直してください。
+ファイルを置き換えた場合やパッケージ名を変更した場合は、ファイル選択画面から再選択してください。
+
+```text
+; 次の列間は実際のタブ文字です。
+<ex2>https://example■.com/	https://example.com/	msg
+```
+
+通常置換は「検索文字［TAB］置換後の文字」。`<ex>`（省略時も同じ）は大小文字を区別せず、
+`<ex2>` は区別します。置換後を空にすると削除します。ルールは上から順に適用します。
+`;`、`'`、`//` で始まる行はコメントです。
+
+[JaneXenoのReplaceStr.txt仕様](https://w.atwiki.jp/janexeno/pages/76.html)を参考にした独立実装です。
+完全互換ではありません。対象は本文のみ（`msg`、省略、`all`も本文のみ）。
+名前・日時・スレタイ・正規表現・URL/タイトル条件は未対応で、指定した場合はエラーになります。
+ファイルは128KB、ルール256件まで。不正なTXTや読み取りエラー時は置換せず表示します。
+
+画面表示用の本文コピーをリンク認識前に置換するため、置換後のURLをリンクとして認識します。
+保存DAT、投稿本文、元のNG判定は変更しません。全体の `■` を一律削除するようなルールは
+URL以外にも適用されるため、なるべくURLを含む具体的な文字列を指定してください。
+掲示板の投稿規約に従って利用してください。
 
 ## Credit
 
