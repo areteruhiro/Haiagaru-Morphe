@@ -4068,8 +4068,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadListA
                 "Landroid/view/ViewGroup;",
             )
     }
-    val instructions = method.implementation?.instructions
-        ?: error("ChMate 191 response adapter has no implementation")
+    // QuickFilterToolbar may already have inserted a call before the return.
+    // Never infer a Kotlin assertion from the number of tail instructions.
+    val instructions = method.implementation?.instructions?.toList()
+        ?: error("ChMate response adapter has no implementation")
     val bindIndex = instructions.indices.single { index ->
         val reference = (instructions[index] as? ReferenceInstruction)?.reference
             as? MethodReference ?: return@single false
@@ -4079,23 +4081,17 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadListA
             && resultTail.contains(Opcode.RETURN_OBJECT)
     }
 
-    // Keep p1 as the original adapter position and move the returned row to p2;
-    // the parent argument is no longer needed after the bind call.
+    val resultRegister = (instructions[bindIndex + 1] as OneRegisterInstruction).registerA
+    // Intercept the View while p1 still holds the adapter position, then restore
+    // the original destination. Preserve both the 191 filter hook and 226
+    // assertion, including their argument registers.
     method.replaceInstruction(bindIndex + 1, "move-result-object p2")
-    val returnIndex = (bindIndex + 2 until minOf(bindIndex + 5, instructions.size))
-        .single { instructions[it].opcode == Opcode.RETURN_OBJECT }
-    if (returnIndex != bindIndex + 2) {
-        // 226 inserts Kotlin's non-null assertion between the bind and return.
-        method.replaceInstruction(
-            bindIndex + 2,
-            "invoke-static {p2, v0}, Lo/fsYhp;->e(Ljava/lang/Object;Ljava/lang/String;)V",
-        )
-    }
-    method.replaceInstruction(returnIndex, "return-object p2")
-    method.addInstruction(
-        returnIndex,
-        "invoke-static {p2, p0, p1}, " +
-            "$EXTENSION->hideLegacyThreadListAd(Landroid/view/View;Landroid/widget/BaseAdapter;I)V",
+    method.addInstructionsWithLabels(
+        bindIndex + 2,
+        """
+            invoke-static {p2, p0, p1}, $EXTENSION->hideLegacyThreadListAd(Landroid/view/View;Landroid/widget/BaseAdapter;I)V
+            move-object/from16 v$resultRegister, p2
+        """.trimIndent(),
     )
 }
 
