@@ -3,10 +3,22 @@
  # Haiagaru for Morphe
 
 ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` / `0.8.10.243 dev` 対応のMorpheパッチです。 <br>
+
+**0.8.10.243 devは非推奨です。一部実装していない機能があります。** パッチ適用は引き続き可能ですが、利用する機能に応じて191 dev／226 dev／241／242 devをご検討ください。
+
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
 
 最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
+
+### 1.6.11（プレリリース）
+
+- 任意の有効なパッケージ名でパッチできるよう検証条件を修正。アプリ名を変更すると起動時に`ClassNotFoundException`になる問題も修正
+- クラス名復号に使うパッケージ名の文字・長さだけを純正ChMateの値に固定し、通常のパッケージ名参照への影響を限定
+- 191 devのフィルター行を隠した際に残る余白を抑制し、フィルター画面の「画像」長押しから画像一覧を開けるよう改善
+- 必死チェッカー／Kyodemoのインライン表示でスタイルが適用されないケースを修正
+
+ChMate 0.8.10.191 devでMorphe適用とXIG05での起動を確認しています。更新時は元のAPKへパッチを適用してください。
 
 ## Features
 

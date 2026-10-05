@@ -2766,7 +2766,7 @@ private fun Document.addOpenUrlFilter(
 @Suppress("unused")
 val haiagaruPatch = resourcePatch(
     name = "Haiagaru",
-    description = "Ports the Haiagaru ChMate module, including its in-app settings.",
+    description = "Haiagaruの機能とアプリ内設定を追加します。ChMate 0.8.10.243 devは一部機能が未実装のため非推奨です（パッチ適用は可能）。",
 ) {
     compatibleWith(chMateCompatibility)
     dependsOn(haiagaruBytecodePatch)
