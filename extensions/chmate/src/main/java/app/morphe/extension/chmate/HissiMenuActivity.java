@@ -74,6 +74,10 @@ public final class HissiMenuActivity extends Activity {
     private String initialWacchoiQuery;
     private String lastArchiveErrorKey;
     private Button kyodemoAnalysisButton;
+    private String analysisRecoveryAttempt;
+    private String pendingAnalysisResult;
+    private String analysisAutoOpenedUrl;
+    private String lastAnalysisFailureUrl;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -315,6 +319,12 @@ public final class HissiMenuActivity extends Activity {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request,
                     WebResourceResponse response) {
+                if (request.isForMainFrame() && response.getStatusCode() >= 400
+                        && KyodemoRouting.analysisResultUrl(request.getUrl().toString()) != null) {
+                    showAnalysisFailure(request.getUrl().toString());
+                }
+                if (request.isForMainFrame()
+                        && recoverKyodemoAnalysis(view, request.getUrl().toString())) return;
                 if (eddiArchiveMode && request.isForMainFrame()) {
                     showArchiveWebError("HTTP_" + response.getStatusCode(),
                             response.getReasonPhrase(), request.getUrl().toString());
@@ -323,6 +333,8 @@ public final class HissiMenuActivity extends Activity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                if (!url.equals(view.getUrl())) return;
+                if (recoverKyodemoAnalysis(view, url)) return;
                 applyViewerTheme(rootLayout, view, Haiagaru.hissiViewerTheme());
                 if (kyodemoAnalysisButton != null) {
                     kyodemoAnalysisButton.setVisibility(isKyodemoAnalysisUrl(url)
@@ -333,6 +345,24 @@ public final class HissiMenuActivity extends Activity {
                 }
                 updateThreadStartCount(view);
                 configureHissiTabs(view);
+                if (url.equals(pendingAnalysisResult)
+                        || ("wt".equals(Uri.parse(url).getFragment())
+                                && !url.equals(analysisAutoOpenedUrl))) {
+                    pendingAnalysisResult = null;
+                    analysisAutoOpenedUrl = url;
+                    view.evaluateJavascript(
+                            "!!document.querySelector('#blist .d-myChart, #b>.right-column #toggle-w-tawindow .d-box')",
+                            result -> {
+                                if (!url.equals(view.getUrl())) return;
+                                if ("true".equals(result) && kyodemoAnalysisButton != null) {
+                                    kyodemoAnalysisButton.performClick();
+                                } else {
+                                    Toast.makeText(HissiMenuActivity.this,
+                                            "分析結果はまだ取得できません。投稿一覧に戻りました。",
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            });
+                }
             }
 
             @Override
@@ -452,9 +482,29 @@ public final class HissiMenuActivity extends Activity {
         if (!fullscreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             layout.requestApplyInsets();
         }
-        if (wacchoiSearchLaunch) {
-            webView.post(() -> showKyodemoSearch(webView, initialWacchoiQuery));
-        }
+    }
+
+    private boolean recoverKyodemoAnalysis(WebView view, String url) {
+        String resultUrl = KyodemoRouting.analysisResultUrl(url);
+        if (resultUrl == null || url.equals(analysisRecoveryAttempt)) return false;
+        view.post(() -> {
+            // HTTP errors can arrive before WebView publishes its new URL.
+            // Do not consume the one-shot recovery unless we actually navigate.
+            if (!url.equals(view.getUrl()) || url.equals(analysisRecoveryAttempt)) return;
+            analysisRecoveryAttempt = url;
+            pendingAnalysisResult = resultUrl;
+            Log.i(LOG_TAG, "Kyodemo analysis: returning to result page");
+            view.loadUrl(resultUrl);
+        });
+        return true;
+    }
+
+    private void showAnalysisFailure(String url) {
+        if (isFinishing() || url.equals(lastAnalysisFailureUrl)) return;
+        lastAnalysisFailureUrl = url;
+        new AlertDialog.Builder(this).setTitle("AI解析")
+                .setMessage("しばらくしてもう一度お試しください")
+                .setPositiveButton("OK", null).show();
     }
 
     private LinearLayout createViewerToolbar(final WebView webView) {
@@ -518,14 +568,19 @@ public final class HissiMenuActivity extends Activity {
             Button analysis = toolbarButton("分析");
             kyodemoAnalysisButton = analysis;
             analysis.setVisibility(View.GONE);
-            analysis.setContentDescription("Kyodemoの投稿分析を表示・非表示");
+            analysis.setContentDescription("投稿分析を表示。長押しで分析リクエスト");
+            analysis.setOnLongClickListener(view -> {
+                requestKyodemoAnalysis(webView);
+                return true;
+            });
             analysis.setOnClickListener(view -> webView.evaluateJavascript(
                     "(function(){if(location.hostname!=='www.kyodemo.net'"
                             + "||!location.pathname.startsWith('/sdemo/b/'))return 'unavailable';"
                             + "var panel=document.querySelector('#b>.right-column');"
                             + "var chart=document.querySelector('#blist .d-myChart');"
-                            + "var inline=!!chart;"
-                            + "if(!inline&&(!panel||!panel.querySelector('#wt')))return 'unavailable';"
+                            + "var trend=panel&&panel.querySelector('#toggle-w-tawindow .d-box');"
+                            + "var inline=!!chart&&!trend;"
+                            + "if(!inline&&!trend)return 'unavailable';"
                             + "var opened=document.body.hasAttribute('data-haiagaru-analysis');"
                             + "if(opened)document.body.removeAttribute('data-haiagaru-analysis');"
                             + "else document.body.setAttribute('data-haiagaru-analysis',inline?'inline':'sidebar');"
@@ -538,8 +593,8 @@ public final class HissiMenuActivity extends Activity {
                             + "window.scrollTo(0,0);return opened?'closed':'opened';})()",
                     result -> {
                         if ("\"unavailable\"".equals(result)) {
-                            Toast.makeText(this, "このページには分析データがありません",
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "分析結果はまだありません。長押しで分析をリクエストできます。",
+                                    Toast.LENGTH_LONG).show();
                         } else {
                             analysis.setText("\"opened\"".equals(result) ? "投稿" : "分析");
                         }
@@ -626,6 +681,41 @@ public final class HissiMenuActivity extends Activity {
                     currentUsesKyodemo = true;
                     webView.loadUrl(url);
                 }).show();
+    }
+
+    /** Request only the action offered by the current result, never invent its token. */
+    private void requestKyodemoAnalysis(WebView webView) {
+        final String pageUrl = webView.getUrl();
+        webView.evaluateJavascript("(function(){"
+                + "if(location.hostname!=='www.kyodemo.net'||!location.pathname.startsWith('/sdemo/b/'))return '';"
+                + "for(var a of document.querySelectorAll('a[href],a[data-url]')){try{"
+                + "var u=new URL(a.getAttribute('data-url')||a.href,location.href);"
+                + "var current=new URL(location.href);"
+                + "var same=['k','wc','id','key','date','fr','to'].every(function(k){return !current.searchParams.has(k)||current.searchParams.get(k)===u.searchParams.get(k);});"
+                + "if(same&&u.origin===location.origin&&u.pathname===location.pathname&&u.searchParams.get('fetch')==='a')return u.href;"
+                + "}catch(e){}}return '';})()", result -> {
+            if (!java.util.Objects.equals(pageUrl, webView.getUrl()) || isFinishing()) return;
+            String executionUrl = decodeJavascriptString(result);
+            if (KyodemoRouting.analysisResultUrl(executionUrl) == null) {
+                new AlertDialog.Builder(this).setTitle("分析リクエスト")
+                        .setMessage("この検索結果にはKyodemoの分析リクエスト用リンクがありません。"
+                                + "分析済みの場合は「分析」で結果を表示できます。"
+                                + "未分析の場合は、サイト側の対象条件や利用制限によって実行できないことがあります。")
+                        .setPositiveButton("OK", null).show();
+                return;
+            }
+            new AlertDialog.Builder(this).setTitle("分析リクエスト")
+                    .setMessage("表示中のID・ﾜｯﾁｮｲについて、Kyodemoへ分析をリクエストします。"
+                            + "完了後に結果を再取得します。サイトの混雑や利用制限で失敗する場合があります。")
+                    .setNegativeButton("キャンセル", null)
+                    .setPositiveButton("リクエスト", (dialog, which) -> {
+                        if (!java.util.Objects.equals(pageUrl, webView.getUrl())) return;
+                        analysisRecoveryAttempt = null;
+                        lastAnalysisFailureUrl = null;
+                        if (kyodemoAnalysisButton != null) kyodemoAnalysisButton.setText("分析中");
+                        webView.loadUrl(executionUrl);
+                    }).show();
+        });
     }
 
     private void selectHissiTab(int selected) {
@@ -933,7 +1023,15 @@ public final class HissiMenuActivity extends Activity {
                         int action = which - copyCount;
                         if (hasWacchoiSearch) {
                             if (action == 0) {
-                                showKyodemoSearch(viewerWebView, wacchoi);
+                                String searchUrl = KyodemoRouting.wacchoiSearchUrl(
+                                        sourceHost, sourceBoard, wacchoi);
+                                if (searchUrl != null) {
+                                    currentUsesKyodemo = true;
+                                    viewerWebView.loadUrl(searchUrl);
+                                } else {
+                                    Toast.makeText(this, "ﾜｯﾁｮｲと板を確認してください",
+                                            Toast.LENGTH_SHORT).show();
+                                }
                                 return;
                             }
                             action--;
@@ -1109,7 +1207,7 @@ public final class HissiMenuActivity extends Activity {
                     + "body[data-haiagaru-analysis] #b>.right-column{display:block !important;"
                     + "box-sizing:border-box;width:100% !important;max-width:100% !important;"
                     + "flex:none !important;padding:12px !important;}"
-                    + "body[data-haiagaru-analysis] #b>.right-column>div:not(#toggle-w-tawindow),"
+                    + "body[data-haiagaru-analysis] #b>.right-column>div:not(#toggle-w-tawindow):not(#wt),"
                     + "body[data-haiagaru-analysis] #b>.right-column>#pw,"
                     + "body[data-haiagaru-analysis] #b>.right-column>#hb,"
                     + "body[data-haiagaru-analysis] #b>.right-column>#hk{display:none !important;}"
@@ -1251,8 +1349,8 @@ public final class HissiMenuActivity extends Activity {
                     + "var body=b?(b.innerText||b.textContent||'').trim():(n.innerText||n.textContent||'').trim();"
                     + "if(!b&&body.indexOf(header)===0)body=body.substring(header.length).trim();"
                     + "if(!body)return '';var number='',name='',id='',url='',wacchoi='';"
-                    + "var wm=(header+' '+body).match(/(?:ﾜｯﾁｮｲW?|ワッチョイ)\\s*[:：]?\\s*([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})/i);"
-                    + "if(wm)wacchoi=wm[1];"
+                    + "var wm=header.match(/(?:[\\uFF66-\\uFF9F\\u30A0-\\u30FF]+[a-z]*|ﾜｯﾁｮｲ[a-z]*)\\s+[a-z0-9]{4}[-‐‑–—][a-z0-9+\\/]{4,}(?![a-z0-9+\\/])/i);"
+                    + "if(wm)wacchoi=wm[0];"
                     + "var em=header.match(/\\bL([0-9]+)\\s+([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})/i);"
                     + "if(em)wacchoi='L'+em[1]+' '+em[2];"
                     + "if(n.tagName==='DL'){var m=header.match(/(?:^|\\n)\\s*(\\d+)\\s*[：:]/);number=m?m[1]:'';"

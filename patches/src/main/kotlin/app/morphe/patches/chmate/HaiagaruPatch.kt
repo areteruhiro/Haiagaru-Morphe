@@ -1212,6 +1212,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             patchProgrammableNgModern("Lo/RewardedInterstitialAdLoadCallback;", "a", "a")
         }
         patchTabletThreadHeaderAdSpace(packageMetadata.versionName)
+        patchStringReplacement()
         patchShortThreadTopAlignment(packageMetadata.versionName)
         when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> {
@@ -3117,6 +3118,15 @@ val haiagaruPatch = resourcePatch(
                     "@android:style/Theme.Material.Light.NoActionBar",
                 )
             })
+            if (packageMetadata.versionName != "0.8.10.243 dev") {
+                application.appendChild(document.createElement("activity").apply {
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name",
+                        "app.morphe.extension.chmate.ReplacementSettingsActivity")
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
+                        "@android:style/Theme.Material.Light.NoActionBar")
+                })
+            }
 
             // Keep the archive page in the same lightweight WebView activity as
             // the checker.  It is declared even when the optional Hissi viewer
