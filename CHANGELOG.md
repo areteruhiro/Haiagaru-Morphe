@@ -1,5 +1,14 @@
 # Haiagaru changelog
 
+## 1.7.0 (Official release)
+
+- Consolidate the improvements since 1.5.2: Hissi/Kyodemo viewers, copy actions, themes, gestures and Wacchoi search.
+- Add MEGA/local backup and foreground startup synchronization, Edge archive search, toolbar filters and compatibility fixes.
+- Preserve Wacchoi labels, case and symbols; improve explicit analysis requests without automatic request loops.
+- Repair legacy BE link spans on 191/226 and add optional external TXT body replacement on 191/226/241/242.
+- Publish the Android MPP and align stable/prerelease bundle sources to 1.7.0.
+- See [Japanese release notes](release-notes-1.7.0.md) for the complete user-facing changes, limitations and acknowledgments.
+
 ## 1.6.8 (Pre-release)
 
 - Prevent startup crashes from incompatible package names by requiring ChMate's original package name as the prefix.
