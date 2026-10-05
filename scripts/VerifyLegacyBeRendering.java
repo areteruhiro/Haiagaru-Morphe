@@ -82,6 +82,19 @@ public class VerifyLegacyBeRendering {
                         "Repair offset beyond eight characters");
                 range = (Long) align.invoke(null, url + " ".repeat(80) + url, url, 50, 69);
                 check((int) range == 50, "Do not guess between distant duplicate links");
+                String bare = "title 391(c)2ch.net\nhttp://hello.2ch.net/test/read.cgi/qa/1418210008/";
+                int domainStart = bare.indexOf("2ch.net");
+                range = (Long) align.invoke(null, bare, "http://2ch.net",
+                        domainStart + 7, domainStart + 14);
+                check((int) range == domainStart && (int) (range >>> 32) == domainStart + 7,
+                        "Bare domain span must not bleed into next line");
+                String abbreviated = "icon\nttp://example.com/thread/";
+                String target = "http://example.com/thread/";
+                range = (Long) align.invoke(null, abbreviated, target, 12, abbreviated.length() + 7);
+                check((int) range == 5 && (int) (range >>> 32) == abbreviated.length(),
+                        "ttp display shifted seven characters");
+                range = (Long) align.invoke(null, "http://hello.2ch.net/", "http://2ch.net", 13, 20);
+                check((int) range == 13, "Do not match a domain embedded in another host");
             }
             System.out.println("BE rendering regression checks passed");
         } finally {

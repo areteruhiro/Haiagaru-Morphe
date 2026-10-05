@@ -18,10 +18,6 @@ import java.util.regex.Pattern;
 /** Adds a board-aware Wacchoi search action to ChMate's response long-press menu. */
 public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
-    private static final Pattern LABELED_TOKEN = Pattern.compile(
-            "(?i)(?:ﾜｯﾁｮｲw?|ワッチョイ|ﾜｯﾁｮｲ)\\s*[:：]?\\s*([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})");
-    private static final Pattern TOKEN = Pattern.compile(
-            "(?i)(?<![a-z0-9])([a-z0-9]{4}[-‐‑–—][a-z0-9]{4,})(?![a-z0-9])");
     private static final ThreadLocal<Object> ACTIVE_DIALOG = new ThreadLocal<>();
 
     private WacchoiLongPressMenu() {}
@@ -363,16 +359,16 @@ public final class WacchoiLongPressMenu {
                         found.query = edgeSlip;
                         return;
                     }
-                    Matcher labeled = LABELED_TOKEN.matcher(text);
-                    if (labeled.find()) {
-                        found.query = normalize(labeled.group(1));
+                    String labeled = KyodemoRouting.labeledWacchoiInText(text);
+                    if (labeled != null) {
+                        found.query = labeled;
                         return;
                     }
                     // ChMate stores the already-parsed token without its label
                     // in some versions; only accept a standalone token then.
-                    Matcher token = TOKEN.matcher(text);
-                    if (token.find()) {
-                        found.query = normalize(token.group(1));
+                    String token = KyodemoRouting.bareWacchoiInText(text);
+                    if (token != null) {
+                        found.query = token;
                         return;
                     }
                 } catch (Throwable ignored) { }
@@ -384,15 +380,9 @@ public final class WacchoiLongPressMenu {
         if (text == null || text.isEmpty()) return null;
         String edgeSlip = KyodemoRouting.edgeWacchoiInText(text);
         if (edgeSlip != null) return edgeSlip;
-        Matcher labeled = LABELED_TOKEN.matcher(text);
-        if (labeled.find()) return normalize(labeled.group(1));
-        Matcher token = TOKEN.matcher(text);
-        return token.find() ? normalize(token.group(1)) : null;
-    }
-
-    private static String normalize(String value) {
-        return value == null ? null : value.replace('‐', '-').replace('‑', '-')
-                .replace('–', '-').replace('—', '-');
+        String labeled = KyodemoRouting.labeledWacchoiInText(text);
+        if (labeled != null) return labeled;
+        return KyodemoRouting.bareWacchoiInText(text);
     }
 
     private static Object invokeNoArg(Object target, String name) {

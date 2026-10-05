@@ -432,6 +432,7 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            StringReplacement.reload(activity, false, null);
                         }
                         @Override public void onActivityPaused(Activity activity) { }
                         @Override public void onActivityStopped(Activity activity) { }
@@ -2579,37 +2580,48 @@ public final class Haiagaru {
         int end = originalEnd;
         if (renderedText != null && url != null && !url.isEmpty()) {
             String text = renderedText.toString();
-            boolean alreadyAligned = start >= 0
-                    && end == start + url.length()
-                    && end <= text.length()
-                    && text.regionMatches(start, url, 0, url.length());
-            if (!alreadyAligned) {
-                int searchStart = Math.max(0, start - 8);
-                int searchEnd = Math.min(text.length(), start + 8 + url.length());
-                int candidate = text.indexOf(url, searchStart);
-                int closest = -1;
-                int closestDistance = Integer.MAX_VALUE;
-                while (candidate >= 0 && candidate + url.length() <= searchEnd) {
-                    int distance = Math.abs(candidate - start);
-                    if (distance < closestDistance) {
-                        closest = candidate;
-                        closestDistance = distance;
+            // The target URL includes a scheme even for a bare domain or ttp
+            // display token. Its length therefore is not the span length.
+            String[] displays = (url.startsWith("http://") || url.startsWith("https://"))
+                    ? new String[]{url, url.substring(1), url.substring(url.indexOf("://") + 3)}
+                    : new String[]{url};
+            int closest = -1, closestLength = 0, closestDistance = Integer.MAX_VALUE;
+            int unique = -1, uniqueLength = 0, matches = 0;
+            for (String display : displays) {
+                int candidate = text.indexOf(display);
+                while (candidate >= 0) {
+                    // Do not mistake a domain inside another URL (or ttp inside
+                    // http) for a standalone display token.
+                    char previous = candidate > 0 ? text.charAt(candidate - 1) : ' ';
+                    boolean boundary = display.equals(url)
+                            || !(Character.isLetterOrDigit(previous)
+                            || previous == '/' || previous == ':' || previous == '.'
+                            || previous == '_' || previous == '-');
+                    if (boundary) {
+                        if (candidate == start && end == start + display.length()) {
+                            return ((long) end << 32) | (start & 0xffffffffL);
+                        }
+                        matches++;
+                        unique = candidate;
+                        uniqueLength = display.length();
+                        int distance = Math.abs(candidate - start);
+                        if (distance <= 8 && distance < closestDistance) {
+                            closest = candidate;
+                            closestLength = display.length();
+                            closestDistance = distance;
+                        }
                     }
-                    candidate = text.indexOf(url, candidate + 1);
+                    candidate = text.indexOf(display, candidate + 1);
                 }
-                // Normalizing a bare BE token can move subsequent offsets by
-                // more than eight characters. Only use a distant match when
-                // it is unique; repeated links must not jump to another row.
-                if (closest < 0) {
-                    int unique = text.indexOf(url);
-                    if (unique >= 0 && text.indexOf(url, unique + 1) < 0) {
-                        closest = unique;
-                    }
-                }
-                if (closest >= 0) {
-                    start = closest;
-                    end = closest + url.length();
-                }
+            }
+            // Distant offsets are repaired only when the display token is unique.
+            if (closest < 0 && matches == 1) {
+                closest = unique;
+                closestLength = uniqueLength;
+            }
+            if (closest >= 0) {
+                start = closest;
+                end = closest + closestLength;
             }
         }
         return ((long) end << 32) | (start & 0xffffffffL);
@@ -3361,6 +3373,13 @@ public final class Haiagaru {
                 "MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
+        if (StringReplacement.supported(activity)) {
+            Button replaceStrings = new Button(activity);
+            replaceStrings.setText("本文の文字列置換（外部TXT）");
+            replaceStrings.setOnClickListener(v -> activity.startActivity(
+                    new Intent(activity, ReplacementSettingsActivity.class)));
+            layout.addView(replaceStrings, rowParams(activity));
+        }
 
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
