@@ -1124,11 +1124,11 @@ public final class HissiMenuActivity extends Activity {
                     + " !important;border:1px solid " + (dark ? "#36363b" : "#e1e1e6")
                     + " !important;border-radius:12px;}"
                     + "#haiagaru-analysis-summary{display:none;white-space:pre-wrap;overflow-wrap:anywhere;}"
-                    + "body[data-haiagaru-analysis='inline'] #b>.right-column{display:none !important;}"
-                    + "body[data-haiagaru-analysis='inline'] #b>.left-column{display:block !important;width:100%;}"
-                    + "body[data-haiagaru-analysis='inline'] #blist>*{display:none !important;}"
-                    + "body[data-haiagaru-analysis='inline'] #blist>.d-myChart,"
-                    + "body[data-haiagaru-analysis='inline'] #haiagaru-analysis-summary{display:block !important;"
+                    + "body[data-haiagaru-analysis=inline] #b>.right-column{display:none !important;}"
+                    + "body[data-haiagaru-analysis=inline] #b>.left-column{display:block !important;width:100%;}"
+                    + "body[data-haiagaru-analysis=inline] #blist>*{display:none !important;}"
+                    + "body[data-haiagaru-analysis=inline] #blist>.d-myChart,"
+                    + "body[data-haiagaru-analysis=inline] #haiagaru-analysis-summary{display:block !important;"
                     + "background:" + bg + " !important;color:" + fg + " !important;max-width:100%;}"
                     // Kyodemo puts empty-result and request errors in this header.
                     + "#b>.left-column>header{display:block !important;}"
