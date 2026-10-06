@@ -40,14 +40,16 @@ https://github.com/areteruhiro/Haiagaru
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」
 * NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、4対応版共通）
 
-### ID検索と専用ビュワー
+## 機能別ドキュメント
 
-詳細は [ID検索と専用ビュワー](docs/id-search-viewer.md) を参照してください。
-
-
-### エッヂの記者ID表示
-
-詳細は [エッヂの記者ID表示](docs/edge-reporter-id.md) を参照してください。
+- [ID検索と専用ビュワー](docs/id-search-viewer.md)
+- [エッヂの記者ID表示](docs/edge-reporter-id.md)
+- [HTTP通信のHTTPS切り替え](docs/https-switching.md)
+- [MEGAバックアップ](docs/mega-backup.md)
+- [ChMate+互換機能](docs/chmate-plus-compat.md)
+- [高度なNGルール](docs/advanced-ng.md)
+- [本文の文字列置換（外部TXT）](docs/replace-str.md)
+- [よくある質問](docs/faq.md)
 
 
 ### DAT落ちスレの自動取得
@@ -65,21 +67,6 @@ Haiagaru設定の「自動DAT取得経路」は、上の行から順に試行し
 各行は `auto|`、`dat|`、`kako|`、`itest|` のいずれかにURLを続けます。
 URLでは `{$server}`、`{$bbs}`、`{$key}`、`{$rand}` を使用できます。
 空行と `#` で始まる行は無視され、無効な設定しかない場合は初期経路へ戻ります。
-
-## HTTP通信のHTTPS切り替え
-
-詳細は [HTTP通信のHTTPS切り替え](docs/https-switching.md) を参照してください。
-
-
-## MEGAバックアップ（開発中）
-
-詳細は [MEGAバックアップ](docs/mega-backup.md) を参照してください。
-
-
-## よくある質問
-
-Cookieエラー、ワッチョイ検索、画像一覧、高度なNGワードについては [よくある質問](docs/faq.md) を参照してください。
-
 
 ## インストールできない場合
 
@@ -177,16 +164,6 @@ patches\build\libs\patches-1.7.0.mpp
 Morphe Desktopでは `Haiagaru` を有効にして対象APKへ適用します。
 APKは再署名されるため、Play版など署名が異なるChMateとはそのまま上書きできません。
 
-### ChMate+互換機能
-
-191／226／243 devでは、Haiagaru設定から「単発ID表示を省略」「コピペ省略2」
-「荒らし省略」を切り替えられます。設定を保存するとアプリが再起動します。
-191では荒らし・コピペ2の判定処理にも有効化の修正を適用し、各設定がOFFの場合は
-判定処理を登録しません。243は元の判定処理と設定条件を使用します。
-
-この検査は191の2箇所の登録制限の除去、設定OFFの分岐の維持、
-243の判定処理の維持を確認します。実際のレスの省略表示は別途実機で確認してください。
-
 ## サポート
 何かあればGitHubのIssueか
 以下のサーバーで対応させていただきます。
@@ -220,63 +197,6 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 ベースのビルドシステムとパッチ形式は
 [Morphe patches](https://github.com/MorpheApp/morphe-patches) を使用しています。
 
-
-### 高度なNGルール
-
-ChMate設定 → Haiagaru →「高度なNGルール（条件・スクリプト）」から設定します。
-初期状態はOFFで、既存のChMate NG設定には変更を加えません。
-
-「NG条件を追加」には、スレタイ／レス本文のキーワード、正規表現、エッヂの記者ID、
-自由記述JavaScriptのひな形があります。対象を全板または指定した板URLに限定でき、
-直近に読み込んだデータで保存前に判定件数をテストできます。
-
-判定関数は `function (text, options) { return true または false; }` の形で記述します。
-`text` はスレタイまたはレス本文です。`options` には板URL、スレッド番号、レス数、勢い、
-記者ID、レス番号、レスIDなど、取得できた項目だけが入ります。
-
-スクリプトはJava/Android APIへアクセスできない制限付きインタプリタで実行し、
-1ルール250ms、1回の一覧判定500ms、ルール32件などの上限を設けています。
-エラーや上限超過時はその判定をNGにせず、設定画面へ理由を表示します。
-設定と判定対象は外部へ送信しません。
-
-スレ一覧とレス本文の判定は `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.241`／
-`0.8.10.243 dev` に対応します。レス本文の一致結果は各バージョンの標準NGWordフラグへ統合します。
-
-この機能はGPLv3の派生リポジトリ
-[`testuser0123-web/Haiagaru-Morphe`](https://github.com/testuser0123-web/Haiagaru-Morphe)
-の設計を参考に、現行コード構成と複数バージョン向け共通フックへ書き直したものです。
-参考実装の作者アカウント: [`testuser0123-web`](https://github.com/testuser0123-web)
-詳細な著作権・ライセンス表示は [`LICENSE`](LICENSE) と [`NOTICE`](NOTICE) を参照してください。
-
-
-### 本文の文字列置換（外部TXT）
-
-191 dev／226 dev／241／242 dev向け。243 devは対象外です。
-Haiagaru設定 →「本文の文字列置換（外部TXT）」でON/OFF、サンプルの作成、
-TXTの選択、再読み込みを行います。初期状態はOFFです。
-
-サンプルは `Download/Haiagaru/ReplaceStr.txt` に作成します。既存のファイルは上書きしません。
-外部のテキストエディタでUTF-8・タブ区切りに編集し、再読み込み後にスレを開き直してください。
-ファイルを置き換えた場合やパッケージ名を変更した場合は、ファイル選択画面から再選択してください。
-
-```text
-; 次の列間は実際のタブ文字です。
-<ex2>https://example■.com/	https://example.com/	msg
-```
-
-通常置換は「検索文字［TAB］置換後の文字」。`<ex>`（省略時も同じ）は大小文字を区別せず、
-`<ex2>` は区別します。置換後を空にすると削除します。ルールは上から順に適用します。
-`;`、`'`、`//` で始まる行はコメントです。
-
-[JaneXenoのReplaceStr.txt仕様](https://w.atwiki.jp/janexeno/pages/76.html)を参考にした独立実装です。
-完全互換ではありません。対象は本文のみ（`msg`、省略、`all`も本文のみ）。
-名前・日時・スレタイ・正規表現・URL/タイトル条件は未対応で、指定した場合はエラーになります。
-ファイルは128KB、ルール256件まで。不正なTXTや読み取りエラー時は置換せず表示します。
-
-画面表示用の本文コピーをリンク認識前に置換するため、置換後のURLをリンクとして認識します。
-保存DAT、投稿本文、元のNG判定は変更しません。全体の `■` を一律削除するようなルールは
-URL以外にも適用されるため、なるべくURLを含む具体的な文字列を指定してください。
-掲示板の投稿規約に従って利用してください。
 
 ## Credit
 
