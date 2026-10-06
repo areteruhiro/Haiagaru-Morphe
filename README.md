@@ -212,6 +212,10 @@ https://github.com/Chipppppppppp/Binnosoko
 Contribution <br>
 Haiagaru Contribution<br>
 yujirox 様 <br>
+ﾜｯﾁｮｲ 8f01-uDul 様 <br>
+toya0717 様<br>
+MUMEI 様<br>
+無名 様<br>
 
 LEINs Contribution<br>
 LEINsに対して寄付/ご購入してくださった皆様
