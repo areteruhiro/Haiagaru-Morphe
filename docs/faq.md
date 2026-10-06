@@ -48,6 +48,6 @@ Kyodemo上ではデータを確認できるにもかかわらず、Haiagaruか�
 
 高度なNGワード機能については、以下のドキュメントを参照してください。
 
-[testuser0123-web/Haiagaru-Morphe - programmable-ng-191.md](https://github.com/testuser0123-web/Haiagaru-Morphe/blob/master/docs/programmable-ng-191.md)
+[高度なNGルール](advanced-ng.md)
 
 本機能の開発にご協力いただいた **testuser0123-web** 氏に感謝申し上げます。
