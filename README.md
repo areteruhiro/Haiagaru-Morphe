@@ -168,7 +168,7 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 何かあればGitHubのIssueか
 以下のサーバーで対応させていただきます。
 お気軽にご質問等お願いします。
-＊開発者自身がchmateを開かないため
+~~＊開発者自身がchmateを開かないため~~
 
 [Haiagaru サポートチャンネル](https://discord.gg/ypTzS4VWaz)
 
