@@ -49,7 +49,7 @@ https://github.com/areteruhiro/Haiagaru
 - [ChMate+互換機能](docs/chmate-plus-compat.md)
 - [高度なNGルール](docs/advanced-ng.md)
 - [本文の文字列置換（外部TXT）](docs/replace-str.md)
-- [よくある質問](docs/faq.md)
+- Cookieエラー、ワッチョイ検索、画像一覧、高度なNGワードについては [よくある質問](docs/faq.md) を参照してください。
 
 
 ### DAT落ちスレの自動取得
