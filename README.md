@@ -13,7 +13,7 @@ https://github.com/areteruhiro/Haiagaru
 最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
-最新版 `1.7.0` の概要: [1.7.0の更新内容](release-notes-1.7.0.md)
+最新版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
 ## Features
 
@@ -117,16 +117,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLとプレ版用URLは、どちらも正式版 `1.7.0` を取得します。
+通常版URLとプレ版用URLは、どちらも正式版 `1.7.1` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の正式版（1.7.0）を取得するパッチソースです。
+現在の正式版（1.7.1）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版用のパッチソースです。今回は正式版1.7.0に揃えています。
+プレ版用のパッチソースです。今回は正式版1.7.1に揃えています。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -160,7 +160,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 生成物:
 
 ```text
-patches\build\libs\patches-1.7.0.mpp
+patches\build\libs\patches-1.7.1.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
