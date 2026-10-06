@@ -181,10 +181,13 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 - [PayPay](https://qr.paypay.ne.jp/p2p01_Cc1k5WqxClWy8HCG)
 
 ### 謝辞
+yujirox 様 <br>
+ﾜｯﾁｮｲ 8f01-uDul 様 <br>
+toya0717 様<br>
+MUMEI 様<br>
+無名 様<br>
+ご支援ありがとうございます。
 
-ﾜｯﾁｮｲ 8f01-uDul 様、UPLIFT利用料のご支援をありがとうございます。
-
-ご寄付いただいた toya0717 様、MUMEI 様、無名 様、本当にありがとうございます。
 皆様からのご報告・検証・ご支援が開発の励みになっています。
 
 ## 構成
@@ -210,12 +213,6 @@ Forked from Binnosoko
 https://github.com/Chipppppppppp/Binnosoko
 
 Contribution <br>
-Haiagaru Contribution<br>
-yujirox 様 <br>
-ﾜｯﾁｮｲ 8f01-uDul 様 <br>
-toya0717 様<br>
-MUMEI 様<br>
-無名 様<br>
 
 LEINs Contribution<br>
 LEINsに対して寄付/ご購入してくださった皆様
