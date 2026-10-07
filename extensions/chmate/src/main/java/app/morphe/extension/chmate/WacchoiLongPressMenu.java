@@ -18,6 +18,11 @@ import java.util.regex.Pattern;
 /** Adds a board-aware Wacchoi search action to ChMate's response long-press menu. */
 public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
+    // These are toolbar-only choices. Some ChMate builds reuse the toolbar
+    // action catalog for the response long-press Menu as well, so explicitly
+    // strip them from that transient menu without removing toolbar choices.
+    private static final int EDGE_ARCHIVE_TOOLBAR_ID = 0x7e000001;
+    private static final int MARK_ALL_READ_TOOLBAR_ID = 0x7e000003;
     private static final ThreadLocal<Object> ACTIVE_DIALOG = new ThreadLocal<>();
 
     private WacchoiLongPressMenu() {}
@@ -90,6 +95,7 @@ public final class WacchoiLongPressMenu {
         ACTIVE_DIALOG.remove();
         if (!(menuObject instanceof Menu) || dialogFragment == null) return;
         Menu menu = (Menu) menuObject;
+        removeToolbarOnlyChoices(menu);
         if (menu.findItem(ITEM_ID) != null) return;
         Object parent = invokeNoArg(dialogFragment, "getParentFragment");
         SearchContext context = findContext(dialogFragment, parent);
@@ -101,6 +107,7 @@ public final class WacchoiLongPressMenu {
             Object responseObject) {
         if (!(menuObject instanceof Menu) || fragmentObject == null || responseObject == null) return;
         Menu menu = (Menu) menuObject;
+        removeToolbarOnlyChoices(menu);
         if (menu.findItem(ITEM_ID) != null) return;
         SearchContext found = new SearchContext();
         // 191 stores the displayed name in n and the date/SLIP text in q.
@@ -110,6 +117,11 @@ public final class WacchoiLongPressMenu {
         if (found.query == null) found.query = queryInText(stringField(responseObject, "q"));
         readBoard(fieldValue(fragmentObject, "W"), found);
         append(menu, fragmentObject, fragmentObject, found);
+    }
+
+    private static void removeToolbarOnlyChoices(Menu menu) {
+        menu.removeItem(EDGE_ARCHIVE_TOOLBAR_ID);
+        menu.removeItem(MARK_ALL_READ_TOOLBAR_ID);
     }
 
     private static void append(Menu menu, Object dialogOrFragment, Object parent,
