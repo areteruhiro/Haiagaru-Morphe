@@ -2,10 +2,12 @@ package app.morphe.extension.chmate;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.Html;
 import android.text.InputType;
 import android.view.Gravity;
@@ -31,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /** Native search for the Edge archive index. Thread bodies remain on the original BBS. */
 final class EddiArchiveSearchUi {
@@ -39,6 +43,11 @@ final class EddiArchiveSearchUi {
     }
 
     private static final String HOST = "eddiarchive3rd.boy.jp";
+    private static final String PREFS = "haiagaru_eddi_search";
+    private static final String STATE_KEY = "haiagaru.eddi.search.state";
+    // Also stored in the Activity bundle: leave room for the view hierarchy
+    // below Android's Binder transaction limit.
+    private static final int MAX_SAVED_LENGTH = 120_000;
     private static final Pattern THREAD = Pattern.compile(
             "(?is)<div\\s+class=[\"']thread[\"']\\s*>(.*?)</div>");
     private static final Pattern ANCHOR = Pattern.compile("(?is)<a\\s+([^>]*class=[\"']title[\"'][^>]*)>(.*?)</a>");
@@ -69,12 +78,17 @@ final class EddiArchiveSearchUi {
     private int page = 1;
     private int generation;
     private int totalResults;
+    private SearchPage displayedPage;
+    private String displayedQuery;
+    private ScrollView advancedScroll;
+    private Button details;
+    private int restoreScrollY = -1;
 
-    static void show(Activity activity, Uri source, ThreadOpener opener) {
-        new EddiArchiveSearchUi(activity, source, opener);
+    static EddiArchiveSearchUi show(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
+        return new EddiArchiveSearchUi(activity, source, opener, state);
     }
 
-    private EddiArchiveSearchUi(Activity activity, Uri source, ThreadOpener opener) {
+    private EddiArchiveSearchUi(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
         this.activity = activity;
         this.opener = opener;
         int theme = Haiagaru.hissiViewerTheme();
@@ -99,10 +113,10 @@ final class EddiArchiveSearchUi {
                 return insets;
             });
         }
-        TextView heading = text("エッヂ過去ログ検索", 21, foreground);
+        TextView heading = text("‹ エッヂ過去ログ検索", 21, foreground);
         heading.setOnClickListener(view -> activity.finish());
         root.addView(heading);
-        root.addView(text("スレタイを探し、結果をタップするとChMateで開きます", 12, muted));
+        root.addView(text("結果をタップしてスレを開き、「戻る」で検索結果に戻れます", 12, muted));
 
         keyword = input("スレタイを入力", false);
         keyword.setSingleLine(true);
@@ -110,7 +124,7 @@ final class EddiArchiveSearchUi {
         LinearLayout actionRow = row();
         Button search = button("検索");
         actionRow.addView(search, weighted());
-        Button details = button("詳細条件 ▾");
+        details = button("詳細条件 ▾");
         actionRow.addView(details, weighted());
         root.addView(actionRow);
 
@@ -134,7 +148,7 @@ final class EddiArchiveSearchUi {
         endDate = input("終了日 YYYY-MM-DD", false);
         advanced.addView(startDate);
         advanced.addView(endDate);
-        ScrollView advancedScroll = new ScrollView(activity);
+        advancedScroll = new ScrollView(activity);
         advancedScroll.addView(advanced);
         advancedScroll.setVisibility(View.GONE);
         root.addView(advancedScroll, new LinearLayout.LayoutParams(
@@ -206,8 +220,91 @@ final class EddiArchiveSearchUi {
         activity.setContentView(root);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
 
-        restoreQuery(source);
-        search(page);
+        if (!restoreSavedSearch(source, state)) {
+            restoreQuery(source);
+            search(page);
+        }
+    }
+
+    /** Save data only, never retain the Activity or its views between launches. */
+    void saveState(Bundle state) {
+        try {
+            JSONObject saved = new JSONObject();
+            saved.put("query", queryUri(page).toString());
+            saved.put("page", page);
+            saved.put("scroll", scroll.getScrollY());
+            saved.put("expanded", advancedScroll.getVisibility() == View.VISIBLE);
+            if (displayedPage != null) {
+                saved.put("resultQuery", displayedQuery);
+                saved.put("total", displayedPage.total);
+                JSONArray threads = new JSONArray();
+                for (ThreadResult thread : displayedPage.threads) {
+                    threads.put(new JSONObject().put("title", thread.title)
+                            .put("date", thread.date).put("url", thread.url));
+                }
+                saved.put("threads", threads);
+            }
+            String encoded = saved.toString();
+            // Oversized results may be fetched again; keep the query and position.
+            if (encoded.length() > MAX_SAVED_LENGTH) {
+                saved.remove("threads");
+                encoded = saved.toString();
+            }
+            if (encoded.length() > MAX_SAVED_LENGTH) return;
+            if (state != null) state.putString(STATE_KEY, encoded);
+            activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .edit().putString("last", encoded).apply();
+        } catch (Exception error) {
+            android.util.Log.w("Haiagaru", "Could not save Edge archive search", error);
+        }
+    }
+
+    void dispose() {
+        ++generation;
+    }
+
+    private boolean restoreSavedSearch(Uri source, Bundle state) {
+        String encoded = state == null ? null : state.getString(STATE_KEY);
+        boolean fromActivityState = encoded != null;
+        if (encoded == null) encoded = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString("last", null);
+        if (encoded == null || encoded.length() > MAX_SAVED_LENGTH) return false;
+        try {
+            JSONObject saved = new JSONObject(encoded);
+            // Explicit incoming searches must take precedence over the last search.
+            if (!fromActivityState && source != null && source.getEncodedQuery() != null
+                    && !source.getEncodedQuery().isEmpty()) return false;
+            Uri query = Uri.parse(saved.getString("query"));
+            if (!HOST.equalsIgnoreCase(query.getHost())) return false;
+            restoreQuery(query);
+            boolean expanded = saved.optBoolean("expanded");
+            advancedScroll.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            details.setText(expanded ? "詳細条件 ▴" : "詳細条件 ▾");
+            JSONArray rows = saved.optJSONArray("threads");
+            if (rows != null && rows.length() <= 50) {
+                List<ThreadResult> threads = new ArrayList<>();
+                for (int index = 0; index < rows.length(); index++) {
+                    JSONObject row = rows.getJSONObject(index);
+                    String url = row.getString("url");
+                    if (!HissiLinkRouting.isThreadUrl(url)) return false;
+                    threads.add(new ThreadResult(row.getString("title"), row.optString("date"), url));
+                }
+                displayedQuery = saved.optString("resultQuery", query.toString());
+                display(Math.max(1, saved.optInt("page", page)),
+                        new SearchPage(threads, Math.max(0, saved.optInt("total"))));
+                status.setText("前回の検索結果 " + totalResults + "件 · " + page
+                        + "ページ目（「検索」で更新）");
+                int position = Math.max(0, saved.optInt("scroll"));
+                scroll.post(() -> scroll.scrollTo(0, position));
+            } else {
+                restoreScrollY = Math.max(0, saved.optInt("scroll"));
+                search(page);
+            }
+            return true;
+        } catch (Exception error) {
+            android.util.Log.w("Haiagaru", "Could not restore Edge archive search", error);
+            return false;
+        }
     }
 
     private void navigateBySwipe(boolean forward) {
@@ -253,7 +350,9 @@ final class EddiArchiveSearchUi {
                 SearchPage result = fetch(uri);
                 activity.runOnUiThread(() -> {
                     if (requestId == generation && !activity.isFinishing()) {
+                        displayedQuery = uri.toString();
                         display(requestedPage, result);
+                        saveState(null);
                     }
                 });
             } catch (Exception error) {
@@ -343,6 +442,7 @@ final class EddiArchiveSearchUi {
 
     private void display(int requestedPage, SearchPage result) {
         page = requestedPage;
+        displayedPage = result;
         totalResults = result.total;
         results.removeAllViews();
         status.setText("検索結果 " + totalResults + "件 · " + page + "ページ目");
@@ -360,6 +460,7 @@ final class EddiArchiveSearchUi {
             card.addView(text(thread.date, 12, muted));
             card.setOnClickListener(view -> {
                 try {
+                    saveState(null);
                     if (opener.open(thread.url)) return;
                     Haiagaru.reportEddiArchiveError(activity, "THREAD_OPEN_FAILED",
                             "ChMate could not open archive result: " + thread.url, null);
@@ -378,6 +479,11 @@ final class EddiArchiveSearchUi {
         previous.setEnabled(page > 1);
         next.setEnabled(result.threads.size() == 50 && (long) page * 50 < totalResults);
         scroll.scrollTo(0, 0);
+        if (restoreScrollY >= 0) {
+            int position = restoreScrollY;
+            restoreScrollY = -1;
+            scroll.post(() -> scroll.scrollTo(0, position));
+        }
     }
 
     private static String clean(String html) {
