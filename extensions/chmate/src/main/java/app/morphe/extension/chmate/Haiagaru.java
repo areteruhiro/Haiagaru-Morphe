@@ -2681,8 +2681,8 @@ public final class Haiagaru {
             String[] displays = (url.startsWith("http://") || url.startsWith("https://"))
                     ? new String[]{url, url.substring(1), url.substring(url.indexOf("://") + 3)}
                     : new String[]{url};
-            int closest = -1, closestLength = 0, closestDistance = Integer.MAX_VALUE;
-            int unique = -1, uniqueLength = 0, matches = 0;
+            int closest = -1, closestLength = 0;
+            long closestDistance = Long.MAX_VALUE;
             for (String display : displays) {
                 int candidate = text.indexOf(display);
                 while (candidate >= 0) {
@@ -2697,11 +2697,8 @@ public final class Haiagaru {
                         if (candidate == start && end == start + display.length()) {
                             return ((long) end << 32) | (start & 0xffffffffL);
                         }
-                        matches++;
-                        unique = candidate;
-                        uniqueLength = display.length();
-                        int distance = Math.abs(candidate - start);
-                        if (distance <= 8 && distance < closestDistance) {
+                        long distance = Math.abs((long) candidate - start);
+                        if (distance < closestDistance) {
                             closest = candidate;
                             closestLength = display.length();
                             closestDistance = distance;
@@ -2710,11 +2707,9 @@ public final class Haiagaru {
                     candidate = text.indexOf(display, candidate + 1);
                 }
             }
-            // Distant offsets are repaired only when the display token is unique.
-            if (closest < 0 && matches == 1) {
-                closest = unique;
-                closestLength = uniqueLength;
-            }
+            // BE icon normalization can shift link offsets by more than a few
+            // characters. Search the full final text and choose the nearest
+            // display match, even when the same URL appears more than once.
             if (closest >= 0) {
                 start = closest;
                 end = closest + closestLength;
