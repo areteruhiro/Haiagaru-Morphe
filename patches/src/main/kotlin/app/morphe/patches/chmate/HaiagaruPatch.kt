@@ -218,46 +218,6 @@ private data class ChMateProfile(
     val legacyPlusFilterClass: String? = null,
 )
 
-/**
- * The 241/242 home list moved from ListView to a RecyclerView and its
- * multi-selection state lives in HomeViewModel. Intercept only the board-row
- * click callback and let the extension toggle that board's thread IDs.
- */
-private fun BytecodePatchContext.patchHomeBoardMultiSelect(versionName: String, homeFragmentClass: String) {
-    if (versionName != "0.8.10.241" && versionName != "0.8.10.242 dev") return
-
-    val homeFragment = mutableClassDefBy(homeFragmentClass)
-    val itemType = if (versionName == "0.8.10.241") "Lo/MediationBannerAdapter;" else "Lo/getAvailabilityStatus;"
-    val toggleType = if (versionName == "0.8.10.241") "Lo/setAdChoicesContent;" else "Lo/newSingleThreadScheduledExecutor;"
-    val candidates = homeFragment.methods.filter { method ->
-        method.returnType == "V" && method.implementation != null &&
-        method.parameterTypes.map(CharSequence::toString) == listOf(itemType) &&
-            method.implementation!!.instructions.any { instruction ->
-                val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-                reference?.definingClass == toggleType && reference.returnType == "V" &&
-                    reference.parameterTypes.map(CharSequence::toString) == listOf("J")
-            }
-    }
-    check(candidates.size == 1) {
-        "$versionName board-header click callback changed (found ${candidates.size})"
-    }
-
-    val callback = homeFragment.findMutableMethodOf(candidates.single())
-    val resultRegister = callback.findFreeRegister(0)
-    val firstInstruction = callback.implementation!!.instructions.firstOrNull()
-        ?: error("$versionName board-header callback has no instructions")
-    callback.addInstructionsWithLabels(
-        0,
-        """
-            invoke-static {p0, p1}, Lapp/morphe/extension/chmate/HomeBoardMultiSelect;->selectBoard(Ljava/lang/Object;Ljava/lang/Object;)Z
-            move-result v$resultRegister
-            if-eqz v$resultRegister, :haiagaru_board_multi_select_continue
-            return-void
-        """.trimIndent(),
-        ExternalLabel("haiagaru_board_multi_select_continue", firstInstruction),
-    )
-}
-
 private enum class ViewModelTrapKind {
     NONE,
     DIVIDE_BY_ZERO,
@@ -495,6 +455,22 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
         mutableClassDefBy(boardCategoryClass).findMutableMethodOf(method).wrapModelReturns()
     }
 
+    // In 0.8.10.191 this separate model catalog powers the toolbar customization
+    // screen; patch it as well as the default home model so the new choice is
+    // available for users to enable without changing the current toolbar.
+    if (versionName == "0.8.10.191 dev") {
+        val catalogDescriptor = "Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;"
+        val catalogMethods = mutableClassDefBy(catalogDescriptor).methods.filter { method ->
+            method.returnType == toolbarModelType && method.implementation != null
+        }
+        if (catalogMethods.isEmpty()) {
+            throw PatchException("ツールバー項目一覧の生成メソッドを特定できません: $versionName")
+        }
+        catalogMethods.forEach { method ->
+            mutableClassDefBy(catalogDescriptor).findMutableMethodOf(method).wrapModelReturns(includeMarkAllRead = true)
+        }
+    }
+
     val dispatcherClass = if (versionName == "0.8.10.191 dev") {
         "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
     } else {
@@ -591,12 +567,6 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
         returnSites.asReversed().forEach { (index, instruction) ->
             val register = (instruction as OneRegisterInstruction).registerA
             builder.addInstructionsWithLabels(index, """
-                invoke-static/range {v$register .. v$register}, $EXTENSION->addEdgeArchiveToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
-                move-result-object v$register
-                check-cast v$register, $toolbarModelType
-                invoke-static/range {v$register .. v$register}, $EXTENSION->addMarkAllReadToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
-                move-result-object v$register
-                check-cast v$register, $toolbarModelType
                 invoke-static/range {v$register .. v$register}, $EXTENSION->addQuickFilterToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
                 move-result-object v$register
                 check-cast v$register, $toolbarModelType
@@ -613,12 +583,6 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
             val first = mutable.implementation!!.instructions.first()
             val result = mutable.findFreeRegister(0)
             mutable.addInstructionsWithLabels(0, """
-                invoke-static/range {p0 .. p1}, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
-                move-result v$result
-                if-eqz v$result, :legacy_filter_dispatch_continue
-                const/4 v$result, 0x1
-                return v$result
-                :legacy_filter_dispatch_continue
                 invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->clickLegacy(Ljava/lang/Object;I)Z
                 move-result v$result
                 if-eqz v$result, :legacy_filter_dispatch
@@ -669,12 +633,6 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
     returns.forEach { (index, instruction) ->
         val register = (instruction as OneRegisterInstruction).registerA
         builder.addInstructionsWithLabels(index, """
-            invoke-static/range {v$register .. v$register}, $EXTENSION->addEdgeArchiveToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
-            move-result-object v$register
-            check-cast v$register, $model
-            invoke-static/range {v$register .. v$register}, $EXTENSION->addMarkAllReadToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
-            move-result-object v$register
-            check-cast v$register, $model
             invoke-static/range {v$register .. v$register}, $EXTENSION->addQuickFilterToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
             move-result-object v$register
             check-cast v$register, $model
@@ -688,18 +646,11 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
     check(dispatchers.size == 1) { "$version response-toolbar dispatcher count=${dispatchers.size}" }
     val dispatcher = dispatchers.single()
     val first = dispatcher.implementation!!.instructions.first()
-    val toolbarResult = dispatcher.findFreeRegister(0)
     dispatcher.addInstructionsWithLabels(0, """
-        invoke-static/range {p0 .. p1}, $EXTENSION->handleEdgeArchiveToolbarClick(Ljava/lang/Object;I)Z
-        move-result v$toolbarResult
-        if-eqz v$toolbarResult, :edge_toolbar_dispatch_continue
-        const/4 v$toolbarResult, 0x1
-        return v$toolbarResult
-        :edge_toolbar_dispatch_continue
         invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->click(Ljava/lang/Object;I)Z
-        move-result v$toolbarResult
-        if-eqz v$toolbarResult, :original_filter_dispatch
-        return v$toolbarResult
+        move-result v0
+        if-eqz v0, :original_filter_dispatch
+        return v0
     """.trimIndent(), ExternalLabel("original_filter_dispatch", first))
     val filterContainer = when (version) {
         "0.8.10.226 dev" -> "Lo/listener\$setContentView;" to "Lo/m2a;"
@@ -937,7 +888,6 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
-        patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
 
         val readManager = when (packageMetadata.versionName) {
             "0.8.10.241" -> "Lo/hLn11;"
@@ -954,13 +904,6 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
         patchQuickFilterToolbar(packageMetadata.versionName)
-        if (packageMetadata.versionName == "0.8.10.191 dev") {
-            patchSearchThreadForwardToTablet191()
-        }
-        if (packageMetadata.versionName == "0.8.10.226 dev") {
-            patchExternalBrowserLongPress226()
-            patchSearchThreadForwardToTablet226()
-        }
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchReadThreadsFirst(packageMetadata.versionName)
         }
@@ -1292,174 +1235,6 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
-}
-
-/**
- * The 226 response-screen toolbar's long-press builds a URL and selects the
- * first ACTION_VIEW target outside its own package. A second ChMate install
- * with a renamed package is therefore mistaken for an external browser.
- * Remove other ChMate thread activities from that candidate list before the
- * stock selection logic runs; leave all real external targets untouched.
- */
-private fun BytecodePatchContext.patchExternalBrowserLongPress226() {
-    val fragment = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
-    val method = fragment.methods.single { candidate ->
-        candidate.name == "onLongClick"
-            && candidate.returnType == "Z"
-            && candidate.parameters.map(CharSequence::toString) ==
-                listOf("Landroid/view/View;")
-    }
-    val instructions = method.implementation?.instructions?.toList()
-        ?: error("ChMate 226 response-screen long-press has no implementation")
-    val queries = instructions.mapIndexedNotNull { index, instruction ->
-        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            ?: return@mapIndexedNotNull null
-        if (reference.definingClass == "Landroid/content/pm/PackageManager;"
-            && reference.name == "queryIntentActivities"
-            && reference.returnType == "Ljava/util/List;"
-            && reference.parameterTypes.map(CharSequence::toString) ==
-                listOf("Landroid/content/Intent;", "I")
-        ) index else null
-    }
-    check(queries.size == 1) {
-        "ChMate 226 external-thread long-press resolver changed (found ${queries.size})"
-    }
-    val resultInstruction = instructions.getOrNull(queries.single() + 1)
-    val resultRegister = (resultInstruction as? OneRegisterInstruction)?.registerA
-        ?.takeIf { resultInstruction.opcode == Opcode.MOVE_RESULT_OBJECT }
-        ?: error("ChMate 226 external-thread resolver result register changed")
-    check(resultInstruction.opcode == Opcode.MOVE_RESULT_OBJECT) {
-        "ChMate 226 external-thread resolver result register changed"
-    }
-    fragment.findMutableMethodOf(method).addInstructionsWithLabels(
-        queries.single() + 2,
-        "invoke-static/range {v$resultRegister .. v$resultRegister}, " +
-            "$EXTENSION->excludeChMateThreadActivities(Ljava/util/List;)Ljava/util/List;\n" +
-            "move-result-object v$resultRegister",
-    )
-    println("ChMate 226 long-press browser candidates exclude other ChMate thread activities")
-}
-
-/**
- * SearchActivity explicitly marks a selected thread with
- * forwardTabletHome=false. In tablet-home mode this prevents the normal
- * ResListActivity forwarding path, leaving the search result surface open
- * while the thread pane stays blank. Use ChMate's own tablet-mode predicate
- * for this flag: phones retain the original non-forwarding behavior.
- */
-private fun BytecodePatchContext.patchSearchThreadForwardToTablet226() {
-    val owner = mutableClassDefBy("Ljp/syoboi/a2chMate/RoidonApp\$RemoteActionCompatParcelizer;")
-    val method = owner.methods.single { candidate ->
-        candidate.name == "d"
-            && candidate.returnType == "V"
-            && candidate.parameters.map(CharSequence::toString) == listOf(
-                "Landroid/app/Activity;",
-                "Landroidx/fragment/app/Fragment;",
-                "I",
-                "J",
-                "Ljava/lang/String;",
-                "Z",
-                "B",
-                "Landroid/os/Bundle;",
-            )
-    }
-    val instructions = method.implementation?.instructions?.toList()
-        ?: error("ChMate 226 search-to-thread launcher has no implementation")
-    val candidates = instructions.mapIndexedNotNull { index, instruction ->
-        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            ?: return@mapIndexedNotNull null
-        if (reference.definingClass != "Landroid/content/Intent;"
-            || reference.name != "putExtra"
-            || reference.returnType != "Landroid/content/Intent;"
-            || reference.parameterTypes.map(CharSequence::toString) !=
-                listOf("Ljava/lang/String;", "Z")
-            || instructions.subList(maxOf(0, index - 6), index).none { previous ->
-                (previous as? ReferenceInstruction)?.reference.let { it as? StringReference }
-                    ?.string == "forwardTabletHome"
-            }
-        ) return@mapIndexedNotNull null
-        index to instruction
-    }
-    check(candidates.size == 1) {
-        "ChMate 226 search-to-thread forwarding flag changed (found ${candidates.size})"
-    }
-    val (invokeIndex, invokeInstruction) = candidates.single()
-    val flagRegister = when (invokeInstruction) {
-        is FiveRegisterInstruction -> invokeInstruction.registerE
-        is RegisterRangeInstruction -> {
-            check(invokeInstruction.registerCount == 3) {
-                "ChMate 226 forwardTabletHome putExtra register range changed"
-            }
-            invokeInstruction.startRegister + 2
-        }
-        else -> error("ChMate 226 forwardTabletHome putExtra invoke format changed")
-    }
-    owner.findMutableMethodOf(method).addInstructionsWithLabels(
-        invokeIndex,
-        "invoke-static/range {p0 .. p0}, Ljp/syoboi/a2chMate/Prefs;->a(Landroid/content/Context;)Z\n" +
-            "move-result v$flagRegister",
-    )
-    println("ChMate 226 search results forward selected threads to TabletHome when enabled")
-}
-
-/** ChMate 191 uses an obfuscated launcher and the older Prefs.e tablet check. */
-private fun BytecodePatchContext.patchSearchThreadForwardToTablet191() {
-    val owner = mutableClassDefBy("Lo/lo;")
-    val candidates = owner.methods.filter { candidate ->
-        if (candidate.returnType != "V" || candidate.parameterTypes.map(CharSequence::toString) !=
-            listOf("Landroid/app/Activity;", "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;", "I", "J", "Ljava/lang/String;", "Z", "B", "Landroid/os/Bundle;")) {
-            return@filter false
-        }
-        val instructions = candidate.implementation?.instructions ?: return@filter false
-        instructions.any { instruction ->
-            (instruction as? ReferenceInstruction)?.reference.let { it as? StringReference }
-                ?.string == "forwardTabletHome"
-        } && instructions.any { instruction ->
-            val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            reference?.definingClass == "Landroid/content/Intent;"
-                && reference.name == "putExtra"
-                && reference.returnType == "Landroid/content/Intent;"
-                && reference.parameterTypes.map(CharSequence::toString) ==
-                    listOf("Ljava/lang/String;", "Z")
-        }
-    }
-    check(candidates.size == 1) {
-        "ChMate 191 search-to-thread forwarding launcher changed (found ${candidates.size})"
-    }
-    val method = candidates.single()
-    val instructions = method.implementation!!.instructions.toList()
-    val call = instructions.mapIndexedNotNull { index, instruction ->
-        val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
-            ?: return@mapIndexedNotNull null
-        if (reference.definingClass == "Landroid/content/Intent;"
-            && reference.name == "putExtra"
-            && reference.returnType == "Landroid/content/Intent;"
-            && reference.parameterTypes.map(CharSequence::toString) ==
-                listOf("Ljava/lang/String;", "Z")
-            && instructions.subList(maxOf(0, index - 6), index).any { previous ->
-                (previous as? ReferenceInstruction)?.reference.let { it as? StringReference }
-                    ?.string == "forwardTabletHome"
-            }
-        ) index to instruction else null
-    }
-    check(call.size == 1) { "ChMate 191 forwardTabletHome flag call changed" }
-    val (invokeIndex, invokeInstruction) = call.single()
-    val flagRegister = when (invokeInstruction) {
-        is FiveRegisterInstruction -> invokeInstruction.registerE
-        is RegisterRangeInstruction -> {
-            check(invokeInstruction.registerCount == 3) {
-                "ChMate 191 forwardTabletHome putExtra register range changed"
-            }
-            invokeInstruction.startRegister + 2
-        }
-        else -> error("ChMate 191 forwardTabletHome putExtra invoke format changed")
-    }
-    owner.findMutableMethodOf(method).addInstructionsWithLabels(
-        invokeIndex,
-        "invoke-static/range {p0 .. p0}, Ljp/syoboi/a2chMate/Prefs;->e(Landroid/content/Context;)Z\n" +
-            "move-result v$flagRegister",
-    )
-    println("ChMate 191 search results forward selected threads to TabletHome when enabled")
 }
 
 /**
@@ -1863,9 +1638,6 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         patchLegacyWacchoiLongPressMenu()
         return
     }
-    if (versionName == "0.8.10.226 dev") {
-        patch226WacchoiTextLongPress()
-    }
 
     val owner = "Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;"
     val candidates = mutableClassDefBy(owner).methods.filter { method ->
@@ -1942,38 +1714,6 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         "Expected one ${versionName} custom response-menu dispatcher, patched $dispatcherCount"
     }
     println("Wacchoi response-menu hook: builder=${builder.name}, dispatcher=$dispatcherCount")
-}
-
-/**
- * ChMate 226 routes ID/SLIP text long presses through a separate selection
- * callback. Re-dispatch that row's standard long-click to show the Wacchoi item.
- */
-private fun app.morphe.patcher.patch.BytecodePatchContext.patch226WacchoiTextLongPress() {
-    val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment\$flag;"
-    val method = mutableClassDefBy(owner).methods.single { candidate ->
-        candidate.returnType == "V"
-            && candidate.parameters.map { it.type } == listOf(
-                "Landroid/view/View;", "I", "Landroid/view/View;", "Ljava/lang/String;",
-                "Lo/BouncyCastleSocketAdapterCompanion;", "Landroid/graphics/Rect;",
-                "Lo/getMaxLine\$RemoteActionCompatParcelizer;",
-            )
-            && candidate.implementation?.instructions?.any { instruction ->
-                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == "ID:"
-            } == true
-            && candidate.implementation?.instructions?.any { instruction ->
-                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == "NAMEOPT:"
-            } == true
-    }
-    val mutableMethod = mutableClassDefBy(owner).findMutableMethodOf(method)
-    val firstInstruction = mutableMethod.implementation!!.instructions.first()
-    val resultRegister = mutableMethod.findFreeRegister(0)
-    mutableMethod.addInstructionsWithLabels(0, """
-        invoke-static/range {p0 .. p7}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->route226TextLongPress(Ljava/lang/Object;Landroid/view/View;ILandroid/view/View;Ljava/lang/String;Ljava/lang/Object;Landroid/graphics/Rect;Ljava/lang/Object;)Z
-        move-result v$resultRegister
-        if-eqz v$resultRegister, :haiagaru_226_wacchoi_continue
-        return-void
-    """.trimIndent(), ExternalLabel("haiagaru_226_wacchoi_continue", firstInstruction))
-    println("ChMate 226 ID/Wacchoi text long-press hook: ${method.name}")
 }
 
 /**
@@ -5343,7 +5083,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoUrlSpanAlign
                 iget-object v12, v${insertion.builderRegister}, $builderType->$builderTextField:Ljava/lang/StringBuilder;
                 invoke-virtual { v${insertion.spanRegister} }, $linkSpanType->$linkUrlGetter()Ljava/lang/String;
                 move-result-object v13
-                invoke-static { v12, v${insertion.spanRegister}, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/Object;Ljava/lang/String;II)J
+                invoke-static { v12, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
                 move-result-wide v14
                 long-to-int v${insertion.startRegister}, v14
                 const/16 v13, 0x20
@@ -5689,7 +5429,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
                 iget-object v12, v${insertion.builderRegister}, Lo/o8;->e:Ljava/lang/StringBuilder;
                 invoke-virtual { v${insertion.spanRegister} }, $legacyLinkSpanType->c()Ljava/lang/String;
                 move-result-object v13
-                invoke-static { v12, v${insertion.spanRegister}, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/Object;Ljava/lang/String;II)J
+                invoke-static { v12, v13, v${insertion.startRegister}, v${insertion.endRegister} }, $EXTENSION->alignLegacyLinkRange(Ljava/lang/CharSequence;Ljava/lang/String;II)J
                 move-result-wide v14
                 long-to-int v${insertion.startRegister}, v14
                 const/16 v13, 0x20

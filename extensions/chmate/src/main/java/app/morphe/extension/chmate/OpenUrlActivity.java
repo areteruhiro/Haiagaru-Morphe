@@ -27,9 +27,6 @@ public final class OpenUrlActivity extends Activity {
 
             Intent target = new Intent(Intent.ACTION_VIEW, uri);
             target.setClassName(this, isThreadUrl(uri) ? THREAD_ACTIVITY : BOARD_ACTIVITY);
-            if (incoming.getBooleanExtra("haiagaru.archive.return", false)) {
-                target.putExtra("forwardTabletHome", false);
-            }
             startActivity(target);
         } catch (RuntimeException error) {
             Log.e(TAG, "Could not open URL in ChMate", error);
