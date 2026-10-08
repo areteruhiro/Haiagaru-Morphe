@@ -136,6 +136,23 @@ public class VerifyLegacyBeRendering {
                                     reportedUrlField.get(shiftedSpan)),
                             "Click destination with BE offset shift " + shift);
                 }
+                String fullResponse = "TEST\nhttp://info.2ch.net/index.php/BE\n"
+                        + "BE registration\nhttp://info.2ch.net/registration\n"
+                        + "beginner\nhttp://ikura.2ch.net/qa/\n"
+                        + "anything\nhttp://ikura.2ch.net/nandemo/\n"
+                        + reported + "\nPC\nhttp://kohada.2ch.net/pcqa/\n"
+                        + "search\nhttp://find.2ch.net/search";
+                Object fullSpan = spanConstructor.newInstance("http://2ch.net");
+                int fullDomain = fullResponse.indexOf("391(c)2ch.net") + 6;
+                range = (Long) alignSpan.invoke(null, fullResponse, fullSpan,
+                        "http://2ch.net", fullDomain, fullDomain + 7);
+                int intendedStart = fullResponse.indexOf("http://hello.2ch.net");
+                int intendedEnd = fullResponse.indexOf('\n', intendedStart);
+                check((int) range == intendedStart && (int) (range >>> 32) == intendedEnd,
+                        "Full response with multiple 2ch.net subdomains must repair the title link");
+                check(fullResponse.substring(intendedStart, intendedEnd).equals(
+                                reportedUrlField.get(fullSpan)),
+                        "Full response click target must match the following URL");
                 String genuine = "2ch.net\nhttp://hello.2ch.net/test/";
                 range = (Long) align.invoke(null, genuine, "http://2ch.net", 0, 7);
                 check((int) range == 0 && (int) (range >>> 32) == 7,

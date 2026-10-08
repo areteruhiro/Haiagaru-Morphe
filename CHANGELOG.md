@@ -4,6 +4,14 @@
 > Format inspired by Morphe patches CHANGELOG.
 > Release dates and commit links are omitted because they are not present in the supplied source history.
 
+## [1.7.6]
+
+**Channel:** Prerelease
+
+* 191 dev／226 devのBEリンク補正で、レス内に同じドメインのURLが複数あると補正が効かない条件を修正。
+* 直前の見出しと次行のURLを対応させ、下線の範囲とリンク先を補正します。
+* 詳細は[更新内容](release-notes-1.7.6.md)をご覧ください。
+
 ## [1.7.5]
 
 **Channel:** Prerelease
