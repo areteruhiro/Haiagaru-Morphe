@@ -1,6 +1,6 @@
 
 ◆9qrWgYJJCo
-◆8LNH56sLs6
+◆sZdvPTT7TE
  # Haiagaru for Morphe
 
 ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` 対応のMorpheパッチです。 <br>
@@ -13,7 +13,7 @@ https://github.com/areteruhiro/Haiagaru
 最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
-最新版 `1.7.3` の概要: [1.7.3の更新内容](release-notes-1.7.3.md)
+最新版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
 ## Features
 
@@ -69,28 +69,6 @@ Haiagaru設定の「自動DAT取得経路」は、上の行から順に試行し
 URLでは `{$server}`、`{$bbs}`、`{$key}`、`{$rand}` を使用できます。
 空行と `#` で始まる行は無視され、無効な設定しかない場合は初期経路へ戻ります。
 
-## 既知の不具合
-
-- **タブレット用モードはOFFにすることを推奨します。**
-  - タブレット用モードでは、エッヂ過去ログなどのツールバー機能に不具合が発生する場合があります。
-
-- 書き込み長押しメニューの **「エッジ過去ログ」**、**「未読を0にする」** は現在機能していません。
-
-### スレ内の検索長押しで「URLを開けるアプリがありません」と表示される場合
-
-Androidの「標準アプリとして設定」から、以下の項目をOFFにしてください。
-
-- `itest.5ch.io`
-- `*.5ch.io`
-
-この設定をOFFにすると、書き込みボタンを長押しした際に外部ブラウザで開けるようになります。
-
-設定例: https://i.imgur.com/lmYxXZD.jpeg
-
-なお、「標準アプリとして設定」内の項目をOFFにしても、Haiagaru内で `*.5ch.io` のURLを開いた場合は、Haiagaru内で正常に開かれます。
-
-情報提供: (ﾜｯﾁｮｲ 0de3-uUZJ)
-
 ## インストールできない場合
 
 ### パッチ適用時にエラーが発生して適用できない
@@ -139,16 +117,16 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは正式版 `1.7.3`、プレ版用URLは検証中の `1.7.2` を取得します。
+通常版URLは正式版 `1.7.1`、プレ版用URLは `1.7.2` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
-現在の正式版（1.7.3）を取得するパッチソースです。
+現在の正式版（1.7.1）を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版用のパッチソースです。正式版とは別に更新します。
+プレ版 `1.7.2` を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -182,7 +160,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 生成物:
 
 ```text
-patches\build\libs\patches-1.7.3.mpp
+patches\build\libs\patches-1.7.1.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。

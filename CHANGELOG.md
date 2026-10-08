@@ -4,22 +4,6 @@
 > Format inspired by Morphe patches CHANGELOG.
 > Release dates and commit links are omitted because they are not present in the supplied source history.
 
-## [1.7.3]
-
-**Channel:** Stable
-
-### 🐛 Bug Fixes
-
-* ChMate 0.8.10.226 devでID／ﾜｯﾁｮｲ文字列の長押しから検索メニューを開けるよう改善
-* エッヂ過去ログ検索・必死チェッカーの専用ビュワーを設定から無効化し、ChMate標準Web表示へ切り替え可能に
-* 1.7.2までのBEアイコン重複に伴うリンク範囲補正、Talk認証キャッシュ、Android向けMEGA暗号プロバイダ等の修正を維持
-
-### 📝 Notes
-
-* 1.7.2からのローカル変更を取り込み、Android向けMorphe MPPを配布します。
-* 191／226／241／242 devを主な対象とします。実機での全バージョン確認は別途記載します。
-* 詳細は[1.7.3の更新内容](release-notes-1.7.3.md)をご覧ください。
-
 ## [1.7.1]
 
 **Channel:** Stable

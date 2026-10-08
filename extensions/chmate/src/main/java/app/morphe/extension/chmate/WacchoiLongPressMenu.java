@@ -5,11 +5,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -23,11 +18,6 @@ import java.util.regex.Pattern;
 /** Adds a board-aware Wacchoi search action to ChMate's response long-press menu. */
 public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
-    // These are toolbar-only choices. Some ChMate builds reuse the toolbar
-    // action catalog for the response long-press Menu as well, so explicitly
-    // strip them from that transient menu without removing toolbar choices.
-    private static final int EDGE_ARCHIVE_TOOLBAR_ID = 0x7e000001;
-    private static final int MARK_ALL_READ_TOOLBAR_ID = 0x7e000003;
     private static final ThreadLocal<Object> ACTIVE_DIALOG = new ThreadLocal<>();
 
     private WacchoiLongPressMenu() {}
@@ -55,9 +45,12 @@ public final class WacchoiLongPressMenu {
             }
             if (context == null) return;
             final Context launchContext = context;
-            final Intent intent = searchIntent(context, query, found.host, found.board);
-            if (intent == null) return;
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            final Intent intent = new Intent(context, HissiMenuActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    .putExtra("haiagaru.wacchoi.search", true)
+                    .putExtra("haiagaru.wacchoi.query", query)
+                    .putExtra("haiagaru.wacchoi.host", found.host)
+                    .putExtra("haiagaru.wacchoi.board", found.board);
             for (Method method : builder.getClass().getDeclaredMethods()) {
                 Class<?>[] types = method.getParameterTypes();
                 if (Modifier.isStatic(method.getModifiers()) || types.length != 6
@@ -97,84 +90,10 @@ public final class WacchoiLongPressMenu {
         ACTIVE_DIALOG.remove();
         if (!(menuObject instanceof Menu) || dialogFragment == null) return;
         Menu menu = (Menu) menuObject;
-        removeToolbarOnlyChoices(menu);
         if (menu.findItem(ITEM_ID) != null) return;
         Object parent = invokeNoArg(dialogFragment, "getParentFragment");
         SearchContext context = findContext(dialogFragment, parent);
         append(menu, dialogFragment, parent, context);
-    }
-
-    /**
-     * ChMate 226 routes ID/SLIP text long presses through its selection callback.
-     * Re-dispatch the selected response row's regular long-click handler so the
-     * existing response menu (including this search item) is shown consistently.
-     */
-    public static boolean route226TextLongPress(Object callback, View firstView, int action,
-            View secondView, String selectedText, Object response, android.graphics.Rect bounds,
-            Object options) {
-        if (callback == null || selectedText == null) return false;
-        String trimmed = selectedText.trim();
-        boolean idSelection = trimmed.regionMatches(true, 0, "ID:", 0, 3);
-        boolean wacchoiSelection = KyodemoRouting.labeledWacchoiInText(trimmed) != null
-                || KyodemoRouting.bareWacchoiInText(trimmed) != null;
-        if (!idSelection && !wacchoiSelection) return false;
-        SearchContext context = new SearchContext();
-        Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        if (wacchoiSelection) context.query = queryInText(selectedText);
-        visit(response, 0, seen, context, true);
-        if (context.query == null) {
-            context.query = visibleToken(firstView);
-            if (context.query == null) context.query = visibleToken(secondView);
-        }
-        if (!idSelection && context.query == null) return false;
-        Object fragment = enclosingResListFragment(callback);
-        if (fragment == null) return false;
-        visit(fragment, 0, seen, context, false);
-        if (context.query == null || context.host == null || context.board == null
-                || KyodemoRouting.boardSlug(context.host, context.board) == null) return false;
-        return dispatchResponseLongClick(firstView) || dispatchResponseLongClick(secondView);
-    }
-
-    private static String visibleToken(View view) {
-        if (!(view instanceof TextView)) return null;
-        return queryInText(((TextView) view).getText().toString());
-    }
-
-    private static Object enclosingResListFragment(Object callback) {
-        for (Class<?> type = callback.getClass(); type != null && type != Object.class;
-                type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
-                if (Modifier.isStatic(field.getModifiers())) continue;
-                try {
-                    field.setAccessible(true);
-                    Object value = field.get(callback);
-                    if (value != null && value.getClass().getName()
-                            .equals("jp.syoboi.a2chMate.ui.reslist.ResListFragment")) return value;
-                } catch (Throwable ignored) { }
-            }
-        }
-        return null;
-    }
-
-    private static boolean dispatchResponseLongClick(View source) {
-        View current = source;
-        while (current != null) {
-            if (current.getParent() instanceof ListView) {
-                ListView list = (ListView) current.getParent();
-                int position = list.getPositionForView(current);
-                if (position < 0) return false;
-                int childIndex = position - list.getFirstVisiblePosition();
-                if (childIndex < 0 || childIndex >= list.getChildCount()) return false;
-                View row = list.getChildAt(childIndex);
-                AdapterView.OnItemLongClickListener listener = list.getOnItemLongClickListener();
-                ListAdapter adapter = list.getAdapter();
-                if (listener == null || adapter == null) return false;
-                return listener.onItemLongClick(list, row, position, adapter.getItemId(position));
-            }
-            Object parent = current.getParent();
-            current = parent instanceof View ? (View) parent : null;
-        }
-        return false;
     }
 
     /** Adds the action using ChMate 191's selected response, not a recycled row view. */
@@ -182,7 +101,6 @@ public final class WacchoiLongPressMenu {
             Object responseObject) {
         if (!(menuObject instanceof Menu) || fragmentObject == null || responseObject == null) return;
         Menu menu = (Menu) menuObject;
-        removeToolbarOnlyChoices(menu);
         if (menu.findItem(ITEM_ID) != null) return;
         SearchContext found = new SearchContext();
         // 191 stores the displayed name in n and the date/SLIP text in q.
@@ -192,11 +110,6 @@ public final class WacchoiLongPressMenu {
         if (found.query == null) found.query = queryInText(stringField(responseObject, "q"));
         readBoard(fieldValue(fragmentObject, "W"), found);
         append(menu, fragmentObject, fragmentObject, found);
-    }
-
-    private static void removeToolbarOnlyChoices(Menu menu) {
-        menu.removeItem(EDGE_ARCHIVE_TOOLBAR_ID);
-        menu.removeItem(MARK_ALL_READ_TOOLBAR_ID);
     }
 
     private static void append(Menu menu, Object dialogOrFragment, Object parent,
@@ -209,27 +122,14 @@ public final class WacchoiLongPressMenu {
         if (!(activity instanceof Context)) activity = invokeNoArg(parent, "getContext");
         if (!(activity instanceof Context)) return;
 
-        Intent intent = searchIntent((Context) activity, context.query,
-                context.host, context.board);
-        if (intent == null) return;
+        Intent intent = new Intent((Context) activity, HissiMenuActivity.class);
+        intent.putExtra("haiagaru.wacchoi.search", true);
+        intent.putExtra("haiagaru.wacchoi.query", context.query);
+        intent.putExtra("haiagaru.wacchoi.host", context.host);
+        intent.putExtra("haiagaru.wacchoi.board", context.board);
         menu.add(Menu.NONE, ITEM_ID, menu.size(), "ﾜｯﾁｮｲで検索")
                 .setIntent(intent)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-    }
-
-    private static Intent searchIntent(Context context, String query, String host, String board) {
-        if (Haiagaru.dedicatedViewerEnabled()) {
-            return new Intent(context, HissiMenuActivity.class)
-                    .putExtra("haiagaru.wacchoi.search", true)
-                    .putExtra("haiagaru.wacchoi.query", query)
-                    .putExtra("haiagaru.wacchoi.host", host)
-                    .putExtra("haiagaru.wacchoi.board", board);
-        }
-        String url = KyodemoRouting.wacchoiSearchUrl(host, board, query);
-        if (url == null) return null;
-        Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
-        intent.setClassName(context, "jp.syoboi.a2chMate.activity.WebViewActivity");
-        return intent;
     }
 
     private static SearchContext findContext(Object dialogFragment, Object parent) {
