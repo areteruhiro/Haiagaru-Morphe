@@ -78,6 +78,7 @@ public final class HissiMenuActivity extends Activity {
     private String pendingAnalysisResult;
     private String analysisAutoOpenedUrl;
     private String lastAnalysisFailureUrl;
+    private EddiArchiveSearchUi archiveSearchUi;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -91,7 +92,7 @@ public final class HissiMenuActivity extends Activity {
         eddiArchiveMode = isEddiArchiveUri(incoming);
         if (eddiArchiveMode && !getIntent().getBooleanExtra("haiagaru.eddi.web", false)) {
             try {
-                EddiArchiveSearchUi.show(this, incoming, this::openThreadInChMate);
+                archiveSearchUi = EddiArchiveSearchUi.show(this, incoming, this::openThreadInChMate, state);
             } catch (RuntimeException error) {
                 Haiagaru.reportEddiArchiveError(this, "VIEWER_START_FAILED",
                         "Native Edge archive viewer could not start", error);
@@ -1427,6 +1428,24 @@ public final class HissiMenuActivity extends Activity {
                 + "）。診断ログを保存しました。", Toast.LENGTH_LONG).show();
     }
 
+    @Override
+    protected void onPause() {
+        if (archiveSearchUi != null) archiveSearchUi.saveState(null);
+        super.onPause();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        if (archiveSearchUi != null) archiveSearchUi.saveState(state);
+        super.onSaveInstanceState(state);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (archiveSearchUi != null) archiveSearchUi.dispose();
+        super.onDestroy();
+    }
+
     private boolean openThreadInChMate(String url) {
         if (openEddiThreadInChMate(url)) return true;
         String original = KyodemoRouting.sourceThreadUrl(sourceHost, sourceBoard, url);
@@ -1454,6 +1473,9 @@ public final class HissiMenuActivity extends Activity {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             intent.setClass(this, OpenUrlActivity.class);
+            // TabletHome is singleTask: forwarding there would clear this search
+            // Activity from the back stack. Keep archive results as a child screen.
+            intent.putExtra("haiagaru.archive.return", true);
             startActivity(intent);
             return true;
         } catch (RuntimeException error) {
