@@ -117,7 +117,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLとプレ版用URLは、どちらも正式版 `1.7.1` を取得します。
+通常版URLは正式版 `1.7.1`、プレ版用URLは `1.7.2` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の正式版（1.7.1）を取得するパッチソースです。
@@ -126,7 +126,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版用のパッチソースです。今回は正式版1.7.1に揃えています。
+プレ版 `1.7.2` を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
