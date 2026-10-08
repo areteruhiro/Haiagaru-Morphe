@@ -4,6 +4,14 @@
 > Format inspired by Morphe patches CHANGELOG.
 > Release dates and commit links are omitted because they are not present in the supplied source history.
 
+## [1.7.5]
+
+**Channel:** Prerelease
+
+* 226 dev／241／242 devで、見出しの直後から次の見出しまでをまとめて選択・解除する処理を修正。範囲外の選択は維持します。
+* 191 dev／226 devのBE表示補正で、URLの下線位置とリンク先が前の行の「2ch.net」にずれる問題を修正。
+* Android向けMPP。安定版は1.7.1のままです。詳細は[更新内容](release-notes-1.7.5.md)をご覧ください。
+
 ## [1.7.1]
 
 **Channel:** Stable

@@ -2678,8 +2678,8 @@ public final class Haiagaru {
             String[] displays = (url.startsWith("http://") || url.startsWith("https://"))
                     ? new String[]{url, url.substring(1), url.substring(url.indexOf("://") + 3)}
                     : new String[]{url};
-            int closest = -1, closestLength = 0, closestDistance = Integer.MAX_VALUE;
-            int unique = -1, uniqueLength = 0, matches = 0;
+            int closest = -1, closestLength = 0;
+            long closestDistance = Long.MAX_VALUE;
             for (String display : displays) {
                 int candidate = text.indexOf(display);
                 while (candidate >= 0) {
@@ -2694,11 +2694,8 @@ public final class Haiagaru {
                         if (candidate == start && end == start + display.length()) {
                             return ((long) end << 32) | (start & 0xffffffffL);
                         }
-                        matches++;
-                        unique = candidate;
-                        uniqueLength = display.length();
-                        int distance = Math.abs(candidate - start);
-                        if (distance <= 8 && distance < closestDistance) {
+                        long distance = Math.abs((long) candidate - start);
+                        if (distance < closestDistance) {
                             closest = candidate;
                             closestLength = display.length();
                             closestDistance = distance;
@@ -2707,11 +2704,8 @@ public final class Haiagaru {
                     candidate = text.indexOf(display, candidate + 1);
                 }
             }
-            // Distant offsets are repaired only when the display token is unique.
-            if (closest < 0 && matches == 1) {
-                closest = unique;
-                closestLength = uniqueLength;
-            }
+            // BE token removal can shift every later link by more than eight
+            // characters; repeated URLs also need the nearest final-text match.
             if (closest >= 0) {
                 start = closest;
                 end = closest + closestLength;
@@ -2769,7 +2763,6 @@ public final class Haiagaru {
             String host = urls.group(1).toLowerCase(Locale.ROOT);
             if (!host.endsWith("." + targetHost) || host.equals(targetHost)) continue;
             int start = urls.start();
-            if (start <= originalStart) continue;
             String value = urls.group();
             while (!value.isEmpty() && ".,;:!?)]".indexOf(value.charAt(value.length() - 1)) >= 0) {
                 value = value.substring(0, value.length() - 1);
@@ -2783,10 +2776,17 @@ public final class Haiagaru {
 
         // Only correct a stale range that points at the bare target domain in
         // prose. Other nearby links should retain ChMate's own interpretation.
-        int domainStart = text.indexOf(targetHost, Math.max(0, originalStart - targetHost.length()));
-        if (domainStart < 0 || domainStart > originalStart + targetHost.length()) return null;
-        if (originalStart > domainStart + targetHost.length()
-                || candidateStart <= domainStart) return null;
+        // The offsets still refer to the text before BE token removal. They
+        // can point beyond this prose domain or even beyond the following URL.
+        // Locate the domain on the line immediately preceding the actual URL.
+        int precedingLineEnd = text.lastIndexOf('\n', candidateStart - 1);
+        if (precedingLineEnd < 0) return null;
+        int precedingLineStart = text.lastIndexOf('\n', precedingLineEnd - 1) + 1;
+        int domainStart = text.indexOf(targetHost, precedingLineStart);
+        if (domainStart < 0 || domainStart >= precedingLineEnd) return null;
+        // Restrict this target repair to copyright/title suffixes. A genuine
+        // standalone bare-host link must retain its own destination.
+        if (domainStart == 0 || text.charAt(domainStart - 1) != ')') return null;
         int lineEnd = text.indexOf('\n', domainStart + targetHost.length());
         if (lineEnd < 0) return null;
         for (int index = domainStart + targetHost.length(); index < lineEnd; index++) {
