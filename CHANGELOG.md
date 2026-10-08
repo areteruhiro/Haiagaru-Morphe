@@ -4,6 +4,20 @@
 > Format inspired by Morphe patches CHANGELOG.
 > Release dates and commit links are omitted because they are not present in the supplied source history.
 
+## [1.7.4]
+
+**Channel:** Pre-release
+
+### 🐛 Bug Fixes
+
+* BEアイコン修正後にリンク下線が別の文字へずれるケースを修正。最終表示テキストからリンク先を探し、元位置に最も近い一致へ範囲を合わせる
+* ソート後に複数の板のスレが交互に並ぶ場合も、板見出しからその板のスレをまとめて選択できるよう修正
+
+### 📝 Notes
+
+* Android向けMorphe MPPを配布します。1.7.3からの差分を含むプレリリースです。
+* 詳細は[1.7.4の更新内容](release-notes-1.7.4.md)をご覧ください。
+
 ## [1.7.3]
 
 **Channel:** Stable
