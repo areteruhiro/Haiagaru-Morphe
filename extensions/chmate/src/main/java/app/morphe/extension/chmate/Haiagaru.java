@@ -15,7 +15,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.content.pm.Signature;
 import android.os.Bundle;
 import android.os.Build;
@@ -135,7 +134,6 @@ public final class Haiagaru {
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
     private static final String HISSI_VIEWER_FULLSCREEN_KEY = "hissiViewerFullscreen";
-    private static final String DEDICATED_VIEWER_ENABLED_KEY = "dedicatedViewerEnabled";
     private static final String HISSI_VIEWER_SWIPE_HISTORY_KEY = "hissiViewerSwipeHistory";
     private static final String HISSI_VIEWER_TOOLBAR_BUTTONS_KEY = "hissiViewerToolbarButtons";
     private static final String KYODEMO_ENHANCED_VIEWER_KEY = "kyodemoEnhancedViewer";
@@ -196,12 +194,6 @@ public final class Haiagaru {
     private static final Pattern LEGACY_BE_ANY_URL = Pattern.compile(
             "(?<![A-Za-z0-9./])(?:(?:(?:sssp|https?):)?//|\\u0003)?img\\.(?:5ch\\.(?:io|net)|2ch\\.net)/(?:premium|ico)/([^\\s<\\u0003\\u3000]+)",
             Pattern.CASE_INSENSITIVE
-    );
-    private static final Pattern LEGACY_LINK_HOST_ONLY = Pattern.compile(
-            "(?i)^https?://([^/:?#]+)(?:/)?$"
-    );
-    private static final Pattern LEGACY_ABSOLUTE_URL = Pattern.compile(
-            "(?i)https?://((?:[a-z0-9-]+\\.)*[a-z0-9-]+)(?=[:/?#]|\\.\\.\\.|$)(?:[^\\s<>\\\"]*)"
     );
     private static final Pattern LEGACY_THREAD_READ_PATH = Pattern.compile(
             // Keep the optional response number separate from any trailing
@@ -613,11 +605,9 @@ public final class Haiagaru {
             Activity activity = toolbarActivity(fragment);
             Context context = activity != null ? activity : applicationContext;
             if (context == null) return false;
-            Intent intent = new Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://eddiarchive3rd.boy.jp/"));
-            intent.setClassName(context, dedicatedViewerEnabled()
-                    ? HissiMenuActivity.class.getName()
-                    : "jp.syoboi.a2chMate.activity.WebViewActivity");
+            Intent intent = new Intent(context, HissiMenuActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
             if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
             return true;
@@ -625,27 +615,6 @@ public final class Haiagaru {
             Log.e(LOG_TAG, "Unable to open Edge archive search from ChMate toolbar", error);
             return false;
         }
-    }
-
-    /**
-     * The stock "open this thread in another app" long-press excludes only
-     * the current package. With renamed Haiagaru installs, other ChMate builds
-     * remain in the resolver list and can be selected before a browser. They
-     * are not external viewers, so remove their thread activities while
-     * leaving browser and other app candidates in the original order.
-     */
-    public static List<?> excludeChMateThreadActivities(List<?> candidates) {
-        if (candidates == null || candidates.isEmpty()) return candidates;
-        ArrayList<Object> external = new ArrayList<>(candidates.size());
-        for (Object candidate : candidates) {
-            if (candidate instanceof ResolveInfo) {
-                ResolveInfo resolved = (ResolveInfo) candidate;
-                String name = resolved.activityInfo == null ? null : resolved.activityInfo.name;
-                if ("jp.syoboi.a2chMate.activity.ResListActivity".equals(name)) continue;
-            }
-            external.add(candidate);
-        }
-        return external;
     }
 
     static void showReadThreadsFirstScope() {
@@ -2664,14 +2633,6 @@ public final class Haiagaru {
             int originalStart,
             int originalEnd
     ) {
-        String subdomainUrl = findSubdomainUrlForBareHost(renderedText, url, originalStart);
-        if (subdomainUrl != null) {
-            int urlStart = renderedText.toString().indexOf(subdomainUrl);
-            if (urlStart >= 0) {
-                int urlEnd = urlStart + subdomainUrl.length();
-                return ((long) urlEnd << 32) | (urlStart & 0xffffffffL);
-            }
-        }
         int start = originalStart;
         int end = originalEnd;
         if (renderedText != null && url != null && !url.isEmpty()) {
@@ -2721,105 +2682,6 @@ public final class Haiagaru {
             }
         }
         return ((long) end << 32) | (start & 0xffffffffL);
-    }
-
-    /**
-     * Repairs legacy parser entries where a bare domain in prose steals the
-     * link metadata for a full URL on the following line. The normal range
-     * aligner intentionally accepts a unique bare-domain match; in this case
-     * that match can be the prose suffix (for example, "391(c)2ch.net") while
-     * the intended link is "http://hello.2ch.net/...". Prefer that unique
-     * subdomain URL and update the ClickableSpan target together with its range.
-     */
-    public static long alignLegacyLinkRange(
-            CharSequence renderedText,
-            Object linkSpan,
-            String url,
-            int originalStart,
-            int originalEnd
-    ) {
-        String correctedUrl = findSubdomainUrlForBareHost(renderedText, url, originalStart);
-        if (correctedUrl == null) {
-            return alignLegacyLinkRange(renderedText, url, originalStart, originalEnd);
-        }
-
-        updateLegacyLinkTarget(linkSpan, url, correctedUrl);
-        String text = renderedText.toString();
-        int start = text.indexOf(correctedUrl);
-        if (start < 0) {
-            return alignLegacyLinkRange(renderedText, url, originalStart, originalEnd);
-        }
-        int end = start + correctedUrl.length();
-        return ((long) end << 32) | (start & 0xffffffffL);
-    }
-
-    private static String findSubdomainUrlForBareHost(
-            CharSequence renderedText,
-            String url,
-            int originalStart
-    ) {
-        if (renderedText == null || url == null || originalStart < 0) return null;
-        Matcher target = LEGACY_LINK_HOST_ONLY.matcher(url);
-        if (!target.matches()) return null;
-        String targetHost = target.group(1).toLowerCase(Locale.ROOT);
-        if (targetHost.indexOf('.') < 0) return null;
-
-        String text = renderedText.toString();
-        Matcher urls = LEGACY_ABSOLUTE_URL.matcher(text);
-        String candidate = null;
-        int candidateStart = -1;
-        while (urls.find()) {
-            String host = urls.group(1).toLowerCase(Locale.ROOT);
-            if (!host.endsWith("." + targetHost) || host.equals(targetHost)) continue;
-            int start = urls.start();
-            if (start <= originalStart) continue;
-            String value = urls.group();
-            while (!value.isEmpty() && ".,;:!?)]".indexOf(value.charAt(value.length() - 1)) >= 0) {
-                value = value.substring(0, value.length() - 1);
-            }
-            if (value.isEmpty()) continue;
-            if (candidate != null) return null;
-            candidate = value;
-            candidateStart = start;
-        }
-        if (candidate == null) return null;
-
-        // Only correct a stale range that points at the bare target domain in
-        // prose. Other nearby links should retain ChMate's own interpretation.
-        int domainStart = text.indexOf(targetHost, Math.max(0, originalStart - targetHost.length()));
-        if (domainStart < 0 || domainStart > originalStart + targetHost.length()) return null;
-        if (originalStart > domainStart + targetHost.length()
-                || candidateStart <= domainStart) return null;
-        int lineEnd = text.indexOf('\n', domainStart + targetHost.length());
-        if (lineEnd < 0) return null;
-        for (int index = domainStart + targetHost.length(); index < lineEnd; index++) {
-            if (!Character.isWhitespace(text.charAt(index))) return null;
-        }
-        int nextLineStart = lineEnd + 1;
-        while (nextLineStart < text.length()
-                && Character.isWhitespace(text.charAt(nextLineStart))
-                && text.charAt(nextLineStart) != '\n') {
-            nextLineStart++;
-        }
-        if (candidateStart != nextLineStart) return null;
-        return candidate;
-    }
-
-    private static void updateLegacyLinkTarget(Object linkSpan, String oldUrl, String newUrl) {
-        if (linkSpan == null || oldUrl == null || oldUrl.equals(newUrl)) return;
-        for (Field field : linkSpan.getClass().getDeclaredFields()) {
-            if (field.getType() != String.class) continue;
-            try {
-                field.setAccessible(true);
-                if (oldUrl.equals(field.get(linkSpan))) {
-                    field.set(linkSpan, newUrl);
-                    return;
-                }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
-                // The corrected display range is still preferable if a target
-                // version makes its URL field immutable to reflection.
-            }
-        }
     }
 
     /** Removes legacy BE tokens when ChMate requests BE icons to be hidden. */
@@ -3317,13 +3179,6 @@ public final class Haiagaru {
                 },
                 preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
         );
-        Switch dedicatedViewerEnabled = addSwitch(
-                layout,
-                activity,
-                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
-                        "Open in dedicated viewer (off: ChMate web view)"),
-                preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
-        );
         Spinner hissiViewerTheme = addSpinner(
                 layout,
                 activity,
@@ -3667,7 +3522,6 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
-                            .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
                             .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
                             .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
                                     Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
@@ -3763,11 +3617,9 @@ public final class Haiagaru {
         button.setAllCaps(false);
         button.setText(text("エッヂの過去ログを検索", "Search archived Edge threads"));
         button.setOnClickListener(view -> {
-            Intent intent = new Intent(Intent.ACTION_VIEW,
-                    Uri.parse("https://eddiarchive3rd.boy.jp/"));
-            intent.setClassName(activity, dedicatedViewerEnabled()
-                    ? HissiMenuActivity.class.getName()
-                    : "jp.syoboi.a2chMate.activity.WebViewActivity");
+            Intent intent = new Intent(activity, HissiMenuActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
             activity.startActivity(intent);
         });
         layout.addView(button, rowParams(activity));
@@ -4460,7 +4312,6 @@ public final class Haiagaru {
 
     /** Returns whether the patch-time dedicated checker Activity was registered. */
     public static boolean dedicatedCheckerViewerAvailable() {
-        if (!dedicatedViewerEnabled()) return false;
         Context context = applicationContext;
         if (context == null) return false;
         try {
@@ -4472,11 +4323,6 @@ public final class Haiagaru {
             Log.w(LOG_TAG, "Unable to detect the dedicated checker viewer", error);
             return false;
         }
-    }
-
-    public static boolean dedicatedViewerEnabled() {
-        SharedPreferences prefs = preferencesOrNull();
-        return prefs == null || prefs.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true);
     }
 
     static Context applicationContextForExtension() {
