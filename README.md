@@ -13,7 +13,7 @@ https://github.com/areteruhiro/Haiagaru
 最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
-最新版 `1.7.3` の概要: [1.7.3の更新内容](release-notes-1.7.3.md)
+最新版 `1.7.4` の概要: [1.7.4の更新内容](release-notes-1.7.4.md)
 
 ## Features
 
