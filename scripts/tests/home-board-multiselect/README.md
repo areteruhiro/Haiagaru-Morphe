@@ -3,7 +3,7 @@
 From the repository root, with JDK 21 on PATH:
 
 ```powershell
-javac -d build/verification/board-select-test/classes scripts/tests/home-board-multiselect/android/util/Log.java extensions/chmate/src/main/java/app/morphe/extension/chmate/HomeBoardMultiSelect.java scripts/tests/home-board-multiselect/BoardSelectionTest.java
+javac -d build/verification/board-select-test/classes scripts/tests/home-board-multiselect/android/util/Log.java scripts/tests/home-board-multiselect/android/widget/ListView.java extensions/chmate/src/main/java/app/morphe/extension/chmate/HomeBoardMultiSelect.java scripts/tests/home-board-multiselect/BoardSelectionTest.java
 java -cp build/verification/board-select-test/classes o.BoardSelectionTest
 ```
 

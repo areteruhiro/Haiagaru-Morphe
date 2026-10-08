@@ -87,7 +87,7 @@ public class VerifyLegacyBeRendering {
                 check((int) range == 7 && (int) (range >>> 32) == 7 + url.length(),
                         "Repair offset beyond eight characters");
                 range = (Long) align.invoke(null, url + " ".repeat(80) + url, url, 50, 69);
-                check((int) range == 50, "Do not guess between distant duplicate links");
+                check((int) range == 0, "Choose nearest final-text occurrence for repeated links");
                 String bare = "title 391(c)2ch.net\nhttp://hello.2ch.net/test/read.cgi/qa/1418210008/";
                 int domainStart = bare.indexOf("2ch.net");
                 range = (Long) align.invoke(null, bare, "http://2ch.net",
@@ -125,6 +125,21 @@ public class VerifyLegacyBeRendering {
                 check(reported.substring((int) range, (int) (range >>> 32)).equals(
                                 reportedUrlField.get(reportedSpan)),
                         "Reported abbreviated URL must receive the matching click target");
+                for (int shift : new int[]{0, 1, 7, 40, 100}) {
+                    Object shiftedSpan = spanConstructor.newInstance("http://2ch.net");
+                    range = (Long) alignSpan.invoke(null, reported, shiftedSpan,
+                            "http://2ch.net", reportedDomain + shift, reportedDomain + shift + 7);
+                    check((int) range == reported.indexOf("http://hello.2ch.net")
+                                    && (int) (range >>> 32) == reported.length(),
+                            "Copyright domain with BE offset shift " + shift);
+                    check(reported.substring((int) range, (int) (range >>> 32)).equals(
+                                    reportedUrlField.get(shiftedSpan)),
+                            "Click destination with BE offset shift " + shift);
+                }
+                String genuine = "2ch.net\nhttp://hello.2ch.net/test/";
+                range = (Long) align.invoke(null, genuine, "http://2ch.net", 0, 7);
+                check((int) range == 0 && (int) (range >>> 32) == 7,
+                        "Keep a genuine standalone bare-domain link");
                 String abbreviated = "icon\nttp://example.com/thread/";
                 String target = "http://example.com/thread/";
                 range = (Long) align.invoke(null, abbreviated, target, 12, abbreviated.length() + 7);

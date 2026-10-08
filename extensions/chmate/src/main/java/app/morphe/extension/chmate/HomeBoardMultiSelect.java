@@ -9,15 +9,44 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import android.util.Log;
+import android.widget.ListView;
 
 /** Selects the threads belonging to a board header in the modern home list. */
 public final class HomeBoardMultiSelect {
     private HomeBoardMultiSelect() {}
 
+    public static boolean selectLegacyRange(ListView list, int position) {
+        if (list == null || list.getChoiceMode() != ListView.CHOICE_MODE_MULTIPLE
+                || position < 0 || position >= list.getCount()) return false;
+        try {
+            if (!isLegacyHeading(list.getItemAtPosition(position))) return false;
+            int end = position + 1;
+            boolean allSelected = true;
+            while (end < list.getCount() && !isLegacyHeading(list.getItemAtPosition(end))) {
+                if (!list.isItemChecked(end)) allSelected = false;
+                end++;
+            }
+            list.setItemChecked(position, false);
+            for (int i = position + 1; i < end; i++) list.setItemChecked(i, !allSelected);
+            return true;
+        } catch (Throwable error) {
+            Log.e("Haiagaru", "Legacy heading selection could not be applied", error);
+            return false;
+        }
+    }
+
+    private static boolean isLegacyHeading(Object row) throws Exception {
+        if (row == null || !row.getClass().getName().startsWith("o.Yy2$")) return false;
+        Method type = row.getClass().getMethod("a");
+        type.setAccessible(true);
+        int kind = ((Number) type.invoke(row)).intValue();
+        // Board, keyword/rating and search-result section headings.
+        return kind == 0 || kind == 2 || kind == 3 || kind == 4;
+    }
+
     public static boolean selectBoard(Object fragment, Object header) {
         try {
-            Object boardId = boardIdOf(header);
-            if (fragment == null || header == null || boardId == null || !isBoardHeader(header)) return false;
+            if (fragment == null || header == null || !isBoardHeader(header)) return false;
 
             Object viewModel = findHomeViewModel(fragment);
             if (viewModel == null) return false;
@@ -28,7 +57,7 @@ public final class HomeBoardMultiSelect {
 
             Object selection = namedFieldValue(viewModel, "p");
             if (selection == null) return false;
-            boolean version241 = header.getClass().getName().equals("o.MediationBannerAdapter$read");
+            boolean version241 = header.getClass().getName().startsWith("o.MediationBannerAdapter$");
             // Use exactly the mode and selection state read by the original row handler.
             if (!Boolean.TRUE.equals(flowValue(namedFieldValue(viewModel, version241 ? "f" : "i")))) return false;
             Object selectedValue = flowValue(namedFieldValue(selection, version241 ? "b" : "c"));
@@ -39,8 +68,6 @@ public final class HomeBoardMultiSelect {
             for (int i = headerIndex + 1; i < items.size(); i++) {
                 Object item = items.get(i);
                 if (item == null) break;
-                Object itemBoard = boardIdOf(item);
-                if (itemBoard != null && !sameBoard(boardId, itemBoard)) break;
                 if (isBoardHeader(item)) break;
                 Long id = threadIdOf(item);
                 if (id != null && id.longValue() > 0L && id.longValue() != Long.MAX_VALUE) threadIds.add(id);
@@ -74,6 +101,7 @@ public final class HomeBoardMultiSelect {
             if (value.getClass().getName().contains("HomeViewModel")) return value;
             try {
                 Method getValue = value.getClass().getMethod("getValue");
+                getValue.setAccessible(true);
                 Object nested = getValue.invoke(value);
                 if (nested != null && nested.getClass().getName().contains("HomeViewModel")) return nested;
             } catch (Throwable ignored) {
@@ -101,24 +129,23 @@ public final class HomeBoardMultiSelect {
         return -1;
     }
 
-    private static Object boardIdOf(Object value) {
-        if (value == null) return null;
-        for (Field field : fieldsOf(value.getClass())) {
-            Object nested = fieldValue(field, value);
-            if (nested != null && nested.getClass().getName().endsWith(".BoardID")) return nested;
-        }
-        return null;
-    }
-
-    private static boolean sameBoard(Object first, Object second) {
-        return first == second || first.equals(second);
-    }
-
     private static boolean isBoardHeader(Object value) {
         if (value == null) return false;
         String name = value.getClass().getName();
-        return name.equals("o.MediationBannerAdapter$read")
-                || name.equals("o.getAvailabilityStatus$ComponentActivity");
+        String getter;
+        if (name.startsWith("o.MediationBannerAdapter$")) getter = "e";
+        else if (name.startsWith("o.getAvailabilityStatus$")) getter = "a";
+        else return false;
+        // Both models reserve MAX_VALUE for headings, including keyword and
+        // rating groups which do not carry a BoardID. Thread bookmark IDs differ.
+        try {
+            Method method = value.getClass().getMethod(getter);
+            if (method.getReturnType() != long.class) return false;
+            method.setAccessible(true);
+            return Long.valueOf(Long.MAX_VALUE).equals(method.invoke(value));
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private static Long threadIdOf(Object value) {
