@@ -7,6 +7,29 @@ public class VerifyKyodemoRouting {
     }
 
     public static void main(String[] args) {
+        String[][] externalBoards = {
+                {"bbs.punipuni.eu", "livepunipuni", "e_p_livepunipuni"},
+                {"bbs.kamemushi.com", "board", "e_k_board"},
+                {"bbs.jpnkn.com", "board", "e_j_board"},
+                {"bbs.3chan.cc", "board", "e_3_board"},
+                {"refugee-chan.mobi", "board", "e_h_board"},
+                {"yaruoshelter.com", "board", "e_y_board"},
+                {"yarumakai.com", "board", "e_y_board"}
+        };
+        for (String[] entry : externalBoards) {
+            check(KyodemoRouting.supportsHost(entry[0]), "Supported host " + entry[0]);
+            check(entry[2].equals(KyodemoRouting.boardSlug(entry[0], entry[1])),
+                    "Board-prefix mapping " + entry[0]);
+            check(KyodemoRouting.idSearchUrl(entry[0], entry[1], "ab+c/d", null, null)
+                            .endsWith("/" + entry[2] + "/?bs=hi&k=ab%2Bc%2Fd"),
+                    "ID transport " + entry[0]);
+        }
+        check("e_e_edge".equals(KyodemoRouting.boardSlug("d1ch.cc", "edge")),
+                "Edge2 d1ch board mapping");
+        check(KyodemoRouting.idSearchUrl("d1ch.cc", "edge", "ab+c/d", "1790000000", "20261008")
+                        .startsWith("https://www.kyodemo.net/sdemo/b/e_e_edge/?bs=hi&k=ab%2Bc%2Fd"),
+                "Pass the selected Edge2 ID without losing plus or slash");
+        check(!KyodemoRouting.supportsHost("evil.d1ch.cc"), "Reject unrelated subdomains");
         String analysisBase = "https://www.kyodemo.net/sdemo/b/morningcoffee/?bs=hi&k=%BB%BB%B8%AF%C3%DB%D7+Spc1-LqHT";
         check((analysisBase + "&c=ee0icqt").equals(KyodemoRouting.analysisResultUrl(
                 analysisBase + "&c=ee0icqt&fetch=a")), "Keep raw search bytes during recovery");

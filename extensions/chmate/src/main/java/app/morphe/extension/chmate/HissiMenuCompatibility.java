@@ -4,10 +4,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /** Repairs the stock Hissi host filter before ChMate expands menu templates. */
 public final class HissiMenuCompatibility {
     private static final String EDDI_ARCHIVE_HOST = "eddiarchive3rd.boy.jp";
     private static final String EDDI_SCHEME = "haiagaru-eddi";
+    private static final Pattern HOST_FILTER_PLACEHOLDER =
+            Pattern.compile("\\{\\$host\\[match:.*?\\]\\}");
     private HissiMenuCompatibility() {}
 
     public static String rewriteTemplate(String template) {
@@ -19,6 +24,9 @@ public final class HissiMenuCompatibility {
             return template;
         }
         boolean dedicatedViewer = Haiagaru.dedicatedCheckerViewerAvailable();
+        // Upgrade expanded templates saved by earlier Haiagaru versions too.
+        template = template.replace("|v1ch\\.cc|pinkdarker\\.com",
+                "|v1ch\\.cc|d1ch\\.cc|pinkdarker\\.com");
         String stockFilter = "{$host[match:[25]ch.net$]}";
         String oldFilter = "{$host[match:(^|\\.)(2ch\\.net|5ch\\.(net|io))$]}";
         // Observed in the stock 242 menu provider (not a user-defined filter).
@@ -29,7 +37,7 @@ public final class HissiMenuCompatibility {
                 + "^(?:jbbs\\.shitaraba\\.net|bbs\\.eddibb\\.cc|bbs\\.punipuni\\.eu|"
                 + "bbs\\.kamemushi\\.com|bbs\\.jpnkn\\.com|bbs\\.3chan\\.cc|"
                 + "refugee-chan\\.mobi|yaruozatsudan\\.com|yaruoshelter\\.com|"
-                + "yarumakai\\.com|v1ch\\.cc|pinkdarker\\.com)$]}";
+                + "yarumakai\\.com|v1ch\\.cc|d1ch\\.cc|pinkdarker\\.com)$]}";
         if (!template.contains(stockFilter) && !template.contains(oldFilter)
                 && !template.contains("haiagaru_mode=")) {
             return template;
@@ -57,7 +65,14 @@ public final class HissiMenuCompatibility {
         rewritten = addSelectedIdParameter(rewritten);
         String sourceFilter = rewritten.contains(stockFilter) ? stockFilter : oldFilter;
         if (!rewritten.contains(sourceFilter)) {
-            // A previously rewritten template only needs its selected mode refreshed.
+            // ChMate persists expanded menu templates. Upgrade their host
+            // matcher as well as the selected mode so newly supported boards
+            // become available without asking users to recreate menu entries.
+            if (!rewritten.contains("haiagaru_mode=")) return rewritten;
+            Matcher hostFilter = HOST_FILTER_PLACEHOLDER.matcher(rewritten);
+            if (hostFilter.find()) {
+                rewritten = hostFilter.replaceAll(Matcher.quoteReplacement(supportedFilter));
+            }
             return rewritten.replaceAll("&haiagaru_mode=[0-9]+", "&haiagaru_mode="
                     + Haiagaru.hissiCheckerMode());
         }

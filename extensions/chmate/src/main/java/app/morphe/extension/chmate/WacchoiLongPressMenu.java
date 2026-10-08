@@ -77,6 +77,21 @@ public final class WacchoiLongPressMenu {
                 method.setAccessible(true);
                 method.invoke(builder, "ﾜｯﾁｮｲで検索", null, true, false,
                         Integer.valueOf(android.R.drawable.ic_menu_search), callback);
+                if (WacchoiSuffixNg.suffix(query) != null) {
+                    Object ngCallback = java.lang.reflect.Proxy.newProxyInstance(
+                            types[5].getClassLoader(), new Class<?>[]{types[5]}, (proxy, invoked, args) -> {
+                                if (invoked.getDeclaringClass() == Object.class) {
+                                    if ("hashCode".equals(invoked.getName())) return System.identityHashCode(proxy);
+                                    if ("equals".equals(invoked.getName())) return proxy == args[0];
+                                    return "HaiagaruWacchoiSuffixNg";
+                                }
+                                if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0)
+                                    WacchoiSuffixNg.confirm(launchContext, query);
+                                return null;
+                            });
+                    method.invoke(builder, "ﾜｯﾁｮｲ下4桁でNGName登録", null, true, false,
+                            Integer.valueOf(android.R.drawable.ic_menu_delete), ngCallback);
+                }
                 return;
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
@@ -126,13 +141,22 @@ public final class WacchoiLongPressMenu {
 
     private static void append(Menu menu, Object dialogOrFragment, Object parent,
             SearchContext context) {
-        if (context == null || context.host == null || context.board == null
-                || context.query == null) return;
-        if (KyodemoRouting.boardSlug(context.host, context.board) == null) return;
+        if (context == null || context.query == null) return;
         Object activity = invokeNoArg(dialogOrFragment, "getActivity");
         if (!(activity instanceof Context)) activity = invokeNoArg(parent, "getActivity");
         if (!(activity instanceof Context)) activity = invokeNoArg(parent, "getContext");
         if (!(activity instanceof Context)) return;
+
+        final Context ngContext = (Context) activity;
+        if (WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
+            menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁でNGName登録")
+                    .setOnMenuItemClickListener(item -> {
+                        WacchoiSuffixNg.confirm(ngContext, context.query);
+                        return true;
+                    });
+        }
+        if (context.host == null || context.board == null
+                || KyodemoRouting.boardSlug(context.host, context.board) == null) return;
 
         Intent intent = new Intent((Context) activity, HissiMenuActivity.class);
         intent.putExtra("haiagaru.wacchoi.search", true);
@@ -216,7 +240,7 @@ public final class WacchoiLongPressMenu {
             Object activity = invokeNoArg(dialogFragment, "getActivity");
             visit(activity, 0, seen, found, false);
         }
-        return found.query == null || found.host == null || found.board == null ? null : found;
+        return found.query == null ? null : found;
     }
 
     private static Object fieldValue(Object target, String name) {
