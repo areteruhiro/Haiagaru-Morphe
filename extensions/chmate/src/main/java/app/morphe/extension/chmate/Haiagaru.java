@@ -135,6 +135,7 @@ public final class Haiagaru {
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
     private static final String HISSI_VIEWER_FULLSCREEN_KEY = "hissiViewerFullscreen";
+    private static final String DEDICATED_VIEWER_ENABLED_KEY = "dedicatedViewerEnabled";
     private static final String HISSI_VIEWER_SWIPE_HISTORY_KEY = "hissiViewerSwipeHistory";
     private static final String HISSI_VIEWER_TOOLBAR_BUTTONS_KEY = "hissiViewerToolbarButtons";
     private static final String KYODEMO_ENHANCED_VIEWER_KEY = "kyodemoEnhancedViewer";
@@ -612,9 +613,11 @@ public final class Haiagaru {
             Activity activity = toolbarActivity(fragment);
             Context context = activity != null ? activity : applicationContext;
             if (context == null) return false;
-            Intent intent = new Intent(context, HissiMenuActivity.class);
-            intent.setAction(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            Intent intent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            intent.setClassName(context, dedicatedViewerEnabled()
+                    ? HissiMenuActivity.class.getName()
+                    : "jp.syoboi.a2chMate.activity.WebViewActivity");
             if (activity == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
             return true;
@@ -3314,6 +3317,13 @@ public final class Haiagaru {
                 },
                 preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
         );
+        Switch dedicatedViewerEnabled = addSwitch(
+                layout,
+                activity,
+                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
+                        "Open in dedicated viewer (off: ChMate web view)"),
+                preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
+        );
         Spinner hissiViewerTheme = addSpinner(
                 layout,
                 activity,
@@ -3657,6 +3667,7 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
+                            .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
                             .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
                             .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
                                     Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
@@ -3752,9 +3763,11 @@ public final class Haiagaru {
         button.setAllCaps(false);
         button.setText(text("エッヂの過去ログを検索", "Search archived Edge threads"));
         button.setOnClickListener(view -> {
-            Intent intent = new Intent(activity, HissiMenuActivity.class);
-            intent.setAction(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            Intent intent = new Intent(Intent.ACTION_VIEW,
+                    Uri.parse("https://eddiarchive3rd.boy.jp/"));
+            intent.setClassName(activity, dedicatedViewerEnabled()
+                    ? HissiMenuActivity.class.getName()
+                    : "jp.syoboi.a2chMate.activity.WebViewActivity");
             activity.startActivity(intent);
         });
         layout.addView(button, rowParams(activity));
@@ -4447,6 +4460,7 @@ public final class Haiagaru {
 
     /** Returns whether the patch-time dedicated checker Activity was registered. */
     public static boolean dedicatedCheckerViewerAvailable() {
+        if (!dedicatedViewerEnabled()) return false;
         Context context = applicationContext;
         if (context == null) return false;
         try {
@@ -4458,6 +4472,11 @@ public final class Haiagaru {
             Log.w(LOG_TAG, "Unable to detect the dedicated checker viewer", error);
             return false;
         }
+    }
+
+    public static boolean dedicatedViewerEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true);
     }
 
     static Context applicationContextForExtension() {

@@ -210,10 +210,13 @@ final class EddiArchiveSearchUi {
         root.addView(navigation);
         Button original = button("元サイトの表示に切り替える");
         original.setOnClickListener(view -> {
-            Intent intent = new Intent(activity, HissiMenuActivity.class);
-            intent.setAction(Intent.ACTION_VIEW);
-            intent.setData(queryUri(page));
-            intent.putExtra("haiagaru.eddi.web", true);
+            Intent intent = new Intent(Intent.ACTION_VIEW, queryUri(page));
+            intent.setClassName(activity, Haiagaru.dedicatedViewerEnabled()
+                    ? HissiMenuActivity.class.getName()
+                    : "jp.syoboi.a2chMate.activity.WebViewActivity");
+            if (Haiagaru.dedicatedViewerEnabled()) {
+                intent.putExtra("haiagaru.eddi.web", true);
+            }
             activity.startActivity(intent);
         });
         root.addView(original);
