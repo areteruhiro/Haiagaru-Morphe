@@ -2768,6 +2768,22 @@ public final class Haiagaru {
                 value = value.substring(0, value.length() - 1);
             }
             if (value.isEmpty()) continue;
+            // Scope candidates to the copyright/title line immediately above
+            // them. Other links in the response often share the same domain.
+            int previousEnd = text.lastIndexOf('\n', start - 1);
+            if (previousEnd < 0) continue;
+            int previousStart = text.lastIndexOf('\n', previousEnd - 1) + 1;
+            int suffixStart = text.indexOf(targetHost, previousStart);
+            if (suffixStart <= previousStart || suffixStart >= previousEnd
+                    || text.charAt(suffixStart - 1) != ')') continue;
+            boolean adjacent = true;
+            for (int index = suffixStart + targetHost.length(); index < start; index++) {
+                if (!Character.isWhitespace(text.charAt(index))) {
+                    adjacent = false;
+                    break;
+                }
+            }
+            if (!adjacent) continue;
             if (candidate != null) return null;
             candidate = value;
             candidateStart = start;
