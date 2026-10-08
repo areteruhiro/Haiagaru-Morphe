@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-08T02:50:36",
-  "description": "Haiagaru 1.7.5 prerelease: heading-range selection for 226/241/242 and legacy BE link alignment for 191/226. Android MPP.",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.7.5/haiagaru_patches-1.7.5.mpp",
+  "created_at": "2026-10-08T03:18:59",
+  "description": "Haiagaru 1.7.6 prerelease: fix legacy BE link alignment with multiple same-domain URLs for 191/226. Android MPP.",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.7.6/haiagaru_patches-1.7.6.mpp",
   "signature_download_url": "",
-  "version": "1.7.5"
+  "version": "1.7.6"
 }
