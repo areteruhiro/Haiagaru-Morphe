@@ -8,6 +8,8 @@ import android.net.Uri;
 public final class HissiMenuCompatibility {
     private static final String EDDI_ARCHIVE_HOST = "eddiarchive3rd.boy.jp";
     private static final String EDDI_SCHEME = "haiagaru-eddi";
+    private static final String CHMATE_WEB_VIEW_ACTIVITY =
+            "jp.syoboi.a2chMate.activity.WebViewActivity";
     private HissiMenuCompatibility() {}
 
     public static String rewriteTemplate(String template) {
@@ -111,7 +113,11 @@ public final class HissiMenuCompatibility {
         if (isEddiArchiveUri(uri)) {
             Context context = Haiagaru.applicationContextForExtension();
             if (context != null) {
-                intent.setClassName(context, HissiMenuActivity.class.getName());
+                intent.setClassName(context, Haiagaru.dedicatedViewerEnabled()
+                        ? HissiMenuActivity.class.getName() : CHMATE_WEB_VIEW_ACTIVITY);
+                if (!Haiagaru.dedicatedViewerEnabled() && EDDI_SCHEME.equalsIgnoreCase(uri.getScheme())) {
+                    intent.setData(uri.buildUpon().scheme("https").build());
+                }
             }
             return;
         }
