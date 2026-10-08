@@ -987,6 +987,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         }
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchReadThreadsFirst(packageMetadata.versionName)
+            patchThreadTitleSpacing(packageMetadata.versionName)
         }
 
         patchNgRegistrationLimit()
@@ -1313,6 +1314,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchEdgeReporterHistory(packageMetadata.versionName)
         patchEdgeReporterTitleCopy(packageMetadata.versionName)
         patchWacchoiLongPressMenu(packageMetadata.versionName)
+        patchImageViewerRotationButton(packageMetadata.versionName)
+        patchXVideoAttachmentProjection()
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
     }
@@ -2031,6 +2034,97 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
         """.trimIndent(),
     )
     println("Wacchoi response-menu hook: selected ChMate 191 response")
+}
+
+/** Add the same in-viewer 90-degree rotation control to the older image viewers. */
+/** Thread rows use TextView on all four supported versions, including RecyclerView rows. */
+private fun BytecodePatchContext.patchThreadTitleSpacing(version: String) {
+    val adapterType = when (version) {
+        "0.8.10.191 dev" -> "Lo/m8a;"
+        "0.8.10.226 dev" -> "Lo/getWriteBytesTotal;"
+        "0.8.10.241" -> "Lo/RegisterListenerMethod;"
+        "0.8.10.242 dev" -> "Lo/zzavb;"
+        else -> return
+    }
+    val bind = mutableClassDefBy(adapterType).methods.single { method ->
+        method.name == if (version == "0.8.10.191 dev" || version == "0.8.10.226 dev") "getView" else "onBindViewHolder"
+    }
+    val instructions = bind.implementation!!.instructions.toList()
+    val sizeIndex = instructions.indexOfFirst { instruction ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == "Landroid/widget/TextView;" && ref.name == "setTextSize"
+            && ref.parameterTypes.map(CharSequence::toString) == listOf("F")
+    }
+    check(sizeIndex > 0) { "$version thread title size binding missing" }
+    val titleField = (instructions[sizeIndex - 1] as ReferenceInstruction).reference as FieldReference
+    val sites = instructions.mapIndexedNotNull { index, instruction ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        val field = (instructions.getOrNull(index - 1) as? ReferenceInstruction)?.reference as? FieldReference
+        if (ref?.name == "setText" && field?.toString() == titleField.toString()) index else null
+    }
+    check(sites.isNotEmpty()) { "$version thread title text binding missing" }
+    sites.asReversed().forEach { index ->
+        val receiver = (instructions[index] as FiveRegisterInstruction).registerC
+        bind.addInstructionsWithLabels(index + 1,
+            "invoke-static/range {v$receiver .. v$receiver}, Lapp/morphe/extension/chmate/ThreadTitleSpacing;->apply(Landroid/widget/TextView;)V")
+    }
+    println("Thread title spacing: ${sites.size} bindings ($version)")
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentProjection() {
+    var count = 0
+    classDefForEach { classDef ->
+        if (!classDef.type.startsWith("Lo/") || !classDef.interfaces.contains("Ljava/lang/CharSequence;")) return@classDefForEach
+        val factory = classDef.methods.singleOrNull { method ->
+            (method.accessFlags and 0x8) != 0 && method.returnType == classDef.type
+                && method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+                && method.implementation?.instructions?.any { instruction ->
+                    ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == "/i.imgur.com/"
+                } == true
+        } ?: return@classDefForEach
+        val method = mutableClassDefBy(classDef).methods.single { it.name == factory.name && it.returnType == factory.returnType }
+        val scratch = method.findFreeRegister(0)
+        check(scratch < 16 && method.implementation!!.registerCount - 1 < 16)
+        val name = classDef.type.removePrefix("L").removeSuffix(";").replace('/', '.')
+        method.addInstructionsWithLabels(0, """
+            const-string v$scratch, "$name"
+            invoke-static {p0, v$scratch}, Lapp/morphe/extension/chmate/XMediaAttachments;->nativeVideo(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;
+            move-result-object v$scratch
+            if-eqz v$scratch, :native_video_fallback
+            check-cast v$scratch, ${classDef.type}
+            return-object v$scratch
+            :native_video_fallback
+            nop
+        """)
+        count++
+    }
+    println("X video attachment factories: $count")
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotationButton(
+    versionName: String,
+) {
+    val targetImageView = when (versionName) {
+        "0.8.10.191 dev" -> "o.qhbExternalSyntheticLambda0"
+        "0.8.10.226 dev" -> "o.TTVideoLandingPageActivity4"
+        else -> return
+    }
+    val activityType = "Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity;"
+    val onCreate = mutableClassDefBy(activityType).methods.single { method ->
+        method.name == "onCreate" && method.returnType == "V"
+            && method.parameters.map(CharSequence::toString) == listOf("Landroid/os/Bundle;")
+    }
+    val returnSites = onCreate.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.RETURN_VOID) index else null
+    }
+    returnSites.asReversed().forEach { index ->
+        onCreate.addInstructionsWithLabels(index, """
+            const-string v0, "$targetImageView"
+            move-object/from16 v1, p0
+            invoke-static {v1, v0}, Lapp/morphe/extension/chmate/ImageViewerRotationButton;->install(Landroid/app/Activity;Ljava/lang/String;)V
+        """.trimIndent())
+    }
+    println("Image viewer rotation button: $versionName -> $targetImageView")
 }
 
 /**
@@ -5079,6 +5173,70 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseB
         }
     }
     check(assignments > 0) { "BE response body assignment missing: $responseModelClass" }
+    if (responseModelClass == "Lo/KeJ11;") {
+        // 242 inlines its URL getter in the thumbnail getter rather than exposing String[].
+        val projection = responseClass.methods.single {
+            it.returnType == "[Ljava/lang/CharSequence;" && it.parameters.isEmpty()
+                && (it.accessFlags and 0x8) == 0
+        }
+        val call = projection.implementation!!.instructions.indexOfFirst { instruction ->
+            val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ref?.returnType == "[Ljava/lang/CharSequence;"
+                && ref.parameterTypes.map(CharSequence::toString) == listOf("[Ljava/lang/String;")
+        }
+        check(call >= 0) { "242 Imgur thumbnail projection missing" }
+        val urls = (projection.implementation!!.instructions[call] as FiveRegisterInstruction).registerC
+        projection.addInstructionsWithLabels(call, """
+            invoke-static {p0, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+            move-result-object v$urls
+        """)
+        // The 242 row renderer also inlines extraction, bypassing the model getter.
+        classDefForEach { owner ->
+            val candidates = owner.methods.filter { method ->
+                method.implementation?.instructions?.any { instruction ->
+                    val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    instruction.opcode == Opcode.IPUT_OBJECT && field?.definingClass == responseModelClass
+                        && field.name == "c" && field.type == "[Ljava/lang/String;"
+                } == true
+            }
+            if (candidates.isEmpty() || owner.type == responseModelClass) return@classDefForEach
+            val mutable = mutableClassDefBy(owner)
+            candidates.forEach { original ->
+                val method = mutable.methods.single { it.name == original.name && it.parameterTypes == original.parameterTypes && it.returnType == original.returnType }
+                val sites = method.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+                    val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+                    if (instruction.opcode == Opcode.IPUT_OBJECT && field?.definingClass == responseModelClass
+                        && field.name == "c" && field.type == "[Ljava/lang/String;") index else null
+                }
+                sites.asReversed().forEach { index ->
+                    val write = method.implementation!!.instructions[index] as TwoRegisterInstruction
+                    method.addInstructionsWithLabels(index + 1, """
+                        invoke-static {v${write.registerB}, v${write.registerA}}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+                        move-result-object v${write.registerA}
+                    """)
+                }
+            }
+        }
+        return
+    }
+    if (responseModelClass != "Lo/zzabv;") {
+        val getter = responseClass.methods.single {
+            it.returnType == "[Ljava/lang/String;" && it.parameters.isEmpty()
+                && (it.accessFlags and 0x8) == 0
+        }
+        val returns = getter.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+            if (instruction.opcode == Opcode.RETURN_OBJECT) index else null
+        }
+        returns.asReversed().forEach { index ->
+            val result = (getter.implementation!!.instructions[index] as OneRegisterInstruction).registerA
+            val receiver = getter.implementation!!.registerCount - 1
+            check(result < 16 && receiver < 16 && result != receiver) { "Imgur attachment hook requires low receiver and result registers" }
+            getter.addInstructionsWithLabels(index, """
+                invoke-static {p0, v$result}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+                move-result-object v$result
+            """)
+        }
+    }
 }
 
 /**

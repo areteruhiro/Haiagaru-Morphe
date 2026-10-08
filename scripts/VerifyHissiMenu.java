@@ -31,14 +31,22 @@ public class VerifyHissiMenu {
                 "hayabusa.2ch.net", "bbs.eddibb.cc", "jbbs.shitaraba.net",
                 "tokyo.machi.to", "hayabusa.open2ch.net", "ex14.vip2ch.com",
                 "aoi.bbspink.com", "bbs.punipuni.eu", "5chan.jp",
-                "yaruozatsudan.com"}) {
+                "yaruozatsudan.com", "yaruoshelter.com", "yarumakai.com",
+                "bbs.kamemushi.com", "bbs.jpnkn.com", "bbs.3chan.cc",
+                "refugee-chan.mobi", "pinkdarker.com", "v1ch.cc", "d1ch.cc"}) {
+            check(app.morphe.extension.chmate.KyodemoRouting.supportsHost(host),
+                    "Menu host must have a Kyodemo route: " + host);
             check(hostFilter.matcher(host).find(), "Missing menu for " + host);
         }
         for (String host : new String[]{"talk.jp", "next2ch.net", "2ch.sc", "evil5ch.io",
-                "egg.5ch.io.example", "egg.5chXio", "evil.bbs.eddibb.cc"}) {
+                "egg.5ch.io.example", "egg.5chXio", "evil.bbs.eddibb.cc",
+                "evil.d1ch.cc", "d1ch.cc.example"}) {
             check(!hostFilter.matcher(host).find(), "Unexpected menu for " + host);
         }
         check(fixed.equals(HissiMenuCompatibility.rewriteTemplate(fixed)), "Rewrite must be idempotent");
+        String saved = fixed.replace("|d1ch\\.cc", "");
+        check(fixed.equals(HissiMenuCompatibility.rewriteTemplate(saved)),
+                "Saved expanded templates must acquire d1ch support");
         String previouslyPatched = "haiagaru-hissi://hissi.org/read.php/{$bbs}/{$date[yyyyMMdd]}/{$id[base64_]}.html"
                 + "{$host[match:(^|\\.)(2ch\\.net|5ch\\.(net|io))$]}";
         check(HissiMenuCompatibility.rewriteTemplate(previouslyPatched).contains("haiagaru_host={$host}"),

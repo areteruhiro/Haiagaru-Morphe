@@ -71,6 +71,7 @@ public final class KyodemoRouting {
         if ("jbbs.shitaraba.net".equals(host)) return "s_";
         if ("bbs.eddibb.cc".equals(host)) return "e_e_";
         if ("v1ch.cc".equals(host)) return "e_e_";
+        if ("d1ch.cc".equals(host)) return "e_e_";
         if ("yaruozatsudan.com".equals(host)) return "e_y_";
         if ("yaruoshelter.com".equals(host) || "yarumakai.com".equals(host)) return "e_y_";
         if ("pinkdarker.com".equals(host)) return "e_n_";

@@ -15,7 +15,7 @@ https://github.com/areteruhiro/Haiagaru
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.7.6` の概要: [1.7.6の更新内容](release-notes-1.7.6.md)
+プレ版 `1.7.7` の概要: [1.7.7の更新内容](docs/release-1.7.7.md)
 
 ## Features
 
@@ -141,7 +141,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは正式版 `1.7.1`、プレ版用URLは `1.7.6` を取得します。
+通常版URLは正式版 `1.7.1`、プレ版用URLは `1.7.7` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の正式版（1.7.1）を取得するパッチソースです。
@@ -150,7 +150,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版 `1.7.6` を取得するパッチソースです。
+プレ版 `1.7.7` を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
