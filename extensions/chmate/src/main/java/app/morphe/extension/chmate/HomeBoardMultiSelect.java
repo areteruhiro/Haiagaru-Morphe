@@ -36,12 +36,13 @@ public final class HomeBoardMultiSelect {
             Set<?> selected = new HashSet<>((Set<?>) selectedValue);
 
             Set<Long> threadIds = new LinkedHashSet<>();
-            for (int i = headerIndex + 1; i < items.size(); i++) {
-                Object item = items.get(i);
-                if (item == null) break;
+            // Sorting can interleave board headers and threads from other boards.
+            // Match the legacy 191 behavior: select every currently displayed
+            // thread whose board ID matches this header, regardless of position.
+            for (Object item : items) {
+                if (item == null || isBoardHeader(item)) continue;
                 Object itemBoard = boardIdOf(item);
-                if (itemBoard != null && !sameBoard(boardId, itemBoard)) break;
-                if (isBoardHeader(item)) break;
+                if (itemBoard == null || !sameBoard(boardId, itemBoard)) continue;
                 Long id = threadIdOf(item);
                 if (id != null && id.longValue() > 0L && id.longValue() != Long.MAX_VALUE) threadIds.add(id);
             }

@@ -37,7 +37,12 @@ public class BoardSelectionTest {
             Object nextHeader = modern ? new getAvailabilityStatus.ComponentActivity(other) : new MediationBannerAdapter.read(other);
             Object first = modern ? new getAvailabilityStatus.r8lambdawJ5MHcSJed_CjC7r4OWD0UxyJsQ(board, 11) : new MediationBannerAdapter.r8lambdavCwjfXDiSGcirCy4I008VOiJ_lw(board, 11);
             Object second = modern ? new getAvailabilityStatus.r8lambdawJ5MHcSJed_CjC7r4OWD0UxyJsQ(board, 12) : new MediationBannerAdapter.r8lambdavCwjfXDiSGcirCy4I008VOiJ_lw(board, 12);
-            HomeViewModelFixture model = new HomeViewModelFixture(Arrays.asList(header, first, first, second, nextHeader));
+            // Non-board sorting may interleave threads from different boards.
+            Object otherThread = modern
+                    ? new getAvailabilityStatus.r8lambdawJ5MHcSJed_CjC7r4OWD0UxyJsQ(other, 21)
+                    : new MediationBannerAdapter.r8lambdavCwjfXDiSGcirCy4I008VOiJ_lw(other, 21);
+            HomeViewModelFixture model = new HomeViewModelFixture(
+                    Arrays.asList(header, first, nextHeader, otherThread, first, second));
             Fragment fragment = new Fragment(model);
             ((Set<Long>) model.p.b.value).add(99L);
             require(HomeBoardMultiSelect.selectBoard(fragment, header), "header not handled");
@@ -51,7 +56,8 @@ public class BoardSelectionTest {
             require(!HomeBoardMultiSelect.selectBoard(fragment, header), "normal board tap intercepted");
             model.f.value = true;
             require(!HomeBoardMultiSelect.selectBoard(fragment, first), "thread tap intercepted");
-            require(!HomeBoardMultiSelect.selectBoard(fragment, nextHeader), "empty group intercepted");
+            require(HomeBoardMultiSelect.selectBoard(fragment, nextHeader), "interleaved board group not handled");
+            require(model.p.b.value.equals(new HashSet<>(Arrays.asList(11L, 12L, 21L, 99L))), "other board selection included unrelated rows");
             System.out.println((modern ? "242" : "241") + ": PASS");
         }
     }
