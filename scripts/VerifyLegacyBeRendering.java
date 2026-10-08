@@ -24,11 +24,14 @@ public class VerifyLegacyBeRendering {
 
     public static void main(String[] args) throws Exception {
         String source = Files.readString(Path.of(
-                "extensions/chmate/src/main/java/app/morphe/extension/chmate/Haiagaru.java"));
+                "extensions/chmate/src/main/java/app/morphe/extension/chmate/Haiagaru.java"))
+                .replace("\r\n", "\n");
         StringBuilder code = new StringBuilder(
-                "import java.util.*; import java.util.regex.*; public class BeUnderTest {\n");
+                "import java.util.*; import java.util.regex.*; import java.lang.reflect.*; public class BeUnderTest {\n"
+                        + "static final class LinkSpan { private final String url; LinkSpan(String value) { url = value; } }\n");
         for (String field : new String[]{"LEGACY_BE_ATTACHMENT_TOKEN", "LEGACY_PREMIUM_BE_URL",
-                "LEGACY_BE_ICO_URL", "LEGACY_BE_ANY_URL"}) {
+                "LEGACY_BE_ICO_URL", "LEGACY_BE_ANY_URL", "LEGACY_LINK_HOST_ONLY",
+                "LEGACY_ABSOLUTE_URL"}) {
             int start = source.indexOf("private static final Pattern " + field);
             code.append(source, start, source.indexOf(';', start) + 1).append('\n');
         }
@@ -37,7 +40,10 @@ public class VerifyLegacyBeRendering {
                 "public static String normalizeBeIconUrl(String original)",
                 "private static String deduplicateBeIcons(String text)",
                 "public static String stripLegacyBeAttachmentTokens(String original)",
-                "public static long alignLegacyLinkRange("}) {
+                "public static long alignLegacyLinkRange(",
+                "public static long alignLegacyLinkRange(\n            CharSequence renderedText,\n            Object linkSpan,",
+                "private static String findSubdomainUrlForBareHost(",
+                "private static void updateLegacyLinkTarget("}) {
             code.append(method(source, signature)).append('\n');
         }
         code.append('}');
@@ -86,8 +92,39 @@ public class VerifyLegacyBeRendering {
                 int domainStart = bare.indexOf("2ch.net");
                 range = (Long) align.invoke(null, bare, "http://2ch.net",
                         domainStart + 7, domainStart + 14);
-                check((int) range == domainStart && (int) (range >>> 32) == domainStart + 7,
-                        "Bare domain span must not bleed into next line");
+                check((int) range == bare.indexOf("http://hello.2ch.net")
+                                && (int) (range >>> 32) == bare.length(),
+                        "Bare-domain alignment must not hijack the full URL on the next line");
+                var alignSpan = test.getMethod("alignLegacyLinkRange", CharSequence.class,
+                        Object.class, String.class, int.class, int.class);
+                var spanConstructor = test.getDeclaredClasses()[0]
+                        .getDeclaredConstructor(String.class);
+                spanConstructor.setAccessible(true);
+                Object span = spanConstructor.newInstance("http://2ch.net");
+                range = (Long) alignSpan.invoke(null, bare, span, "http://2ch.net",
+                        domainStart + 7, domainStart + 14);
+                check((int) range == bare.indexOf("http://hello.2ch.net")
+                                && (int) (range >>> 32) == bare.length(),
+                        "Link span must cover the full subdomain URL");
+                var urlField = span.getClass().getDeclaredField("url");
+                urlField.setAccessible(true);
+                check(bare.substring((int) range, (int) (range >>> 32)).equals(
+                                urlField.get(span)),
+                        "Clickable target must follow the corrected URL range");
+                String reported = "391(c)2ch.net\nhttp://hello.2ch.net...d.cgi/qa/1418210008/";
+                int reportedDomain = reported.indexOf("2ch.net");
+                spanConstructor.setAccessible(true);
+                Object reportedSpan = spanConstructor.newInstance("http://2ch.net");
+                range = (Long) alignSpan.invoke(null, reported, reportedSpan,
+                        "http://2ch.net", reportedDomain + 7, reportedDomain + 14);
+                check((int) range == reported.indexOf("http://hello.2ch.net")
+                                && (int) (range >>> 32) == reported.length(),
+                        "Reported abbreviated URL must receive the link range");
+                var reportedUrlField = reportedSpan.getClass().getDeclaredField("url");
+                reportedUrlField.setAccessible(true);
+                check(reported.substring((int) range, (int) (range >>> 32)).equals(
+                                reportedUrlField.get(reportedSpan)),
+                        "Reported abbreviated URL must receive the matching click target");
                 String abbreviated = "icon\nttp://example.com/thread/";
                 String target = "http://example.com/thread/";
                 range = (Long) align.invoke(null, abbreviated, target, 12, abbreviated.length() + 7);
@@ -98,7 +135,8 @@ public class VerifyLegacyBeRendering {
             }
             System.out.println("BE rendering regression checks passed");
         } finally {
-            for (String name : new String[]{"BeUnderTest.java", "BeUnderTest.class"})
+            for (String name : new String[]{"BeUnderTest.java", "BeUnderTest.class",
+                    "BeUnderTest$LinkSpan.class"})
                 Files.deleteIfExists(temp.resolve(name));
             Files.deleteIfExists(temp);
         }
