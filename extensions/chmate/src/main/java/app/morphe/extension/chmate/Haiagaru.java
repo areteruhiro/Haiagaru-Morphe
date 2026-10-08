@@ -649,7 +649,7 @@ public final class Haiagaru {
         ReadThreadsFirst.chooseScope(resumedActivity.get());
     }
 
-    private static Activity toolbarActivity(Object owner) {
+    static Activity toolbarActivity(Object owner) {
         if (owner instanceof Activity) return (Activity) owner;
         if (owner != null) {
             try {
@@ -3268,6 +3268,13 @@ public final class Haiagaru {
                     preferences.getBoolean("topAlignShortThreads", false));
         }
         final Switch topAlignShortThreadsSwitch = topAlignShortThreads;
+        String[] titleSpacingChoices = new String[21];
+        for (int index = 0; index < titleSpacingChoices.length; index++)
+            titleSpacingChoices[index] = (100 + index * 5) + "%";
+        final int initialThreadTitleSpacing = threadTitleSpacingPercent();
+        Spinner threadTitleSpacing = addSpinner(layout, activity,
+                text("スレ一覧のタイトル行間（標準に対する割合）", "Thread-list title line spacing (relative to default)"),
+                titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
 
         Switch replaceUserAgent = addSwitch(
                 layout,
@@ -3330,6 +3337,24 @@ public final class Haiagaru {
                 },
                 preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
         );
+        Spinner mediaAutoFetch = addSpinner(layout, activity,
+                text("URLメディア：動画の場合", "URL media: videos"),
+                new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
+                        text("画像＋動画", "Thumbnail and video"),
+                        text("動画のみ", "Video only"), text("取得しない", "Do not retrieve")},
+                mediaAutoFetchMode());
+        Spinner imageAutoFetch = addSpinner(layout, activity,
+                text("URLメディア：画像の場合", "URL media: images"),
+                new String[]{text("画像を取得", "Retrieve images"), text("取得しない", "Do not retrieve")},
+                mediaImageFetchEnabled() ? 0 : 1);
+        EditText videoThumbnailMaxMb = addTextField(layout, activity,
+                text("動画サムネイルの取得上限（MB、1〜1024）", "Video thumbnail download limit (MB, 1–1024)"),
+                Integer.toString(videoThumbnailMaxMb()));
+        videoThumbnailMaxMb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoThumbnailTimeoutSeconds = addTextField(layout, activity,
+                text("動画サムネイルの取得制限時間（秒、1〜600）", "Video thumbnail download timeout (seconds, 1–600)"),
+                Integer.toString(videoThumbnailTimeoutSeconds()));
+        videoThumbnailTimeoutSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         Spinner hissiViewerTheme = addSpinner(
                 layout,
                 activity,
@@ -3673,6 +3698,11 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
+                            .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
+                            .putInt("urlVideoFetchMode", mediaAutoFetch.getSelectedItemPosition())
+                            .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
+                            .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
+                            .putInt("videoThumbnailTimeoutSeconds", boundedMediaSetting(value(videoThumbnailTimeoutSeconds), videoThumbnailTimeoutSeconds(), 600))
                             .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
                             .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
                                     Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
@@ -3709,7 +3739,8 @@ public final class Haiagaru {
                     }
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
-                    if (!before.equals(after) || legacyPlusChanged) restart(activity);
+                    if (!before.equals(after) || legacyPlusChanged
+                            || initialThreadTitleSpacing != threadTitleSpacingPercent()) restart(activity);
                 })
                 .show();
     }
@@ -4478,6 +4509,76 @@ public final class Haiagaru {
 
     static Context applicationContextForExtension() {
         return applicationContext;
+    }
+
+    public static int mediaAutoFetchMode() {
+        SharedPreferences prefs = preferencesOrNull();
+        int oldMode = prefs == null ? 2 : prefs.getInt("mediaAutoFetchMode", 2);
+        int mode = prefs == null ? 1 : prefs.getInt("urlVideoFetchMode", oldMode == 3 ? 3 : oldMode == 0 ? 0 : 1);
+        return mode >= 0 && mode <= 3 ? mode : 1;
+    }
+
+    public static int threadTitleSpacingPercent() {
+        SharedPreferences prefs = preferencesOrNull();
+        int percent = prefs == null ? 100 : prefs.getInt("threadTitleSpacingPercent", 100);
+        return Math.max(100, Math.min(200, percent)) / 5 * 5;
+    }
+
+    public static boolean mediaImageFetchEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return true;
+        int oldMode = prefs.getInt("mediaAutoFetchMode", 2);
+        return prefs.getBoolean("urlImageFetchEnabled", oldMode != 1 && oldMode != 3);
+    }
+
+    private static int boundedMediaSetting(String raw, int fallback, int maximum) {
+        try {
+            int value = Integer.parseInt(raw.trim());
+            if (value >= 1 && value <= maximum) return value;
+        } catch (RuntimeException ignored) {}
+        return Math.max(1, Math.min(maximum, fallback));
+    }
+
+    public static int videoThumbnailMaxMb() {
+        SharedPreferences prefs = preferencesOrNull();
+        return Math.max(1, Math.min(1024, prefs == null ? 24 : prefs.getInt("videoThumbnailMaxMb", 24)));
+    }
+
+    public static int videoThumbnailTimeoutSeconds() {
+        SharedPreferences prefs = preferencesOrNull();
+        return Math.max(1, Math.min(600, prefs == null ? 20 : prefs.getInt("videoThumbnailTimeoutSeconds", 20)));
+    }
+
+    static void refreshImgurAttachments() {
+        Activity activity = resumedActivity.get();
+        if (activity != null) activity.runOnUiThread(() ->
+                refreshImgurList(activity.getWindow().getDecorView()));
+    }
+
+    private static void refreshImgurList(android.view.View view) {
+        if (view instanceof android.widget.ListView) {
+            android.widget.ListAdapter adapter = ((android.widget.ListView) view).getAdapter();
+            if (adapter instanceof android.widget.HeaderViewListAdapter)
+                adapter = ((android.widget.HeaderViewListAdapter) adapter).getWrappedAdapter();
+            if (adapter instanceof android.widget.BaseAdapter)
+                ((android.widget.BaseAdapter) adapter).notifyDataSetChanged();
+        }
+        // Later ChMate generations can host responses in a RecyclerView.
+        // Notify only existing visible adapters; never recreate tabs or reorder rows.
+        for (Class<?> type = view.getClass(); type != null; type = type.getSuperclass()) {
+            if (!"androidx.recyclerview.widget.RecyclerView".equals(type.getName())) continue;
+            try {
+                Object adapter = type.getMethod("getAdapter").invoke(view);
+                if (adapter != null) adapter.getClass().getMethod("notifyDataSetChanged").invoke(adapter);
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                Log.w(LOG_TAG, "Could not refresh resolved Imgur attachments", error);
+            }
+            break;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) refreshImgurList(group.getChildAt(i));
+        }
     }
 
     static void refreshBoardListAfterReadSortChange() {
