@@ -1863,6 +1863,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         patchLegacyWacchoiLongPressMenu()
         return
     }
+    if (versionName == "0.8.10.226 dev") {
+        patch226WacchoiTextLongPress()
+    }
 
     val owner = "Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;"
     val candidates = mutableClassDefBy(owner).methods.filter { method ->
@@ -1939,6 +1942,38 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         "Expected one ${versionName} custom response-menu dispatcher, patched $dispatcherCount"
     }
     println("Wacchoi response-menu hook: builder=${builder.name}, dispatcher=$dispatcherCount")
+}
+
+/**
+ * ChMate 226 routes ID/SLIP text long presses through a separate selection
+ * callback. Re-dispatch that row's standard long-click to show the Wacchoi item.
+ */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patch226WacchoiTextLongPress() {
+    val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment\$flag;"
+    val method = mutableClassDefBy(owner).methods.single { candidate ->
+        candidate.returnType == "V"
+            && candidate.parameters.map { it.type } == listOf(
+                "Landroid/view/View;", "I", "Landroid/view/View;", "Ljava/lang/String;",
+                "Lo/BouncyCastleSocketAdapterCompanion;", "Landroid/graphics/Rect;",
+                "Lo/getMaxLine\$RemoteActionCompatParcelizer;",
+            )
+            && candidate.implementation?.instructions?.any { instruction ->
+                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == "ID:"
+            } == true
+            && candidate.implementation?.instructions?.any { instruction ->
+                ((instruction as? ReferenceInstruction)?.reference as? StringReference)?.string == "NAMEOPT:"
+            } == true
+    }
+    val mutableMethod = mutableClassDefBy(owner).findMutableMethodOf(method)
+    val firstInstruction = mutableMethod.implementation!!.instructions.first()
+    val resultRegister = mutableMethod.findFreeRegister(0)
+    mutableMethod.addInstructionsWithLabels(0, """
+        invoke-static/range {p0 .. p7}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->route226TextLongPress(Ljava/lang/Object;Landroid/view/View;ILandroid/view/View;Ljava/lang/String;Ljava/lang/Object;Landroid/graphics/Rect;Ljava/lang/Object;)Z
+        move-result v$resultRegister
+        if-eqz v$resultRegister, :haiagaru_226_wacchoi_continue
+        return-void
+    """.trimIndent(), ExternalLabel("haiagaru_226_wacchoi_continue", firstInstruction))
+    println("ChMate 226 ID/Wacchoi text long-press hook: ${method.name}")
 }
 
 /**

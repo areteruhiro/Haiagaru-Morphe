@@ -152,6 +152,17 @@ public final class HissiMenuActivity extends Activity {
             }
             target = currentUsesKyodemo ? kyodemoTarget : hissiTarget;
         }
+        if (!Haiagaru.dedicatedViewerEnabled() && target != null) {
+            Intent fallback = new Intent(Intent.ACTION_VIEW, Uri.parse(target));
+            fallback.setClassName(this, "jp.syoboi.a2chMate.activity.WebViewActivity");
+            try {
+                startActivity(fallback);
+                finish();
+                return;
+            } catch (RuntimeException error) {
+                Log.w(LOG_TAG, "Could not open ChMate web view; continuing in viewer", error);
+            }
+        }
         if (target == null) {
             TextView error = new TextView(this);
             error.setText(currentUsesKyodemo
