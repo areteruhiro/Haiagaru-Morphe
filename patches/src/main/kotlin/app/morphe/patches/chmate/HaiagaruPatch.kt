@@ -224,6 +224,30 @@ private data class ChMateProfile(
  * click callback and let the extension toggle that board's thread IDs.
  */
 private fun BytecodePatchContext.patchHomeBoardMultiSelect(versionName: String, homeFragmentClass: String) {
+    if (versionName == "0.8.10.226 dev") {
+        val fragment = mutableClassDefBy(homeFragmentClass)
+        val click = fragment.methods.single { method ->
+            method.returnType == "V" && method.implementation != null &&
+                method.parameterTypes.map(CharSequence::toString) ==
+                listOf("Landroid/widget/ListView;", "Landroid/view/View;", "I", "J")
+        }
+        val callback = fragment.findMutableMethodOf(click)
+        val original = callback.implementation!!.instructions.first()
+        callback.addInstructionsWithLabels(
+            0,
+            """
+                move-object/from16 v0, p1
+                move/from16 v1, p3
+                invoke-static {v0, v1}, Lapp/morphe/extension/chmate/HomeBoardMultiSelect;->selectLegacyRange(Landroid/widget/ListView;I)Z
+                move-result v2
+                if-eqz v2, :haiagaru_legacy_heading_continue
+                invoke-direct/range {p0 .. p0}, $homeFragmentClass->y()V
+                return-void
+            """.trimIndent(),
+            ExternalLabel("haiagaru_legacy_heading_continue", original),
+        )
+        return
+    }
     if (versionName != "0.8.10.241" && versionName != "0.8.10.242 dev") return
 
     val homeFragment = mutableClassDefBy(homeFragmentClass)
