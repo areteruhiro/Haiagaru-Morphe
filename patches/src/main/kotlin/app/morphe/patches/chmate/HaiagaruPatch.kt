@@ -17,6 +17,8 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.util.findFreeRegister
 import app.morphe.util.findMutableMethodOf
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.Method
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
@@ -1357,6 +1359,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchEdgeReporterHistory(packageMetadata.versionName)
         patchEdgeReporterTitleCopy(packageMetadata.versionName)
         patchWacchoiLongPressMenu(packageMetadata.versionName)
+        patchImageListResolvedMedia(packageMetadata.versionName)
         if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchPostVersionInfo(profile.applicationClass)
         }
@@ -1964,6 +1967,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostVersionInfo(a
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressMenu(
     versionName: String,
 ) {
+    if (versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
+        patchWacchoiNgPopupDispatch(versionName)
+    }
     if (versionName == "0.8.10.226 dev") {
         val owner = "Lo/getImgAcceptedHeight;"
         val method = mutableClassDefBy(owner).methods.single { method ->
@@ -2078,11 +2084,141 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
     println("Wacchoi response-menu hook: builder=${builder.name}, dispatcher=$dispatcherCount")
 }
 
-/**
- * ChMate 191 builds the response popup in pa.Wx_. Inject immediately before
- * the selected response's menu is measured; its normal click handler already
- * dispatches MenuItems carrying an Intent.
- */
+/** Bridge the NG item's listener in the custom popup used by supported versions. */
+private fun BytecodePatchContext.patchImageListResolvedMedia(version: String) {
+    val modelAndBody = when (version) {
+        "0.8.10.191 dev" -> "Lo/processAdDisplayErrorPostbackForUserError;" to "c"
+        "0.8.10.226 dev" -> "Lo/BouncyCastleSocketAdapterCompanion;" to "d"
+        "0.8.10.241" -> "Lo/setDislikeWidth;" to "g"
+        "0.8.10.242 dev" -> "Lo/KeJ11;" to "h"
+        else -> return
+    }
+    if (version == "0.8.10.241" || version == "0.8.10.242 dev") {
+        // Modern galleries share their DAT loader with thread properties. Hook
+        // the loop entry, including the branch that reuses the 242 URL cache.
+        val loaderType = if (version == "0.8.10.241") "Lo/getMediaContent;" else "Lo/getWrappedCursor;"
+        val viewModel = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/imagelist/ImageListViewModel;")
+        check(viewModel.methods.any { method -> method.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? MethodReference)?.definingClass == loaderType
+        } == true }) { "Modern image-list loader changed: $version" }
+        val loader = mutableClassDefBy(loaderType)
+        val sites = loader.methods.flatMap { method ->
+            val instructions = method.implementation?.instructions?.toList().orEmpty()
+            instructions.mapIndexedNotNull { index, instruction ->
+                if (instruction.opcode != Opcode.ARRAY_LENGTH) return@mapIndexedNotNull null
+                val length = instruction as TwoRegisterInstruction
+                val bodyIndex = (maxOf(0, index - 12) until index).lastOrNull { prior ->
+                    val field = (instructions[prior] as? ReferenceInstruction)?.reference as? FieldReference
+                    instructions[prior].opcode == Opcode.IGET_OBJECT && field?.definingClass == modelAndBody.first
+                        && field.name == modelAndBody.second && field.type == "Ljava/lang/String;"
+                } ?: return@mapIndexedNotNull null
+                val model = (instructions[bodyIndex] as TwoRegisterInstruction).registerB
+                check(model != length.registerB && model < 16 && length.registerB < 16)
+                Triple(method, index, Triple(model, length.registerB, length.registerA))
+            }
+        }
+        check(sites.size == 1) { "Expected one modern gallery loop: $version, found ${sites.size}" }
+        val (method, index, registers) = sites.single()
+        val (model, urls, count) = registers
+        // Keep existing branch labels attached to the hook, not past it.
+        method.replaceInstruction(index, "invoke-static {v$model, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;")
+        method.addInstructionsWithLabels(index + 1, """
+            move-result-object v$urls
+            array-length v$count, v$urls
+        """.trimIndent())
+        println("Image-list resolved media: $version -> $loaderType")
+        return
+    }
+    val activity = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImageListActivity;")
+    val onCreate = activity.methods.single { it.name == "onCreate" }
+    val fragments = onCreate.implementation!!.instructions.mapNotNull { instruction ->
+        if (instruction.opcode != Opcode.NEW_INSTANCE) return@mapNotNull null
+        val type = ((instruction as ReferenceInstruction).reference as TypeReference).type
+        type.takeIf { candidate ->
+            candidate.startsWith("Lo/") && mutableClassDefBy(candidate).methods.any { method ->
+                method.name == "onCreate" && method.implementation?.instructions?.any { body ->
+                    ((body as? ReferenceInstruction)?.reference as? StringReference)?.string == "urlinfo"
+                } == true
+            }
+        }
+    }.distinct()
+    check(fragments.size == 1) { "Expected one $version image-list fragment, found $fragments" }
+    val fragment = mutableClassDefBy(fragments.single())
+    val create = fragment.methods.single { it.name == "onCreate" }
+    val instructions = create.implementation!!.instructions.toList()
+    val sites = instructions.mapIndexedNotNull { index, instruction ->
+        val extraction = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+            ?: return@mapIndexedNotNull null
+        if (extraction.returnType != "[Ljava/lang/String;"
+            || "Ljava/lang/String;" !in extraction.parameterTypes.map(CharSequence::toString)
+            || "Z" !in extraction.parameterTypes.map(CharSequence::toString)) return@mapIndexedNotNull null
+        val bodyRead = (maxOf(0, index - 12) until index).lastOrNull { prior ->
+            val field = (instructions[prior] as? ReferenceInstruction)?.reference as? FieldReference
+            instructions[prior].opcode == Opcode.IGET_OBJECT && field?.definingClass == modelAndBody.first
+                && field.name == modelAndBody.second && field.type == "Ljava/lang/String;"
+        } ?: return@mapIndexedNotNull null
+        check(instructions[index + 1].opcode == Opcode.MOVE_RESULT_OBJECT) { "Image-list URL extraction result moved" }
+        val model = (instructions[bodyRead] as TwoRegisterInstruction).registerB
+        val result = (instructions[index + 1] as OneRegisterInstruction).registerA
+        check(model != result && model < 16 && result < 16) { "Image-list model/result register overlap" }
+        Triple(index + 2, model, result)
+    }
+    check(sites.size == 1) { "Expected one $version image-list media extraction, found ${sites.size}" }
+    sites.asReversed().forEach { (index, model, result) ->
+        create.addInstructionsWithLabels(index, """
+            invoke-static {v$model, v$result}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+            move-result-object v$result
+        """.trimIndent())
+    }
+    println("Image-list resolved media: $version -> ${fragment.type}")
+}
+
+private fun BytecodePatchContext.patchWacchoiNgPopupDispatch(version: String) {
+    // These custom popups bypass MenuItem's listener. Match the shared structure
+    // rather than a version-specific obfuscated name, and touch only our action.
+    val candidates = mutableListOf<Pair<ClassDef, Method>>()
+    classDefForEach { classDef ->
+        classDef.methods.filter { method ->
+            method.name == "onItemClick" && method.returnType == "V"
+                && method.parameters.map(CharSequence::toString) == listOf(
+                    "Landroid/widget/AdapterView;", "Landroid/view/View;", "I", "J",
+                )
+        }.forEach { method ->
+            val references = method.implementation?.instructions?.mapNotNull {
+                (it as? ReferenceInstruction)?.reference as? MethodReference
+            }.orEmpty()
+            if (references.any { it.definingClass == "Landroid/view/MenuItem;" && it.name == "getSubMenu" }
+                && references.any { it.name == "dismiss" && it.parameterTypes.isEmpty() }
+                && references.any { it.definingClass == "Landroid/widget/AdapterView;" && it.name == "getItemAtPosition" }
+                && references.any { it.name == "onMenuItemClick" && it.returnType == "Z"
+                    && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;") }) {
+                candidates += classDef to method
+            }
+        }
+    }
+    check(candidates.size == 1) {
+        "Expected one $version custom NG popup dispatcher, found ${candidates.map { it.first.type }}"
+    }
+    val (popupOwner, popupMethod) = candidates.single()
+    val popupClick = mutableClassDefBy(popupOwner).findMutableMethodOf(popupMethod)
+    val nativeClick = popupClick.implementation!!.instructions.withIndex().single {
+        val reference = (it.value as? ReferenceInstruction)?.reference as? MethodReference
+        reference?.name == "onMenuItemClick" && reference.returnType == "Z"
+            && reference.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
+    }
+    val selectedItemRegister = (nativeClick.value as FiveRegisterInstruction).registerD
+    popupClick.addInstructionsWithLabels(nativeClick.index, """
+        invoke-static/range {v$selectedItemRegister .. v$selectedItemRegister}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->dispatchSuffixNgItem(Ljava/lang/Object;)Z
+        move-result p3
+        if-eqz p3, :nativePopupClick
+        return-void
+        :nativePopupClick
+        nop
+    """.trimIndent())
+    println("Wacchoi NG popup dispatch: $version -> ${popupOwner.type}")
+}
+
+/** 191 builds its name and response menus separately, both from the selected response. */
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLongPressMenu() {
     val owner = "Lo/pa;"
     // Name/SLIP long presses use c(Response, boolean, boolean), independently
@@ -5452,6 +5588,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseB
         """)
         // The 242 row renderer also inlines extraction, bypassing the model getter.
         classDefForEach { owner ->
+            // The gallery has its own common-loop hook, including cache reuse.
+            // Do not also expand its uncached extraction branch here.
+            if (owner.type == "Lo/getWrappedCursor;") return@classDefForEach
             val candidates = owner.methods.filter { method ->
                 method.implementation?.instructions?.any { instruction ->
                     val field = (instruction as? ReferenceInstruction)?.reference as? FieldReference
