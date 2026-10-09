@@ -14,12 +14,12 @@ public final class WacchoiSuffixNg {
 
     public static String suffix(String query) {
         if (query == null) return null;
-        Matcher match = Pattern.compile("(?i)(?<![a-z0-9])[a-f0-9]{4}-([^\\s()（）<>]{4})(?=$|[\\s()（）<>])").matcher(query);
+        Matcher match = Pattern.compile("(?<![A-Za-z0-9])[A-Za-z0-9]{4}-([^\\s()（）<>]{4})(?=$|[\\s()（）<>])").matcher(query);
         return match.find() ? match.group(1) : null;
     }
 
     public static String expression(String suffix) {
-        return "(?<![A-Za-z0-9])[0-9A-Fa-f]{4}-(?-i:" + Pattern.quote(suffix)
+        return "(?<![A-Za-z0-9])[A-Za-z0-9]{4}-(?-i:" + Pattern.quote(suffix)
                 + ")(?=$|[\\s()（）<>])";
     }
 
@@ -51,6 +51,7 @@ public final class WacchoiSuffixNg {
             Class<?> storeType = Class.forName("jp.syoboi.a2chMate.ng.NGWord", false, loader);
             Class<?> itemType = Class.forName("jp.syoboi.a2chMate.ng.NGWord$Item", false, loader);
             Object store = null;
+            Object nameType = null;
             Class<?> appType = context.getApplicationContext().getClass();
             for (Method method : appType.getDeclaredMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
@@ -63,6 +64,7 @@ public final class WacchoiSuffixNg {
                 if (name == null) continue;
                 method.setAccessible(true);
                 store = method.invoke(null, name);
+                nameType = name;
                 break;
             }
             if (store == null) throw new IllegalStateException("Native NGName provider unavailable");
@@ -81,6 +83,7 @@ public final class WacchoiSuffixNg {
                     if (Modifier.isStatic(field.getModifiers()) || field.getType() != String.class) continue;
                     field.setAccessible(true);
                     if (regex.equals(field.get(existing))) {
+                        notifyLegacyNameChange(loader, nameType, itemType, existing);
                         Toast.makeText(context, "同じ条件が既に登録されています", Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -104,10 +107,22 @@ public final class WacchoiSuffixNg {
             if (update == null) throw new IllegalStateException("Native NGName registration unavailable");
             update.setAccessible(true);
             update.invoke(store, null, item);
+            notifyLegacyNameChange(loader, nameType, itemType, item);
             Toast.makeText(context, "NGNameに登録しました", Toast.LENGTH_SHORT).show();
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("Haiagaru", "Cannot register Wacchoi suffix NG", error);
             Toast.makeText(context, "NGNameに登録できませんでした", Toast.LENGTH_LONG).show();
         }
+    }
+
+    /** 191 persists the item but does not notify the displayed response list itself. */
+    private static void notifyLegacyNameChange(ClassLoader loader, Object nameType,
+            Class<?> itemType, Object item) throws ReflectiveOperationException {
+        if (!"o.mgExternalSyntheticLambda3".equals(nameType.getClass().getName())) return;
+        Class<?> changeType = Class.forName("o.MaxNativeAdLoaderImplcExternalSyntheticLambda0", false, loader);
+        Object change = changeType.getConstructor(nameType.getClass(), itemType, itemType)
+                .newInstance(nameType, null, item);
+        Object event = Class.forName("o.setRequestListener", false, loader).getField("f").get(null);
+        event.getClass().getMethod("b", Object.class).invoke(event, change);
     }
 }

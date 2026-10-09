@@ -5,7 +5,7 @@ import javax.tools.ToolProvider;
 public class VerifyImgurAlbum {
     public static void main(String[] args) throws Exception {
         String source = Files.readString(Path.of("extensions/chmate/src/main/java/app/morphe/extension/chmate/ImgurAlbumAttachments.java"));
-        String patterns = source.substring(source.indexOf("    private static final Pattern META"),
+        String patterns = source.substring(source.indexOf("    private static final Pattern ALBUM"),
                 source.indexOf("    private static final ExecutorService"));
         String parser = source.substring(source.indexOf("    public static String imageFromHtml"),
                 source.indexOf("    public static String[] imagesFromJson"));
@@ -17,6 +17,17 @@ public class VerifyImgurAlbum {
                 throw new AssertionError("Parser compilation failed");
             try (var loader = new java.net.URLClassLoader(new java.net.URL[]{temp.toUri().toURL()})) {
                 var method = loader.loadClass("ImgurParser").getMethod("imageFromHtml", String.class);
+                var albumField = loader.loadClass("ImgurParser").getDeclaredField("ALBUM");
+                albumField.setAccessible(true);
+                var album = (java.util.regex.Pattern) albumField.get(null);
+                for (String prefix : new String[]{"", "ttps://", "ttp://", "//", "https://", "http://"}) {
+                    var match = album.matcher(prefix + "imgur.com/a/K2De8");
+                    if (!match.find() || !"K2De8".equals(match.group(1))) throw new AssertionError("Incomplete album URL: " + prefix);
+                }
+                for (String bad : new String[]{"https://evil.imgur.com/a/K2De8", "ftp://imgur.com/a/K2De8",
+                        "https://imgur.com.evil/a/K2De8", "user@imgur.com/a/K2De8"}) {
+                    if (album.matcher(bad).find()) throw new AssertionError("Invalid album URL: " + bad);
+                }
                 String[][] cases = {
                     {"<meta property=\"og:image\" content=\"https://i.imgur.com/LWkGnaI.png?fb\">", "https://i.imgur.com/LWkGnaI.png"},
                     {"<META content='https://i.imgur.com/ABC.jpg#x' property='og:image'>", "https://i.imgur.com/ABC.jpg"},
