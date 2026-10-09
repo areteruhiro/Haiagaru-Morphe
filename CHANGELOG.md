@@ -4,6 +4,22 @@
 > Format inspired by Morphe patches CHANGELOG.
 > Release dates and commit links are omitted because they are not present in the supplied source history.
 
+## [1.7.8]
+
+**Channel:** Prerelease
+
+* 241／242 devで、未読スレを読んで一覧に戻っても左下の未読合計が残る問題を修正。
+* 既読変更の通知に追従して合計を再計算します。未読数を一律に0へ変更する処理ではありません。
+* 両バージョンで実機検証済み。詳細は[更新内容](docs/release-1.7.8.md)をご覧ください。
+
+## [1.7.7]
+
+**Channel:** Prerelease
+
+* Instagram／X／Imgurの添付メディア取得、スレタイの行間設定、ワッチョイ末尾4文字でのNGName登録を追加。
+* 191／226の画像回転ボタンとエッヂの必死チェッカーメニューを改善。
+* 詳細は[更新内容](docs/release-1.7.7.md)をご覧ください。
+
 ## [1.7.6]
 
 **Channel:** Prerelease

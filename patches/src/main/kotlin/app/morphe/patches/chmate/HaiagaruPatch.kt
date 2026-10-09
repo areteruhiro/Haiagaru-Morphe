@@ -955,12 +955,54 @@ private fun BytecodePatchContext.patchReadThreadsFirst(version: String) {
     }
 }
 
+/** Keep every Unit event alive through ChMate's stateIn in the unread total. */
+private fun BytecodePatchContext.patchUnreadToolbarCount(version: String) {
+    val legacy = version == "0.8.10.241"
+    if (!legacy && version != "0.8.10.242 dev") return
+    val owner = "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListViewModel"
+    val flow = if (legacy) "Lo/zzayl;" else "Lo/zzcol;"
+    val stateInOwner = if (legacy) "Lo/zzazCC;" else "Lo/zzcoo;"
+    val stateType = if (legacy) "Lo/zzazi;" else "Lo/zzcpr;"
+    val sourceSuffix = if (legacy) "addOnConfigurationChangedListener" else "addContentView"
+    val combineSuffix = if (legacy) "addOnPictureInPictureModeChangedListener" else "addOnUserLeaveHintListener"
+    val source = mutableClassDefBy("$owner\$$sourceSuffix;").methods.single { it.name == "invokeSuspend" }
+    val instructions = source.implementation!!.instructions
+    val stateIn = instructions.withIndex().filter { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == stateInOwner && ref.parameterTypes.size == 4 &&
+            ref.parameterTypes.first().toString() == flow && ref.returnType == stateType
+    }.single()
+    val call = stateIn.value as? FiveRegisterInstruction
+        ?: error("$version unread-count stateIn register layout changed")
+    // The fourth argument is the initial Unit; reuse it as scratch, then restore
+    // it before stateIn. No new register or coroutine state is necessary.
+    val unit = if (legacy) "Lo/zzagp;" else "Lo/zzbwq;"
+    source.addInstructionsWithLabels(stateIn.index, """
+        const-string v${call.registerF}, "${flow.substring(1, flow.length - 1).replace('/', '.')}"
+        invoke-static {v${call.registerC}, v${call.registerF}}, Lapp/morphe/extension/chmate/ReadCountEvents;->distinct(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+        move-result-object v${call.registerC}
+        check-cast v${call.registerC}, $flow
+        sget-object v${call.registerF}, $unit->INSTANCE:$unit
+    """.trimIndent())
+    // The combine ignores its event argument. Its bridge must accept the unique
+    // tokens as well as the initial Unit instead of casting every token to Unit.
+    val combine = mutableClassDefBy("$owner\$$combineSuffix;").methods.single {
+        it.parameters.size == 4 && it.returnType == "Ljava/lang/Object;"
+    }
+    val cast = combine.implementation!!.instructions.withIndex().filter { (_, instruction) ->
+        instruction.opcode == Opcode.CHECK_CAST &&
+            ((instruction as? ReferenceInstruction)?.reference as? TypeReference)?.type == unit
+    }.single()
+    combine.replaceInstruction(cast.index, "nop")
+}
+
 private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
     extendWith("extensions/chmate.mpe")
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
+        patchUnreadToolbarCount(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
 
         val readManager = when (packageMetadata.versionName) {
