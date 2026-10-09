@@ -27,6 +27,29 @@ public final class WacchoiLongPressMenu {
 
     private WacchoiLongPressMenu() {}
 
+    /** Custom popups bypass MenuItem's listener and call their own dispatcher. */
+    public static boolean dispatchSuffixNgItem(Object itemObject) {
+        if (!(itemObject instanceof MenuItem)) return false;
+        MenuItem item = (MenuItem) itemObject;
+        if (item.getItemId() != 76) return false;
+        try {
+            for (Class<?> type = item.getClass(); type != null; type = type.getSuperclass()) {
+                for (Field field : type.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())
+                            || !MenuItem.OnMenuItemClickListener.class.isAssignableFrom(field.getType())) continue;
+                    field.setAccessible(true);
+                    Object listener = field.get(item);
+                    if (listener instanceof MenuItem.OnMenuItemClickListener) {
+                        return ((MenuItem.OnMenuItemClickListener) listener).onMenuItemClick(item);
+                    }
+                }
+            }
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            android.util.Log.w("Haiagaru", "Cannot dispatch Wacchoi suffix NG menu", error);
+        }
+        return false;
+    }
+
     /** Name/SLIP bottom sheets use a list builder instead of android.view.Menu. */
     public static void appendNameSheet(Object model, Object builder, Object boardId, String selected) {
         String query = queryInText(selected);
