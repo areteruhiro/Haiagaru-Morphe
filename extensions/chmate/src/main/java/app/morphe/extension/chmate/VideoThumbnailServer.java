@@ -24,6 +24,7 @@ final class VideoThumbnailServer {
     static synchronized String register(String key, File file) throws IOException {
         if (server == null) {
             server = new ServerSocket(0, 8, InetAddress.getByName("127.0.0.1"));
+            HttpsTransport.registerThumbnailServerPort(server.getLocalPort());
             Thread worker = new Thread(() -> {
                 while (!server.isClosed()) {
                     try (Socket client = server.accept()) { serve(client); }

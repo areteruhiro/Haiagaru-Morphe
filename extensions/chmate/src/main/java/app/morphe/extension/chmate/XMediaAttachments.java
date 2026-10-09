@@ -17,9 +17,13 @@ public final class XMediaAttachments {
                 }
             });
     private static final Pattern POST = Pattern.compile(
-            "https?://(?:(?:www|mobile)\\.)?(?:x\\.com|twitter\\.com)/(?:[A-Za-z0-9_]+/status|i/web/status)/(\\d+)(?!\\d)");
+            "(?<![A-Za-z0-9_./:@-])(?:(?:https?|ttps?)://|//)?"
+                    + "(?:(?:www|mobile)\\.)?(?:x\\.com|twitter\\.com)/"
+                    + "(?:[A-Za-z0-9_]+/status|i/web/status)/(\\d+)(?=[/?#\\s<>\"'()（）]|$)",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern DIRECT = Pattern.compile(
-            "https://video\\.twimg\\.com/[^\\s<>\"']+", Pattern.CASE_INSENSITIVE);
+            "(?<![A-Za-z0-9_./:@-])(?:(?:https?|ttps?)://|//)?"
+                    + "video\\.twimg\\.com/[^\\s<>\"']+", Pattern.CASE_INSENSITIVE);
 
     private XMediaAttachments() {}
 
@@ -48,6 +52,7 @@ public final class XMediaAttachments {
 
     public static String[] postIds(String body) {
         LinkedHashSet<String> ids = new LinkedHashSet<>();
+        if (body == null) return new String[0];
         Matcher matcher = POST.matcher(body);
         while (matcher.find() && ids.size() < 8) ids.add(matcher.group(1));
         return ids.toArray(new String[0]);
@@ -55,9 +60,14 @@ public final class XMediaAttachments {
 
     public static String[] directVideos(String body) {
         LinkedHashSet<String> urls = new LinkedHashSet<>();
+        if (body == null) return new String[0];
         Matcher matcher = DIRECT.matcher(body);
         while (matcher.find() && urls.size() < 8) {
             String url = matcher.group().replace("&amp;", "&");
+            // Only the recognized, exact media host is repaired. Keep the
+            // response text unchanged and always fetch the video over HTTPS.
+            int host = url.toLowerCase(java.util.Locale.ROOT).indexOf("video.twimg.com/");
+            url = "https://" + url.substring(host);
             if (validMedia(url, true)) urls.add(url);
         }
         return urls.toArray(new String[0]);

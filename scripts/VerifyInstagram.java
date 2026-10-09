@@ -27,6 +27,17 @@ public class VerifyInstagram {
                 if (((String[]) parse.invoke(null,html,"Other")).length != 0) throw new AssertionError("shortcode mismatch");
                 var urls = parser.getMethod("postIds",String.class);
                 if (((String[])urls.invoke(null,"https://www.instagram.com/p/Test/ https://instagram.com/reel/Test/")).length != 1) throw new AssertionError("dedup");
+                for (String prefix : new String[]{"", "ttps://", "ttp://", "//", "http://", "https://"}) {
+                    String url = prefix + "www.instagram.com/p/DeLi00MEntO/";
+                    if (!java.util.Arrays.equals((String[])urls.invoke(null,url),new String[]{"DeLi00MEntO"}))
+                        throw new AssertionError("Incomplete Instagram URL: " + url);
+                }
+                for (String bad : new String[]{"https://evil.instagram.com/p/Test/", "evilinstagram.com/p/Test/",
+                        "https://instagram.com.evil/p/Test/", "ftp://instagram.com/p/Test/", "user@instagram.com/p/Test/"}) {
+                    if (((String[])urls.invoke(null,bad)).length != 0) throw new AssertionError("Invalid Instagram URL: " + bad);
+                }
+                if (((String[])urls.invoke(null,"www.instagram.com/p/Test/ ttps://www.instagram.com/p/Test/")).length != 1)
+                    throw new AssertionError("Incomplete Instagram dedup");
                 if ((boolean)parser.getMethod("validMedia",String.class,boolean.class).invoke(null,"https://s.fbcdn.net.evil/a.jpg",false)) throw new AssertionError("unsafe host");
                 if (args.length > 0) {
                     var request = java.net.http.HttpRequest.newBuilder(URI.create("https://www.instagram.com/p/DeLi00MEntO/embed/")).header("User-Agent","Mozilla/5.0").timeout(java.time.Duration.ofSeconds(30)).GET().build();

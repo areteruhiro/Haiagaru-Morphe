@@ -40,6 +40,15 @@ internal fun BytecodePatchContext.patchHttpsTransport() {
                         ?.takeIf { instruction.opcode == Opcode.IGET_OBJECT
                             && it.definingClass == classDef.type && it.type == "Ljava/lang/String;" }
                 } ?: error("HTTPS: missing OkHttp scheme in ${classDef.type}")
+                // Both Kotlin and Java builders null-check scheme and host.
+                // Credential/fragment strings must never identify the endpoint.
+                val host = instructions.withIndex().firstNotNullOfOrNull { (index, instruction) ->
+                    ((instruction as? ReferenceInstruction)?.reference as? FieldReference)
+                        ?.takeIf { instruction.opcode == Opcode.IGET_OBJECT
+                            && it.definingClass == classDef.type && it.type == "Ljava/lang/String;"
+                            && it.name != scheme.name
+                            && instructions.getOrNull(index + 1)?.opcode in listOf(Opcode.IF_EQZ, Opcode.IF_NEZ) }
+                } ?: error("HTTPS: missing checked OkHttp host in ${classDef.type}")
                 val port = classDef.instanceFields.singleOrNull { it.type == "I" }
                     ?: error("HTTPS: ambiguous OkHttp port in ${classDef.type}")
                 check(method.implementation!!.registerCount >= 3) {
@@ -50,6 +59,14 @@ internal fun BytecodePatchContext.patchHttpsTransport() {
                     0,
                     """
                         move-object/from16 v1, p0
+                        iget-object v0, v1, $host
+                        iget v2, v1, ${classDef.type}->${port.name}:I
+                        invoke-static { v0, v2 }, $HTTPS->isLocalThumbnailEndpoint(Ljava/lang/String;I)Z
+                        move-result v0
+                        # Small SDK builders alias p0 with v2. Restore the receiver
+                        # before either branch resumes the original implementation.
+                        move-object/16 p0, v1
+                        if-nez v0, :haiagaru_original_https_builder
                         iget-object v0, v1, $scheme
                         invoke-static { v0 }, $HTTPS->shouldUpgrade(Ljava/lang/String;)Z
                         move-result v0
