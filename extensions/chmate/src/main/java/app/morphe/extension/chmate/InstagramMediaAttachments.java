@@ -11,7 +11,9 @@ import org.json.JSONTokener;
 /** Public embed data only: no login, cookies, private-post access or mirror services. */
 public final class InstagramMediaAttachments {
     private static final Pattern POST = Pattern.compile(
-            "https?://(?:www\\.)?instagram\\.com/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)(?=[/?#\\s<>\"']|$)");
+            "(?<![A-Za-z0-9_./:@-])(?:(?:https?|ttps?)://|//)?"
+                    + "(?:www\\.)?instagram\\.com/(?:p|reel|reels|tv)/([A-Za-z0-9_-]+)(?=[/?#\\s<>\"'()（）]|$)",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern CONTEXT = Pattern.compile(
             "\"contextJSON\"\\s*:\\s*(\"(?:\\\\.|[^\"\\\\])*+\")");
     private static final Pattern META = Pattern.compile("<meta\\b[^>]*>", Pattern.CASE_INSENSITIVE);
@@ -22,6 +24,7 @@ public final class InstagramMediaAttachments {
 
     public static String[] postIds(String body) {
         LinkedHashSet<String> ids = new LinkedHashSet<>();
+        if (body == null) return new String[0];
         Matcher matches = POST.matcher(body);
         while (matches.find() && ids.size() < 8) ids.add(matches.group(1));
         return ids.toArray(new String[0]);

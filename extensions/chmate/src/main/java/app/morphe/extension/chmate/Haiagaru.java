@@ -135,6 +135,7 @@ public final class Haiagaru {
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
     private static final String HISSI_VIEWER_FULLSCREEN_KEY = "hissiViewerFullscreen";
+    private static final String DEDICATED_VIEWER_ENABLED_KEY = "dedicatedViewerEnabled";
     private static final String HISSI_VIEWER_SWIPE_HISTORY_KEY = "hissiViewerSwipeHistory";
     private static final String HISSI_VIEWER_TOOLBAR_BUTTONS_KEY = "hissiViewerToolbarButtons";
     private static final String KYODEMO_ENHANCED_VIEWER_KEY = "kyodemoEnhancedViewer";
@@ -3268,6 +3269,18 @@ public final class Haiagaru {
                     preferences.getBoolean("topAlignShortThreads", false));
         }
         final Switch topAlignShortThreadsSwitch = topAlignShortThreads;
+        EditText autoReloadIntervalField = null;
+        if (LegacyAutoReload.supported(activity)) {
+            autoReloadIntervalField = addTextField(layout, activity,
+                    text("自動リロードの最小間隔（秒、10〜1800）", "Minimum auto-reload interval (seconds, 10–1800)"),
+                    Integer.toString(autoReloadIntervalSeconds()));
+            autoReloadIntervalField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            TextView autoReloadHelp = new TextView(activity);
+            autoReloadHelp.setText(text("自動スクロールを長押しで開始／停止。現在位置からスクロールし、末尾で待って更新します。新着がない場合は間隔が延びます。板の更新制限を優先し、画面を離れると停止します。",
+                    "Long-press auto-scroll to start/stop. Scrolls from the current position, then waits at the bottom before reloading. Empty updates increase the interval. Board limits are respected; leaving the screen stops it."));
+            layout.addView(autoReloadHelp);
+        }
+        final EditText autoReloadInterval = autoReloadIntervalField;
         String[] titleSpacingChoices = new String[21];
         for (int index = 0; index < titleSpacingChoices.length; index++)
             titleSpacingChoices[index] = (100 + index * 5) + "%";
@@ -3275,6 +3288,30 @@ public final class Haiagaru {
         Spinner threadTitleSpacing = addSpinner(layout, activity,
                 text("スレ一覧のタイトル行間（標準に対する割合）", "Thread-list title line spacing (relative to default)"),
                 titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
+        String[] postSizeChoices = new String[29];
+        postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
+        for (int index = 1; index < 28; index++)
+            postSizeChoices[index] = (index + 9) + " sp";
+        postSizeChoices[28] = text("その他（任意のサイズ）", "Other (custom size)");
+        final float initialPostSize = postEditorTextSizeSp();
+        Spinner postEditorTextSize = addSpinner(layout, activity,
+                text("書き込み画面の文字サイズ（本文・名前・メール・スレタイ）", "Posting text size (body, name, email, title)"),
+                postSizeChoices, PostEditorSizeValue.choice(initialPostSize));
+        LinearLayout customPostSizeRow = new LinearLayout(activity);
+        customPostSizeRow.setOrientation(LinearLayout.VERTICAL);
+        layout.addView(customPostSizeRow);
+        EditText customPostSize = addTextField(customPostSizeRow, activity,
+                text("任意の文字サイズ（1〜200sp、小数可）", "Custom text size (1–200sp, decimals allowed)"),
+                Float.toString(initialPostSize == 0 ? 16 : initialPostSize));
+        customPostSize.setInputType(android.text.InputType.TYPE_CLASS_NUMBER
+                | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        customPostSizeRow.setVisibility(PostEditorSizeValue.choice(initialPostSize) == 28 ? View.VISIBLE : View.GONE);
+        postEditorTextSize.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                customPostSizeRow.setVisibility(position == 28 ? View.VISIBLE : View.GONE);
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
 
         Switch replaceUserAgent = addSwitch(
                 layout,
@@ -3336,6 +3373,13 @@ public final class Haiagaru {
                         text("両方（画面上で切り替え）", "Both (switch on the checker screen)")
                 },
                 preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
+        );
+        Switch dedicatedViewerEnabled = addSwitch(
+                layout,
+                activity,
+                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
+                        "Open in dedicated viewer (off: ChMate web view)"),
+                preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
         );
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
@@ -3623,6 +3667,14 @@ public final class Haiagaru {
                 .setCancelable(false)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
+                    int postSizeChoice = postEditorTextSize.getSelectedItemPosition();
+                    float selectedPostSize = postSizeChoice == 0 ? 0 : postSizeChoice == 28
+                            ? PostEditorSizeValue.parse(value(customPostSize)) : postSizeChoice + 9;
+                    if (selectedPostSize < 0) {
+                        Toast.makeText(activity, text("文字サイズは1〜200spの数値で入力してください。設定は保存されませんでした。",
+                                "Enter a text size from 1 to 200sp. Settings were not saved."), Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     boolean legacyPlusChanged = false;
                     if (legacyPlusSupported) {
                         SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
@@ -3698,7 +3750,11 @@ public final class Haiagaru {
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
+                            .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
+                            .putInt("autoReloadInterval", autoReloadInterval == null ? autoReloadIntervalSeconds()
+                                    : Math.max(10, boundedMediaSetting(value(autoReloadInterval), autoReloadIntervalSeconds(), 1800)))
                             .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
+                            .putFloat("postEditorCustomTextSizeSp", selectedPostSize)
                             .putInt("urlVideoFetchMode", mediaAutoFetch.getSelectedItemPosition())
                             .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
                             .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
@@ -4492,6 +4548,12 @@ public final class Haiagaru {
         return mode < 0 || mode > 3 ? 0 : mode;
     }
 
+    /** Runtime display choice. Keep patch-time availability separate for URL expansion. */
+    public static boolean dedicatedViewerEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true);
+    }
+
     /** Returns whether the patch-time dedicated checker Activity was registered. */
     public static boolean dedicatedCheckerViewerAvailable() {
         Context context = applicationContext;
@@ -4518,10 +4580,23 @@ public final class Haiagaru {
         return mode >= 0 && mode <= 3 ? mode : 1;
     }
 
+    public static int autoReloadIntervalSeconds() {
+        SharedPreferences prefs = preferencesOrNull();
+        return Math.max(10, Math.min(1800, prefs == null ? 10 : prefs.getInt("autoReloadInterval", 10)));
+    }
+
     public static int threadTitleSpacingPercent() {
         SharedPreferences prefs = preferencesOrNull();
         int percent = prefs == null ? 100 : prefs.getInt("threadTitleSpacingPercent", 100);
         return Math.max(100, Math.min(200, percent)) / 5 * 5;
+    }
+
+    public static float postEditorTextSizeSp() {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs == null) return 0;
+        float size = prefs.contains("postEditorCustomTextSizeSp")
+                ? prefs.getFloat("postEditorCustomTextSizeSp", 0) : prefs.getInt("postEditorTextSizeSp", 0);
+        return PostEditorSizeValue.valid(size) ? size : 0;
     }
 
     public static boolean mediaImageFetchEnabled() {

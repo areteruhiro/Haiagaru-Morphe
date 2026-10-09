@@ -30,16 +30,20 @@ public final class WacchoiLongPressMenu {
     /** Name/SLIP bottom sheets use a list builder instead of android.view.Menu. */
     public static void appendNameSheet(Object model, Object builder, Object boardId, String selected) {
         String query = queryInText(selected);
-        if (query == null || builder == null || boardId == null) return;
+        if (query == null || builder == null) return;
         SearchContext found = new SearchContext();
         readBoard(boardId, found);
-        // The NG scope BoardID may omit its server. In 242 the selected
-        // thread URL lives in the view-model's af StateFlow.
+        // The NG scope BoardID may omit its server. Resolve only the current
+        // thread flow; never scan other loaded responses for a poster's token.
         if (found.host == null || found.board == null) {
             Object currentThread = invokeNoArg(fieldValue(model, "af"), "d");
+            if (currentThread == null) currentThread = invokeNoArg(fieldValue(model, "ab"), "b");
+            if (currentThread == null && model != null
+                    && "o.getImgAcceptedHeight".equals(model.getClass().getName())) {
+                currentThread = invokeNoArg(fieldValue(model, "d"), "c");
+            }
             if (currentThread != null) readBoard(currentThread, found);
         }
-        if (found.host == null || found.board == null) return;
         try {
             Context context = null;
             for (Field field : builder.getClass().getDeclaredFields()) {
@@ -58,12 +62,14 @@ public final class WacchoiLongPressMenu {
                     .putExtra("haiagaru.wacchoi.board", found.board);
             for (Method method : builder.getClass().getDeclaredMethods()) {
                 Class<?>[] types = method.getParameterTypes();
-                if (Modifier.isStatic(method.getModifiers()) || types.length != 6
+                boolean hasIcon = types.length == 6 && types[4] == Integer.class;
+                if (Modifier.isStatic(method.getModifiers()) || (!hasIcon && types.length != 5)
                         || types[0] != String.class || types[1] != String.class
                         || types[2] != boolean.class || types[3] != boolean.class
-                        || types[4] != Integer.class || !types[5].isInterface()) continue;
+                        || !types[types.length - 1].isInterface()) continue;
+                Class<?> callbackType = types[types.length - 1];
                 Object callback = java.lang.reflect.Proxy.newProxyInstance(
-                        types[5].getClassLoader(), new Class<?>[]{types[5]}, (proxy, invoked, args) -> {
+                        callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
                             if (invoked.getDeclaringClass() == Object.class) {
                                 if ("hashCode".equals(invoked.getName())) return System.identityHashCode(proxy);
                                 if ("equals".equals(invoked.getName())) return proxy == args[0];
@@ -75,11 +81,13 @@ public final class WacchoiLongPressMenu {
                             return null;
                         });
                 method.setAccessible(true);
-                method.invoke(builder, "ﾜｯﾁｮｲで検索", null, true, false,
-                        Integer.valueOf(android.R.drawable.ic_menu_search), callback);
+                if (found.host != null && found.board != null) {
+                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲで検索",
+                            android.R.drawable.ic_menu_search, callback);
+                }
                 if (WacchoiSuffixNg.suffix(query) != null) {
                     Object ngCallback = java.lang.reflect.Proxy.newProxyInstance(
-                            types[5].getClassLoader(), new Class<?>[]{types[5]}, (proxy, invoked, args) -> {
+                            callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
                                 if (invoked.getDeclaringClass() == Object.class) {
                                     if ("hashCode".equals(invoked.getName())) return System.identityHashCode(proxy);
                                     if ("equals".equals(invoked.getName())) return proxy == args[0];
@@ -89,14 +97,20 @@ public final class WacchoiLongPressMenu {
                                     WacchoiSuffixNg.confirm(launchContext, query);
                                 return null;
                             });
-                    method.invoke(builder, "ﾜｯﾁｮｲ下4桁でNGName登録", null, true, false,
-                            Integer.valueOf(android.R.drawable.ic_menu_delete), ngCallback);
+                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁でNGName登録",
+                            android.R.drawable.ic_menu_delete, ngCallback);
                 }
                 return;
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("Haiagaru", "Cannot append Wacchoi name menu", error);
         }
+    }
+
+    private static void appendSheetItem(Method method, Object builder, boolean hasIcon,
+            String title, int icon, Object callback) throws ReflectiveOperationException {
+        if (hasIcon) method.invoke(builder, title, null, true, false, Integer.valueOf(icon), callback);
+        else method.invoke(builder, title, null, true, false, callback);
     }
 
     /** Marks the response-menu builder; its return hook supplies the built menu. */

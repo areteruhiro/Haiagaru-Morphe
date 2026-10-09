@@ -9,6 +9,7 @@ import java.net.URLConnection;
 /** Shared policy for OkHttp and java.net, without changing hostnames or TLS validation. */
 public final class HttpsTransport {
     private static volatile boolean enabled;
+    private static volatile int thumbnailServerPort = -1;
 
     private HttpsTransport() {}
 
@@ -20,13 +21,23 @@ public final class HttpsTransport {
         return enabled && "http".equalsIgnoreCase(scheme);
     }
 
+    /** Only the process-owned, loopback thumbnail server may remain HTTP. */
+    static void registerThumbnailServerPort(int port) {
+        thumbnailServerPort = port > 0 && port <= 65535 ? port : -1;
+    }
+
+    public static boolean isLocalThumbnailEndpoint(String host, int port) {
+        return port > 0 && port == thumbnailServerPort && "127.0.0.1".equals(host);
+    }
+
     /** -1 selects the HTTPS default; nonstandard explicitly selected ports are retained. */
     public static int upgradePort(int port) {
         return port == 80 ? -1 : port;
     }
 
     public static URL upgrade(URL original) throws IOException {
-        if (original == null || !shouldUpgrade(original.getProtocol())) return original;
+        if (original == null || !shouldUpgrade(original.getProtocol())
+                || isLocalThumbnailEndpoint(original.getHost(), original.getPort())) return original;
         String external = original.toExternalForm();
         String upgraded = "https" + external.substring(original.getProtocol().length());
         String authority = original.getAuthority();

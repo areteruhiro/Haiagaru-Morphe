@@ -1030,6 +1030,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchReadThreadsFirst(packageMetadata.versionName)
             patchThreadTitleSpacing(packageMetadata.versionName)
+            patchPostEditorTextSize()
         }
 
         patchNgRegistrationLimit()
@@ -1356,7 +1357,12 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchEdgeReporterHistory(packageMetadata.versionName)
         patchEdgeReporterTitleCopy(packageMetadata.versionName)
         patchWacchoiLongPressMenu(packageMetadata.versionName)
+        if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
+            patchPostVersionInfo(profile.applicationClass)
+        }
         patchImageViewerRotationButton(packageMetadata.versionName)
+        patchLargeImageAlignment(packageMetadata.versionName)
+        patchLegacyAutoReload(packageMetadata.versionName)
         patchXVideoAttachmentProjection()
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
@@ -1909,15 +1915,60 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchPreIoHissiMenu(
     )
 }
 
+/** Add the bundle version to the explicit version/device information insertion. */
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchPostVersionInfo(applicationClass: String) {
+    val owner = mutableClassDefBy(applicationClass)
+    val method = owner.methods.single { method ->
+        method.returnType in setOf("Ljava/lang/String;", "Ljava/lang/Object;") && method.implementation?.instructions?.any {
+            val text = ((it as? ReferenceInstruction)?.reference as? StringReference)?.string
+            text?.startsWith("2chMate ") == true
+        } == true
+    }
+    val instructions = method.implementation!!.instructions.toList()
+    val prefixIndex = instructions.indexOfFirst {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string?.startsWith("2chMate ") == true
+    }
+    // 242 builds this text inside a shared Object-returning dispatcher. Hook
+    // only this StringBuilder result, never all returns of that dispatcher.
+    fun receiver(instruction: com.android.tools.smali.dexlib2.iface.instruction.Instruction): Int? = when (instruction) {
+        is FiveRegisterInstruction -> instruction.registerC
+        is RegisterRangeInstruction -> instruction.startRegister
+        else -> null
+    }
+    val builderInitIndex = instructions.indices.first { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
+        index > prefixIndex && reference?.definingClass == "Ljava/lang/StringBuilder;"
+            && reference.name == "<init>"
+            && reference.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;")
+    }
+    val builderRegister = receiver(instructions[builderInitIndex])
+        ?: error("ChMate version/device StringBuilder constructor changed")
+    val toStringIndex = instructions.indices.first { index ->
+        val reference = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
+        index > builderInitIndex && reference != null
+            && reference.definingClass in setOf("Ljava/lang/StringBuilder;", "Ljava/lang/Object;")
+            && reference.name == "toString" && reference.returnType == "Ljava/lang/String;"
+            && receiver(instructions[index]) == builderRegister
+    }
+    val result = instructions[toStringIndex + 1]
+    check(result.opcode == Opcode.MOVE_RESULT_OBJECT) { "ChMate version/device StringBuilder result changed" }
+    val register = (result as OneRegisterInstruction).registerA
+    owner.findMutableMethodOf(method).addInstructionsWithLabels(toStringIndex + 2, """
+        invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/PostVersionInfo;->append(Ljava/lang/String;)Ljava/lang/String;
+        move-result-object v$register
+    """.trimIndent())
+    println("ChMate version/device information: $applicationClass->${method.name}")
+}
+
 /** Install the Wacchoi item alongside ChMate's custom response-menu actions. */
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressMenu(
     versionName: String,
 ) {
-    if (versionName == "0.8.10.242 dev") {
-        val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
+    if (versionName == "0.8.10.226 dev") {
+        val owner = "Lo/getImgAcceptedHeight;"
         val method = mutableClassDefBy(owner).methods.single { method ->
             method.returnType == "V" && method.parameters.map(CharSequence::toString) == listOf(
-                owner, "Lo/isDataValid;", "Ljp/syoboi/a2chMate/client/BoardID;", "Ljava/lang/String;",
+                owner, "Lo/setDomStorageEnabled;", "Ljp/syoboi/a2chMate/client/BoardID;", "Ljava/lang/String;",
             ) && method.implementation?.instructions?.any {
                 ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "NGName"
             } == true
@@ -1925,8 +1976,25 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         mutableClassDefBy(owner).findMutableMethodOf(method).addInstructionsWithLabels(0, """
             invoke-static/range {p0 .. p3}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendNameSheet(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V
         """.trimIndent())
-        println("Wacchoi name-sheet hook: ${method.name}")
-        return
+        println("Wacchoi 226 name-sheet hook: ${method.name}")
+        // Keep the response-body menu hook below as well.
+    }
+    if (versionName == "0.8.10.241" || versionName == "0.8.10.242 dev") {
+        val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
+        val sheetBuilder = if (versionName == "0.8.10.241") "Lo/OnUserEarnedRewardListener;" else "Lo/isDataValid;"
+        val method = mutableClassDefBy(owner).methods.single { method ->
+            method.returnType == "V" && method.parameters.map(CharSequence::toString) == listOf(
+                owner, sheetBuilder, "Ljp/syoboi/a2chMate/client/BoardID;", "Ljava/lang/String;",
+            ) && method.implementation?.instructions?.any {
+                ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "NGName"
+            } == true
+        }
+        mutableClassDefBy(owner).findMutableMethodOf(method).addInstructionsWithLabels(0, """
+            invoke-static/range {p0 .. p3}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendNameSheet(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/String;)V
+        """.trimIndent())
+        println("Wacchoi $versionName name-sheet hook: ${method.name}")
+        if (versionName == "0.8.10.242 dev") return
+        // 241 also retains the response-body menu hook below.
     }
     if (versionName == "0.8.10.191 dev") {
         patchLegacyWacchoiLongPressMenu()
@@ -2141,6 +2209,156 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentP
         count++
     }
     println("X video attachment factories: $count")
+}
+
+/** The draft's pixel scale must not determine the original content's screen centre. */
+/** Keep stock board validation and reload events, but replace the modern tailing
+ * start with bottom-only automatic scrolling. Never emit a tailing state, so
+ * neither the forced sort nor the forced jump-to-bottom collector runs. */
+private fun BytecodePatchContext.patchPostEditorTextSize() {
+    val activity = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResEditActivity;")
+    val resume = activity.methods.single { it.name == "onResume" && it.parameterTypes.isEmpty() && it.returnType == "V" }
+    val returns = resume.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.RETURN_VOID) index else null
+    }
+    check(returns.isNotEmpty()) { "Posting activity resume exit missing" }
+    returns.asReversed().forEach { index ->
+        resume.addInstructionsWithLabels(index,
+            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/PostEditorTextSize;->apply(Landroid/app/Activity;)V")
+    }
+    println("Posting editor configurable text size: ${returns.size} resume exits")
+}
+
+private fun BytecodePatchContext.patchLegacyAutoReload(version: String) {
+    val v241 = when (version) {
+        "0.8.10.241" -> true
+        "0.8.10.242 dev" -> false
+        else -> return
+    }
+    val extension = "Lapp/morphe/extension/chmate/LegacyAutoReload;"
+    val fragmentType = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;"
+    val controllerType = if (v241) "Lo/getAvailableFeatures;" else "Lo/zzaeg;"
+    val minimumField = if (v241) "g" else "j"
+    val fragment = mutableClassDefBy(fragmentType)
+    val base = mutableClassDefBy("Ljp/syoboi/a2chMate/fragment/RoidonListFragment;")
+    listOf(if (v241) "q" else "r", "p").forEach { name ->
+        check(base.methods.count { it.name == name && it.parameterTypes.isEmpty() && it.returnType == "V" } == 1)
+    }
+    check(fragment.fields.any { it.name == (if (v241) "m" else "n") && it.type == "Landroidx/recyclerview/widget/RecyclerView;" })
+    check(fragment.fields.any { it.name == (if (v241) "s" else "t") })
+    val model = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;")
+    check(model.methods.count { it.name == "b" && it.parameterTypes.map(CharSequence::toString) == listOf("Z") && it.returnType == "Z" } == 1)
+    check(model.fields.any { it.name == (if (v241) "al" else "ai") })
+    val longClick = fragment.methods.single {
+        it.name == "onLongClick" && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/View;")
+    }
+    val original = longClick.implementation!!.instructions.toList()
+    check(longClick.implementation!!.registerCount == if (v241) 16 else 15)
+    check(mutableClassDefBy(controllerType).fields.any { it.name == minimumField && it.type == "J" })
+    val starts = original.mapIndexedNotNull { index, instruction ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (ref?.definingClass == controllerType && ref.name == "d" && ref.returnType == "V"
+            && ref.parameterTypes.size == 1) index else null
+    }
+    val defaults = original.mapIndexedNotNull { index, instruction ->
+        val literal = (instruction as? NarrowLiteralInstruction)?.narrowLiteral
+        if (literal in setOf(7, 15) && (instruction as? OneRegisterInstruction)?.registerA == 1
+            && instruction.opcode in setOf(Opcode.CONST_4, Opcode.CONST_16)) index else null
+    }
+    val boardClamp = original.mapIndexedNotNull { index, instruction ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (ref?.definingClass == (if (v241) "Lo/zzapi;" else "Lo/zzcfo;")
+            && ref.name == "b" && ref.parameterTypes.map(CharSequence::toString) == listOf("I", "I", "I")
+            && ref.returnType == "I") index else null
+    }
+    check(starts.size == 2 && defaults.size == 2 && boardClamp.size == 1) {
+        "$version auto-reload anchors changed: ${starts.size}/${defaults.size}/${boardClamp.size}"
+    }
+    // Descending edits preserve all original branch labels and other toolbar actions.
+    (starts + defaults + boardClamp).sortedDescending().forEach { index ->
+        when (index) {
+            in starts -> {
+                val call = original[index] as FiveRegisterInstruction
+                check(call.registerC == if (v241) 15 else 14)
+                longClick.replaceInstruction(index, "iget-wide v0, p1, $controllerType->$minimumField:J")
+                longClick.addInstructionsWithLabels(index + 1,
+                    "invoke-static {p0, v0, v1}, $extension->start(Ljava/lang/Object;J)V")
+            }
+            in defaults -> {
+                longClick.replaceInstruction(index, "invoke-static {}, $extension->intervalSeconds()I")
+                longClick.addInstruction(index + 1, "move-result v1")
+            }
+            else -> {
+                val call = original[index] as FiveRegisterInstruction
+                longClick.replaceInstruction(index,
+                    "invoke-static {v${call.registerC}, v${call.registerD}, v${call.registerE}}, " +
+                        "$extension->intervalForBoard(III)I")
+            }
+        }
+    }
+    longClick.addInstructionsWithLabels(0, """
+        invoke-static {p0, p1}, $extension->stopLongPress(Ljava/lang/Object;Landroid/view/View;)Z
+        move-result v0
+        if-eqz v0, :stock_long_press
+        const/4 v0, 0x1
+        return v0
+        :stock_long_press
+        nop
+    """.trimIndent())
+    // Hooks must be at entry: p1 is reused as scratch storage by stock code.
+    val active = fragment.methods.single { it.name == (if (v241) "a" else "e")
+        && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf("Z") }
+    active.addInstructionsWithLabels(0,
+        "invoke-static {p0, p1}, $extension->activeTab(Ljava/lang/Object;Z)V")
+    val scrolling = fragment.methods.single { it.name == (if (v241) "e" else "b")
+        && it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf("Z") }
+    scrolling.addInstructionsWithLabels(0,
+        "invoke-static {p0, p1}, $extension->scrollState(Ljava/lang/Object;Z)V")
+    listOf("onPause", "onDestroyView").forEach { name ->
+        fragment.methods.single { it.name == name && it.parameterTypes.isEmpty() }
+            .addInstructionsWithLabels(0,
+                "invoke-static/range {p0 .. p0}, $extension->stop(Ljava/lang/Object;)V")
+    }
+    val eventType = if (v241) "Lo/honorsDebugCertificates;" else "Lo/zzacz;"
+    val eventKinds = if (v241) listOf("write", "IconCompatParcelizer", "ComponentActivity", "_init_lambda2", "RemoteActionCompatParcelizer", "read")
+        else listOf("RemoteActionCompatParcelizer", "read", "write", "r8lambdawJ5MHcSJed_CjC7r4OWD0UxyJsQ", "IconCompatParcelizer", "ComponentActivity")
+    eventKinds.forEach { mutableClassDefBy(eventType.removeSuffix(";") + "\$" + it + ";") }
+    val eventMethod = fragment.methods.single {
+        it.returnType == "V" && it.parameterTypes.map(CharSequence::toString) == listOf(fragmentType, eventType)
+    }
+    eventMethod.addInstructionsWithLabels(0,
+        "invoke-static {p0, p1}, $extension->event(Ljava/lang/Object;Ljava/lang/Object;)V")
+    println("$version 226-style auto reload: current position, preserved sort, configurable bottom wait")
+}
+
+private fun BytecodePatchContext.patchLargeImageAlignment(version: String) {
+    val (type, methodName) = when (version) {
+        "0.8.10.241" -> "Lo/getCallingPackage;" to "d"
+        "0.8.10.242 dev" -> "Lo/zzbfo;" to "c"
+        else -> return
+    }
+    val method = mutableClassDefBy(type).methods.single {
+        it.name == methodName && it.returnType == "V" &&
+            it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/graphics/Matrix;", "I", "I", "F")
+    }
+    val instructions = method.implementation!!.instructions.toList()
+    // Both verified layouts have five locals. p2/p3 are dead after postScale.
+    check(method.implementation!!.registerCount == 10)
+    val fields = instructions.mapNotNull { (it as? ReferenceInstruction)?.reference as? FieldReference }
+    check(fields.any { it.name == "mImageWidth" && it.type == "I" } &&
+        fields.any { it.name == "mImageHeight" && it.type == "I" })
+    val scaleField = mutableClassDefBy(type).fields.single { it.name == "mScale" && it.type == "F" }
+    val returns = instructions.mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.RETURN_VOID) index else null
+    }
+    check(returns.size == 1)
+    method.addInstructionsWithLabels(returns.single(), """
+        iget v2, p0, $type->mImageWidth:I
+        iget v4, p0, $type->mImageHeight:I
+        iget p2, p0, $scaleField
+        invoke-static {p1, v2, v4, p4, p2}, Lapp/morphe/extension/chmate/LargeImageAlignment;->correct(Landroid/graphics/Matrix;IIFF)V
+    """.trimIndent())
+    println("$version large-image draft centre correction ($type->$methodName)")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotationButton(
@@ -6058,6 +6276,22 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacy5chIoCompat
                 """
             )
         }
+    }
+
+    // Enable multiline form values when the shared parser is initialized, not
+    // only after Talk has been used. Otherwise a 5ch cookie confirmation loses
+    // MESSAGE and is shown as a posting error before cookies can be established.
+    val parserInit = mutableClassDefBy("Lo/getCredentials;").methods.single { it.name == "<clinit>" }
+    val parserCompiles = parserInit.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if (ref?.definingClass == "Ljava/util/regex/Pattern;" && ref.name == "compile" &&
+            ref.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;")) index else null
+    }
+    check(parserCompiles.size == 2) { "191 shared confirmation parser patterns changed" }
+    parserCompiles.asReversed().forEach { index ->
+        val register = (parserInit.implementation!!.instructions[index] as FiveRegisterInstruction).registerC
+        parserInit.replaceInstruction(index,
+            "invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/LegacyPostFormPatterns;->compile(Ljava/lang/String;)Ljava/util/regex/Pattern;")
     }
 
     val confirmationDetector = mutableClassDefBy("Lo/getJsonData;").methods.single { method ->

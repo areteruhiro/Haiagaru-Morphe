@@ -25,7 +25,10 @@ configure<ApplicationExtension> {
 
     defaultConfig {
         minSdk = 21
+        buildConfigField("String", "HAIAGARU_VERSION", "\"${providers.gradleProperty("version").get()}\"")
     }
+
+    buildFeatures.buildConfig = true
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

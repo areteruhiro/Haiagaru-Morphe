@@ -23,7 +23,9 @@ import java.util.regex.Pattern;
 /** Resolves album metadata without changing the posted response text. */
 public final class ImgurAlbumAttachments {
     private static final Pattern ALBUM = Pattern.compile(
-            "https?://(?:www\\.)?imgur\\.com/a/([A-Za-z0-9]+)(?:[/?#][^\\s<>\\\"]*)?");
+            "(?<![A-Za-z0-9_./:@-])(?:(?:https?|ttps?)://|//)?"
+                    + "(?:www\\.)?imgur\\.com/a/([A-Za-z0-9]+)(?=[/?#\\s<>\"'()（）]|$)"
+                    + "(?:[/?#][^\\s<>\\\"]*)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern META = Pattern.compile("<meta\\b[^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern PROPERTY = Pattern.compile(
             "(?:property|name)\\s*=\\s*['\\\"]og:image['\\\"]", Pattern.CASE_INSENSITIVE);

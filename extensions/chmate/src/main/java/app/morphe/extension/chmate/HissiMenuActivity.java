@@ -90,7 +90,8 @@ public final class HissiMenuActivity extends Activity {
         initialWacchoiQuery = getIntent() == null ? null
                 : getIntent().getStringExtra("haiagaru.wacchoi.query");
         eddiArchiveMode = isEddiArchiveUri(incoming);
-        if (eddiArchiveMode && !getIntent().getBooleanExtra("haiagaru.eddi.web", false)) {
+        if (eddiArchiveMode && Haiagaru.dedicatedViewerEnabled()
+                && !getIntent().getBooleanExtra("haiagaru.eddi.web", false)) {
             try {
                 archiveSearchUi = EddiArchiveSearchUi.show(this, incoming, this::openThreadInChMate, state);
             } catch (RuntimeException error) {
@@ -164,6 +165,17 @@ public final class HissiMenuActivity extends Activity {
                     : dark ? Color.rgb(30, 30, 32) : Color.WHITE);
             error.setPadding(32, 32, 32, 32);
             setContentView(error);
+            return;
+        }
+
+        // Resolve the checker first so OFF still preserves the selected service,
+        // source board, ID/ﾜｯﾁｮｲ and custom-scheme links cached by ChMate.
+        // Every entry point (including explicit launches) reaches this boundary.
+        if (!Haiagaru.dedicatedViewerEnabled()) {
+            Intent standardWeb = new Intent(Intent.ACTION_VIEW, Uri.parse(target));
+            standardWeb.setClassName(this, "jp.syoboi.a2chMate.activity.WebViewActivity");
+            startActivity(standardWeb);
+            finish();
             return;
         }
 
