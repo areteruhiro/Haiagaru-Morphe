@@ -39,29 +39,36 @@ public final class ImageViewerRotationButton {
         button.setContentDescription("画像を右に回転");
         button.setFocusable(true);
         button.setClickable(true);
-        // Keep the 52dp touch target, but draw only the rotation glyph.
+        // A larger touch target, still drawing only the rotation glyph.
         button.setBackground(null);
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                dp(activity, 52), dp(activity, 52), Gravity.END | Gravity.BOTTOM);
+                dp(activity, 56), dp(activity, 56), Gravity.END | Gravity.BOTTOM);
         params.setMargins(dp(activity, 12), dp(activity, 12),
-                dp(activity, 16), dp(activity, 16));
+                dp(activity, 24), dp(activity, 32));
+        params.setMarginEnd(dp(activity, 24));
         root.addView(button, params);
         button.bringToFront();
         android.util.Log.i(LOG_TAG, "Rotation button installed on " + root.getClass().getName());
         button.setOnClickListener(new RotationClickListener(activity, root, imageViewClassName));
-        synchronizeControlsVisibility(root, button);
+        synchronizeControlsVisibility(activity, root, button);
     }
 
     /** Follow the native counter's visibility without replacing image gesture listeners. */
-    private static void synchronizeControlsVisibility(FrameLayout root, View button) {
+    private static void synchronizeControlsVisibility(Activity activity, FrameLayout root, View button) {
         button.setVisibility(View.INVISIBLE);
+        ControlPosition position = new ControlPosition(activity, root, button);
         android.view.ViewTreeObserver.OnPreDrawListener listener =
                 new android.view.ViewTreeObserver.OnPreDrawListener() {
             private TextView counter;
 
             @Override
             public boolean onPreDraw() {
+                if (!Haiagaru.imageRotationButtonEnabled(activity)) {
+                    if (button.getVisibility() != View.GONE) button.setVisibility(View.GONE);
+                    return true;
+                }
+                position.update();
                 if (counter == null || !counter.isAttachedToWindow()) counter = findCounter(root);
                 int visibility = counter != null && counter.isShown() && counter.getAlpha() > 0f
                         ? View.VISIBLE : View.INVISIBLE;
@@ -77,6 +84,66 @@ public final class ImageViewerRotationButton {
                     root.getViewTreeObserver().removeOnPreDrawListener(listener);
             }
         });
+    }
+
+    /** Observe insets without replacing ChMate's own inset listener or consuming its events. */
+    private static final class ControlPosition {
+        private final Activity activity;
+        private final FrameLayout root;
+        private final View button;
+        private final int bottomGap, sideGap;
+        private final int[] hostPosition = new int[2], windowPosition = new int[2];
+
+        ControlPosition(Activity activity, FrameLayout root, View button) {
+            this.activity = activity;
+            this.root = root;
+            this.button = button;
+            bottomGap = dp(activity, 32);
+            sideGap = dp(activity, 24);
+        }
+
+        void update() {
+            if (root.getWidth() == 0 || root.getHeight() == 0) return;
+            int bottom = 0, left = 0, right = 0;
+            if (android.os.Build.VERSION.SDK_INT >= 23) {
+                android.view.WindowInsets insets = root.getRootWindowInsets();
+                if (insets != null) {
+                    if (android.os.Build.VERSION.SDK_INT >= 30) {
+                        android.graphics.Insets safe = insets.getInsetsIgnoringVisibility(
+                                android.view.WindowInsets.Type.navigationBars() | android.view.WindowInsets.Type.displayCutout());
+                        android.graphics.Insets gestures = insets.getInsets(android.view.WindowInsets.Type.systemGestures());
+                        bottom = Math.max(safe.bottom, gestures.bottom);
+                        left = Math.max(safe.left, gestures.left);
+                        right = Math.max(safe.right, gestures.right);
+                    } else {
+                        bottom = Math.max(insets.getSystemWindowInsetBottom(), insets.getStableInsetBottom());
+                        left = Math.max(insets.getSystemWindowInsetLeft(), insets.getStableInsetLeft());
+                        right = Math.max(insets.getSystemWindowInsetRight(), insets.getStableInsetRight());
+                        if (android.os.Build.VERSION.SDK_INT >= 29) {
+                            android.graphics.Insets gestures = insets.getSystemGestureInsets();
+                            bottom = Math.max(bottom, gestures.bottom);
+                            left = Math.max(left, gestures.left);
+                            right = Math.max(right, gestures.right);
+                        }
+                    }
+                }
+            }
+            View decor = activity.getWindow().getDecorView();
+            root.getLocationInWindow(hostPosition);
+            decor.getLocationInWindow(windowPosition);
+            int excludedBottom = Math.max(0, windowPosition[1] + decor.getHeight()
+                    - hostPosition[1] - root.getHeight()) + root.getPaddingBottom();
+            boolean rtl = root.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+            int excludedSide = (rtl ? Math.max(0, hostPosition[0] - windowPosition[0]) + root.getPaddingLeft()
+                    : Math.max(0, windowPosition[0] + decor.getWidth() - hostPosition[0] - root.getWidth()) + root.getPaddingRight());
+            int bottomMargin = ViewerControlInsets.margin(bottomGap, bottom, excludedBottom);
+            int endMargin = ViewerControlInsets.margin(sideGap, rtl ? left : right, excludedSide);
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) button.getLayoutParams();
+            if (params.bottomMargin == bottomMargin && params.getMarginEnd() == endMargin) return;
+            params.bottomMargin = bottomMargin;
+            params.setMarginEnd(endMargin);
+            button.setLayoutParams(params);
+        }
     }
 
     private static TextView findCounter(View view) {
@@ -112,6 +179,7 @@ public final class ImageViewerRotationButton {
 
         @Override
         public void onClick(View button) {
+            if (!Haiagaru.imageRotationButtonEnabled(activity)) return;
             int[] contentLocation = new int[2];
             content.getLocationOnScreen(contentLocation);
             View image = findCurrentImage(content, imageViewClassName,

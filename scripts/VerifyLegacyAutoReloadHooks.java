@@ -37,7 +37,7 @@ public final class VerifyLegacyAutoReloadHooks {
     }
     public static void main(String[] args) throws Exception {
         for (String apk : args) {
-            ClassDef fragment = null, extension = null;
+            ClassDef fragment = null, extension = null, title241 = null, title242 = null;
             try (ZipFile zip = new ZipFile(apk)) {
                 var entries = zip.entries();
                 while (entries.hasMoreElements()) {
@@ -48,12 +48,18 @@ public final class VerifyLegacyAutoReloadHooks {
                     for (ClassDef cls : new DexBackedDexFile(Opcodes.getDefault(), java.nio.ByteBuffer.wrap(bytes)).getClasses()) {
                         if (cls.getType().equals("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")) fragment = cls;
                         if (cls.getType().equals(EXT)) extension = cls;
+                        if (cls.getType().equals("Lo/ShowFirstParty;")) title241 = cls;
+                        if (cls.getType().equals("Lo/zzaK;")) title242 = cls;
                     }
                 }
             }
             check(fragment != null && extension != null, apk + " required classes missing");
             Method longClick = method(fragment, "onLongClick", List.of("Landroid/view/View;"));
             boolean v241 = longClick.getImplementation().getRegisterCount() == 16;
+            ClassDef titleBar = v241 ? title241 : title242;
+            check(titleBar != null, "Native title bar missing");
+            check(calls(method(titleBar, "setTitle", List.of("Ljava/lang/String;")), EXT, "displayTitle") == 1,
+                    "Title status must be hooked exactly once");
             check(calls(longClick, EXT, "start") == 2, "Both stock start branches redirected");
             check(calls(longClick, EXT, "stopLongPress") == 1, "Long-press toggle retained");
             check(calls(longClick, EXT, "intervalSeconds") == 2, "Both default timing branches configurable");

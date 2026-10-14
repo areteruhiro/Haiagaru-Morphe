@@ -140,7 +140,8 @@ public final class HissiMenuActivity extends Activity {
             kyodemoTarget = null;
             target = toEddiArchiveUrl(incoming);
         } else {
-            boolean automaticKyodemo = sourceHost != null && !isHissiHost(sourceHost);
+            boolean automaticKyodemo = sourceHost != null && (!isHissiHost(sourceHost)
+                    || KyodemoRouting.prefersKyodemo(sourceHost, sourceBoard));
             currentUsesKyodemo = checkerMode == 2 || (checkerMode == 0 && automaticKyodemo)
                     || (checkerMode == 3 && getSharedPreferences(CHECKER_CHOICE_PREFS,
                             Context.MODE_PRIVATE).getBoolean(choiceKey(), automaticKyodemo));
@@ -1485,9 +1486,11 @@ public final class HissiMenuActivity extends Activity {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             intent.setClass(this, OpenUrlActivity.class);
-            // TabletHome is singleTask: forwarding there would clear this search
-            // Activity from the back stack. Keep archive results as a child screen.
-            intent.putExtra("haiagaru.archive.return", true);
+            // Optional child screen keeps search in the back stack. Otherwise
+            // leave native tablet forwarding untouched (TabletHome is singleTask).
+            if (Haiagaru.archiveThreadStandalone(this)) {
+                intent.putExtra("haiagaru.archive.return", true);
+            }
             startActivity(intent);
             return true;
         } catch (RuntimeException error) {

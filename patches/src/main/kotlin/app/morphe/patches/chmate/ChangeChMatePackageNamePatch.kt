@@ -10,6 +10,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.intOption
+import app.morphe.patcher.patch.filePathOption
 import app.morphe.patcher.patch.resourcePatch
 import app.morphe.patcher.patch.stringOption
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
@@ -56,10 +57,11 @@ val changeChMatePackageNamePatch = resourcePatch(
         description = "Launcher name for the separately installed app. Leave empty to keep the original name.",
     )
 
-    val appIconOption = stringOption(
+    val appIconOption = filePathOption(
         key = "appIcon",
         title = "App icon",
-        description = "Path to a PNG or WebP launcher icon. Leave empty to keep the original icon.",
+        description = "PNG or WebP launcher icon file path (not a folder). Leave empty to keep the original icon.",
+        allowedExtensions = listOf("png", "webp"),
     )
 
     val versionCodeOption = intOption(

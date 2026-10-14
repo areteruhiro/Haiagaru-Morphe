@@ -3,6 +3,9 @@ package o;
 import app.morphe.extension.chmate.TalkPostCompatibility;
 
 public final class isAtLeastJellyBeanMR1 {
+    public static Object c(String input) {
+        throw new AssertionError("integrity-wrapped digest called");
+    }
     public static Object c(Object client, String id, String password, long timestamp) {
         if (setExtras.e != Long.MIN_VALUE) {
             throw new AssertionError("generated cache was not invalidated");

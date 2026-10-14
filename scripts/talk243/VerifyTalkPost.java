@@ -22,7 +22,7 @@ public class VerifyTalkPost {
             throw new AssertionError("generated post result");
         }
 
-        var generated = VerifyTalkPost.class.getMethod("generatedOuter", String.class);
+        var generated = o.isAtLeastJellyBeanMR1.class.getMethod("c", String.class);
         Object token = TalkPostCompatibility.invoke(generated, null, new Object[]{"body"});
         if (!"digest:body".equals(token)) throw new AssertionError("callable result");
 
