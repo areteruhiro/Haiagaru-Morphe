@@ -18,6 +18,7 @@ import java.util.WeakHashMap;
 public final class LegacyAutoReload {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final WeakHashMap<Object, Session> SESSIONS = new WeakHashMap<>();
+    private static final WeakHashMap<Object, TitleState> TITLES = new WeakHashMap<>();
     private LegacyAutoReload() {}
 
     public static boolean supported(Context context) {
@@ -53,6 +54,7 @@ public final class LegacyAutoReload {
                     LegacyAutoReloadTiming.durationMillis(encodedMinimum));
             SESSIONS.put(fragment, session);
             session.startScrolling();
+            session.updateTitle();
             MAIN.postDelayed(session, 250);
             Toast.makeText(activity, "自動リロードを開始しました", Toast.LENGTH_SHORT).show();
         } catch (Exception error) {
@@ -66,6 +68,7 @@ public final class LegacyAutoReload {
         Session session = SESSIONS.remove(fragment);
         if (session == null) return;
         MAIN.removeCallbacks(session);
+        updateTitleInterval(session.titleBar.get(), 0);
         try {
             session.stopScroll.invoke(fragment);
         } catch (Exception error) {
@@ -77,6 +80,38 @@ public final class LegacyAutoReload {
 
     public static void activeTab(Object fragment, boolean active) {
         if (!active) stop(fragment);
+    }
+
+    /** Hooked only into the native 241/242 title-bar display setter. */
+    public static String displayTitle(Object bar, String title) {
+        TitleState state = TITLES.get(bar);
+        if (state == null) {
+            state = new TitleState();
+            TITLES.put(bar, state);
+        }
+        if (!state.updating) state.original = title;
+        return AutoReloadTitle.format(state.original, state.intervalMillis);
+    }
+
+    private static final class TitleState {
+        String original;
+        long intervalMillis;
+        boolean updating;
+    }
+
+    private static void updateTitleInterval(Object bar, long intervalMillis) {
+        if (bar == null) return;
+        TitleState state = TITLES.get(bar);
+        // The setter hook captures the title when the screen is first bound.
+        // Never infer the title from other text fields or replace it with an empty string.
+        if (state == null || state.intervalMillis == intervalMillis) return;
+        state.intervalMillis = intervalMillis;
+        state.updating = true;
+        try {
+            bar.getClass().getMethod("setTitle", String.class).invoke(bar, state.original);
+        } catch (Exception error) {
+            Log.w("HaiagaruAutoReload", "Unable to update title indicator", error);
+        } finally { state.updating = false; }
     }
 
     public static void scrollState(Object fragment, boolean scrolling) {
@@ -127,6 +162,7 @@ public final class LegacyAutoReload {
     private static final class Session implements Runnable {
         final WeakReference<Object> fragment;
         final WeakReference<View> list;
+        final WeakReference<Object> titleBar;
         final Method startScroll, stopScroll, reload, resumed, visible, busyValue, adapter, itemCount;
         final Object busyFlow;
         final WeakReference<Object> model;
@@ -145,6 +181,19 @@ public final class LegacyAutoReload {
             list = new WeakReference<>(recycler);
             Class<?> base = Class.forName("jp.syoboi.a2chMate.fragment.RoidonListFragment", false,
                     target.getClass().getClassLoader());
+            Object bar = null;
+            try {
+                Field holderField = base.getDeclaredField(v241 ? "f" : "a");
+                holderField.setAccessible(true);
+                Object holder = holderField.get(target);
+                if (holder != null) for (Field holderMember : holder.getClass().getDeclaredFields()) {
+                    if (!holderMember.getType().getName().equals(v241 ? "o.ShowFirstParty" : "o.zzaK")) continue;
+                    holderMember.setAccessible(true);
+                    bar = holderMember.get(holder);
+                    break;
+                }
+            } catch (Exception error) { Log.w("HaiagaruAutoReload", "Title bar not ready", error); }
+            titleBar = new WeakReference<>(bar);
             startScroll = method(base, v241 ? "q" : "r");
             stopScroll = method(base, "p");
             Object lazy = field(target, v241 ? "s" : "t");
@@ -185,6 +234,10 @@ public final class LegacyAutoReload {
                 // Keep the display on while waiting too, not just while scrolling.
                 view.setKeepScreenOn(true);
             } finally { starting = false; }
+        }
+
+        void updateTitle() {
+            updateTitleInterval(titleBar.get(), timing.intervalMillis());
         }
 
         @Override public void run() {
@@ -238,6 +291,7 @@ public final class LegacyAutoReload {
                         }
                     }
                 }
+                updateTitle();
                 MAIN.postDelayed(this, 250);
             } catch (Exception error) {
                 stop(target);

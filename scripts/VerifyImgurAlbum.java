@@ -21,11 +21,14 @@ public class VerifyImgurAlbum {
                 albumField.setAccessible(true);
                 var album = (java.util.regex.Pattern) albumField.get(null);
                 for (String prefix : new String[]{"", "ttps://", "ttp://", "//", "https://", "http://"}) {
-                    var match = album.matcher(prefix + "imgur.com/a/K2De8");
-                    if (!match.find() || !"K2De8".equals(match.group(1))) throw new AssertionError("Incomplete album URL: " + prefix);
+                    for (String host : new String[]{"imgur.com", "www.imgur.com", "i.imgur.com"}) {
+                        var match = album.matcher(prefix + host + "/a/K2De8");
+                        if (!match.matches() || !"K2De8".equals(match.group(1))) throw new AssertionError("Album URL: " + prefix + host);
+                    }
                 }
                 for (String bad : new String[]{"https://evil.imgur.com/a/K2De8", "ftp://imgur.com/a/K2De8",
-                        "https://imgur.com.evil/a/K2De8", "user@imgur.com/a/K2De8"}) {
+                        "https://imgur.com.evil/a/K2De8", "user@imgur.com/a/K2De8",
+                        "https://evil.i.imgur.com/a/K2De8", "https://i.imgur.com/LWkGnaI.png"}) {
                     if (album.matcher(bad).find()) throw new AssertionError("Invalid album URL: " + bad);
                 }
                 String[][] cases = {

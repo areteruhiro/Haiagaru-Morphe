@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 public final class ImgurAlbumAttachments {
     private static final Pattern ALBUM = Pattern.compile(
             "(?<![A-Za-z0-9_./:@-])(?:(?:https?|ttps?)://|//)?"
-                    + "(?:www\\.)?imgur\\.com/a/([A-Za-z0-9]+)(?=[/?#\\s<>\"'()（）]|$)"
+                    + "(?:(?:www|i)\\.)?imgur\\.com/a/([A-Za-z0-9]+)(?=[/?#\\s<>\"'()（）]|$)"
                     + "(?:[/?#][^\\s<>\\\"]*)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern META = Pattern.compile("<meta\\b[^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern PROPERTY = Pattern.compile(
@@ -85,18 +85,32 @@ public final class ImgurAlbumAttachments {
                 if (field.get(model) != original) continue;
                 prepare(model, body, field.getName());
                 Object updated = field.get(model);
-                return updated instanceof String[] ? (String[]) updated : original;
+                return projectImageVpn(model, body, updated instanceof String[] ? (String[]) updated : original);
             }
             // BE filtering can return a new array rather than the native cached instance.
             if (cacheCount == 1 && onlyCache != null) {
                 onlyCache.set(model, original);
                 prepare(model, body, onlyCache.getName());
-                return (String[]) onlyCache.get(model);
+                return projectImageVpn(model, body, (String[]) onlyCache.get(model));
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             Log.w("HaiagaruImgur", "Attachment cache unavailable", error);
         }
-        return original;
+        return projectImageVpn(model, body, original);
+    }
+
+    private static String[] projectImageVpn(Object model, String bodyField, String[] urls) {
+        if (!ImageVpnController.enabled()) return urls;
+        String body = null;
+        if (Haiagaru.mediaImageFetchEnabled()) {
+            try {
+                Field field = model.getClass().getDeclaredField(bodyField);
+                field.setAccessible(true);
+                Object raw = field.get(model);
+                if (raw instanceof String) body = (String) raw;
+            } catch (ReflectiveOperationException ignored) { }
+        }
+        return ImageVpnController.attachments(body, urls);
     }
 
     /** Runs before the native cached attachment getter; networking stays off the UI thread. */
@@ -110,6 +124,8 @@ public final class ImgurAlbumAttachments {
             Object raw = bodyField.get(model);
             if (!(raw instanceof String)) return;
             if (((String) raw).contains("video.twimg.com")) VIDEO_MODELS.put(model, Boolean.TRUE);
+            if (Haiagaru.mediaImageFetchEnabled())
+                append(model, cacheFieldName, TwimgImageUrls.extract((String) raw));
             if (mode != 3)
                 append(model, cacheFieldName, XMediaAttachments.directVideos((String) raw));
             Matcher albums = ALBUM.matcher((String) raw);
@@ -280,7 +296,23 @@ public final class ImgurAlbumAttachments {
             boolean changed = false;
             int mode = Haiagaru.mediaAutoFetchMode();
             for (String url : (String[]) existing) {
+                if (Haiagaru.mediaImageFetchEnabled()) {
+                    String normalized = TwimgImageUrls.canonical(url);
+                    if (normalized != null && !normalized.equals(url)) {
+                        url = normalized;
+                        changed = true;
+                    }
+                }
                 boolean resolvedPost = false;
+                // i.imgur.com/a/... is an album page, not an additional image.
+                // Replace only once resolution succeeds; failed albums remain retryable.
+                Matcher album = url == null ? null : ALBUM.matcher(url);
+                if (Haiagaru.mediaImageFetchEnabled() && album != null && album.matches()) {
+                    synchronized (CACHE) {
+                        Entry entry = CACHE.get(album.group(1));
+                        resolvedPost = entry != null && entry.images != null && entry.images.length > 0;
+                    }
+                }
                 for (String code : InstagramMediaAttachments.postIds(url)) {
                     synchronized (CACHE) {
                         Entry entry = CACHE.get("ig:" + code);
@@ -303,7 +335,7 @@ public final class ImgurAlbumAttachments {
                         if (poster != null) urls.add(poster);
                         else VideoFrameThumbnail.request(url);
                     }
-                } else urls.add(url);
+                } else changed |= !urls.add(url);
             }
             for (String image : images) {
                 boolean video = XMediaAttachments.isVideo(image);

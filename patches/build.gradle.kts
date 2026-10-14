@@ -21,3 +21,17 @@ dependencies {
     // Android API stubs defined here.
     compileOnly(project(":patches:stub"))
 }
+
+tasks.named<ProcessResources>("processResources") {
+    from(zipTree(rootProject.file("vpn/image-stack/prebuilt/image-stack.aar"))) {
+        include("jni/**/*.so")
+        into("chmate/image-vpn")
+    }
+    from(rootProject.file("third-party/open-sstp/LICENSE")) {
+        into("chmate/image-vpn/licenses/open-sstp")
+    }
+    from(rootProject.file("third-party/image-stack")) {
+        include("**/LICENSE", "NOTICE.md")
+        into("chmate/image-vpn/licenses/image-stack")
+    }
+}

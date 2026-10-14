@@ -1,6 +1,7 @@
 import com.android.build.api.dsl.ApplicationExtension
 
 dependencies {
+    implementation(files(rootProject.file("vpn/image-stack/prebuilt/image-stack.aar")))
     implementation(libs.hiddenapi)
     implementation("org.mozilla:rhino:1.8.0")
     implementation("dev.carlsen.mega:mega:1.0.0-beta08")

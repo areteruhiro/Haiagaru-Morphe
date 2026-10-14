@@ -57,6 +57,12 @@ public final class KyodemoRouting {
                 && prefixForHost(sourceHost.toLowerCase(Locale.ROOT)) != null;
     }
 
+    /** Kenmo is indexed by Kyodemo under the native poverty board ID. */
+    public static boolean prefersKyodemo(String sourceHost, String board) {
+        return "poverty".equals(board) && sourceHost != null
+                && "".equals(prefixForHost(sourceHost.toLowerCase(Locale.ROOT)));
+    }
+
     private static String prefixForHost(String host) {
         // Kyodemo uses the ordinary ChMate board name for 5ch/2ch boards.
         if (isHostOrSubdomain(host, "5ch.net") || isHostOrSubdomain(host, "5ch.io")
