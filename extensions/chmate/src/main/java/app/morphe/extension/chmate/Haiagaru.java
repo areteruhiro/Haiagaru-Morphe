@@ -152,6 +152,7 @@ public final class Haiagaru {
     private static final int MAX_NG_REGISTRATION_LIMIT = 100_000;
     /** ChMate's own bounded post-history store (postDataList.json). */
     private static final String CHMATE_POST_DATA_LIST_COUNT_KEY = "postDataListCount";
+    private static final String POSTED_THREAD_DISPLAY_COUNT_KEY = "postedThreadDisplayCount";
     private static final int DEFAULT_CHMATE_POST_DATA_LIST_COUNT = 100;
     private static final int MAX_CHMATE_POST_DATA_LIST_COUNT = 10_000;
     private static final String ARCHIVE_ROUTE_TEMPLATES_KEY = "archiveRouteTemplates";
@@ -862,6 +863,7 @@ public final class Haiagaru {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        ImageVpnController.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
         runtimePackageName = appContext.getPackageName();
@@ -1741,6 +1743,23 @@ public final class Haiagaru {
         if (preferences == null) return DEFAULT_NG_REGISTRATION_LIMIT;
         int value = preferences.getInt(NG_REGISTRATION_LIMIT_KEY, DEFAULT_NG_REGISTRATION_LIMIT);
         return value <= 0 ? Integer.MAX_VALUE : Math.min(value, MAX_NG_REGISTRATION_LIMIT);
+    }
+
+    public static int getPostedThreadDisplayCount() {
+        return PostedThreadCountValue.queryLimit(getPostedThreadDisplayCountSetting());
+    }
+
+    private static int getPostedThreadDisplayCountSetting() {
+        SharedPreferences prefs = preferencesOrNull();
+        int defaultValue = PostedThreadCountValue.DEFAULT;
+        try { defaultValue = PostedThreadCountValue.defaultForVersion(chMateVersion()); }
+        catch (PackageManager.NameNotFoundException | RuntimeException ignored) { }
+        return PostedThreadCountValue.normalize(prefs == null ? defaultValue
+                : prefs.getInt(POSTED_THREAD_DISPLAY_COUNT_KEY, defaultValue));
+    }
+
+    public static long getPostedThreadDisplayCountLong() {
+        return getPostedThreadDisplayCount();
     }
 
     private static final class CellularNetworkLease {
@@ -3004,6 +3023,7 @@ public final class Haiagaru {
             // no text/background and would otherwise be mistaken for spacers.
             if (child.getVisibility() == View.VISIBLE
                     && child instanceof ViewGroup
+                    && !AdContainerSafety.isScreenHost(child.getClass(), child.getId())
                     && ((ViewGroup) child).getChildCount() == 0
                     && child.getHeight() >= dp(child.getContext(), 160)) {
                 collapseView(child);
@@ -3031,6 +3051,7 @@ public final class Haiagaru {
         // wrapper chain and collapse a parent after every child has become empty or hidden.
         for (int depth = 0; depth < 4 && current.getParent() instanceof ViewGroup; depth++) {
             ViewGroup container = (ViewGroup) current.getParent();
+            if (AdContainerSafety.isScreenHost(container.getClass(), container.getId())) return;
             String name = container.getClass().getName();
             if (name.contains("RecyclerView") || name.contains("AbsListView")
                     || name.contains("ScrollView")) {
@@ -3052,6 +3073,7 @@ public final class Haiagaru {
     }
 
     private static boolean isEmptySpacer(View view) {
+        if (view != null && AdContainerSafety.isScreenHost(view.getClass(), view.getId())) return false;
         if (view == null || view.getVisibility() != View.VISIBLE || view.getHeight() <= 0) {
             return true;
         }
@@ -3078,6 +3100,9 @@ public final class Haiagaru {
     }
 
     private static void collapseView(View view) {
+        // The image viewer is added later to an initially empty Fragment host.
+        // Never turn that host (or the Activity content root) into an ad spacer.
+        if (AdContainerSafety.isScreenHost(view.getClass(), view.getId())) return;
         view.setVisibility(View.GONE);
         ViewGroup.LayoutParams params = view.getLayoutParams();
         if (params != null) {
@@ -3252,6 +3277,18 @@ public final class Haiagaru {
         int padding = dp(activity, 20);
         layout.setPadding(padding, padding, padding, padding);
 
+        int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
+        Spinner settingsLanguage = addSpinner(layout, activity,
+                "Haiagaruの表示言語 / Haiagaru language",
+                new String[]{"日本語 / Japanese", "English / 英語", "端末の言語 / System"},
+                initialSettingsLanguage);
+        TextView settingsLanguageDescription = new TextView(activity);
+        settingsLanguageDescription.setText(text(
+                "端末・ChMate本体の言語は変更しません。OKで保存し、次回設定を開くと反映されます。",
+                "Does not change the device or ChMate language. Save with OK; applies when settings are reopened."));
+        settingsLanguageDescription.setTextSize(13);
+        layout.addView(settingsLanguageDescription, rowParams(activity));
+
         Switch hideAd = addSwitch(
                 layout,
                 activity,
@@ -3366,6 +3403,28 @@ public final class Haiagaru {
                         "Open in dedicated viewer (off: ChMate web view)"),
                 preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
         );
+        Switch imageVpnSetting = null;
+        if (ImageVpnController.available()) {
+            imageVpnSetting = addSwitch(layout, activity,
+                    text("VPN Gateで対象の画像を取得（実験的）", "Fetch eligible images through VPN Gate (experimental)"),
+                    preferences.getBoolean("imageVpnEnabled", false));
+            TextView warning = new TextView(activity);
+            warning.setText(text("検証中の機能です。対象の画像だけをVPN経由で取得します。VPN取得失敗時は直接取得しません。VPN運営者には接続元IPが見え、通信が記録される可能性があります。固有URLによる識別は防げません。状態: ",
+                    "Under validation. Only eligible images use the VPN. No direct fallback on VPN fetch failure. VPN operators see your source IP and may log traffic; unique URLs can still identify viewers. Status: ")
+                    + ImageVpnController.status());
+            layout.addView(warning, rowParams(activity));
+        }
+        final Switch imageVpnEnabledSetting = imageVpnSetting;
+        Switch imageRotationButton = null;
+        try {
+            String version = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
+            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)) {
+                imageRotationButton = addSwitch(layout, activity,
+                        text("画像ビューアの回転ボタン", "Image viewer rotation button"),
+                        preferences.getBoolean("imageViewerRotationButton", true));
+            }
+        } catch (Exception error) { Log.w(LOG_TAG, "Rotation setting version check failed", error); }
+        final Switch imageRotationButtonSetting = imageRotationButton;
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
@@ -3528,6 +3587,23 @@ public final class Haiagaru {
         postDataListCountDescription.setTextSize(13);
         layout.addView(postDataListCountDescription, rowParams(activity));
 
+        EditText postedThreads = null;
+        if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
+                || "0.8.10.241".equals(chMateVersion) || "0.8.10.242 dev".equals(chMateVersion)
+                || "0.8.10.243 dev".equals(chMateVersion)) {
+            postedThreads = addTextField(layout, activity,
+                    text("書き込んだスレの表示数（0で無制限）", "Number of posted threads to display (0: unlimited)"),
+                    Integer.toString(getPostedThreadDisplayCountSetting()));
+            postedThreads.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            TextView description = new TextView(activity);
+            description.setText(text("1〜10000件、0で無制限。ホームの一覧を開き直すと反映されます。"
+                            + "「書き込んだスレ」の表示件数のみを変更します。下の「送信済み」の件数や、保存済みの履歴は変更しません。",
+                    "1–10000, or 0 for unlimited. Reopen the home list to apply. Only posted threads are limited; sent posts and saved history are unchanged."));
+            description.setTextSize(13);
+            layout.addView(description, rowParams(activity));
+        }
+        final EditText postedThreadDisplayCount = postedThreads;
+
         EditText ngRegistrationLimit = addTextField(
                 layout,
                 activity,
@@ -3611,6 +3687,18 @@ public final class Haiagaru {
             Log.w(LOG_TAG, "Unable to add automatic DAT route controls", error);
         }
         final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
+        Switch archiveThreadStandalone = addSwitch(layout, activity,
+                text("エッヂ過去ログのスレをタブレットモードを解除して開く",
+                        "Open Edge archive threads outside tablet mode"),
+                archiveThreadStandalone(activity));
+        TextView archiveTabletDescription = new TextView(activity);
+        archiveTabletDescription.setText(text(
+                "オン：単独画面で開き、戻ると検索結果に戻ります。オフ：ChMateのタブレット設定に従います。"
+                        + "タブレットモードでは検索画面が閉じる場合があります。",
+                "On: open a separate screen and return to search with Back. Off: follow ChMate's tablet setting. "
+                        + "Tablet navigation may close the search screen."));
+        archiveTabletDescription.setTextSize(13);
+        layout.addView(archiveTabletDescription, rowParams(activity));
         addOptionalSettingsSection(
                 "Edge archive search",
                 () -> addEddiArchiveSearchControl(activity, layout)
@@ -3630,6 +3718,10 @@ public final class Haiagaru {
         addOptionalSettingsSection(
                 "programmable NG",
                 () -> ProgrammableNgController.addSettingsButton(layout, activity)
+        );
+        addOptionalSettingsSection(
+                "native NG management",
+                () -> NgManagement.addSettingsButton(layout, activity)
         );
         addOptionalSettingsSection(
                 "MEGA backup",
@@ -3652,6 +3744,13 @@ public final class Haiagaru {
                 .setCancelable(false)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
+                    int displayCount = postedThreadDisplayCount == null ? getPostedThreadDisplayCountSetting()
+                            : PostedThreadCountValue.parse(value(postedThreadDisplayCount));
+                    if (displayCount < 0) {
+                        Toast.makeText(activity, text("書き込んだスレの表示数は0〜10000で入力してください（0は無制限）。設定は保存されませんでした。",
+                                "Enter 0 to 10000 (0: unlimited). Settings were not saved."), Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     int postSizeChoice = postEditorTextSize.getSelectedItemPosition();
                     float selectedPostSize = postSizeChoice == 0 ? 0 : postSizeChoice == 28
                             ? PostEditorSizeValue.parse(value(customPostSize)) : postSizeChoice + 9;
@@ -3723,6 +3822,9 @@ public final class Haiagaru {
                                 .commit();
                     }
                     preferences.edit()
+                            .putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition()))
+                            .putBoolean("archiveThreadStandalone", archiveThreadStandalone.isChecked())
+                            .putInt(POSTED_THREAD_DISPLAY_COUNT_KEY, displayCount)
                             .putBoolean("hideAd", hideAd.isChecked())
                             .putBoolean("topAlignShortThreads", topAlignShortThreadsSwitch != null
                                     && topAlignShortThreadsSwitch.isChecked())
@@ -3734,6 +3836,10 @@ public final class Haiagaru {
                             .putBoolean("chtoio", chtoio.isChecked())
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
                             .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
+                            .putBoolean("imageVpnEnabled", imageVpnEnabledSetting != null && imageVpnEnabledSetting.isChecked())
+                            .putBoolean("imageViewerRotationButton", imageRotationButtonSetting == null
+                                    ? preferences.getBoolean("imageViewerRotationButton", true)
+                                    : imageRotationButtonSetting.isChecked())
                             .putInt("autoReloadInterval", autoReloadInterval == null ? autoReloadIntervalSeconds()
                                     : Math.max(10, boundedMediaSetting(value(autoReloadInterval), autoReloadIntervalSeconds(), 1800)))
                             .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
@@ -3778,8 +3884,14 @@ public final class Haiagaru {
                     }
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
+                    boolean imageVpnChanged = ImageVpnController.enabled() != preferences.getBoolean("imageVpnEnabled", false);
+                    ImageVpnController.setEnabled(preferences.getBoolean("imageVpnEnabled", false));
                     if (!before.equals(after) || legacyPlusChanged
-                            || initialThreadTitleSpacing != threadTitleSpacingPercent()) restart(activity);
+                            || imageVpnChanged || initialThreadTitleSpacing != threadTitleSpacingPercent()) restart(activity);
+                    else if (initialSettingsLanguage != settingsLanguage.getSelectedItemPosition()) {
+                        Toast.makeText(activity, text("表示言語を変更しました。設定を開き直すと反映されます。",
+                                "Language saved. Reopen settings to apply."), Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .show();
     }
@@ -3831,6 +3943,10 @@ public final class Haiagaru {
         reset.setOnClickListener(view -> editor.setText(DEFAULT_ARCHIVE_ROUTE_TEMPLATES));
         layout.addView(reset, rowParams(activity));
         return editor;
+    }
+
+    static boolean archiveThreadStandalone(Context context) {
+        return preferences(context).getBoolean("archiveThreadStandalone", true);
     }
 
     private static void addEddiArchiveSearchControl(Activity activity, LinearLayout layout) {
@@ -4499,9 +4615,9 @@ public final class Haiagaru {
     }
 
     private static String text(String japanese, String english) {
-        return Locale.JAPANESE.getLanguage().equals(Locale.getDefault().getLanguage())
-                ? japanese
-                : english;
+        SharedPreferences prefs = preferencesOrNull();
+        String language = prefs == null ? "ja" : prefs.getString("settingsLanguage", "ja");
+        return SettingsLanguage.text(language, Locale.getDefault(), japanese, english);
     }
 
     private static SharedPreferences preferences(Context context) {
@@ -4525,6 +4641,10 @@ public final class Haiagaru {
     public static boolean dedicatedViewerEnabled() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs == null || prefs.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true);
+    }
+
+    static boolean imageRotationButtonEnabled(Context context) {
+        return context != null && preferences(context).getBoolean("imageViewerRotationButton", true);
     }
 
     /** Returns whether the patch-time dedicated checker Activity was registered. */

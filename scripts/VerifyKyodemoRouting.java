@@ -7,6 +7,21 @@ public class VerifyKyodemoRouting {
     }
 
     public static void main(String[] args) {
+        check("poverty".equals(KyodemoRouting.boardSlug("greta.5ch.io", "poverty")),
+                "Kenmo must use the site's unprefixed poverty board ID");
+        check(KyodemoRouting.prefersKyodemo("greta.5ch.io", "poverty")
+                        && KyodemoRouting.prefersKyodemo("GRETA.5CH.NET", "poverty")
+                        && !KyodemoRouting.prefersKyodemo("egg.5ch.io", "android")
+                        && !KyodemoRouting.prefersKyodemo("greta.5ch.io.example", "poverty")
+                        && !KyodemoRouting.prefersKyodemo(null, "poverty"),
+                "Automatic Kenmo routing must not change other boards");
+        check("https://www.kyodemo.net/sdemo/b/poverty/?bs=hi&k=ab%2Bc%2Fd&fr=2026-10-14&to=2026-10-14".equals(
+                KyodemoRouting.idSearchUrl("greta.5ch.io", "poverty", "ab+c/d", "1791989395", "20261014")),
+                "Kenmo ID and response date transport");
+        check("https://greta.5ch.io/test/read.cgi/poverty/1791989395/1/".equals(
+                KyodemoRouting.sourceThreadUrl("greta.5ch.io", "poverty",
+                        "https://www.kyodemo.net/sdemo/r/poverty/1791989395/1/")),
+                "Kenmo checker result opens the source thread");
         String[][] externalBoards = {
                 {"bbs.punipuni.eu", "livepunipuni", "e_p_livepunipuni"},
                 {"bbs.kamemushi.com", "board", "e_k_board"},

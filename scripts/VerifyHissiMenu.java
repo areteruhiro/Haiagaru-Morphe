@@ -28,7 +28,7 @@ public class VerifyHissiMenu {
         }
         check(hostFilter != null, "Host filter must parse using ChMate's grammar");
         for (String host : new String[]{"egg.5ch.io", "mi.5ch.io", "5ch.io", "egg.5ch.net",
-                "hayabusa.2ch.net", "bbs.eddibb.cc", "jbbs.shitaraba.net",
+                "hayabusa.2ch.net", "greta.5ch.io", "itest.5ch.io", "bbs.eddibb.cc", "jbbs.shitaraba.net",
                 "tokyo.machi.to", "hayabusa.open2ch.net", "ex14.vip2ch.com",
                 "aoi.bbspink.com", "bbs.punipuni.eu", "5chan.jp",
                 "yaruozatsudan.com", "yaruoshelter.com", "yarumakai.com",

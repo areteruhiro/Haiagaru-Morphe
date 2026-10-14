@@ -3,14 +3,29 @@ package app.morphe.extension.chmate;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.widget.Toast;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Registers a quoted suffix regex through ChMate's own NGName store. */
+/** Copies a suffix fragment and opens the native editor; never auto-adds an NG row. */
 public final class WacchoiSuffixNg {
     private WacchoiSuffixNg() {}
+
+    // Native NGWord flags: regular expression, chain replies, transparent NG.
+    private static final int REGEX = 0x20;
+    private static final int CHAIN = 0x08;
+    private static final int HIDDEN = 0x01;
+
+    static short registrationFlags(short previous, boolean chain, boolean hidden) {
+        return (short) ((previous & ~(0x70 | CHAIN | HIDDEN)) | REGEX
+                | (chain ? CHAIN : 0) | (hidden ? HIDDEN : 0));
+    }
 
     public static String suffix(String query) {
         if (query == null) return null;
@@ -23,29 +38,45 @@ public final class WacchoiSuffixNg {
                 + ")(?=$|[\\s()（）<>])";
     }
 
+    public static String clipboardValue(String query) {
+        String value = suffix(query);
+        return value == null ? null : "-" + value + "|";
+    }
+
     public static void confirm(Context context, String query) {
-        String suffix = suffix(query);
-        if (suffix == null) return;
+        confirm(context, query, null);
+    }
+
+    public static void confirm(Context context, String query, String currentBoard) {
+        String copied = clipboardValue(query);
+        if (copied == null) return;
         android.app.Activity activity = Haiagaru.toolbarActivity(context);
         if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
             Toast.makeText(context, "表示中の画面からもう一度お試しください", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
-        new AlertDialog.Builder(activity)
-                .setTitle("ﾜｯﾁｮｲ下4桁でNGName登録")
-                .setMessage("末尾が「" + suffix + "」の名前を全板でNGにします。\n"
-                        + "前半が違うワッチョイも対象です。別の利用者と一致する場合があります。\n"
-                        + "解除・編集はChMateのNGネーム設定から行えます。")
-                .setNegativeButton("キャンセル", null)
-                .setPositiveButton("登録", (dialog, which) -> register(activity, expression(suffix)))
-                .show();
-        } catch (android.view.WindowManager.BadTokenException error) {
-            android.util.Log.w("Haiagaru", "NG confirmation activity no longer visible", error);
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                    activity.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard == null) throw new IllegalStateException("Clipboard unavailable");
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("ﾜｯﾁｮｲ下4桁", copied));
+            try {
+                NativeNgEditor.openName(activity);
+                Toast.makeText(activity, copied + " をコピーしました。既存のNGへ追記できます。"
+                        + "正規表現で保存する場合、末尾の | は次の条件を続けるか削除してください。",
+                        Toast.LENGTH_LONG).show();
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                android.util.Log.w("Haiagaru", "Cannot open native NGName editor", error);
+                Toast.makeText(activity, copied + " をコピーしました。NGネーム設定を手動で開いてください。",
+                        Toast.LENGTH_LONG).show();
+            }
+        } catch (RuntimeException error) {
+            android.util.Log.w("Haiagaru", "Cannot copy Wacchoi suffix", error);
+            Toast.makeText(activity, "下4桁をコピーできませんでした", Toast.LENGTH_LONG).show();
         }
     }
 
-    private static void register(Context context, String regex) {
+    private static void register(Context context, String regex, boolean chain, boolean hidden, String board) {
         try {
             ClassLoader loader = context.getClassLoader();
             Class<?> storeType = Class.forName("jp.syoboi.a2chMate.ng.NGWord", false, loader);
@@ -68,33 +99,44 @@ public final class WacchoiSuffixNg {
                 break;
             }
             if (store == null) throw new IllegalStateException("Native NGName provider unavailable");
-            java.util.List<?> entries = null;
-            for (Method method : storeType.getDeclaredMethods()) {
-                if (Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(method.getModifiers())
-                        && method.getParameterTypes().length == 0
-                        && method.getReturnType() == java.util.ArrayList.class) {
-                    entries = (java.util.List<?>) method.invoke(store);
-                    break;
-                }
-            }
+            String version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+            String snapshotName = "0.8.10.191 dev".equals(version) ? "a"
+                    : "0.8.10.242 dev".equals(version) ? "e" : "d";
+            java.util.List<?> entries = (java.util.List<?>) storeType.getMethod(snapshotName).invoke(store);
             if (entries == null) throw new IllegalStateException("Native NGName list unavailable");
+            Object previous = null;
+            short previousFlags = 0;
+            long created = System.currentTimeMillis();
             for (Object existing : entries) {
-                for (java.lang.reflect.Field field : itemType.getDeclaredFields()) {
-                    if (Modifier.isStatic(field.getModifiers()) || field.getType() != String.class) continue;
+                // toString() returns the native pattern on all supported versions.
+                if (!regex.equals(existing.toString())) continue;
+                String existingBoard = null;
+                short flags = 0;
+                long timestamp = created;
+                for (Field field : itemType.getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())) continue;
                     field.setAccessible(true);
-                    if (regex.equals(field.get(existing))) {
-                        notifyLegacyNameChange(loader, nameType, itemType, existing);
-                        Toast.makeText(context, "同じ条件が既に登録されています", Toast.LENGTH_SHORT).show();
-                        return;
+                    if (field.getType() == short.class) flags = field.getShort(existing);
+                    if (field.getType() == long.class) timestamp = field.getLong(existing);
+                    // Ignore the private cached matching key; the two public
+                    // strings are the pattern and optional board restriction.
+                    if (Modifier.isPublic(field.getModifiers()) && field.getType() == String.class) {
+                        Object value = field.get(existing);
+                        if (value != null && !regex.equals(value)) existingBoard = value.toString();
                     }
                 }
+                if (!java.util.Objects.equals(board, existingBoard)) continue;
+                previous = existing;
+                previousFlags = flags;
+                created = timestamp;
+                break;
             }
-            if (entries.size() >= Haiagaru.getNgRegistrationLimit()) {
+            if (previous == null && entries.size() >= Haiagaru.getNgRegistrationLimit()) {
                 Toast.makeText(context, "NGNameの登録上限に達しています", Toast.LENGTH_LONG).show();
                 return;
             }
             Object item = itemType.getConstructor(String.class, short.class, long.class, String.class)
-                    .newInstance(regex, (short) 32, System.currentTimeMillis(), null);
+                    .newInstance(regex, registrationFlags(previousFlags, chain, hidden), created, board);
             Method update = null;
             for (Method method : storeType.getDeclaredMethods()) {
                 Class<?>[] parameters = method.getParameterTypes();
@@ -106,22 +148,23 @@ public final class WacchoiSuffixNg {
             }
             if (update == null) throw new IllegalStateException("Native NGName registration unavailable");
             update.setAccessible(true);
-            update.invoke(store, null, item);
-            notifyLegacyNameChange(loader, nameType, itemType, item);
-            Toast.makeText(context, "NGNameに登録しました", Toast.LENGTH_SHORT).show();
-        } catch (ReflectiveOperationException | RuntimeException error) {
+            update.invoke(store, previous, item);
+            notifyLegacyNameChange(loader, nameType, itemType, previous, item);
+            Toast.makeText(context, previous == null ? "NGNameに登録しました" : "NGNameの設定を更新しました",
+                    Toast.LENGTH_SHORT).show();
+        } catch (ReflectiveOperationException | android.content.pm.PackageManager.NameNotFoundException | RuntimeException error) {
             android.util.Log.w("Haiagaru", "Cannot register Wacchoi suffix NG", error);
             Toast.makeText(context, "NGNameに登録できませんでした", Toast.LENGTH_LONG).show();
         }
     }
 
     /** 191 persists the item but does not notify the displayed response list itself. */
-    private static void notifyLegacyNameChange(ClassLoader loader, Object nameType,
-            Class<?> itemType, Object item) throws ReflectiveOperationException {
+    static void notifyLegacyNameChange(ClassLoader loader, Object nameType,
+            Class<?> itemType, Object previous, Object item) throws ReflectiveOperationException {
         if (!"o.mgExternalSyntheticLambda3".equals(nameType.getClass().getName())) return;
         Class<?> changeType = Class.forName("o.MaxNativeAdLoaderImplcExternalSyntheticLambda0", false, loader);
         Object change = changeType.getConstructor(nameType.getClass(), itemType, itemType)
-                .newInstance(nameType, null, item);
+                .newInstance(nameType, previous, item);
         Object event = Class.forName("o.setRequestListener", false, loader).getField("f").get(null);
         event.getClass().getMethod("b", Object.class).invoke(event, change);
     }

@@ -117,10 +117,10 @@ public final class WacchoiLongPressMenu {
                                     return "HaiagaruWacchoiSuffixNg";
                                 }
                                 if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0)
-                                    WacchoiSuffixNg.confirm(launchContext, query);
+                                    WacchoiSuffixNg.confirm(launchContext, query, found.nativeBoard);
                                 return null;
                             });
-                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁でNGName登録",
+                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁をコピーしてNG編集",
                             android.R.drawable.ic_menu_delete, ngCallback);
                 }
                 return;
@@ -186,9 +186,9 @@ public final class WacchoiLongPressMenu {
 
         final Context ngContext = (Context) activity;
         if (WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
-            menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁でNGName登録")
+            menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁をコピーしてNG編集")
                     .setOnMenuItemClickListener(item -> {
-                        WacchoiSuffixNg.confirm(ngContext, context.query);
+                        WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard);
                         return true;
                     });
         }
@@ -343,6 +343,18 @@ public final class WacchoiLongPressMenu {
 
     private static void readBoard(Object value, SearchContext found) {
         if (value == null) return;
+        if (value.getClass().getName().endsWith("BoardID")) found.nativeBoard = value.toString();
+        else {
+            for (Method method : value.getClass().getMethods()) {
+                if (method.getParameterTypes().length != 0
+                        || !method.getReturnType().getName().endsWith("BoardID")) continue;
+                try {
+                    Object boardId = method.invoke(value);
+                    if (boardId != null) found.nativeBoard = boardId.toString();
+                } catch (ReflectiveOperationException ignored) { }
+                break;
+            }
+        }
         String[] hostFields = {"f", "e", "b", "c", "i", "j"};
         String[] boardFields = {"g", "f", "c", "b", "j", "i"};
         for (String field : hostFields) {
@@ -471,6 +483,7 @@ public final class WacchoiLongPressMenu {
     }
 
     private static final class SearchContext {
+        String nativeBoard;
         String host;
         String board;
         String query;
