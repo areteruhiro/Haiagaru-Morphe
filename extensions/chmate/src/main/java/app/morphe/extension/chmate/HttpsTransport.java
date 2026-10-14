@@ -27,7 +27,9 @@ public final class HttpsTransport {
     }
 
     public static boolean isLocalThumbnailEndpoint(String host, int port) {
-        return port > 0 && port == thumbnailServerPort && "127.0.0.1".equals(host);
+        return (port > 0 && port == thumbnailServerPort && "127.0.0.1".equals(host))
+                || ImageVpnController.isLocalEndpoint(host, port)
+                || (ImageVpnController.enabled() && "127.0.0.1".equals(host) && port == 9);
     }
 
     /** -1 selects the HTTPS default; nonstandard explicitly selected ports are retained. */
@@ -66,11 +68,23 @@ public final class HttpsTransport {
     }
 
     public static URLConnection openConnection(URL url) throws IOException {
-        return upgrade(url).openConnection();
+        URLConnection connection = openRawConnection(url, null, false);
+        return ImageVpnController.enabled()
+                ? ImageVpnRedirectConnection.wrap(connection, url, null, false) : connection;
     }
 
     public static URLConnection openConnection(URL url, Proxy proxy) throws IOException {
-        return upgrade(url).openConnection(proxy);
+        URLConnection connection = openRawConnection(url, proxy, true);
+        return ImageVpnController.enabled()
+                ? ImageVpnRedirectConnection.wrap(connection, url, proxy, true) : connection;
+    }
+
+    /** Only the guarded redirect driver may call this when VPN protection is enabled. */
+    static URLConnection openRawConnection(URL url, Proxy proxy, boolean explicitProxy) throws IOException {
+        URL target = ImageVpnController.route(upgrade(url));
+        // Capability URLs must stay local even if a system HTTP proxy is configured.
+        if (isLocalThumbnailEndpoint(target.getHost(), target.getPort())) return target.openConnection(Proxy.NO_PROXY);
+        return explicitProxy ? target.openConnection(proxy) : target.openConnection();
     }
 
     public static InputStream openStream(URL url) throws IOException {

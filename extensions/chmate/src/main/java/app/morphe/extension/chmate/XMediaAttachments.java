@@ -98,6 +98,8 @@ public final class XMediaAttachments {
             if (item == null) continue;
             String thumbnail = item.optString("media_url_https");
             if (thumbnail.isEmpty()) thumbnail = item.optString("url");
+            String normalizedThumbnail = TwimgImageUrls.canonical(thumbnail);
+            if (normalizedThumbnail != null) thumbnail = normalizedThumbnail;
             JSONObject info = item.optJSONObject("video_info");
             JSONArray variants = info == null ? null : info.optJSONArray("variants");
             String best = null;

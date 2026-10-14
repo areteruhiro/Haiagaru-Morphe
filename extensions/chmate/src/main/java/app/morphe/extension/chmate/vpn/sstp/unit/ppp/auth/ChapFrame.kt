@@ -1,0 +1,73 @@
+// Adapted from Open-SSTP-Client, revision 5f97511c3afff7dcf76b763882e0e29207ad1a36.
+// Copyright (c) 2019 KOBAYASHI Ittoku. MIT; see third-party/open-sstp/LICENSE.
+package app.morphe.extension.chmate.vpn.sstp.unit.ppp.auth
+
+import app.morphe.extension.chmate.vpn.sstp.unit.ppp.Frame
+import app.morphe.extension.chmate.vpn.sstp.unit.ppp.PPP_PROTOCOL_CHAP
+import java.nio.ByteBuffer
+
+
+internal const val CHAP_CODE_CHALLENGE: Byte = 1
+internal const val CHAP_CODE_RESPONSE: Byte = 2
+internal const val CHAP_CODE_SUCCESS: Byte = 3
+internal const val CHAP_CODE_FAILURE: Byte = 4
+
+
+internal abstract class ChapFrame : Frame() {
+    override val protocol = PPP_PROTOCOL_CHAP
+}
+
+internal abstract class ChapValueNameFrame : ChapFrame() {
+    internal var valueName = ChapValueNameFiled()
+    override val length: Int
+        get() = headerSize + valueName.length
+
+    override fun read(buffer: ByteBuffer) {
+        readHeader(buffer)
+
+        valueName.givenLength = givenLength - headerSize
+        valueName.read(buffer)
+    }
+
+    override fun write(buffer: ByteBuffer) {
+        writeHeader(buffer)
+
+        valueName.write(buffer)
+    }
+}
+
+internal class ChapChallenge : ChapValueNameFrame() {
+    override val code = CHAP_CODE_CHALLENGE
+}
+
+internal class ChapResponse : ChapValueNameFrame() {
+    override val code = CHAP_CODE_RESPONSE
+}
+
+internal abstract class ChapMessageFrame : ChapFrame() {
+    internal var message = ChapMessageField()
+    override val length: Int
+        get() = headerSize + message.length
+
+    override fun read(buffer: ByteBuffer) {
+        readHeader(buffer)
+
+        message.givenLength = givenLength - headerSize
+        message.read(buffer)
+    }
+
+    override fun write(buffer: ByteBuffer) {
+        writeHeader(buffer)
+
+        message.write(buffer)
+    }
+}
+
+internal class ChapSuccess : ChapMessageFrame() {
+    override val code = CHAP_CODE_SUCCESS
+}
+
+internal class ChapFailure : ChapMessageFrame() {
+    override val code = CHAP_CODE_FAILURE
+}
+
