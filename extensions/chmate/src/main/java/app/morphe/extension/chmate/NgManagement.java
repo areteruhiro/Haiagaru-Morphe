@@ -170,7 +170,7 @@ public final class NgManagement {
                     List<NativeNgStore.Entry> group = groups.get(i);
                     NativeNgStore.Entry first = group.get(0);
                     String regex = WacchoiSuffixNg.expression(NgNameConsolidation.suffix(first.pattern, first.flags));
-                    short flags = (short) (first.flags | 0x20);
+                    short flags = NgNameConsolidation.regexFlags(first.flags);
                     boolean exists = snapshot.stream().anyMatch(e -> regex.equals(e.pattern)
                             && Objects.equals(first.board, e.board) && flags == e.flags);
                     if (!exists) after.add(store.item(regex, flags, System.currentTimeMillis(), first.board));
