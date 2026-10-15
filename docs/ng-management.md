@@ -76,3 +76,33 @@ data. Screenshots: `build/verification/ng-literal-preview.png` and
 `build/verification/ng-literal-after.png`. User's Samsung/Android16 environment
 and 226/241/242 UI are not yet checked; the corrected implementation is shared.
 The published 1.8.0 asset has not been replaced and no release/commit was made.
+
+## 1.8.1 report: consolidation preview buttons outside the screen
+
+191/Android16 report: 15 suffix groups, 36 registrations; the multi-line
+choice list fills the dialog and even its bottom does not expose Apply/Cancel.
+The preview combined `setMultiChoiceItems` with a custom `setView` panel.
+Framework AlertController can give the list WRAP_CONTENT/zero weight in this
+configuration, letting it displace the action panel when there are many rows.
+
+Remove that custom panel. Keep the native choice-list panel and action panel;
+add the optional source-deletion checkbox as a non-selectable ListView footer.
+The checkbox remains interactive and scrolls with the list; Apply/Cancel stay
+in the framework's fixed action area. Selection indices and write safeguards
+are unchanged, deletion still defaults OFF, and no data is written by scrolling.
+This preview implementation is shared by 191/226/241/242.
+
+`scripts/frida-ng-preview-layout.js` seeds 15 groups/36 synthetic registrations
+only in an isolated package (`...haiagaru.nglayout191`) and checks both buttons'
+bounds, choice count and footer. It does not replace application methods.
+
+Validation: Android MPP build and original-191 patch application succeeded.
+API36 isolated emulator, 1080x2400: 15 choices + one footer; Apply and Cancel
+within the usable display before/after scrolling. Bottom screenshot:
+`build/verification/ng-layout-bottom.png`. The deletion checkbox defaults OFF.
+Selected one three-name group and enabled deletion through actual UI taps;
+Apply returned to the manager and the native store changed from 36 to 34
+registrations (three originals replaced with one regex). Other fixture rules
+remained. No production methods were replaced. Samsung physical-device testing
+and 226/241/242 UI testing remain unperformed; the preview code is shared.
+No release assets or metadata were changed.

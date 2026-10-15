@@ -218,6 +218,7 @@ yujirox 様 <br>
 ﾜｯﾁｮｲ 8f01-uDul 様 <br>
 toya0717 様<br>
 MUMEI 様<br>
+タケヨシキ様<br>
 無名 様<br>
 ご支援ありがとうございます。
 

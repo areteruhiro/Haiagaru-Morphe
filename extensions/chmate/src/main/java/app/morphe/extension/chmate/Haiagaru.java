@@ -3491,6 +3491,9 @@ public final class Haiagaru {
                     preferences.getBoolean("compactQuickFilters", false));
         }
         final Switch compactQuickFiltersSwitch = compactFilters;
+        Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
+                "ワッチョイ長押しメニューをNG登録優先の順番にする",
+                preferences.getBoolean("wacchoiNgFirstMenu", false));
         final boolean initialHideNgThreadGroup = hideNgThreadGroup();
         Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
                 text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
@@ -3862,6 +3865,7 @@ public final class Haiagaru {
                             .putInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, hissiViewerSwipeHistory.getSelectedItemPosition())
                             .putBoolean(KYODEMO_ENHANCED_VIEWER_KEY, kyodemoEnhancedViewer.isChecked())
                             .putBoolean("compactQuickFilters", compactQuickFiltersSwitch != null && compactQuickFiltersSwitch.isChecked())
+                            .putBoolean("wacchoiNgFirstMenu", wacchoiNgFirstMenu.isChecked())
                             .putBoolean("hideNgThreadGroup", hideNgThreadGroupSwitch.isChecked())
                             .putBoolean("readThreadsFirst", readThreadsFirstSwitch == null
                                     ? ReadThreadsFirst.enabled() : readThreadsFirstSwitch.isChecked())

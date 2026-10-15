@@ -158,7 +158,12 @@ public final class NgManagement {
         remove.setText("統合した元のNGNameを削除する（選択した対象のみ）");
         AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("統合する下4桁を選択")
                 .setMultiChoiceItems(labels.toArray(new String[0]), selected, (d, which, checked) -> selected[which] = checked)
-                .setView(remove).setNegativeButton("キャンセル", null).setPositiveButton("適用", null).create();
+                .setNegativeButton("キャンセル", null).setPositiveButton("適用", null).create();
+        // A custom panel alongside AlertDialog's choice list gives that list
+        // WRAP_CONTENT/zero weight on some framework themes. Many multi-line
+        // rows then push the button bar off-screen. Keep just the native list
+        // panel, and scroll the optional deletion checkbox as its footer.
+        dialog.getListView().addFooterView(remove, null, false);
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 List<Object> after = new ArrayList<>();
