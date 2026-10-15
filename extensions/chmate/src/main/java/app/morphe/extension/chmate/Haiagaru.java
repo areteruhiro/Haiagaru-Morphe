@@ -426,6 +426,7 @@ public final class Haiagaru {
     public static void onApplicationPreCreate(Application application) {
         if (application == null) return;
         initializeApplicationContext(application);
+        NativeRestore191.initialize(application);
         EmojiFontFallback.initialize(application);
     }
 
@@ -443,6 +444,7 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            NativeRestore191.onActivityResumed(activity);
                             StringReplacement.reload(activity, false, null);
                         }
                         @Override public void onActivityPaused(Activity activity) { }
@@ -3504,6 +3506,10 @@ public final class Haiagaru {
                     preferences.getBoolean("compactQuickFilters", false));
         }
         final Switch compactQuickFiltersSwitch = compactFilters;
+        final boolean initialHideNgThreadGroup = hideNgThreadGroup();
+        Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
+                text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
+                initialHideNgThreadGroup);
         Switch readThreadsFirst = null;
         // 191/241/242/243 expose this in ChMate's board display options.
         // 226 keeps the Haiagaru toggle until its settings UI is migrated.
@@ -3873,6 +3879,7 @@ public final class Haiagaru {
                             .putInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, hissiViewerSwipeHistory.getSelectedItemPosition())
                             .putBoolean(KYODEMO_ENHANCED_VIEWER_KEY, kyodemoEnhancedViewer.isChecked())
                             .putBoolean("compactQuickFilters", compactQuickFiltersSwitch != null && compactQuickFiltersSwitch.isChecked())
+                            .putBoolean("hideNgThreadGroup", hideNgThreadGroupSwitch.isChecked())
                             .putBoolean("readThreadsFirst", readThreadsFirstSwitch == null
                                     ? ReadThreadsFirst.enabled() : readThreadsFirstSwitch.isChecked())
                             .putBoolean("edgeReporterId", edgeReporterId.isChecked())
@@ -3904,7 +3911,8 @@ public final class Haiagaru {
                     boolean imageVpnChanged = ImageVpnController.enabled() != preferences.getBoolean("imageVpnEnabled", false);
                     ImageVpnController.setEnabled(preferences.getBoolean("imageVpnEnabled", false));
                     if (!before.equals(after) || legacyPlusChanged
-                            || imageVpnChanged || initialThreadTitleSpacing != threadTitleSpacingPercent()) restart(activity);
+                            || imageVpnChanged || initialThreadTitleSpacing != threadTitleSpacingPercent()
+                            || initialHideNgThreadGroup != hideNgThreadGroup()) restart(activity);
                     else if (initialSettingsLanguage != settingsLanguage.getSelectedItemPosition()) {
                         Toast.makeText(activity, text("表示言語を変更しました。設定を開き直すと反映されます。",
                                 "Language saved. Reopen settings to apply."), Toast.LENGTH_SHORT).show();
@@ -4784,6 +4792,15 @@ public final class Haiagaru {
             }
             ReadThreadsFirst.refreshComposeSettingDialog(activity);
         });
+    }
+
+    private static boolean hideNgThreadGroup() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("hideNgThreadGroup", false);
+    }
+
+    public static java.util.List<?> ngThreadsForDisplay(java.util.List<?> threads) {
+        return NgThreadGroup.visible(threads, hideNgThreadGroup());
     }
 
     public static int hissiViewerTheme() {
