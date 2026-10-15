@@ -1044,6 +1044,33 @@ private fun BytecodePatchContext.patchReadThreadsFirst(version: String) {
     }
 }
 
+/** Suppress only the NG display bucket, never the underlying NG rules or source list. */
+private fun BytecodePatchContext.patchNgThreadGroupVisibility(version: String) {
+    val owner = when (version) {
+        "0.8.10.191 dev" -> "Lo/m8a;"
+        "0.8.10.226 dev" -> "Lo/getWriteBytesTotal\$RemoteActionCompatParcelizer;"
+        "0.8.10.241" -> "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListViewModel\$RemoteActionCompatParcelizer;"
+        "0.8.10.242 dev" -> "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListViewModel\$ComponentActivity;"
+        else -> error("Unsupported NG thread display version: $version")
+    }
+    val legacy191 = version == "0.8.10.191 dev"
+    val list = if (legacy191) "Ljava/util/ArrayList;" else "Ljava/util/List;"
+    val parameters = when (version) {
+        "0.8.10.191 dev" -> listOf(list, list, "Z", "Lo/onRewardedVideoCompleted;", "Z")
+        "0.8.10.226 dev" -> listOf(list, list, "Z", list, "Z")
+        else -> listOf(list, list, list, "Z")
+    }
+    val method = mutableClassDefBy(owner).methods.single {
+        it.accessFlags and 8 != 0 && it.parameterTypes.map(CharSequence::toString) == parameters
+    }
+    method.addInstructionsWithLabels(0, """
+        invoke-static/range {p1 .. p1}, $EXTENSION->ngThreadsForDisplay(Ljava/util/List;)Ljava/util/List;
+        move-result-object p1
+        ${if (legacy191) "check-cast p1, Ljava/util/ArrayList;" else ""}
+    """.trimIndent())
+    println("NG thread group visibility: $version -> $owner")
+}
+
 /** Keep every Unit event alive through ChMate's stateIn in the unread total. */
 private fun BytecodePatchContext.patchUnreadToolbarCount(version: String) {
     val legacy = version == "0.8.10.241"
@@ -1110,6 +1137,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
         patchQuickFilterToolbar(packageMetadata.versionName)
         if (packageMetadata.versionName == "0.8.10.191 dev") {
+            patchNativeRestore191()
             patchConsumedPopupMenu191()
             patchSearchThreadForwardToTablet191()
         }
@@ -1119,6 +1147,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         }
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchReadThreadsFirst(packageMetadata.versionName)
+            patchNgThreadGroupVisibility(packageMetadata.versionName)
             patchThreadTitleSpacing(packageMetadata.versionName)
             patchPostEditorTextSize()
         }
@@ -1396,6 +1425,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
                 patchIoTalkDatLoading()
                 patchIoTalkPostIntegrity()
+                patchUpliftIntegrityComparison("Lo/VLj;", "c", "Lo/VLj\$ComponentActivity;")
+                patchUpliftIntegrityComparison("Lo/VLj;", "c", "Lo/VLj\$ComponentActivity;", "Lo/getPaint;", "J")
                 patchIoUpliftLoginCastMessage()
                 patchIoUpliftTokenExpiryArithmetic()
                 patchIoThreadRefreshCache()
@@ -3406,7 +3437,20 @@ private fun BytecodePatchContext.patchIoUpliftLoginCastMessage() {
         is RegisterRangeInstruction -> call.startRegister + 1
         else -> error("ChMate 241 UPLIFT substring index register changed")
     }
-    method.addInstructionsWithLabels(substringIndex, "const/4 v$indexRegister, 0x2")
+    // Fix the calculation itself: overriding substring's argument afterwards
+    // still lets the signature-derived division throw before reaching it.
+    val instructions = method.implementation!!.instructions.toList()
+    val divisionIndex = substringIndex - 2
+    val division = instructions[divisionIndex]
+    check(division.opcode == Opcode.DIV_INT_2ADDR
+        && (division as TwoRegisterInstruction).registerA == indexRegister) {
+        "ChMate 241 UPLIFT diagnostic division changed"
+    }
+    val numerator = instructions[divisionIndex - 1] as? NarrowLiteralInstruction
+    check(numerator?.narrowLiteral == 7120) {
+        "ChMate 241 UPLIFT diagnostic numerator changed"
+    }
+    method.replaceInstruction(divisionIndex, "const/4 v$indexRegister, 0x2")
 }
 
 /** 241's cached UPLIFT token expiry adds a signature-derived quotient to a
