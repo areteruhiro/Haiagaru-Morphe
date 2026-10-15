@@ -2092,6 +2092,29 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
 ) {
     if (versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
         patchWacchoiNgPopupDispatch(versionName)
+        patchWacchoiSuffixLongPress(versionName)
+        if (versionName != "0.8.10.191 dev") {
+            val builder = when (versionName) {
+                "0.8.10.226 dev" -> "Lo/setDomStorageEnabled;"
+                "0.8.10.241" -> "Lo/OnUserEarnedRewardListener;"
+                else -> "Lo/isDataValid;"
+            }
+            val appenders = mutableClassDefBy(builder).methods.filter { method ->
+                method.name != "<init>" && method.accessFlags and 8 == 0 && method.returnType == "V" &&
+                    method.implementation?.instructions?.any {
+                        val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+                        ref?.definingClass == "Ljava/util/List;" && ref.name == "add"
+                    } == true
+            }
+            check(appenders.size == 2) { "$versionName name sheet appenders changed (${appenders.size})" }
+            appenders.forEach { method ->
+                method.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
+                    .asReversed().forEach { (index, _) ->
+                        method.addInstructionsWithLabels(index,
+                            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->reorderNameSheet(Ljava/lang/Object;)V")
+                    }
+            }
+        }
     }
     if (versionName == "0.8.10.226 dev") {
         val owner = "Lo/getImgAcceptedHeight;"
@@ -2315,6 +2338,84 @@ private fun BytecodePatchContext.patchImageListResolvedMedia(version: String) {
     println("Image-list resolved media: $version -> ${fragment.type}")
 }
 
+private fun BytecodePatchContext.patchWacchoiSuffixLongPress(version: String) {
+    var rowHooks = 0
+    val compose = mutableListOf<Pair<String, Method>>()
+    classDefForEach { cls ->
+        cls.methods.toList().forEach { method ->
+            if (method.name == "getView" && method.returnType == "Landroid/view/View;"
+                && method.parameterTypes.map(CharSequence::toString) == listOf("I", "Landroid/view/View;", "Landroid/view/ViewGroup;")
+                && method.implementation?.instructions?.any {
+                    val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+                    ref?.definingClass == "Landroid/view/MenuItem;" && ref.name == "getTitle"
+                } == true) {
+                val owner = mutableClassDefBy(cls)
+                val mutable = owner.findMutableMethodOf(method)
+                // getView may reuse every parameter register (191 even reuses
+                // p1 for the returned View). Keep the original frame untouched.
+                val wrapper = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(
+                    cls.type, "getView", method.parameters, method.returnType, method.accessFlags,
+                    method.annotations, method.hiddenApiRestrictions,
+                    com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(5, emptyList(), emptyList(), emptyList())
+                ))
+                mutable.setName("haiagaruSuffixGetView")
+                wrapper.addInstructionsWithLabels(0, """
+                    invoke-virtual/range {p0 .. p3}, ${cls.type}->haiagaruSuffixGetView(ILandroid/view/View;Landroid/view/ViewGroup;)Landroid/view/View;
+                    move-result-object v0
+                    move-object p2, v0
+                    invoke-static/range {p0 .. p2}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->bindSuffixRow(Ljava/lang/Object;ILandroid/view/View;)V
+                    return-object v0
+                """.trimIndent())
+                owner.methods.add(wrapper)
+                rowHooks++
+            }
+            val p = method.parameterTypes.map(CharSequence::toString)
+            val callbackIndex = if (p.size == 5) 3 else 4
+            val clickSignature = p.size in 5..6 && p[1] == "Z" && p[2] == "Ljava/lang/String;"
+                && p.last() == "I" && method.returnType == p[0]
+            if (com.android.tools.smali.dexlib2.AccessFlags.STATIC.isSet(method.accessFlags) && clickSignature
+                && cls.methods.any { other ->
+                    val q = other.parameterTypes.map(CharSequence::toString)
+                    (q.size in 9..10 && other.returnType == p[0] && q[0] == p[0] && q[1] == "Z"
+                        && q[2] == "Ljava/lang/String;" && q[4] == "Ljava/lang/String;" && q[5] == p[callbackIndex]
+                        && q[6] == p[callbackIndex] && q.last() == p[callbackIndex])
+                    || (q.size == 7 && other.returnType == p[0] && q[0] == p[0] && q[1] == "Z"
+                        && q[2] == p[callbackIndex] && q[3] == "Z" && q[5] == p[callbackIndex] && q[6] == "I")
+                }) compose += cls.type to method
+        }
+    }
+    check(rowHooks > 0) { "No $version native menu rows for suffix long press" }
+    if (version != "0.8.10.191 dev") {
+        // Older Compose builds do not expose this exact combined-click bridge.
+        // Do not make their ordinary menu features unpatchable just because
+        // the optional suffix-row long-press enhancement is unavailable.
+        if (compose.isEmpty() && version in setOf("0.8.10.226 dev", "0.8.10.241")) {
+            println("Wacchoi suffix long press: $version native row adapters=$rowHooks; compatible Compose bridge unavailable")
+            return
+        }
+        check(compose.size == 1) { "Expected one $version Compose clickable bridge, found ${compose.map { it.first }}" }
+        val (owner, method) = compose.single()
+        val mutable = mutableClassDefBy(owner).findMutableMethodOf(method)
+        val parameterCount = method.parameterTypes.size
+        check(mutable.implementation!!.registerCount > parameterCount) { "Compose clickable needs a local register" }
+        val helper = if (parameterCount == 5)
+            "suffixCombinedClickable5(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/Object;I)Ljava/lang/Object;"
+        else "suffixCombinedClickable(Ljava/lang/Object;ZLjava/lang/String;Ljava/lang/Object;Ljava/lang/Object;I)Ljava/lang/Object;"
+        mutable.addInstructionsWithLabels(0, """
+            const-string v0, "${owner.removePrefix("L").removeSuffix(";").replace('/', '.')}"
+            invoke-static {v0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->configureCombinedClickable(Ljava/lang/String;)V
+            invoke-static/range {p0 .. p${parameterCount - 1}}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->$helper
+            move-result-object v0
+            if-eqz v0, :nativeSuffixClick
+            check-cast v0, ${method.returnType}
+            return-object v0
+            :nativeSuffixClick
+            nop
+        """.trimIndent())
+    }
+    println("Wacchoi suffix long press: $version, native row adapters=$rowHooks, Compose=${compose.size}")
+}
+
 private fun BytecodePatchContext.patchWacchoiNgPopupDispatch(version: String) {
     // These custom popups bypass MenuItem's listener. Match the shared structure
     // rather than a version-specific obfuscated name, and touch only our action.
@@ -2378,6 +2479,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
     check(nameAnchors.size == 1) { "191 name/SLIP menu anchor changed" }
     val nameAnchor = nameAnchors.single()
     val nameMenuRegister = (nameAnchor.value as FiveRegisterInstruction).registerC
+    nameMenu.addInstructionsWithLabels(nameAnchor.index + 1,
+        "invoke-static/range {v$nameMenuRegister .. v$nameMenuRegister}, " +
+            "Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->reorderLegacyNameMenu(Ljava/lang/Object;)V")
     nameMenu.addInstructionsWithLabels(nameAnchor.index, """
         invoke-static {p0, v$nameMenuRegister, p1}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendLegacyForResponse(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
     """.trimIndent())
