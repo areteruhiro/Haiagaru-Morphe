@@ -7,13 +7,20 @@ import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.view.View;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Copies a suffix fragment and opens the native editor; never auto-adds an NG row. */
+/** Explicit suffix registration; long press retains the copy-and-edit workflow. */
 public final class WacchoiSuffixNg {
     private WacchoiSuffixNg() {}
 
@@ -25,6 +32,37 @@ public final class WacchoiSuffixNg {
     static short registrationFlags(short previous, boolean chain, boolean hidden) {
         return (short) ((previous & ~(0x70 | CHAIN | HIDDEN)) | REGEX
                 | (chain ? CHAIN : 0) | (hidden ? HIDDEN : 0));
+    }
+
+    static short registrationFlags(short previous, boolean regex, boolean enabled, boolean chain, boolean hidden) {
+        return (short) ((previous & ~(0x70 | 4 | CHAIN | HIDDEN)) | (regex ? REGEX : 0x10)
+                | (enabled ? 0 : 4) | (chain ? CHAIN : 0) | (hidden ? HIDDEN : 0));
+    }
+
+    static String regexFragment(String value) {
+        // Keep the familiar -aabb spelling, while escaping symbols such as + and |.
+        StringBuilder result = new StringBuilder();
+        for (char c : value.toCharArray()) {
+            if ("\\.[]{}()*+?^$|".indexOf(c) >= 0) result.append('\\');
+            result.append(c);
+        }
+        return result.toString();
+    }
+
+    static String stripTrailingSeparators(String base) {
+        while (base.endsWith("|")) {
+            int slashes = 0;
+            for (int i = base.length() - 2; i >= 0 && base.charAt(i) == '\\'; i--) slashes++;
+            if ((slashes & 1) != 0) break;
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+    static String appendRegex(String base, String fragment) {
+        base = stripTrailingSeparators(base);
+        if (base.isEmpty()) return fragment;
+        return "(?:" + base + ")|(?:" + fragment + ")";
     }
 
     public static String suffix(String query) {
@@ -48,6 +86,102 @@ public final class WacchoiSuffixNg {
     }
 
     public static void confirm(Context context, String query, String currentBoard) {
+        String suffix = suffix(query);
+        android.app.Activity activity = Haiagaru.toolbarActivity(context);
+        if (suffix == null || activity == null || activity.isFinishing() || activity.isDestroyed()) return;
+        try {
+            NativeNgStore store = new NativeNgStore(activity, "NAME");
+            LinearLayout content = new LinearLayout(activity);
+            content.setOrientation(LinearLayout.VERTICAL);
+            int pad = Math.round(16 * activity.getResources().getDisplayMetrics().density);
+            content.setPadding(pad, 0, pad, 0);
+            CheckBox enabled = new CheckBox(activity);
+            enabled.setText("有効"); enabled.setChecked(true); content.addView(enabled);
+            RadioGroup mode = new RadioGroup(activity); mode.setOrientation(LinearLayout.HORIZONTAL);
+            RadioButton literal = new RadioButton(activity); literal.setId(View.generateViewId()); literal.setText("文字列");
+            RadioButton regex = new RadioButton(activity); regex.setId(View.generateViewId()); regex.setText("正規表現");
+            mode.addView(literal); mode.addView(regex); mode.check(literal.getId()); content.addView(mode);
+            EditText text = new EditText(activity); text.setSingleLine(true); text.setText("-" + suffix); content.addView(text);
+            CheckBox chain = new CheckBox(activity); chain.setText("連鎖"); content.addView(chain);
+            CheckBox hidden = new CheckBox(activity); hidden.setText("非表示（あぼーん扱いにしない）"); content.addView(hidden);
+            Spinner scope = NgManagement.addScopePicker(activity, content, currentBoard);
+            if (currentBoard != null && !currentBoard.isEmpty()) scope.setSelection(1);
+            TextView baseLabel = new TextView(activity); baseLabel.setText("追加先（同じ板・有効／連鎖／非表示設定の正規表現NG）"); content.addView(baseLabel);
+            Spinner base = new Spinner(activity); content.addView(base);
+            List<NativeNgStore.Entry> choices = new ArrayList<>();
+            Runnable refresh = () -> {
+                choices.clear();
+                List<String> labels = new ArrayList<>(); labels.add("新規登録");
+                try {
+                    short flags = registrationFlags((short) 0, true, enabled.isChecked(), chain.isChecked(), hidden.isChecked());
+                    for (NativeNgStore.Entry entry : store.entries()) {
+                        if (entry.flags == flags && Objects.equals(entry.board, NgManagement.selectedScope(scope))) {
+                            choices.add(entry); labels.add(entry.pattern);
+                        }
+                    }
+                } catch (ReflectiveOperationException error) { android.util.Log.w("Haiagaru", "NG choices", error); }
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, android.R.layout.simple_spinner_item, labels);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); base.setAdapter(adapter);
+                base.setVisibility(regex.isChecked() ? View.VISIBLE : View.GONE);
+                baseLabel.setVisibility(regex.isChecked() ? View.VISIBLE : View.GONE);
+            };
+            mode.setOnCheckedChangeListener((group, id) -> {
+                String value = text.getText().toString();
+                if (regex.isChecked() && value.equals("-" + suffix)) text.setText(regexFragment(value));
+                if (literal.isChecked() && value.equals(regexFragment("-" + suffix))) text.setText("-" + suffix);
+                refresh.run();
+            });
+            enabled.setOnCheckedChangeListener((button, checked) -> refresh.run());
+            chain.setOnCheckedChangeListener((button, checked) -> refresh.run());
+            hidden.setOnCheckedChangeListener((button, checked) -> refresh.run());
+            scope.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                public void onItemSelected(AdapterView<?> p, View v, int position, long id) { refresh.run(); }
+                public void onNothingSelected(AdapterView<?> p) { }
+            });
+            TextView help = new TextView(activity);
+            help.setText("NGNameを文字列で登録する人は\n-aabb\nNGのたびに新規登録\n―――――――――――――――――――\nNGNameを正規表現で登録する人は\n-aabb|\nベースとなるNGのところに追加登録\n\n正規表現では追加先を選択できます。末尾の | は追記用の区切りです。空の条件は保存しません。\nこのNG項目を長押しすると、下4桁をコピーして従来のNG編集画面を開きます。");
+            content.addView(help);
+            ScrollView scroll = new ScrollView(activity); scroll.addView(content);
+            AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("NGName追加")
+                    .setView(scroll).setNegativeButton("キャンセル", null).setPositiveButton("OK", null).create();
+            dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                try {
+                    String value = text.getText().toString();
+                    if (value.trim().isEmpty()) { text.setError("登録文字列を入力してください"); return; }
+                    NativeNgStore.Entry target = regex.isChecked() && base.getSelectedItemPosition() > 0
+                            ? choices.get(base.getSelectedItemPosition() - 1) : null;
+                    List<NativeNgStore.Entry> current = store.entries();
+                    if (target != null && current.stream().noneMatch(target::same))
+                        throw new IllegalStateException("追加先が変更されました。画面を開き直してください");
+                    String pattern = regex.isChecked() ? stripTrailingSeparators(value) : value;
+                    if (pattern.isEmpty()) { text.setError("空の正規表現は登録できません"); return; }
+                    if (target != null) pattern = appendRegex(target.pattern, pattern);
+                    if (regex.isChecked()) Pattern.compile(pattern);
+                    short flags = registrationFlags((short) 0, regex.isChecked(), enabled.isChecked(), chain.isChecked(), hidden.isChecked());
+                    String board = NgManagement.selectedScope(scope);
+                    for (NativeNgStore.Entry entry : current) {
+                        if (entry.pattern.equals(pattern) && entry.flags == flags && Objects.equals(entry.board, board)) {
+                            Toast.makeText(activity, "同じNGNameが登録済みです", Toast.LENGTH_SHORT).show(); return;
+                        }
+                    }
+                    if (target == null && current.size() >= Haiagaru.getNgRegistrationLimit())
+                        throw new IllegalStateException("NGNameの登録上限に達しています");
+                    store.update(target == null ? null : target.nativeItem, store.item(pattern, flags,
+                            target == null ? System.currentTimeMillis() : target.timestamp, board));
+                    dialog.dismiss(); Toast.makeText(activity, "NGNameに登録しました", Toast.LENGTH_SHORT).show();
+                } catch (ReflectiveOperationException | RuntimeException error) {
+                    android.util.Log.w("Haiagaru", "NG suffix registration", error);
+                    Toast.makeText(activity, "登録できませんでした: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }));
+            refresh.run(); dialog.show();
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            android.util.Log.w("Haiagaru", "NG suffix dialog", error);
+            Toast.makeText(activity, "NG追加画面を開けませんでした", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public static void copyAndEdit(Context context, String query) {
         String copied = clipboardValue(query);
         if (copied == null) return;
         android.app.Activity activity = Haiagaru.toolbarActivity(context);
@@ -76,87 +210,6 @@ public final class WacchoiSuffixNg {
         }
     }
 
-    private static void register(Context context, String regex, boolean chain, boolean hidden, String board) {
-        try {
-            ClassLoader loader = context.getClassLoader();
-            Class<?> storeType = Class.forName("jp.syoboi.a2chMate.ng.NGWord", false, loader);
-            Class<?> itemType = Class.forName("jp.syoboi.a2chMate.ng.NGWord$Item", false, loader);
-            Object store = null;
-            Object nameType = null;
-            Class<?> appType = context.getApplicationContext().getClass();
-            for (Method method : appType.getDeclaredMethods()) {
-                Class<?>[] parameters = method.getParameterTypes();
-                if (!Modifier.isStatic(method.getModifiers()) || method.getReturnType() != storeType
-                        || parameters.length != 1 || !parameters[0].isEnum()) continue;
-                Object name = null;
-                for (Object value : parameters[0].getEnumConstants()) {
-                    if ("NAME".equals(((Enum<?>) value).name())) name = value;
-                }
-                if (name == null) continue;
-                method.setAccessible(true);
-                store = method.invoke(null, name);
-                nameType = name;
-                break;
-            }
-            if (store == null) throw new IllegalStateException("Native NGName provider unavailable");
-            String version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
-            String snapshotName = "0.8.10.191 dev".equals(version) ? "a"
-                    : "0.8.10.242 dev".equals(version) ? "e" : "d";
-            java.util.List<?> entries = (java.util.List<?>) storeType.getMethod(snapshotName).invoke(store);
-            if (entries == null) throw new IllegalStateException("Native NGName list unavailable");
-            Object previous = null;
-            short previousFlags = 0;
-            long created = System.currentTimeMillis();
-            for (Object existing : entries) {
-                // toString() returns the native pattern on all supported versions.
-                if (!regex.equals(existing.toString())) continue;
-                String existingBoard = null;
-                short flags = 0;
-                long timestamp = created;
-                for (Field field : itemType.getDeclaredFields()) {
-                    if (Modifier.isStatic(field.getModifiers())) continue;
-                    field.setAccessible(true);
-                    if (field.getType() == short.class) flags = field.getShort(existing);
-                    if (field.getType() == long.class) timestamp = field.getLong(existing);
-                    // Ignore the private cached matching key; the two public
-                    // strings are the pattern and optional board restriction.
-                    if (Modifier.isPublic(field.getModifiers()) && field.getType() == String.class) {
-                        Object value = field.get(existing);
-                        if (value != null && !regex.equals(value)) existingBoard = value.toString();
-                    }
-                }
-                if (!java.util.Objects.equals(board, existingBoard)) continue;
-                previous = existing;
-                previousFlags = flags;
-                created = timestamp;
-                break;
-            }
-            if (previous == null && entries.size() >= Haiagaru.getNgRegistrationLimit()) {
-                Toast.makeText(context, "NGNameの登録上限に達しています", Toast.LENGTH_LONG).show();
-                return;
-            }
-            Object item = itemType.getConstructor(String.class, short.class, long.class, String.class)
-                    .newInstance(regex, registrationFlags(previousFlags, chain, hidden), created, board);
-            Method update = null;
-            for (Method method : storeType.getDeclaredMethods()) {
-                Class<?>[] parameters = method.getParameterTypes();
-                if (!Modifier.isStatic(method.getModifiers()) && method.getReturnType() == int.class
-                        && parameters.length == 2 && parameters[0] == itemType && parameters[1] == itemType) {
-                    update = method;
-                    break;
-                }
-            }
-            if (update == null) throw new IllegalStateException("Native NGName registration unavailable");
-            update.setAccessible(true);
-            update.invoke(store, previous, item);
-            notifyLegacyNameChange(loader, nameType, itemType, previous, item);
-            Toast.makeText(context, previous == null ? "NGNameに登録しました" : "NGNameの設定を更新しました",
-                    Toast.LENGTH_SHORT).show();
-        } catch (ReflectiveOperationException | android.content.pm.PackageManager.NameNotFoundException | RuntimeException error) {
-            android.util.Log.w("Haiagaru", "Cannot register Wacchoi suffix NG", error);
-            Toast.makeText(context, "NGNameに登録できませんでした", Toast.LENGTH_LONG).show();
-        }
-    }
 
     /** 191 persists the item but does not notify the displayed response list itself. */
     static void notifyLegacyNameChange(ClassLoader loader, Object nameType,

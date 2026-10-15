@@ -24,6 +24,159 @@ public final class WacchoiLongPressMenu {
     private static final int EDGE_ARCHIVE_TOOLBAR_ID = 0x7e000001;
     private static final int MARK_ALL_READ_TOOLBAR_ID = 0x7e000003;
     private static final ThreadLocal<Object> ACTIVE_DIALOG = new ThreadLocal<>();
+    private static final java.util.Set<Object> ORDERED_NAME_SHEETS =
+            Collections.newSetFromMap(Collections.synchronizedMap(new java.util.WeakHashMap<>()));
+
+    public static boolean preferredOrderEnabled() {
+        Context context = Haiagaru.applicationContextForExtension();
+        return context != null && context.getSharedPreferences(
+                "io.github.areteruhiro.chmate.haiagaru.ui-config", Context.MODE_PRIVATE)
+                .getBoolean("wacchoiNgFirstMenu", false);
+    }
+
+    /** Invoked after native sheet items are appended, only for a marked Wacchoi sheet. */
+    public static void reorderNameSheet(Object builder) {
+        if (!preferredOrderEnabled() || !ORDERED_NAME_SHEETS.contains(builder)) return;
+        try {
+            String field;
+            switch (builder.getClass().getName()) {
+                case "o.setDomStorageEnabled": field = "c"; break;
+                case "o.OnUserEarnedRewardListener": field = "b"; break;
+                case "o.isDataValid": field = "a"; break;
+                default: return;
+            }
+            Object items = fieldValue(builder, field);
+            if (!(items instanceof java.util.List)) return;
+            @SuppressWarnings("unchecked") java.util.List<Object> rows = (java.util.List<Object>) items;
+            WacchoiMenuOrder.reorder(rows, item -> {
+                String titleField;
+                switch (item.getClass().getName()) {
+                    case "o.setDisplayZoomControls": titleField = "h"; break;
+                    case "o.MuteThisAdListener": titleField = "g"; break;
+                    case "o.onDataRangeInserted": titleField = "j"; break;
+                    default: return "";
+                }
+                Object title = fieldValue(item, titleField);
+                return title instanceof String ? (String) title : "";
+            });
+        } catch (RuntimeException error) {
+            android.util.Log.w("Haiagaru", "Cannot order Wacchoi name sheet", error);
+        }
+    }
+
+    /** Only the legacy name/SLIP menu calls this; response-body and ID menus stay intact. */
+    public static void reorderLegacyNameMenu(Object menuObject) {
+        if (!preferredOrderEnabled() || !(menuObject instanceof Menu)
+                || !menuObject.getClass().getName().equals("o.m6fExternalSyntheticLambda0")) return;
+        Menu menu = (Menu) menuObject;
+        if (menu.findItem(76) == null && menu.findItem(ITEM_ID) == null) return;
+        MenuItem suffix = menu.findItem(76), search = menu.findItem(ITEM_ID);
+        if (suffix != null) suffix.setTitle("ﾜｯﾁｮｲ下4桁でNGName登録");
+        if (search != null) search.setTitle("必死チェッカーもどき(ﾜｯﾁｮｲ)");
+        Object items = fieldValue(menuObject, "c");
+        if (items instanceof java.util.List) {
+            @SuppressWarnings("unchecked") java.util.List<MenuItem> rows = (java.util.List<MenuItem>) items;
+            WacchoiMenuOrder.reorder(rows, item -> String.valueOf(item.getTitle()));
+        }
+    }
+    private static final java.util.Map<Object, Runnable> SUFFIX_LONG_PRESS =
+            Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static String combinedClickableOwner;
+    public static void configureCombinedClickable(String owner) { combinedClickableOwner = owner; }
+
+    /** Called by native adapter bind hooks; never changes unrelated rows. */
+    public static void bindSuffixRow(Object adapter, int position, android.view.View row) {
+        if (!(adapter instanceof android.widget.Adapter) || row == null) return;
+        try {
+            Object item = ((android.widget.Adapter) adapter).getItem(position);
+            Runnable action = SUFFIX_LONG_PRESS.get(item);
+            if (action == null && item != null) {
+                for (Field field : item.getClass().getDeclaredFields()) {
+                    if (Modifier.isStatic(field.getModifiers())) continue;
+                    field.setAccessible(true);
+                    action = SUFFIX_LONG_PRESS.get(field.get(item));
+                    if (action != null) break;
+                }
+            }
+            final Runnable selected = action;
+            // Only clear a listener installed by us when a row is recycled.
+            if (selected != null) {
+                row.setTag(0x7e000076, Boolean.TRUE);
+                row.setOnLongClickListener(v -> { selected.run(); return true; });
+            } else if (Boolean.TRUE.equals(row.getTag(0x7e000076))) {
+                row.setOnLongClickListener(null); row.setLongClickable(false); row.setTag(0x7e000076, null);
+            }
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            android.util.Log.w("Haiagaru", "NG suffix long press row", error);
+        }
+    }
+
+    /** Replace Compose clickable only for our callback, retaining native gesture arbitration. */
+    public static Object suffixCombinedClickable5(Object modifier, boolean enabled, String label, Object click, int mask) {
+        return suffixCombinedClickable(modifier, enabled, label, null, click, mask);
+    }
+
+    public static Object suffixCombinedClickable(Object modifier, boolean enabled, String label, Object role, Object click, int mask) {
+        Runnable action = suffixAction(click, 3, new java.util.IdentityHashMap<>());
+        if (action == null) return null;
+        try {
+            Class<?> callback = click.getClass().getInterfaces()[0];
+            Object longClick = java.lang.reflect.Proxy.newProxyInstance(callback.getClassLoader(), new Class<?>[]{callback},
+                    (proxy, method, args) -> {
+                        if (method.getDeclaringClass() == Object.class) {
+                            if (method.getName().equals("hashCode")) return System.identityHashCode(proxy);
+                            if (method.getName().equals("equals")) return proxy == args[0];
+                            return "HaiagaruSuffixLongPress";
+                        }
+                        action.run(); return null;
+                    });
+            Class<?> clickable = Class.forName(combinedClickableOwner, false, callback.getClassLoader());
+            for (Method method : clickable.getDeclaredMethods()) {
+                Class<?>[] p = method.getParameterTypes();
+                // 241's optimized overload: modifier, enabled, long click,
+                // haptic feedback, interaction source, click, default mask.
+                if (Modifier.isStatic(method.getModifiers()) && p.length == 7 && p[0].isInstance(modifier)
+                        && p[1] == boolean.class && p[2] == callback && p[3] == boolean.class
+                        && p[5] == callback && p[6] == int.class) {
+                    method.setAccessible(true);
+                    return method.invoke(null, modifier, (mask & 1) != 0 || enabled, longClick, true, null, click, 0);
+                }
+                if (!Modifier.isStatic(method.getModifiers()) || (p.length != 9 && p.length != 10)
+                        || !p[0].isInstance(modifier) || p[1] != boolean.class || p[2] != String.class
+                        || p[4] != String.class || p[5] != callback || p[6] != callback || p[p.length-1] != callback) continue;
+                Object[] args = new Object[p.length];
+                args[0] = modifier; args[1] = (mask & 1) != 0 || enabled;
+                args[2] = (mask & 2) != 0 ? null : label; args[3] = (mask & 4) != 0 ? null : role;
+                args[4] = "下4桁をコピーしてNG編集"; args[5] = longClick;
+                if (p.length == 10) args[7] = true;
+                args[p.length-1] = click;
+                method.setAccessible(true);
+                return method.invoke(null, args);
+            }
+        } catch (Exception error) { android.util.Log.w("Haiagaru", "NG suffix combined click", error); }
+        return null;
+    }
+
+    // Native sheets copy a menu item and wrap its callback to dismiss the sheet.
+    // Match only the captured callback graph, not merely the outer lambda.
+    private static Runnable suffixAction(Object value, int depth, java.util.IdentityHashMap<Object, Boolean> seen) {
+        if (value == null) return null;
+        Runnable direct = SUFFIX_LONG_PRESS.get(value);
+        if (direct != null) return direct;
+        if (depth == 0 || seen.size() >= 24 || seen.put(value, Boolean.TRUE) != null) return null;
+        Class<?> type = value.getClass();
+        if (type.getName().startsWith("java.") || type.getName().startsWith("android.")
+                || type.getName().startsWith("androidx.") || type.isArray()) return null;
+        for (Field field : type.getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) continue;
+            try {
+                field.setAccessible(true);
+                Runnable found = suffixAction(field.get(value), depth - 1, seen);
+                if (found != null) return found;
+            } catch (ReflectiveOperationException | RuntimeException ignored) { }
+        }
+        return null;
+    }
 
     private WacchoiLongPressMenu() {}
 
@@ -54,6 +207,7 @@ public final class WacchoiLongPressMenu {
     public static void appendNameSheet(Object model, Object builder, Object boardId, String selected) {
         String query = queryInText(selected);
         if (query == null || builder == null) return;
+        if (preferredOrderEnabled()) ORDERED_NAME_SHEETS.add(builder);
         SearchContext found = new SearchContext();
         readBoard(boardId, found);
         // The NG scope BoardID may omit its server. Resolve only the current
@@ -105,7 +259,7 @@ public final class WacchoiLongPressMenu {
                         });
                 method.setAccessible(true);
                 if (found.host != null && found.board != null) {
-                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲで検索",
+                    appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "必死チェッカーもどき(ﾜｯﾁｮｲ)" : "ﾜｯﾁｮｲで検索",
                             android.R.drawable.ic_menu_search, callback);
                 }
                 if (WacchoiSuffixNg.suffix(query) != null) {
@@ -120,7 +274,8 @@ public final class WacchoiLongPressMenu {
                                     WacchoiSuffixNg.confirm(launchContext, query, found.nativeBoard);
                                 return null;
                             });
-                    appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁をコピーしてNG編集",
+                    SUFFIX_LONG_PRESS.put(ngCallback, () -> WacchoiSuffixNg.copyAndEdit(launchContext, query));
+                    appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "ﾜｯﾁｮｲ下4桁でNGName登録" : "ﾜｯﾁｮｲ下4桁をNG登録",
                             android.R.drawable.ic_menu_delete, ngCallback);
                 }
                 return;
@@ -186,11 +341,12 @@ public final class WacchoiLongPressMenu {
 
         final Context ngContext = (Context) activity;
         if (WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
-            menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁をコピーしてNG編集")
+            MenuItem suffixItem = menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁をNG登録")
                     .setOnMenuItemClickListener(item -> {
                         WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard);
                         return true;
                     });
+            SUFFIX_LONG_PRESS.put(suffixItem, () -> WacchoiSuffixNg.copyAndEdit(ngContext, context.query));
         }
         if (context.host == null || context.board == null
                 || KyodemoRouting.boardSlug(context.host, context.board) == null) return;
