@@ -34,6 +34,10 @@ public final class ImgurAlbumAttachments {
     private static final Pattern IMAGE = Pattern.compile(
             "https://i\\.imgur\\.com/[A-Za-z0-9]+\\.(?:png|jpe?g|gif|webp)(?:[?#].*)?",
             Pattern.CASE_INSENSITIVE);
+    private static final Pattern VIDEO_PROPERTY = Pattern.compile(
+            "(?:property|name)\\s*=\\s*['\"]og:video(?::(?:url|secure_url))?['\"]", Pattern.CASE_INSENSITIVE);
+    private static final Pattern VIDEO = Pattern.compile(
+            "https://i\\.imgur\\.com/[A-Za-z0-9]+\\.mp4(?:[?#].*)?", Pattern.CASE_INSENSITIVE);
     private static final ExecutorService WORKER = Executors.newFixedThreadPool(2);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final Map<String, Entry> CACHE = new LinkedHashMap<>();
@@ -130,7 +134,7 @@ public final class ImgurAlbumAttachments {
                 append(model, cacheFieldName, XMediaAttachments.directVideos((String) raw));
             Matcher albums = ALBUM.matcher((String) raw);
             LinkedHashSet<String> ids = new LinkedHashSet<>();
-            while (Haiagaru.mediaImageFetchEnabled() && albums.find() && ids.size() < 8) ids.add(albums.group(1));
+            while ((mode != 3 || Haiagaru.mediaImageFetchEnabled()) && albums.find() && ids.size() < 8) ids.add(albums.group(1));
             for (String postId : XMediaAttachments.postIds((String) raw)) ids.add("x:" + postId);
             for (String postId : InstagramMediaAttachments.postIds((String) raw)) ids.add("ig:" + postId);
             for (String id : ids) {
@@ -201,10 +205,26 @@ public final class ImgurAlbumAttachments {
             String hash = item.optString("hash");
             String ext = item.optString("ext");
             String url = "https://i.imgur.com/" + hash + ext;
-            if (hash.matches("[A-Za-z0-9]+") && ext.matches("(?i)\\.(png|jpe?g|gif|webp)"))
+            if (hash.matches("[A-Za-z0-9]+") && ext.matches("(?i)\\.(png|jpe?g|gif|webp|mp4)"))
                 urls.add(url);
         }
         return urls.toArray(new String[0]);
+    }
+
+    public static String[] mediaFromHtml(String html) {
+        Matcher tags = META.matcher(html);
+        LinkedHashSet<String> videos = new LinkedHashSet<>();
+        while (tags.find() && videos.size() < 100) {
+            String tag = tags.group();
+            if (!VIDEO_PROPERTY.matcher(tag).find()) continue;
+            Matcher content = CONTENT.matcher(tag);
+            if (!content.find()) continue;
+            String url = content.group(1).replace("&amp;", "&");
+            if (VIDEO.matcher(url).matches()) videos.add(url);
+        }
+        if (!videos.isEmpty()) return videos.toArray(new String[0]);
+        String image = imageFromHtml(html);
+        return image == null ? new String[0] : new String[]{image};
     }
 
     private static String fetch(String url) throws Exception {
@@ -257,8 +277,7 @@ public final class ImgurAlbumAttachments {
         if (!xPost && !instagramPost && (images == null || images.length == 0)) {
             try {
                 String html = fetch("https://imgur.com/a/" + id);
-                String cover = html == null ? null : imageFromHtml(html);
-                images = cover == null ? null : new String[]{cover};
+                images = html == null ? null : mediaFromHtml(html);
             } catch (Exception error) {
                 Log.w("HaiagaruImgur", "Album metadata unavailable: " + id, error);
             }
@@ -307,7 +326,7 @@ public final class ImgurAlbumAttachments {
                 // i.imgur.com/a/... is an album page, not an additional image.
                 // Replace only once resolution succeeds; failed albums remain retryable.
                 Matcher album = url == null ? null : ALBUM.matcher(url);
-                if (Haiagaru.mediaImageFetchEnabled() && album != null && album.matches()) {
+                if ((mode != 3 || Haiagaru.mediaImageFetchEnabled()) && album != null && album.matches()) {
                     synchronized (CACHE) {
                         Entry entry = CACHE.get(album.group(1));
                         resolvedPost = entry != null && entry.images != null && entry.images.length > 0;

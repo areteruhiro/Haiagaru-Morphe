@@ -18,10 +18,16 @@ public final class ImgurWebLoginActivity extends Activity {
     private Switch enabled;
     private boolean updating;
     private int verificationGeneration;
+    private boolean googleFlow;
+    private boolean checkingCompletion;
+    private int loginGeneration;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         if (!ImgurWebUpload.supported(this)) { finish(); return; }
         ImgurWebUpload.init(this);
+        if (getIntent().getBooleanExtra("show_uploads", false)) {
+            startActivity(new android.content.Intent(this, ImgurUploadsActivity.class)); finish(); return;
+        }
         LinearLayout root = new LinearLayout(this); root.setOrientation(LinearLayout.VERTICAL);
         int padding = (int) (12 * getResources().getDisplayMetrics().density);
         root.setPadding(padding, padding, padding, padding);
@@ -39,13 +45,20 @@ public final class ImgurWebLoginActivity extends Activity {
         root.addView(status);
         LinearLayout buttons = new LinearLayout(this); root.addView(buttons);
         button(buttons, "ログイン", () -> {
+            loginGeneration++; googleFlow = false; checkingCompletion = false;
+            verificationGeneration++; verify.setEnabled(true);
             while (windows.size() > 1) closePopup(web);
+            web.setVisibility(android.view.View.VISIBLE);
             web.loadUrl("https://imgur.com/signin");
         });
         verify = button(buttons, "確認・有効化", this::verify);
         button(buttons, "解除", () -> new AlertDialog.Builder(this).setMessage("Imgurのログイン情報をこのアプリから削除しますか？")
                 .setNegativeButton("キャンセル", null).setPositiveButton("解除", (d, w) -> clearSession()).show());
         button(buttons, "戻る", this::finish);
+        LinearLayout mediaButtons = new LinearLayout(this); root.addView(mediaButtons);
+        button(mediaButtons, "投稿一覧", () -> startActivity(new android.content.Intent(this, ImgurUploadsActivity.class)));
+        button(mediaButtons, "処理待ち時間", this::configureWait);
+        button(mediaButtons, "Imgurへ戻る", () -> checkLoginCompletion(true));
         enabled.setOnCheckedChangeListener((view, checked) -> {
             if (updating) return;
             if (!checked) {
@@ -90,11 +103,15 @@ public final class ImgurWebLoginActivity extends Activity {
                 if (!"about:blank".equals(url) && !ImgurWebPolicy.loginUrl(url)) {
                     view.stopLoading(); block(url); return;
                 }
+                if (ImgurWebPolicy.googleLoginUrl(url)) googleFlow = true;
                 if (view == web) showLocation(url);
             }
             @Override public void onPageFinished(WebView view, String url) {
                 CookieManager.getInstance().flush();
                 if (view == web) showLocation(url);
+                // Only an actual return to Imgur (or explicit user action) may finish the flow.
+                // A Google account cookie alone is not proof of an Imgur login.
+                if (googleFlow && ImgurWebPolicy.imgurLoginReturnUrl(url)) checkLoginCompletion(false);
             }
         });
         view.setWebChromeClient(new WebChromeClient() {
@@ -105,11 +122,18 @@ public final class ImgurWebLoginActivity extends Activity {
                 ((WebView.WebViewTransport) result.obj).setWebView(child);
                 result.sendToTarget(); return true;
             }
-            @Override public void onCloseWindow(WebView window) { closePopup(window); }
+            @Override public void onCloseWindow(WebView window) {
+                closePopup(window);
+                if (googleFlow) checkLoginCompletion(false);
+            }
         });
-        if (web != null) web.setVisibility(android.view.View.GONE);
+        // Keep the opener alive and visible underneath the opaque child. GONE may suspend
+        // its visibility-dependent timers/message handling during a provider popup login.
+        if (web != null) web.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        view.setBackgroundColor(android.graphics.Color.WHITE);
         windows.add(view); web = view;
         browserFrame.addView(view, new FrameLayout.LayoutParams(-1, -1));
+        view.bringToFront(); view.requestFocus();
         return view;
     }
     private void showLocation(String url) {
@@ -121,12 +145,15 @@ public final class ImgurWebLoginActivity extends Activity {
         browserFrame.removeView(window); windows.remove(window);
         window.stopLoading(); window.destroy();
         web = windows.get(windows.size() - 1); web.setVisibility(android.view.View.VISIBLE);
+        web.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+        web.requestFocus();
         showLocation(web.getUrl() == null ? "about:blank" : web.getUrl());
     }
     private Button button(LinearLayout parent, String title, Runnable action) {
         Button button = new Button(this); button.setText(title);
         button.setOnClickListener(v -> action.run());
-        parent.addView(button, new LinearLayout.LayoutParams(0, -2, 1)); return button;
+        parent.addView(button, parent.getOrientation() == LinearLayout.HORIZONTAL
+                ? new LinearLayout.LayoutParams(0, -2, 1) : new LinearLayout.LayoutParams(-1, -2)); return button;
     }
     private void setChecked(boolean value) { updating = true; enabled.setChecked(value); updating = false; }
     private void verify() {
@@ -139,6 +166,7 @@ public final class ImgurWebLoginActivity extends Activity {
                     if (isFinishing() || isDestroyed() || generation != verificationGeneration) return;
                     ImgurWebUpload.prefs(this).edit().putBoolean("enabled", true).apply();
                     setChecked(true); verify.setEnabled(true);
+                    if (googleFlow || windows.size() > 1) returnToImgur();
                     status.setText("送信先: " + account + "\n既存のImgurアップロードからこのアカウントへ送信します。");
                 });
             } catch (Exception error) {
@@ -152,7 +180,48 @@ public final class ImgurWebLoginActivity extends Activity {
             }
         }, "Haiagaru-Imgur-session").start();
     }
+
+    private void returnToImgur() {
+        loginGeneration++; checkingCompletion = false; googleFlow = false;
+        while (windows.size() > 1) closePopup(web);
+        web.setVisibility(android.view.View.VISIBLE);
+        web.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
+        CookieManager.getInstance().flush();
+        web.loadUrl("https://imgur.com/upload");
+    }
+
+    /** Never enables uploads implicitly and never reads the provider's credentials/cookies. */
+    private void checkLoginCompletion(boolean requested) {
+        if (checkingCompletion || !verify.isEnabled() || isFinishing() || isDestroyed()) return;
+        checkingCompletion = true;
+        final int generation = loginGeneration;
+        CookieManager.getInstance().flush();
+        if (requested) status.setText("Imgurへのログイン完了を確認しています…");
+        new Thread(() -> {
+            try {
+                String account = ImgurWebUpload.checkAccount();
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || generation != loginGeneration) return;
+                    checkingCompletion = false;
+                    returnToImgur();
+                    status.setText("Imgurへのログインを確認しました: " + account
+                            + "\n送信に使う場合は「確認・有効化」を押してください。");
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || generation != loginGeneration) return;
+                    checkingCompletion = false;
+                    if (requested) status.setText("Imgurへのログイン完了はまだ確認できません。"
+                            + "\nGoogleへのログインだけではImgur認証が完了していない場合があります。"
+                            + "\nGoogle画面が止まったままの場合は「ログイン」で画面を開き直し、Googleログインを選び直してください。"
+                            + "\n追加認証やGoogle側のWebView制限は回避できません。");
+                });
+            }
+        }, "Haiagaru-Imgur-login-return").start();
+    }
     private void clearSession() {
+        loginGeneration++; googleFlow = false; checkingCompletion = false;
+        web.setVisibility(android.view.View.VISIBLE);
         verificationGeneration++;
         verify.setEnabled(true);
         ImgurWebUpload.prefs(this).edit().putBoolean("enabled", false).apply(); setChecked(false);
@@ -179,10 +248,39 @@ public final class ImgurWebLoginActivity extends Activity {
         else if (windows.size() > 1) closePopup(web);
         else super.onBackPressed();
     }
+    @Override protected void onPause() {
+        CookieManager.getInstance().flush();
+        super.onPause();
+    }
     @Override protected void onDestroy() {
+        loginGeneration++;
         verificationGeneration++;
+        CookieManager.getInstance().flush();
         for (WebView window : windows) { window.stopLoading(); window.destroy(); }
         windows.clear();
         super.onDestroy();
     }
+
+    private void configureWait() {
+        EditText input = new EditText(this);
+        input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        input.setText(Integer.toString(ImgurWebUpload.processingWaitSeconds()));
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Imgurの処理待ち時間（秒）")
+                .setMessage("送信後の動画変換などを待つ上限です。0〜1800秒、初期値120秒。"
+                        + "0は待たずに投稿一覧で確認します。通信自体のタイムアウトとは別です。"
+                        + "待機中は再アップロードしません。時間切れでもImgur側の処理は継続する場合があります。")
+                .setView(input).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(-1).setOnClickListener(view -> {
+            int seconds;
+            try { seconds = Integer.parseInt(input.getText().toString().trim()); }
+            catch (NumberFormatException error) { seconds = -1; }
+            if (seconds < 0 || seconds > ImgurProcessingWait.MAX_SECONDS) {
+                input.setError("0〜1800秒で入力してください"); return;
+            }
+            ImgurWebUpload.prefs(this).edit().putInt("processingWaitSeconds", seconds).apply();
+            Toast.makeText(this, "次回の送信から適用します", Toast.LENGTH_SHORT).show(); dialog.dismiss();
+        }));
+        dialog.show();
+    }
+
 }

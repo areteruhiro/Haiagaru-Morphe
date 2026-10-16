@@ -44,6 +44,51 @@ private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
 private object EmojiFontResourceMarker
 
+private fun BytecodePatchContext.patchNgEditGesture(version: String) {
+    if (version !in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) return
+    val candidates = mutableListOf<ClassDef>()
+    classDefForEach { cls ->
+        if (cls.superclass == "Landroid/widget/LinearLayout;" && cls.methods.any {
+            it.name == "setOnGestureListener"
+        }) candidates.add(cls)
+    }
+    check(candidates.size == 1) { "$version gesture layout changed (${candidates.size})" }
+    val owner = mutableClassDefBy(candidates.single())
+    val complete = owner.methods.single {
+        it.parameterTypes == listOf("I", "Landroid/graphics/PointF;", "Landroid/graphics/PointF;")
+            && it.returnType == "V"
+    }
+    val body = complete.implementation!!.instructions.toList()
+    val lookups = body.indices.filter { index ->
+        val ref = (body[index] as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.parameterTypes == listOf("I") && ref.returnType == "Ljava/lang/Object;"
+            && body.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+    }
+    check(lookups.size == 1) { "$version gesture registry lookup changed (${lookups.size})" }
+    val index = lookups.single()
+    val lookup = body[index] as FiveRegisterInstruction
+    // Reuse only the lookup receiver, then restore it before the original call.
+    // 242 keeps every local live here, so searching for a spare register fails.
+    val scratch = lookup.registerC
+    val registry = owner.fields.single { field ->
+        val ref = (body[index] as ReferenceInstruction).reference as MethodReference
+        field.type == ref.definingClass
+    }
+    val thisRegister = complete.implementation!!.registerCount - 4
+    check(scratch != lookup.registerD && scratch != thisRegister) { "$version gesture receiver changed" }
+    complete.addInstructionsWithLabels(index, """
+        move-object/from16 v$scratch, p0
+        invoke-static {v$scratch, v${lookup.registerD}}, Lapp/morphe/extension/chmate/NgEditGesture;->onGesture(Landroid/view/View;I)Z
+        move-result v$scratch
+        if-eqz v$scratch, :restore_gesture_registry
+        invoke-virtual/range {p0 .. p0}, Landroid/view/View;->invalidate()V
+        return-void
+        :restore_gesture_registry
+        move-object/from16 v$scratch, p0
+        iget-object v$scratch, v$scratch, ${owner.type}->${registry.name}:${registry.type}
+    """.trimIndent())
+}
+
 private fun BytecodePatchContext.patchBrowsingAndSearchHistory(version: String) {
     val profile = when (version) {
         "0.8.10.191 dev" -> listOf("Lo/lrb\$write;", "Lo/r8lambdaEBvvDaQDWIaS7WUoordU_4sxR3Y;", "b")
@@ -1392,6 +1437,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostedThreadDisplayCount(packageMetadata.versionName)
         patchPostHistoryRetentionCount(packageMetadata.versionName)
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
+        patchNgEditGesture(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
@@ -1727,6 +1773,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchImageViewerRotationButton(packageMetadata.versionName)
         patchLargeImageAlignment(packageMetadata.versionName)
         patchLegacyAutoReload(packageMetadata.versionName)
+        patchAutoScrollControlColors(packageMetadata.versionName)
         patchXVideoAttachmentProjection()
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
@@ -2851,6 +2898,67 @@ private fun BytecodePatchContext.patchPostEditorTextSize() {
     println("Posting editor configurable text size: ${returns.size} resume exits")
 }
 
+/** Only tint the two native auto-scroll icons; preserve click/hold callbacks and timing. */
+private fun BytecodePatchContext.patchAutoScrollControlColors(version: String) {
+    val profile = when (version) {
+        "0.8.10.226 dev" -> listOf("Lo/getChannel;", "Lo/addConnectException;", "b", "bv")
+        "0.8.10.241" -> listOf("Lo/QWA11;", "Lo/getPageMargin;", "a", "bs")
+        "0.8.10.242 dev" -> listOf("Lo/AdChoicesView;", "Lo/onTextChanged;", "a", "bq")
+        else -> return // 191 already follows the theme; deprecated 243 is unchanged.
+    }
+    val (icons, theme, getter, colorField) = profile
+    val themeClass = mutableClassDefBy(theme)
+    check(themeClass.methods.count { it.name == getter && it.accessFlags and 8 != 0
+        && it.parameterTypes == listOf("Landroid/content/Context;") && it.returnType == theme } == 1)
+    check(themeClass.fields.any { it.name == colorField && it.type == "I" })
+    // Verify the field's semantic meaning, not just the version-specific obfuscated name.
+    check(themeClass.methods.any { method ->
+        val body = method.implementation?.instructions?.toList() ?: return@any false
+        body.indices.any { index ->
+            ((body[index] as? ReferenceInstruction)?.reference as? StringReference)?.string == "textPrimaryColor"
+                && ((body.getOrNull(index + 1) as? ReferenceInstruction)?.reference as? FieldReference)
+                    ?.let { it.definingClass == theme && it.name == colorField } == true
+        }
+    }) { "$version primary theme color anchor changed" }
+    val iconMethods = mutableClassDefBy(icons).methods.filter { method ->
+        method.implementation?.instructions?.any {
+            ((it as? ReferenceInstruction)?.reference as? StringReference)?.string in setOf("Up", "Down")
+        } == true
+    }
+    check(iconMethods.size == 2) { "$version auto-scroll icon pair changed" }
+    iconMethods.forEach { method ->
+        val body = method.implementation!!.instructions.toList()
+        val index = body.indices.single { position ->
+            val reference = (body[position] as? ReferenceInstruction)?.reference as? MethodReference
+            reference?.parameterTypes?.let { it.size == 7 && it[1] == "Ljava/lang/String;"
+                && it[3] == "J" && it.takeLast(2) == listOf("I", "I") } == true
+                && reference.returnType == "V"
+        }
+        val call = body[index] as? RegisterRangeInstruction
+            ?: error("$version auto-scroll icon invocation is not a range")
+        check(call.registerCount == 8)
+        val tint = call.startRegister + 3
+        val defaults = call.startRegister + 7
+        check(tint + 1 < 16 && defaults < 16)
+        val mask = body.take(index).last { it is OneRegisterInstruction && it.registerA == defaults }
+        check((mask as? NarrowLiteralInstruction)?.narrowLiteral == 12) {
+            "$version auto-scroll icon default mask changed"
+        }
+        method.addInstructionsWithLabels(index, """
+            invoke-static {}, $EXTENSION->applicationContextForExtension()Landroid/content/Context;
+            move-result-object v$tint
+            invoke-static {v$tint}, $theme->$getter(Landroid/content/Context;)$theme
+            move-result-object v$tint
+            iget v$tint, v$tint, $theme->$colorField:I
+            int-to-long v$tint, v$tint
+            const/16 v$defaults, 0x20
+            shl-long/2addr v$tint, v$defaults
+            const/4 v$defaults, 0x4
+        """.trimIndent()) // sRGB Compose Color = ARGB << 32; keep only modifier defaulted.
+    }
+    println("$version auto-scroll controls: native primary theme color (2 icons)")
+}
+
 private fun BytecodePatchContext.patchLegacyAutoReload(version: String) {
     val v241 = when (version) {
         "0.8.10.241" -> true
@@ -3035,10 +3143,12 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalInte
             instructions.mapIndexedNotNull { index, instruction ->
                 val reference = (instruction as? ReferenceInstruction)?.reference
                     as? MethodReference ?: return@mapIndexedNotNull null
-                if (reference.name != "startActivity"
+                val parameters = reference.parameterTypes.map(CharSequence::toString)
+                val launch = reference.name == "startActivity" && parameters == listOf("Landroid/content/Intent;")
+                val launchForResult = reference.name == "startActivityForResult"
+                    && parameters == listOf("Landroid/content/Intent;", "I")
+                if ((!launch && !launchForResult)
                     || reference.returnType != "V"
-                    || reference.parameterTypes.map(CharSequence::toString) !=
-                        listOf("Landroid/content/Intent;")
                     || reference.definingClass !in setOf(
                         "Landroid/content/Context;", "Landroid/app/Activity;",
                         "Landroidx/fragment/app/Fragment;",
@@ -3047,25 +3157,44 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalInte
                 val register = when (instruction) {
                     is FiveRegisterInstruction -> instruction.registerD
                     is RegisterRangeInstruction -> {
-                        if (instruction.registerCount != 2) return@mapIndexedNotNull null
+                        if (instruction.registerCount != (if (launchForResult) 3 else 2)) return@mapIndexedNotNull null
                         instruction.startRegister + 1
                     }
                     else -> return@mapIndexedNotNull null
                 }
                 index to register
             }.asReversed().forEach { (index, register) ->
-                mutableClass.findMutableMethodOf(method).addInstructionsWithLabels(
-                    index,
+                val launchName = ((instructions[index] as ReferenceInstruction).reference as MethodReference).name
+                val checkerHook = if (launchName == "startActivity")
                     "invoke-static/range {v$register .. v$register}, " +
-                        "Lapp/morphe/extension/chmate/HissiMenuCompatibility;->prepareExternalIntent(" +
-                        "Landroid/content/Intent;)V",
-                )
+                        "Lapp/morphe/extension/chmate/HissiMenuCompatibility;->prepareExternalIntent(Landroid/content/Intent;)V\n"
+                    else ""
+                val mutable = mutableClass.findMutableMethodOf(method)
+                val instruction = instructions[index]
+                val reference = (instruction as ReferenceInstruction).reference as MethodReference
+                val originalLaunch = when (instruction) {
+                    is FiveRegisterInstruction -> {
+                        val registers = listOf(instruction.registerC, instruction.registerD, instruction.registerE,
+                            instruction.registerF, instruction.registerG).take(instruction.registerCount)
+                        "${instruction.opcode.name} {${registers.joinToString(", ") { "v$it" }}}, $reference"
+                    }
+                    is RegisterRangeInstruction -> "${instruction.opcode.name} {v${instruction.startRegister} .. " +
+                        "v${instruction.startRegister + instruction.registerCount - 1}}, $reference"
+                    else -> error("Unexpected launch instruction")
+                }
+                // Replace the instruction itself so incoming branches/try-entry labels
+                // cannot jump past the hook (191's video helper does exactly that).
+                mutable.replaceInstruction(index,
+                    "invoke-static/range {v$register .. v$register}, " +
+                        "Lapp/morphe/extension/chmate/VideoViewerActivity;->prepareExternalIntent(Landroid/content/Intent;)V")
+                mutable.addInstruction(index + 1, originalLaunch)
+                if (checkerHook.isNotEmpty()) mutable.addInstruction(index, checkerHook.trim())
                 patched++
             }
         }
     }
     check(patched > 0) { "ChMate external activity launch boundary was not found" }
-    println("Hissi external intent boundaries: $patched")
+    println("Checker/video external intent boundaries: $patched")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchModernTalkDatLoading() {
@@ -4154,6 +4283,25 @@ val haiagaruPatch = resourcePatch(
             "false", "0", "no", "off" -> false
             else -> throw PatchException("imageNgTfliteFixは true / false を指定してください")
         }
+        if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
+            val gestureXmls = get("res/xml").listFiles().orEmpty().filter {
+                it.extension == "xml" && it.readText().contains("gestureSetting")
+            }
+            check(gestureXmls.size == 1) { "Gesture preferences XML changed (${gestureXmls.size})" }
+            document("res/xml/${gestureXmls.single().name}").use { settings ->
+                val nodes = settings.getElementsByTagName("jp.syoboi.a2chMate.ui.setting.preference.gesture.GesturePreference")
+                val anchor = (0 until nodes.length).map { nodes.item(it) as Element }.single {
+                    it.getAttribute("android:key") == "gestureSetting"
+                        || it.getAttributeNS("http://schemas.android.com/apk/res/android", "key") == "gestureSetting"
+                }
+                val entry = settings.createElement("jp.syoboi.a2chMate.ui.setting.preference.gesture.GesturePreference")
+                entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:title", "NG編集")
+                entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:key", "haiagaruGestureNgEdit")
+                entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:defaultValue", "0")
+                entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:summary", "未使用のジェスチャーを割り当ててください")
+                anchor.parentNode.insertBefore(entry, anchor.nextSibling)
+            }
+        }
         if (replaceImageNgTflite && packageMetadata.versionName == "0.8.10.191 dev") {
             // 191's bundled TFLite JNI crashes in NativeInterpreterWrapper_run
             // during automatic image NG classification. Keep the model and Java
@@ -4401,6 +4549,14 @@ val haiagaruPatch = resourcePatch(
             }
 
             val application = document.getElementsByTagName("application").item(0) as Element
+            if (packageMetadata.versionName != "0.8.10.243 dev") {
+                application.appendChild(document.createElement("activity").apply {
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", "app.morphe.extension.chmate.VideoViewerActivity")
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:configChanges", "orientation|screenSize")
+                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.NoActionBar")
+                })
+            }
             val openUrlActivity = document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", OPEN_URL_ACTIVITY)
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")
@@ -6005,6 +6161,75 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUpload
     // The decoded suffix begins at character 13. Avoid the signature-derived divisor
     // while leaving file copying, image decoding, resizing, and uploading untouched.
     method.replaceInstruction(divideIndex, "const/16 v$indexRegister, 0xd")
+}
+
+/** Posting overflow only: preserve the native editor layout and all native menu actions. */
+internal fun BytecodePatchContext.patchImgurPostingMenu(version: String) {
+    val legacy = version == "0.8.10.191 dev"
+    val owner = if (legacy) "Lo/p9ExternalSyntheticLambda6;"
+        else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;"
+    val prepareName = if (legacy) "Wy_" else "d"
+    val dispatchName = when (version) {
+        "0.8.10.191 dev" -> "VQ_"
+        "0.8.10.226 dev" -> "e"
+        "0.8.10.241", "0.8.10.242 dev" -> "a_"
+        else -> error("Unsupported Imgur posting menu version: $version")
+    }
+    val cls = mutableClassDefBy(owner)
+    val prepare = cls.methods.single {
+        it.name == prepareName && it.returnType == "V"
+            && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/Menu;")
+    }
+    check(prepare.implementation!!.instructions.any {
+        val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == "Landroid/view/Menu;" && ref.name == "findItem"
+    }) { "$version posting menu preparation contract changed" }
+    // Add before native visibility updates. Branches targeting an existing return
+    // can skip instructions inserted immediately before that return.
+    prepare.addInstructionsWithLabels(0,
+        "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
+    val dispatch = cls.methods.single {
+        it.name == dispatchName && it.returnType == "Z"
+            && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
+    }
+    check(dispatch.implementation!!.registerCount > 2) { "$version posting dispatcher needs a local register" }
+    check(dispatch.implementation!!.instructions.any {
+        val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == "Landroid/view/MenuItem;" && ref.name == "getItemId"
+    }) { "$version posting menu dispatch contract changed" }
+    dispatch.addInstructionsWithLabels(0, """
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->handlePostingMenu(Ljava/lang/Object;Landroid/view/MenuItem;)Z
+        move-result v0
+        if-eqz v0, :haiagaru_imgur_native_menu
+        return v0
+    """.trimIndent(), ExternalLabel("haiagaru_imgur_native_menu", dispatch.implementation!!.instructions.first()))
+    if (legacy) {
+        // The dialog posting toolbar can open the activity-owned overflow, not
+        // the fragment-owned popup. Bind before its adapter snapshots the menu.
+        val activityPopup = mutableClassDefBy("Lo/m6b;").methods.single {
+            it.name == "a" && it.returnType == "V"
+                && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/View;", "Landroidx/fragment/app/Fragment;")
+        }
+        val constructor = activityPopup.implementation!!.instructions.withIndex().single {
+            val ref = (it.value as? ReferenceInstruction)?.reference as? MethodReference
+            ref?.definingClass == "Lo/m9;" && ref.name == "<init>"
+                && ref.parameterTypes.map(CharSequence::toString) == listOf("Landroid/content/Context;", "Landroid/view/Menu;")
+        }
+        val registers = constructor.value as FiveRegisterInstruction
+        activityPopup.addInstructionsWithLabels(constructor.index,
+            "invoke-static {v${registers.registerD}, v${registers.registerE}}, Lapp/morphe/extension/chmate/ImgurWebUpload;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
+        val activityClick = mutableClassDefBy("Lo/m6b\$4;").methods.single {
+            it.name == "Xf_" && it.returnType == "Z"
+                && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
+        }
+        check(activityClick.implementation!!.registerCount > 2)
+        activityClick.addInstructionsWithLabels(0, """
+            invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->handlePostingActivityMenu(Landroid/view/MenuItem;)Z
+            move-result v0
+            if-eqz v0, :haiagaru_imgur_native_activity_menu
+            return v0
+        """.trimIndent(), ExternalLabel("haiagaru_imgur_native_activity_menu", activityClick.implementation!!.instructions.first()))
+    }
 }
 
 /** Hook only the verified image HTTP invocation, not selection, preprocessing or other reflection. */

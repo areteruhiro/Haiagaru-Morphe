@@ -8,6 +8,25 @@ public final class VerifyImgurWebPolicy {
     public static void main(String[] args) throws Exception {
         check(ImgurWebPolicy.loginUrl("https://imgur.com/signin"));
         check(ImgurWebPolicy.loginUrl("https://accounts.google.com/o/oauth2/auth?client_id=test"));
+        check(ImgurWebPolicy.googleLoginUrl("https://accounts.google.com/signin/v2/challenge/pwd"));
+        for (String host : new String[]{"accounts.google.co.jp", "accounts.youtube.com"}) {
+            check(ImgurWebPolicy.loginUrl("https://" + host + "/accounts/SetSID?fixture=1"));
+            check(ImgurWebPolicy.googleLoginUrl("https://" + host + "/accounts/SetSID?fixture=1"));
+            check(!ImgurWebPolicy.imgurLoginUrl("https://" + host + "/accounts/SetSID"));
+            check(!ImgurWebPolicy.imgurLoginReturnUrl("https://" + host + "/accounts/SetSID"));
+            for (String bad : new String[]{"http://" + host + "/", "https://" + host + ".evil/",
+                    "https://evil@" + host + "/", "https://" + host + ":444/"})
+                check(!ImgurWebPolicy.loginUrl(bad));
+        }
+        check(!ImgurWebPolicy.loginUrl("https://www.youtube.com/"));
+        check(!ImgurWebPolicy.loginUrl("https://www.google.co.jp/"));
+        check(!ImgurWebPolicy.googleLoginUrl("https://accounts.google.com.evil/"));
+        check(ImgurWebPolicy.imgurLoginUrl("https://imgur.com/signin/google"));
+        check(!ImgurWebPolicy.imgurLoginUrl("https://accounts.google.com/"));
+        check(!ImgurWebPolicy.imgurLoginUrl("https://evil/"));
+        check(!ImgurWebPolicy.imgurLoginReturnUrl("https://imgur.com/signin"));
+        check(!ImgurWebPolicy.imgurLoginReturnUrl("https://imgur.com/signin/"));
+        check(ImgurWebPolicy.imgurLoginReturnUrl("https://imgur.com/signin/google?code=fixture"));
         for (String bad : new String[]{"https://accounts.google.com.evil/", "https://google.com/",
                 "https://evil@accounts.google.com/", "http://accounts.google.com/", "https://accounts.google.com:444/"})
             check(!ImgurWebPolicy.loginUrl(bad));
@@ -25,6 +44,18 @@ public final class VerifyImgurWebPolicy {
         check(!ImgurWebPolicy.ownedBy(0, "user", 0, "user"));
         check(ImgurWebPolicy.mediaUrl("https://i.imgur.com/abc123.png"));
         check(ImgurWebPolicy.mediaUrl("https://i.imgur.com/abc123.mp4"));
+        for (Object done : new Object[]{null, false, "false", "FALSE", 0, "null"}) check(!ImgurWebPolicy.processing(done));
+        for (Object pending : new Object[]{true, "true", 1, "pending"}) check(ImgurWebPolicy.processing(pending));
+        check(ImgurWebPolicy.imageId("abc123"));
+        check(!ImgurWebPolicy.imageId("../secret"));
+        check("https://i.imgur.com/Abc123m.jpg".equals(ImgurWebPolicy.thumbnailUrl("Abc123", "https://i.imgur.com/Abc123.png", false)));
+        check("https://i.imgur.com/Video1m.jpg".equals(ImgurWebPolicy.thumbnailUrl("Video1", "https://i.imgur.com/Video1.mp4", false)));
+        check(ImgurWebPolicy.thumbnailUrl("Video1", "https://i.imgur.com/Video1.mp4", true) == null);
+        check(ImgurWebPolicy.thumbnailUrl("../secret", "https://i.imgur.com/Video1.mp4", false) == null);
+        check(ImgurWebPolicy.thumbnailUrl("Video1", "https://evil/Video1.mp4", false) == null);
+        check(ImgurWebPolicy.thumbnailUrl("Video1", "http://i.imgur.com/Video1.mp4", false) == null);
+        check(ImgurWebPolicy.thumbnailUrl("Video1", "https://i.imgur.com/Other.mp4", false) == null);
+        check(ImgurWebPolicy.thumbnailUrl(null, null, false) == null);
         for (String bad : new String[]{"http://i.imgur.com/a.jpg", "https://i.imgur.com.evil/a.jpg", "https://user@i.imgur.com/a.jpg", "https://i.imgur.com:443/a.jpg", "https://i.imgur.com/a/album", "https://i.imgur.com/a.svg"})
             check(!ImgurWebPolicy.mediaUrl(bad));
         if (args.length > 0 && args[0].equals("--live")) {
