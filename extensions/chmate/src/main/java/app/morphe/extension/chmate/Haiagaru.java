@@ -467,6 +467,11 @@ public final class Haiagaru {
         return addToolbarChoice(toolbarModel, MARK_ALL_READ_TOOLBAR_ID, "haiagaru_mark_all_read");
     }
 
+    public static boolean keepQuickFilterPosition() {
+        return applicationContext != null
+                && preferences(applicationContext).getBoolean("keepQuickFilterPosition", false);
+    }
+
     public static boolean compactQuickFilters() {
         return applicationContext != null
                 && preferences(applicationContext).getBoolean("compactQuickFilters", false);
@@ -3491,6 +3496,9 @@ public final class Haiagaru {
                     preferences.getBoolean("compactQuickFilters", false));
         }
         final Switch compactQuickFiltersSwitch = compactFilters;
+        Switch keepFilterPosition = addSwitch(layout, activity,
+                "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
+                preferences.getBoolean("keepQuickFilterPosition", false));
         Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
                 "ワッチョイ長押しメニューをNG登録優先の順番にする",
                 preferences.getBoolean("wacchoiNgFirstMenu", false));
@@ -3865,6 +3873,7 @@ public final class Haiagaru {
                             .putInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, hissiViewerSwipeHistory.getSelectedItemPosition())
                             .putBoolean(KYODEMO_ENHANCED_VIEWER_KEY, kyodemoEnhancedViewer.isChecked())
                             .putBoolean("compactQuickFilters", compactQuickFiltersSwitch != null && compactQuickFiltersSwitch.isChecked())
+                            .putBoolean("keepQuickFilterPosition", keepFilterPosition.isChecked())
                             .putBoolean("wacchoiNgFirstMenu", wacchoiNgFirstMenu.isChecked())
                             .putBoolean("hideNgThreadGroup", hideNgThreadGroupSwitch.isChecked())
                             .putBoolean("readThreadsFirst", readThreadsFirstSwitch == null

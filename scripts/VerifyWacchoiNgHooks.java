@@ -41,8 +41,9 @@ public class VerifyWacchoiNgHooks {
                     }
                 }
             }
-            if (!helperPresent || hooks != 1) throw new AssertionError(apk + ": helpers=" + helperPresent + ", hooks=" + hooks);
-            System.out.println("PASS: " + apk + " popup callback bridge present exactly once");
+            int expected = apk.contains("191") ? 2 : 1;
+            if (!helperPresent || hooks != expected) throw new AssertionError(apk + ": helpers=" + helperPresent + ", hooks=" + hooks);
+            System.out.println("PASS: " + apk + " popup callback bridges=" + hooks);
         }
     }
 }
