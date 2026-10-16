@@ -3470,6 +3470,12 @@ public final class Haiagaru {
         Switch videoViewer = addSwitch(layout, activity,
                 text("動画を専用ビューアで開く（オフなら従来の動作）", "Open videos in dedicated viewer (off: original behavior)"),
                 preferences.getBoolean("videoViewerEnabled", true));
+        if (!VideoViewerActivity.installed(activity)) {
+            videoViewer.setChecked(false);
+            videoViewer.setEnabled(false);
+            videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
+                    "Dedicated video viewer (select the patch when patching)"));
+        }
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
@@ -3914,7 +3920,8 @@ public final class Haiagaru {
                             .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
                             .putFloat("postEditorCustomTextSizeSp", selectedPostSize)
                             .putInt("urlVideoFetchMode", mediaAutoFetch.getSelectedItemPosition())
-                            .putBoolean("videoViewerEnabled", videoViewer.isChecked())
+                            .putBoolean("videoViewerEnabled", VideoViewerActivity.installed(activity)
+                                    ? videoViewer.isChecked() : preferences.getBoolean("videoViewerEnabled", true))
                             .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
                             .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
                             .putInt("videoThumbnailTimeoutSeconds", boundedMediaSetting(value(videoThumbnailTimeoutSeconds), videoThumbnailTimeoutSeconds(), 600))
@@ -4773,7 +4780,7 @@ public final class Haiagaru {
 
     public static boolean videoViewerEnabled() {
         Context context = applicationContext;
-        if (context == null || !preferences(context).getBoolean("videoViewerEnabled", true)) return false;
+        if (!VideoViewerActivity.installed(context) || !preferences(context).getBoolean("videoViewerEnabled", true)) return false;
         try {
             String version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
             return "0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)

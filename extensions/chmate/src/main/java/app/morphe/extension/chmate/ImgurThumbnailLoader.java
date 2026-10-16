@@ -17,6 +17,11 @@ import okhttp3.*;
 public final class ImgurThumbnailLoader implements AutoCloseable {
     private final ExecutorService workers = Executors.newFixedThreadPool(2);
     private final ArrayList<Future<?>> tasks = new ArrayList<>();
+    private final Object callsLock = new Object();
+    private final java.util.HashSet<Call> calls = new java.util.HashSet<>();
+    private static final ExecutorService cleanupWorker = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "ImgurPreviewCleanup"); thread.setDaemon(true); return thread;
+    });
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile int generation;
     private volatile boolean closed;
@@ -31,11 +36,21 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
 
     // Called only on the UI thread. In-flight callbacks from an old page cannot touch the new page.
     void reset() {
-        generation++;
-        for (Future<?> task : tasks) task.cancel(true);
+        final ArrayList<Call> oldCalls;
+        synchronized (callsLock) {
+            generation++;
+            oldCalls = new ArrayList<>(calls);
+            calls.clear();
+        }
+        final ArrayList<Future<?>> oldTasks = new ArrayList<>(tasks);
         tasks.clear();
-        client.dispatcher().cancelAll();
-        if (workers instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) workers).purge();
+        // Call.cancel() may close a TLS socket. Cancel only the previous page's
+        // calls, on a worker; cancelAll later could cancel the next page too.
+        cleanupWorker.submit(() -> {
+            for (Call call : oldCalls) call.cancel();
+            for (Future<?> task : oldTasks) task.cancel(true);
+            if (workers instanceof ThreadPoolExecutor) ((ThreadPoolExecutor) workers).purge();
+        });
     }
 
     void load(String url, ImageView target) {
@@ -49,7 +64,7 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
         tasks.add(workers.submit(() -> {
             if (closed || requestGeneration != generation || Thread.currentThread().isInterrupted()) return;
             Bitmap bitmap = null;
-            try { bitmap = fetch(url); } catch (Exception ignored) {}
+            try { bitmap = fetch(url, requestGeneration); } catch (Exception ignored) {}
             final Bitmap preview = bitmap;
             main.post(() -> {
                 if (closed || requestGeneration != generation || !url.equals(target.getTag())) return;
@@ -63,11 +78,17 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
         }));
     }
 
-    private Bitmap fetch(String url) throws IOException {
+    private Bitmap fetch(String url, int requestGeneration) throws IOException {
         if (!url.matches("https://i\\.imgur\\.com/[A-Za-z0-9]{1,64}m\\.jpg")) throw new IOException("Invalid preview URL");
         Request request = new Request.Builder().url(url).header("Accept", "image/*").get().build();
         byte[] bytes;
-        try (Response response = client.newCall(request).execute()) {
+        Call call = client.newCall(request);
+        synchronized (callsLock) {
+            if (closed || requestGeneration != generation || Thread.currentThread().isInterrupted())
+                throw new IOException("Preview cancelled");
+            calls.add(call);
+        }
+        try (Response response = call.execute()) {
             if (!response.isSuccessful() || response.body() == null) throw new IOException("No preview");
             int limit = 3 * 1024 * 1024;
             if (response.body().contentLength() > limit) throw new IOException("Preview too large");
@@ -79,7 +100,7 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
                 }
                 bytes = output.toByteArray();
             }
-        }
+        } finally { synchronized (callsLock) { calls.remove(call); } }
         BitmapFactory.Options bounds = new BitmapFactory.Options(); bounds.inJustDecodeBounds = true;
         BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0 || bounds.outWidth > 8192 || bounds.outHeight > 8192)
@@ -92,6 +113,14 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
     }
 
     @Override public void close() {
-        closed = true; reset(); workers.shutdownNow(); cache.evictAll(); client.connectionPool().evictAll();
+        if (closed) return;
+        closed = true; reset(); cache.evictAll();
+        // Closing an idle TLS connection can send close_notify. Never do that
+        // from Activity.onDestroy: Android treats it as main-thread networking.
+        cleanupWorker.submit(() -> {
+            workers.shutdownNow();
+            client.dispatcher().cancelAll();
+            client.connectionPool().evictAll();
+        });
     }
 }

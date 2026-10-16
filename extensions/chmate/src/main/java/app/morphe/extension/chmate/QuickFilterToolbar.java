@@ -387,6 +387,13 @@ public final class QuickFilterToolbar {
     }
 
     /** Called only for the dedicated filter container, after its content is bound. */
+    public static boolean shouldCollapseMeasuredFilterRow(android.view.View row) {
+        // ListView treats LayoutParams.height == 0 as UNSPECIFIED when measuring a row.
+        // Only registered filter containers may override the resulting measured height.
+        return row != null && legacyRowHeights.containsKey(row) && Haiagaru.compactQuickFilters();
+    }
+
+    /** Called only for the dedicated filter container, after its content is bound. */
     public static void prepareFilterRow(android.view.View row) {
         if (row == null) return;
         android.view.ViewGroup.LayoutParams params = row.getLayoutParams();

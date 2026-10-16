@@ -46,6 +46,29 @@ public final class VerifyImgurWebPolicy {
         check(ImgurWebPolicy.mediaUrl("https://i.imgur.com/abc123.mp4"));
         for (Object done : new Object[]{null, false, "false", "FALSE", 0, "null"}) check(!ImgurWebPolicy.processing(done));
         for (Object pending : new Object[]{true, "true", 1, "pending"}) check(ImgurWebPolicy.processing(pending));
+        check(!ImgurWebPolicy.processing(new org.json.JSONObject("{\"status\":\"completed\"}")));
+        for (String status : new String[]{"pending", "processing", "failed", "unknown", ""})
+            check(ImgurWebPolicy.processing(new org.json.JSONObject().put("status", status)));
+        check(ImgurWebPolicy.processing(new org.json.JSONObject()));
+        final int[] polls = {0};
+        final long[] now = {0};
+        org.json.JSONObject video = app.morphe.extension.chmate.ImgurProcessingWait.await(
+                new org.json.JSONObject("{\"processing\":{\"status\":\"pending\"},\"link\":\"https://i.imgur.com/Video1.mp4\"}"),
+                120, new app.morphe.extension.chmate.ImgurProcessingWait.Source<org.json.JSONObject>() {
+                    public boolean ready(org.json.JSONObject row) {
+                        return !ImgurWebPolicy.processing(row.opt("processing"))
+                                && ImgurWebPolicy.mediaUrl(row.optString("link"));
+                    }
+                    public org.json.JSONObject fetch(int remaining) throws Exception {
+                        polls[0]++;
+                        return new org.json.JSONObject("{\"processing\":{\"status\":\"completed\"},\"link\":\"https://i.imgur.com/Video1.mp4\"}");
+                    }
+                }, new app.morphe.extension.chmate.ImgurProcessingWait.Clock() {
+                    public long millis() { return now[0]; }
+                    public void sleep(long ms) { now[0] += ms; }
+                });
+        check(polls[0] == 1);
+        check("https://i.imgur.com/Video1.mp4".equals(video.getString("link")));
         check(ImgurWebPolicy.imageId("abc123"));
         check(!ImgurWebPolicy.imageId("../secret"));
         check("https://i.imgur.com/Abc123m.jpg".equals(ImgurWebPolicy.thumbnailUrl("Abc123", "https://i.imgur.com/Abc123.png", false)));

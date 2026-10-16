@@ -20,7 +20,10 @@ public final class ImgurWebUpload {
     private static long cachedAt;
     private ImgurWebUpload() {}
 
-    static void init(Context value) { context = value.getApplicationContext(); }
+    static void init(Context value) {
+        context = value.getApplicationContext();
+        ImgurUploadHistory.init(context);
+    }
     static SharedPreferences prefs(Context c) {
         return c.getSharedPreferences("haiagaru_imgur_web", Context.MODE_PRIVATE);
     }
@@ -154,7 +157,9 @@ public final class ImgurWebUpload {
             throw new IOException("送信結果のアカウントを確認できません。再送せずImgurの投稿一覧を確認してください");
         if (!ready(data))
             throw new IOException("Imgurで処理中、またはリンクを取得できません。再送せず投稿一覧を確認してください");
-        return nativeResponse(responseType, data);
+        Object response = nativeResponse(responseType, data);
+        ImgurUploadHistory.uploaded(data.getString("link"), accountId);
+        return response;
     }
 
     private static boolean ready(JSONObject data) {
