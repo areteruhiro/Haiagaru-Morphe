@@ -27,14 +27,16 @@ Java.perform(function() {
             if(!chrome.onCreateWindow(parent,false,true,message)||windows.size()!==2)
                 throw new Error('User popup not opened inside WebView');
             const child=transport.getWebView();
-            if(child===null||parent.getVisibility()!==8)throw new Error('Popup not visible');
+            if(child===null||parent.getVisibility()!==0
+                    ||parent.getImportantForAccessibility()!==4)throw new Error('Opener suspended or exposed to accessibility');
             const client=child.getWebViewClient();
             if(client.shouldOverrideUrlLoading.overload('android.webkit.WebView','java.lang.String')
                     .call(client,child,'https://accounts.google.com/'))throw new Error('Google navigation blocked');
             if(!client.shouldOverrideUrlLoading.overload('android.webkit.WebView','java.lang.String')
                     .call(client,child,'https://accounts.google.com.evil/'))throw new Error('Foreign navigation allowed');
             chrome.onCloseWindow(child);
-            if(windows.size()!==1||parent.getVisibility()!==0)throw new Error('Popup close failed');
+            if(windows.size()!==1||parent.getVisibility()!==0
+                    ||parent.getImportantForAccessibility()!==0)throw new Error('Popup close failed');
             status.setText(originalStatus);
             console.log('PASS default WebView UA, user-gesture popup, Google allowlist, foreign-host rejection, popup cleanup');
         }); },

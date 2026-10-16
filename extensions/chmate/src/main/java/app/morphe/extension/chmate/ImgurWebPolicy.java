@@ -8,13 +8,64 @@ import java.util.regex.Pattern;
 public final class ImgurWebPolicy {
     private ImgurWebPolicy() {}
 
+    interface CookieSink {
+        void set(String url, String header);
+        void flush();
+    }
+
+    /** Preserve the server's exact expiry/domain/path attributes, including deletions. */
+    static void receiveCookies(String url, java.util.Map<String, java.util.List<String>> headers,
+            CookieSink sink) {
+        try {
+            URI uri = new URI(url);
+            if (!"https".equals(uri.getScheme()) || !"api.imgur.com".equals(uri.getHost())
+                    || uri.getRawUserInfo() != null || (uri.getPort() != -1 && uri.getPort() != 443)) return;
+        } catch (Exception ignored) { return; }
+        if (headers == null) return;
+        boolean changed = false;
+        for (java.util.Map.Entry<String, java.util.List<String>> entry : headers.entrySet()) {
+            if (!"Set-Cookie".equalsIgnoreCase(entry.getKey()) || entry.getValue() == null) continue;
+            for (String header : entry.getValue()) {
+                if (header == null || header.isEmpty() || header.indexOf('\r') >= 0 || header.indexOf('\n') >= 0) continue;
+                // Do not split on commas: Expires contains a comma. WebView validates attributes.
+                sink.set(url, header);
+                changed = true;
+            }
+        }
+        if (changed) sink.flush();
+    }
+
     public static boolean loginUrl(String url) {
         try {
             URI uri = new URI(url);
             return "https".equals(uri.getScheme()) && uri.getRawUserInfo() == null
                     && (uri.getPort() == -1 || uri.getPort() == 443)
                     && ("imgur.com".equals(uri.getHost()) || "www.imgur.com".equals(uri.getHost())
-                        || "accounts.google.com".equals(uri.getHost()));
+                        || googleAccountHost(uri.getHost()));
+        } catch (Exception ignored) { return false; }
+    }
+
+    public static boolean googleLoginUrl(String url) {
+        try { return loginUrl(url) && googleAccountHost(new URI(url).getHost()); }
+        catch (Exception ignored) { return false; }
+    }
+
+    private static boolean googleAccountHost(String host) {
+        // Observed Google account-session redirects in the emulator. Keep exact hosts;
+        // do not allow every google/youtube subdomain or relax HTTPS/certificate checks.
+        return "accounts.google.com".equals(host) || "accounts.google.co.jp".equals(host)
+                || "accounts.youtube.com".equals(host);
+    }
+
+    public static boolean imgurLoginUrl(String url) {
+        return loginUrl(url) && !googleLoginUrl(url);
+    }
+
+    public static boolean imgurLoginReturnUrl(String url) {
+        try {
+            if (!imgurLoginUrl(url)) return false;
+            String path = new URI(url).getPath();
+            return !"/signin".equals(path) && !"/signin/".equals(path);
         } catch (Exception ignored) { return false; }
     }
 
@@ -47,5 +98,22 @@ public final class ImgurWebPolicy {
                     && uri.getRawUserInfo() == null && uri.getPort() == -1
                     && uri.getPath().matches("/[a-zA-Z0-9]+\\.(?:jpe?g|png|gif|webp|mp4|webm)");
         } catch (Exception ignored) { return false; }
+    }
+
+    public static boolean processing(Object value) {
+        if (value == null || Boolean.FALSE.equals(value)) return false;
+        String text = String.valueOf(value);
+        return !("false".equalsIgnoreCase(text) || "0".equals(text) || "null".equals(text));
+    }
+
+    public static boolean imageId(String id) { return id != null && id.matches("[A-Za-z0-9]{1,64}"); }
+
+    /** Static CDN preview for images and videos. Never download the original video for a preview. */
+    public static String thumbnailUrl(String id, String link, boolean pending) {
+        if (pending || !imageId(id) || !mediaUrl(link)) return null;
+        try {
+            if (!new URI(link).getPath().startsWith("/" + id + ".")) return null;
+            return "https://i.imgur.com/" + id + "m.jpg";
+        } catch (Exception ignored) { return null; }
     }
 }

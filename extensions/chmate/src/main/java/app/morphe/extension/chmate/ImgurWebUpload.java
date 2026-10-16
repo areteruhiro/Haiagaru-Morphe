@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Looper;
 import android.webkit.CookieManager;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.HttpURLConnection;
@@ -103,12 +104,197 @@ public final class ImgurWebUpload {
             }
             data = json(connection).optJSONObject("data");
         } finally { connection.disconnect(); }
-        if (data == null || !ImgurWebPolicy.ownedBy(accountId, accountName,
+        if (data == null) throw new IOException("Imgurの投稿を確認できません。再送せず投稿一覧を確認してください");
+        final JSONObject original = data;
+        final String imageId = data.optString("id", "");
+        if (hasOwner(data)
+                && !ImgurWebPolicy.ownedBy(accountId, accountName, data.optLong("account_id", 0), data.optString("account_url", "")))
+            throw new IOException("送信結果のアカウントが一致しません。再送せず投稿一覧を確認してください");
+        if (!ready(data) && ImgurWebPolicy.imageId(imageId)) {
+            data = ImgurProcessingWait.await(data, processingWaitSeconds(), new ImgurProcessingWait.Source<JSONObject>() {
+                public boolean ready(JSONObject value) { return ImgurWebUpload.ready(value); }
+                public JSONObject fetch(int remainingMillis) throws Exception {
+                    HttpURLConnection poll = open("https://api.imgur.com/3/image/" + imageId
+                            + "?client_id=" + session.clientId, session);
+                    long started = android.os.SystemClock.elapsedRealtime();
+                    poll.setConnectTimeout(Math.min(30_000, remainingMillis));
+                    poll.setReadTimeout(Math.min(30_000, remainingMillis));
+                    try {
+                        poll.connect();
+                        long left = remainingMillis - (android.os.SystemClock.elapsedRealtime() - started);
+                        if (left <= 0) throw new IOException("Imgurの処理待ち時間を超えました。再送せず投稿一覧を確認してください");
+                        poll.setReadTimeout((int) Math.min(30_000, left));
+                        JSONObject update = json(poll).optJSONObject("data");
+                        if (update == null || !imageId.equals(update.optString("id", "")))
+                            throw new IOException("Imgurの処理状況を確認できません。再送せず投稿一覧を確認してください");
+                        if (hasOwner(update)
+                                && !ImgurWebPolicy.ownedBy(accountId, accountName, update.optLong("account_id", 0), update.optString("account_url", "")))
+                            throw new IOException("Imgurの処理結果のアカウントが一致しません。再送せず投稿一覧を確認してください");
+                        // Keep upload-only deletion metadata, but never keep an outdated processing flag/link.
+                        JSONObject merged = new JSONObject(original.toString());
+                        merged.remove("processing"); merged.remove("link");
+                        java.util.Iterator<String> keys = update.keys();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            if (key.equals("account_id") && update.optLong(key, 0) <= 0) continue;
+                            if (key.equals("account_url") && (update.isNull(key) || update.optString(key, "").isEmpty())) continue;
+                            if (key.equals("deletehash") && update.isNull(key)) continue;
+                            merged.put(key, update.get(key));
+                        }
+                        return merged;
+                    } finally { poll.disconnect(); }
+                }
+            }, new ImgurProcessingWait.Clock() {
+                public long millis() { return android.os.SystemClock.elapsedRealtime(); }
+                public void sleep(long millis) throws InterruptedException { Thread.sleep(millis); }
+            });
+        }
+        if (!ImgurWebPolicy.ownedBy(accountId, accountName,
                 data.optLong("account_id", 0), data.optString("account_url", "")))
             throw new IOException("送信結果のアカウントを確認できません。再送せずImgurの投稿一覧を確認してください");
-        if (data.has("processing") || !ImgurWebPolicy.mediaUrl(data.optString("link", "")))
+        if (!ready(data))
             throw new IOException("Imgurで処理中、またはリンクを取得できません。再送せず投稿一覧を確認してください");
         return nativeResponse(responseType, data);
+    }
+
+    private static boolean ready(JSONObject data) {
+        return !ImgurWebPolicy.processing(data.opt("processing"))
+                && ImgurWebPolicy.mediaUrl(data.optString("link", ""));
+    }
+    private static boolean hasOwner(JSONObject data) {
+        return data.optLong("account_id", 0) > 0
+                || (!data.isNull("account_url") && !data.optString("account_url", "").isEmpty());
+    }
+    static int processingWaitSeconds() {
+        return context == null ? ImgurProcessingWait.DEFAULT_SECONDS : ImgurProcessingWait.seconds(
+                prefs(context).getInt("processingWaitSeconds", ImgurProcessingWait.DEFAULT_SECONDS));
+    }
+
+    private static final int POSTING_UPLOADS_MENU_ID = 0x48690041;
+    private static final java.util.WeakHashMap<android.view.MenuItem, java.lang.ref.WeakReference<android.app.Activity>> POSTING_MENU_ACTIVITIES = new java.util.WeakHashMap<>();
+
+    private static android.app.Activity postingActivity(Object fragment) {
+        if (fragment instanceof android.app.Activity) {
+            for (Class<?> type = fragment.getClass(); type != null; type = type.getSuperclass()) {
+                if ("jp.syoboi.a2chMate.activity.ResEditActivity".equals(type.getName()))
+                    return (android.app.Activity) fragment;
+            }
+            return null;
+        }
+        try {
+            Object activity = fragment.getClass().getMethod("getActivity").invoke(fragment);
+            return activity instanceof android.app.Activity ? (android.app.Activity) activity : null;
+        } catch (ReflectiveOperationException ignored) { return null; }
+    }
+
+    /** Adds to ChMate's existing posting overflow menu without wrapping the editor. */
+    public static void addPostingMenu(Object fragment, android.view.Menu menu) {
+        android.app.Activity activity = postingActivity(fragment);
+        if (activity == null || !supported(activity) || menu == null
+                || menu.findItem(POSTING_UPLOADS_MENU_ID) != null) return;
+        android.view.MenuItem item = menu.add(android.view.Menu.NONE, POSTING_UPLOADS_MENU_ID,
+                android.view.Menu.NONE, "Imgur投稿一覧");
+        POSTING_MENU_ACTIVITIES.put(item, new java.lang.ref.WeakReference<>(activity));
+        item.setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+        item.setOnMenuItemClickListener(selected -> handlePostingMenu(fragment, selected));
+    }
+
+    /** ChMate's custom overflow dispatch also calls this; other items remain native. */
+    public static boolean handlePostingMenu(Object fragment, android.view.MenuItem item) {
+        if (item == null || item.getItemId() != POSTING_UPLOADS_MENU_ID) return false;
+        android.app.Activity activity = postingActivity(fragment);
+        if (activity == null || activity.isFinishing() || !supported(activity)) return false;
+        activity.startActivity(new android.content.Intent(activity, ImgurUploadsActivity.class));
+        return true;
+    }
+
+    /** 191's activity-owned overflow consumes all clicks before MenuItem listeners. */
+    public static boolean handlePostingActivityMenu(android.view.MenuItem item) {
+        if (item == null || item.getItemId() != POSTING_UPLOADS_MENU_ID) return false;
+        java.lang.ref.WeakReference<android.app.Activity> reference = POSTING_MENU_ACTIVITIES.get(item);
+        android.app.Activity activity = reference == null ? null : reference.get();
+        return activity != null && handlePostingMenu(activity, item);
+    }
+
+    /** Account-local uploads, including unlisted media. GET only; never uploads/deletes. */
+    static JSONArray uploads(int page) throws Exception {
+        return uploadPage(page).rows;
+    }
+    static final class UploadPage {
+        final long accountId;
+        final JSONArray rows;
+        UploadPage(long accountId, JSONArray rows) { this.accountId = accountId; this.rows = rows; }
+    }
+    static UploadPage uploadPage(int page) throws Exception {
+        if (page < 0 || page > 10000) throw new IOException("Imgurのページ番号が不正です");
+        Session session = session();
+        JSONObject me = account(session);
+        long id = me.optLong("id", 0); String name = me.optString("url", "");
+        if (id <= 0 || name.isEmpty()) throw loginRequired();
+        HttpURLConnection connection = open("https://api.imgur.com/3/account/me/images/" + page
+                + "?client_id=" + session.clientId, session);
+        try {
+            JSONArray rows = json(connection).optJSONArray("data");
+            if (rows == null) throw new IOException("Imgurの投稿一覧を取得できません");
+            JSONArray result = new JSONArray();
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row == null) continue;
+                // The authenticated /me endpoint establishes ownership even if a row omits account fields.
+                if (hasOwner(row)
+                        && !ImgurWebPolicy.ownedBy(id, name, row.optLong("account_id", 0), row.optString("account_url", ""))) continue;
+                result.put(row);
+            }
+            return new UploadPage(id, result);
+        } finally { connection.disconnect(); }
+    }
+
+    public interface DeleteCancellation { boolean cancelled(); }
+    static final class DeleteResult {
+        final int deleted, unconfirmed, notAttempted;
+        DeleteResult(int deleted, int unconfirmed, int notAttempted) {
+            this.deleted = deleted; this.unconfirmed = unconfirmed; this.notAttempted = notAttempted;
+        }
+    }
+
+    /** Explicit confirmed selection only. Stop at the first unacknowledged DELETE; never retry. */
+    static DeleteResult deleteUploads(UploadPage page, String[] selected, DeleteCancellation cancellation) throws Exception {
+        if (Looper.myLooper() == Looper.getMainLooper()) throw new IOException("削除はバックグラウンドで実行してください");
+        if (page == null || selected == null || selected.length == 0 || page.accountId <= 0)
+            throw new IOException("削除する投稿を選択してください");
+        java.util.HashSet<String> visible = new java.util.HashSet<>();
+        for (int i = 0; i < page.rows.length(); i++) {
+            JSONObject row = page.rows.optJSONObject(i);
+            if (row != null && ImgurWebPolicy.imageId(row.optString("id", ""))) visible.add(row.optString("id"));
+        }
+        java.util.LinkedHashSet<String> ids = new java.util.LinkedHashSet<>();
+        for (String id : selected) {
+            if (!ImgurWebPolicy.imageId(id) || !visible.contains(id))
+                throw new IOException("一覧にない投稿は削除できません。一覧を更新してください");
+            ids.add(id);
+        }
+        if (cancellation.cancelled()) return new DeleteResult(0, 0, ids.size());
+        Session session = session();
+        if (account(session).optLong("id", 0) != page.accountId)
+            throw new IOException("一覧表示時とアカウントが異なります。一覧を更新してください。削除は行っていません");
+        int deleted = 0;
+        for (String id : ids) {
+            if (cancellation.cancelled()) return new DeleteResult(deleted, 0, ids.size() - deleted);
+            HttpURLConnection connection = null;
+            try {
+                connection = open("https://api.imgur.com/3/image/" + id + "?client_id=" + session.clientId, session);
+                connection.setConnectTimeout(10_000); connection.setReadTimeout(20_000);
+                connection.setRequestMethod("DELETE");
+                JSONObject response = json(connection);
+                if (!response.optBoolean("success", false) || !Boolean.TRUE.equals(response.opt("data")))
+                    throw new IOException("削除完了を確認できません");
+                deleted++;
+            } catch (Exception error) {
+                // Even a timeout may mean the server deleted the item. Do not send it again.
+                return new DeleteResult(deleted, 1, ids.size() - deleted - 1);
+            } finally { if (connection != null) connection.disconnect(); }
+        }
+        return new DeleteResult(deleted, 0, 0);
     }
 
     /** Preserve native link insertion, deletion metadata and the existing selection/resizing UI. */
@@ -158,6 +344,7 @@ public final class ImgurWebUpload {
     }
     private static JSONObject account(Session session) throws Exception {
         HttpURLConnection connection = open("https://api.imgur.com/3/account/me?client_id=" + session.clientId, session);
+        connection.setConnectTimeout(10_000); connection.setReadTimeout(10_000);
         try {
             JSONObject data = json(connection).optJSONObject("data");
             if (data == null) throw loginRequired();
@@ -196,7 +383,11 @@ public final class ImgurWebUpload {
         if (!"api.imgur.com".equals(connection.getURL().getHost())) throw new IOException("Invalid Imgur host");
         connection.setInstanceFollowRedirects(false);
         connection.setConnectTimeout(30_000); connection.setReadTimeout(120_000);
-        connection.setRequestProperty("Cookie", session.cookie);
+        // Account checks/polling may rotate cookies. Never reuse the initial snapshot,
+        // or resurrect a cleared login by falling back to that old value.
+        String cookie = CookieManager.getInstance().getCookie(url);
+        if (cookie == null || cookie.isEmpty()) throw loginRequired();
+        connection.setRequestProperty("Cookie", cookie);
         connection.setRequestProperty("User-Agent", session.agent);
         connection.setRequestProperty("Origin", "https://imgur.com");
         connection.setRequestProperty("Referer", "https://imgur.com/");
@@ -205,7 +396,10 @@ public final class ImgurWebUpload {
     }
     private static JSONObject json(HttpURLConnection connection) throws Exception {
         int status = connection.getResponseCode();
-        if (status == 401 || status == 403) throw loginRequired();
+        receiveSessionCookies(connection);
+        if (status == 401) throw loginRequired();
+        if (status == 403) throw new IOException("Imgurへのアクセスが拒否されました（HTTP 403）。"
+                + "一時的なアクセス制限の場合もあり、ログアウトとは限りません。匿名送信は行いません");
         if (status < 200 || status >= 300) throw new IOException("Imgur Web送信エラー HTTP " + status
                 + "（再送前に投稿一覧を確認してください）");
         try {
@@ -213,6 +407,14 @@ public final class ImgurWebUpload {
             if (root.has("success") && !root.optBoolean("success")) throw new IOException("Imgurが処理を拒否しました");
             return root;
         } catch (org.json.JSONException e) { throw new IOException("Imgurの応答を解析できません（投稿一覧を確認してください）"); }
+    }
+    private static void receiveSessionCookies(HttpURLConnection connection) {
+        final CookieManager manager = CookieManager.getInstance();
+        ImgurWebPolicy.receiveCookies(connection.getURL().toString(), connection.getHeaderFields(),
+                new ImgurWebPolicy.CookieSink() {
+                    public void set(String url, String header) { manager.setCookie(url, header); }
+                    public void flush() { manager.flush(); }
+                });
     }
     private static String read(InputStream stream, int limit) throws IOException {
         try (InputStream input = stream; ByteArrayOutputStream output = new ByteArrayOutputStream()) {

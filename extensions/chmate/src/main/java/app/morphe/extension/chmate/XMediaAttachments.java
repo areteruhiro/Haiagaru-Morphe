@@ -79,6 +79,8 @@ public final class XMediaAttachments {
             return "https".equalsIgnoreCase(uri.getScheme()) && uri.getUserInfo() == null
                     && uri.getPort() == -1
                     && (video ? "video.twimg.com".equalsIgnoreCase(uri.getHost())
+                        || ("i.imgur.com".equalsIgnoreCase(uri.getHost())
+                            && uri.getPath() != null && uri.getPath().matches("(?i)/[A-Za-z0-9]+\\.mp4"))
                         || (uri.getHost() != null && (uri.getHost().endsWith(".cdninstagram.com") || uri.getHost().endsWith(".fbcdn.net")))
                         : "pbs.twimg.com".equalsIgnoreCase(uri.getHost()))
                     && uri.getPath() != null
