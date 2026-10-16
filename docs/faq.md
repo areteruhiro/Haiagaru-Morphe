@@ -12,22 +12,7 @@ Morpheでパッチを適用しようとした際にエラーが発生する場�
 
 ---
 
-## `strings.xml: open failed: ENOENT` エラーが発生する
-
-パッチ適用時に、以下のようなエラーが表示される場合があります。
-
-```text
-app.morphe.patcher.patch.PatchException: /data/user/0/app.morphe.manager/app_ephemeral/patcher/apk/resources/package_1/res/values-en/strings.xml: open failed: ENOENT (No such file or directory)
-at app.morphe.patcher.Patcher$invoke$1.invokeSuspend$execute(SourceFile:102)
-```
-
-このエラーが発生する場合は、以下のページからChMateのAPKをダウンロードして、そのAPKへパッチを適用してください。
-
-https://2chmate.jp.uptodown.com/android
-
----
-
-## 新しいパッチ済みChMateから古いバージョンへ上書きインストールしたい
+## 新しいChMateから古いバージョンへ上書きインストールしたい
 
 `Change ChMate package name` パッチのオプションにある **Version code（バージョンコード）** を、現在インストールしているパッチ済みAPKと同じ値、またはそれ以上に設定してパッチを適用してください。
 
@@ -40,7 +25,6 @@ https://2chmate.jp.uptodown.com/android
 > **事前にバックアップしてください。** バージョンコードを調整しても、異なるChMate間の設定・データ形式の互換性が保証されるわけではありません。また、パッケージ名が異なると別アプリになり、署名が異なると上書きできません。
 
 ---
-
 
 ## ChMate 0.8.10.191 dev / 0.8.10.226 dev で発生する可能性がある問題
 
