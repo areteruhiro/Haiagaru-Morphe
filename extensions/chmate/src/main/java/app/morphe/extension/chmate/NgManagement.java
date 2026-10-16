@@ -26,22 +26,6 @@ public final class NgManagement {
         layout.addView(button);
     }
 
-    static Spinner addScopePicker(Context context, LinearLayout parent, String currentBoard) {
-        List<String> boards = new ArrayList<>();
-        boards.add(GLOBAL);
-        if (currentBoard != null && !currentBoard.isEmpty()) boards.add(currentBoard);
-        try {
-            for (NativeNgStore.Entry entry : new NativeNgStore(context, "NAME").entries())
-                if (entry.board != null && !boards.contains(entry.board)) boards.add(entry.board);
-        } catch (Exception error) { android.util.Log.w("Haiagaru", "NG scope choices", error); }
-        TextView label = new TextView(context);
-        label.setText("登録板（全板共通、現在の板、登録済みの板）");
-        parent.addView(label);
-        Spinner spinner = spinner(context, boards);
-        parent.addView(spinner);
-        return spinner;
-    }
-
     static String selectedScope(Spinner spinner) {
         String label = String.valueOf(spinner.getSelectedItem());
         return GLOBAL.equals(label) || ALL.equals(label) ? null : label;
@@ -68,7 +52,7 @@ public final class NgManagement {
                 stores.put(kind, store);
                 snapshots.put(kind, entries);
                 for (NativeNgStore.Entry entry : entries)
-                    if (entry.board != null && !boards.contains(entry.board)) boards.add(entry.board);
+                    for (String board : NgBoardScope.boards(entry.board)) if (!boards.contains(board)) boards.add(board);
             }
             LinearLayout content = new LinearLayout(activity);
             content.setOrientation(LinearLayout.VERTICAL);
@@ -84,6 +68,9 @@ public final class NgManagement {
             content.addView(scope);
             TextView count = new TextView(activity);
             content.addView(count);
+            TextView scopeHelp = new TextView(activity);
+            scopeHelp.setText("NG項目をタップすると対象板を変更できます（指定板以外すべても選択可能）。");
+            content.addView(scopeHelp);
             Button consolidate = new Button(activity);
             consolidate.setText("表示中のNGNameを下4桁でまとめる");
             content.addView(consolidate);
@@ -99,9 +86,10 @@ public final class NgManagement {
                 List<String> rows = new ArrayList<>();
                 for (NativeNgStore.Entry entry : snapshots.get(kind)) {
                     if (scope.getSelectedItemPosition() == 1 && entry.board != null) continue;
-                    if (!NgNameConsolidation.matches(entry.pattern, entry.board, query, board)) continue;
+                    if (!NgNameConsolidation.matches(entry.pattern, null, query, null)
+                            || board != null && !NgBoardScope.matches(entry.board, board)) continue;
                     visible.add(entry);
-                    rows.add(entry.pattern + "\n" + (entry.board == null ? GLOBAL : entry.board)
+                    rows.add(entry.pattern + "\n" + NgBoardScope.label(entry.board)
                             + ((entry.flags & 8) != 0 ? " · 連鎖" : "")
                             + ((entry.flags & 1) != 0 ? " · 非表示" : "")
                             + ((entry.flags & 4) != 0 ? " · 無効" : ""));
@@ -123,11 +111,32 @@ public final class NgManagement {
             });
             AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("登録NGの管理")
                     .setView(content).setNegativeButton("閉じる", null).create();
+            list.setOnItemClickListener((parent, view, position, id) -> {
+                NativeNgStore store = stores.get(categories[category.getSelectedItemPosition()]);
+                editScope(activity, store, visible.get(position), () -> { dialog.dismiss(); show(activity); });
+            });
             consolidate.setOnClickListener(v -> preview(activity, stores.get("NAME"), snapshots.get("NAME"),
                     new ArrayList<>(visible), () -> { dialog.dismiss(); show(activity); }));
             refresh.run();
             dialog.show();
         } catch (Exception error) { fail(activity, error); }
+    }
+
+    private static void editScope(Activity activity, NativeNgStore store, NativeNgStore.Entry entry, Runnable done) {
+        NgBoardScopePicker picker = new NgBoardScopePicker(activity, null, entry.board);
+        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("NGの対象板: " + entry.pattern)
+                .setView(picker).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            try {
+                String scope = picker.value();
+                if (store.entries().stream().noneMatch(entry::same))
+                    throw new IllegalStateException("NGが変更されました。開き直してください");
+                store.update(entry.nativeItem, store.item(entry.pattern, entry.flags, entry.timestamp, scope));
+                dialog.dismiss(); done.run();
+                Toast.makeText(activity, "対象板を変更しました。表示中のスレは開き直してください", Toast.LENGTH_LONG).show();
+            } catch (Exception error) { fail(activity, error); }
+        }));
+        dialog.show();
     }
 
     private static void preview(Activity activity, NativeNgStore store, List<NativeNgStore.Entry> snapshot,
@@ -145,7 +154,7 @@ public final class NgManagement {
             NativeNgStore.Entry first = entries.get(0);
             groups.add(entries);
             StringBuilder label = new StringBuilder("-").append(NgNameConsolidation.suffix(first.pattern, first.flags))
-                    .append(" · ").append(first.board == null ? GLOBAL : first.board);
+                    .append(" · ").append(NgBoardScope.label(first.board));
             for (NativeNgStore.Entry entry : entries) label.append("\n").append(entry.pattern);
             labels.add(label.toString());
         }

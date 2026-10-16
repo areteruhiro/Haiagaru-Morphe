@@ -483,7 +483,18 @@ public final class QuickFilterToolbar {
                 && names.contains("IMAGE") && names.contains("MOVIE");
     }
 
-    private static Object findResponseViewModel(Object fragment) throws Exception {
+    static Object findResponseViewModel(Object fragment) throws Exception {
+        if (fragment.getClass().getName().equals("jp.syoboi.a2chMate.ui.reslist.ResListFragment")) {
+            try {
+                java.lang.reflect.Field provider = fragment.getClass().getDeclaredField("H");
+                provider.setAccessible(true);
+                Object lazy = provider.getType().getName().equals("o.trN") ? provider.get(fragment) : null;
+                if (lazy != null) {
+                    Object model = lazy.getClass().getMethod("e").invoke(lazy);
+                    if (model != null && model.getClass().getName().equals("o.getImgAcceptedHeight")) return model;
+                }
+            } catch (ReflectiveOperationException ignored) {}
+        }
         for (java.lang.reflect.Field field : fragment.getClass().getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers())) continue;
             field.setAccessible(true);

@@ -110,6 +110,23 @@ Java.perform(function () {
         ok.performClick();
         }); }); }, 700);
     }); };
+    globalThis.testLegacyPopupClick = function () { Java.scheduleOnMainThread(function () {
+        if(!pkg.endsWith('191'))throw new Error('191 only');
+        const a=activity(), helper=Java.use('app.morphe.extension.chmate.WacchoiLongPressMenu');
+        const Host=Java.registerClass({name:'app.morphe.extension.chmate.fixture.SuffixClickHost191',
+            fields:{owner:'android.app.Activity'},methods:{getActivity:{returnType:'android.app.Activity',argumentTypes:[],implementation:function(){return this.owner.value;}}}});
+        const Callback=Java.registerClass({name:'app.morphe.extension.chmate.fixture.SuffixPopupConsumed191',
+            implements:[Java.use('o.qm$IconCompatParcelizer')],methods:{Xf_:function(item){console.log('Native outer dispatcher consumed item '+item.getItemId());return true;},e:function(){return false;}}});
+        const host=Host.$new();host.owner.value=a;
+        const context=Java.use('app.morphe.extension.chmate.WacchoiLongPressMenu$SearchContext').$new();
+        context.query.value='(test 1234-aabb)';context.nativeBoard.value='android';
+        const menu=Java.use('o.m6fExternalSyntheticLambda0').$new.overload('android.content.Context').call(Java.use('o.m6fExternalSyntheticLambda0'),a);
+        helper.append(menu,host,host,context);
+        const adapter=Java.use('o.m6f').$new.overload('android.content.Context','android.view.Menu').call(Java.use('o.m6f'),a,menu);
+        const popup=Java.use('o.qm').$new(a,adapter,Callback.$new());
+        popup.onItemClick(null,null,0,0);
+        console.log('Dispatched real qm popup click; inspect whether NGName追加 is visible');
+    }); };
     globalThis.testLegacyRow = function () { Java.scheduleOnMainThread(function () {
         if(!pkg.endsWith('191'))throw new Error('191 only');
         const a=activity(), helper=Java.use('app.morphe.extension.chmate.WacchoiLongPressMenu');

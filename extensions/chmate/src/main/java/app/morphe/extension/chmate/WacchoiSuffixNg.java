@@ -104,8 +104,8 @@ public final class WacchoiSuffixNg {
             EditText text = new EditText(activity); text.setSingleLine(true); text.setText("-" + suffix); content.addView(text);
             CheckBox chain = new CheckBox(activity); chain.setText("連鎖"); content.addView(chain);
             CheckBox hidden = new CheckBox(activity); hidden.setText("非表示（あぼーん扱いにしない）"); content.addView(hidden);
-            Spinner scope = NgManagement.addScopePicker(activity, content, currentBoard);
-            if (currentBoard != null && !currentBoard.isEmpty()) scope.setSelection(1);
+            NgBoardScopePicker scope = new NgBoardScopePicker(activity, currentBoard, currentBoard);
+            content.addView(scope);
             TextView baseLabel = new TextView(activity); baseLabel.setText("追加先（同じ板・有効／連鎖／非表示設定の正規表現NG）"); content.addView(baseLabel);
             Spinner base = new Spinner(activity); content.addView(base);
             List<NativeNgStore.Entry> choices = new ArrayList<>();
@@ -115,10 +115,12 @@ public final class WacchoiSuffixNg {
                 try {
                     short flags = registrationFlags((short) 0, true, enabled.isChecked(), chain.isChecked(), hidden.isChecked());
                     for (NativeNgStore.Entry entry : store.entries()) {
-                        if (entry.flags == flags && Objects.equals(entry.board, NgManagement.selectedScope(scope))) {
+                        if (entry.flags == flags && Objects.equals(entry.board, scope.value())) {
                             choices.add(entry); labels.add(entry.pattern);
                         }
                     }
+                } catch (IllegalArgumentException invalidScope) {
+                    // A selection is required before offering existing append targets.
                 } catch (ReflectiveOperationException error) { android.util.Log.w("Haiagaru", "NG choices", error); }
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, android.R.layout.simple_spinner_item, labels);
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); base.setAdapter(adapter);
@@ -134,10 +136,7 @@ public final class WacchoiSuffixNg {
             enabled.setOnCheckedChangeListener((button, checked) -> refresh.run());
             chain.setOnCheckedChangeListener((button, checked) -> refresh.run());
             hidden.setOnCheckedChangeListener((button, checked) -> refresh.run());
-            scope.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                public void onItemSelected(AdapterView<?> p, View v, int position, long id) { refresh.run(); }
-                public void onNothingSelected(AdapterView<?> p) { }
-            });
+            scope.onChanged(refresh);
             TextView help = new TextView(activity);
             help.setText("NGNameを文字列で登録する人は\n-aabb\nNGのたびに新規登録\n―――――――――――――――――――\nNGNameを正規表現で登録する人は\n-aabb|\nベースとなるNGのところに追加登録\n\n正規表現では追加先を選択できます。末尾の | は追記用の区切りです。空の条件は保存しません。\nこのNG項目を長押しすると、下4桁をコピーして従来のNG編集画面を開きます。");
             content.addView(help);
@@ -158,7 +157,7 @@ public final class WacchoiSuffixNg {
                     if (target != null) pattern = appendRegex(target.pattern, pattern);
                     if (regex.isChecked()) Pattern.compile(pattern);
                     short flags = registrationFlags((short) 0, regex.isChecked(), enabled.isChecked(), chain.isChecked(), hidden.isChecked());
-                    String board = NgManagement.selectedScope(scope);
+                    String board = scope.value();
                     for (NativeNgStore.Entry entry : current) {
                         if (entry.pattern.equals(pattern) && entry.flags == flags && Objects.equals(entry.board, board)) {
                             Toast.makeText(activity, "同じNGNameが登録済みです", Toast.LENGTH_SHORT).show(); return;
