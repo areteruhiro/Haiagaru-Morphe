@@ -60,20 +60,37 @@ final class HaiagaruMegaSync {
 
     private HaiagaruMegaSync() {}
 
+    static boolean installed(Context context) {
+        if (context == null) return false;
+        try (java.io.InputStream marker = context.getAssets().open("haiagaru/mega-sync/installed")) {
+            return marker.read() == '1';
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    static boolean enabled(Context context) {
+        return android.os.Build.VERSION.SDK_INT >= 24 && installed(context);
+    }
+
     static void addSettingsButton(LinearLayout parent, Activity activity) {
         Button button = new Button(activity);
-        button.setText("MEGAにバックアップ・復元");
+        button.setText(enabled(activity) ? "バックアップ・復元（ローカル／MEGA）" : "ローカルバックアップ・復元");
         button.setOnClickListener(view -> showDialog(activity));
         parent.addView(button);
         TextView help = new TextView(activity);
-        help.setText("自分のMEGAアカウントに保存します。同期対象を選択できます。"
+        help.setText(enabled(activity) ? "自分のMEGAアカウントに保存します。同期対象を選択できます。"
                 + " 自動バックアップとCookie同期は初期状態でOFFです。"
-                + " Cookieを選ぶとログイン状態がバックアップに含まれます。");
+                + " Cookieを選ぶとログイン状態がバックアップに含まれます。Android 7.0以降が必要です。"
+                : "端末のファイルへバックアップ・復元できます。MEGA同期はパッチ導入時の選択が必要です。"
+                + " MEGA同期にはAndroid 7.0以降が必要です。");
         help.setTextSize(13);
         parent.addView(help);
     }
 
     static void maybeBackupOnStartup(Context context) {
+        // A retained session or automatic-sync preference must not bypass patch selection.
+        if (!enabled(context)) return;
         // A process can also be started by a service. Register here, but never
         // transfer or restore until a real Activity is resumed.
         if (!(context instanceof Application) || !REGISTERED.compareAndSet(false, true)) return;
@@ -100,6 +117,7 @@ final class HaiagaruMegaSync {
     }
 
     private static void showDialog(Activity activity) {
+        final boolean megaEnabled = enabled(activity);
         SharedPreferences options = options(activity);
         ScrollView scroll = new ScrollView(activity);
         LinearLayout content = new LinearLayout(activity);
@@ -111,7 +129,7 @@ final class HaiagaruMegaSync {
         TextView description = new TextView(activity);
         description.setText("同期する項目を選択してください。バックアップ時は選択項目のみ保存し、"
                 + "復元時にはもう一度対象を選べます。Cookieにはログイン情報が含まれるため、"
-                + "必要な場合のみ選択してください。MEGA上のバックアップにも保存されます。"
+                + "必要な場合のみ選択してください。選択時はバックアップに保存されます。"
                 + "対象はChMateのCookie用設定で、WebView内のCookieは含みません。");
         content.addView(description);
 
@@ -130,117 +148,119 @@ final class HaiagaruMegaSync {
             choices[index] = choice;
         }
 
-        CheckBox automatic = new CheckBox(activity);
-        automatic.setText("指定した間隔で自動同期（アプリ起動時に実行）");
-        automatic.setChecked(options.getBoolean(AUTO, false));
-        automatic.setOnCheckedChangeListener((button, checked) ->
-                options.edit().putBoolean(AUTO, checked).apply());
-        content.addView(automatic);
+        if (megaEnabled) {
+            CheckBox automatic = new CheckBox(activity);
+            automatic.setText("指定した間隔で自動同期（アプリ起動時に実行）");
+            automatic.setChecked(options.getBoolean(AUTO, false));
+            automatic.setOnCheckedChangeListener((button, checked) ->
+                    options.edit().putBoolean(AUTO, checked).apply());
+            content.addView(automatic);
 
-        CheckBox showDiff = new CheckBox(activity);
-        showDiff.setText("復元前に変更内容を確認する");
-        showDiff.setChecked(options.getBoolean(SHOW_DIFF, true));
-        showDiff.setOnCheckedChangeListener((button, checked) ->
-                options.edit().putBoolean(SHOW_DIFF, checked).apply());
-        content.addView(showDiff);
+            CheckBox showDiff = new CheckBox(activity);
+            showDiff.setText("復元前に変更内容を確認する");
+            showDiff.setChecked(options.getBoolean(SHOW_DIFF, true));
+            showDiff.setOnCheckedChangeListener((button, checked) ->
+                    options.edit().putBoolean(SHOW_DIFF, checked).apply());
+            content.addView(showDiff);
 
-        TextView modeTitle = new TextView(activity);
-        modeTitle.setText("同期方式");
-        modeTitle.setTextSize(16);
-        content.addView(modeTitle);
-        RadioGroup modes = new RadioGroup(activity);
-        RadioButton remoteToLocal = radio(activity, "同期元: MEGA → この端末");
-        RadioButton localToRemote = radio(activity, "同期元: この端末 → MEGA");
-        RadioButton bothWays = radio(activity, "双方向: 不足分をお互いに追加");
-        modes.addView(remoteToLocal);
-        modes.addView(localToRemote);
-        modes.addView(bothWays);
-        int savedMode = options.getInt(MODE, MODE_BIDIRECTIONAL);
-        modes.check(savedMode == MODE_REMOTE_TO_LOCAL ? remoteToLocal.getId()
-                : savedMode == MODE_LOCAL_TO_REMOTE ? localToRemote.getId() : bothWays.getId());
-        modes.setOnCheckedChangeListener((group, checkedId) -> options.edit().putInt(MODE,
-                checkedId == remoteToLocal.getId() ? MODE_REMOTE_TO_LOCAL
-                        : checkedId == localToRemote.getId() ? MODE_LOCAL_TO_REMOTE : MODE_BIDIRECTIONAL).apply());
-        content.addView(modes);
+            TextView modeTitle = new TextView(activity);
+            modeTitle.setText("同期方式");
+            modeTitle.setTextSize(16);
+            content.addView(modeTitle);
+            RadioGroup modes = new RadioGroup(activity);
+            RadioButton remoteToLocal = radio(activity, "同期元: MEGA → この端末");
+            RadioButton localToRemote = radio(activity, "同期元: この端末 → MEGA");
+            RadioButton bothWays = radio(activity, "双方向: 不足分をお互いに追加");
+            modes.addView(remoteToLocal);
+            modes.addView(localToRemote);
+            modes.addView(bothWays);
+            int savedMode = options.getInt(MODE, MODE_BIDIRECTIONAL);
+            modes.check(savedMode == MODE_REMOTE_TO_LOCAL ? remoteToLocal.getId()
+                    : savedMode == MODE_LOCAL_TO_REMOTE ? localToRemote.getId() : bothWays.getId());
+            modes.setOnCheckedChangeListener((group, checkedId) -> options.edit().putInt(MODE,
+                    checkedId == remoteToLocal.getId() ? MODE_REMOTE_TO_LOCAL
+                            : checkedId == localToRemote.getId() ? MODE_LOCAL_TO_REMOTE : MODE_BIDIRECTIONAL).apply());
+            content.addView(modes);
 
-        TextView intervalTitle = new TextView(activity);
-        intervalTitle.setText("自動同期の間隔（最短5分）");
-        intervalTitle.setTextSize(16);
-        content.addView(intervalTitle);
-        LinearLayout intervalRow = new LinearLayout(activity);
-        intervalRow.setOrientation(LinearLayout.HORIZONTAL);
-        EditText intervalValue = new EditText(activity);
-        intervalValue.setInputType(InputType.TYPE_CLASS_NUMBER);
-        intervalValue.setSingleLine(true);
-        intervalValue.setText(String.valueOf(options.getInt(INTERVAL_VALUE, 1)));
-        intervalRow.addView(intervalValue, new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        Spinner intervalUnit = new Spinner(activity);
-        String[] units = {"分ごと", "時間ごと", "日ごと"};
-        intervalUnit.setAdapter(new ArrayAdapter<>(activity,
-                android.R.layout.simple_spinner_dropdown_item, units));
-        intervalUnit.setSelection(options.getInt(INTERVAL_UNIT, 2));
-        intervalRow.addView(intervalUnit, new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-        content.addView(intervalRow);
-        Button saveInterval = new Button(activity);
-        saveInterval.setText("間隔を保存");
-        saveInterval.setOnClickListener(view -> {
-            try {
-                int value = Math.max(1, Integer.parseInt(intervalValue.getText().toString().trim()));
-                int unit = intervalUnit.getSelectedItemPosition();
-                if (value > 3650) throw new NumberFormatException();
-                long millis = toMillis(value, unit);
-                if (millis < MIN_INTERVAL) throw new IllegalArgumentException("5分未満は指定できません");
-                options.edit().putInt(INTERVAL_VALUE, value).putInt(INTERVAL_UNIT, unit).apply();
-                message(activity, "自動同期の間隔を保存しました");
-            } catch (IllegalArgumentException error) {
-                message(activity, error.getMessage() == null ? "間隔の指定が不正です" : error.getMessage());
-            }
-        });
-        content.addView(saveInterval);
-
-        Button credentials = new Button(activity);
-        credentials.setText(HaiagaruMegaSession.hasSession(activity)
-                ? "MEGAの接続を管理" : "MEGAにログイン");
-        credentials.setOnClickListener(view -> showLoginDialog(activity));
-        content.addView(credentials);
-
-        Button backup = new Button(activity);
-        backup.setText("選択項目を今すぐバックアップ");
-        backup.setOnClickListener(view -> {
-            int flags = chosen(choices);
-            if (flags == 0) {
-                message(activity, "バックアップする項目を選択してください");
-                return;
-            }
-            run(activity, "バックアップ中", () -> {
-                String name = HaiagaruMegaClient.upload(activity.getApplicationContext(),
-                        HaiagaruSyncSnapshot.capture(activity.getApplicationContext(), flags));
-                options.edit().putLong(LAST, System.currentTimeMillis()).apply();
-                return "MEGAのHaiagaruフォルダに保存しました: " + name;
+            TextView intervalTitle = new TextView(activity);
+            intervalTitle.setText("自動同期の間隔（最短5分）");
+            intervalTitle.setTextSize(16);
+            content.addView(intervalTitle);
+            LinearLayout intervalRow = new LinearLayout(activity);
+            intervalRow.setOrientation(LinearLayout.HORIZONTAL);
+            EditText intervalValue = new EditText(activity);
+            intervalValue.setInputType(InputType.TYPE_CLASS_NUMBER);
+            intervalValue.setSingleLine(true);
+            intervalValue.setText(String.valueOf(options.getInt(INTERVAL_VALUE, 1)));
+            intervalRow.addView(intervalValue, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            Spinner intervalUnit = new Spinner(activity);
+            String[] units = {"分ごと", "時間ごと", "日ごと"};
+            intervalUnit.setAdapter(new ArrayAdapter<>(activity,
+                    android.R.layout.simple_spinner_dropdown_item, units));
+            intervalUnit.setSelection(options.getInt(INTERVAL_UNIT, 2));
+            intervalRow.addView(intervalUnit, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            content.addView(intervalRow);
+            Button saveInterval = new Button(activity);
+            saveInterval.setText("間隔を保存");
+            saveInterval.setOnClickListener(view -> {
+                try {
+                    int value = Math.max(1, Integer.parseInt(intervalValue.getText().toString().trim()));
+                    int unit = intervalUnit.getSelectedItemPosition();
+                    if (value > 3650) throw new NumberFormatException();
+                    long millis = toMillis(value, unit);
+                    if (millis < MIN_INTERVAL) throw new IllegalArgumentException("5分未満は指定できません");
+                    options.edit().putInt(INTERVAL_VALUE, value).putInt(INTERVAL_UNIT, unit).apply();
+                    message(activity, "自動同期の間隔を保存しました");
+                } catch (IllegalArgumentException error) {
+                    message(activity, error.getMessage() == null ? "間隔の指定が不正です" : error.getMessage());
+                }
             });
-        });
-        content.addView(backup);
+            content.addView(saveInterval);
 
-        Button sync = new Button(activity);
-        sync.setText("設定した方式で今すぐ同期");
-        sync.setOnClickListener(view -> {
-            int flags = chosen(choices);
-            if (flags == 0) {
-                message(activity, "同期する項目を選択してください");
-                return;
-            }
-            startSync(activity, flags, false);
-        });
-        content.addView(sync);
+            Button credentials = new Button(activity);
+            credentials.setText(HaiagaruMegaSession.hasSession(activity)
+                    ? "MEGAの接続を管理" : "MEGAにログイン");
+            credentials.setOnClickListener(view -> showLoginDialog(activity));
+            content.addView(credentials);
 
-        Button restore = new Button(activity);
-        restore.setText("MEGAの最新バックアップを確認して復元");
-        restore.setOnClickListener(view -> {
-            startSync(activity, chosen(choices), true);
-        });
-        content.addView(restore);
+            Button backup = new Button(activity);
+            backup.setText("選択項目を今すぐバックアップ");
+            backup.setOnClickListener(view -> {
+                int flags = chosen(choices);
+                if (flags == 0) {
+                    message(activity, "バックアップする項目を選択してください");
+                    return;
+                }
+                run(activity, "バックアップ中", () -> {
+                    String name = HaiagaruMegaClient.upload(activity.getApplicationContext(),
+                            HaiagaruSyncSnapshot.capture(activity.getApplicationContext(), flags));
+                    options.edit().putLong(LAST, System.currentTimeMillis()).apply();
+                    return "MEGAのHaiagaruフォルダに保存しました: " + name;
+                });
+            });
+            content.addView(backup);
+
+            Button sync = new Button(activity);
+            sync.setText("設定した方式で今すぐ同期");
+            sync.setOnClickListener(view -> {
+                int flags = chosen(choices);
+                if (flags == 0) {
+                    message(activity, "同期する項目を選択してください");
+                    return;
+                }
+                startSync(activity, flags, false);
+            });
+            content.addView(sync);
+
+            Button restore = new Button(activity);
+            restore.setText("MEGAの最新バックアップを確認して復元");
+            restore.setOnClickListener(view -> {
+                startSync(activity, chosen(choices), true);
+            });
+            content.addView(restore);
+        }
 
         Button saveLocal = new Button(activity);
         saveLocal.setText("端末のファイルにバックアップ");
@@ -274,14 +294,16 @@ final class HaiagaruMegaSync {
         localNote.setTextSize(13);
         content.addView(localNote);
 
-        TextView note = new TextView(activity);
-        note.setText("MEGA上に「Haiagaru」フォルダを作成します。復元は確認後に実行し、"
-                + "復元前の端末データをアプリ内へ退避します。復元後はChMateを再起動してください。"
-                + " 双方向同期は既存の項目を残して不足分だけ追加します。"
-                + " 自動同期は起動して画面を表示した時だけ確認します。終了中・バックグラウンドでは予約実行しません。"
-                + " この機能はAndroid 7以降が必要です。");
-        note.setTextSize(13);
-        content.addView(note);
+        if (megaEnabled) {
+            TextView note = new TextView(activity);
+            note.setText("MEGA上に「Haiagaru」フォルダを作成します。復元は確認後に実行し、"
+                    + "復元前の端末データをアプリ内へ退避します。復元後はChMateを再起動してください。"
+                    + " 双方向同期は既存の項目を残して不足分だけ追加します。"
+                    + " 自動同期は起動して画面を表示した時だけ確認します。終了中・バックグラウンドでは予約実行しません。"
+                    + " MEGA同期にはAndroid 7.0以降が必要です。");
+            note.setTextSize(13);
+            content.addView(note);
+        }
         new AlertDialog.Builder(activity).setTitle("バックアップ・同期")
                 .setView(scroll).setPositiveButton("閉じる", null).show();
     }
@@ -314,6 +336,7 @@ final class HaiagaruMegaSync {
      */
     private static String runConfiguredSync(Context context, int categories, int mode)
             throws Exception {
+        if (!enabled(context)) throw new IOException("MEGA同期パッチの選択とAndroid 7.0以降が必要です");
         SharedPreferences options = options(context);
         if (mode == MODE_LOCAL_TO_REMOTE) {
             requireForeground();
@@ -381,6 +404,7 @@ final class HaiagaruMegaSync {
     }
 
     private static void startSync(Activity activity, int categories, boolean preview) {
+        if (!enabled(activity)) return;
         if (categories == 0) {
             message(activity, "同期する項目を選択してください");
             return;
@@ -425,6 +449,7 @@ final class HaiagaruMegaSync {
     }
 
     private static void showLoginDialog(Activity activity) {
+        if (!enabled(activity)) return;
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         int margin = (int) (20 * activity.getResources().getDisplayMetrics().density);

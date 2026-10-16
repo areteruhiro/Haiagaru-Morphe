@@ -3316,6 +3316,10 @@ public final class Haiagaru {
             imgurLogin.setOnClickListener(view -> activity.startActivity(
                     new Intent(activity, ImgurWebLoginActivity.class)));
             layout.addView(imgurLogin);
+            Button imgurUploads = new Button(activity);
+            imgurUploads.setText(text("Imgur投稿一覧", "Imgur uploads"));
+            imgurUploads.setOnClickListener(view -> activity.startActivity(new Intent(activity, ImgurUploadsActivity.class)));
+            layout.addView(imgurUploads);
         }
 
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
@@ -3478,6 +3482,9 @@ public final class Haiagaru {
             }
         } catch (Exception error) { Log.w(LOG_TAG, "Rotation setting version check failed", error); }
         final Switch imageRotationButtonSetting = imageRotationButton;
+        Switch videoViewer = addSwitch(layout, activity,
+                text("動画を専用ビューアで開く（オフなら従来の動作）", "Open videos in dedicated viewer (off: original behavior)"),
+                preferences.getBoolean("videoViewerEnabled", true));
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
@@ -3798,7 +3805,7 @@ public final class Haiagaru {
                 () -> NgManagement.addSettingsButton(layout, activity)
         );
         addOptionalSettingsSection(
-                "MEGA backup",
+                "local/optional MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
         if (StringReplacement.supported(activity)) {
@@ -3815,9 +3822,9 @@ public final class Haiagaru {
         ConfigSnapshot before = ConfigSnapshot.read(preferences);
         final int initialPostedThreadDisplayCount = getPostedThreadDisplayCountSetting();
         final int initialPostHistoryRetentionCount = getPostHistoryRetentionCount();
-        new AlertDialog.Builder(activity)
+        AlertDialog settingsDialog = new AlertDialog.Builder(activity)
                 .setTitle("Haiagaru")
-                .setCancelable(false)
+                .setCancelable(true)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
                     if (!historyLimits.validate()) return;
@@ -3924,6 +3931,7 @@ public final class Haiagaru {
                             .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
                             .putFloat("postEditorCustomTextSizeSp", selectedPostSize)
                             .putInt("urlVideoFetchMode", mediaAutoFetch.getSelectedItemPosition())
+                            .putBoolean("videoViewerEnabled", videoViewer.isChecked())
                             .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
                             .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
                             .putInt("videoThumbnailTimeoutSeconds", boundedMediaSetting(value(videoThumbnailTimeoutSeconds), videoThumbnailTimeoutSeconds(), 600))
@@ -3980,6 +3988,8 @@ public final class Haiagaru {
                     }
                 })
                 .show();
+        // Back dismisses without saving; accidental taps outside keep settings open.
+        settingsDialog.setCanceledOnTouchOutside(false);
     }
 
     private static void addOptionalSettingsSection(String name, Runnable section) {
@@ -4758,7 +4768,7 @@ public final class Haiagaru {
         }
     }
 
-    static Context applicationContextForExtension() {
+    public static Context applicationContextForExtension() {
         return applicationContext;
     }
 
@@ -4786,6 +4796,16 @@ public final class Haiagaru {
         float size = prefs.contains("postEditorCustomTextSizeSp")
                 ? prefs.getFloat("postEditorCustomTextSizeSp", 0) : prefs.getInt("postEditorTextSizeSp", 0);
         return PostEditorSizeValue.valid(size) ? size : 0;
+    }
+
+    public static boolean videoViewerEnabled() {
+        Context context = applicationContext;
+        if (context == null || !preferences(context).getBoolean("videoViewerEnabled", true)) return false;
+        try {
+            String version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+            return "0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)
+                    || "0.8.10.241".equals(version) || "0.8.10.242 dev".equals(version);
+        } catch (Exception ignored) { return false; }
     }
 
     public static boolean mediaImageFetchEnabled() {

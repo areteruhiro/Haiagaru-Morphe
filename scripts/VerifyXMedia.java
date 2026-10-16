@@ -43,6 +43,14 @@ public class VerifyXMedia {
                 if (((String[])posts.invoke(null,(Object)null)).length != 0) throw new AssertionError("null body");
                 if (((String[]) posts.invoke(null, "https://evil.x.com/u/status/123")).length != 0) throw new AssertionError("Host validation");
                 var videos = parser.getMethod("directVideos", String.class);
+                var isVideo = parser.getDeclaredMethod("validMedia", String.class, boolean.class);
+                isVideo.setAccessible(true);
+                if (!(Boolean)isVideo.invoke(null,"https://i.imgur.com/A54Xv8k.mp4",true))
+                    throw new AssertionError("Imgur native video projection");
+                for (String bad : new String[]{"https://i.imgur.com.evil/a.mp4", "http://i.imgur.com/a.mp4",
+                        "https://i.imgur.com/a/test.mp4", "https://i.imgur.com/a.png"}) {
+                    if ((Boolean)isVideo.invoke(null,bad,true)) throw new AssertionError("Imgur video validation: " + bad);
+                }
                 String direct = "https://video.twimg.com/ext_tw_video/2104908394507411457/pu/vid/avc1/720x960/x6cfbDt22DoPXS7l.mp4";
                 if (!java.util.Arrays.equals((String[]) videos.invoke(null, direct), new String[]{direct})) throw new AssertionError("Direct video");
                 for (String prefix : new String[]{"", "ttps://", "ttp://", "//", "http://"}) {

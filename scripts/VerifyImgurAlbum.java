@@ -8,12 +8,12 @@ public class VerifyImgurAlbum {
         String patterns = source.substring(source.indexOf("    private static final Pattern ALBUM"),
                 source.indexOf("    private static final ExecutorService"));
         String parser = source.substring(source.indexOf("    public static String imageFromHtml"),
-                source.indexOf("    public static String[] imagesFromJson"));
+                source.indexOf("    private static String fetch"));
         Path temp = Files.createTempDirectory("haiagaru-imgur-test-");
         try {
             Path file = temp.resolve("ImgurParser.java");
-            Files.writeString(file, "import java.util.regex.*; public class ImgurParser {" + patterns + parser + "}");
-            if (ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", temp.toString(), file.toString()) != 0)
+            Files.writeString(file, "import java.util.*; import java.util.regex.*; public class ImgurParser {" + patterns + parser + "}");
+            if (ToolProvider.getSystemJavaCompiler().run(null, null, null, "-cp", System.getProperty("java.class.path"), "-d", temp.toString(), file.toString()) != 0)
                 throw new AssertionError("Parser compilation failed");
             try (var loader = new java.net.URLClassLoader(new java.net.URL[]{temp.toUri().toURL()})) {
                 var method = loader.loadClass("ImgurParser").getMethod("imageFromHtml", String.class);
@@ -43,6 +43,26 @@ public class VerifyImgurAlbum {
                     Object result = method.invoke(null, test[0]);
                     if (!java.util.Objects.equals(test[1], result)) throw new AssertionError("Unexpected: " + result);
                 }
+                var json = loader.loadClass("ImgurParser").getMethod("imagesFromJson", String.class);
+                String mixed = "{\"success\":true,\"data\":{\"images\":["
+                        + "{\"hash\":\"A54Xv8k\",\"ext\":\".mp4\",\"animated\":true},"
+                        + "{\"hash\":\"Photo\",\"ext\":\".png\"},"
+                        + "{\"hash\":\"A54Xv8k\",\"ext\":\".mp4\"},"
+                        + "{\"hash\":\"../bad\",\"ext\":\".mp4\"},"
+                        + "{\"hash\":\"bad\",\"ext\":\".html\"}]}}";
+                if (!java.util.Arrays.equals((String[]) json.invoke(null, mixed),
+                        new String[]{"https://i.imgur.com/A54Xv8k.mp4", "https://i.imgur.com/Photo.png"}))
+                    throw new AssertionError("Mixed album, video and deduplication");
+                if (((String[])json.invoke(null, "{\"success\":false}")).length != 0)
+                    throw new AssertionError("Failed response");
+                var html = loader.loadClass("ImgurParser").getMethod("mediaFromHtml", String.class);
+                String videoHtml = "<meta property='og:image' content='https://i.imgur.com/cover.jpg'>"
+                        + "<meta property='og:video' content='https://i.imgur.com/A54Xv8k.mp4'>"
+                        + "<meta property='og:video:secure_url' content='https://i.imgur.com/A54Xv8k.mp4'>";
+                if (!java.util.Arrays.equals((String[])html.invoke(null,videoHtml), new String[]{"https://i.imgur.com/A54Xv8k.mp4"}))
+                    throw new AssertionError("Video metadata takes precedence over cover");
+                if (((String[])html.invoke(null,"<meta property='og:video' content='https://i.imgur.com.evil/a.mp4'>")).length != 0)
+                    throw new AssertionError("Invalid video host");
                 if (args.length > 0) {
                     Object result = method.invoke(null, Files.readString(Path.of(args[0])));
                     if (!"https://i.imgur.com/LWkGnaI.png".equals(result)) throw new AssertionError("Real album: " + result);
