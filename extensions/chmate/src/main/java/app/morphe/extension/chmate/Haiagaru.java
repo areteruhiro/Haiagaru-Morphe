@@ -872,6 +872,7 @@ public final class Haiagaru {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
         ImageVpnController.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
@@ -1772,6 +1773,23 @@ public final class Haiagaru {
 
     public static long getPostedThreadDisplayCountLong() {
         return getPostedThreadDisplayCount();
+    }
+
+    /** Legacy database wrappers do not forward the posted query-builder LIMIT. */
+    public static java.util.List<?> limitPostedThreadRows(java.util.List<?> rows) {
+        if (rows == null) return null;
+        int limit = getPostedThreadDisplayCount();
+        return rows.size() <= limit ? rows : new java.util.ArrayList<>(rows.subList(0, limit));
+    }
+
+    /** Unlike the display limit, zero deliberately keeps no sent-history entries. */
+    public static int getPostHistoryRetentionCount() {
+        Context context = applicationContext;
+        if (context == null) return DEFAULT_CHMATE_POST_DATA_LIST_COUNT;
+        int count = PreferenceManager.getDefaultSharedPreferences(context).getInt(
+                CHMATE_POST_DATA_LIST_COUNT_KEY, DEFAULT_CHMATE_POST_DATA_LIST_COUNT);
+        if (count == Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        return Math.max(0, Math.min(count, MAX_CHMATE_POST_DATA_LIST_COUNT));
     }
 
     private static final class CellularNetworkLease {
@@ -3597,22 +3615,32 @@ public final class Haiagaru {
 
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
+        final int savedPostHistoryCount = chMatePreferences.getInt(
+                CHMATE_POST_DATA_LIST_COUNT_KEY, DEFAULT_CHMATE_POST_DATA_LIST_COUNT);
+        Switch unlimitedPostHistory = addSwitch(layout, activity,
+                text("書き込み履歴を無制限に保存", "Keep unlimited post history"),
+                savedPostHistoryCount == Integer.MAX_VALUE);
         EditText postDataListCount = addTextField(
                 layout,
                 activity,
                 text("書き込み履歴に残す件数（0で残さない）",
                         "Posts to keep in post history (0 keeps none)"),
-                Integer.toString(chMatePreferences.getInt(
-                        CHMATE_POST_DATA_LIST_COUNT_KEY,
-                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
-                ))
+                Integer.toString(savedPostHistoryCount == Integer.MAX_VALUE
+                        ? DEFAULT_CHMATE_POST_DATA_LIST_COUNT : savedPostHistoryCount)
         );
+        postDataListCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        postDataListCount.setEnabled(!unlimitedPostHistory.isChecked());
+        unlimitedPostHistory.setOnCheckedChangeListener((button, checked) ->
+                postDataListCount.setEnabled(!checked));
         TextView postDataListCountDescription = new TextView(activity);
         postDataListCountDescription.setText(text(
-                "書き込み履歴の古い項目から削除します。設定変更時にもすぐ整理されます。"
-                        + " 1〜10000、または0を指定できます。",
-                "Oldest post-history entries are removed first, including immediately after changing "
-                        + "this setting. Choose 0 to 10000."
+                "書き込み履歴の古い項目から削除します。件数変更時はアプリを再起動し、"
+                        + "次に送信済み履歴を保存する際に反映します。削除された履歴は戻せません。"
+                        + " 1〜10000、または0を指定できます。無制限を有効にすると件数による削除を行いません。"
+                        + "保存容量・バックアップサイズや読み込み負荷が増える場合があります。",
+                "Oldest post-history entries are removed first. Changing the count restarts the app; "
+                        + "the limit applies when sent history is next saved. Removed history cannot be restored. Choose 0 to 10000, "
+                        + "or enable unlimited to disable count-based pruning. Storage, backup size and load time may increase."
         ));
         postDataListCountDescription.setTextSize(13);
         layout.addView(postDataListCountDescription, rowParams(activity));
@@ -3626,13 +3654,14 @@ public final class Haiagaru {
                     Integer.toString(getPostedThreadDisplayCountSetting()));
             postedThreads.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
             TextView description = new TextView(activity);
-            description.setText(text("1〜10000件、0で無制限。ホームの一覧を開き直すと反映されます。"
+            description.setText(text("1〜10000件、0で無制限。件数を変更するとアプリを再起動して反映します。"
                             + "「書き込んだスレ」の表示件数のみを変更します。下の「送信済み」の件数や、保存済みの履歴は変更しません。",
-                    "1–10000, or 0 for unlimited. Reopen the home list to apply. Only posted threads are limited; sent posts and saved history are unchanged."));
+                    "1–10000, or 0 for unlimited. Changing the count restarts the app to refresh the list. Only posted threads are limited; sent posts and saved history are unchanged."));
             description.setTextSize(13);
             layout.addView(description, rowParams(activity));
         }
         final EditText postedThreadDisplayCount = postedThreads;
+        final HistoryLimits.Settings historyLimits = HistoryLimits.addSettings(layout, activity);
 
         EditText ngRegistrationLimit = addTextField(
                 layout,
@@ -3769,11 +3798,14 @@ public final class Haiagaru {
         scrollView.addView(layout);
 
         ConfigSnapshot before = ConfigSnapshot.read(preferences);
+        final int initialPostedThreadDisplayCount = getPostedThreadDisplayCountSetting();
+        final int initialPostHistoryRetentionCount = getPostHistoryRetentionCount();
         new AlertDialog.Builder(activity)
                 .setTitle("Haiagaru")
                 .setCancelable(false)
                 .setView(scrollView)
                 .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
+                    if (!historyLimits.validate()) return;
                     int displayCount = postedThreadDisplayCount == null ? getPostedThreadDisplayCountSetting()
                             : PostedThreadCountValue.parse(value(postedThreadDisplayCount));
                     if (displayCount < 0) {
@@ -3792,7 +3824,7 @@ public final class Haiagaru {
                     boolean legacyPlusChanged = false;
                     if (legacyPlusSupported) {
                         SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
-                        int postHistoryCount = parsePostHistoryCount(
+                        int postHistoryCount = unlimitedPostHistory.isChecked() ? Integer.MAX_VALUE : parsePostHistoryCount(
                                 value(postDataListCount),
                                 chMatePreferences.getInt(
                                         CHMATE_POST_DATA_LIST_COUNT_KEY,
@@ -3840,7 +3872,7 @@ public final class Haiagaru {
                         }
                         chMateEditor.commit();
                     } else {
-                        int postHistoryCount = parsePostHistoryCount(
+                        int postHistoryCount = unlimitedPostHistory.isChecked() ? Integer.MAX_VALUE : parsePostHistoryCount(
                                 value(postDataListCount),
                                 chMatePreferences.getInt(
                                         CHMATE_POST_DATA_LIST_COUNT_KEY,
@@ -3917,10 +3949,13 @@ public final class Haiagaru {
                     }
 
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
+                    boolean historyLimitsChanged = historyLimits.save();
                     boolean imageVpnChanged = ImageVpnController.enabled() != preferences.getBoolean("imageVpnEnabled", false);
                     ImageVpnController.setEnabled(preferences.getBoolean("imageVpnEnabled", false));
-                    if (!before.equals(after) || legacyPlusChanged
-                            || imageVpnChanged || initialThreadTitleSpacing != threadTitleSpacingPercent()
+                    if (!before.equals(after) || legacyPlusChanged || historyLimitsChanged
+                            || imageVpnChanged || initialPostedThreadDisplayCount != displayCount
+                            || initialPostHistoryRetentionCount != getPostHistoryRetentionCount()
+                            || initialThreadTitleSpacing != threadTitleSpacingPercent()
                             || initialHideNgThreadGroup != hideNgThreadGroup()) restart(activity);
                     else if (initialSettingsLanguage != settingsLanguage.getSelectedItemPosition()) {
                         Toast.makeText(activity, text("表示言語を変更しました。設定を開き直すと反映されます。",

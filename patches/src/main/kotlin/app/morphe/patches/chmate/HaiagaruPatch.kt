@@ -44,6 +44,110 @@ private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
 private object EmojiFontResourceMarker
 
+private fun BytecodePatchContext.patchBrowsingAndSearchHistory(version: String) {
+    val profile = when (version) {
+        "0.8.10.191 dev" -> listOf("Lo/lrb\$write;", "Lo/r8lambdaEBvvDaQDWIaS7WUoordU_4sxR3Y;", "b")
+        "0.8.10.226 dev" -> listOf("Lo/hasNextProxy\$ComponentActivity;", "Lo/TrustRootIndex;", "b")
+        "0.8.10.241" -> listOf("Lo/canScrollHorizontally\$read;", "Lo/tul11;", "d")
+        "0.8.10.242 dev" -> listOf("Lo/afterTextChanged\$RemoteActionCompatParcelizer;", "Lo/initView;", "a")
+        else -> return
+    }
+    val runtime = "Lapp/morphe/extension/chmate/HistoryLimits;"
+    val writer = mutableClassDefBy(profile[0]).methods.single { method ->
+        method.parameterTypes == listOf("Ljava/lang/String;") && method.returnType == "V"
+            && method.implementation?.instructions?.any {
+                (it as? NarrowLiteralInstruction)?.narrowLiteral == 50
+            } == true
+    }
+    val first = writer.implementation!!.instructions.first()
+    val argument = if (writer.accessFlags and 8 != 0) "p0" else "p1"
+    val register = writer.findFreeRegister(0)
+    writer.addInstructionsWithLabels(0, """
+        invoke-static {$argument}, $runtime->recordSearchHistory(Ljava/lang/String;)Z
+        move-result v$register
+        if-eqz v$register, :original_search_history
+        return-void
+    """.trimIndent(), ExternalLabel("original_search_history", first))
+    val prune = mutableClassDefBy(profile[1]).methods.single {
+        it.name == profile[2] && it.parameterTypes.isEmpty() && it.returnType == "V"
+    }
+    check(prune.implementation!!.instructions.any {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string?.contains("ORDER BY access") == true
+    }) { "$version automatic history cleanup changed" }
+    val original = prune.implementation!!.instructions.first()
+    val guard = prune.findFreeRegister(0)
+    prune.addInstructionsWithLabels(0, """
+        invoke-static {}, $runtime->unlimitedThreadHistory()Z
+        move-result v$guard
+        if-eqz v$guard, :original_history_cleanup
+        return-void
+    """.trimIndent(), ExternalLabel("original_history_cleanup", original))
+    if (version == "0.8.10.242 dev") {
+        val ctor = mutableClassDefBy("Lo/initRenderFinish\$_init_lambda3;").methods.single { it.name == "<init>" }
+        val body = ctor.implementation!!.instructions.toList()
+        val index = body.indices.single { (body[it] as? WideLiteralInstruction)?.wideLiteral == 50L
+            && body.getOrNull(it + 1)?.opcode == Opcode.IPUT_WIDE }
+        val destination = (body[index] as OneRegisterInstruction).registerA
+        ctor.replaceInstruction(index, "invoke-static {}, $runtime->getRecentThreadDisplayCountLong()J")
+        ctor.addInstruction(index + 1, "move-result-wide v$destination")
+    } else {
+        var matches = 0
+        classDefForEach { cls ->
+            if (!cls.type.startsWith("Lo/")) return@classDefForEach
+            cls.methods.forEach { method ->
+                val body = method.implementation?.instructions?.toList() ?: return@forEach
+                if (body.none { ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "access" }) return@forEach
+                val index = body.indexOfFirst {
+                    ((it as? ReferenceInstruction)?.reference as? StringReference)?.string == "access"
+                }
+                val queries = body.indices.filter { position -> position > index
+                    && ((body[position] as? ReferenceInstruction)?.reference as? MethodReference)
+                        ?.let { it.definingClass == profile[1] && it.returnType == "Ljava/util/ArrayList;"
+                            && it.parameterTypes.size == 3 } == true }
+                if (queries.isEmpty()) return@forEach
+                check(queries.size == 1) { "$version recent-history query ambiguous" }
+                val query = queries.single()
+                check(body[query + 1].opcode == Opcode.MOVE_RESULT_OBJECT)
+                val result = (body[query + 1] as OneRegisterInstruction).registerA
+                val mutable = mutableClassDefBy(cls).findMutableMethodOf(method)
+                mutable.addInstruction(query + 2, "invoke-static {v$result}, $runtime->limitRecentThreadRows(Ljava/util/ArrayList;)Ljava/util/ArrayList;")
+                mutable.addInstruction(query + 3, "move-result-object v$result")
+                matches++
+            }
+        }
+        check(matches == 1) { "$version recent-history query changed ($matches)" }
+    }
+}
+
+/** Modern PostDataList no longer reads the legacy preference; bind its pruning limit. */
+private fun BytecodePatchContext.patchPostHistoryRetentionCount(version: String) {
+    val owner = when (version) {
+        "0.8.10.241" -> "Lo/KP;"
+        "0.8.10.242 dev" -> "Lo/PackageSignatureVerifier;"
+        else -> return // 191/226 already read and observe postDataListCount natively.
+    }
+    val field = if (version == "0.8.10.241") "h" else "f"
+    var patched = 0
+    mutableClassDefBy(owner).methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        instructions.indices.reversed().forEach { index ->
+            val instruction = instructions[index]
+            val reference = (instruction as? ReferenceInstruction)?.reference as? FieldReference
+            if (instruction.opcode == Opcode.IGET && reference?.definingClass == owner
+                && reference.name == field && reference.type == "I") {
+                check(instructions.getOrNull(index + 1)?.opcode == Opcode.IF_LE) {
+                    "$version post-history retention comparison changed"
+                }
+                val register = (instruction as OneRegisterInstruction).registerA
+                method.replaceInstruction(index, "invoke-static {}, $EXTENSION->getPostHistoryRetentionCount()I")
+                method.addInstruction(index + 1, "move-result v$register")
+                patched++
+            }
+        }
+    }
+    check(patched == 1) { "$version post-history retention limit changed ($patched)" }
+}
+
 /** Change only the recently-posted query LIMIT, not the stored post-history retention. */
 private fun BytecodePatchContext.patchPostedThreadDisplayCount(version: String) {
     val owner = when (version) {
@@ -90,10 +194,42 @@ private fun BytecodePatchContext.patchPostedThreadDisplayCount(version: String) 
     }
     check(anchors.size == 1) { "$version posted-thread query limit changed (${anchors.size})" }
     val (index, register) = anchors.single()
+    if (wide) {
+        // These generated constructors ignore their J argument and store a literal 10.
+        // Patch the value actually bound to SQL LIMIT, not the unused caller argument.
+        val constructor = (instructions[index + 1] as ReferenceInstruction).reference as MethodReference
+        val target = mutableClassDefBy(constructor.definingClass).methods.single {
+            it.name == "<init>" && it.parameterTypes == constructor.parameterTypes
+        }
+        val body = target.implementation!!.instructions.toList()
+        val stores = body.mapIndexedNotNull { position, instruction ->
+            if (instruction.opcode == Opcode.CONST_WIDE_16
+                && (instruction as? WideLiteralInstruction)?.wideLiteral == 10L
+                && body.getOrNull(position + 1)?.opcode == Opcode.IPUT_WIDE)
+                position to (instruction as OneRegisterInstruction).registerA else null
+        }
+        check(stores.size == 1) { "$version posted-thread constructor limit changed" }
+        val (position, destination) = stores.single()
+        target.replaceInstruction(position, "invoke-static {}, $EXTENSION->getPostedThreadDisplayCountLong()J")
+        target.addInstruction(position + 1, "move-result-wide v$destination")
+        return
+    }
     method.replaceInstruction(index, if (wide)
         "invoke-static {}, $EXTENSION->getPostedThreadDisplayCountLong()J" else
         "invoke-static {}, $EXTENSION->getPostedThreadDisplayCount()I")
     method.addInstruction(index + 1, "${if (wide) "move-result-wide" else "move-result"} v$register")
+    if (!wide) {
+        // The compatibility query drops the builder LIMIT entirely. Bound only
+        // the posted-thread result, before draft/sent sections are appended.
+        val query = instructions.indices.first { position -> position > index
+            && ((instructions[position] as? ReferenceInstruction)?.reference as? MethodReference)
+                ?.let { it.returnType == "Ljava/util/ArrayList;" && it.parameterTypes.size == 3 } == true
+        }
+        check(instructions[query + 1].opcode == Opcode.MOVE_RESULT_OBJECT)
+        val result = (instructions[query + 1] as OneRegisterInstruction).registerA
+        method.addInstruction(query + 3, "invoke-static {v$result}, $EXTENSION->limitPostedThreadRows(Ljava/util/List;)Ljava/util/List;")
+        method.addInstruction(query + 4, "move-result-object v$result")
+    }
 }
 
 /**
@@ -1254,6 +1390,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         patchNgRegistrationLimit()
         patchPostedThreadDisplayCount(packageMetadata.versionName)
+        patchPostHistoryRetentionCount(packageMetadata.versionName)
+        patchBrowsingAndSearchHistory(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
