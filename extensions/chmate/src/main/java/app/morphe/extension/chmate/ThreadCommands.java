@@ -56,11 +56,12 @@ public final class ThreadCommands {
                     bodyName = "a"; targetName = "P"; modeName = "r"; urlMethod = "G";
                 }
             }
+            Object target = field(model, targetName);
+            String url = (String) target.getClass().getMethod(urlMethod).invoke(target);
+            ExternalBoardAuth.target(fragment, url);
             Object mode = field(model, modeName);
             if (!(mode instanceof Enum) || !((Enum<?>) mode).name().equals("Thread")) return;
             EditText body = (EditText) field(binding, bodyName);
-            Object target = field(model, targetName);
-            String url = (String) target.getClass().getMethod(urlMethod).invoke(target);
             String profile = ThreadCommandRules.profile(url);
             // Insert alongside the body container, preserving its native listeners and layout params.
             View anchor = body;

@@ -1856,6 +1856,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHttpsTransport()
         patchNativeUpdatePolicy(packageMetadata.versionName)
         patchPatrolImages(packageMetadata.versionName)
+        patchExternalBoardAuth(packageMetadata.versionName)
+        patchExternalBoardEditor(packageMetadata.versionName)
     }
 }
 
@@ -4415,6 +4417,23 @@ val haiagaruPatch = resourcePatch(
             "false", "0", "no", "off" -> false
             else -> throw PatchException("imageNgTfliteFixは true / false を指定してください")
         }
+        val boardXmls = get("res/xml").listFiles().orEmpty().filter {
+            it.extension == "xml" && it.readText().contains("updateBbsMenu")
+        }
+        check(boardXmls.size == 1) { "Board/BBSMENU preferences XML changed (${boardXmls.size})" }
+        val boardEditorPackage = document("AndroidManifest.xml").use { it.documentElement.getAttribute("package") }
+        document("res/xml/${boardXmls.single().name}").use { settings ->
+            val entry = settings.createElement("Preference")
+            entry.setAttributeNS(ANDROID_XML_NAMESPACE,"android:key","haiagaruExternalBoardEditor")
+            entry.setAttributeNS(ANDROID_XML_NAMESPACE,"android:title","登録した外部板の名前・URLを編集")
+            entry.setAttributeNS(ANDROID_XML_NAMESPACE,"android:summary","外部板の移転・名前変更。保存後はChMateを再起動してください")
+            val intent = settings.createElement("intent")
+            // Package-name patch also rewrites targetPackage attributes in resource XML.
+            intent.setAttributeNS(ANDROID_XML_NAMESPACE,"android:targetPackage",boardEditorPackage)
+            intent.setAttributeNS(ANDROID_XML_NAMESPACE,"android:targetClass","app.morphe.extension.chmate.ExternalBoardEditorActivity")
+            entry.appendChild(intent)
+            settings.documentElement.appendChild(entry)
+        }
         val cacheArrayNames = document("res/values/arrays.xml").use {
             ImageCacheSizeOptions.expand(it)
         }
@@ -4755,6 +4774,19 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:configChanges", "orientation|screenSize|keyboardHidden")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
                     "@android:style/Theme.Material.Light.NoActionBar")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name",
+                    "app.morphe.extension.chmate.ExternalBoardAuthActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ExternalBoardEditorActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Material.Light.NoActionBar")
             })
             if (packageMetadata.versionName != "0.8.10.243 dev") {
                 application.appendChild(document.createElement("activity").apply {
@@ -6313,6 +6345,10 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUpload
 
 /** Posting overflow only: preserve the native editor layout and all native menu actions. */
 internal fun BytecodePatchContext.patchImgurPostingMenu(version: String) {
+    patchPostingOverflowMenu(version,"ImgurWebUpload","imgur")
+}
+
+internal fun BytecodePatchContext.patchPostingOverflowMenu(version: String, extension: String, label: String) {
     val legacy = version == "0.8.10.191 dev"
     val owner = if (legacy) "Lo/p9ExternalSyntheticLambda6;"
         else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;"
@@ -6335,7 +6371,7 @@ internal fun BytecodePatchContext.patchImgurPostingMenu(version: String) {
     // Add before native visibility updates. Branches targeting an existing return
     // can skip instructions inserted immediately before that return.
     prepare.addInstructionsWithLabels(0,
-        "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
+        "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/$extension;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
     val dispatch = cls.methods.single {
         it.name == dispatchName && it.returnType == "Z"
             && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
@@ -6346,11 +6382,11 @@ internal fun BytecodePatchContext.patchImgurPostingMenu(version: String) {
         ref?.definingClass == "Landroid/view/MenuItem;" && ref.name == "getItemId"
     }) { "$version posting menu dispatch contract changed" }
     dispatch.addInstructionsWithLabels(0, """
-        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->handlePostingMenu(Ljava/lang/Object;Landroid/view/MenuItem;)Z
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/$extension;->handlePostingMenu(Ljava/lang/Object;Landroid/view/MenuItem;)Z
         move-result v0
-        if-eqz v0, :haiagaru_imgur_native_menu
+        if-eqz v0, :haiagaru_${label}_native_menu
         return v0
-    """.trimIndent(), ExternalLabel("haiagaru_imgur_native_menu", dispatch.implementation!!.instructions.first()))
+    """.trimIndent(), ExternalLabel("haiagaru_${label}_native_menu", dispatch.implementation!!.instructions.first()))
     if (legacy) {
         // The dialog posting toolbar can open the activity-owned overflow, not
         // the fragment-owned popup. Bind before its adapter snapshots the menu.
@@ -6365,18 +6401,18 @@ internal fun BytecodePatchContext.patchImgurPostingMenu(version: String) {
         }
         val registers = constructor.value as FiveRegisterInstruction
         activityPopup.addInstructionsWithLabels(constructor.index,
-            "invoke-static {v${registers.registerD}, v${registers.registerE}}, Lapp/morphe/extension/chmate/ImgurWebUpload;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
+            "invoke-static {v${registers.registerD}, v${registers.registerE}}, Lapp/morphe/extension/chmate/$extension;->addPostingMenu(Ljava/lang/Object;Landroid/view/Menu;)V")
         val activityClick = mutableClassDefBy("Lo/m6b\$4;").methods.single {
             it.name == "Xf_" && it.returnType == "Z"
                 && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
         }
         check(activityClick.implementation!!.registerCount > 2)
         activityClick.addInstructionsWithLabels(0, """
-            invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/ImgurWebUpload;->handlePostingActivityMenu(Landroid/view/MenuItem;)Z
+            invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/$extension;->handlePostingActivityMenu(Landroid/view/MenuItem;)Z
             move-result v0
-            if-eqz v0, :haiagaru_imgur_native_activity_menu
+            if-eqz v0, :haiagaru_${label}_native_activity_menu
             return v0
-        """.trimIndent(), ExternalLabel("haiagaru_imgur_native_activity_menu", activityClick.implementation!!.instructions.first()))
+        """.trimIndent(), ExternalLabel("haiagaru_${label}_native_activity_menu", activityClick.implementation!!.instructions.first()))
     }
 }
 

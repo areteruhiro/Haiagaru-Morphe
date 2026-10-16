@@ -446,6 +446,7 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            ExternalBoardAuth.resumed(activity);
                             NativeRestore191.onActivityResumed(activity);
                             ResponseArchive.onActivityResumed(activity);
                             StringReplacement.reload(activity, false, null);
@@ -879,6 +880,8 @@ public final class Haiagaru {
         ImgurWebUpload.init(appContext);
         ImageVpnController.initialize(appContext);
         PatrolImages.initialize(appContext);
+        ExternalBoardAuth.initialize(appContext);
+        ExternalBoardEditor.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
         runtimePackageName = appContext.getPackageName();
@@ -3889,6 +3892,7 @@ public final class Haiagaru {
                 () -> addPackageMigrationControl(activity, layout)
         );
         sections.begin(SettingsSections.Category.ADVANCED);
+        ExternalBoardAuth.addSettingsButton(layout, activity);
         addOptionalSettingsSection(
                 "duplicate board cleanup",
                 () -> addBoardDuplicateCleanupControl(activity, layout)

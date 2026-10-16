@@ -22,7 +22,7 @@ foreach ($line in ($source -split '\r?\n')) {
         $current.Scoped++
     }
 }
-if ($entries.Count -lt 80 -or $entries[0].Version -ne '1.8.8') { throw 'Missing changelog history/latest version' }
+if ($entries.Count -lt 80 -or $entries[0].Version -ne '1.8.9') { throw 'Missing changelog history/latest version' }
 if (@($entries | Where-Object { $_.Scoped -eq 0 }).Count) { throw 'Empty ChMate entries' }
 if (@($entries.Version | Select-Object -Unique).Count -ne $entries.Count) { throw 'Duplicate versions' }
 if ($source -match '\]\(docs/') { throw 'Relative links will not resolve inside Morphe' }
