@@ -110,7 +110,7 @@ Java.perform(function () {
         ok.performClick();
         }); }); }, 700);
     }); };
-    globalThis.testLegacyPopupClick = function () { Java.scheduleOnMainThread(function () {
+    globalThis.testLegacyPopupClick = function (showForTouch) { Java.scheduleOnMainThread(function () {
         if(!pkg.endsWith('191'))throw new Error('191 only');
         const a=activity(), helper=Java.use('app.morphe.extension.chmate.WacchoiLongPressMenu');
         const Host=Java.registerClass({name:'app.morphe.extension.chmate.fixture.SuffixClickHost191',
@@ -124,6 +124,18 @@ Java.perform(function () {
         helper.append(menu,host,host,context);
         const adapter=Java.use('o.m6f').$new.overload('android.content.Context','android.view.Menu').call(Java.use('o.m6f'),a,menu);
         const popup=Java.use('o.qm').$new(a,adapter,Callback.$new());
+        if (showForTouch) {
+            const anchor=Java.use('android.widget.TextView').$new(a);
+            anchor.setText(Java.use('java.lang.String').$new('191 suffix popup touch fixture'));
+            anchor.setPadding(30,30,30,30);
+            const frame=Java.use('android.widget.FrameLayout').$new(a);
+            frame.addView.overload('android.view.View','android.view.ViewGroup$LayoutParams').call(frame,anchor,
+                Java.use('android.widget.FrameLayout$LayoutParams').$new(650,180));
+            a.setContentView.overload('android.view.View').call(a,frame);
+            anchor.post(Java.registerClass({name:'app.morphe.extension.chmate.fixture.ShowSuffixPopup191',
+                implements:[Java.use('java.lang.Runnable')],methods:{run:function(){popup.a.overload('android.view.View').call(popup,anchor);}}}).$new());
+            console.log('Showing real qm popup; test actual touch on its row');return;
+        }
         popup.onItemClick(null,null,0,0);
         console.log('Dispatched real qm popup click; inspect whether NGName追加 is visible');
     }); };
@@ -145,6 +157,43 @@ Java.perform(function () {
         const row=adapter.getView(0,null,Java.use('android.widget.FrameLayout').$new(a));
         if(!row.isLongClickable()||!row.performLongClick())throw new Error('Long press not consumed');
         console.log('PASS 191 real MenuItem -> bound Android row -> performLongClick; verify NG editor');
+    }); };
+    globalThis.testSuffixRowRecycling = function () { Java.scheduleOnMainThread(function () {
+        const a=activity(), helper=Java.use('app.morphe.extension.chmate.WacchoiLongPressMenu');
+        const menu=Java.use('o.m6fExternalSyntheticLambda0').$new.overload('android.content.Context')
+            .call(Java.use('o.m6fExternalSyntheticLambda0'),a);
+        const suffix=menu.add.overload('int','int','int','java.lang.CharSequence')
+            .call(menu,0,76,0,Java.use('java.lang.String').$new('suffix'));
+        menu.add.overload('int','int','int','java.lang.CharSequence')
+            .call(menu,0,90,1,Java.use('java.lang.String').$new('unrelated'));
+        const mapField=helper.class.getDeclaredField('SUFFIX_LONG_PRESS');mapField.setAccessible(true);
+        const actions=Java.cast(mapField.get(null),Java.use('java.util.Map'));
+        let longs=0, clicks=0, nativeClicks=0;
+        const Action=Java.registerClass({name:'app.morphe.extension.chmate.fixture.RowLongAction',
+            implements:[Java.use('java.lang.Runnable')],methods:{run:function(){longs++;}}});
+        const Click=Java.registerClass({name:'app.morphe.extension.chmate.fixture.RowNativeClick',
+            implements:[Java.use('android.view.View$OnClickListener')],methods:{onClick:function(v){nativeClicks++;}}});
+        const ItemClick=Java.registerClass({name:'app.morphe.extension.chmate.fixture.RowParentClick',
+            implements:[Java.use('android.widget.AdapterView$OnItemClickListener')],
+            methods:{onItemClick:function(parent,view,position,id){if(position!==0)throw new Error('Wrong current position');clicks++;}}});
+        actions.put(suffix,Action.$new());
+        const adapter=Java.use('o.m6f').$new.overload('android.content.Context','android.view.Menu')
+            .call(Java.use('o.m6f'),a,menu);
+        const list=Java.use('android.widget.ListView').$new(a);list.setAdapter(adapter);
+        list.setOnItemClickListener(ItemClick.$new());
+        a.setContentView.overload('android.view.View').call(a,list);
+        list.measure(1073742500,1073742500);list.layout(0,0,676,676);
+        const row=list.getChildAt(0);if(row===null)throw new Error('No row');
+        row.performClick();if(clicks!==1)throw new Error('Normal tap not forwarded exactly once');
+        row.performLongClick();if(longs!==1||clicks!==1)throw new Error('Long press also clicked');
+        helper.bindSuffixRow(adapter,0,row);row.performClick();
+        if(clicks!==2)throw new Error('Rebind duplicated/lost click');
+        helper.bindSuffixRow(adapter,1,row);
+        if(row.isLongClickable()||row.isClickable()||row.hasOnClickListeners())throw new Error('Recycled row retained listeners');
+        row.setOnClickListener(Click.$new());helper.bindSuffixRow(adapter,0,row);row.performClick();
+        helper.bindSuffixRow(adapter,1,row);row.performClick();
+        if(nativeClicks!==2)throw new Error('Native row listener overwritten');
+        console.log('PASS normal click forwarding, long press isolation, rebind, recycling, native click preservation');
     }); };
     globalThis.testNativeLongPress = function () { Java.scheduleOnMainThread(function () {
         const version = app.getPackageManager().getPackageInfo(pkg, 0).versionName.value.toString();
