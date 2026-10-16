@@ -135,6 +135,48 @@ private fun BytecodePatchContext.patchNgRegistrationLimit() {
     }
 }
 
+/** Extend only the two native board filters, leaving NG text/flags/cache keys intact. */
+private fun BytecodePatchContext.patchNgBoardScopes() {
+    val itemType = "Ljp/syoboi/a2chMate/ng/NGWord\$Item;"
+    val item = mutableClassDefBy(itemType)
+    val constructor = item.methods.single {
+        it.name == "<init>" && it.parameterTypes.map(CharSequence::toString) ==
+            listOf("Ljava/lang/String;", "S", "J", "Ljava/lang/String;")
+    }
+    val lastParameter = constructor.implementation!!.registerCount - 1
+    val boardField = constructor.implementation!!.instructions.single {
+        it.opcode == Opcode.IPUT_OBJECT && (it as TwoRegisterInstruction).registerA == lastParameter
+    }.let { (it as ReferenceInstruction).reference as FieldReference }
+    val store = mutableClassDefBy("Ljp/syoboi/a2chMate/ng/NGWord;")
+    val filters = store.methods.filter {
+        val p = it.parameterTypes.map(CharSequence::toString)
+        it.returnType == itemType && p.size == 2 && p[0] == "Ljava/lang/String;"
+            && p[1] in listOf("Ljp/syoboi/a2chMate/client/BBSUrlInfo\$BoardID;", "Ljp/syoboi/a2chMate/client/BoardID;")
+            || it.returnType == "V" && p.size == 3 && p[1] == "Ljava/lang/String;" && p[2] == "J"
+    }
+    check(filters.size == 2) { "Native NG board filters changed: ${filters.size}" }
+    filters.forEach { method ->
+        val instructions = method.implementation!!.instructions.toList()
+        val anchors = instructions.indices.filter { index ->
+            val call = instructions[index] as? FiveRegisterInstruction ?: return@filter false
+            val ref = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
+            ref?.returnType == "Z" && (ref.name == "equals" && ref.parameterTypes.size == 1
+                || instructions[index].opcode == Opcode.INVOKE_STATIC
+                    && ref.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/Object;", "Ljava/lang/Object;"))
+                && (maxOf(0, index - 3) until index).any { previous ->
+                    val field = instructions[previous]
+                    field.opcode == Opcode.IGET_OBJECT && (field as TwoRegisterInstruction).registerA == call.registerC
+                        && (field as ReferenceInstruction).reference == boardField
+                }
+        }
+        check(anchors.size == 1) { "Native NG board equality changed: ${method.name}/${anchors.size}" }
+        val index = anchors.single()
+        val call = instructions[index] as FiveRegisterInstruction
+        method.replaceInstruction(index, "invoke-static {v${call.registerC}, v${call.registerD}}, " +
+            "Lapp/morphe/extension/chmate/NgBoardScope;->matches(Ljava/lang/String;Ljava/lang/String;)Z")
+    }
+}
+
 internal val chMateCompatibility = Compatibility(
     name = "ChMate",
     packageName = "jp.co.airfront.android.a2chMate",
@@ -693,6 +735,7 @@ private fun BytecodePatchContext.patchConsumedPopupMenu191() {
 }
 
 private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
+    patchQuickFilterPosition(version)
     if (version == "0.8.10.191 dev") {
         val toolbarModelType = "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
         val builder = mutableClassDefBy("Lo/pa;").methods.single {
@@ -871,6 +914,62 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
     }
     // Keep the original filter state and handlers; only omit each version's
     // Compose row while the compact toolbar option is enabled.
+}
+
+/** Capture only quick-filter operations, including the stock upper filter controls. */
+private fun BytecodePatchContext.patchQuickFilterPosition(version: String) {
+    val extension = "Lapp/morphe/extension/chmate/FilterPosition;"
+    if (version == "0.8.10.191 dev") {
+        val owner = "Lo/pa\$21;"
+        val callback = mutableClassDefBy(owner).methods.single {
+            it.name == "e" && it.parameterTypes.isEmpty() && it.returnType == "V"
+        }
+        val rebuild = callback.implementation!!.instructions.withIndex().single { (_, instruction) ->
+            (instruction as? ReferenceInstruction)?.reference?.toString() ==
+                "Lo/m9ExternalSyntheticLambda1;->c(Z)V"
+        }.index
+        // p0 is the callback; its owner field is the fragment, not a global active tab.
+        val free = callback.findFreeRegister(0)
+        callback.addInstructionsWithLabels(0, """
+            iget-object v$free, p0, $owner->d:Lo/pa;
+            invoke-static/range {v$free .. v$free}, $extension->beforeFragment(Ljava/lang/Object;)V
+        """.trimIndent())
+        check(rebuild > 0) { "191 quick-filter rebuild missing" }
+        return
+    }
+    if (version !in setOf("0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) return
+    val fragment = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
+    val bind = fragment.methods.single { it.name == "onViewCreated" && it.returnType == "V" }
+    bind.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
+        .asReversed().forEach { (index, _) ->
+            bind.addInstructionsWithLabels(index, """
+                invoke-static/range {p0 .. p0}, $extension->register(Ljava/lang/Object;)V
+            """.trimIndent())
+        }
+    if (version == "0.8.10.226 dev") {
+        val toggle = mutableClassDefBy("Lo/listener\$setContentView\$ComponentActivity;").methods.single {
+            it.name == "invoke" && it.returnType == "Ljava/lang/Object;"
+        }
+        val site = toggle.implementation!!.instructions.withIndex().single { (_, instruction) ->
+            (instruction as? ReferenceInstruction)?.reference?.toString() == "Lo/getImgAcceptedHeight;->k:Lo/zzbc;"
+                    && instruction.opcode == Opcode.IGET_OBJECT
+                    && (instruction as TwoRegisterInstruction).registerA == 0
+        }
+        val receiver = (site.value as TwoRegisterInstruction).registerB
+        toggle.addInstructionsWithLabels(site.index, """
+            invoke-static/range {v$receiver .. v$receiver}, $extension->beforeModel(Ljava/lang/Object;)V
+        """.trimIndent())
+    } else {
+        val model = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;")
+        val kind = if (version == "0.8.10.241") "Lo/setBufferSize;" else "Lo/isAtLeastLollipop;"
+        val action = if (version == "0.8.10.241") "d" else "b"
+        val toggle = model.methods.single {
+            it.name == action && it.returnType == "V" && it.parameterTypes == listOf(kind)
+        }
+        toggle.addInstructionsWithLabels(0, """
+            invoke-static/range {p0 .. p0}, $extension->beforeModel(Ljava/lang/Object;)V
+        """.trimIndent())
+    }
 }
 
 /** Board display settings and the post-bookmark thread list are separate flows. */
@@ -1150,6 +1249,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             patchNgThreadGroupVisibility(packageMetadata.versionName)
             patchThreadTitleSpacing(packageMetadata.versionName)
             patchPostEditorTextSize()
+            patchNgBoardScopes()
         }
 
         patchNgRegistrationLimit()
@@ -2432,33 +2532,35 @@ private fun BytecodePatchContext.patchWacchoiNgPopupDispatch(version: String) {
             }.orEmpty()
             if (references.any { it.definingClass == "Landroid/view/MenuItem;" && it.name == "getSubMenu" }
                 && references.any { it.name == "dismiss" && it.parameterTypes.isEmpty() }
-                && references.any { it.definingClass == "Landroid/widget/AdapterView;" && it.name == "getItemAtPosition" }
+                && (version == "0.8.10.191 dev" && classDef.type == "Lo/qm;"
+                    || references.any { it.definingClass == "Landroid/widget/AdapterView;" && it.name == "getItemAtPosition" })
                 && references.any { it.name == "onMenuItemClick" && it.returnType == "Z"
                     && it.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;") }) {
                 candidates += classDef to method
             }
         }
     }
-    check(candidates.size == 1) {
-        "Expected one $version custom NG popup dispatcher, found ${candidates.map { it.first.type }}"
+    check(candidates.size == if (version == "0.8.10.191 dev") 2 else 1) {
+        "Unexpected $version custom NG popup dispatchers: ${candidates.map { it.first.type }}"
     }
-    val (popupOwner, popupMethod) = candidates.single()
-    val popupClick = mutableClassDefBy(popupOwner).findMutableMethodOf(popupMethod)
-    val nativeClick = popupClick.implementation!!.instructions.withIndex().single {
-        val reference = (it.value as? ReferenceInstruction)?.reference as? MethodReference
-        reference?.name == "onMenuItemClick" && reference.returnType == "Z"
-            && reference.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
+    candidates.forEach { (popupOwner, popupMethod) ->
+        val popupClick = mutableClassDefBy(popupOwner).findMutableMethodOf(popupMethod)
+        val nativeClick = popupClick.implementation!!.instructions.withIndex().single {
+            val reference = (it.value as? ReferenceInstruction)?.reference as? MethodReference
+            reference?.name == (if (popupOwner.type == "Lo/qm;") "Xf_" else "onMenuItemClick") && reference.returnType == "Z"
+                && reference.parameterTypes.map(CharSequence::toString) == listOf("Landroid/view/MenuItem;")
+        }
+        val selectedItemRegister = (nativeClick.value as FiveRegisterInstruction).registerD
+        popupClick.addInstructionsWithLabels(nativeClick.index, """
+            invoke-static/range {v$selectedItemRegister .. v$selectedItemRegister}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->dispatchSuffixNgItem(Ljava/lang/Object;)Z
+            move-result p3
+            if-eqz p3, :nativePopupClick
+            return-void
+            :nativePopupClick
+            nop
+        """.trimIndent())
+        println("Wacchoi NG popup dispatch: $version -> ${popupOwner.type}")
     }
-    val selectedItemRegister = (nativeClick.value as FiveRegisterInstruction).registerD
-    popupClick.addInstructionsWithLabels(nativeClick.index, """
-        invoke-static/range {v$selectedItemRegister .. v$selectedItemRegister}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->dispatchSuffixNgItem(Ljava/lang/Object;)Z
-        move-result p3
-        if-eqz p3, :nativePopupClick
-        return-void
-        :nativePopupClick
-        nop
-    """.trimIndent())
-    println("Wacchoi NG popup dispatch: $version -> ${popupOwner.type}")
 }
 
 /** 191 builds its name and response menus separately, both from the selected response. */
