@@ -3,6 +3,7 @@ import javax.tools.ToolProvider;
 
 /** Checks 226's five-argument and 241/242's six-argument native builders. */
 public class VerifyWacchoiNameSheet {
+    public interface SearchClick { Object invoke(); }
     public static final class Builder226 {
         String title;
         Runnable callback;
@@ -26,12 +27,15 @@ public class VerifyWacchoiNameSheet {
     }
     public static void main(String[] args) throws Exception {
         String source = Files.readString(Path.of("extensions/chmate/src/main/java/app/morphe/extension/chmate/WacchoiLongPressMenu.java"));
-        String helper = source.substring(source.indexOf("    private static void appendSheetItem"),
+        String helper = source.substring(source.indexOf("    private static Object searchCallback"),
                 source.indexOf("    /** Marks the response-menu builder"));
         Path temp = Files.createTempDirectory("haiagaru-name-sheet-");
         try {
             Path file = temp.resolve("Sheet.java");
-            Files.writeString(file, "import java.lang.reflect.Method; public class Sheet {" + helper + "}");
+            Files.writeString(file, "import java.lang.reflect.Method; public class Sheet {"
+                    + "public static class Intent { public String query; public Intent(String q){query=q;} }"
+                    + "public static class Context { public Intent launched; public void startActivity(Intent i){launched=i;} }"
+                    + helper + "}");
             if (ToolProvider.getSystemJavaCompiler().run(null, null, null,
                     "-d", temp.toString(), file.toString()) != 0) throw new AssertionError("compile");
             try (var loader = new java.net.URLClassLoader(new java.net.URL[]{temp.toUri().toURL()})) {
@@ -50,6 +54,23 @@ public class VerifyWacchoiNameSheet {
                 current.callback.run();
                 if (!"NG suffix".equals(old.title) || !"NG suffix".equals(current.title)
                         || current.icon != 123 || clicks[0] != 2) throw new AssertionError("menu callback");
+                Class<?> contextType = loader.loadClass("Sheet$Context"), intentType = loader.loadClass("Sheet$Intent");
+                var search = loader.loadClass("Sheet").getDeclaredMethod("searchCallback",
+                        Class.class, contextType, intentType);
+                search.setAccessible(true);
+                Object context = contextType.getConstructor().newInstance();
+                Object full = intentType.getConstructor(String.class).newInstance("ｽｯﾌﾟ Sd03-uDul");
+                Object suffix = intentType.getConstructor(String.class).newInstance("-uDul");
+                var launched = contextType.getField("launched");
+                SearchClick fullClick = (SearchClick) search.invoke(null, SearchClick.class, context, full);
+                SearchClick suffixClick = (SearchClick) search.invoke(null, SearchClick.class, context, suffix);
+                suffixClick.toString(); suffixClick.hashCode(); suffixClick.equals(fullClick);
+                if (launched.get(context) != null) throw new AssertionError("Object methods launched a search");
+                suffixClick.invoke();
+                if (launched.get(context) != suffix || !"-uDul".equals(intentType.getField("query").get(suffix)))
+                    throw new AssertionError("Suffix callback lost its independent query");
+                fullClick.invoke();
+                if (launched.get(context) != full) throw new AssertionError("Full search was changed by suffix callback");
                 System.out.println("PASS: 226/241/242 name-sheet item signatures and callbacks");
             }
         } finally {

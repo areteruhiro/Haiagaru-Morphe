@@ -7,6 +7,14 @@ public class VerifyKyodemoRouting {
     }
 
     public static void main(String[] args) {
+        for (String suffix : new String[]{"-uDul", "-a+/B", "-a&=#", "-日本語！"}) {
+            String url = KyodemoRouting.wacchoiSearchUrl("egg.5ch.io", "android", suffix);
+            check(url != null && suffix.equals(java.net.URLDecoder.decode(
+                    url.substring(url.indexOf("&k=") + 3), java.nio.charset.StandardCharsets.UTF_8)),
+                    "Suffix search must omit carrier/prefix and preserve symbols: " + suffix);
+        }
+        check(KyodemoRouting.wacchoiSearchUrl("evil.example", "android", "-uDul") == null,
+                "Suffix search must retain the board allowlist");
         check("poverty".equals(KyodemoRouting.boardSlug("greta.5ch.io", "poverty")),
                 "Kenmo must use the site's unprefixed poverty board ID");
         check(KyodemoRouting.prefersKyodemo("greta.5ch.io", "poverty")

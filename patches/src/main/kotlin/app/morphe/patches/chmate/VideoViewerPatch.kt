@@ -52,7 +52,6 @@ val videoViewerPatch = resourcePatch(
         targets = listOf(
             AppTarget(version = "0.8.10.191 dev", minSdk = 21),
             AppTarget(version = "0.8.10.226 dev", minSdk = 23),
-            AppTarget(version = "0.8.10.241", minSdk = 23),
             AppTarget(version = "0.8.10.242 dev", minSdk = 23),
         ),
     ))
@@ -64,10 +63,11 @@ val videoViewerPatch = resourcePatch(
         }
         document("AndroidManifest.xml").use { manifest ->
             val application = manifest.getElementsByTagName("application").item(0) as Element
-            application.appendChild(manifest.createElement("activity").apply {
+            for (activity in listOf("VideoViewerActivity", "YouTubeViewerActivity")) application.appendChild(manifest.createElement("activity").apply {
                 val ns = "http://schemas.android.com/apk/res/android"
-                setAttributeNS(ns, "android:name", "app.morphe.extension.chmate.VideoViewerActivity")
+                setAttributeNS(ns, "android:name", "app.morphe.extension.chmate.$activity")
                 setAttributeNS(ns, "android:exported", "false")
+                setAttributeNS(ns, "android:enableOnBackInvokedCallback", "true")
                 setAttributeNS(ns, "android:configChanges", "orientation|screenSize")
                 setAttributeNS(ns, "android:theme", "@android:style/Theme.Material.NoActionBar")
             })

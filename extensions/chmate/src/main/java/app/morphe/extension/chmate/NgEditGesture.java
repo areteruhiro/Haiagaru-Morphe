@@ -12,10 +12,18 @@ import android.widget.Toast;
 public final class NgEditGesture {
     public static final String KEY = "haiagaruGestureNgEdit";
     private static final int ACTION = 0x48690042;
+    private static Class<?> previewOwner;
+    private static Object previewAction;
+    private static int previewSequence;
     private NgEditGesture() {}
 
     public static boolean onGesture(View view, int gesture) {
         if (gesture == 0 || !view.isShown()) return false;
+        if (!assigned(view, gesture)) return false;
+        return handle(view, ACTION);
+    }
+
+    private static boolean assigned(View view, int gesture) {
         android.content.SharedPreferences preferences =
                 PreferenceManager.getDefaultSharedPreferences(view.getContext());
         if (preferences.getInt(KEY, 0) != gesture) return false;
@@ -25,7 +33,41 @@ public final class NgEditGesture {
                     && entry.getValue() instanceof Integer && ((Integer) entry.getValue()) == gesture)
                 return false;
         }
-        return handle(view, ACTION);
+        return true;
+    }
+
+    /** Supply only the missing preview row; never insert an action into the native registry. */
+    public static Object preview(View view, int gesture, Object original) {
+        if (original != null || gesture == 0 || !assigned(view, gesture)) return original;
+        synchronized (NgEditGesture.class) {
+            Class<?> owner = view.getClass();
+            if (previewOwner == owner && previewSequence == gesture && previewAction != null)
+                return previewAction;
+            try {
+                Object candidate = null;
+                for (Class<?> nested : owner.getDeclaredClasses()) {
+                    for (java.lang.reflect.Constructor<?> constructor : nested.getDeclaredConstructors()) {
+                        Class<?>[] parameters = constructor.getParameterTypes();
+                        if (java.util.Arrays.equals(parameters, new Class<?>[]{int.class, String.class})) {
+                            if (candidate != null) return original;
+                            constructor.setAccessible(true);
+                            candidate = constructor.newInstance(ACTION, "NG編集");
+                        } else if (java.util.Arrays.equals(parameters,
+                                new Class<?>[]{int.class, int.class, String.class})) {
+                            if (candidate != null) return original;
+                            constructor.setAccessible(true);
+                            candidate = constructor.newInstance(ACTION, gesture, "NG編集");
+                        }
+                    }
+                }
+                previewOwner = owner;
+                previewSequence = gesture;
+                previewAction = candidate;
+                return candidate;
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                return original;
+            }
+        }
     }
 
     public static boolean handle(View view, int action) {

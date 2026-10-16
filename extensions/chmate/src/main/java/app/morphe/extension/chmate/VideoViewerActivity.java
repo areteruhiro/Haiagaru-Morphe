@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.MotionEvent;
+import android.view.KeyEvent;
 import android.widget.*;
 
 /** User-visible streaming player. No WebView, login cookies or automatic retries. */
@@ -25,6 +26,8 @@ public final class VideoViewerActivity extends Activity {
     private boolean prepared, foreground, playWhenReady = true;
     private boolean rotated;
     private VideoViewerGestures gestures;
+    private VideoTouchControls touchControls;
+    private Runnable unregisterBack;
 
     public static boolean installed(Context context) {
         if (context == null) return false;
@@ -39,14 +42,17 @@ public final class VideoViewerActivity extends Activity {
         Context context = Haiagaru.applicationContextForExtension();
         if (context == null || !Haiagaru.videoViewerEnabled()) return;
         Uri uri = intent.getData();
-        if (uri == null || !XMediaAttachments.isVideo(uri.toString())) return;
+        if (uri == null) return;
         // Do not replace unrelated explicit destinations or pin to another installed app.
         if (intent.getComponent() != null || intent.getPackage() != null) return;
-        intent.setClass(context, VideoViewerActivity.class);
+        if (YouTubeUrls.videoId(uri.toString()) != null && VideoViewerSettings.youtubeEnabled(context)) {
+            intent.setClass(context, YouTubeViewerActivity.class);
+        } else if (XMediaAttachments.isVideo(uri.toString())) intent.setClass(context, VideoViewerActivity.class);
     }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        unregisterBack = VideoViewerBack.register(this);
         if (!Haiagaru.videoViewerEnabled()) { finish(); return; }
         Uri uri = getIntent().getData();
         if (uri == null || !XMediaAttachments.isVideo(uri.toString())) { finish(); return; }
@@ -71,6 +77,10 @@ public final class VideoViewerActivity extends Activity {
         more.setOnClickListener(this::showMenu); toolbar.addView(more);
         FrameLayout frame = new FrameLayout(this);
         video = new VideoView(this);
+        setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
+        touchControls = new VideoTouchControls(this);
+        // Confirmed taps are handled by the detector, so a double tap cannot toggle controls twice.
+        video.setOnTouchListener((view, event) -> true);
         frame.addView(video, new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER));
         // Overlay controls so hiding them does not resize or shift the video.
         frame.addView(toolbar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
@@ -79,13 +89,26 @@ public final class VideoViewerActivity extends Activity {
         root.addView(status);
         setContentView(root); root.requestApplyInsets();
         controls = new MediaController(this) {
+            private Runnable unregisterControllerBack;
             @Override public void show(int timeout) {
                 // VideoView and MediaController also request timed shows after touch/seek/play.
                 // Ignore every timeout so none of these paths schedule automatic dismissal.
                 super.show(0);
+                if (unregisterControllerBack != null) unregisterControllerBack.run();
+                unregisterControllerBack = VideoViewerBack.register(this, VideoViewerActivity.this);
                 toolbar.setVisibility(View.VISIBLE);
             }
+            @Override public boolean dispatchKeyEvent(KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                    if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) finish();
+                    return true;
+                }
+                return super.dispatchKeyEvent(event);
+            }
             @Override public void hide() {
+                if (unregisterControllerBack != null) {
+                    unregisterControllerBack.run(); unregisterControllerBack = null;
+                }
                 super.hide();
                 toolbar.setVisibility(View.INVISIBLE);
             }
@@ -94,24 +117,24 @@ public final class VideoViewerActivity extends Activity {
         video.setOnPreparedListener(player -> {
             prepared = true;
             if (position > 0) video.seekTo(position);
-            status.setText("画面タップで操作パネルの表示・非表示を切り替え");
+            setStatus("");
             if (foreground && playWhenReady) video.start();
             controls.show(0);
         });
         video.setOnCompletionListener(player -> {
             playWhenReady = false; position = 0;
-            status.setText("再生が終了しました。再生ボタンで最初から再生できます"); controls.show(0);
+            setStatus("再生が終了しました。再生ボタンで最初から再生できます"); controls.show(0);
         });
         video.setOnErrorListener((player, what, extra) -> {
             prepared = false; playWhenReady = false;
-            status.setText("動画を再生できません（エラー " + what + "/" + extra
+            setStatus("動画を再生できません（エラー " + what + "/" + extra
                     + "）。︙から再読み込み、または外部アプリで開いてください");
             return true;
         });
         video.setOnInfoListener((player, what, extra) -> {
-            if (what == android.media.MediaPlayer.MEDIA_INFO_BUFFERING_START) status.setText("読み込み中…");
+            if (what == android.media.MediaPlayer.MEDIA_INFO_BUFFERING_START) setStatus("読み込み中…");
             else if (what == android.media.MediaPlayer.MEDIA_INFO_BUFFERING_END)
-                status.setText("画面タップで操作パネルの表示・非表示を切り替え");
+                setStatus("");
             return false;
         });
         load();
@@ -130,13 +153,35 @@ public final class VideoViewerActivity extends Activity {
 
     private void load() {
         prepared = false;
-        status.setText("動画を読み込み中…（通信が発生します）");
+        setStatus("動画を読み込み中…（通信が発生します）");
         video.setVideoURI(Uri.parse(url));
     }
 
     @Override public boolean dispatchTouchEvent(MotionEvent event) {
-        if (gestures != null && gestures.dispatch(event, video)) return true;
+        if (touchControls != null && video != null && touchControls.dispatch(event, video)) return true;
+        if (gestures != null && gestures.dispatch(event, video)) {
+            if (touchControls != null) touchControls.cancel();
+            return true;
+        }
         return super.dispatchTouchEvent(event);
+    }
+    void toggleControls() {
+        if (controls == null) return;
+        if (controls.isShowing()) controls.hide(); else controls.show(0);
+    }
+    float videoMidpoint() {
+        int[] p = new int[2]; video.getLocationOnScreen(p); return p[0] + video.getWidth() / 2f;
+    }
+    void cancelNativeVideoGesture() { if (gestures != null) gestures.cancel(); }
+    private void setStatus(String message) {
+        status.setText(message);
+        status.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+    void gestureStatus(String message) { setStatus(message); }
+    void seekRelative(int seconds) {
+        if (!prepared || video.getDuration() <= 0) return;
+        video.seekTo(VideoPlaybackMath.seekTarget(video.getCurrentPosition(), video.getDuration(), seconds));
+        setStatus(Math.abs(seconds) + (seconds < 0 ? "秒巻き戻し" : "秒早送り"));
     }
     boolean dispatchVideoTouch(MotionEvent event) { return super.dispatchTouchEvent(event); }
     boolean isVideoToolbarTouch(float x, float y) {
@@ -176,6 +221,7 @@ public final class VideoViewerActivity extends Activity {
         menu.getMenu().add(0, 2, 1, "URLをコピー");
         menu.getMenu().add(0, 3, 2, "再読み込み");
         menu.getMenu().add(0, 4, 3, "画面を回転");
+        menu.getMenu().add(0, 5, 4, "操作設定");
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1:
@@ -199,6 +245,7 @@ public final class VideoViewerActivity extends Activity {
                     rotated = !rotated;
                     setRequestedOrientation(rotated ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED); return true;
+                case 5: VideoViewerSettings.show(this); return true;
                 default: return false;
             }
         });
@@ -217,6 +264,7 @@ public final class VideoViewerActivity extends Activity {
         if (prepared && playWhenReady) video.start();
     }
     @Override protected void onPause() {
+        if (touchControls != null) touchControls.cancel();
         foreground = false; pausePlayback();
         // Returning from another app should resume only on the user's play action.
         playWhenReady = false;
@@ -230,9 +278,12 @@ public final class VideoViewerActivity extends Activity {
         state.putBoolean("rotated", rotated); super.onSaveInstanceState(state);
     }
     @Override protected void onDestroy() {
+        if (unregisterBack != null) { unregisterBack.run(); unregisterBack = null; }
+        if (touchControls != null) touchControls.cancel();
         if (gestures != null) gestures.close();
         if (controls != null) controls.hide();
         if (video != null) video.stopPlayback();
         super.onDestroy();
     }
+    @Override public void onBackPressed() { finish(); }
 }

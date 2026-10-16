@@ -104,8 +104,14 @@ final class EmojiFontFallback {
         return name.contains("ResListActivity") || name.contains("TabletHomeActivity");
     }
 
+    static void refreshVisibleRows() {
+        for (View root : new ArrayList<>(threadObservers.keySet()))
+            if (root != null) root.post(() -> applyToRow(root));
+    }
+
     static void applyToRow(View view) {
         if (view instanceof TextView) {
+            XPostPreview.apply((TextView) view);
             applyToTextView((TextView) view);
         } else if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;

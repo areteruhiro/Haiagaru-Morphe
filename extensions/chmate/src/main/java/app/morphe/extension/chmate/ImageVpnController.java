@@ -49,6 +49,11 @@ public final class ImageVpnController {
         return relay != null && "127.0.0.1".equals(host) && port == relay.port();
     }
 
+    /** Persistent export dedup must not depend on a per-process relay capability URL. */
+    static synchronized String imageIdentity(String value) {
+        return relay == null ? value : relay.imageIdentity(value);
+    }
+
     public static synchronized String route(String value) {
         if (!enabled || value == null) return value;
         try {

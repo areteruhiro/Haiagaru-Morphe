@@ -15,27 +15,28 @@ import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.runBlocking
-import kotlinx.io.Buffer
-import kotlinx.io.readByteArray
+import kotlinx.io.asSource
+import kotlinx.io.asSink
+import kotlinx.io.buffered
 import kotlinx.serialization.json.Json
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.util.UUID
 
-/** A small MEGA transport around bounded, versioned Haiagaru snapshots. */
+/** File-streaming MEGA transport; archive size is limited by storage, not a byte array. */
+@OptIn(kotlin.time.ExperimentalTime::class)
 internal object HaiagaruMegaClient {
     private const val FOLDER = "Haiagaru"
     private const val PREFIX = "Haiagaru-sync-"
-    private const val SUFFIX = ".json"
-    private const val MAX_SNAPSHOT_BYTES = 32 * 1024 * 1024L
 
     class MegaFile(
         @JvmField val hash: String,
         @JvmField val name: String,
         @JvmField val createdTime: String,
+        @JvmField val size: Long,
     )
 
     @JvmStatic
@@ -52,21 +53,41 @@ internal object HaiagaruMegaClient {
     }
 
     @JvmStatic
-    fun upload(context: Context, snapshot: ByteArray): String = runBlocking {
+    fun upload(context: Context, snapshot: File): String = runBlocking {
         requireSupportedAndroid()
-        if (snapshot.isEmpty() || snapshot.size > MAX_SNAPSHOT_BYTES) {
+        if (!snapshot.isFile || snapshot.length() <= 0) {
             throw IOException("バックアップのサイズが不正です")
         }
         withSession(context) { mega ->
             val folder = folder(mega, create = true)
                 ?: throw IOException("MEGAのバックアップフォルダを作成できません")
-            val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.ROOT).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }.format(Date())
-            val name = "$PREFIX$timestamp-${UUID.randomUUID().toString().take(8)}$SUFFIX"
-            val source = Buffer().apply { write(snapshot) }
-            CancellationToken().use { token ->
-                mega.uploadFile(folder, name, snapshot.size.toLong(), source, token)
+            val timestamp = BackupTime.filename(System.currentTimeMillis())
+            val identity = HaiagaruBackupSecrets.identity(context)
+            val device = (Build.MANUFACTURER + "-" + Build.MODEL)
+                .replace(Regex("[^A-Za-z0-9._-]"), "_").take(64).ifEmpty { "Android" }
+            val options = context.getSharedPreferences("haiagaru.mega-sync.options", 0)
+            val overwrite = options.getBoolean(MegaBackupDeletionPolicy.OVERWRITE, false)
+            // Snapshot the opt-in before starting the transfer, not halfway through deletion.
+            val permanent = MegaBackupDeletionPolicy.permanent(overwrite,
+                options.getBoolean(MegaBackupDeletionPolicy.PERMANENT, false))
+            val name = if (overwrite) "$PREFIX$device-$identity.zip"
+                else "$PREFIX$device-$timestamp-${UUID.randomUUID().toString().take(8)}.zip"
+            // Capture exact old nodes before upload. Never delete another installation's backup.
+            val previous = if (overwrite) mega.getChildren(folder).filter { it.isFile && it.name == name } else emptyList()
+            val uploaded = FileInputStream(snapshot).asSource().buffered().use { source ->
+                CancellationToken().use { token -> mega.uploadFile(folder, name, snapshot.length(), source, token) }
+            }
+            if (uploaded.size != snapshot.length()) throw IOException("アップロード後のサイズが一致しません。旧バックアップは保持します")
+            if (overwrite && previous.isNotEmpty()) {
+                val verification = HaiagaruBackupArchive.temporary(context)
+                try {
+                    downloadTo(mega, uploaded, verification)
+                    if (!digest(snapshot).contentEquals(digest(verification))) throw IOException("バックアップ検証に失敗しました。旧バックアップは保持します")
+                    for (old in previous) {
+                        if (MegaBackupDeletionPolicy.canRemove(overwrite, true, name,
+                                old.name, uploaded.hash, old.hash)) mega.delete(old, destroy = permanent)
+                    }
+                } finally { verification.delete() }
             }
             name
         }
@@ -78,33 +99,68 @@ internal object HaiagaruMegaClient {
         withSession(context) { mega ->
             val folder = folder(mega, create = false)
                 ?: throw IOException("MEGAにバックアップがありません")
-            val node = mega.getChildren(folder)
-                .asSequence()
-                .filter { it.isFile && it.name.startsWith(PREFIX) && it.name.endsWith(SUFFIX) }
-                .filter { it.size in 1..MAX_SNAPSHOT_BYTES }
-                .maxByOrNull { it.name }
+            val node = mega.getChildren(folder).filter { eligible(it) }
+                .maxByOrNull { it.timestamp.toEpochMilliseconds() }
                 ?: throw IOException("MEGAにバックアップがありません")
-            MegaFile(node.hash, node.name, node.name.removePrefix(PREFIX).removeSuffix(SUFFIX))
+            describe(node)
         }
     }
 
     @JvmStatic
-    fun download(context: Context, file: MegaFile): ByteArray = runBlocking {
+    fun list(context: Context): Array<MegaFile> = runBlocking {
+        requireSupportedAndroid()
+        withSession(context) { mega ->
+            val folder = folder(mega, false) ?: throw IOException("MEGAにバックアップがありません")
+            mega.getChildren(folder).filter { eligible(it) }
+                .sortedByDescending { it.timestamp.toEpochMilliseconds() }.map { describe(it) }.toTypedArray()
+        }
+    }
+
+    private fun eligible(node: Node) = node.isFile && node.name.startsWith(PREFIX)
+        && (node.name.endsWith(".json") || node.name.endsWith(".zip")) && node.size > 0
+
+    private fun describe(node: Node): MegaFile = MegaFile(node.hash, node.name,
+        BackupTime.display(node.timestamp.toEpochMilliseconds()), node.size)
+
+    @JvmStatic
+    fun download(context: Context, file: MegaFile): File = runBlocking {
         requireSupportedAndroid()
         withSession(context) { mega ->
             val node = mega.getNodeByHash(file.hash)
                 ?: throw IOException("MEGA上のバックアップが見つかりません")
-            if (!node.isFile || node.name != file.name || node.size !in 1..MAX_SNAPSHOT_BYTES) {
+            if (!eligible(node) || node.name != file.name || node.size != file.size) {
                 throw IOException("MEGA上のバックアップが変更されました")
             }
-            val output = Buffer()
-            CancellationToken().use { token -> mega.downloadFile(node, output, token) }
-            output.readByteArray().also {
-                if (it.isEmpty() || it.size > MAX_SNAPSHOT_BYTES) {
-                    throw IOException("取得したバックアップのサイズが不正です")
-                }
+            val output = HaiagaruBackupArchive.temporary(context)
+            try {
+                downloadTo(mega, node, output)
+                output
+            } catch (error: Throwable) {
+                output.delete()
+                throw error
             }
         }
+    }
+
+    private suspend fun downloadTo(mega: Mega, node: Node, output: File) {
+        if (output.parentFile!!.usableSpace < node.size + 8L * 1024 * 1024) throw IOException("バックアップ取得用の空き容量が不足しています")
+        FileOutputStream(output).asSink().buffered().use { sink ->
+            CancellationToken().use { token -> mega.downloadFile(node, sink, token) }
+        }
+        if (output.length() != node.size) throw IOException("取得したバックアップのサイズが一致しません")
+    }
+
+    private fun digest(file: File): ByteArray {
+        val digest = MessageDigest.getInstance("SHA-256")
+        FileInputStream(file).use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest()
     }
 
     private suspend fun folder(mega: Mega, create: Boolean): Node? {

@@ -1,6 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -23,6 +24,8 @@ import android.widget.Spinner;
 import android.widget.ArrayAdapter;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.SeekBar;
+import android.widget.CheckBox;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -82,6 +85,13 @@ final class EddiArchiveSearchUi {
     private String displayedQuery;
     private ScrollView advancedScroll;
     private Button details;
+    private LinearLayout searchForm;
+    private ArrayAdapter<String> sortAdapter;
+    private final java.util.Map<TextView, Float> controlTextSizes = new java.util.IdentityHashMap<>();
+    private final java.util.Map<TextView, Float> resultTextSizes = new java.util.IdentityHashMap<>();
+    private int controlScale;
+    private int resultScale;
+    private boolean hideSearchForm;
     private int restoreScrollY = -1;
 
     static EddiArchiveSearchUi show(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
@@ -91,6 +101,10 @@ final class EddiArchiveSearchUi {
     private EddiArchiveSearchUi(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
         this.activity = activity;
         this.opener = opener;
+        android.content.SharedPreferences prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        controlScale = clampTextScale(prefs.getInt("controlTextScale", 100));
+        resultScale = clampTextScale(prefs.getInt("resultTextScale", 100));
+        hideSearchForm = prefs.getBoolean("hideSearchForm", false);
         int theme = Haiagaru.hissiViewerTheme();
         boolean dark = theme == 1 || theme == 2 || (theme != 3
                 && (activity.getResources().getConfiguration().uiMode
@@ -115,18 +129,26 @@ final class EddiArchiveSearchUi {
         }
         TextView heading = text("‹ エッヂ過去ログ検索", 21, foreground);
         heading.setOnClickListener(view -> activity.finish());
-        root.addView(heading);
-        root.addView(text("結果をタップしてスレを開き、「戻る」で検索結果に戻れます", 12, muted));
+        LinearLayout header = row();
+        header.addView(heading, weighted());
+        Button appearance = button("表示");
+        appearance.setOnClickListener(view -> showAppearanceSettings());
+        header.addView(appearance);
+        root.addView(header);
+        searchForm = new LinearLayout(activity);
+        searchForm.setOrientation(LinearLayout.VERTICAL);
+        root.addView(searchForm);
+        searchForm.addView(text("結果をタップしてスレを開き、「戻る」で検索結果に戻れます", 12, muted));
 
         keyword = input("スレタイを入力", false);
         keyword.setSingleLine(true);
-        root.addView(keyword);
+        searchForm.addView(keyword);
         LinearLayout actionRow = row();
         Button search = button("検索");
         actionRow.addView(search, weighted());
         details = button("詳細条件 ▾");
         actionRow.addView(details, weighted());
-        root.addView(actionRow);
+        searchForm.addView(actionRow);
 
         LinearLayout advanced = new LinearLayout(activity);
         advanced.setOrientation(LinearLayout.VERTICAL);
@@ -141,7 +163,15 @@ final class EddiArchiveSearchUi {
         advanced.addView(text("並び順", 13, muted));
         sort = new Spinner(activity);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(activity,
-                android.R.layout.simple_spinner_dropdown_item, SORT_LABELS);
+                android.R.layout.simple_spinner_dropdown_item, SORT_LABELS) {
+            @Override public View getView(int position, View convertView, ViewGroup parent) {
+                return styleSortText(super.getView(position, convertView, parent));
+            }
+            @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
+                return styleSortText(super.getDropDownView(position, convertView, parent));
+            }
+        };
+        sortAdapter = adapter;
         sort.setAdapter(adapter);
         advanced.addView(sort);
         startDate = input("開始日 YYYY-MM-DD", false);
@@ -151,7 +181,7 @@ final class EddiArchiveSearchUi {
         advancedScroll = new ScrollView(activity);
         advancedScroll.addView(advanced);
         advancedScroll.setVisibility(View.GONE);
-        root.addView(advancedScroll, new LinearLayout.LayoutParams(
+        searchForm.addView(advancedScroll, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(240)));
         details.setOnClickListener(view -> {
             boolean expanded = advancedScroll.getVisibility() != View.VISIBLE;
@@ -217,6 +247,7 @@ final class EddiArchiveSearchUi {
             activity.startActivity(intent);
         });
         root.addView(original);
+        applyAppearance();
         activity.setContentView(root);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
 
@@ -445,9 +476,10 @@ final class EddiArchiveSearchUi {
         displayedPage = result;
         totalResults = result.total;
         results.removeAllViews();
+        resultTextSizes.clear();
         status.setText("検索結果 " + totalResults + "件 · " + page + "ページ目");
         if (result.threads.isEmpty()) {
-            results.addView(text("該当するスレはありません。検索条件を変えてください。", 15, muted));
+            results.addView(resultText("該当するスレはありません。検索条件を変えてください。", 15, muted));
         }
         for (ThreadResult thread : result.threads) {
             LinearLayout card = new LinearLayout(activity);
@@ -455,9 +487,9 @@ final class EddiArchiveSearchUi {
             card.setPadding(dp(12), dp(12), dp(12), dp(12));
             card.setBackgroundColor(background == Color.WHITE
                     ? Color.rgb(242, 246, 248) : Color.rgb(36, 38, 43));
-            TextView title = text(thread.title, 16, foreground);
+            TextView title = resultText(thread.title, 16, foreground);
             card.addView(title);
-            card.addView(text(thread.date, 12, muted));
+            card.addView(resultText(thread.date, 12, muted));
             card.setOnClickListener(view -> {
                 try {
                     saveState(null);
@@ -496,7 +528,8 @@ final class EddiArchiveSearchUi {
     private TextView text(String value, int size, int color) {
         TextView view = new TextView(activity);
         view.setText(value);
-        view.setTextSize(size);
+        controlTextSizes.put(view, (float) size);
+        view.setTextSize(scaledTextSize(size, controlScale));
         view.setTextColor(color);
         return view;
     }
@@ -507,6 +540,8 @@ final class EddiArchiveSearchUi {
         view.setTextColor(foreground);
         view.setHintTextColor(muted);
         view.setSingleLine(true);
+        controlTextSizes.put(view, 18f);
+        view.setTextSize(scaledTextSize(18, controlScale));
         if (numeric) view.setInputType(InputType.TYPE_CLASS_NUMBER);
         return view;
     }
@@ -515,7 +550,8 @@ final class EddiArchiveSearchUi {
         Switch view = new Switch(activity);
         view.setText(label);
         view.setTextColor(foreground);
-        view.setTextSize(12);
+        controlTextSizes.put(view, 12f);
+        view.setTextSize(scaledTextSize(12, controlScale));
         return view;
     }
 
@@ -523,7 +559,108 @@ final class EddiArchiveSearchUi {
         Button view = new Button(activity);
         view.setText(label);
         view.setAllCaps(false);
+        controlTextSizes.put(view, 14f);
+        view.setTextSize(scaledTextSize(14, controlScale));
         return view;
+    }
+
+    static int clampTextScale(int scale) {
+        return Math.max(70, Math.min(150, scale));
+    }
+
+    static float scaledTextSize(float baseSp, int scale) {
+        return baseSp * clampTextScale(scale) / 100f;
+    }
+
+    private TextView resultText(String value, int size, int color) {
+        TextView view = text(value, size, color);
+        controlTextSizes.remove(view);
+        resultTextSizes.put(view, (float) size);
+        view.setTextSize(scaledTextSize(size, resultScale));
+        return view;
+    }
+
+    private View styleSortText(View view) {
+        if (view instanceof TextView) {
+            ((TextView) view).setTextSize(scaledTextSize(16, controlScale));
+            ((TextView) view).setTextColor(foreground);
+            view.setBackgroundColor(background);
+        }
+        return view;
+    }
+
+    private void applyAppearance() {
+        int position = scroll.getScrollY();
+        for (java.util.Map.Entry<TextView, Float> entry : controlTextSizes.entrySet()) {
+            TextView view = entry.getKey();
+            view.setTextSize(scaledTextSize(entry.getValue(), controlScale));
+            // Remove the theme's fixed button/input minimum when compacting,
+            // but keep usable touch targets and let larger fonts grow naturally.
+            if (view instanceof Button || view instanceof EditText) {
+                int minimum = dp(controlScale < 100 ? 40 : 48);
+                view.setMinimumHeight(minimum);
+                view.setMinHeight(minimum);
+                view.setPadding(dp(8), dp(controlScale < 100 ? 2 : 6), dp(8),
+                        dp(controlScale < 100 ? 2 : 6));
+            }
+        }
+        for (java.util.Map.Entry<TextView, Float> entry : resultTextSizes.entrySet())
+            entry.getKey().setTextSize(scaledTextSize(entry.getValue(), resultScale));
+        searchForm.setVisibility(hideSearchForm ? View.GONE : View.VISIBLE);
+        advancedScroll.getLayoutParams().height = dp(Math.round(240 * controlScale / 100f));
+        advancedScroll.requestLayout();
+        sortAdapter.notifyDataSetChanged();
+        scroll.post(() -> scroll.scrollTo(0, position));
+    }
+
+    private void showAppearanceSettings() {
+        LinearLayout content = new LinearLayout(activity);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(8), dp(20), 0);
+        SeekBar controls = sizeSlider(content, "検索欄・操作ボタン", controlScale);
+        SeekBar titles = sizeSlider(content, "検索結果", resultScale);
+        CheckBox hide = new CheckBox(activity);
+        hide.setText("検索欄を隠して結果を広く表示");
+        hide.setChecked(hideSearchForm);
+        content.addView(hide);
+        TextView help = new TextView(activity);
+        help.setText("検索欄を隠しても「表示」から再表示できます。文字サイズは次回も保持します。");
+        content.addView(help);
+        new AlertDialog.Builder(activity).setTitle("過去ログ検索の表示設定")
+                .setView(content).setNegativeButton("キャンセル", null)
+                .setNeutralButton("標準に戻す", (dialog, which) -> saveAppearance(100, 100, false))
+                .setPositiveButton("適用", (dialog, which) -> saveAppearance(
+                        controls.getProgress() + 70, titles.getProgress() + 70, hide.isChecked()))
+                .show();
+    }
+
+    private SeekBar sizeSlider(LinearLayout content, String title, int value) {
+        TextView label = new TextView(activity);
+        label.setText(title + ": " + value + "%");
+        content.addView(label);
+        SeekBar slider = new SeekBar(activity);
+        slider.setMax(80);
+        slider.setProgress(clampTextScale(value) - 70);
+        slider.setContentDescription(title);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                label.setText(title + ": " + (progress + 70) + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        content.addView(slider);
+        return slider;
+    }
+
+    private void saveAppearance(int controls, int titles, boolean hide) {
+        controlScale = clampTextScale(controls);
+        resultScale = clampTextScale(titles);
+        hideSearchForm = hide;
+        activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putInt("controlTextScale", controlScale).putInt("resultTextScale", resultScale)
+                .putBoolean("hideSearchForm", hideSearchForm).apply();
+        applyAppearance();
     }
 
     private LinearLayout row() {

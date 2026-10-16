@@ -66,7 +66,7 @@ public final class VerifyMegaSyncOption {
                             sdkGuard = sdk && api24 && installed;
                         }
                         if (method.getName().equals("showDialog")) {
-                            int cloud = textIndex(code, "MEGAの最新バックアップを確認して復元");
+                            int cloud = textIndex(code, "MEGAのバックアップ一覧から選んで復元");
                             int local = textIndex(code, "端末のファイルにバックアップ");
                             int restore = textIndex(code, "端末のバックアップファイルから復元");
                             int[] addresses = new int[code.size()];

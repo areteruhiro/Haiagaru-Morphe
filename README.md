@@ -3,9 +3,9 @@
 ◆8LNH56sLs6
  # Haiagaru for Morphe
 
-ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.241` / `0.8.10.242 dev` 対応のMorpheパッチです。 <br>
+ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパッチです。 <br>
 
-**0.8.10.243 devは非推奨です。一部実装していない機能があります。** パッチ適用は引き続き可能ですが、利用する機能に応じて191 dev／226 dev／241／242 devをご検討ください。
+**0.8.10.241／0.8.10.243 devは対応対象外です。** 191 dev／226 dev／242 devをご利用ください。
 
 機能は以下を参照
 https://github.com/areteruhiro/Haiagaru
@@ -15,11 +15,12 @@ https://github.com/areteruhiro/Haiagaru
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.7.7` の概要: [1.7.7の更新内容](docs/release-1.7.7.md)
+プレ版 `1.8.8` の概要: [1.8.8の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.8)
 
 ## Features
 
 * Remove ads (including margins)
+* 画像キャッシュサイズを最大256GBまで選択（4／8／16／32／64／128／256GBを追加、現在の設定は維持）。[詳細](docs/image-cache-size.md)
 * Modify User-Agent
 * 画像を含むHTTP通信のHTTPS切り替え（Haiagaru設定でON/OFF、初期値OFF）
 * Remove MonaKey
@@ -29,17 +30,18 @@ https://github.com/areteruhiro/Haiagaru
 * 古いDAT・過去ログの改行保持と`.io` URL直接起動時の自動DAT取得
 * Talkの現行・旧形式板URLからの板一覧／スレ取得と書き込み互換処理
 * モバイル回線固定時の投稿で失効したNetwork IDを再利用しない接続更新（Haiagaru設定でON/OFF、初期値ON）
-* ChMate `0.8.10.191 dev`／`0.8.10.226 dev`／`0.8.10.243 dev` のスレ内広告行の非表示
+* ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のスレ内広告行の非表示
 * 5ch.io板が外部板扱いと5ch扱いで重複した場合の内部板一覧一括整理
 * パッケージ名・アプリ名・アイコン・versionCodeの変更
 * クラッシュログ保存（Morpheで無効化可能、初期値ON）
 * 専用ビュワーの追加　<オフに出来ないとの報告があります>
+* 動画専用ビューアの左右上下スワイプ（明るさ／音量）・左右ダブルタップの相対シーク設定、およびYouTube公式プレーヤーのアプリ内表示。[操作と制限](docs/video-viewer-controls.md)
 * エッヂ過去ログビューアーで開けない場合はエラーコードを表示し、`Download/Haiagaru` に診断ログを保存
 * ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のChMate+互換設定
   * 単発ID表示を省略
   * コピペ省略2　<191でコピペ省略が機能していないとの報告があります>
   * 荒らし省略
-* 191 dev／226 dev／241／243 devのエッヂ板でスレタイ末尾に記者IDを表示（初期値ON、Haiagaru設定から切り替え）
+* エッヂ板でスレタイ末尾に記者IDを表示（初期値ON、Haiagaru設定から切り替え）
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」
 * NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、4対応版共通）
 
@@ -169,9 +171,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 - パッケージ: `jp.co.airfront.android.a2chMate`
 - バージョン: `0.8.10.191 dev`（versionCode 459、minSdk 21）
 - バージョン: `0.8.10.226 dev`（versionCode 494、minSdk 23）
-- バージョン: `0.8.10.241`（versionCode 511、minSdk 23）
 - バージョン: `0.8.10.242 dev`（versionCode 512、minSdk 23）
-- バージョン: `0.8.10.243 dev`（versionCode 513、minSdk 24）
 - 元APKの署名 SHA-256:
   `7dd84d97df4666fbc8188b8d6167ce59314636997f0edae82d685fffda4059d2`
 

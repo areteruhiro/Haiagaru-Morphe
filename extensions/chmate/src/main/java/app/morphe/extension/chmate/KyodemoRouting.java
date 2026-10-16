@@ -104,6 +104,11 @@ public final class KyodemoRouting {
 
     public static String wacchoiSearchUrl(String host, String board, String wacchoi) {
         if (wacchoi == null) return null;
+        // A suffix search intentionally has no carrier label or first half.
+        // Do not expand "-uDul" into "ﾜｯﾁｮｲ -uDul": that excludes other carriers.
+        if (wacchoi.matches("-[^\\s()（）<>]{4}")) {
+            return idSearchUrl(host, board, wacchoi, null, null);
+        }
         String edgeSlip = edgeWacchoiInText(wacchoi);
         if (edgeSlip != null) {
             String slug = boardSlug(host, board);

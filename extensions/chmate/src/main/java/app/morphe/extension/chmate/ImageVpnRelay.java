@@ -77,6 +77,15 @@ public final class ImageVpnRelay implements Closeable {
         return localUrl(path);
     }
 
+    synchronized String imageIdentity(String value) {
+        try {
+            java.net.URL url = new java.net.URL(value);
+            if (!"127.0.0.1".equals(url.getHost()) || url.getPort() != port()) return value;
+            Entry entry = entries.get(url.getPath());
+            return entry == null ? value : entry.url;
+        } catch (java.net.MalformedURLException invalid) { return value; }
+    }
+
     private String localUrl(String path) { return "http://127.0.0.1:" + port() + path; }
 
     private static Thread daemon(Runnable task, String name) {

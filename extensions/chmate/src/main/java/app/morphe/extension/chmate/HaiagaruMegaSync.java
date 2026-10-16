@@ -44,15 +44,23 @@ final class HaiagaruMegaSync {
     private static final int MODE_LOCAL_TO_REMOTE = 2;
     private static final int MODE_BIDIRECTIONAL = 3;
     private static final long MIN_INTERVAL = 5L * 60 * 1000;
-    private static final int[] CATEGORY_BITS = {
+    static final int[] CATEGORY_BITS = {
             HaiagaruSyncSnapshot.BOOKMARKS, HaiagaruSyncSnapshot.NG,
             HaiagaruSyncSnapshot.SETTINGS, HaiagaruSyncSnapshot.POST_HISTORY,
-            HaiagaruSyncSnapshot.KAKIKOMI, HaiagaruSyncSnapshot.COOKIES
+            HaiagaruSyncSnapshot.KAKIKOMI, HaiagaruSyncSnapshot.COOKIES,
+            HaiagaruSyncSnapshot.RESPONSES, HaiagaruSyncSnapshot.THREAD_ARCHIVES,
+            HaiagaruSyncSnapshot.DAT, HaiagaruSyncSnapshot.RESOURCES,
+            HaiagaruSyncSnapshot.AUTH, HaiagaruSyncSnapshot.DEVICE_DATA, HaiagaruSyncSnapshot.UPLOAD_HISTORY
     };
-    private static final String[] CATEGORY_NAMES = {
+    static final String[] CATEGORY_NAMES = {
             "お気に入り・閲覧履歴", "NGワード・NG IDなど", "ChMate・Haiagaruの設定",
             "書き込み履歴 (postDataList.json)", "書き込みメモ (kakikomi.txt)",
-            "Cookie（ログイン状態を含む・初期OFF）"
+            "Cookie（ログイン状態を含む・初期OFF）",
+            "レスのアーカイブ", "スレのアーカイブ", "取得済みスレログ（DAT・大容量／初期OFF）",
+            "フォント・テーマ・キーワードグループ",
+            "認証情報・WebView Cookie・MEGAセッション（機密・初期OFF）",
+            "端末依存の暗号化済みデータ（同じインストール専用・初期OFF）",
+            "標準画像アップロード履歴（削除用情報を含む・初期OFF）"
     };
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
     private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);
@@ -130,7 +138,10 @@ final class HaiagaruMegaSync {
         description.setText("同期する項目を選択してください。バックアップ時は選択項目のみ保存し、"
                 + "復元時にはもう一度対象を選べます。Cookieにはログイン情報が含まれるため、"
                 + "必要な場合のみ選択してください。選択時はバックアップに保存されます。"
-                + "対象はChMateのCookie用設定で、WebView内のCookieは含みません。");
+                + "Cookie単独の項目はChMate用です。WebView内のCookieは「認証情報」で選択します。\n"
+                + HaiagaruBackupSecrets.WARNING
+                + "\nZIP全体に32MiB上限はありません。作成・取得・復元・退避用の空き容量が必要です。"
+                + "画像キャッシュ、OSの権限、Keystore秘密鍵は含みません。");
         content.addView(description);
 
         CheckBox[] choices = new CheckBox[CATEGORY_BITS.length];
@@ -143,12 +154,53 @@ final class HaiagaruMegaSync {
             choice.setOnCheckedChangeListener((button, checked) -> {
                 int flags = options.getInt(CATEGORIES, HaiagaruSyncSnapshot.DEFAULT);
                 options.edit().putInt(CATEGORIES, checked ? flags | bit : flags & ~bit).apply();
+                if (checked && (bit == HaiagaruSyncSnapshot.AUTH || bit == HaiagaruSyncSnapshot.DEVICE_DATA)) {
+                    new AlertDialog.Builder(activity).setTitle("機密情報のバックアップ")
+                            .setMessage(HaiagaruBackupSecrets.WARNING)
+                            .setNegativeButton("取り消す", (d, w) -> choice.setChecked(false))
+                            .setPositiveButton("含める", null)
+                            .setOnCancelListener(d -> choice.setChecked(false)).show();
+                }
             });
             content.addView(choice);
             choices[index] = choice;
         }
 
         if (megaEnabled) {
+            CheckBox overwrite = new CheckBox(activity);
+            overwrite.setText("この端末のバックアップを上書き（他端末のファイルは保持）");
+            overwrite.setChecked(options.getBoolean(MegaBackupDeletionPolicy.OVERWRITE, false));
+            content.addView(overwrite);
+            CheckBox permanent = new CheckBox(activity);
+            permanent.setText("上書き時、旧バックアップを完全削除（ゴミ箱を経由しない・復元不可）");
+            permanent.setEnabled(overwrite.isChecked());
+            permanent.setChecked(MegaBackupDeletionPolicy.permanent(overwrite.isChecked(),
+                    options.getBoolean(MegaBackupDeletionPolicy.PERMANENT, false)));
+            permanent.setOnCheckedChangeListener((button, checked) -> {
+                if (!checked) {
+                    options.edit().putBoolean(MegaBackupDeletionPolicy.PERMANENT, false).apply();
+                    return;
+                }
+                new AlertDialog.Builder(activity).setTitle("旧バックアップの完全削除")
+                        .setMessage("新しいバックアップを再取得しSHA-256照合に成功した後、"
+                                + "この端末の同じ固定名の旧バックアップだけを完全削除します。"
+                                + "MEGAのゴミ箱からも復元できません。他端末のバックアップや、"
+                                + "すでにゴミ箱にあるファイルは削除しません。自動同期による上書きにも適用されます。")
+                        .setNegativeButton("キャンセル", (d, w) -> permanent.setChecked(false))
+                        .setOnCancelListener(d -> permanent.setChecked(false))
+                        .setPositiveButton("完全削除を有効にする", (d, w) -> options.edit()
+                                .putBoolean(MegaBackupDeletionPolicy.PERMANENT, overwrite.isChecked()).apply())
+                        .show();
+            });
+            overwrite.setOnCheckedChangeListener((button, checked) -> {
+                options.edit().putBoolean(MegaBackupDeletionPolicy.OVERWRITE, checked).apply();
+                permanent.setEnabled(checked);
+                if (!checked) {
+                    permanent.setChecked(false);
+                    options.edit().putBoolean(MegaBackupDeletionPolicy.PERMANENT, false).apply();
+                }
+            });
+            content.addView(permanent);
             CheckBox automatic = new CheckBox(activity);
             automatic.setText("指定した間隔で自動同期（アプリ起動時に実行）");
             automatic.setChecked(options.getBoolean(AUTO, false));
@@ -234,8 +286,7 @@ final class HaiagaruMegaSync {
                     return;
                 }
                 run(activity, "バックアップ中", () -> {
-                    String name = HaiagaruMegaClient.upload(activity.getApplicationContext(),
-                            HaiagaruSyncSnapshot.capture(activity.getApplicationContext(), flags));
+                    String name = uploadSnapshot(activity.getApplicationContext(), flags);
                     options.edit().putLong(LAST, System.currentTimeMillis()).apply();
                     return "MEGAのHaiagaruフォルダに保存しました: " + name;
                 });
@@ -255,9 +306,9 @@ final class HaiagaruMegaSync {
             content.addView(sync);
 
             Button restore = new Button(activity);
-            restore.setText("MEGAの最新バックアップを確認して復元");
+            restore.setText("MEGAのバックアップ一覧から選んで復元");
             restore.setOnClickListener(view -> {
-                startSync(activity, chosen(choices), true);
+                chooseRemoteBackup(activity, chosen(choices));
             });
             content.addView(restore);
         }
@@ -289,7 +340,7 @@ final class HaiagaruMegaSync {
 
         TextView localNote = new TextView(activity);
         localNote.setText("端末のファイル操作はMEGAログイン不要です。Cookieを含めると、"
-                + "ログイン情報が暗号化されていないJSONファイルに保存されます。"
+                + "ログイン情報が暗号化されていないZIPファイルに保存されます。"
                 + "共有先と保管場所に注意してください。");
         localNote.setTextSize(13);
         content.addView(localNote);
@@ -340,14 +391,14 @@ final class HaiagaruMegaSync {
         SharedPreferences options = options(context);
         if (mode == MODE_LOCAL_TO_REMOTE) {
             requireForeground();
-            String name = HaiagaruMegaClient.upload(context,
-                    HaiagaruSyncSnapshot.capture(context, categories));
+            String name = uploadSnapshot(context, categories);
             return "この端末のデータをMEGAへ保存しました: " + name;
         }
 
         HaiagaruMegaClient.MegaFile file = HaiagaruMegaClient.latest(context);
-        JSONObject snapshot = HaiagaruSyncSnapshot.validate(
-                HaiagaruMegaClient.download(context, file));
+        try (HaiagaruBackupArchive.Backup backup = HaiagaruBackupArchive.read(context,
+                HaiagaruMegaClient.download(context, file))) {
+        JSONObject snapshot = backup.snapshot;
         long createdAt = snapshot.optLong("createdAt", 0L);
         if (mode == MODE_REMOTE_TO_LOCAL) {
             long applied = options.getLong(LAST_REMOTE, 0L);
@@ -356,18 +407,45 @@ final class HaiagaruMegaSync {
             }
             if (!approveChanges(context, snapshot, categories, false)) return "復元を保留しました";
             requireForeground();
-            HaiagaruSyncSnapshot.restore(context, snapshot, categories);
+            HaiagaruBackupArchive.restore(context, backup, categories, false);
             options.edit().putLong(LAST_REMOTE, createdAt).apply();
             return "MEGAの最新バックアップを復元しました。ChMateを再起動してください";
         }
 
         if (!approveChanges(context, snapshot, categories, true)) return "同期を保留しました";
         requireForeground();
-        HaiagaruSyncSnapshot.mergeMissing(context, snapshot, categories);
-        String name = HaiagaruMegaClient.upload(context,
-                HaiagaruSyncSnapshot.capture(context, categories));
+        HaiagaruBackupArchive.restore(context, backup, categories, true);
+        String name = uploadSnapshot(context, categories);
         options.edit().putLong(LAST_REMOTE, createdAt).apply();
         return "双方向同期が完了しました。不足分を統合してMEGAへ保存しました: " + name;
+        }
+    }
+
+    private static String uploadSnapshot(Context context, int categories) throws Exception {
+        java.io.File file = HaiagaruBackupArchive.capture(context, categories);
+        try { return HaiagaruMegaClient.upload(context, file); }
+        finally { file.delete(); }
+    }
+
+    private static void chooseRemoteBackup(Activity activity, int categories) {
+        run(activity, "バックアップ一覧を取得中", () -> {
+            HaiagaruMegaClient.MegaFile[] files = HaiagaruMegaClient.list(activity);
+            if (files.length == 0) throw new IOException("MEGAにバックアップがありません");
+            String[] labels = new String[files.length];
+            for (int i = 0; i < files.length; i++) labels[i] = files[i].createdTime + " / "
+                    + android.text.format.Formatter.formatFileSize(activity, files[i].size) + "\n" + files[i].name;
+            activity.runOnUiThread(() -> new AlertDialog.Builder(activity).setTitle("復元するバックアップ")
+                    .setItems(labels, (dialog, index) -> run(activity, "バックアップを取得・検証中", () -> {
+                        HaiagaruBackupArchive.Backup backup = HaiagaruBackupArchive.read(activity,
+                                HaiagaruMegaClient.download(activity, files[index]));
+                        activity.runOnUiThread(() -> {
+                            if (activity.isFinishing() || activity.isDestroyed()) backup.close();
+                            else confirmRestore(activity, files[index], backup, categories);
+                        });
+                        return "バックアップを確認しました";
+                    })).setNegativeButton("キャンセル", null).show());
+            return "一覧から復元元を選択してください";
+        });
     }
 
     private static void requireForeground() throws IOException {
@@ -419,9 +497,9 @@ final class HaiagaruMegaSync {
             try {
                 if (preview) {
                     HaiagaruMegaClient.MegaFile file = HaiagaruMegaClient.latest(activity);
-                    JSONObject snapshot = HaiagaruSyncSnapshot.validate(
+                    HaiagaruBackupArchive.Backup backup = HaiagaruBackupArchive.read(activity,
                             HaiagaruMegaClient.download(activity, file));
-                    activity.runOnUiThread(() -> confirmRestore(activity, file, snapshot, categories));
+                    activity.runOnUiThread(() -> confirmRestore(activity, file, backup, categories));
                 } else {
                     int mode = prefs.getInt(MODE, MODE_BIDIRECTIONAL);
                     String result;
@@ -432,8 +510,7 @@ final class HaiagaruMegaSync {
                                 || !String.valueOf(missingRemote.getMessage()).contains("バックアップがありません")) {
                             throw missingRemote;
                         }
-                        String name = HaiagaruMegaClient.upload(activity,
-                                HaiagaruSyncSnapshot.capture(activity, categories));
+                        String name = uploadSnapshot(activity, categories);
                         result = "MEGAに初回バックアップを保存しました: " + name;
                     }
                     prefs.edit().putLong(LAST, System.currentTimeMillis()).apply();
@@ -508,10 +585,12 @@ final class HaiagaruMegaSync {
     }
 
     private static void confirmRestore(Activity activity, HaiagaruMegaClient.MegaFile file,
-                                       JSONObject snapshot, int currentChoice) {
+                                       HaiagaruBackupArchive.Backup backup, int currentChoice) {
+        JSONObject snapshot = backup.snapshot;
         int available = snapshot.optInt("categories", 0) & HaiagaruSyncSnapshot.ALL;
         if (available == 0) {
             showError(activity, new IOException("復元できる項目がありません"));
+            backup.close();
             return;
         }
         String[] labels = new String[CATEGORY_BITS.length];
@@ -527,14 +606,20 @@ final class HaiagaruMegaSync {
         if ((available & HaiagaruSyncSnapshot.COOKIES) != 0) {
             message += "\nCookieを選ぶとログイン情報も復元されます。別端末では再ログインが必要な場合があります。";
         }
+        if ((available & (HaiagaruSyncSnapshot.AUTH | HaiagaruSyncSnapshot.DEVICE_DATA)) != 0) message += "\n" + HaiagaruBackupSecrets.WARNING;
         if (options(activity).getBoolean(SHOW_DIFF, true)) {
             message += "\n\n変更内容（選択した項目）\n" + buildChangeSummary(activity, snapshot, available);
         }
-        new AlertDialog.Builder(activity).setTitle("復元内容を確認")
-                .setMessage(message)
+        final String details = message;
+        new AlertDialog.Builder(activity).setTitle("復元する項目を選択")
                 .setMultiChoiceItems(labels, selected, (dialog, index, checked) ->
                         selected[index] = checked && (available & CATEGORY_BITS[index]) != 0)
-                .setNegativeButton("キャンセル", null)
+                .setNeutralButton("内容・注意事項", (dialog, which) -> new AlertDialog.Builder(activity)
+                        .setMessage(details).setPositiveButton("項目選択に戻る", (d, w) ->
+                                confirmRestore(activity, file, backup, currentChoice))
+                        .setOnCancelListener(d -> backup.close()).show())
+                .setNegativeButton("キャンセル", (d, w) -> backup.close())
+                .setOnCancelListener(d -> backup.close())
                 .setPositiveButton("復元", (dialog, which) -> {
                     int flags = 0;
                     for (int index = 0; index < selected.length; index++) {
@@ -542,20 +627,23 @@ final class HaiagaruMegaSync {
                     }
                     if (flags == 0) {
                         message(activity, "復元する項目を選択してください");
+                        backup.close();
                         return;
                     }
                     final int restoreFlags = flags;
-                    run(activity, "復元中", () -> {
+                    confirmSensitive(activity, restoreFlags, () -> run(activity, "復元中", () -> {
+                        try (HaiagaruBackupArchive.Backup owned = backup) {
                         if (!approveChanges(activity, snapshot, restoreFlags, false)) return "復元を保留しました";
                         requireForeground();
-                        HaiagaruSyncSnapshot.restore(activity.getApplicationContext(),
-                                snapshot, restoreFlags);
+                        HaiagaruBackupArchive.restore(activity.getApplicationContext(),
+                                backup, restoreFlags, false);
                         return "復元しました。ChMateを再起動してください";
-                    });
+                        }
+                    }), backup::close);
                 }).show();
     }
 
-    private static String buildChangeSummary(Context context, JSONObject snapshot, int available) {
+    static String buildChangeSummary(Context context, JSONObject snapshot, int available) {
         StringBuilder summary = new StringBuilder();
         if ((available & HaiagaruSyncSnapshot.BOOKMARKS) != 0) {
             JSONArray rows = snapshot.optJSONArray("bookmarks");
@@ -589,7 +677,24 @@ final class HaiagaruMegaSync {
             summary.append("・Cookie: ").append(stores == null ? 0 : stores.length())
                     .append("保存領域を確認（ログイン情報を含む）\n");
         }
+        for (int i = 0; i < CATEGORY_BITS.length; i++) {
+            if (CATEGORY_BITS[i] > HaiagaruSyncSnapshot.COOKIES && (available & CATEGORY_BITS[i]) != 0) {
+                summary.append("・").append(CATEGORY_NAMES[i]).append("\n");
+            }
+        }
         return summary.length() == 0 ? "変更候補はありません" : summary.toString().trim();
+    }
+
+    static void confirmSensitive(Activity activity, int flags, Runnable proceed, Runnable cancel) {
+        if ((flags & (HaiagaruSyncSnapshot.AUTH | HaiagaruSyncSnapshot.DEVICE_DATA
+                | HaiagaruSyncSnapshot.COOKIES | HaiagaruSyncSnapshot.UPLOAD_HISTORY)) == 0) {
+            proceed.run(); return;
+        }
+        new AlertDialog.Builder(activity).setTitle("機密情報の復元を確認")
+                .setMessage("ログイン状態・アカウント情報が切り替わる場合があります。\n\n" + HaiagaruBackupSecrets.WARNING)
+                .setNegativeButton("キャンセル", (d, w) -> cancel.run())
+                .setOnCancelListener(d -> cancel.run())
+                .setPositiveButton("復元する", (d, w) -> proceed.run()).show();
     }
 
     private static int chosen(CheckBox[] choices) {
@@ -619,7 +724,17 @@ final class HaiagaruMegaSync {
     }
 
     private static SharedPreferences options(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (!prefs.getBoolean("archiveCategoriesV2", false)) {
+            synchronized (HaiagaruMegaSync.class) {
+                if (!prefs.getBoolean("archiveCategoriesV2", false)) prefs.edit()
+                        .putInt(CATEGORIES, prefs.getInt(CATEGORIES, HaiagaruSyncSnapshot.DEFAULT)
+                                | HaiagaruSyncSnapshot.RESPONSES | HaiagaruSyncSnapshot.THREAD_ARCHIVES
+                                | HaiagaruSyncSnapshot.RESOURCES)
+                        .putBoolean("archiveCategoriesV2", true).commit();
+            }
+        }
+        return prefs;
     }
 
     private static void showError(Activity activity, Exception error) {

@@ -22,6 +22,8 @@ public final class VerifyWacchoiMenuOrder {
             throw new AssertionError("Unrelated NG action classified as add NGName");
         if (WacchoiMenuOrder.rank("ﾜｯﾁｮｲで検索") != 4 || WacchoiMenuOrder.rank("ﾜｯﾁｮｲ下4桁をNG登録") != 1)
             throw new AssertionError("Legacy labels");
+        if (WacchoiMenuOrder.rank("ﾜｯﾁｮｲ下4桁で検索") != 4)
+            throw new AssertionError("Suffix search must not be grouped with NG registration");
         System.out.println("PASS Wacchoi menu order, action identity, extras, repeated append and legacy labels");
     }
 }
