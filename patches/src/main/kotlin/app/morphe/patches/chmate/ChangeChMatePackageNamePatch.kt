@@ -165,6 +165,18 @@ val changeChMatePackageNamePatch = resourcePatch(
 
     finalize {
         val newPackageName = packageNameOption.value!!
+        // Haiagaru can append preference intents after this patch's execute phase.
+        // Include those late entries, not only shortcuts that existed in the input APK.
+        get("res").walkTopDown()
+            .filter { it.isFile && it.extension.equals("xml", ignoreCase = true) }
+            .forEach { resource ->
+                val original = resource.readText()
+                val rewritten = original.replace(
+                    "android:targetPackage=\"$ORIGINAL_PACKAGE_NAME\"",
+                    "android:targetPackage=\"$newPackageName\"",
+                )
+                if (rewritten != original) resource.writeText(rewritten)
+            }
         document("AndroidManifest.xml").use { document ->
             document.getElementsByTagName("*")
                 .asSequence()

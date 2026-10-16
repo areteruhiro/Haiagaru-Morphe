@@ -15,7 +15,7 @@ https://github.com/areteruhiro/Haiagaru
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.8.8` の概要: [1.8.8の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.8)
+プレ版 `1.8.9` の概要: [1.8.9の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.9)
 
 ## Features
 
