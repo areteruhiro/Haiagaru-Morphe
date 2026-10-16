@@ -5869,6 +5869,38 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUpload
     method.replaceInstruction(divideIndex, "const/16 v$indexRegister, 0xd")
 }
 
+/** Hook only the verified image HTTP invocation, not selection, preprocessing or other reflection. */
+internal fun BytecodePatchContext.patchImgurWebSessionUpload(version: String) {
+    val (owner, response, hook) = when (version) {
+        "0.8.10.241" -> Triple("Lo/GNk35;", "Lo/defaultzzb;", "invoke241")
+        "0.8.10.242 dev" -> Triple("Lo/ApiMetadataBuilder;", "Lo/zzbtj;", "invoke242")
+        else -> return // 191 and 226 already have dedicated uploader wrappers.
+    }
+    var matches = 0
+    mutableClassDefBy(owner).methods.forEach { method ->
+        val instructions = method.implementation?.instructions?.toList() ?: return@forEach
+        val indexes = instructions.indices.filter { index ->
+            val ref = (instructions[index] as? ReferenceInstruction)?.reference as? MethodReference
+            ref?.definingClass == "Ljava/lang/reflect/Method;" && ref.name == "invoke"
+                && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
+                && ((instructions.getOrNull(index + 2) as? ReferenceInstruction)?.reference as? TypeReference)?.type == response
+        }
+        indexes.reversed().forEach { index ->
+            val target = "Lapp/morphe/extension/chmate/ImgurWebUpload;->$hook(" +
+                "Ljava/lang/reflect/Method;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"
+            when (val call = instructions[index]) {
+                is FiveRegisterInstruction -> method.replaceInstruction(index,
+                    "invoke-static {v${call.registerC}, v${call.registerD}, v${call.registerE}}, $target")
+                is RegisterRangeInstruction -> method.replaceInstruction(index,
+                    "invoke-static/range {v${call.startRegister} .. v${call.startRegister + 2}}, $target")
+                else -> error("$version Imgur uploader invocation registers changed")
+            }
+            matches++
+        }
+    }
+    check(matches == 1) { "$version Imgur web upload hook expected 1 invocation, found $matches" }
+}
+
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyImageUploadCall() {
     val method = mutableClassDefBy("Lo/nq;").methods.single { method ->
         method.name == "e"

@@ -339,6 +339,8 @@ public final class Haiagaru {
 
     /** Runs the legacy 0.8.10.191 image request without its generated integrity decoy. */
     public static Object uploadLegacyImage(Object[] arguments) throws Exception {
+        if (ImgurWebUpload.enabled()) return ImgurWebUpload.upload(arguments,
+                Class.forName("o.r0ExternalSyntheticLambda13", true, Haiagaru.class.getClassLoader()));
         File image = (File) arguments[0];
         HttpURLConnection connection = (HttpURLConnection) new URL(
                 "https://imgw.syoboi.jp/3/image").openConnection();
@@ -872,6 +874,7 @@ public final class Haiagaru {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        ImgurWebUpload.init(appContext);
         ImageVpnController.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
@@ -1095,6 +1098,8 @@ public final class Haiagaru {
             Object receiver,
             Object[] arguments
     ) throws Throwable {
+        if (ImgurWebUpload.enabled()) return ImgurWebUpload.upload(arguments,
+                Class.forName("o.Ad", true, Haiagaru.class.getClassLoader()));
         ClassLoader loader = method.getDeclaringClass().getClassLoader();
         Class<?> stateClass = Class.forName("o.getMethodokhttp", false, loader);
         Field stateField = stateClass.getDeclaredField("c");
@@ -3286,6 +3291,14 @@ public final class Haiagaru {
         layout.setOrientation(LinearLayout.VERTICAL);
         int padding = dp(activity, 20);
         layout.setPadding(padding, padding, padding, padding);
+
+        if (ImgurWebUpload.supported(activity)) {
+            Button imgurLogin = new Button(activity);
+            imgurLogin.setText(text("Imgurにログイン／Webアカウント送信（開発中）", "Imgur login / web account uploads (in development)"));
+            imgurLogin.setOnClickListener(view -> activity.startActivity(
+                    new Intent(activity, ImgurWebLoginActivity.class)));
+            layout.addView(imgurLogin);
+        }
 
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,
