@@ -1,23 +1,25 @@
 
 ◆9qrWgYJJCo
 ◆8LNH56sLs6
- # Haiagaru for Morphe
+# Haiagaru for Morphe
 
 ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパッチです。 <br>
 
 **0.8.10.241／0.8.10.243 devは対応対象外です。** 191 dev／226 dev／242 devをご利用ください。
 
-機能は以下を参照
-https://github.com/areteruhiro/Haiagaru
+ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
+従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新版: [Latest](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)
+最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.9](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.9)
+
+以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
 プレ版 `1.8.9` の概要: [1.8.9の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.9)
 
-## Features
+## 主な機能
 
 * Remove ads (including margins)
 * 画像キャッシュサイズを最大256GBまで選択（4／8／16／32／64／128／256GBを追加、現在の設定は維持）。[詳細](docs/image-cache-size.md)
@@ -43,7 +45,45 @@ https://github.com/areteruhiro/Haiagaru
   * 荒らし省略
 * エッヂ板でスレタイ末尾に記者IDを表示（初期値ON、Haiagaru設定から切り替え）
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」
-* NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、4対応版共通）
+* NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、191 dev／226 dev／242 dev共通）
+
+## 1.8.8・1.8.9の追加機能
+
+### 1.8.9：外部板の認証・登録板編集
+
+- **外部板の認証支援**：書き込み画面の「︙ → 外部板の認証ページ」、または「Haiagaru設定 → 詳細 → 外部板の認証ページを設定・開く」から認証ページをアプリ内で開けます。認証を要求するエラーを検出した際も案内します。コード入力後に「認証を反映して戻る」を押すと、その板のHTTPS通信へCookieを連携します。
+- **登録した外部板の名前・URL編集**：「ChMate設定 → 掲示板／BBSMENU → 登録した外部板の名前・URLを編集」から変更できます。同じ板の改名・移転向けで、ブックマーク・ログ・NGの識別情報は維持します。保存後はChMateを終了・再起動してください。
+- **パッケージ名変更の修正**：追加した設定画面の起動先も変更後のパッケージ名へ揃えます。
+
+認証は利用者自身で操作してください。二重投稿防止のため自動再投稿は行いません。Cookie以外の認証方式など、対応できないサイトがあります。実サイトの認証完了・投稿成功は未検証です。板移転時に別ホストへ認証情報をコピーすることはありません。
+
+詳細：[外部板認証](docs/external-board-auth.md) ／ [板名・URL編集](docs/external-board-editor.md) ／ [1.8.9の更新内容](docs/release-1.8.9.md)
+
+### 1.8.8：設定・巡回画像・テーマ・バックアップなど
+
+- **設定を整理**：Haiagaru設定を10カテゴリへ分類。項目名・説明の検索と全開閉に対応し、既存の設定値は維持します。
+- **巡回時の画像自動保存（初期OFF）**：ChMate標準の巡回対象を、複数のスレタイキーワード・スレURLで絞り込み可能。未表示のスレでも本文取得に合わせて画像を保存します。保存先はChMate画像キャッシュ／`Download/Haiagaru/スレごとのフォルダ`を選択でき、保存済み画像の重複取得を避けます。
+- **自作テーマの取り込み**：Android標準のファイル選択からテーマを複数取り込み可能。画像素材付きフォルダと同名ファイルの置換確認にも対応し、Android/dataの手動操作は不要です。
+- **画像キャッシュ上限を拡張**：4／8／16／32／64／128／256GBを追加。空き容量と標準のキャッシュ整理処理は引き続き適用されます。
+- **標準画像アップロード履歴を拡張**：右上の︙に「新しい順（降順）」と、選択・確認付きの「サーバーから一括削除」を追加。サーバー上の削除は取り消せません。
+- **動画操作を追加**：左右上下スワイプの明るさ・音量調整、左右ダブルタップの巻き戻し・早送りを個別設定可能（初期OFF）。YouTubeは公式埋め込みプレーヤーでアプリ内表示。システムの戻る1回でプレーヤーを終了します。
+- **X／Twitter本文プレビュー（初期OFF）**：公開投稿URLから投稿者・本文・日時をレス内に追加表示。追加通信を行います。元DATやNG判定は変更しません。
+- **スレ立てコマンド候補**：5ch／エッヂに応じた編集可能な候補を選び、本文へ挿入できます。自動送信はしません。
+- **NG操作を拡張**：ワッチョイ長押しの「下4桁で検索」、226 devの「NG編集」ジェスチャー名表示、右上の「非表示NGを表示」を隠す任意設定を追加。
+- **エッヂ過去ログ検索の表示調整**：検索欄・検索結果の文字倍率を個別設定でき、検索欄の折りたたみで結果を広く表示できます。
+- **レス単位アーカイブ**：レスごとの保存・一覧・オフライン閲覧を追加。従来のスレ全体保存も維持します。
+- **バックアップを拡充**：ローカル／MEGAへDAT、レス・スレアーカイブ、フォント・テーマ・追加設定・標準画像アップロード履歴などを保存。ZIP全体の32MiB上限を撤廃し、旧JSON復元も維持します。
+- **MEGAバックアップの管理**：端末名・作成日時の一覧から復元元を選択可能。端末ごとの上書きと、照合成功後の旧ファイル完全削除オプション（初期OFF）を追加。日時は端末のタイムゾーンで表示します。
+- **認証情報の任意バックアップ**：認証情報・通常WebView Cookie・MEGAセッションと、同一インストール専用の暗号化済みデータを別々の初期OFF項目として追加。Keystore秘密鍵は保存しません。
+- **191 devの通信改善**：TCP競合接続（約250ms後に別候補へ接続を開始・初期ON）と進捗通知の軽量化、任意の通信全体上限を追加。特定の取得時間や、すべての通信停止の解消を保証するものではありません。
+
+巡回画像保存は「Haiagaru設定 → 画像・動画・X／Twitter → 巡回時の画像自動保存（スレタイ・URL指定）」にあります。ChMate標準の自動巡回と「本文(dat)もダウンロード」も有効にしてください。巡回対象を増やす機能ではなく、動画は対象外です。通信量・保存容量が増える点にご注意ください。
+
+自作テーマは「Haiagaru設定 → スレ・スレ一覧の表示 → 自作テーマをファイル／フォルダから取り込む」から追加できます。
+
+認証情報入りバックアップは第三者に渡さず厳重に保管してください。端末固有の暗号化済みデータは他端末・再インストール先で利用できるとは限りません。MEGA同期は任意パッチでAndroid 7.0以降が必要です。ローカルバックアップはMEGAなしでも利用できます。
+
+詳細：[1.8.8の更新内容・検証範囲](docs/release-1.8.8.md)
 
 ## 機能別ドキュメント
 
@@ -54,6 +94,21 @@ https://github.com/areteruhiro/Haiagaru
 - [ChMate+互換機能](docs/chmate-plus-compat.md)
 - [高度なNGルール](docs/advanced-ng.md)
 - [本文の文字列置換（外部TXT）](docs/replace-str.md)
+- [Haiagaru設定のカテゴリ・検索](docs/settings-organization.md)
+- [巡回時の画像自動保存・フィルタリング](docs/patrol-images.md)
+- [自作テーマの取り込み](docs/custom-theme-import.md)
+- [画像キャッシュサイズ](docs/image-cache-size.md)
+- [標準画像アップロード履歴・一括削除](docs/native-upload-history.md)
+- [動画ビューアの操作](docs/video-viewer-controls.md)
+- [X／Twitter本文プレビュー](docs/x-post-preview.md)
+- [スレ立てコマンド](docs/thread-commands.md)
+- [ワッチョイ下4桁検索](docs/wacchoi-suffix-search.md)
+- [非表示NGメニューの表示設定](docs/hidden-ng-menu.md)
+- [エッヂ過去ログ検索の表示調整](docs/edge-archive-display.md)
+- [レス単位アーカイブ](docs/response-archive.md)
+- [191 devの通信改善・検証範囲](docs/chmate191-update-performance.md)
+- [外部板の認証ページ](docs/external-board-auth.md)
+- [登録した外部板の名前・URL編集](docs/external-board-editor.md)
 - Cookieエラー、ワッチョイ検索、画像一覧、高度なNGワードについては [よくある質問](docs/faq.md) を参照してください。
 
 
@@ -105,7 +160,7 @@ Morpheでパッチを適用しようとした際にエラーが発生する場�
 
 設定変更後、もう一度パッチ適用をお試しください。
 
-ChMate `0.8.10.241`では、アプリデータを残したまま以前のChMateをアンインストールすると、再インストール時に既存のパッケージとの競合が表示される場合があります。
+以前のChMateをアプリデータを残してアンインストールした場合など、既存のパッケージとの競合が表示されることがあります。まずパッケージ名・署名の違いを確認してください。データを消す操作は最終手段です（過去の241での報告。現在241は対応対象外）。
 
 1. ChMateの設定や必要なデータをバックアップします。
 2. 以前のChMateを、アプリデータも含めて完全にアンインストールします。
@@ -143,7 +198,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは正式版 `1.7.1`、プレ版用URLは `1.7.7` を取得します。
+通常版URLは正式版 `1.7.1`、プレ版用URLは `1.8.9` を取得します。
 配布物はAndroid拡張を内包したMPPです。
 
 現在の正式版（1.7.1）を取得するパッチソースです。
@@ -152,7 +207,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版 `1.7.7` を取得するパッチソースです。
+プレ版 `1.8.9` を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
@@ -161,6 +216,8 @@ https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bun
 通常版とプレリリース版は別々に更新します。同じバージョン内で修正版を配布する場合は、
 URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
 更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
+Morpheで「プレリリース」を有効にしたリポジトリソースは、`dev/patches-bundle.json`を参照する場合もあります。この取得先も1.8.9に揃えています。GitHubの配信キャッシュにより反映に数分かかる場合があります。
+変更履歴で「このリリースは空です」と出る場合は、Morphe Managerも最新版へ更新してください。
 
 ## 更新履歴
 
@@ -184,7 +241,7 @@ URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布
 生成物:
 
 ```text
-patches\build\libs\patches-1.7.1.mpp
+patches\build\libs\patches-1.8.9.mpp
 ```
 
 公開には`:patches:buildAndroid`で生成したMPPを使用し、`classes.dex`が含まれることを確認してください。
