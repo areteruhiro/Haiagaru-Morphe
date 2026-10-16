@@ -11,7 +11,7 @@ import java.util.zip.ZipFile;
 public final class VerifyNgEditGesture {
     public static void main(String[] args) throws Exception {
         for (String apk : args) try (var zip = new ZipFile(apk)) {
-            int hooks = 0, settings = 0;
+            int hooks = 0, previews = 0, settings = 0;
             boolean helper = false;
             for (var entry : Collections.list(zip.entries())) {
                 byte[] bytes;
@@ -34,13 +34,20 @@ public final class VerifyNgEditGesture {
                                     throw new AssertionError("Wrong completion hook: " + method);
                                 hooks++;
                             }
+                            if (instruction instanceof ReferenceInstruction r && r.getReference() instanceof MethodReference m
+                                    && m.getDefiningClass().equals("Lapp/morphe/extension/chmate/NgEditGesture;")
+                                    && m.getName().equals("preview")) {
+                                if (!method.getName().equals("dispatchDraw"))
+                                    throw new AssertionError("Preview hook outside native drawing: " + method);
+                                previews++;
+                            }
                         }
                     }
                 }
             }
-            if (!helper || hooks != 1 || settings != 1)
-                throw new AssertionError(apk + " helper=" + helper + " hooks=" + hooks + " settings=" + settings);
-            System.out.println("PASS " + apk + " completionHooks=1 gesturePreference=1");
+            if (!helper || hooks != 1 || previews != 1 || settings != 1)
+                throw new AssertionError(apk + " helper=" + helper + " hooks=" + hooks + " previews=" + previews + " settings=" + settings);
+            System.out.println("PASS " + apk + " completionHooks=1 previewHooks=1 gesturePreference=1");
         }
     }
 }

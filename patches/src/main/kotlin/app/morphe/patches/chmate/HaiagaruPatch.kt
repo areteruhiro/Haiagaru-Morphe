@@ -45,6 +45,39 @@ private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
 private object EmojiFontResourceMarker
 
+private fun BytecodePatchContext.patchHiddenNgMenu(version: String) {
+    // String and menu IDs are different. Validate both against each native preparation method.
+    val profile = when (version) {
+        "0.8.10.191 dev" -> Triple("Lo/pa;", 0x7f120470, 2131362442)
+        "0.8.10.226 dev" -> Triple("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;", 0x7f10046e, 2131296944)
+        "0.8.10.242 dev" -> Triple("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;", 0x7f100498, 2131296922)
+        else -> return
+    }
+    val owner = mutableClassDefBy(profile.first)
+    val method = owner.methods.single { method ->
+        method.parameterTypes == listOf("Landroid/view/Menu;") && method.returnType == "V"
+            && method.implementation?.instructions?.any {
+                (it as? WideLiteralInstruction)?.wideLiteral == profile.second.toLong()
+            } == true
+    }
+    val instructions = method.implementation!!.instructions.toList()
+    check(instructions.any { (it as? WideLiteralInstruction)?.wideLiteral == profile.third.toLong() }) {
+        "$version hidden-NG menu item ID changed"
+    }
+    check(instructions.any {
+        val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == "Landroid/view/MenuItem;" && ref.name == "setVisible"
+    }) { "$version hidden-NG visibility preparation changed" }
+    val bridge = mutableClassDefBy("Lapp/morphe/extension/chmate/HiddenNgMenu;")
+        .methods.single { it.name == "itemId" }
+    bridge.replaceInstruction(0, "const v0, ${profile.third}")
+    instructions.indices.filter { instructions[it].opcode == Opcode.RETURN_VOID }.reversed().forEach {
+        method.addInstruction(it,
+            "invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/HiddenNgMenu;->apply(Landroid/view/Menu;)V")
+    }
+    println("Hidden NG overflow option: $version -> ${owner.type}->${method.name}")
+}
+
 private fun BytecodePatchContext.patchNgEditGesture(version: String) {
     if (version !in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) return
     val candidates = mutableListOf<ClassDef>()
@@ -87,6 +120,29 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         :restore_gesture_registry
         move-object/from16 v$scratch, p0
         iget-object v$scratch, v$scratch, ${owner.type}->${registry.name}:${registry.type}
+    """.trimIndent())
+
+    // Completion and preview have separate native lookups. Do not register a synthetic
+    // action globally: it would also reach native listeners that do not know its ID.
+    val draw = owner.methods.single { it.name == "dispatchDraw" }
+    val drawBody = draw.implementation!!.instructions.toList()
+    val lookupReference = (body[index] as ReferenceInstruction).reference as MethodReference
+    val previewLookups = drawBody.indices.filter { position ->
+        ((drawBody[position] as? ReferenceInstruction)?.reference as? MethodReference)?.let {
+            it.definingClass == lookupReference.definingClass && it.name == lookupReference.name &&
+                it.parameterTypes == lookupReference.parameterTypes && it.returnType == lookupReference.returnType
+        } == true
+    }
+    check(previewLookups.size == 1) { "$version gesture preview lookup changed" }
+    val previewIndex = previewLookups.single()
+    val previewLookup = drawBody[previewIndex] as FiveRegisterInstruction
+    val previewResult = drawBody[previewIndex + 1] as OneRegisterInstruction
+    check(drawBody[previewIndex + 1].opcode == Opcode.MOVE_RESULT_OBJECT)
+    check(previewResult.registerA != previewLookup.registerD) { "$version preview sequence aliases result" }
+    check(draw.implementation!!.registerCount - 2 <= 15) { "$version preview view register too high" }
+    draw.addInstructions(previewIndex + 2, """
+        invoke-static {p0, v${previewLookup.registerD}, v${previewResult.registerA}}, Lapp/morphe/extension/chmate/NgEditGesture;->preview(Landroid/view/View;ILjava/lang/Object;)Ljava/lang/Object;
+        move-result-object v${previewResult.registerA}
     """.trimIndent())
 }
 
@@ -377,16 +433,8 @@ internal val chMateCompatibility = Compatibility(
             minSdk = 23
         ),
         AppTarget(
-            version = "0.8.10.241",
-            minSdk = 23
-        ),
-        AppTarget(
             version = "0.8.10.242 dev",
             minSdk = 23
-        ),
-        AppTarget(
-            version = "0.8.10.243 dev",
-            minSdk = 24
         )
     )
 )
@@ -1452,7 +1500,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             patchReadThreadsFirst(packageMetadata.versionName)
             patchNgThreadGroupVisibility(packageMetadata.versionName)
             patchThreadTitleSpacing(packageMetadata.versionName)
-            patchPostEditorTextSize()
+            patchPostEditorTextSize(packageMetadata.versionName)
             patchNgBoardScopes()
         }
 
@@ -1461,6 +1509,9 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostHistoryRetentionCount(packageMetadata.versionName)
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
+        patchHiddenNgMenu(packageMetadata.versionName)
+        patchNativeUploadHistory(packageMetadata.versionName)
+        patchResponseArchive(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
@@ -1803,6 +1854,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchXVideoAttachmentProjection()
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
+        patchNativeUpdatePolicy(packageMetadata.versionName)
+        patchPatrolImages(packageMetadata.versionName)
     }
 }
 
@@ -2868,12 +2921,26 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
         menuIndex,
         """
             invoke-static {p0, v$menuRegister, v$responseRegister}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendLegacyForResponse(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+            invoke-static {p0, v$menuRegister, v$responseRegister}, Lapp/morphe/extension/chmate/ResponseArchive;->appendLegacy(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
         """.trimIndent(),
     )
     println("Wacchoi response-menu hook: selected ChMate 191 response")
 }
 
 /** Add the same in-viewer 90-degree rotation control to the older image viewers. */
+private fun BytecodePatchContext.patchResponseArchive(version: String) {
+    if (version != "0.8.10.242 dev") return // 191/226 share their existing exact-target menu hooks.
+    val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
+    val method = mutableClassDefBy(owner).methods.single {
+        it.accessFlags and 8 != 0 && it.returnType == "V" && it.parameterTypes == listOf(
+            owner, "Lo/isDataValid;", "Lo/KeJ11;"
+        )
+    }
+    method.addInstruction(0,
+        "invoke-static/range {p0 .. p2}, Lapp/morphe/extension/chmate/ResponseArchive;->appendSheet(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V")
+    println("Response archive: 242 exact response sheet -> ${method.name}")
+}
+
 /** Thread rows use TextView on all four supported versions, including RecyclerView rows. */
 private fun BytecodePatchContext.patchThreadTitleSpacing(version: String) {
     val adapterType = when (version) {
@@ -2942,7 +3009,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentP
 /** Keep stock board validation and reload events, but replace the modern tailing
  * start with bottom-only automatic scrolling. Never emit a tailing state, so
  * neither the forced sort nor the forced jump-to-bottom collector runs. */
-private fun BytecodePatchContext.patchPostEditorTextSize() {
+private fun BytecodePatchContext.patchPostEditorTextSize(version: String) {
+    val fragment = mutableClassDefBy(if (version == "0.8.10.191 dev")
+        "Lo/p9ExternalSyntheticLambda6;" else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
+    val created = fragment.methods.single { it.name == "onViewCreated" && it.parameterTypes == listOf("Landroid/view/View;", "Landroid/os/Bundle;") }
+    // Native code reuses p1 for a FragmentManager in 191. Capture the original
+    // view at entry; extension defers binding access until initialization ends.
+    created.addInstructionsWithLabels(0,
+        "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ThreadCommands;->attach(Ljava/lang/Object;Landroid/view/View;)V")
     val activity = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ResEditActivity;")
     val resume = activity.methods.single { it.name == "onResume" && it.parameterTypes.isEmpty() && it.returnType == "V" }
     val returns = resume.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
@@ -4287,7 +4361,7 @@ private fun Document.addOpenUrlFilter(
 @Suppress("unused")
 val haiagaruPatch = resourcePatch(
     name = "Haiagaru",
-    description = "Haiagaruの機能とアプリ内設定を追加します。ChMate 0.8.10.243 devは一部機能が未実装のため非推奨です（パッチ適用は可能）。",
+    description = "Haiagaruの機能とアプリ内設定を追加します。対応バージョンはChMate 0.8.10.191 dev／0.8.10.226 dev／0.8.10.242 devです。",
 ) {
     compatibleWith(chMateCompatibility)
     dependsOn(haiagaruBytecodePatch)
@@ -4340,6 +4414,22 @@ val haiagaruPatch = resourcePatch(
             "true", "1", "yes", "on" -> true
             "false", "0", "no", "off" -> false
             else -> throw PatchException("imageNgTfliteFixは true / false を指定してください")
+        }
+        val cacheArrayNames = document("res/values/arrays.xml").use {
+            ImageCacheSizeOptions.expand(it)
+        }
+        get("res").listFiles().orEmpty().filter {
+            it.isDirectory && it.name.startsWith("values-")
+        }.forEach { directory ->
+            directory.listFiles().orEmpty().filter { file ->
+                file.extension == "xml" && cacheArrayNames.any { name ->
+                    file.readText().contains("name=\"$name\"")
+                }
+            }.forEach { file ->
+                document("res/${directory.name}/${file.name}").use {
+                    ImageCacheSizeOptions.expandOverrides(it, cacheArrayNames)
+                }
+            }
         }
         if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             val gestureXmls = get("res/xml").listFiles().orEmpty().filter {
@@ -4657,6 +4747,14 @@ val haiagaruPatch = resourcePatch(
                     "android:theme",
                     "@android:style/Theme.Material.Light.NoActionBar",
                 )
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name",
+                    "app.morphe.extension.chmate.ThemeImportActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:configChanges", "orientation|screenSize|keyboardHidden")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar")
             })
             if (packageMetadata.versionName != "0.8.10.243 dev") {
                 application.appendChild(document.createElement("activity").apply {

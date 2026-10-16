@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 /** Adds a board-aware Wacchoi search action to ChMate's response long-press menu. */
 public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
+    private static final int SUFFIX_SEARCH_ITEM_ID = 0x7e000077;
     // These are toolbar-only choices. Some ChMate builds reuse the toolbar
     // action catalog for the response long-press Menu as well, so explicitly
     // strip them from that transient menu without removing toolbar choices.
@@ -221,6 +222,7 @@ public final class WacchoiLongPressMenu {
 
     /** Custom popups bypass MenuItem's listener and call their own dispatcher. */
     public static boolean dispatchSuffixNgItem(Object itemObject) {
+        if (ResponseArchive.handle(itemObject)) return true;
         if (!(itemObject instanceof MenuItem)) return false;
         MenuItem item = (MenuItem) itemObject;
         if (item.getItemId() != 76) return false;
@@ -284,22 +286,19 @@ public final class WacchoiLongPressMenu {
                         || types[2] != boolean.class || types[3] != boolean.class
                         || !types[types.length - 1].isInterface()) continue;
                 Class<?> callbackType = types[types.length - 1];
-                Object callback = java.lang.reflect.Proxy.newProxyInstance(
-                        callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
-                            if (invoked.getDeclaringClass() == Object.class) {
-                                if ("hashCode".equals(invoked.getName())) return System.identityHashCode(proxy);
-                                if ("equals".equals(invoked.getName())) return proxy == args[0];
-                                return "HaiagaruWacchoiSearch";
-                            }
-                            if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0) {
-                                launchContext.startActivity(intent);
-                            }
-                            return null;
-                        });
+                Object callback = searchCallback(callbackType, launchContext, intent);
                 method.setAccessible(true);
                 if (found.host != null && found.board != null) {
                     appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "必死チェッカーもどき(ﾜｯﾁｮｲ)" : "ﾜｯﾁｮｲで検索",
                             android.R.drawable.ic_menu_search, callback);
+                    String suffix = WacchoiSuffixNg.suffix(query);
+                    if (suffix != null) {
+                        Intent suffixIntent = new Intent(intent)
+                                .putExtra("haiagaru.wacchoi.query", "-" + suffix);
+                        appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁で検索",
+                                android.R.drawable.ic_menu_search,
+                                searchCallback(callbackType, launchContext, suffixIntent));
+                    }
                 }
                 if (WacchoiSuffixNg.suffix(query) != null) {
                     Object ngCallback = java.lang.reflect.Proxy.newProxyInstance(
@@ -324,6 +323,20 @@ public final class WacchoiLongPressMenu {
         }
     }
 
+    private static Object searchCallback(Class<?> callbackType, Context context, Intent intent) {
+        return java.lang.reflect.Proxy.newProxyInstance(
+                callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
+                    if (invoked.getDeclaringClass() == Object.class) {
+                        if ("hashCode".equals(invoked.getName())) return System.identityHashCode(proxy);
+                        if ("equals".equals(invoked.getName())) return proxy == args[0];
+                        return "HaiagaruWacchoiSearch";
+                    }
+                    if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0)
+                        context.startActivity(intent);
+                    return null;
+                });
+    }
+
     private static void appendSheetItem(Method method, Object builder, boolean hasIcon,
             String title, int icon, Object callback) throws ReflectiveOperationException {
         if (hasIcon) method.invoke(builder, title, null, true, false, Integer.valueOf(icon), callback);
@@ -340,6 +353,7 @@ public final class WacchoiLongPressMenu {
         Object dialogFragment = ACTIVE_DIALOG.get();
         ACTIVE_DIALOG.remove();
         if (!(menuObject instanceof Menu) || dialogFragment == null) return;
+        ResponseArchive.appendDialog(dialogFragment, menuObject);
         Menu menu = (Menu) menuObject;
         removeToolbarOnlyChoices(menu);
         if (menu.findItem(ITEM_ID) != null) return;
@@ -398,6 +412,12 @@ public final class WacchoiLongPressMenu {
         menu.add(Menu.NONE, ITEM_ID, menu.size(), "ﾜｯﾁｮｲで検索")
                 .setIntent(intent)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        String suffix = WacchoiSuffixNg.suffix(context.query);
+        if (suffix != null && menu.findItem(SUFFIX_SEARCH_ITEM_ID) == null) {
+            menu.add(Menu.NONE, SUFFIX_SEARCH_ITEM_ID, menu.size(), "ﾜｯﾁｮｲ下4桁で検索")
+                    .setIntent(new Intent(intent).putExtra("haiagaru.wacchoi.query", "-" + suffix))
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        }
     }
 
     private static SearchContext findContext(Object dialogFragment, Object parent) {

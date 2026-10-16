@@ -21,7 +21,6 @@ private val imgurWebCompatibility = Compatibility(
     targets = listOf(
         AppTarget(version = "0.8.10.191 dev", minSdk = 21),
         AppTarget(version = "0.8.10.226 dev", minSdk = 23),
-        AppTarget(version = "0.8.10.241", minSdk = 23),
         AppTarget(version = "0.8.10.242 dev", minSdk = 23),
     ),
 )

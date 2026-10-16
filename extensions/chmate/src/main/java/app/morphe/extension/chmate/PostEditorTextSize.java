@@ -18,8 +18,9 @@ public final class PostEditorTextSize {
         update(root, Haiagaru.postEditorTextSizeSp());
         // Fragment views may be attached after the activity's onResume callback.
         root.post(() -> {
-            if (!activity.isFinishing() && !activity.isDestroyed())
+            if (!activity.isFinishing() && !activity.isDestroyed()) {
                 update(root, Haiagaru.postEditorTextSizeSp());
+            }
         });
     }
 

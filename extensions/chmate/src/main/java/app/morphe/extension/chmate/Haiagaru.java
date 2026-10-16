@@ -445,6 +445,7 @@ public final class Haiagaru {
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
                             NativeRestore191.onActivityResumed(activity);
+                            ResponseArchive.onActivityResumed(activity);
                             StringReplacement.reload(activity, false, null);
                         }
                         @Override public void onActivityPaused(Activity activity) { }
@@ -875,6 +876,7 @@ public final class Haiagaru {
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
         ImageVpnController.initialize(appContext);
+        PatrolImages.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
         runtimePackageName = appContext.getPackageName();
@@ -1745,6 +1747,22 @@ public final class Haiagaru {
     public static boolean isCellularNetworkRefreshEnabled() {
         SharedPreferences preferences = preferencesOrNull();
         return preferences == null || preferences.getBoolean("refreshCellularNetwork", true);
+    }
+
+    public static boolean optimize191UpdateProgress() {
+        SharedPreferences settings = preferencesOrNull();
+        return settings == null || settings.getBoolean("optimize191UpdateProgress", true);
+    }
+
+    public static boolean fast191UpdateConnect() {
+        SharedPreferences settings = preferencesOrNull();
+        return settings == null || settings.getBoolean("fast191UpdateConnect", true);
+    }
+
+    public static int update191TimeoutSeconds() {
+        SharedPreferences settings = preferencesOrNull();
+        int value = settings == null ? 0 : settings.getInt("update191TimeoutSeconds", 0);
+        return value == 30 || value == 60 || value == 120 ? value : 0;
     }
 
     /**
@@ -3307,6 +3325,8 @@ public final class Haiagaru {
         int padding = dp(activity, 20);
         layout.setPadding(padding, padding, padding, padding);
 
+        SettingsSections sections = new SettingsSections(layout, "en".equals(text("ja", "en")));
+        sections.begin(SettingsSections.Category.MEDIA);
         if (ImgurWebUpload.supported(activity)) {
             Button imgurLogin = new Button(activity);
             imgurLogin.setText(text("Imgurにログイン／Webアカウント送信（開発中）", "Imgur login / web account uploads (in development)"));
@@ -3319,6 +3339,7 @@ public final class Haiagaru {
             layout.addView(imgurUploads);
         }
 
+        sections.begin(SettingsSections.Category.GENERAL);
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,
                 "Haiagaruの表示言語 / Haiagaru language",
@@ -3326,8 +3347,8 @@ public final class Haiagaru {
                 initialSettingsLanguage);
         TextView settingsLanguageDescription = new TextView(activity);
         settingsLanguageDescription.setText(text(
-                "端末・ChMate本体の言語は変更しません。OKで保存し、次回設定を開くと反映されます。",
-                "Does not change the device or ChMate language. Save with OK; applies when settings are reopened."));
+                "端末・ChMate本体の言語は変更しません。「保存」を押し、次回設定を開くと反映されます。",
+                "Does not change the device or ChMate language. Tap Save; applies when settings are reopened."));
         settingsLanguageDescription.setTextSize(13);
         layout.addView(settingsLanguageDescription, rowParams(activity));
 
@@ -3337,6 +3358,11 @@ public final class Haiagaru {
                 text("広告を削除", "Remove ads"),
                 preferences.getBoolean("hideAd", true)
         );
+        sections.begin(SettingsSections.Category.DISPLAY);
+        Button importThemes = new Button(activity);
+        importThemes.setText(text("自作テーマをファイル／フォルダから取り込む", "Import custom themes from files / folder"));
+        importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
+        layout.addView(importThemes);
         Switch topAlignShortThreads = null;
         if (supportsModernThreadList(activity)) {
             topAlignShortThreads = addSwitch(
@@ -3364,6 +3390,7 @@ public final class Haiagaru {
         Spinner threadTitleSpacing = addSpinner(layout, activity,
                 text("スレ一覧のタイトル行間（標準に対する割合）", "Thread-list title line spacing (relative to default)"),
                 titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
+        sections.begin(SettingsSections.Category.POSTING);
         String[] postSizeChoices = new String[29];
         postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
         for (int index = 1; index < 28; index++)
@@ -3389,6 +3416,7 @@ public final class Haiagaru {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
+        sections.begin(SettingsSections.Category.ADVANCED);
 
         Switch removeMonaKey = addSwitch(
                 layout,
@@ -3426,6 +3454,7 @@ public final class Haiagaru {
                 "chtoio",
                 preferences.getBoolean("chtoio", true)
         );
+        sections.begin(SettingsSections.Category.CHECKER);
         Spinner hissiCheckerMode = addSpinner(
                 layout,
                 activity,
@@ -3445,6 +3474,7 @@ public final class Haiagaru {
                         "Open in dedicated viewer (off: ChMate web view)"),
                 preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
         );
+        sections.begin(SettingsSections.Category.MEDIA);
         Switch imageVpnSetting = null;
         if (ImageVpnController.available()) {
             imageVpnSetting = addSwitch(layout, activity,
@@ -3457,6 +3487,7 @@ public final class Haiagaru {
             layout.addView(warning, rowParams(activity));
         }
         final Switch imageVpnEnabledSetting = imageVpnSetting;
+        PatrolImages.addSettingsButton(layout, activity);
         Switch imageRotationButton = null;
         try {
             String version = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
@@ -3476,6 +3507,10 @@ public final class Haiagaru {
             videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
                     "Dedicated video viewer (select the patch when patching)"));
         }
+        VideoViewerSettings.addSettingsButton(layout, activity);
+        Switch xPostPreview = addSwitch(layout, activity,
+                text("X／Twitterの投稿内容をレス内に表示（追加通信あり）", "Show X/Twitter post text in responses (network access)"),
+                xPostPreviewEnabled());
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
@@ -3494,6 +3529,7 @@ public final class Haiagaru {
                 text("動画サムネイルの取得制限時間（秒、1〜600）", "Video thumbnail download timeout (seconds, 1–600)"),
                 Integer.toString(videoThumbnailTimeoutSeconds()));
         videoThumbnailTimeoutSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        sections.begin(SettingsSections.Category.CHECKER);
         Spinner hissiViewerTheme = addSpinner(
                 layout,
                 activity,
@@ -3533,6 +3569,7 @@ public final class Haiagaru {
                 text("KyodemoのID/ﾜｯﾁｮｲ検索を専用表示", "Enhanced Kyodemo ID/Wacchoi viewer"),
                 preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
         );
+        sections.begin(SettingsSections.Category.DISPLAY);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,
@@ -3543,9 +3580,20 @@ public final class Haiagaru {
         Switch keepFilterPosition = addSwitch(layout, activity,
                 "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
                 preferences.getBoolean("keepQuickFilterPosition", false));
+        sections.begin(SettingsSections.Category.NG);
         Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
                 "ワッチョイ長押しメニューをNG登録優先の順番にする",
                 preferences.getBoolean("wacchoiNgFirstMenu", false));
+        Switch hideShowHiddenNgMenu = addSwitch(layout, activity,
+                text("右上メニューの「非表示NGを表示」を隠す", "Hide Show hidden NG in the overflow menu"),
+                preferences.getBoolean("hideShowHiddenNgMenu", false));
+        TextView hiddenNgMenuDescription = new TextView(activity);
+        hiddenNgMenuDescription.setText(text(
+                "メニュー項目だけを隠します。NG登録やレスの表示状態は変更しません。変更は次にメニューを開いたときに反映します。",
+                "Hides only the menu action, without changing NG rules or response visibility. Applies the next time the menu opens."));
+        hiddenNgMenuDescription.setTextSize(13);
+        layout.addView(hiddenNgMenuDescription, rowParams(activity));
+        sections.begin(SettingsSections.Category.DISPLAY);
         final boolean initialHideNgThreadGroup = hideNgThreadGroup();
         Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
                 text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
@@ -3575,6 +3623,7 @@ public final class Haiagaru {
                 text("エッヂのスレタイ末尾に記者IDを表示", "Show Edge reporter IDs in thread titles"),
                 preferences.getBoolean("edgeReporterId", true)
         );
+        sections.begin(SettingsSections.Category.ADVANCED);
         Switch forceHttps = addSwitch(
                 layout,
                 activity,
@@ -3588,12 +3637,45 @@ public final class Haiagaru {
         ));
         httpsDescription.setTextSize(13);
         layout.addView(httpsDescription, rowParams(activity));
+        Switch update191Progress = null;
+        Switch update191Connect = null;
+        Spinner update191Timeout = null;
+        if ("0.8.10.191 dev".equals(chMateVersion)) {
+            update191Connect = addSwitch(layout, activity,
+                    text("191の代替IPへの切り替えを速くする", "Faster alternative IP fallback (191)"),
+                    fast191UpdateConnect());
+            TextView connectDescription = new TextView(activity);
+            connectDescription.setText(text(
+                    "板・スレ取得で複数の接続先IPがある場合、約250ms後に次のTCP接続も並行して試します。取得時間は回線や接続先に依存します。投稿・画像取得・プロキシ経由・TLS認証は変更しません。オフで従来の逐次接続に戻ります。次の新規接続から反映します。",
+                    "For board/thread GETs with multiple direct IPs, starts another TCP connection after about 250ms. Actual load time depends on the network and server. Leaves posting, media, proxies and TLS verification unchanged. Turn off to restore sequential connections; applies to new connections."));
+            connectDescription.setTextSize(13);
+            layout.addView(connectDescription, rowParams(activity));
+            update191Progress = addSwitch(layout, activity,
+                    text("191の更新進捗通知をまとめる", "Coalesce update progress notifications (191)"),
+                    optimize191UpdateProgress());
+            int timeoutChoice = update191TimeoutSeconds() == 30 ? 1
+                    : update191TimeoutSeconds() == 60 ? 2 : update191TimeoutSeconds() == 120 ? 3 : 0;
+            update191Timeout = addSpinner(layout, activity,
+                    text("191の板・スレ取得の通信全体の上限", "Overall board/thread call timeout (191)"),
+                    new String[]{text("変更しない", "Unchanged"), "30s", "60s", "120s"}, timeoutChoice);
+            TextView updateDescription = new TextView(activity);
+            updateDescription.setText(text(
+                    "進捗の途中表示だけを最大毎秒10回にまとめます。受信データ・完了通知は省略しません。通信上限は次の取得から適用し、投稿・画像取得には適用しません。DNS等のOS処理は直ちに中断できない場合があります。",
+                    "Coalesces intermediate progress to at most 10 updates/second without dropping data or completion. The optional call timeout applies to subsequent standard thread/board GETs, not posts or media. OS operations such as DNS may not stop immediately."));
+            updateDescription.setTextSize(13);
+            layout.addView(updateDescription, rowParams(activity));
+        }
+        final Switch update191ProgressSetting = update191Progress;
+        final Switch update191ConnectSetting = update191Connect;
+        final Spinner update191TimeoutSetting = update191Timeout;
+        sections.begin(SettingsSections.Category.ARCHIVE);
         Switch automaticDat = addSwitch(
                 layout,
                 activity,
                 text("自動DAT取得", "Automatic DAT retrieval"),
                 preferences.getBoolean("automaticDat", true)
         );
+        sections.begin(SettingsSections.Category.POSTING);
         Switch refreshCellularNetwork = addSwitch(
                 layout,
                 activity,
@@ -3626,6 +3708,7 @@ public final class Haiagaru {
         bypassPostPreflightDescription.setTextSize(13);
         layout.addView(bypassPostPreflightDescription, rowParams(activity));
 
+        sections.begin(SettingsSections.Category.HISTORY);
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
         final int savedPostHistoryCount = chMatePreferences.getInt(
@@ -3676,6 +3759,7 @@ public final class Haiagaru {
         final EditText postedThreadDisplayCount = postedThreads;
         final HistoryLimits.Settings historyLimits = HistoryLimits.addSettings(layout, activity);
 
+        sections.begin(SettingsSections.Category.NG);
         EditText ngRegistrationLimit = addTextField(
                 layout,
                 activity,
@@ -3745,6 +3829,11 @@ public final class Haiagaru {
         final Switch copipeNg2 = copipeNg2Value;
         final Switch arashiNg = arashiNgValue;
 
+        sections.begin(SettingsSections.Category.ARCHIVE);
+        Button responseArchive = new Button(activity);
+        responseArchive.setText(text("レスのアーカイブを開く", "Open saved responses"));
+        responseArchive.setOnClickListener(v -> ResponseArchive.showList(activity));
+        layout.addView(responseArchive);
         EditText archiveRouteTemplatesValue = null;
         try {
             archiveRouteTemplatesValue = addArchiveRouteControl(
@@ -3779,14 +3868,17 @@ public final class Haiagaru {
                 "archived-thread preset",
                 () -> addArchiveSearchPresetControl(activity, layout)
         );
+        sections.begin(SettingsSections.Category.BACKUP);
         addOptionalSettingsSection(
                 "package data migration",
                 () -> addPackageMigrationControl(activity, layout)
         );
+        sections.begin(SettingsSections.Category.ADVANCED);
         addOptionalSettingsSection(
                 "duplicate board cleanup",
                 () -> addBoardDuplicateCleanupControl(activity, layout)
         );
+        sections.begin(SettingsSections.Category.NG);
         addOptionalSettingsSection(
                 "programmable NG",
                 () -> ProgrammableNgController.addSettingsButton(layout, activity)
@@ -3795,10 +3887,12 @@ public final class Haiagaru {
                 "native NG management",
                 () -> NgManagement.addSettingsButton(layout, activity)
         );
+        sections.begin(SettingsSections.Category.BACKUP);
         addOptionalSettingsSection(
                 "local/optional MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
+        sections.begin(SettingsSections.Category.DISPLAY);
         if (StringReplacement.supported(activity)) {
             Button replaceStrings = new Button(activity);
             replaceStrings.setText("本文の文字列置換（外部TXT）");
@@ -3807,6 +3901,7 @@ public final class Haiagaru {
             layout.addView(replaceStrings, rowParams(activity));
         }
 
+        sections.finish();
         ScrollView scrollView = new ScrollView(activity);
         scrollView.addView(layout);
 
@@ -3817,11 +3912,16 @@ public final class Haiagaru {
                 .setTitle("Haiagaru")
                 .setCancelable(true)
                 .setView(scrollView)
-                .setPositiveButton(text("OK", "OK"), (dialog, which) -> {
-                    if (!historyLimits.validate()) return;
+                .setPositiveButton(text("保存", "Save"), null)
+                .setNegativeButton(text("キャンセル", "Cancel"), null)
+                .create();
+        settingsDialog.setOnShowListener(ignored -> settingsDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(saveView -> {
+                    if (!historyLimits.validate()) { sections.revealCategory(SettingsSections.Category.HISTORY); return; }
                     int displayCount = postedThreadDisplayCount == null ? getPostedThreadDisplayCountSetting()
                             : PostedThreadCountValue.parse(value(postedThreadDisplayCount));
                     if (displayCount < 0) {
+                        if (postedThreadDisplayCount != null) sections.reveal(postedThreadDisplayCount);
                         Toast.makeText(activity, text("書き込んだスレの表示数は0〜10000で入力してください（0は無制限）。設定は保存されませんでした。",
                                 "Enter 0 to 10000 (0: unlimited). Settings were not saved."), Toast.LENGTH_LONG).show();
                         return;
@@ -3830,6 +3930,7 @@ public final class Haiagaru {
                     float selectedPostSize = postSizeChoice == 0 ? 0 : postSizeChoice == 28
                             ? PostEditorSizeValue.parse(value(customPostSize)) : postSizeChoice + 9;
                     if (selectedPostSize < 0) {
+                        sections.reveal(customPostSize);
                         Toast.makeText(activity, text("文字サイズは1〜200spの数値で入力してください。設定は保存されませんでした。",
                                 "Enter a text size from 1 to 200sp. Settings were not saved."), Toast.LENGTH_LONG).show();
                         return;
@@ -3899,6 +4000,7 @@ public final class Haiagaru {
                     preferences.edit()
                             .putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition()))
                             .putBoolean("archiveThreadStandalone", archiveThreadStandalone.isChecked())
+                            .putBoolean("xPostPreviewEnabled", xPostPreview.isChecked())
                             .putInt(POSTED_THREAD_DISPLAY_COUNT_KEY, displayCount)
                             .putBoolean("hideAd", hideAd.isChecked())
                             .putBoolean("topAlignShortThreads", topAlignShortThreadsSwitch != null
@@ -3909,6 +4011,12 @@ public final class Haiagaru {
                             .putString("prefMonaKeyName", value(monaKeyName))
                             .putString("adClass", value(adClass).trim())
                             .putBoolean("chtoio", chtoio.isChecked())
+                            .putBoolean("optimize191UpdateProgress", update191ProgressSetting == null
+                                    ? optimize191UpdateProgress() : update191ProgressSetting.isChecked())
+                            .putBoolean("fast191UpdateConnect", update191ConnectSetting == null
+                                    ? fast191UpdateConnect() : update191ConnectSetting.isChecked())
+                            .putInt("update191TimeoutSeconds", update191TimeoutSetting == null
+                                    ? update191TimeoutSeconds() : new int[]{0, 30, 60, 120}[update191TimeoutSetting.getSelectedItemPosition()])
                             .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
                             .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
                             .putBoolean("imageVpnEnabled", imageVpnEnabledSetting != null && imageVpnEnabledSetting.isChecked())
@@ -3935,6 +4043,7 @@ public final class Haiagaru {
                             .putBoolean("compactQuickFilters", compactQuickFiltersSwitch != null && compactQuickFiltersSwitch.isChecked())
                             .putBoolean("keepQuickFilterPosition", keepFilterPosition.isChecked())
                             .putBoolean("wacchoiNgFirstMenu", wacchoiNgFirstMenu.isChecked())
+                            .putBoolean("hideShowHiddenNgMenu", hideShowHiddenNgMenu.isChecked())
                             .putBoolean("hideNgThreadGroup", hideNgThreadGroupSwitch.isChecked())
                             .putBoolean("readThreadsFirst", readThreadsFirstSwitch == null
                                     ? ReadThreadsFirst.enabled() : readThreadsFirstSwitch.isChecked())
@@ -3963,6 +4072,7 @@ public final class Haiagaru {
                                 .commit();
                     }
 
+                    EmojiFontFallback.refreshVisibleRows();
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
                     boolean historyLimitsChanged = historyLimits.save();
                     boolean imageVpnChanged = ImageVpnController.enabled() != preferences.getBoolean("imageVpnEnabled", false);
@@ -3976,8 +4086,9 @@ public final class Haiagaru {
                         Toast.makeText(activity, text("表示言語を変更しました。設定を開き直すと反映されます。",
                                 "Language saved. Reopen settings to apply."), Toast.LENGTH_SHORT).show();
                     }
-                })
-                .show();
+                    settingsDialog.dismiss();
+                }));
+        settingsDialog.show();
         // Back dismisses without saving; accidental taps outside keep settings open.
         settingsDialog.setCanceledOnTouchOutside(false);
     }
@@ -4715,6 +4826,11 @@ public final class Haiagaru {
         return context == null ? null : preferences(context);
     }
 
+    public static boolean hideShowHiddenNgMenu() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("hideShowHiddenNgMenu", false);
+    }
+
     /** 0=automatic, 1=hissi.org, 2=Kyodemo, 3=both. Shared by all supported ChMate versions. */
     public static int hissiCheckerMode() {
         SharedPreferences prefs = preferencesOrNull();
@@ -4811,6 +4927,11 @@ public final class Haiagaru {
     public static int videoThumbnailTimeoutSeconds() {
         SharedPreferences prefs = preferencesOrNull();
         return Math.max(1, Math.min(600, prefs == null ? 20 : prefs.getInt("videoThumbnailTimeoutSeconds", 20)));
+    }
+
+    public static boolean xPostPreviewEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("xPostPreviewEnabled", false);
     }
 
     static void refreshImgurAttachments() {

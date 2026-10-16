@@ -10,7 +10,9 @@ import android.widget.Toast;
 
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -22,10 +24,10 @@ public final class HaiagaruLocalBackupActivity extends Activity {
     public static final int MODE_SAVE = 1;
     public static final int MODE_OPEN = 2;
     private static final int REQUEST_DOCUMENT = 1;
-    private static final int MAX_BYTES = 32 * 1024 * 1024;
     private int mode;
     private int categories;
     private boolean pickerStarted;
+    private HaiagaruBackupArchive.Backup openedBackup;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -49,14 +51,13 @@ public final class HaiagaruLocalBackupActivity extends Activity {
         Intent picker = new Intent(mode == MODE_SAVE
                 ? Intent.ACTION_CREATE_DOCUMENT : Intent.ACTION_OPEN_DOCUMENT);
         picker.addCategory(Intent.CATEGORY_OPENABLE);
-        picker.setType("application/json");
+        picker.setType("application/zip");
         if (mode == MODE_SAVE) {
             picker.putExtra(Intent.EXTRA_TITLE, "haiagaru-backup-" +
-                    new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.ROOT)
-                            .format(new java.util.Date()) + ".json");
+                    BackupTime.filename(System.currentTimeMillis()) + ".zip");
         } else {
             picker.setType("*/*");
-            picker.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain"});
+            picker.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/zip", "application/x-zip-compressed", "application/json", "text/plain", "application/octet-stream"});
         }
         try {
             pickerStarted = true;
@@ -84,43 +85,41 @@ public final class HaiagaruLocalBackupActivity extends Activity {
             return;
         }
         run("端末のファイルにバックアップしました", () -> {
-            byte[] snapshot = HaiagaruSyncSnapshot.capture(getApplicationContext(), categories);
-            try (ParcelFileDescriptor file = getContentResolver().openFileDescriptor(uri, "wt")) {
+            File snapshot = HaiagaruBackupArchive.capture(getApplicationContext(), categories);
+            try (ParcelFileDescriptor file = getContentResolver().openFileDescriptor(uri, "wt");
+                 InputStream input = new FileInputStream(snapshot)) {
                 if (file == null) throw new IOException("保存先を開けませんでした");
                 try (OutputStream output = new ParcelFileDescriptor.AutoCloseOutputStream(file)) {
-                    output.write(snapshot);
+                    HaiagaruBackupArchive.copy(input, output);
                     output.flush();
                 }
-            }
+            } finally { snapshot.delete(); }
         });
     }
 
     private void open(Uri uri) {
         run(null, () -> {
-            byte[] bytes;
-            try (InputStream input = getContentResolver().openInputStream(uri)) {
+            File temporary = HaiagaruBackupArchive.temporary(this);
+            boolean transferred = false;
+            try (InputStream input = getContentResolver().openInputStream(uri);
+                 OutputStream output = new FileOutputStream(temporary)) {
                 if (input == null) throw new IOException("ファイルを開けませんでした");
-                ByteArrayOutputStream output = new ByteArrayOutputStream();
-                byte[] buffer = new byte[8192];
-                int read;
-                while ((read = input.read(buffer)) != -1) {
-                    if (output.size() + read > MAX_BYTES) throw new IOException("32 MiBを超えるバックアップです");
-                    output.write(buffer, 0, read);
-                }
-                bytes = output.toByteArray();
-            }
-            JSONObject snapshot = HaiagaruSyncSnapshot.validate(bytes);
-            runOnUiThread(() -> confirmRestore(snapshot));
+                HaiagaruBackupArchive.copy(input, output);
+                transferred = true;
+            } finally { if (!transferred) temporary.delete(); }
+            HaiagaruBackupArchive.Backup backup = HaiagaruBackupArchive.read(this, temporary);
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) backup.close();
+                else { openedBackup = backup; confirmRestore(backup); }
+            });
         });
     }
 
-    private void confirmRestore(JSONObject snapshot) {
+    private void confirmRestore(HaiagaruBackupArchive.Backup backup) {
+        JSONObject snapshot = backup.snapshot;
         int available = snapshot.optInt("categories", 0) & HaiagaruSyncSnapshot.ALL;
-        int[] bits = {HaiagaruSyncSnapshot.BOOKMARKS, HaiagaruSyncSnapshot.NG,
-                HaiagaruSyncSnapshot.SETTINGS, HaiagaruSyncSnapshot.POST_HISTORY,
-                HaiagaruSyncSnapshot.KAKIKOMI, HaiagaruSyncSnapshot.COOKIES};
-        String[] names = {"お気に入り・閲覧履歴", "NG設定", "ChMate・Haiagaru設定",
-                "書き込み履歴", "書き込みメモ", "Cookie（ログイン情報を含む）"};
+        int[] bits = HaiagaruMegaSync.CATEGORY_BITS;
+        String[] names = HaiagaruMegaSync.CATEGORY_NAMES.clone();
         boolean[] selected = new boolean[bits.length];
         for (int index = 0; index < bits.length; index++) {
             boolean present = (available & bits[index]) != 0;
@@ -129,18 +128,19 @@ public final class HaiagaruLocalBackupActivity extends Activity {
         }
         String summary;
         try {
-            summary = HaiagaruSyncSnapshot.describeChanges(getApplicationContext(),
-                    snapshot, available, false);
+            summary = HaiagaruMegaSync.buildChangeSummary(getApplicationContext(), snapshot, available);
         } catch (Exception error) {
             showError("変更内容を確認できませんでした");
             return;
         }
         new AlertDialog.Builder(this).setTitle("端末のバックアップから復元")
-                .setMessage("復元前に現在のデータをアプリ内へ退避します。\n\n" + summary
-                        + "\nCookieはログイン情報を含み、別端末では再ログインが必要な場合があります。")
                 .setMultiChoiceItems(names, selected, (dialog, index, checked) ->
                         selected[index] = checked && (available & bits[index]) != 0)
                 .setNegativeButton("キャンセル", (dialog, which) -> finish())
+                .setNeutralButton("内容・注意事項", (d, w) -> new AlertDialog.Builder(this)
+                        .setMessage("復元前に現在のデータをアプリ内へ退避します。\n" + summary + "\n" + HaiagaruBackupSecrets.WARNING)
+                        .setPositiveButton("項目選択に戻る", (info, chosen) -> confirmRestore(backup))
+                        .setOnCancelListener(info -> finish()).show())
                 .setPositiveButton("復元", (dialog, which) -> {
                     int flags = 0;
                     for (int index = 0; index < bits.length; index++) {
@@ -151,8 +151,14 @@ public final class HaiagaruLocalBackupActivity extends Activity {
                         return;
                     }
                     final int chosen = flags;
-                    run("復元しました。ChMateを再起動してください", () ->
-                            HaiagaruSyncSnapshot.restore(getApplicationContext(), snapshot, chosen));
+                    HaiagaruMegaSync.confirmSensitive(this, chosen, () -> {
+                    openedBackup = null; // Worker owns the temporary file from here.
+                    run("復元しました。ChMateを再起動してください", () -> {
+                        try (HaiagaruBackupArchive.Backup owned = backup) {
+                            HaiagaruBackupArchive.restore(getApplicationContext(), backup, chosen, false);
+                        }
+                    });
+                    }, this::finish);
                 })
                 .setOnCancelListener(dialog -> finish()).show();
     }
@@ -176,6 +182,11 @@ public final class HaiagaruLocalBackupActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("バックアップを処理できませんでした")
                 .setMessage(message).setPositiveButton("閉じる", (dialog, which) -> finish())
                 .setOnCancelListener(dialog -> finish()).show();
+    }
+
+    @Override protected void onDestroy() {
+        if (openedBackup != null) { openedBackup.close(); openedBackup = null; }
+        super.onDestroy();
     }
 
     private interface Operation { void perform() throws Exception; }

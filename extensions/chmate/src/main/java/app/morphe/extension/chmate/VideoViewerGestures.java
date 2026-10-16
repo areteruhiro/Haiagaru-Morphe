@@ -13,6 +13,7 @@ public final class VideoViewerGestures {
     private Method touch, distance;
     private boolean tracking, intercepted;
     private boolean closed;
+    private boolean cancelling;
 
     // Replaced by the optional patch after fingerprinting the target APK.
     public static String recognizerClassName() { return ""; }
@@ -34,7 +35,7 @@ public final class VideoViewerGestures {
                     if (method.getName().equals("equals")) return proxy == args[0];
                     return "HaiagaruVideoGestureListener";
                 }
-                if (!closed && args != null && args.length == 3 && args[0] instanceof Integer)
+                if (!closed && !cancelling && args != null && args.length == 3 && args[0] instanceof Integer)
                     complete((Integer) args[0]);
                 return null;
             });
@@ -99,13 +100,14 @@ public final class VideoViewerGestures {
         }
     }
 
-    void close() {
-        closed = true;
+    void cancel() {
         if (recognizer != null && touch != null) {
             MotionEvent cancel = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
+            cancelling = true;
             try { touch.invoke(recognizer, cancel); } catch (ReflectiveOperationException | RuntimeException ignored) { }
-            finally { cancel.recycle(); }
+            finally { cancelling = false; cancel.recycle(); }
         }
-        tracking = false;
+        tracking = intercepted = false;
     }
+    void close() { closed = true; cancel(); }
 }

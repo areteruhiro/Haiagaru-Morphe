@@ -66,6 +66,20 @@ public final class ImgurAlbumAttachments {
 
     private ImgurAlbumAttachments() {}
 
+    /** Background patrol may wait for its own metadata, not unrelated on-screen requests. */
+    static boolean pendingFor(java.util.Collection<?> models) {
+        java.util.Set<Object> targets = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        targets.addAll(models);
+        synchronized (CACHE) {
+            for (Entry entry : CACHE.values()) {
+                if (!entry.pending) continue;
+                for (Subscriber subscriber : entry.subscribers)
+                    if (targets.contains(subscriber.model.get())) return true;
+            }
+        }
+        return false;
+    }
+
     /** Called after native extraction, so a fast metadata response cannot replace its results. */
     public static String[] complete(Object model, String[] original) {
         if (model == null || original == null) return original;
@@ -258,10 +272,8 @@ public final class ImgurAlbumAttachments {
         boolean xPost = id.startsWith("x:");
         boolean instagramPost = id.startsWith("ig:");
         try {
-            String json = fetch(instagramPost
+            String json = xPost ? XPostMetadata.fetch(id.substring(2)) : fetch(instagramPost
                     ? "https://www.instagram.com/p/" + id.substring(3) + "/embed/"
-                    : xPost
-                    ? "https://cdn.syndication.twimg.com/tweet-result?id=" + id.substring(2) + "&lang=ja&token=0"
                     : "https://imgur.com/ajaxalbums/getimages/" + id + "/hit.json");
             if (json != null) images = instagramPost ? InstagramMediaAttachments.fromHtml(json, id.substring(3))
                     : xPost ? XMediaAttachments.fromJson(json, id.substring(2)) : imagesFromJson(json);
