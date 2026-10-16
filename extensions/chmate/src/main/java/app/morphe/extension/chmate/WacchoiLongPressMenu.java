@@ -84,6 +84,15 @@ public final class WacchoiLongPressMenu {
     private static String combinedClickableOwner;
     public static void configureCombinedClickable(String owner) { combinedClickableOwner = owner; }
 
+    private static final class SuffixRowBinding {
+        final boolean clickable, longClickable, addedClick;
+        SuffixRowBinding(android.view.View row) {
+            clickable = row.isClickable();
+            longClickable = row.isLongClickable();
+            addedClick = !row.hasOnClickListeners();
+        }
+    }
+
     /** Called by native adapter bind hooks; never changes unrelated rows. */
     public static void bindSuffixRow(Object adapter, int position, android.view.View row) {
         if (!(adapter instanceof android.widget.Adapter) || row == null) return;
@@ -101,10 +110,40 @@ public final class WacchoiLongPressMenu {
             final Runnable selected = action;
             // Only clear a listener installed by us when a row is recycled.
             if (selected != null) {
-                row.setTag(0x7e000076, Boolean.TRUE);
+                Object previous = row.getTag(0x7e000076);
+                SuffixRowBinding binding = previous instanceof SuffixRowBinding
+                        ? (SuffixRowBinding) previous : new SuffixRowBinding(row);
+                row.setTag(0x7e000076, binding);
+                if (binding.addedClick) {
+                    // A long-clickable child consumes ACTION_UP before ListView
+                    // can dispatch it. Forward via the current parent/position so
+                    // native popup dismissal and MenuItem dispatch still run.
+                    row.setOnClickListener(v -> {
+                        android.view.ViewParent parent = v.getParent();
+                        while (parent != null) {
+                            if (parent instanceof android.widget.AdapterView) {
+                                android.widget.AdapterView<?> list = (android.widget.AdapterView<?>) parent;
+                                int current = list.getPositionForView(v);
+                                if (current != android.widget.AdapterView.INVALID_POSITION
+                                        && list.getOnItemClickListener() != null) {
+                                    list.performItemClick(v, current, list.getItemIdAtPosition(current));
+                                    return;
+                                }
+                            }
+                            parent = parent.getParent();
+                        }
+                    });
+                }
                 row.setOnLongClickListener(v -> { selected.run(); return true; });
-            } else if (Boolean.TRUE.equals(row.getTag(0x7e000076))) {
-                row.setOnLongClickListener(null); row.setLongClickable(false); row.setTag(0x7e000076, null);
+            } else if (row.getTag(0x7e000076) instanceof SuffixRowBinding) {
+                SuffixRowBinding binding = (SuffixRowBinding) row.getTag(0x7e000076);
+                if (binding.addedClick) {
+                    row.setOnClickListener(null);
+                    row.setClickable(binding.clickable);
+                }
+                row.setOnLongClickListener(null);
+                row.setLongClickable(binding.longClickable);
+                row.setTag(0x7e000076, null);
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("Haiagaru", "NG suffix long press row", error);
