@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
+import android.view.MotionEvent;
 import android.widget.*;
 
 /** User-visible streaming player. No WebView, login cookies or automatic retries. */
@@ -23,6 +24,14 @@ public final class VideoViewerActivity extends Activity {
     private int position;
     private boolean prepared, foreground, playWhenReady = true;
     private boolean rotated;
+    private VideoViewerGestures gestures;
+
+    public static boolean installed(Context context) {
+        if (context == null) return false;
+        try (java.io.InputStream marker = context.getAssets().open("haiagaru/video-viewer/installed")) {
+            return marker.read() == '1';
+        } catch (java.io.IOException ignored) { return false; }
+    }
 
     /** Called only at native external-launch boundaries, never at the external menu below. */
     public static void prepareExternalIntent(Intent intent) {
@@ -38,6 +47,7 @@ public final class VideoViewerActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        if (!Haiagaru.videoViewerEnabled()) { finish(); return; }
         Uri uri = getIntent().getData();
         if (uri == null || !XMediaAttachments.isVideo(uri.toString())) { finish(); return; }
         url = uri.toString();
@@ -123,6 +133,39 @@ public final class VideoViewerActivity extends Activity {
         status.setText("動画を読み込み中…（通信が発生します）");
         video.setVideoURI(Uri.parse(url));
     }
+
+    @Override public boolean dispatchTouchEvent(MotionEvent event) {
+        if (gestures != null && gestures.dispatch(event, video)) return true;
+        return super.dispatchTouchEvent(event);
+    }
+    boolean dispatchVideoTouch(MotionEvent event) { return super.dispatchTouchEvent(event); }
+    boolean isVideoToolbarTouch(float x, float y) {
+        if (toolbar == null || toolbar.getVisibility() != View.VISIBLE) return false;
+        int[] p = new int[2]; toolbar.getLocationOnScreen(p);
+        return x >= p[0] && x < p[0] + toolbar.getWidth() && y >= p[1] && y < p[1] + toolbar.getHeight();
+    }
+    void performVideoGesture(String key) {
+        switch (key) {
+            case "gestureBack": case "gestureCloseTab": finish(); break;
+            case "gestureTop": if (prepared) video.seekTo(0); break;
+            case "gestureBottom": if (prepared) video.seekTo(Math.max(0, video.getDuration() - 1)); break;
+            case "gestureRefresh":
+                if (prepared) position = video.getCurrentPosition();
+                video.stopPlayback(); playWhenReady = true; load(); break;
+            case "gestureFullScreen":
+                if (controls.isShowing()) controls.hide(); else controls.show(0); break;
+            case "gestureSetting":
+                try { startActivity(new Intent(this, Class.forName("jp.syoboi.a2chMate.activity.SettingActivity", false, getClassLoader()))); }
+                catch (ReflectiveOperationException | RuntimeException error) {
+                    Toast.makeText(this, "設定を開けませんでした", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case NgEditGesture.KEY: NgEditGesture.handle(video, 0x48690042); break;
+            // No next-video/forward history exists in a single-video viewer.
+            case "gestureForward": Toast.makeText(this, "次の動画はありません", Toast.LENGTH_SHORT).show(); break;
+            default: break;
+        }
+    }
     private void showMenu(View anchor) {
         controls.show(0);
         PopupMenu menu = new PopupMenu(this, anchor);
@@ -170,12 +213,14 @@ public final class VideoViewerActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        if (video != null) gestures = new VideoViewerGestures(this);
         if (prepared && playWhenReady) video.start();
     }
     @Override protected void onPause() {
         foreground = false; pausePlayback();
         // Returning from another app should resume only on the user's play action.
         playWhenReady = false;
+        if (gestures != null) gestures.close();
         if (controls != null) controls.hide();
         super.onPause();
     }
@@ -185,6 +230,7 @@ public final class VideoViewerActivity extends Activity {
         state.putBoolean("rotated", rotated); super.onSaveInstanceState(state);
     }
     @Override protected void onDestroy() {
+        if (gestures != null) gestures.close();
         if (controls != null) controls.hide();
         if (video != null) video.stopPlayback();
         super.onDestroy();

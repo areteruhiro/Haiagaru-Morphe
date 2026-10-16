@@ -37,6 +37,18 @@ public final class ImgurWebLoginActivity extends Activity {
         });
         enabled = new Switch(this); enabled.setText("Imgur Webのログイン済みアカウントで送信（開発中）");
         enabled.setChecked(ImgurWebUpload.enabled()); root.addView(enabled);
+        Switch history = new Switch(this); history.setText("ログイン送信をChMateの画像アップロード履歴に残す");
+        history.setChecked(ImgurUploadHistory.nativeEnabled(this)); root.addView(history);
+        history.setOnCheckedChangeListener((view, checked) -> ImgurWebUpload.prefs(this).edit()
+                .putBoolean("nativeUploadHistory", checked).apply());
+        Switch threads = new Switch(this); threads.setText("投稿一覧にアップロード元スレを記録・表示する");
+        threads.setChecked(ImgurUploadHistory.threadsEnabled(this)); root.addView(threads);
+        threads.setOnCheckedChangeListener((view, checked) -> ImgurWebUpload.prefs(this).edit()
+                .putBoolean("uploadThreadHistory", checked).apply());
+        TextView historyNote = new TextView(this);
+        historyNote.setText("変更後に成功した送信が対象です。オフでも既存履歴は削除しません。"
+                + "スレ記録は端末内のみ（最大1000件）。掲示板への投稿完了を保証する記録ではありません。");
+        root.addView(historyNote);
         status = new TextView(this);
         status.setText("この画面でImgurにログインしてください。Chrome等とはセッションを共有しません。"
                 + "\n有効時は認証失敗でも匿名送信しません。Web仕様変更・追加認証により使えない場合があります。"

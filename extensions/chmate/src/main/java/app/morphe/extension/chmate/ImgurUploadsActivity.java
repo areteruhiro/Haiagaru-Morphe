@@ -81,6 +81,7 @@ public final class ImgurUploadsActivity extends Activity {
             try {
                 ImgurWebUpload.UploadPage snapshot = ImgurWebUpload.uploadPage(page);
                 org.json.JSONArray rows = snapshot.rows;
+                java.util.Map<String, java.util.List<String>> threads = ImgurUploadHistory.threads(this, snapshot.accountId);
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed() || uploadsGeneration != generation) return;
                     heading.setText("Imgurアップロード一覧（非公開画像・動画を含む）\n" + (page + 1) + "ページ目");
@@ -156,6 +157,20 @@ public final class ImgurUploadsActivity extends Activity {
                             }
                         });
                         uploadsRows.addView(copy);
+                        java.util.List<String> related = threads.get(url);
+                        if (ImgurUploadHistory.threadsEnabled(this) && related != null && !related.isEmpty()) {
+                            TextView note = new TextView(this);
+                            note.setText("アップロード元スレ（掲示板への投稿完了は未確認）"); uploadsRows.addView(note);
+                            for (String thread : related) button(uploadsRows, thread, () -> {
+                                try {
+                                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse(thread));
+                                    intent.setClass(this, OpenUrlActivity.class); startActivity(intent);
+                                } catch (RuntimeException error) {
+                                    Toast.makeText(this, "スレを開けませんでした", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     }
                     all.setEnabled(!choices.isEmpty());
                     uploadsView.scrollTo(0, 0);

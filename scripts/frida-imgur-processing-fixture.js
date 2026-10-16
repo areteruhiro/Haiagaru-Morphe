@@ -27,8 +27,8 @@ Java.perform(function () {
                 let data;
                 if(path==='/3/account/me') data={id:123,url:'FixtureUser'};
                 else if(path.startsWith('/3/account/me/images/')) data=[payload,{id:'Pending',processing:true},{id:'Png123',link:'https://i.imgur.com/Png123.png',processing:false}];
-                else if(path==='/3/upload'){posts++;data=Object.assign({},payload,{processing:true});}
-                else if(path==='/3/image/Test123'){polls++;data=Object.assign({},payload,{processing:mode==='timeout',account_id:null,account_url:null,deletehash:null});}
+                else if(path==='/3/upload'){posts++;data=Object.assign({},payload,{processing:{status:'pending'}});}
+                else if(path==='/3/image/Test123'){polls++;data=Object.assign({},payload,{processing:{status:mode==='timeout'?'pending':'completed'},account_id:null,account_url:null,deletehash:null});}
                 else throw Error('Unrecognized mock path: '+path);
                 const bytes=J.$new(JSON.stringify({success:true,data:data})).getBytes('UTF-8');
                 return Java.use('java.io.ByteArrayInputStream').$new(bytes);

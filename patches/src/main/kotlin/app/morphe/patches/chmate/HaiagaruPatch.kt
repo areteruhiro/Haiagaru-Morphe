@@ -2,6 +2,7 @@ package app.morphe.patches.chmate
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.ApkFileType
@@ -1065,6 +1066,28 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
             }
         }
         check(hooks == 1) { "$version filter container anchor count=$hooks" }
+        if (version == "0.8.10.226 dev") {
+            // ListView measures a zero-height row with UNSPECIFIED height, unlike
+            // RecyclerView. Let Compose initialize/measure, then collapse only the
+            // explicitly registered filter row. Do not suppress state subscriptions.
+            val composeBase = mutableClassDefBy(mutableClassDefBy(viewType).superclass!!)
+            val measure = composeBase.methods.single {
+                it.name == "onMeasure" && it.parameterTypes == listOf("I", "I") && it.returnType == "V"
+            }
+            val exits = measure.implementation!!.instructions.withIndex()
+                .filter { it.value.opcode == Opcode.RETURN_VOID }.toList()
+            check(exits.size == 1) { "226 Compose measurement exit changed" }
+            val originalReturn = exits.single().value
+            measure.addInstructionsWithLabels(exits.single().index, """
+                invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/QuickFilterToolbar;->shouldCollapseMeasuredFilterRow(Landroid/view/View;)Z
+                move-result p1
+                if-eqz p1, :haiagaru_filter_measure_done
+                invoke-virtual {p0}, Landroid/view/View;->getMeasuredWidth()I
+                move-result p1
+                const/4 p2, 0x0
+                invoke-virtual {p0, p1, p2}, Landroid/view/View;->setMeasuredDimension(II)V
+            """.trimIndent(), ExternalLabel("haiagaru_filter_measure_done", originalReturn))
+        }
         // Keep Compose initialization and state subscriptions active. Only the
         // dedicated row's measured height changes, with its original height restored on OFF.
         return
@@ -1627,6 +1650,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
 
         when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> {
+                patchLegacySettingsPaneDivider("Lo/pq;")
+                patchLegacyExternalWebSearch191()
                 patchLegacyBeResponseBody(
                     "Lo/processAdDisplayErrorPostbackForUserError;", "c")
                 patchProgrammableNg191()
@@ -1645,6 +1670,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
                 patchLegacyCellularSocketRefresh()
             }
             "0.8.10.226 dev" -> {
+                patchLegacySettingsPaneDivider("Lo/onDenied;")
                 patchUpliftIntegrityComparison("Lo/OpenJSSEPlatformCompanion;", "d", "Lo/OpenJSSEPlatformCompanion\$IconCompatParcelizer;")
                 patchUpliftIntegrityComparison("Lo/OpenJSSEPlatformCompanion;", "j", "[Ljava/lang/Object;", returnType = "Ljava/lang/Object;")
                 patchLiteralDiagnosticSubstring242(
@@ -1978,13 +2004,45 @@ private fun BytecodePatchContext.patchAboutLogoThemeColor226() {
     """.trimIndent())
 }
 
+/** A search has no result to return and must not share ChMate's activity task. */
+private fun BytecodePatchContext.patchLegacyExternalWebSearch191() {
+    val method = mutableClassDefBy("Lo/lo;").methods.single {
+        it.name == "c" && it.returnType == "V" &&
+            it.parameterTypes == listOf("Landroid/content/Context;", "Ljava/lang/String;")
+    }
+    check(method.implementation!!.instructions.any {
+        ((it as? ReferenceInstruction)?.reference as? StringReference)?.string ==
+            "android.intent.action.WEB_SEARCH"
+    }) { "191 web search launcher changed" }
+    method.addInstructions(0, """
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ExternalWebSearch;->open(Landroid/content/Context;Ljava/lang/String;)V
+        return-void
+    """.trimIndent())
+}
+
+/** Keep legacy settings dividers only at an on-screen pane boundary. */
+private fun BytecodePatchContext.patchLegacySettingsPaneDivider(type: String) {
+    val method = mutableClassDefBy(type).methods.single { it.name == "onViewCreated" }
+    val calls = method.implementation!!.instructions.withIndex().filter { (_, instruction) ->
+        (instruction as? ReferenceInstruction)?.reference.let { it as? MethodReference }?.let {
+            it.definingClass == "Landroidx/slidingpanelayout/widget/SlidingPaneLayout;" &&
+                it.name == "setShadowDrawableLeft"
+        } == true
+    }
+    check(calls.size == 1) { "Legacy settings pane divider call not found: $type" }
+    val (index, instruction) = calls.single()
+    val call = instruction as FiveRegisterInstruction
+    method.addInstructions(index, """
+        invoke-static {v${call.registerC}, v${call.registerD}}, Lapp/morphe/extension/chmate/SettingsPaneDivider;->wrap(Landroid/view/View;Landroid/graphics/drawable/Drawable;)Landroid/graphics/drawable/Drawable;
+        move-result-object v${call.registerD}
+    """.trimIndent())
+}
+
 /**
  * 226's paid-option sync screen contains a certificate-dependent arithmetic
- * decoy in S2MSettingActivity's generated dispatch method.  After Morphe
- * re-signing, its divisor becomes zero immediately before the first sync
- * listener is created, so the user is returned to Home instead of reaching
- * the key-registration screen.  Match the stable divide/allocation boundary
- * rather than generated callback class names.
+ * decoy in S2MSettingActivity's generated dispatch method. After re-signing,
+ * its divisor becomes zero before the first sync listener is created.
+ * Match the stable divide/allocation boundary, not generated callback names.
  */
 private fun BytecodePatchContext.patchPreIoS2mSettingActivityIntegrityTrap() {
     val activity = mutableClassDefBy(
@@ -4549,14 +4607,6 @@ val haiagaruPatch = resourcePatch(
             }
 
             val application = document.getElementsByTagName("application").item(0) as Element
-            if (packageMetadata.versionName != "0.8.10.243 dev") {
-                application.appendChild(document.createElement("activity").apply {
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", "app.morphe.extension.chmate.VideoViewerActivity")
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:configChanges", "orientation|screenSize")
-                    setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.NoActionBar")
-                })
-            }
             val openUrlActivity = document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", OPEN_URL_ACTIVITY)
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "true")

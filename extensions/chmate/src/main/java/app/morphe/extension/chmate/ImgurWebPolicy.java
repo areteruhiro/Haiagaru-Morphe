@@ -101,6 +101,11 @@ public final class ImgurWebPolicy {
     }
 
     public static boolean processing(Object value) {
+        // Video responses use {"status":"pending"/"completed"}, not just a boolean.
+        // Unknown/missing states remain pending; a CDN link alone is not completion.
+        if (value instanceof org.json.JSONObject) {
+            return !"completed".equalsIgnoreCase(((org.json.JSONObject) value).optString("status", ""));
+        }
         if (value == null || Boolean.FALSE.equals(value)) return false;
         String text = String.valueOf(value);
         return !("false".equalsIgnoreCase(text) || "0".equals(text) || "null".equals(text));

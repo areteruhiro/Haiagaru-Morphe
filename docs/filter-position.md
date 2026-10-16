@@ -13,3 +13,15 @@ Haiagaru設定の「フィルタ切り替え時に表示位置を維持する」
   画面破棄・アダプタ差替え・3秒の期限で待機を解除します。
 
 検証用: `scripts/VerifyFilterPositionAnchor.java` はAndroid不要の位置選択テストです。
+
+## 226 devの上部フィルタ非表示（未公開修正）
+
+- 226のListViewはLayoutParams.heightが0の場合もUNSPECIFIEDで中身を測るため、
+  既存の高さ0指定だけではComposeのフィルタ行が消えなかった。
+- Compose初期化・計測は残し、その後に登録済みフィルタ行だけ測定高さを0にする。
+  幅は維持し、無関係なComposeViewには適用しない。191 / 241 / 242の計測経路は変更しない。
+- オフでは元の高さへ戻す。ツールバーの操作・フィルタモデルの状態購読は変更しない。
+- 分離した226アプリで、実際のComposeViewを使いUNSPECIFIED計測を検証。
+  修正前は高さ指定0でも80px、修正後は0pxとなり、オフで80pxへ戻る。
+  Composeツリーの維持、別のComposeViewへの非干渉、再バインド、オンへの再変更を含む11項目を検証。
+  `scripts/frida-filter-hide226-test.js`、`build/verification/filter-hide226-fixed.log`。
