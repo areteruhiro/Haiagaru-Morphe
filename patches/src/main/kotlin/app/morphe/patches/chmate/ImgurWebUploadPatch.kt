@@ -23,7 +23,10 @@ private val imgurWebCompatibility = Compatibility(
 
 private val imgurWebUploadBytecodePatch = bytecodePatch {
     dependsOn(haiagaruPatch)
-    execute { patchImgurWebSessionUpload(packageMetadata.versionName) }
+    execute {
+        patchImgurPostingMenu(packageMetadata.versionName)
+        patchImgurWebSessionUpload(packageMetadata.versionName)
+    }
 }
 
 /** Deliberately opt-in while real account upload and service compatibility are being tested. */
@@ -42,12 +45,14 @@ val imgurWebUploadPatch = resourcePatch(
         }
         document("AndroidManifest.xml").use { manifest ->
             val application = manifest.getElementsByTagName("application").item(0) as Element
-            application.appendChild(manifest.createElement("activity").apply {
-                val ns = "http://schemas.android.com/apk/res/android"
-                setAttributeNS(ns, "android:name", "app.morphe.extension.chmate.ImgurWebLoginActivity")
-                setAttributeNS(ns, "android:exported", "false")
-                setAttributeNS(ns, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
-            })
+            for (activityName in listOf("ImgurWebLoginActivity", "ImgurUploadsActivity")) {
+                application.appendChild(manifest.createElement("activity").apply {
+                    val ns = "http://schemas.android.com/apk/res/android"
+                    setAttributeNS(ns, "android:name", "app.morphe.extension.chmate.$activityName")
+                    setAttributeNS(ns, "android:exported", "false")
+                    setAttributeNS(ns, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
+                })
+            }
         }
     }
 }
