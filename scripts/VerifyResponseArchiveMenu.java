@@ -50,10 +50,19 @@ public final class VerifyResponseArchiveMenu {
         check(calls(wacchoi, "dispatchSuffixNgItem", ARCHIVE, "handle"), "custom popup dispatch retained");
         if (version.equals("191")) {
             String dialog = "Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;";
-            check(calls(dialog, "c", ARCHIVE, "captureDialog"), "ordinary 191 dialog captured");
-            check(calls(dialog, "c", ARCHIVE, "appendCapturedDialog"), "ordinary 191 menu amended");
-            check(calls(ARCHIVE, "appendCapturedDialog", ARCHIVE, "appendDialog"), "191 target dispatch connected");
+            check(calls(dialog, "c", dialog, "haiagaruBuildResponseMenu"), "ordinary 191 builder wrapped");
+            check(calls(dialog, "c", ARCHIVE, "appendDialog"), "ordinary 191 menu amended after native return");
+            for (Method m : classes.get(dialog).getMethods()) if (m.getName().equals("c")) {
+                int returns=0;
+                for (var i : m.getImplementation().getInstructions()) {
+                    String opcode=i.getOpcode().name();
+                    check(!opcode.startsWith("IF_") && !opcode.startsWith("GOTO"), "191 wrapper has no branch bypass");
+                    if(opcode.equals("RETURN_OBJECT"))returns++;
+                }
+                check(returns==1,"191 wrapper has one successful exit");
+            }
         } else if (version.equals("226")) {
+            check(calls("Lo/GNk;", "d", "Ljava/lang/Math;", "min"), "226 closed selected tab chooses remaining neighbour");
             check(calls("Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;", null, wacchoi, "appendForCurrentDialog"), "226 native response menu hooked");
             check(calls(wacchoi, "appendForCurrentDialog", ARCHIVE, "appendDialog"), "226 archive menu connected");
             String collector = "Lo/QWA$5$5$5;";
@@ -67,6 +76,9 @@ public final class VerifyResponseArchiveMenu {
             }
         } else if (version.equals("242")) {
             check(calls("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;", "b", ARCHIVE, "appendSheet"), "242 response sheet hooked");
+            check(calls("Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;", "g", ARCHIVE, "appendDialog242"), "242 ordinary response menu hooked");
+            check(calls(ARCHIVE, "appendDialog242", ARCHIVE, "append"), "242 ordinary selected response connected");
+            check(calls("Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;", "c", ARCHIVE, "handle"), "242 ordinary click dispatch connected");
         } else throw new IllegalArgumentException("Unsupported verification version");
         System.out.println("PASS " + version + " native response menu wiring, save/browse labels and list dispatch");
     }

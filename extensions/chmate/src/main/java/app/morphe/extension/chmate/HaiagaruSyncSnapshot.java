@@ -134,6 +134,7 @@ final class HaiagaruSyncSnapshot {
         }
         if ((categories & NG) != 0) {
             snapshot.put("ng", captureNg(context));
+            snapshot.put("programmableNg", captureProgrammableNg(context));
         }
         if ((categories & SETTINGS) != 0) {
             snapshot.put("settings", captureSettings(context));
@@ -206,6 +207,7 @@ final class HaiagaruSyncSnapshot {
             restoreSettings(context, snapshot.optJSONObject("settings"),
                     snapshot.optString("sourcePackage", ""));
         }
+        if ((selected & NG) != 0) restoreProgrammableNg(context, snapshot, false);
         if ((selected & POST_HISTORY) != 0 && !snapshot.isNull("postDataList")) {
             writeAtomic(context.getFileStreamPath("postDataList.json"),
                     decodeFile(snapshot.getString("postDataList")));
@@ -229,6 +231,7 @@ final class HaiagaruSyncSnapshot {
         if ((selected & NG) != 0) restoreNg(context, snapshot.optJSONObject("ng"));
         if ((selected & SETTINGS) != 0) mergeMissingSettings(context,
                 snapshot.optJSONObject("settings"), snapshot.optString("sourcePackage", ""));
+        if ((selected & NG) != 0) restoreProgrammableNg(context, snapshot, true);
         if ((selected & POST_HISTORY) != 0 && !snapshot.isNull("postDataList")) {
             mergeJsonArrayFile(context.getFileStreamPath("postDataList.json"),
                     decodeFile(snapshot.getString("postDataList")));
@@ -406,6 +409,34 @@ final class HaiagaruSyncSnapshot {
         }
     }
 
+    private static JSONObject captureProgrammableNg(Context context) throws Exception {
+        JSONObject values = new JSONObject();
+        SharedPreferences preferences = context.getSharedPreferences(ProgrammableNgController.PREFS,
+                Context.MODE_PRIVATE);
+        for (String key : new String[]{ProgrammableNgController.RULES_KEY, ProgrammableNgController.ENABLED_KEY}) {
+            Object value = preferences.getAll().get(key);
+            if (value != null) values.put(key, encodePreference(value));
+        }
+        return values;
+    }
+
+    private static void restoreProgrammableNg(Context context, JSONObject snapshot, boolean merge)
+            throws Exception {
+        JSONObject values = snapshot.optJSONObject("programmableNg");
+        // Older backups stored these preferences only in the settings category.
+        JSONObject settings = snapshot.optJSONObject("settings");
+        if (values == null && settings != null) values = settings.optJSONObject(ProgrammableNgController.PREFS);
+        if (values == null) return; // A legacy NG-only backup must not clear local rules.
+        JSONObject allowed = new JSONObject();
+        for (String key : new String[]{ProgrammableNgController.RULES_KEY, ProgrammableNgController.ENABLED_KEY}) {
+            if (values.has(key)) allowed.put(key, values.get(key));
+        }
+        JSONObject files = new JSONObject().put(ProgrammableNgController.PREFS, allowed);
+        // Scripts are opaque user text: never rewrite package names inside them.
+        if (merge) mergeMissingSettings(context, files, "");
+        else restoreSettings(context, files, "");
+    }
+
     private static JSONObject captureSettings(Context context) throws Exception {
         JSONObject files = new JSONObject();
         java.util.List<String> names = new java.util.ArrayList<>();
@@ -449,7 +480,7 @@ final class HaiagaruSyncSnapshot {
                     case "float": editor.putFloat(key, (float) value.getDouble("value")); break;
                     case "string":
                         String text = value.getString("value");
-                        if (!sourcePackage.isEmpty()) {
+                        if (!sourcePackage.isEmpty() && !name.equals(ProgrammableNgController.PREFS)) {
                             text = text.replace(sourcePackage, context.getPackageName());
                         }
                         editor.putString(key, text);
@@ -496,7 +527,7 @@ final class HaiagaruSyncSnapshot {
                     case "float": editor.putFloat(key, (float) value.getDouble("value")); changed = true; break;
                     case "string":
                         String text = value.getString("value");
-                        if (!sourcePackage.isEmpty()) text = text.replace(sourcePackage, context.getPackageName());
+                        if (!sourcePackage.isEmpty() && !name.equals(ProgrammableNgController.PREFS)) text = text.replace(sourcePackage, context.getPackageName());
                         editor.putString(key, text); changed = true; break;
                     case "strings":
                         JSONArray array = value.getJSONArray("value");

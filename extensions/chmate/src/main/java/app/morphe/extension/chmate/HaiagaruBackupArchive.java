@@ -42,6 +42,7 @@ final class HaiagaruBackupArchive {
         roots.add(new Root("responses", HaiagaruSyncSnapshot.RESPONSES,
                 new File(context.getFilesDir(), "haiagaru-response-archive"), false));
         roots.add(new Root("archive", HaiagaruSyncSnapshot.THREAD_ARCHIVES, new File(external, "archive"), false));
+        roots.add(new Root("archive-origins", HaiagaruSyncSnapshot.THREAD_ARCHIVES, ArchiveOrigins.directory(context), false));
         roots.add(new Root("dat", HaiagaruSyncSnapshot.DAT, new File(external, "dat"), false));
         roots.add(new Root("posts", HaiagaruSyncSnapshot.POST_HISTORY, context.getFileStreamPath("postDataList.json"), true));
         roots.add(new Root("memo", HaiagaruSyncSnapshot.KAKIKOMI, new File(external, "kakikomi.txt"), true));
@@ -62,6 +63,7 @@ final class HaiagaruBackupArchive {
 
     static File capture(Context context, int flags) throws Exception {
         if ((flags & HaiagaruSyncSnapshot.ALL) == 0) throw new IOException("バックアップ対象がありません");
+        if ((flags & HaiagaruSyncSnapshot.THREAD_ARCHIVES) != 0) ArchiveOrigins.flush();
         File target = temporary(context);
         boolean complete = false;
         try {

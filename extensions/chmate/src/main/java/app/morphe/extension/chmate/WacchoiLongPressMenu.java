@@ -99,6 +99,7 @@ public final class WacchoiLongPressMenu {
         if (!(adapter instanceof android.widget.Adapter) || row == null) return;
         try {
             Object item = ((android.widget.Adapter) adapter).getItem(position);
+            bindCompactMenuLabel(item, row);
             Runnable action = SUFFIX_LONG_PRESS.get(item);
             if (action == null && item != null) {
                 for (Field field : item.getClass().getDeclaredFields()) {
@@ -148,6 +149,30 @@ public final class WacchoiLongPressMenu {
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             android.util.Log.w("Haiagaru", "NG suffix long press row", error);
+        }
+    }
+
+    /** Native icon grids allow two lines. Keep action titles intact, but fit their visible labels. */
+    private static void bindCompactMenuLabel(Object item, android.view.View row) {
+        if (!(item instanceof MenuItem)) return;
+        MenuItem menuItem = (MenuItem) item;
+        String label;
+        switch (menuItem.getItemId()) {
+            case 0x7e484a01: label = "レスを保存"; break;
+            case 0x7e484b01: label = "投稿者を強調"; break;
+            default: return;
+        }
+        replaceMenuLabel(row, String.valueOf(menuItem.getTitle()), label);
+    }
+
+    private static void replaceMenuLabel(android.view.View view, String full, String compact) {
+        if (view instanceof android.widget.TextView) {
+            android.widget.TextView text = (android.widget.TextView) view;
+            if (full.contentEquals(text.getText())) text.setText(compact);
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) replaceMenuLabel(group.getChildAt(i), full, compact);
         }
     }
 

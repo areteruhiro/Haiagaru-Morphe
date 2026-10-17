@@ -24,6 +24,17 @@ public final class VerifyBoardAuthRules {
         check(BoardAuthRules.suggested("https://board.example/a/","認証コード: /auth-code").equals("https://board.example/auth-code"),"relative auth link");
         check(BoardAuthRules.suggested("https://board.example/a/","https://board.example/check").isEmpty(),"ordinary link ignored");
         check(BoardAuthRules.validate("https://board.example/auth?x=1").equals("https://board.example/auth?x=1"),"explicit configurable URL");
+        check(BoardAuthRules.code("認証コード: AbC12-34_xyz\n認証してください").equals("AbC12-34_xyz"),"exact code preserved");
+        check(BoardAuthRules.code("認証コード：「123456」").equals("123456"),"quoted Japanese code");
+        check(BoardAuthRules.code("Auth code = ABC123").equals("ABC123"),"English code");
+        check(BoardAuthRules.code("認証コード'123456'を用いて、以下のURLから認証を行ってください").equals("123456"),"board error quoted code without colon");
+        check(BoardAuthRules.code("認証コード「ABC123」を入力").equals("ABC123"),"Japanese quotes without colon");
+        check(BoardAuthRules.code("認証コード: https://board.example/auth-code").isEmpty(),"auth URL is not a code");
+        check(BoardAuthRules.code("認証コードを入力してください").isEmpty(),"instructions are not a code");
+        check(BoardAuthRules.code("認証コード: "+"a".repeat(256)).isEmpty(),"no truncated code");
+        check(BoardAuthRules.code("認証コード: "+"a".repeat(65536)).isEmpty(),"bounded code scan");
+        check(BoardAuthRules.code(null).isEmpty(),"null code");
+        check(BoardAuthRules.code("認証コード: ab").isEmpty(),"ambiguous short code uses full-error fallback");
         System.out.println("PASS "+checks+" external-board auth policy checks");
     }
 }

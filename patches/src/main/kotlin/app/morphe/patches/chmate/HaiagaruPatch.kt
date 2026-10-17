@@ -1509,10 +1509,14 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostedThreadDisplayCount(packageMetadata.versionName)
         patchPostHistoryRetentionCount(packageMetadata.versionName)
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
+        patchGroupedBrowsingHistory(packageMetadata.versionName)
+        patchClipboardHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
         patchHiddenNgMenu(packageMetadata.versionName)
         patchNativeUploadHistory(packageMetadata.versionName)
+        patchPostingOverflowMenu(packageMetadata.versionName, "MediaUploadHosts", "upload_hosts")
         patchResponseArchive(packageMetadata.versionName)
+        patchArchiveOrigins(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
@@ -1823,6 +1827,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         if (packageMetadata.versionName == "0.8.10.241") {
             patchProgrammableNgModern("Lo/RewardedInterstitialAdLoadCallback;", "a", "a")
         }
+        patchXPostPreviewBindings()
+        patchDirectBodySelection(packageMetadata.versionName)
         patchTabletThreadHeaderAdSpace(packageMetadata.versionName)
         patchStringReplacement()
         patchShortThreadTopAlignment(packageMetadata.versionName)
@@ -1841,6 +1847,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.243 dev" -> EdgeSubjectUrlFingerprint.method.rewriteEdgeSubjectUrl()
         }
         patchEdgeReporterHistory(packageMetadata.versionName)
+        patchImgurWebSessionUpload(packageMetadata.versionName)
+        patchEdgeReporterDisplay(packageMetadata.versionName)
         patchEdgeReporterTitleCopy(packageMetadata.versionName)
         patchWacchoiLongPressMenu(packageMetadata.versionName)
         patchImageListResolvedMedia(packageMetadata.versionName)
@@ -1857,8 +1865,10 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHttpsTransport()
         patchNativeUpdatePolicy(packageMetadata.versionName)
         patchPatrolImages(packageMetadata.versionName)
+        patchPatrolInterval(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)
         patchExternalBoardEditor(packageMetadata.versionName)
+        patchPosterHighlight(packageMetadata.versionName)
     }
 }
 
@@ -2937,19 +2947,49 @@ private fun BytecodePatchContext.patchResponseArchive(version: String) {
         val menu = dialog.methods.single {
             it.name == "c" && it.parameterTypes.isEmpty() && it.returnType == "Lo/m6fExternalSyntheticLambda0;"
         }
-        val exits = menu.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT }
-        check(exits.isNotEmpty()) { "191 ordinary response menu return changed" }
-        exits.asReversed().forEach { (index, instruction) ->
-            val register = (instruction as OneRegisterInstruction).registerA
-            menu.addInstructionsWithLabels(index,
-                "invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/ResponseArchive;->appendCapturedDialog(Ljava/lang/Object;)V")
-        }
-        menu.addInstruction(0,
-            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/ResponseArchive;->captureDialog(Ljava/lang/Object;)V")
+        // Native branches jump directly to RETURN_OBJECT. Inserting before that
+        // instruction can leave their labels pointing past our extension call.
+        // Wrap the entire builder so every successful return is amended once.
+        val delegate = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(
+            dialog.type, "haiagaruBuildResponseMenu", menu.parameters, menu.returnType,
+            menu.accessFlags, menu.annotations, menu.hiddenApiRestrictions, menu.implementation))
+        val wrapper = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(
+            dialog.type, menu.name, menu.parameters, menu.returnType,
+            menu.accessFlags, menu.annotations, menu.hiddenApiRestrictions,
+            com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(3, emptyList(), emptyList(), emptyList())))
+        val invoke = if (menu.accessFlags and 2 != 0) "invoke-direct" else "invoke-virtual"
+        wrapper.addInstructions(0, """
+            $invoke {p0}, $delegate
+            move-result-object v0
+            move-object v1, p0
+            invoke-static {v1, v0}, Lapp/morphe/extension/chmate/ResponseArchive;->appendDialog(Ljava/lang/Object;Ljava/lang/Object;)V
+            return-object v0
+        """.trimIndent())
+        dialog.methods.remove(menu)
+        dialog.methods.add(delegate)
+        dialog.methods.add(wrapper)
         println("Response archive: 191 ordinary response menu -> ${dialog.type}")
         return
     }
     if (version != "0.8.10.242 dev") return // 226 uses the existing exact-target dialog hook.
+    // Compose's icon grid calls the parent's native dispatcher, not the
+    // MenuItem listener used by the legacy grid. Consume our actions first.
+    val ordinaryDialog = mutableClassDefBy("Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment;")
+    val ordinaryClick = ordinaryDialog.methods.single {
+        it.name == "c" && it.accessFlags and 8 != 0 && it.parameterTypes == listOf(
+            ordinaryDialog.type, "Lo/TTPlayableLandingPageActivity15;"
+        )
+    }
+    ordinaryClick.addInstructionsWithLabels(0, """
+        invoke-static {p1}, Lapp/morphe/extension/chmate/ResponseArchive;->handle(Ljava/lang/Object;)Z
+        move-result v0
+        if-eqz v0, :nativeResponseClick
+        invoke-virtual {p0}, Lo/setOptionsView;->dismiss()V
+        sget-object v0, Lo/zzbwq;->INSTANCE:Lo/zzbwq;
+        return-object v0
+        :nativeResponseClick
+        nop
+    """.trimIndent())
     val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
     val method = mutableClassDefBy(owner).methods.single {
         it.accessFlags and 8 != 0 && it.returnType == "V" && it.parameterTypes == listOf(
@@ -4455,16 +4495,20 @@ val haiagaruPatch = resourcePatch(
         val cacheArrayNames = document("res/values/arrays.xml").use {
             ImageCacheSizeOptions.expand(it)
         }
+        val patrolArrayNames = document("res/values/arrays.xml").use {
+            PatrolIntervalOptions.expand(it)
+        }
         get("res").listFiles().orEmpty().filter {
             it.isDirectory && it.name.startsWith("values-")
         }.forEach { directory ->
             directory.listFiles().orEmpty().filter { file ->
-                file.extension == "xml" && cacheArrayNames.any { name ->
+                file.extension == "xml" && (cacheArrayNames + patrolArrayNames).any { name ->
                     file.readText().contains("name=\"$name\"")
                 }
             }.forEach { file ->
                 document("res/${directory.name}/${file.name}").use {
                     ImageCacheSizeOptions.expandOverrides(it, cacheArrayNames)
+                    PatrolIntervalOptions.expandOverrides(it, patrolArrayNames)
                 }
             }
         }
@@ -4565,6 +4609,27 @@ val haiagaruPatch = resourcePatch(
         get("res").resolve("drawable/haiagaru_quick_filter.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
                 <path android:fillColor="#FFFFFFFF" android:pathData="M3,4h18l-7,8v7l-4,2V12z"/>
+            </vector>
+        """.trimIndent())
+        document("res/values/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_direct_copy")
+            entry.textContent = "長押しコピー"
+            strings.documentElement.appendChild(entry)
+        }
+        document("res/values-en/strings.xml").use { strings ->
+            val entry = strings.createElement("string")
+            entry.setAttribute("name", "haiagaru_direct_copy")
+            entry.textContent = "Long-press copy"
+            strings.documentElement.appendChild(entry)
+        }
+        PublicXmlManager(get("res/values/public.xml")).use {
+            it.createPublicId("string", "haiagaru_direct_copy")
+            it.createPublicId("drawable", "haiagaru_direct_copy")
+        }
+        get("res").resolve("drawable/haiagaru_direct_copy.xml").writeText("""
+            <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                <path android:fillColor="#FFFFFFFF" android:pathData="M4,2h12v2H4v14H2V4a2,2 0,0 1,2 -2M8,6h12a2,2 0,0 1,2 2v12a2,2 0,0 1,-2 2H8a2,2 0,0 1,-2 -2V8a2,2 0,0 1,2 -2M8,8v12h12V8zM10,10h8v2h-3v6h-2v-6h-3z"/>
             </vector>
         """.trimIndent())
         val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
@@ -4800,6 +4865,12 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
                     "@android:style/Theme.Material.Light.NoActionBar")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.MediaUploadWebActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Material.Light.NoActionBar")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:windowSoftInputMode","adjustResize")
             })
             application.appendChild(document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ExternalBoardEditorActivity")

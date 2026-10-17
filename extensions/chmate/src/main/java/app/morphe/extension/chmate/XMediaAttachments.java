@@ -10,6 +10,10 @@ import org.json.JSONObject;
 
 /** Public X embed metadata only; no login credentials or third-party mirrors. */
 public final class XMediaAttachments {
+    private static final java.util.Map<String, String> FRAME_POSTERS = java.util.Collections.synchronizedMap(
+            new java.util.LinkedHashMap<String, String>() {
+                @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, String> entry) { return size() > 256; }
+            });
     private static final java.util.Map<String, String> POSTERS = java.util.Collections.synchronizedMap(
             new java.util.LinkedHashMap<String, String>() {
                 @Override protected boolean removeEldestEntry(java.util.Map.Entry<String, String> entry) {
@@ -31,12 +35,12 @@ public final class XMediaAttachments {
         if (url == null || !validMedia(url, true)) return null;
         int mode = Haiagaru.mediaAutoFetchMode();
         if (mode == 0 || mode == 3) return null;
-        if (!POSTERS.containsKey(url)) VideoFrameThumbnail.request(url);
+        if (!POSTERS.containsKey(url) || VideoFrameThumbnail.fourAllowed()) VideoFrameThumbnail.request(url);
         try {
             java.lang.reflect.Constructor<?> constructor = Class.forName(className)
                     .getDeclaredConstructor(String.class, String.class);
             constructor.setAccessible(true);
-            String poster = POSTERS.get(url);
+            String poster = generatedPoster(url);
             if (poster == null) poster = VideoThumbnailServer.placeholder();
             return constructor.newInstance(url, poster);
         } catch (Exception error) {
@@ -46,8 +50,13 @@ public final class XMediaAttachments {
     }
 
     static void setGeneratedPoster(String url, String poster) { POSTERS.put(url, poster); }
-    static boolean isPoster(String url) { return POSTERS.containsValue(url); }
-    static String generatedPoster(String url) { return POSTERS.get(url); }
+    static void setFramePoster(String url, String variant, String poster) { FRAME_POSTERS.put(variant + ":" + url, poster); }
+    static boolean isPoster(String url) { return POSTERS.containsValue(url) || FRAME_POSTERS.containsValue(url); }
+    static String generatedPoster(String url) {
+        if (VideoFrameThumbnail.fourAllowed()) VideoFrameThumbnail.request(url);
+        String frame = FRAME_POSTERS.get(VideoFrameThumbnail.currentVariant() + ":" + url);
+        return frame != null ? frame : POSTERS.get(url);
+    }
     public static boolean isVideo(String url) { return validMedia(url, true); }
 
     public static String[] postIds(String body) {

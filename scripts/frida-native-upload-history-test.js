@@ -33,7 +33,9 @@ Java.perform(function () {
         check(String(unit.getClass().getName()) === (modern ? 'o.zzbwq' : 'o.Ff11'), 'native coroutine Unit binding');
         return Java.use('java.lang.Boolean').TRUE.value;
     };
-    const transportRow = Row.$new('', '', 'https://example.invalid/binding.png', 'fixture-binding', 1, null);
+    const foreignRow = Row.$new('', '', 'https://images2.imgbox.com/ab/cd/Fixture_o.png', 'fixture-foreign', 1, null);
+    check(H.delete(app, foreignRow) === false && !bound, 'foreign media never reaches native Imgur delete');
+    const transportRow = Row.$new('', '', 'https://i.imgur.com/FixtureBinding.png', 'fixture-binding', 1, null);
     check(H.delete(app, transportRow) === !legacy && bound, 'native synchronous delete binding (network blocked)');
     // Block every request at the shared transport boundary, even if the fixture safety check fails.
     H.delete.implementation = function (context, row) {
@@ -61,7 +63,7 @@ Java.perform(function () {
                 const rows = ArrayList.$new();
                 [['old', 'fixture-ok', 1000], ['new', 'fixture-fail', 3000], ['middle', '', 2000], ['deleted', 'fixture-deleted', 4000]]
                     .forEach(function (data, i) {
-                        const row = Row.$new('', '', 'https://example.invalid/' + data[0] + '.png', data[1], data[2], null);
+                        const row = Row.$new('', '', 'https://i.imgur.com/Fixture' + data[0] + '.png', data[1], data[2], null);
                         if (i === 3) row.flags.value = 1;
                         rows.add(row);
                     });
@@ -78,9 +80,10 @@ Java.perform(function () {
                 const Popup = Java.use('android.widget.PopupMenu');
                 const menu = Popup.$new(activity, Java.use('android.view.View').$new(activity)).getMenu();
                 H.addMenu(owner, menu); H.addMenu(owner, menu);
-                check(menu.size() === 2, 'native menu actions added once');
+                check(menu.size() === 3, 'native menu actions added once');
                 check(String(menu.getItem(0).getTitle()).includes('降順'), 'descending menu label');
                 check(String(menu.getItem(1).getTitle()).includes('サーバーから一括削除'), 'server bulk deletion menu label');
+                check(String(menu.getItem(2).getTitle()).includes('imgbox／imgpile'), 'foreign media management menu label');
                 H.handle(owner, menu.getItem(0));
                 check(!prefs.getBoolean('newestFirst', true) && !menu.getItem(0).isChecked(), 'menu toggle saves off and updates checkmark');
                 H.handle(owner, menu.getItem(0));
@@ -114,7 +117,7 @@ Java.perform(function () {
                     check(stored.size() === 4 && (Java.cast(stored.get(0), Row).flags.value & 1) === 1,
                         'native writer and reader persist deleted flag without removing history');
                     const fresh = ArrayList.$new();
-                    for (let i = 0; i < 3; i++) fresh.add(Row.$new('', '', 'https://example.invalid/cancel' + i + '.png', 'fixture-cancel' + i, 5000 + i, null));
+                    for (let i = 0; i < 3; i++) fresh.add(Row.$new('', '', 'https://i.imgur.com/FixtureCancel' + i + '.png', 'fixture-cancel' + i, 5000 + i, null));
                     setField(manager, legacy ? 'f' : 'h', fresh); H.refresh(owner);
                     cancelMode = true; requests = 0;
                     Java.choose('android.app.AlertDialog', {onMatch: function(d) { if (d.isShowing()) d.dismiss(); }, onComplete: function(){}});

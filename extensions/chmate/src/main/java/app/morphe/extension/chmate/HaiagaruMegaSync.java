@@ -53,7 +53,7 @@ final class HaiagaruMegaSync {
             HaiagaruSyncSnapshot.AUTH, HaiagaruSyncSnapshot.DEVICE_DATA, HaiagaruSyncSnapshot.UPLOAD_HISTORY
     };
     static final String[] CATEGORY_NAMES = {
-            "お気に入り・閲覧履歴", "NGワード・NG IDなど", "ChMate・Haiagaruの設定",
+            "お気に入り・閲覧履歴", "NG設定（高度なNGルールを含む）", "ChMate・Haiagaruの設定",
             "書き込み履歴 (postDataList.json)", "書き込みメモ (kakikomi.txt)",
             "Cookie（ログイン状態を含む・初期OFF）",
             "レスのアーカイブ・保存用スレ", "スレのアーカイブ", "取得済みスレログ（DAT・大容量／初期OFF）",

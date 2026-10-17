@@ -49,4 +49,15 @@ public final class BoardAuthRules {
         }
         return preset(board);
     }
+
+    /** Extract only an explicitly labelled token; otherwise let the user copy the whole error. */
+    public static String code(String message) {
+        if (message == null || message.length() > 65536) return "";
+        Matcher match = Pattern.compile("(?:認証コード|authentication code|auth code)(?:\\s*[：:=]\\s*[「『\\\"']?|\\s*[「『\\\"'])([A-Za-z0-9][A-Za-z0-9_-]{2,254})(?![A-Za-z0-9_/-])",
+                Pattern.CASE_INSENSITIVE).matcher(message);
+        if (!match.find()) return "";
+        String value = match.group(1);
+        // A URL after the label is not a code.
+        return value.equalsIgnoreCase("https") || value.equalsIgnoreCase("http") ? "" : value;
+    }
 }

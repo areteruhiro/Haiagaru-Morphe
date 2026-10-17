@@ -36,7 +36,7 @@ Java.perform(function () {
                 open(p1);
                 later(()=>{selected(p1,'first open');open(p2);
                 later(()=>{selected(p2,'second open');model.d.overload('int').call(model,Number(state().a.value));
-                later(()=>{check(Number(state().a.value)===-1,'closing selected tab does not select another through feedback');open(p3);
+                later(()=>{selected(p1,'closing selected tab selects remaining neighbour');open(p3);
                 later(()=>{selected(p3,'new tab after close');
                     const pos=model.d.overload('o.Kjv').call(model,p1);
                     model.d.overload('int').call(model,pos);

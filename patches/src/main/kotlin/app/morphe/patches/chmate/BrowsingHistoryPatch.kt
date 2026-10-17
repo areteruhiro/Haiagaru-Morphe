@@ -1,0 +1,51 @@
+package app.morphe.patches.chmate
+
+import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+
+private const val HISTORY = "Lapp/morphe/extension/chmate/BrowsingHistory;"
+
+internal fun BytecodePatchContext.patchGroupedBrowsingHistory(version: String) {
+    if (version == "0.8.10.242 dev") {
+        // Home AdapterData, not initRenderFinish's recent-thread popup.
+        val ctor = mutableClassDefBy("Lo/SafeParcelableClass;").methods.single {
+            it.name == "<init>" && it.parameterTypes == listOf("Ljava/util/List;", "I", "Z",
+                "Lo/ApiApiOptionsHasAccountOptions;", "I", "I")
+        }
+        check(ctor.implementation!!.registerCount <= 16)
+        // p2 is the layout type. p5, stored as AdapterData.b, is the history/sort mode.
+        ctor.addInstructions(0, """
+            invoke-static {p1, p5}, $HISTORY->transform(Ljava/util/List;I)Ljava/util/List;
+            move-result-object p1
+        """.trimIndent())
+    } else {
+        val (owner, name) = when(version) {
+            "0.8.10.191 dev" -> "Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;" to "a"
+            "0.8.10.226 dev" -> "Ljp/syoboi/a2chMate/fragment/HomeFragment;" to "b"
+            else -> return
+        }
+        val klass = mutableClassDefBy(owner)
+        val original = klass.methods.single {
+            it.name == name && it.parameterTypes == listOf("I", "Z") && it.returnType == "V"
+        }
+        check(original.accessFlags and 8 == 0)
+        val renamed = MutableMethod(ImmutableMethod(owner, "haiagaruNativeHistorySort", original.parameters,
+            original.returnType, original.accessFlags, original.annotations, original.hiddenApiRestrictions, original.implementation))
+        val wrapper = MutableMethod(ImmutableMethod(owner, name, original.parameters, original.returnType,
+            original.accessFlags, original.annotations, original.hiddenApiRestrictions,
+            ImmutableMethodImplementation(3, emptyList(), emptyList(), emptyList())))
+        val invoke = if(original.accessFlags and 2 != 0) "invoke-direct/range" else "invoke-virtual/range"
+        wrapper.addInstructions(0, """
+            $invoke {p0 .. p2}, $renamed
+            invoke-static/range {p0 .. p1}, $HISTORY->applyLegacy(Ljava/lang/Object;I)V
+            return-void
+        """.trimIndent())
+        klass.methods.remove(original)
+        klass.methods.add(renamed)
+        klass.methods.add(wrapper)
+    }
+    println("Board-grouped normal browsing history: $version (popup unchanged)")
+}

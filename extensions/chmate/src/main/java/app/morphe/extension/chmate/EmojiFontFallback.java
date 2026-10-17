@@ -111,7 +111,9 @@ final class EmojiFontFallback {
 
     static void applyToRow(View view) {
         if (view instanceof TextView) {
+            DirectBodySelection.prepare(view);
             XPostPreview.apply((TextView) view);
+            PosterHighlight.apply((TextView) view);
             applyToTextView((TextView) view);
         } else if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;

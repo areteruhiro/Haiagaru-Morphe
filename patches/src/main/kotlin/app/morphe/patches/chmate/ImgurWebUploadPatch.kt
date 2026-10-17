@@ -29,7 +29,6 @@ private val imgurWebUploadBytecodePatch = bytecodePatch {
     dependsOn(haiagaruPatch)
     execute {
         patchImgurPostingMenu(packageMetadata.versionName)
-        patchImgurWebSessionUpload(packageMetadata.versionName)
         val (callback, row) = when (packageMetadata.versionName) {
             "0.8.10.191 dev" -> "Lo/onRewardedInterstitialAdLoadFailed\$2;" to "Lo/onRewardedInterstitialAdDisplayed;"
             "0.8.10.226 dev" -> "Lo/enB3\$write;" to "Lo/enB12;"

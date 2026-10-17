@@ -52,7 +52,9 @@ public final class VerifyImgurWebHooks {
                 for (var ins : method.getImplementation().getInstructions()) if (ins instanceof ReferenceInstruction ref && ref.getReference() instanceof MethodReference target
                         && target.getName().equals(entryHook) && !cls.getType().startsWith("Lapp/morphe/extension/")) hooks++;
             }
-            int expectedHooks = without && !apk.contains("191") && !apk.contains("226") ? 0 : 1;
+            // The native transport bridge is now also used by imgbox/imgpile in the base patch.
+            // Imgur account upload itself still requires the opt-in marker.
+            int expectedHooks = 1;
             check(hooks == expectedHooks, apk + " expected " + expectedHooks + " native uploader hooks, got " + hooks);
             System.out.println("PASS: " + apk + " native response fields, constructor, helper and upload hook");
         }
