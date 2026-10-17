@@ -45,6 +45,47 @@ private const val EXTENSION = "Lapp/morphe/extension/chmate/Haiagaru;"
 
 private object EmojiFontResourceMarker
 
+private fun BytecodePatchContext.patchToolbarIcons(version: String) {
+    val type = when (version) {
+        "0.8.10.191 dev" -> "Lo/r8lambda98incQ33GAiiY2082BMi9yDa3l0;"
+        "0.8.10.226 dev" -> "Lo/PAGBannerAdLoadCallback;"
+        "0.8.10.242 dev" -> "Lo/zzcI;"
+        else -> return
+    }
+    val owner = mutableClassDefBy(type)
+    val constructors = owner.methods.filter { it.name == "<init>" && it.implementation != null }
+    val visibilityFields = constructors.filter { it.parameterTypes.take(5) == listOf("I", "I", "I", "I", "Z") }
+        .flatMap { constructor ->
+            val flag = constructor.implementation!!.registerCount - constructor.parameterTypes.size + 4
+            constructor.implementation!!.instructions.filter {
+                it.opcode == Opcode.IPUT_BOOLEAN && (it as TwoRegisterInstruction).registerA == flag
+            }.map { ((it as ReferenceInstruction).reference as FieldReference).name }
+        }.distinct()
+    check(visibilityFields.size == 1) { "Toolbar visible flag changed: $version $visibilityFields" }
+    mutableClassDefBy("Lapp/morphe/extension/chmate/ToolbarIcons;").methods.single { it.name == "visibilityField" }
+        .replaceInstruction(0, "const-string v0, \"${visibilityFields.single()}\"")
+    constructors.forEach { constructor ->
+        constructor.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
+            .toList().asReversed().forEach { (index, _) -> constructor.addInstruction(index,
+                "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/ToolbarIcons;->applyVisibility(Ljava/lang/Object;)V") }
+    }
+    val method = owner.methods.single {
+        it.parameterTypes == listOf("Landroid/content/Context;", "I") &&
+            it.returnType == "Landroid/graphics/drawable/Drawable;"
+    }
+    check(method.implementation!!.registerCount <= 16) { "Toolbar drawable registers changed: $version" }
+    method.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT }
+        .toList().asReversed().forEach { (index, instruction) ->
+            val result = (instruction as OneRegisterInstruction).registerA
+            check(result != method.implementation!!.registerCount - 3) { "Toolbar result overwrites receiver: $version" }
+            method.addInstructions(index, """
+                invoke-static {p0, v$result}, Lapp/morphe/extension/chmate/ToolbarIcons;->replaceNative(Ljava/lang/Object;Landroid/graphics/drawable/Drawable;)Landroid/graphics/drawable/Drawable;
+                move-result-object v$result
+            """.trimIndent())
+        }
+    println("Toolbar icon customization: $version -> $type")
+}
+
 private fun BytecodePatchContext.patchHiddenNgMenu(version: String) {
     // String and menu IDs are different. Validate both against each native preparation method.
     val profile = when (version) {
@@ -110,6 +151,7 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
     }
     val thisRegister = complete.implementation!!.registerCount - 4
     check(scratch != lookup.registerD && scratch != thisRegister) { "$version gesture receiver changed" }
+    check(complete.implementation!!.registerCount - 2 <= 15) { "$version gesture coordinate register changed" }
     complete.addInstructionsWithLabels(index, """
         move-object/from16 v$scratch, p0
         invoke-static {v$scratch, v${lookup.registerD}}, Lapp/morphe/extension/chmate/NgEditGesture;->onGesture(Landroid/view/View;I)Z
@@ -121,6 +163,8 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         move-object/from16 v$scratch, p0
         iget-object v$scratch, v$scratch, ${owner.type}->${registry.name}:${registry.type}
     """.trimIndent())
+    // Native completion overwrites parameter registers before the registry lookup.
+    complete.addInstruction(0, "invoke-static {p0, p2}, Lapp/morphe/extension/chmate/NgEditGesture;->rememberStart(Landroid/view/View;Landroid/graphics/PointF;)V")
 
     // Completion and preview have separate native lookups. Do not register a synthetic
     // action globally: it would also reach native listeners that do not know its ID.
@@ -144,6 +188,38 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         invoke-static {p0, v${previewLookup.registerD}, v${previewResult.registerA}}, Lapp/morphe/extension/chmate/NgEditGesture;->preview(Landroid/view/View;ILjava/lang/Object;)Ljava/lang/Object;
         move-result-object v${previewResult.registerA}
     """.trimIndent())
+
+    val listBase = mutableClassDefBy(if (version == "0.8.10.191 dev")
+        "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;" else "Ljp/syoboi/a2chMate/fragment/RoidonListFragment;")
+    val longClick = listBase.methods.single { it.name == "onLongClick" && it.parameterTypes == listOf("Landroid/view/View;") }
+    // A fresh local is dead at entry; 191's packed switches confuse generic CFG scratch discovery.
+    check(longClick.implementation!!.registerCount - 2 >= 1) { "$version long-click local missing" }
+    val free = 0
+    val original = longClick.implementation!!.instructions.first()
+    longClick.addInstructionsWithLabels(0, """
+        invoke-static {p0, p1}, Lapp/morphe/extension/chmate/DeleteReadThreads;->longClick(Ljava/lang/Object;Landroid/view/View;)Z
+        move-result v$free
+        if-eqz v$free, :native_long_click
+        return v$free
+    """.trimIndent(), ExternalLabel("native_long_click", original))
+    val viewCreated = listBase.methods.single { it.name == "onViewCreated" && it.implementation != null }
+    viewCreated.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
+        .map { it.index }.asReversed().forEach { position -> viewCreated.addInstruction(position,
+            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/DeleteReadThreads;->bind(Ljava/lang/Object;)V") }
+    println("Read-thread deletion gesture and refresh long press: $version")
+    if (version != "0.8.10.241") {
+        val table = when (version) {
+            "0.8.10.191 dev" -> "Lo/r8lambdaEBvvDaQDWIaS7WUoordU_4sxR3Y;"
+            "0.8.10.226 dev" -> "Lo/TrustRootIndex;"
+            else -> "Lo/initView;"
+        }
+        val board = if (version == "0.8.10.191 dev") "Ljp/syoboi/a2chMate/client/BBSUrlInfo\$BoardID;"
+            else "Ljp/syoboi/a2chMate/client/BoardID;"
+        val name = when (version) { "0.8.10.191 dev" -> "e"; "0.8.10.226 dev" -> "b"; else -> "a" }
+        check(mutableClassDefBy(table).methods.count {
+            it.name == name && it.parameterTypes == listOf(board, "J") && it.returnType == "V"
+        } == 1) { "Native delete-with-cache API changed: $version" }
+    }
 }
 
 private fun BytecodePatchContext.patchBrowsingAndSearchHistory(version: String) {
@@ -1512,6 +1588,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchGroupedBrowsingHistory(packageMetadata.versionName)
         patchClipboardHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
+        patchToolbarIcons(packageMetadata.versionName)
         patchHiddenNgMenu(packageMetadata.versionName)
         patchNativeUploadHistory(packageMetadata.versionName)
         patchPostingOverflowMenu(packageMetadata.versionName, "MediaUploadHosts", "upload_hosts")
@@ -4529,6 +4606,12 @@ val haiagaruPatch = resourcePatch(
                 entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:defaultValue", "0")
                 entry.setAttributeNS("http://schemas.android.com/apk/res/android", "android:summary", "未使用のジェスチャーを割り当ててください")
                 anchor.parentNode.insertBefore(entry, anchor.nextSibling)
+                val deleteRead = settings.createElement("jp.syoboi.a2chMate.ui.setting.preference.gesture.GesturePreference")
+                deleteRead.setAttributeNS("http://schemas.android.com/apk/res/android", "android:title", "既読スレをすべて削除")
+                deleteRead.setAttributeNS("http://schemas.android.com/apk/res/android", "android:key", "haiagaruGestureDeleteReadThreads")
+                deleteRead.setAttributeNS("http://schemas.android.com/apk/res/android", "android:defaultValue", "0")
+                deleteRead.setAttributeNS("http://schemas.android.com/apk/res/android", "android:summary", "板のスレ一覧で使用。確認画面で対象をチェックして履歴・ログを削除します")
+                anchor.parentNode.insertBefore(deleteRead, entry.nextSibling)
             }
         }
         if (replaceImageNgTflite && packageMetadata.versionName == "0.8.10.191 dev") {
@@ -4593,7 +4676,7 @@ val haiagaruPatch = resourcePatch(
         }
         get("res").resolve("drawable/haiagaru_mark_all_read.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-                <path android:fillColor="#FFFFFFFF" android:pathData="M3,5h12v2H3zM3,10h9v2H3zM3,15h8v2H3zM14,16l2.5,2.5L21,13l1.5,1.5-6,7L12.5,17.5z"/>
+                <path android:fillColor="#FFFFFFFF" android:pathData="M18,7l-1.41,-1.41 -6.34,6.34 1.41,1.41L18,7zM22.24,5.59L11.66,16.17 7.48,12l-1.41,1.41L11.66,19l12,-12 -1.42,-1.41zM0.41,13.41L6,19l1.41,-1.41L1.83,12 0.41,13.41z"/>
             </vector>
         """.trimIndent())
         document("res/values/strings.xml").use { strings ->
@@ -4608,7 +4691,7 @@ val haiagaruPatch = resourcePatch(
         }
         get("res").resolve("drawable/haiagaru_quick_filter.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-                <path android:fillColor="#FFFFFFFF" android:pathData="M3,4h18l-7,8v7l-4,2V12z"/>
+                <path android:fillColor="#FFFFFFFF" android:pathData="M10,18h4v-2h-4v2zM3,6v2h18V6H3zM6,13h12v-2H6v2z"/>
             </vector>
         """.trimIndent())
         document("res/values/strings.xml").use { strings ->
@@ -4629,10 +4712,16 @@ val haiagaruPatch = resourcePatch(
         }
         get("res").resolve("drawable/haiagaru_direct_copy.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-                <path android:fillColor="#FFFFFFFF" android:pathData="M4,2h12v2H4v14H2V4a2,2 0,0 1,2 -2M8,6h12a2,2 0,0 1,2 2v12a2,2 0,0 1,-2 2H8a2,2 0,0 1,-2 -2V8a2,2 0,0 1,2 -2M8,8v12h12V8zM10,10h8v2h-3v6h-2v-6h-3z"/>
+                <path android:fillColor="#FFFFFFFF" android:pathData="M16,1H4c-1.1,0 -2,0.9 -2,2v14h2V3h12V1zM19,5H8c-1.1,0 -2,0.9 -2,2v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7c0,-1.1 -0.9,-2 -2,-2zM19,21H8V7h11v14z"/>
             </vector>
         """.trimIndent())
         val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
+        for (name in listOf("LICENSE", "NOTICE.md")) {
+            val notice = get("assets").resolve("haiagaru/licenses/material-icons/$name")
+            notice.parentFile.mkdirs()
+            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream("/chmate/material-icons/$name"))
+                .use { source -> notice.outputStream().use(source::copyTo) }
+        }
         if (iconSourcePath.isEmpty()) {
             val iconTarget = get("res").resolve("drawable/haiagaru_edge_archive.xml")
             iconTarget.parentFile.mkdirs()
@@ -4874,6 +4963,11 @@ val haiagaruPatch = resourcePatch(
             })
             application.appendChild(document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ExternalBoardEditorActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Material.Light.NoActionBar")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ToolbarIconsActivity")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Material.Light.NoActionBar")
             })

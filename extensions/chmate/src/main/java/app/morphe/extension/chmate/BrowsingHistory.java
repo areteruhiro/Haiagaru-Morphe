@@ -21,7 +21,9 @@ public final class BrowsingHistory {
         Field value = owner.getClass().getDeclaredField(name); value.setAccessible(true); return value;
     }
     public static List<?> transform(List<?> input, int mode) {
-        if (input == null || Math.abs(mode) != 101 || !enabled()) return input;
+        // Native HOME IDs: 101 = unread, 103 = browsing history, 104 = posted.
+        // Never override unread sorting (including its native board-sort option).
+        if (input == null || Math.abs(mode) != 103 || !enabled()) return input;
         try {
             return BrowsingHistoryOrder.arrange(input, new BrowsingHistoryOrder.Access<Object>() {
                 @Override public String board(Object row) throws Exception {
@@ -49,7 +51,7 @@ public final class BrowsingHistory {
     }
     /** Run only after the exact legacy home-sort method has completed. */
     public static void applyLegacy(Object fragment, int mode) {
-        if (fragment == null || Math.abs(mode) != 101 || !enabled()) return;
+        if (fragment == null || Math.abs(mode) != 103 || !enabled()) return;
         try {
             boolean legacy191 = fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk");
             Object adapter = field(fragment, legacy191 ? "e" : "i").get(fragment);

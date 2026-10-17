@@ -61,10 +61,12 @@ public final class ThreadCommands {
             Object mode = field(model, modeName);
             if (!(mode instanceof Enum)) return;
             boolean thread = ((Enum<?>) mode).name().equals("Thread");
+            // Commands belong only to thread creation, not ordinary replies.
+            // Keep target registration above for external-board authentication.
+            if (!thread) return;
             EditText body = (EditText) field(binding, bodyName);
             EditText name = (EditText) field(binding, nameName);
             String profile = ThreadCommandRules.profile(url);
-            if (!thread && !profile.equals("5ch") && !profile.equals("open2ch")) return;
             // Insert alongside the body container, preserving its native listeners and layout params.
             View anchor = body;
             while (anchor.getParent() instanceof ViewGroup) {

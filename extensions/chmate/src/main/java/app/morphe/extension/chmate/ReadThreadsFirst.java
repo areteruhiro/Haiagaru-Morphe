@@ -624,7 +624,7 @@ public final class ReadThreadsFirst {
         return false;
     }
 
-    private static Object thread(Object row) throws Exception {
+    static Object thread(Object row) throws Exception {
         if (row == null) return null;
         String name = row.getClass().getName();
         if (name.equals("o.OnConnectionFailedListener") || name.equals("o.zzauw")

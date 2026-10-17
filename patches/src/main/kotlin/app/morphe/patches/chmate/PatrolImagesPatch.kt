@@ -13,7 +13,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val PATROL_IMAGES = "Lapp/morphe/extension/chmate/PatrolImages;"
 
-/** Wrap only the worker's successful DAT call; viewing a thread never triggers this feature. */
+/** All native patrol entry points share this worker; ordinary thread viewing is unchanged. */
 internal fun BytecodePatchContext.patchPatrolImages(version: String) {
     val config = when (version) {
         "0.8.10.191 dev" -> listOf("d", "d", "o.ndc", "d", "b", "a", "c", "h", "g", "191")
@@ -97,6 +97,15 @@ internal fun BytecodePatchContext.patchPatrolImages(version: String) {
                 }
                 else -> error("Unknown patrol invocation")
             })
+            // Startup, manual and periodic patrols share checkWithDownload. The native
+            // boolean may be false even with image saving enabled. Change only this
+            // invocation's argument; never persist or alter ChMate's download preference.
+            check(method.parameterTypes.size == 3 && method.parameterTypes.last() == "Z"
+                && method.accessFlags and 8 == 0) { "Patrol download flag changed: $version" }
+            method.addInstructions(0, """
+                invoke-static/range {p3 .. p3}, $PATROL_IMAGES->needsDat(Z)Z
+                move-result p3
+            """.trimIndent())
             count++
         }
     }

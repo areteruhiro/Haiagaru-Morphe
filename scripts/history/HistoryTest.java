@@ -56,17 +56,20 @@ public final class HistoryTest {
         try {
             prefs.edit().putBoolean("groupBrowsingHistoryByBoard",true).putInt("browsingHistoryDays",2).commit();
             BrowsingHistory.initialize(context);
-            List<?> result=BrowsingHistory.transform(source,101);
+            List<?> result=BrowsingHistory.transform(source,103);
             check(result.equals(Arrays.asList(a1,a2,b1,c1)),"Native row fields: recency grouping, date filtering");
             check(source.size()==6 && source.get(0)==a2,"Native input untouched");
             check(BrowsingHistory.transform(source,100)==source,"All/favorite screen unchanged");
-            check(BrowsingHistory.transform(source,104)==source,"Unread screen unchanged");
-            check(BrowsingHistory.transform(source,107)==source,"Posting history unchanged");
-            check(BrowsingHistory.transform(source,-101).equals(result),"Signed history sort");
+            check(BrowsingHistory.transform(source,101)==source,"Unread screen unchanged");
+            check(BrowsingHistory.transform(source,-101)==source,"Reverse unread screen unchanged");
+            check(BrowsingHistory.transform(source,102)==source,"Thread screen unchanged");
+            check(BrowsingHistory.transform(source,104)==source,"Posting history unchanged");
+            check(BrowsingHistory.transform(source,107)==source,"Board screen unchanged");
+            check(BrowsingHistory.transform(source,-103).equals(result),"Signed history sort");
             prefs.edit().putInt("browsingHistoryDays",0).commit();
-            check(BrowsingHistory.transform(source,101).equals(Arrays.asList(a1,a2,b1,old,c1)),"All-period grouping, zero access excluded");
+            check(BrowsingHistory.transform(source,103).equals(Arrays.asList(a1,a2,b1,old,c1)),"All-period grouping, zero access excluded");
             prefs.edit().putBoolean("groupBrowsingHistoryByBoard",false).commit();
-            check(BrowsingHistory.transform(source,101)==source,"Feature off retains native reference");
+            check(BrowsingHistory.transform(source,103)==source,"Feature off retains native reference");
             prefs.edit().putBoolean("groupBrowsingHistoryByBoard",true).putInt("browsingHistoryDays",2).commit();
             if(v191 || v226) {
                 String listType=v191?"o.onAdDisplayed$setBackgroundResource":"o.Yy2$CheckResult";
@@ -79,6 +82,8 @@ public final class HistoryTest {
                 Object fragment=Class.forName(v191?"o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk":"jp.syoboi.a2chMate.fragment.HomeFragment",true,loader).getConstructor().newInstance();
                 field(fragment,v191?"e":"i").set(fragment,adapter);
                 BrowsingHistory.applyLegacy(fragment,101);
+                check(field(adapter,v191?"g":"d").get(adapter)==input,"Legacy unread list and native sort retained");
+                BrowsingHistory.applyLegacy(fragment,103);
                 check(((List<?>)field(adapter,v191?"i":"g").get(adapter)).equals(result),"Legacy filter-source native subclass updated");
                 check(((List<?>)field(adapter,v191?"g":"d").get(adapter)).equals(result),"Legacy display native subclass updated");
                 check(((List<?>)input).size()==6,"Legacy original model retained");
@@ -87,9 +92,18 @@ public final class HistoryTest {
                 Class<?> options=Class.forName("o.ApiApiOptionsHasAccountOptions",true,loader);
                 Object opt=options.getConstructors()[0].newInstance(1f,0,false,false,false,false,false,false);
                 Constructor<?> ctor=data.getConstructor(List.class,int.class,boolean.class,options,int.class,int.class);
-                Object state=ctor.newInstance(source,2,false,opt,101,0);
+                Object state=ctor.newInstance(source,2,false,opt,103,0);
                 check(((List<?>)field(state,"a").get(state)).equals(result),"242 native AdapterData constructor connected");
-                check(((Integer)field(state,"b").get(state))==101,"242 mode retained");
+                check(((Integer)field(state,"b").get(state))==103,"242 mode retained");
+                for(int mode:new int[]{101,-101,102,104,105,106,107}) {
+                    for(int sort=0;sort<5;sort++) {
+                        List<Object> ordered=new ArrayList<>(source);
+                        if((sort&1)!=0)Collections.reverse(ordered);
+                        Collections.rotate(ordered,sort);
+                        Object unread=ctor.newInstance(ordered,2,sort==0,opt,mode,sort);
+                        check(field(unread,"a").get(unread)==ordered,"242 non-history native order/count retained: "+mode+"/"+sort);
+                    }
+                }
                 Object favorites=ctor.newInstance(source,2,false,opt,100,0);
                 check(field(favorites,"a").get(favorites)==source,"242 other screen untouched at native constructor");
             }
