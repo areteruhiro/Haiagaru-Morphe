@@ -52,6 +52,9 @@ public final class XPostPreview {
     private static volatile int revision;
     private static final java.util.WeakHashMap<TextView, Boolean> BOUND = new java.util.WeakHashMap<>();
     private static final java.util.WeakHashMap<TextView, RowState> ROWS = new java.util.WeakHashMap<>();
+    // Native body TextViews call onBound from their overridden setText. Our own
+    // preview writes must not enter that binding hook again (191/226/242).
+    private static final ThreadLocal<TextView> WRITING = new ThreadLocal<>();
     private static final class RowState {
         final String source;
         final java.util.HashSet<String> expanded = new java.util.HashSet<>();
@@ -152,6 +155,7 @@ public final class XPostPreview {
 
     /** Called after native binding; covers recycled rows even when no global layout fires. */
     public static void onBound(Object object) {
+        if (object == WRITING.get()) return;
         DirectBodySelection.prepare(object);
         if (!(object instanceof TextView) || object instanceof EditText || !Haiagaru.xPostPreviewEnabled()) return;
         TextView view = (TextView) object;
@@ -169,8 +173,15 @@ public final class XPostPreview {
     }
 
     private static void setText(TextView view, CharSequence source) {
-        XPostPreviewPosition.beforeChange(view);
-        view.setText(source, TextView.BufferType.SPANNABLE);
+        TextView previous = WRITING.get();
+        WRITING.set(view);
+        try {
+            XPostPreviewPosition.beforeChange(view);
+            view.setText(source, TextView.BufferType.SPANNABLE);
+        } finally {
+            if (previous == null) WRITING.remove();
+            else WRITING.set(previous);
+        }
     }
 
     static void toggle(TextView view, String id) {

@@ -35,6 +35,9 @@ public final class ResponseArchive {
     private static final int ITEM = 0x7e484a01, SWITCHER = 0x7e484a02, VIEW_ARCHIVE = 0x7e484a03;
     private static final ThreadLocal<Object> ACTIVE_DIALOG = new ThreadLocal<>();
     private static final String EXTRA = "haiagaru.response.archive";
+    private static final String SORT_PREFS = "haiagaru-response-archive";
+    private static final String[] SORT_LABELS = {"保存日時：降順（新しい順）", "保存日時：昇順（古い順）",
+            "投稿日時：降順（新しい順）", "投稿日時：昇順（古い順）"};
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private ResponseArchive() { }
@@ -216,13 +219,14 @@ public final class ResponseArchive {
 
     static JSONObject json(ResponseArchiveEntry e) throws Exception {
         return new JSONObject().put("version", 1).put("url", e.url).put("title", e.title)
-                .put("number", e.number).put("name", e.name).put("date", e.date).put("body", e.body);
+                .put("number", e.number).put("name", e.name).put("date", e.date).put("body", e.body).put("mail", e.mail)
+                .put("savedAt", System.currentTimeMillis());
     }
 
     static ResponseArchiveEntry decode(JSONObject j) throws Exception {
         if (j.getInt("version") != 1) throw new IOException("Unknown response archive version");
         return new ResponseArchiveEntry(j.getString("url"), j.getString("title"), j.getInt("number"),
-                j.getString("name"), j.getString("date"), j.getString("body"));
+                j.getString("name"), j.getString("date"), j.getString("body"), j.optString("mail", ""));
     }
 
     static void save(Context context, ResponseArchiveEntry entry) throws Exception {
@@ -328,6 +332,52 @@ public final class ResponseArchive {
         return result;
     }
 
+    private static int sortMode(Context context) {
+        int mode = context.getSharedPreferences(SORT_PREFS, 0).getInt("sort", 0);
+        return mode >= 0 && mode < SORT_LABELS.length ? mode : 0;
+    }
+
+    static File[] sortedArchiveFiles(Context context, File directory) throws IOException {
+        File[] files = archiveFiles(directory);
+        int mode = sortMode(context);
+        Map<File, long[]> keys = new HashMap<>();
+        for (File file : files) {
+            File backup = new File(file.getPath() + ".bak");
+            long saved = backup.exists() ? backup.lastModified() : file.lastModified();
+            long posted = ResponseArchiveOrder.UNKNOWN;
+            // Stream just the date metadata. Do not retain every archived response body in memory.
+            try (android.util.JsonReader reader = new android.util.JsonReader(new InputStreamReader(
+                    new AtomicFile(file).openRead(), StandardCharsets.UTF_8))) {
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    String key = reader.nextName();
+                    if ("savedAt".equals(key)) {
+                        long value = reader.nextLong(); if (value > 0) saved = value;
+                    } else if ("date".equals(key) && mode >= 2) posted = ResponseArchiveOrder.postedAt(plain(reader.nextString()));
+                    else reader.skipValue();
+                }
+                reader.endObject();
+            } catch (Exception error) { report(error); }
+            keys.put(file, new long[]{saved, posted});
+        }
+        Arrays.sort(files, (a, b) -> {
+            long[] x = keys.get(a), y = keys.get(b);
+            return ResponseArchiveOrder.compare(x[0], x[1], a.getName(), y[0], y[1], b.getName(), mode);
+        });
+        return files;
+    }
+
+    private static void showSort(Activity a, Collection collection, int offset) {
+        AlertDialog.Builder chooser = new AlertDialog.Builder(a).setTitle("レスの並び順")
+                .setSingleChoiceItems(SORT_LABELS, sortMode(a), (dialog, which) -> {
+                    a.getSharedPreferences(SORT_PREFS, 0).edit().putInt("sort", which).apply();
+                    dialog.dismiss();
+                    returnToList(a, collection, 0);
+                }).setNegativeButton("戻る", (d, w) -> returnToList(a, collection, offset));
+        if (collection != null) chooser.setNeutralButton("名前を変更", (d, w) -> editCollection(a, collection, null));
+        chooser.show();
+    }
+
     public static void showList(Activity a) { chooseCollection(a, null); }
 
     private static void chooseCollection(Activity a, ResponseArchiveEntry entry) { chooseCollection(a, entry, 0); }
@@ -397,7 +447,7 @@ public final class ResponseArchive {
         IO.execute(() -> {
             try {
                 Collection current = readCollection(a, collection.id);
-                File[] files = archiveFiles(collectionDirectory(a, current.id));
+                File[] files = sortedArchiveFiles(a, collectionDirectory(a, current.id));
                 int end = Math.min(files.length, offset + 10);
                 ArrayList<ResponseArchiveEntry> rows = new ArrayList<>();
                 for (int i = offset; i < end; i++) {
@@ -431,7 +481,7 @@ public final class ResponseArchive {
                     }
                     AlertDialog viewer = new AlertDialog.Builder(a).setTitle(current.title + "（" + files.length + "レス）")
                             .setView(scroll).setNegativeButton("スレ一覧", (d, w) -> showList(a))
-                            .setNeutralButton("名前を変更", (d, w) -> editCollection(a, current, null))
+                            .setNeutralButton("並び順", (d, w) -> showSort(a, current, offset))
                             .setPositiveButton(end < files.length ? "次の10件" : offset > 0 ? "先頭へ" : "閉じる",
                                     (d, w) -> { if (end < files.length || offset > 0) showCollection(a, current, end < files.length ? end : 0); })
                             .create();
@@ -455,14 +505,7 @@ public final class ResponseArchive {
         if (a == null || a.isFinishing()) return;
         IO.execute(() -> {
             try {
-                File[] stored = directory(a).listFiles((dir, name) -> name.matches("[0-9a-f]{64}\\.json(?:\\.bak)?"));
-                if (stored == null) throw new IOException("Cannot list response archive");
-                // AtomicFile may leave only .bak after an interrupted write. openRead restores it.
-                LinkedHashSet<File> unique = new LinkedHashSet<>();
-                for (File f : stored) unique.add(f.getName().endsWith(".bak")
-                        ? new File(f.getParentFile(), f.getName().substring(0, f.getName().length() - 4)) : f);
-                File[] files = unique.toArray(new File[0]);
-                Arrays.sort(files, (x, y) -> Long.compare(y.lastModified(), x.lastModified()));
+                File[] files = sortedArchiveFiles(a, directory(a));
                 ArrayList<ResponseArchiveEntry> rows = new ArrayList<>();
                 int end = Math.min(files.length, offset + 100), skipped = 0;
                 for (int i = offset; i < end; i++) {
@@ -474,7 +517,7 @@ public final class ResponseArchive {
                 }
                 final int bad = skipped;
                 ArrayList<String> labels = new ArrayList<>();
-                for (ResponseArchiveEntry e : rows) labels.add(e.title + "\nレス " + e.number + "  " + plain(e.name));
+                for (ResponseArchiveEntry e : rows) labels.add(e.title + "\nレス " + e.number + "  " + plain(e.name) + "\n" + plain(e.date));
                 boolean more = end < files.length;
                 if (more) labels.add("次の100件を表示");
                 if (offset > 0) labels.add("先頭に戻る");
@@ -485,6 +528,7 @@ public final class ResponseArchive {
                                 if (which < rows.size()) loadDetail(a, rows.get(which));
                                 else showLegacyList(a, more && which == rows.size() ? end : 0);
                             }).setMessage(labels.isEmpty() ? "保存したレスはありません。レス本文を長押しして保存できます。" : null)
+                            .setNeutralButton("並び順", (d, w) -> showSort(a, null, offset))
                             .setNegativeButton("閉じる", null).show();
                     if (bad > 0) toast(a, "読み込めない保存レスを" + bad + "件スキップしました");
                 });
@@ -494,6 +538,12 @@ public final class ResponseArchive {
 
     @SuppressWarnings("deprecation")
     private static String plain(String html) { return Html.fromHtml(html).toString(); }
+
+    static String copyText(ResponseArchiveEntry entry) {
+        String mail = plain(entry.mail).trim();
+        return entry.number + " " + plain(entry.name).trim() + (mail.isEmpty() ? "" : " " + mail) + " " + plain(entry.date).trim()
+                + "\n\n" + plain(entry.body).trim();
+    }
 
     private static void loadDetail(Activity a, ResponseArchiveEntry row) {
         IO.execute(() -> {
@@ -511,7 +561,18 @@ public final class ResponseArchive {
         text.setPadding(pad, pad, pad, pad); text.setTextIsSelectable(true);
         // No WebView, image getter or automatic URL fetch: offline viewing only.
         text.setText(e.number + " " + plain(e.name) + "\n" + plain(e.date) + "\n\n" + plain(e.body) + "\n\n" + e.url);
-        scroll.addView(text);
+        LinearLayout contents = new LinearLayout(a); contents.setOrientation(LinearLayout.VERTICAL);
+        Button copy = new Button(a); copy.setText("ヘッダー＋本文をコピー");
+        copy.setOnClickListener(v -> {
+            ClipboardManager clipboard = (ClipboardManager) a.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (clipboard != null) {
+                ClipboardHistory.setPrimaryClip(clipboard, ClipData.newPlainText("保存レス", copyText(e)));
+                toast(a, "ヘッダーと本文をコピーしました");
+            }
+        });
+        contents.addView(copy, new LinearLayout.LayoutParams(-1, -2));
+        contents.addView(text);
+        scroll.addView(contents);
         new AlertDialog.Builder(a).setTitle(e.title).setView(scroll)
                 .setNegativeButton("一覧へ", (d, w) -> returnToList(a, collection, offset))
                 .setPositiveButton("URLをコピー", (d, w) -> {
@@ -551,7 +612,32 @@ public final class ResponseArchive {
             ArchiveOrigins.addSettings(container, a);
             container.addView(nativeList, new LinearLayout.LayoutParams(-1, 0, 1));
             content.addView(container, original);
+            // Only inset the injected controls. The native list keeps its own inset handling.
+            container.setOnApplyWindowInsetsListener((view, insets) -> {
+                updateArchiveButtonInsets(container, button, insets);
+                return insets;
+            });
+            container.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+                if (android.os.Build.VERSION.SDK_INT >= 23)
+                    updateArchiveButtonInsets(container, button, container.getRootWindowInsets());
+            });
+            container.requestApplyInsets();
         });
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void updateArchiveButtonInsets(View container, Button button, android.view.WindowInsets insets) {
+        if (insets == null) return;
+        int top = insets.getSystemWindowInsetTop();
+        if (android.os.Build.VERSION.SDK_INT >= 28 && insets.getDisplayCutout() != null)
+            top = Math.max(top, insets.getDisplayCutout().getSafeInsetTop());
+        int[] position = new int[2]; container.getLocationInWindow(position);
+        int margin = Math.max(0, top - position[1]);
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) button.getLayoutParams();
+        if (params.topMargin != margin) {
+            params.topMargin = margin;
+            button.setLayoutParams(params);
+        }
     }
 
     private static void toast(Activity a, String text) { if (a != null && !a.isDestroyed()) Toast.makeText(a, text, Toast.LENGTH_LONG).show(); }

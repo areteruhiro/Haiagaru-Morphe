@@ -177,6 +177,12 @@ public final class VideoViewerActivity extends Activity {
         int[] p = new int[2]; video.getLocationOnScreen(p); return p[0] + video.getWidth() / 2f;
     }
     void cancelNativeVideoGesture() { if (gestures != null) gestures.cancel(); }
+    // MediaController is a separate focused window. The uncovered video still
+    // receives swipes, even though the Activity itself no longer owns focus.
+    boolean hasVideoGestureFocus() {
+        return foreground && !isFinishing() && !isDestroyed()
+                && (hasWindowFocus() || controls != null && controls.isShowing() && controls.hasWindowFocus());
+    }
     private void setStatus(String message) {
         status.setText(message);
         status.setVisibility(message.isEmpty() ? View.GONE : View.VISIBLE);

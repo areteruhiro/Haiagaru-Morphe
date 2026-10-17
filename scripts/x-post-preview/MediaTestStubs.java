@@ -9,3 +9,8 @@ final class VideoFrameThumbnail {
 final class VideoThumbnailServer {
     static String placeholder() { return ""; }
 }
+
+// Direct selection is unrelated to this fixture's synthetic TextView subclasses.
+final class DirectBodySelection {
+    static boolean prepare(Object view) { return false; }
+}

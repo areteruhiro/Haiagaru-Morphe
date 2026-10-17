@@ -34,6 +34,33 @@ public class VerifyThreadCommands {
         check(ThreadCommandRules.conflicts("本文","!metadent:vv:\n!metadent:v:"));
         check(!ThreadCommandRules.conflicts("本文","!one\n!two\n!one"));
         check(ThreadCommandRules.values("edge")[2].equals("!metadent:v:"));
+        for (String p : new String[]{"open2ch", "shitaraba", "afternoontea", "custom"})
+            check(ThreadCommandRules.labels(p).length == ThreadCommandRules.values(p).length);
+        check(ThreadCommandRules.profile("https://hayabusa.open2ch.net/livejupiter/").equals("open2ch"));
+        check(ThreadCommandRules.profile("https://jbbs.shitaraba.net/game/1/").equals("shitaraba"));
+        check(ThreadCommandRules.profile("https://afternoontea.st/boards/1/").equals("afternoontea"));
+        check(ThreadCommandRules.profile("https://open2ch.net.evil.com/").equals("custom"));
+        check(ThreadCommandRules.boardKey("https://egg.5ch.io/test/read.cgi/android/123/1").equals("egg.5ch.io/android/"));
+        check(ThreadCommandRules.boardKey("https://jbbs.shitaraba.net/bbs/read.cgi/game/123/456/").equals("jbbs.shitaraba.net/game/123/"));
+        check(ThreadCommandRules.boardKey("https://afternoontea.st/boards/123/").equals("afternoontea.st/boards/123/"));
+        check(ThreadCommandRules.boardKey("https://user@egg.5ch.io/android/").isEmpty());
+        check(ThreadCommandRules.boardKey("file:///android/").isEmpty());
+        check(ThreadCommandRules.settingsUrl("http://egg.5ch.io/test/read.cgi/android/123/").equals("https://egg.5ch.io/android/SETTING.TXT"));
+        check(ThreadCommandRules.settingsUrl("https://egg.5ch.io/android/SETTING.TXT").equals("https://egg.5ch.io/android/SETTING.TXT"));
+        check(ThreadCommandRules.settingsUrl("https://d1ch.cc/edge/").isEmpty());
+        check(ThreadCommandRules.settingsUrl("https://5ch.io.evil.com/android/").isEmpty());
+        var settings = ThreadCommandRules.settings("BBS_USE_VIPQ2=2\r\nBBS_FORCE_ID=checked\nEVIL=hidden\nBBS_LINE_NUMBER=20\n");
+        check(settings.size() == 3);
+        check(settings.get("BBS_USE_VIPQ2").equals("2"));
+        check(settings.get("BBS_LINE_NUMBER").equals("20"));
+        check(!ThreadCommandRules.available("5ch",0,false));
+        check(ThreadCommandRules.available("5ch",13,false));
+        check(ThreadCommandRules.nameCommand("5ch",15));
+        check(!ThreadCommandRules.nameCommand("edge",13));
+        check(ThreadCommandRules.available("open2ch",0,true));
+        check(!ThreadCommandRules.available("open2ch",2,true));
+        check(ThreadCommandRules.available("open2ch",2,false));
+        check(!ThreadCommandRules.available("open2ch",0,false));
         System.out.println("PASS " + count + " thread-command cases");
     }
 }
