@@ -10,7 +10,7 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.12](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.12)
+最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.13](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.13)
 
 以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
 
@@ -21,7 +21,7 @@ ChMateに追加設定・閲覧・メディア・バックアップ機能を組�
 1.8.11: [コピー履歴・分類](docs/clipboard-history.md)。Haiagaru設定の「履歴・保存件数」または書き込み画面の︙から、ChMate内でコピーした本文を検索・再コピー・カテゴリ分けできます。記録は初期オフ、最新100件まで。他アプリのコピーは収集しません。
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.8.12` の概要: [1.8.11からの更新内容](docs/release-1.8.12.md)。Xプレビューのクラッシュ修正、動画ジェスチャー、レスアーカイブのコピー・並び順、板別コマンドの拡充を含みます。
+プレ版 `1.8.13` の概要: [1.8.12からの更新内容](docs/release-1.8.13.md)。未読一覧の並び順修正、巡回画像保存の改善、既読スレ削除、追加アイコンの表示・画像設定、返信画面のコマンドボタン削除を含みます。
 
 ## 主な機能
 
