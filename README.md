@@ -179,7 +179,7 @@ APKは再署名されるため、Play版など署名が異なるChMateとはそ�
 さらにご支援いただける場合は、以下から寄付を受け付けています。
 
 - [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
-- [PayPay](https://qr.paypay.ne.jp/p2p01_Cc1k5WqxClWy8HCG)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_I0Y0ojbYQ7RlZG1u)
 
 ### 謝辞
 yujirox 様 <br>
