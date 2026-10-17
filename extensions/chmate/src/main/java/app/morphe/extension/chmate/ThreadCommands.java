@@ -37,10 +37,10 @@ public final class ThreadCommands {
         try {
             if (root.findViewWithTag(TAG) != null) return;
             Object binding, model;
-            String bodyName, targetName, modeName, urlMethod;
+            String bodyName, nameName, targetName, modeName, urlMethod;
             if (fragment.getClass().getName().equals("o.p9ExternalSyntheticLambda6")) {
                 binding = field(fragment, "d"); model = field(fragment, "y");
-                bodyName = "f"; targetName = "w"; modeName = "o"; urlMethod = "i";
+                bodyName = "f"; nameName = "p"; targetName = "w"; modeName = "o"; urlMethod = "i";
             } else {
                 boolean modern242;
                 try {
@@ -49,27 +49,30 @@ public final class ThreadCommands {
                 } catch (ClassNotFoundException ignored) { modern242 = false; }
                 if (modern242) {
                     binding = field(fragment, "i"); model = unwrap(field(fragment, "y"));
-                    bodyName = "b"; targetName = "T"; modeName = "x"; urlMethod = "A";
+                    bodyName = "b"; nameName = "n"; targetName = "T"; modeName = "x"; urlMethod = "A";
                 } else {
                     binding = field(fragment, "h"); model = unwrap(field(fragment, "u"));
-                    bodyName = "a"; targetName = "P"; modeName = "r"; urlMethod = "G";
+                    bodyName = "a"; nameName = "l"; targetName = "P"; modeName = "r"; urlMethod = "G";
                 }
             }
             Object target = field(model, targetName);
             String url = (String) target.getClass().getMethod(urlMethod).invoke(target);
             ExternalBoardAuth.target(fragment, url);
             Object mode = field(model, modeName);
-            if (!(mode instanceof Enum) || !((Enum<?>) mode).name().equals("Thread")) return;
+            if (!(mode instanceof Enum)) return;
+            boolean thread = ((Enum<?>) mode).name().equals("Thread");
             EditText body = (EditText) field(binding, bodyName);
+            EditText name = (EditText) field(binding, nameName);
             String profile = ThreadCommandRules.profile(url);
+            if (!thread && !profile.equals("5ch") && !profile.equals("open2ch")) return;
             // Insert alongside the body container, preserving its native listeners and layout params.
             View anchor = body;
             while (anchor.getParent() instanceof ViewGroup) {
                 ViewGroup parent = (ViewGroup) anchor.getParent();
                 if (parent instanceof LinearLayout && ((LinearLayout) parent).getOrientation() == LinearLayout.VERTICAL) {
                     Button button = new Button(root.getContext());
-                    button.setTag(TAG); button.setText("コマンド（" + (profile.equals("edge") ? "エッヂ" : profile.equals("5ch") ? "5ch" : "カスタム") + "）");
-                    button.setOnClickListener(v -> choose(body, profile));
+                    button.setTag(TAG); button.setText("コマンド（" + serviceName(profile) + "）");
+                    button.setOnClickListener(v -> choose(body, name, profile, url, thread));
                     parent.addView(button, parent.indexOfChild(anchor), new LinearLayout.LayoutParams(-1, -2));
                     return;
                 }
@@ -80,25 +83,65 @@ public final class ThreadCommands {
         }
     }
     private static void choose(EditText body, String profile) {
-        Context c = body.getContext();
-        new AlertDialog.Builder(c).setTitle("スレ立てコマンド")
-                .setItems(ThreadCommandRules.labels(profile), (d, index) -> edit(body, profile, index)).setNegativeButton("閉じる", null).show();
+        choose(body, null, profile, "", true);
+    }
+    private static String serviceName(String profile) {
+        switch (profile) {
+            case "5ch": return "5ch"; case "edge": return "エッヂ"; case "open2ch": return "おーぷん2ch";
+            case "shitaraba": return "したらば"; case "afternoontea": return "AfternoonTea"; default: return "カスタム";
+        }
+    }
+    private static void choose(EditText body, EditText name, String profile, String url, boolean thread) {
+        java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+        java.util.ArrayList<Integer> indices = new java.util.ArrayList<>();
+        String[] all = ThreadCommandRules.labels(profile);
+        for (int i = 0; i < all.length; i++) if (ThreadCommandRules.available(profile, i, thread)) { labels.add(all[i]); indices.add(i); }
+        AlertDialog.Builder chooser = new AlertDialog.Builder(body.getContext()).setTitle((thread ? "スレ立て" : "レス") + "コマンド・" + serviceName(profile))
+                .setItems(labels.toArray(new String[0]), (d, index) -> edit(body, name, profile, url, indices.get(index)))
+                .setNeutralButton("仕様・使い方", (d, w) -> help(body.getContext(), profile))
+                .setNegativeButton("閉じる", null);
+        if (!ThreadCommandRules.settingsUrl(url).isEmpty())
+            chooser.setPositiveButton("板設定を取得", (d, w) -> ThreadCommandSettings.show(body.getContext(), url));
+        chooser.show();
+    }
+    private static void help(Context c, String profile) {
+        String message;
+        switch (profile) {
+            case "5ch": message = "!extendは板設定BBS_USE_VIPQ2が2以上の場合に使用します。どんぐりの0は必要レベルで、編集できます。1/2は大砲可、3/4は不可。名前欄用は本文に入りません。!donguriは大砲不可のスレでも攻撃対象になる場合があります。\nhttps://donguri.wikiru.jp/?command"; break;
+            case "edge": message = "!metadent:v: はレベル、vv: は識別文字列、vvv: は両方を表示。スレ立て本文用です。\nhttps://github.com/edginer/eddiner/blob/main/src/routes/bbs_cgi.rs"; break;
+            case "open2ch": message = "!jienはスレ立て本文用。!aku／!kaijoはスレ主・副主等のレス本文用で、対象レス番号を指定します。事前アク禁の引継ぎは本文コマンドではなくWebの次スレ作成フォームで行います。\nhttps://onj-shadowverse.game-info.wiki/d/%21aku\nhttps://w.atwiki.jp/openj3/pages/533.html"; break;
+            case "shitaraba": message = "本文に入れる共通のスレ設定コマンドは確認できていません。管理画面の設定と本文コマンドは別です。自由入力はその板で公開された仕様を確認して使ってください。\nhttps://rentalbbs.shitaraba.com/rule/help/"; break;
+            case "afternoontea": message = "共通の本文コマンド仕様は確認できていません。板のお知らせ・ローカルルールを確認してください。\nhttps://afternoontea.st/"; break;
+            default: message = "自由入力は掲示板固有の仕様を確認して使ってください。";
+        }
+        android.widget.TextView view = new android.widget.TextView(c); view.setPadding(24, 16, 24, 16);
+        view.setAutoLinkMask(android.text.util.Linkify.WEB_URLS); view.setText(message);
+        view.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        android.widget.ScrollView scroll = new android.widget.ScrollView(c); scroll.addView(view);
+        new AlertDialog.Builder(c).setTitle("コマンドの仕様・注意").setView(scroll).setPositiveButton("閉じる", null).show();
     }
     private static AlertDialog edit(EditText body, String profile, int index) {
+        return edit(body, null, profile, "", index);
+    }
+    private static AlertDialog edit(EditText body, EditText name, String profile, String url, int index) {
         Context c = body.getContext();
         SharedPreferences prefs = c.getSharedPreferences("haiagaru_thread_commands", 0);
-        String key = profile + "." + index;
+        String legacyKey = profile + "." + index;
+        String board = ThreadCommandRules.boardKey(url);
+        String key = board.isEmpty() ? legacyKey : "board." + board + "." + index;
+        boolean toName = ThreadCommandRules.nameCommand(profile, index);
         String initial = ThreadCommandRules.values(profile)[index];
         EditText input = new EditText(c);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         input.setSingleLine(false); input.setMinLines(3); input.setMaxLines(8);
         input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
         input.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_ENTER_ACTION);
-        input.setText(ThreadCommandRules.editValue(initial, prefs.getString(key, null)));
+        input.setText(ThreadCommandRules.editValue(initial, prefs.getString(key, prefs.getString(legacyKey, null))));
         AlertDialog dialog = new AlertDialog.Builder(c).setTitle("コマンドを編集して追加")
-                .setMessage("本文の先頭に追加します。ワッチョイ候補の初期値は3行です（投稿時に1行消費される場合に備えます）。改行・同じコマンドの再追加ができます。候補ごとの編集内容を保存します。掲示板の設定によっては無効です。IP表示コマンドはIPが公開されます。")
+                .setMessage((toName ? "名前欄へ追加します。!donguriは大砲不可のスレでも攻撃対象になる場合があります。" : "本文の先頭に追加します。ワッチョイ候補は3行です。改行・同じコマンドの再追加ができます。")
+                        + "編集内容は板・候補ごとに保存します。IP表示はIPが公開されます。板設定によっては使えません。" + (profile.equals("5ch") ? "!extendにはBBS_USE_VIPQ2=2以上が必要です。" : ""))
                 .setView(input).setNegativeButton("キャンセル", null)
-                .setNeutralButton("初期値", null).setPositiveButton("本文に追加", null).create();
+                .setNeutralButton("初期値", null).setPositiveButton(toName ? "名前欄に追加" : "本文に追加", null).create();
         dialog.setOnShowListener(d -> {
             dialog.getButton(-3).setOnClickListener(v -> input.setText(initial));
             dialog.getButton(-1).setOnClickListener(v -> {
@@ -106,12 +149,15 @@ public final class ThreadCommands {
                 if (command.isEmpty() || command.length() > 4096) {
                     input.setError("コマンドを入力してください（改行可・4096文字まで）"); return;
                 }
+                if (command.contains("{レス番号}")) { input.setError("{レス番号}を対象の数字に置き換えてください（例：!aku31）"); return; }
+                if (toName && (name == null || command.contains("\n"))) { input.setError("名前欄が取得できないか、改行が含まれています"); return; }
                 String draft = body.getText().toString();
-                if (ThreadCommandRules.conflicts(draft, command)) {
+                if (!toName && ThreadCommandRules.conflicts(draft, command)) {
                     input.setError("同系統のコマンドが本文にあります。本文で編集・削除してください"); return;
                 }
                 prefs.edit().putString(key, command).apply();
-                body.getText().insert(0, command + "\n"); body.setSelection(command.length() + 1);
+                if (toName) { name.getText().append((name.length() == 0 ? "" : " ") + command); name.setSelection(name.length()); }
+                else { body.getText().insert(0, command + "\n"); body.setSelection(command.length() + 1); }
                 dialog.dismiss();
             });
         });

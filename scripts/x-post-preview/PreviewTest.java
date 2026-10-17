@@ -23,6 +23,25 @@ public final class PreviewTest {
         @Override public boolean isShown() { return getVisibility() == android.view.View.VISIBLE; }
     }
     static int checks;
+    /** Matches native ChMate body setText -> injected onBound, unlike plain TextView. */
+    static final class BoundTextView extends TextView {
+        boolean armed, failWrite;
+        int depth, maximumDepth, bindings;
+        BoundTextView(Context context) { super(context); armed = true; }
+        @Override public boolean isShown() { return true; }
+        @Override public void setText(CharSequence text, BufferType type) {
+            if (failWrite) { failWrite = false; throw new IllegalStateException("test write failed"); }
+            super.setText(text, type);
+            if (!armed) return;
+            bindings++;
+            depth++;
+            maximumDepth = Math.max(maximumDepth, depth);
+            try {
+                if (depth > 8) throw new AssertionError("Recursive native preview binding");
+                XPostPreview.onBound(this);
+            } finally { depth--; }
+        }
+    }
     static final class RecordingContext extends ContextWrapper {
         Intent opened;
         RecordingContext(Context context) { super(context); }
@@ -162,7 +181,43 @@ public final class PreviewTest {
         view.setVisibility(android.view.View.GONE);
         XPostPreview.apply(view);
         check(view.getText().toString().equals(original), "Hidden body receives no preview");
+        checkNativeReentry(context, source, original, data.text);
         System.out.println("PASS: " + checks + " Android tweet-preview checks; no network or account access.");
+    }
+
+    static void checkNativeReentry(Context context, CharSequence source, String original, String body) {
+        Haiagaru.enabled = true; Haiagaru.collapsible = false;
+        BoundTextView nativeView = new BoundTextView(context);
+        nativeView.setText(source, TextView.BufferType.SPANNABLE);
+        check(nativeView.maximumDepth == 2 && nativeView.bindings == 2, "Native setText reentry is bounded");
+        check(nativeView.getText().toString().contains(body), "Cached preview survives native binding");
+        String expected = nativeView.getText().toString();
+        for (int i = 0; i < 20; i++) XPostPreview.onBound(nativeView);
+        check(nativeView.getText().toString().equals(expected), "Repeated native binding never duplicates preview");
+        check(nativeView.maximumDepth == 2, "Repeated rebind does not grow the stack");
+        Haiagaru.collapsible = true;
+        nativeView.setText(source, TextView.BufferType.SPANNABLE);
+        check(nativeView.getText().toString().contains("▶ X投稿"), "Collapsed native binding remains usable");
+        XPostPreview.toggle(nativeView, "123");
+        check(nativeView.getText().toString().contains(body), "Native expand does not recurse");
+        XPostPreview.toggle(nativeView, "123");
+        check(!nativeView.getText().toString().contains(body), "Native collapse does not recurse");
+        nativeView.setText(new SpannableStringBuilder("https://x.com/example/status/999"), TextView.BufferType.SPANNABLE);
+        check(nativeView.getText().toString().contains("▶ X投稿"), "Uncached collapsed native binding does not recurse");
+        Haiagaru.collapsible = false;
+        nativeView.armed = false;
+        nativeView.setText(source, TextView.BufferType.SPANNABLE);
+        nativeView.armed = true; nativeView.failWrite = true;
+        try { XPostPreview.onBound(nativeView); throw new AssertionError("Expected test write failure"); }
+        catch (IllegalStateException expectedFailure) { checks++; }
+        XPostPreview.onBound(nativeView);
+        check(nativeView.getText().toString().contains(body), "Write guard is cleared after an exception");
+        nativeView.setText(new SpannableStringBuilder("別のレス"), TextView.BufferType.SPANNABLE);
+        check(nativeView.getText().toString().equals("別のレス"), "Recycled native row removes previous preview");
+        nativeView.setText(source, TextView.BufferType.SPANNABLE);
+        Haiagaru.enabled = false; XPostPreview.apply(nativeView);
+        check(nativeView.getText().toString().equals(original), "OFF removes preview through native binding");
+        Haiagaru.enabled = true;
     }
 
     static void tapToggle(TextView view) {

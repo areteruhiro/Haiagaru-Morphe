@@ -90,7 +90,7 @@ public final class VideoViewerGestures {
     }
 
     private void complete(int code) {
-        if (code == 0 || activity.isFinishing() || !activity.hasWindowFocus()) return;
+        if (code == 0 || !activity.hasVideoGestureFocus()) return;
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(activity);
         if (!prefs.getBoolean("gesture", true)) return;
         String[] keys = {"gestureBack", "gestureForward", "gestureTop", "gestureBottom", "gestureRefresh",

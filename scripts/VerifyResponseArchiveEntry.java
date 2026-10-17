@@ -9,14 +9,14 @@ public final class VerifyResponseArchiveEntry {
     public static void main(String[] args) throws Exception {
         Path temp = Files.createTempDirectory("haiagaru-response-archive-");
         String[] types = {"processAdDisplayErrorPostbackForUserError", "BouncyCastleSocketAdapterCompanion", "KeJ11"};
-        String[][] fields = {{"o", "n", "q", "c"}, {"l", "m", "t", "d"}, {"o", "n", "p", "h"}};
+        String[][] fields = {{"o", "n", "q", "c", "j"}, {"l", "m", "t", "d", "g"}, {"o", "n", "p", "h", "j"}};
         try {
             for (int i = 0; i < types.length; i++) {
                 String[] f = fields[i];
                 Path src = temp.resolve(types[i] + ".java");
                 Files.writeString(src, "package o; public class " + types[i] + " { public int " + f[0]
                         + "=42; public String " + f[1] + "=\"name\", " + f[2]
-                        + "=\"date ID:abc+/\", " + f[3] + "=\"hello<br>world &amp; test\"; }");
+                        + "=\"date ID:abc+/\", " + f[3] + "=\"hello<br>world &amp; test\", " + f[4] + "=\"sage\"; }");
                 check(ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", temp.toString(), src.toString()) == 0, "native fixture compile");
             }
             Path board = temp.resolve("Board.java");
@@ -31,6 +31,7 @@ public final class VerifyResponseArchiveEntry {
                     check(e.name.equals("name") && e.date.equals("date ID:abc+/"), "name/date unchanged");
                     check(e.body.equals("hello<br>world &amp; test"), "raw body unchanged");
                     check(e.title.equals("thread title"), "title retained");
+                    check(e.mail.equals("sage"), "mail/sage retained");
                 }
             }
             for (String bad : new String[]{"file:///sdcard/a", "https://user:pass@example.org/a", "javascript:alert(1)", "not url"}) {

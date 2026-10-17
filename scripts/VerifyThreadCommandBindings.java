@@ -38,6 +38,13 @@ public class VerifyThreadCommandBindings {
                 ClassDef c = classes.get(t); t = c == null ? null : c.getSuperclass();
             }
             if (!edit) throw new AssertionError("Not a native editor " + body);
+            String name = field(binding, new String[]{"p", "l", "n"}[n]).getType();
+            edit = false;
+            for (String t = name; t != null;) {
+                if (t.equals("Landroid/widget/EditText;")) { edit = true; break; }
+                ClassDef c = classes.get(t); t = c == null ? null : c.getSuperclass();
+            }
+            if (!edit) throw new AssertionError("Not a native name editor " + name);
             field(p[0], p[3]); field(p[4], p[6]);
             String target = field(p[4], p[5]).getType();
             boolean url = false, created = false;
