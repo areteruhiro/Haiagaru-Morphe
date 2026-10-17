@@ -17,7 +17,10 @@ public final class HistoryLimits {
     private static final String PREFS = "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static volatile Context context;
     private HistoryLimits() { }
-    static void initialize(Context value) { context = value.getApplicationContext(); }
+    static void initialize(Context value) {
+        context = value.getApplicationContext();
+        BrowsingHistory.initialize(value);
+    }
     private static SharedPreferences prefs() { return context.getSharedPreferences(PREFS, 0); }
     private static SharedPreferences nativePrefs() { return PreferenceManager.getDefaultSharedPreferences(context); }
     private static int defaultDisplay() {
@@ -62,8 +65,10 @@ public final class HistoryLimits {
     }
     static final class Settings {
         final Activity activity;
-        final Switch unlimited;
-        final EditText retained, displayed, searches;
+        final Switch unlimited, grouped;
+        final EditText retained, displayed, searches, historyDays;
+        final boolean oldGrouped;
+        final int oldHistoryDays;
         final boolean oldUnlimited;
         final int oldRetained, oldDisplayed, oldSearches;
         Settings(LinearLayout layout, Activity activity) {
@@ -72,6 +77,22 @@ public final class HistoryLimits {
             oldRetained = nativePrefs().getInt("autoDelete", 300);
             oldDisplayed = prefs().getInt("recentThreadDisplayCount", defaultDisplay());
             oldSearches = prefs().getInt("searchHistoryCount", 50);
+            oldGrouped = BrowsingHistory.enabled();
+            oldHistoryDays = BrowsingHistory.days();
+            grouped = new Switch(activity);
+            grouped.setText("閲覧履歴を板ごとにまとめる（通常画面のみ）");
+            grouped.setChecked(oldGrouped);
+            layout.addView(grouped);
+            historyDays = field(layout, "まとめる閲覧履歴の対象（何日前から／0で全期間）", oldHistoryDays);
+            historyDays.setEnabled(oldGrouped);
+            grouped.setOnCheckedChangeListener((button, checked) -> historyDays.setEnabled(checked));
+            TextView groupingDescription = new TextView(activity);
+            groupingDescription.setText("標準は2日前の午前0時から今日まで。1〜36500日前、0で全期間。"
+                    + "最近閲覧した板から、板内は閲覧が新しい順に表示し、板名・日付の区切りは追加しません。"
+                    + "最近見たスレのポップアップやお気に入りは変更せず、古い履歴も削除しません。"
+                    + "オフにすると従来の表示に戻ります。");
+            groupingDescription.setTextSize(13);
+            layout.addView(groupingDescription);
             unlimited = new Switch(activity);
             unlimited.setText("閲覧スレ履歴を無制限に保存（自動削除しない）");
             unlimited.setChecked(oldUnlimited);
@@ -102,7 +123,8 @@ public final class HistoryLimits {
         boolean validate() {
             int retention = number(retained), display = number(displayed), search = number(searches);
             boolean valid = (unlimited.isChecked() || retention >= 1 && retention <= 10000)
-                    && display >= 0 && display <= 10000 && search >= 0 && search <= 10000;
+                    && display >= 0 && display <= 10000 && search >= 0 && search <= 10000
+                    && (!grouped.isChecked() || number(historyDays) >= 0 && number(historyDays) <= 36500);
             if (!valid) Toast.makeText(activity, "履歴件数は表示された範囲の数値で入力してください。設定は保存されませんでした。", Toast.LENGTH_LONG).show();
             return valid;
         }
@@ -110,10 +132,13 @@ public final class HistoryLimits {
             int retention = unlimited.isChecked() ? oldRetained : number(retained);
             int display = number(displayed), search = number(searches);
             prefs().edit().putBoolean("unlimitedThreadHistory", unlimited.isChecked())
+                    .putBoolean("groupBrowsingHistoryByBoard", grouped.isChecked())
+                    .putInt("browsingHistoryDays", grouped.isChecked() ? number(historyDays) : oldHistoryDays)
                     .putInt("recentThreadDisplayCount", display).putInt("searchHistoryCount", search).commit();
             if (retention != oldRetained) nativePrefs().edit().putInt("autoDelete", retention).commit();
             return oldUnlimited != unlimited.isChecked() || oldRetained != retention
-                    || oldDisplayed != display || oldSearches != search;
+                    || oldDisplayed != display || oldSearches != search || oldGrouped != grouped.isChecked()
+                    || grouped.isChecked() && oldHistoryDays != number(historyDays);
         }
     }
 }

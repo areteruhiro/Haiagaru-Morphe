@@ -37,7 +37,7 @@ public class VerifyEdgeReporterHistory {
         String full = "スレ [/sE8R8tL★]";
         restart();
         equal("[/sE8R8tL★]", EdgeReporterId.suffix(full));
-        equal(null, EdgeReporterId.suffix("スレ [not-an-id★]"));
+        equal("[not-an-id★]", EdgeReporterId.suffix("スレ [not-an-id★]"));
         equal(null, EdgeReporterId.suffix(full + "追記"));
         equal(false, EdgeReporterId.isBoard("evil.example/liveedge"));
         equal(false, EdgeReporterId.isBoard("bbs.eddibb.cc%2Fother"));
@@ -60,6 +60,13 @@ public class VerifyEdgeReporterHistory {
         equal("別スレ [g66+xfHI★]", EdgeReporterHistory.title(board,1234567892L,"別スレ"));
         EdgeReporterHistory.capture(new Object(),List.of(new Subject(1234567893L, full)));
         equal("スレ", EdgeReporterHistory.title(board,1234567893L,"スレ"));
+        equal(full, EdgeReporterHistory.displayTitle(1234567890L,"スレ"));
+        equal(full, EdgeReporterHistory.displayTitle(1234567890L,full));
+        equal("スレ [different★]", EdgeReporterHistory.displayTitle(1234567890L,"スレ [different★]"));
+        equal("スレ", EdgeReporterHistory.displayTitle(1234567899L,"スレ"));
+        equal(null, EdgeReporterHistory.displayTitle(1234567890L,null));
+        equal("", EdgeReporterHistory.displayTitle(1234567890L,""));
+        equal("スレ", EdgeReporterHistory.displayTitle(0,"スレ"));
         System.out.println("PASS: " + checks + " reporter persistence and isolation checks");
     }
 }

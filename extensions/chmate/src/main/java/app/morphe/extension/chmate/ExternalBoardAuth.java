@@ -3,6 +3,8 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -15,6 +17,9 @@ import android.webkit.CookieManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.ScrollView;
+import android.widget.Toast;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,18 +131,50 @@ public final class ExternalBoardAuth {
     public static void observe(CharSequence message) {
         if(message==null || !BoardAuthRules.required(message.toString())) return;
         String text=message.toString();
+        WeakReference<Activity> source=new WeakReference<>(resumed.get());
         new Handler(Looper.getMainLooper()).postDelayed(()->{
-            Activity a=resumed.get(); if(a==null || a.isFinishing() || a instanceof ExternalBoardAuthActivity) return;
+            Activity a=source.get(); if(a==null || a!=resumed.get() || a.isFinishing() || a instanceof ExternalBoardAuthActivity) return;
             WeakReference<android.view.View> editor=editors.get(a);
             if(editor==null || editor.get()==null || !editor.get().isShown()) return;
             String board=targets.get(a);if(board==null) return;
             if(text.equals(prompted.get(a))) return;
             prompted.put(a,text);
             String suggested=BoardAuthRules.suggested(board,text);
-            new AlertDialog.Builder(a).setTitle("板の認証が必要です")
-                .setMessage("アプリ内で認証ページを開きますか？ 認証後に投稿内容を確認して、再度書き込んでください。")
-                .setNegativeButton("後で",null).setPositiveButton("認証ページ",(d,w)->configure(a,board,suggested)).show();
+            showError(a,board,suggested,text);
         },400);
+    }
+    private static void showError(Activity a,String board,String suggested,String raw) {
+        // Render HTML as inert text, never as a WebView or clickable link.
+        String error=raw;
+        if(java.util.regex.Pattern.compile("(?i)<(?:html|body|br|p|div|span|b|strong)\\b").matcher(raw).find()) {
+            error=android.text.Html.fromHtml(raw).toString().trim();
+        }
+        final String readable=error;
+        final String code=BoardAuthRules.code(readable);
+        LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
+        int pad=(int)(20*a.getResources().getDisplayMetrics().density);box.setPadding(pad,pad,pad,pad);
+        TextView notice=new TextView(a);
+        notice.setText("書き込みエラーの内容を確認してください。認証コードはコピーできます。認証後の投稿は自動再送信しません。");
+        box.addView(notice);
+        TextView content=new TextView(a);content.setText(readable);content.setTextIsSelectable(true);
+        content.setPadding(0,pad,0,pad);box.addView(content);
+        ScrollView scroll=new ScrollView(a);scroll.addView(box);
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("書き込みエラー・板の認証")
+            .setView(scroll).setNegativeButton("後で",null)
+            .setNeutralButton(code.isEmpty()?"エラー全文をコピー":"認証コードをコピー",null)
+            .setPositiveButton("認証ページ",(d,w)->configure(a,board,suggested)).create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
+            ClipboardManager clipboard=(ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE);
+            if(clipboard==null) return;
+            ClipData clip=ClipData.newPlainText("板の認証",code.isEmpty()?readable:code);
+            if(android.os.Build.VERSION.SDK_INT>=24) {
+                android.os.PersistableBundle extras=new android.os.PersistableBundle();
+                extras.putBoolean("android.content.extra.IS_SENSITIVE",true);clip.getDescription().setExtras(extras);
+            }
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText(a,code.isEmpty()?"エラー全文をコピーしました":"認証コードをコピーしました",Toast.LENGTH_SHORT).show();
+        }));
+        dialog.show();
     }
     public static Object parseCookie(Object url,String cookie) { return null; } // Bound at patch time.
     public static void received(Object url,List<?> cookies) {

@@ -218,6 +218,7 @@ public final class ProgrammableNgController {
 
     /** Index body-rule matches once per 191 adapter rebuild. */
     public static void prepareLegacyResponses(Object adapter) {
+        HiddenIdNg.prepare(adapter);
         LEGACY_RESPONSE_MATCHES.remove(adapter);
         if (context == null) return;
         try {
@@ -255,6 +256,7 @@ public final class ProgrammableNgController {
 
     /** Adds the standard NGWord bit while preserving every flag ChMate already produced. */
     public static int mergeLegacyResponseFlags(Object adapter, Object response, int original) {
+        original = HiddenIdNg.merge(adapter, response, original);
         if (!enabled) return original;
         try {
             Set<Integer> matches = LEGACY_RESPONSE_MATCHES.get(adapter);
@@ -269,6 +271,8 @@ public final class ProgrammableNgController {
 
     /** Keeps the response list in a range-encodable register for modern renderers. */
     public static void pendingModernResponses(Object responses) {
+        HiddenIdNg.pending(responses);
+        PosterHighlight.observeResponses(responses);
         PENDING_RESPONSE_LIST.set(responses);
     }
 
@@ -306,6 +310,7 @@ public final class ProgrammableNgController {
 
     /** Adds the same NGWord bit at the per-response boundary used by 226 dev. */
     public static int mergeModernResponseFlags(Object owner, Object response, int original) {
+        original = HiddenIdNg.merge(owner, response, original);
         if (context == null || response == null) return original;
         try {
             Boolean cached = MODERN_RESPONSE_MATCHES.get(response);

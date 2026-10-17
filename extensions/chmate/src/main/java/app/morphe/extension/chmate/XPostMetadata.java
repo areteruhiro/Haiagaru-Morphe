@@ -10,10 +10,49 @@ import java.util.concurrent.FutureTask;
 /** Shared, bounded public metadata cache for tweet text and existing media extraction. */
 final class XPostMetadata {
     private static final LinkedHashMap<String, Entry> CACHE = new LinkedHashMap<>();
+    private static XPostDiskCache disk;
+    private static long generation;
+    private static XPostDiskCache disk() {
+        android.content.Context context = Haiagaru.applicationContextForExtension();
+        if (disk == null && context != null) disk = new XPostDiskCache(new java.io.File(context.getCacheDir(), "haiagaru-x-posts"));
+        return disk;
+    }
+    static void clear() {
+        synchronized (CACHE) {
+            ++generation;
+            CACHE.clear();
+            XPostDiskCache current = disk();
+            if (current != null) current.clear();
+        }
+    }
+    static String fetchPreview(String id) throws Exception {
+        if (id == null || !id.matches("[0-9]{1,25}")) return null;
+        XPostDiskCache cache; long ticket;
+        synchronized (CACHE) { cache = disk(); ticket = generation; }
+        if (cache != null) {
+            String stored = cache.read(id, System.currentTimeMillis());
+            if (stored != null) return stored;
+        }
+        String json = fetch(id);
+        if (json != null && cache != null) synchronized (CACHE) {
+            // Clearing while a request is in flight must not resurrect deleted disk entries.
+            if (ticket == generation) cache.write(id, json, System.currentTimeMillis());
+        }
+        return json;
+    }
     private static final class Entry {
         final FutureTask<String> task;
         volatile long expires = Long.MAX_VALUE;
-        Entry(String id) { task = new FutureTask<>(() -> download(id)); }
+        Entry(String id) { task = new FutureTask<>(() -> {
+            try {
+                String json = download(id);
+                expires = android.os.SystemClock.elapsedRealtime() + (json == null ? 8_000 : 900_000);
+                return json;
+            } catch (Exception error) {
+                expires = android.os.SystemClock.elapsedRealtime() + 8_000;
+                throw error;
+            }
+        }); }
     }
 
     static String fetch(String id) throws Exception {
@@ -42,11 +81,8 @@ final class XPostMetadata {
         // Only the first worker runs this task. Others share the same response.
         entry.task.run();
         try {
-            String json = entry.task.get();
-            entry.expires = android.os.SystemClock.elapsedRealtime() + (json == null ? 120_000 : 900_000);
-            return json;
+            return entry.task.get();
         } catch (Exception error) {
-            entry.expires = android.os.SystemClock.elapsedRealtime() + 120_000;
             throw error;
         }
     }

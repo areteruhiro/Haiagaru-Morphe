@@ -94,7 +94,13 @@ final class ArchivedThreadImporter {
 
         File directory = activity.getExternalFilesDir("2chMate/dat");
         if (directory == null) return false;
-        File datFile = new File(directory, info.cacheBoardId() + "_" + info.thread + ".dat");
+        final String cacheBoard;
+        try { cacheBoard = info.cacheBoardId(); }
+        catch (IOException error) {
+            Log.w(LOG_TAG, "Unable to resolve native archive board identity", error);
+            return false;
+        }
+        File datFile = new File(directory, cacheBoard + "_" + info.thread + ".dat");
         if (datFile.isFile() && datFile.length() > 0) {
             Log.i(LOG_TAG, "Using existing cached DAT " + datFile.getName()
                     + " (" + datFile.length() + " bytes)");
@@ -107,7 +113,7 @@ final class ArchivedThreadImporter {
             return false;
         }
 
-        String importKey = info.board + ":" + info.thread;
+        String importKey = info.host + "/" + info.board + ":" + info.thread;
         if (isTabletActivity(activity) && consumeRecentFailure(importKey)) {
             // ResListActivity's retry extra is not copied into TabletHomeActivity's
             // in-process navigation bundle. Without this one-shot guard, a failed
@@ -409,7 +415,7 @@ final class ArchivedThreadImporter {
      */
     private static byte[] fetchLiveDatIfAvailable(ThreadInfo info) {
         try {
-            String url = "https://" + info.server + ".5ch.io/"
+            String url = "https://" + (info.vip ? info.host : info.server + ".5ch.io") + "/"
                     + encode(info.board) + "/dat/" + encode(info.thread) + ".dat";
             byte[] response = requestBytes(url);
             return validateDat(response);
@@ -426,6 +432,9 @@ final class ArchivedThreadImporter {
     }
 
     private static byte[] fetchArchivedDat(Activity activity, ThreadInfo info) throws Exception {
+        // Never send an external board's identity to the default 5ch/mirror routes.
+        if (info.vip) return validateDat(requestBytes(new ArchiveRoute(RouteFormat.DAT,
+                ArchiveRouteVariables.VIP_TEMPLATE).resolve(info)));
         List<ArchiveRoute> routes = parseRoutes(Haiagaru.archiveRouteTemplates(activity));
         Throwable firstFailure = null;
         Throwable lastFailure = null;
@@ -484,8 +493,8 @@ final class ArchivedThreadImporter {
                 }
             }
             if (!template.startsWith("https://")
-                    || !template.contains("{$bbs}")
-                    || !template.contains("{$key}")) {
+                    || !ArchiveRouteVariables.containsVariable(template, "bbs")
+                    || !ArchiveRouteVariables.containsVariable(template, "key")) {
                 Log.w(LOG_TAG, "Skipping invalid archive route template: " + line);
                 continue;
             }
@@ -762,11 +771,7 @@ final class ArchivedThreadImporter {
         }
 
         String resolve(ThreadInfo info) throws IOException {
-            return template
-                    .replace("{$server}", encode(info.server))
-                    .replace("{$bbs}", encode(info.board))
-                    .replace("{$key}", encode(info.thread))
-                    .replace("{$rand}", randomToken());
+            return ArchiveRouteVariables.resolve(template, info.server, info.host, info.board, info.thread, randomToken());
         }
     }
 
@@ -775,25 +780,56 @@ final class ArchivedThreadImporter {
         final String board;
         final String thread;
         final boolean talk;
+        final String host;
+        final boolean vip;
 
-        ThreadInfo(String server, String board, String thread, boolean talk) {
+        ThreadInfo(String server, String board, String thread, boolean talk, String host, boolean vip) {
             this.server = server;
             this.board = board;
             this.thread = thread;
             this.talk = talk;
+            this.host = host;
+            this.vip = vip;
         }
 
         static ThreadInfo parse(String url) {
             Matcher matcher = TALK_THREAD_URL.matcher(url == null ? "" : url);
             if (matcher.matches()) {
-                return new ThreadInfo("talk", matcher.group(1), matcher.group(2), true);
+                return new ThreadInfo("talk", matcher.group(1), matcher.group(2), true, "talk.jp", false);
             }
             matcher = THREAD_URL.matcher(url == null ? "" : url);
             if (!matcher.matches()) return null;
-            return new ThreadInfo(matcher.group(1), matcher.group(3), matcher.group(4), false);
+            return new ThreadInfo(matcher.group(1), matcher.group(3), matcher.group(4), false,
+                    (matcher.group(1) + "." + matcher.group(2)).toLowerCase(Locale.ROOT),
+                    ArchiveRouteVariables.isVipThread(url));
         }
 
-        String cacheBoardId() {
+        String cacheBoardId() throws IOException {
+            if (vip) {
+                // Use each ChMate generation's own external-board ID, not a guessed filename.
+                try {
+                    Class<?> type = Class.forName("jp.syoboi.a2chMate.client.BBSUrlInfo");
+                    for (Method parser : type.getDeclaredMethods()) {
+                        if (!java.lang.reflect.Modifier.isStatic(parser.getModifiers()) || parser.getReturnType() != type
+                                || !java.util.Arrays.equals(parser.getParameterTypes(), new Class<?>[]{String.class})) continue;
+                        parser.setAccessible(true);
+                        Object model = parser.invoke(null, "https://" + host + "/test/read.cgi/" + board + "/" + thread + "/");
+                        if (model == null) continue;
+                        for (Method method : type.getDeclaredMethods()) {
+                            if (!method.getReturnType().getName().endsWith("BoardID")) continue;
+                            boolean isStatic = java.lang.reflect.Modifier.isStatic(method.getModifiers());
+                            if ((!isStatic && method.getParameterTypes().length == 0)
+                                    || (isStatic && java.util.Arrays.equals(method.getParameterTypes(), new Class<?>[]{type}))) {
+                                method.setAccessible(true);
+                                Object id = isStatic ? method.invoke(null, model) : method.invoke(model);
+                                String name = id == null ? "" : id.toString();
+                                if (!name.isEmpty() && !name.contains("/") && !name.contains("\\") && !name.contains("..")) return name;
+                            }
+                        }
+                    }
+                } catch (ReflectiveOperationException error) { throw new IOException("Cannot resolve native board ID", error); }
+                throw new IOException("Native board ID not found");
+            }
             // BBSUrlInfo.BoardID.toString() percent-encodes the separator.
             // Talk threads therefore use "talk.jp%2F<board>" as the DAT stem.
             return talk ? "talk.jp%2F" + board : board;

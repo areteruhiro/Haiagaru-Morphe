@@ -41,6 +41,12 @@ public final class EdgeReporterHistory {
     public static String historyTitle(long thread, Object board, String title) {
         return title(board, thread, title);
     }
+    /** Called only after the display bridge has verified the current board and thread. */
+    public static String displayTitle(long thread, String title) {
+        SharedPreferences prefs = cache;
+        if (prefs == null || thread <= 0 || EdgeReporterId.suffix(title) != null) return title;
+        return EdgeReporterId.restore(title, prefs.getString(Long.toString(thread), null));
+    }
     public static String title(Object board, long thread, String title) {
         SharedPreferences prefs = cache;
         if (prefs == null || thread <= 0 || !EdgeReporterId.isBoard(board)) return title;

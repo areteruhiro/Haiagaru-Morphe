@@ -110,6 +110,7 @@ public final class Haiagaru {
             new WeakHashMap<>();
     private static final int EDDI_ARCHIVE_TOOLBAR_ID = 0x7e000001;
     private static final int MARK_ALL_READ_TOOLBAR_ID = 0x7e000003;
+    private static final int DIRECT_COPY_TOOLBAR_ID = 0x7e000004;
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String LEGACY_TALK_PREFS_NAME = "talk";
@@ -339,6 +340,8 @@ public final class Haiagaru {
 
     /** Runs the legacy 0.8.10.191 image request without its generated integrity decoy. */
     public static Object uploadLegacyImage(Object[] arguments) throws Exception {
+        if (MediaUploadHosts.handles(arguments)) return MediaUploadHosts.upload(arguments,
+                Class.forName("o.r0ExternalSyntheticLambda13", true, Haiagaru.class.getClassLoader()));
         if (ImgurWebUpload.enabled()) return ImgurWebUpload.upload(arguments,
                 Class.forName("o.r0ExternalSyntheticLambda13", true, Haiagaru.class.getClassLoader()));
         File image = (File) arguments[0];
@@ -486,7 +489,13 @@ public final class Haiagaru {
     public static Object addQuickFilterToolbarChoice(Object toolbarModel) {
         // The toolbar action is always available; the setting only hides the
         // original filter row at the top of the response list.
-        return addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
+        Object result = addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
+        try {
+            String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
+            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
+                result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
+        } catch (Exception ignored) { }
+        return result;
     }
 
     private static Object addToolbarChoice(Object toolbarModel, int actionId, String resourceName) {
@@ -615,6 +624,23 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if (itemId == DIRECT_COPY_TOOLBAR_ID) {
+            Activity activity = toolbarActivity(fragment);
+            if (activity == null || activity.isFinishing()) return true;
+            SharedPreferences prefs = preferences(activity);
+            boolean enabled = !prefs.getBoolean("directBodySelection", false);
+            prefs.edit().putBoolean("directBodySelection", enabled).apply();
+            EmojiFontFallback.refreshVisibleRows();
+            View button = activity.getWindow().getDecorView().findViewById(DIRECT_COPY_TOOLBAR_ID);
+            if (button != null) {
+                button.setActivated(enabled);
+                button.setSelected(enabled);
+                button.setContentDescription("長押しコピー: " + (enabled ? "ON" : "OFF"));
+            }
+            Toast.makeText(activity, enabled ? "長押しコピー: ON（本文を長押しして範囲選択）"
+                    : "長押しコピー: OFF（従来のレスメニュー）", Toast.LENGTH_SHORT).show();
+            return true;
+        }
         if (itemId == MARK_ALL_READ_TOOLBAR_ID) {
             Activity activity = toolbarActivity(fragment);
             if (activity != null) showMarkAllReadConfirmation(activity);
@@ -878,12 +904,15 @@ public final class Haiagaru {
         applicationContext = appContext;
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
+        MediaUploadHosts.init(appContext);
         ImageVpnController.initialize(appContext);
         PatrolImages.initialize(appContext);
         ExternalBoardAuth.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
+        HiddenIdNg.initialize(appContext);
+        PosterHighlight.initialize(appContext);
         runtimePackageName = appContext.getPackageName();
         migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
@@ -1104,6 +1133,8 @@ public final class Haiagaru {
             Object receiver,
             Object[] arguments
     ) throws Throwable {
+        if (MediaUploadHosts.handles(arguments)) return MediaUploadHosts.upload(arguments,
+                Class.forName("o.Ad", true, Haiagaru.class.getClassLoader()));
         if (ImgurWebUpload.enabled()) return ImgurWebUpload.upload(arguments,
                 Class.forName("o.Ad", true, Haiagaru.class.getClassLoader()));
         ClassLoader loader = method.getDeclaringClass().getClassLoader();
@@ -1482,9 +1513,12 @@ public final class Haiagaru {
 
     /** Redirects Edge's subject list to the metadata feed that includes reporter IDs. */
     public static String rewriteSubjectUrl(String original) {
+        return EdgeSubjectUrl.rewrite(original, edgeReporterIdsEnabled());
+    }
+
+    public static boolean edgeReporterIdsEnabled() {
         SharedPreferences preferences = preferencesOrNull();
-        return EdgeSubjectUrl.rewrite(original,
-                preferences == null || preferences.getBoolean("edgeReporterId", true));
+        return preferences == null || preferences.getBoolean("edgeReporterId", true);
     }
 
     /**
@@ -2361,6 +2395,7 @@ public final class Haiagaru {
         if (intent == null || intent.getData() == null) return;
         String original = intent.getData().toString();
         boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
+        boolean vipThread = ArchiveRouteVariables.isVipThread(original);
         if (talkThread) {
             try {
                 String version = activity.getPackageManager()
@@ -2373,8 +2408,8 @@ public final class Haiagaru {
             } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
             }
         }
-        if (!talkThread && !isChtoioEnabled()) return;
-        String rewritten = talkThread ? original : rewriteLegacyThreadUrl(original);
+        if (!talkThread && !vipThread && !isChtoioEnabled()) return;
+        String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = intent.getBooleanExtra("haiagaru.archive.retry", false);
         if (archiveRetry) {
             // The retry marker is valid only for the Activity opened immediately
@@ -2382,7 +2417,7 @@ public final class Haiagaru {
             intent.removeExtra("haiagaru.archive.retry");
         }
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling thread through the local DAT cache: " + original);
@@ -2412,11 +2447,12 @@ public final class Haiagaru {
         if (original == null || original.isEmpty()) return false;
 
         boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
-        if (!talkThread && !isChtoioEnabled()) return false;
-        String rewritten = talkThread ? original : rewriteLegacyThreadUrl(original);
+        boolean vipThread = ArchiveRouteVariables.isVipThread(original);
+        if (!talkThread && !vipThread && !isChtoioEnabled()) return false;
+        String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && isArchivedThreadUrl(original));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);
@@ -3333,6 +3369,10 @@ public final class Haiagaru {
 
         SettingsSections sections = new SettingsSections(layout, "en".equals(text("ja", "en")));
         sections.begin(SettingsSections.Category.MEDIA);
+        Button uploadHosts = new Button(activity);
+        uploadHosts.setText(text("画像・動画のアップロード先（Imgur／imgbox／imgpile）", "Image / video upload destination (Imgur / imgbox / imgpile)"));
+        uploadHosts.setOnClickListener(view -> MediaUploadHosts.showSettings(activity));
+        layout.addView(uploadHosts);
         if (ImgurWebUpload.supported(activity)) {
             Button imgurLogin = new Button(activity);
             imgurLogin.setText(text("Imgurにログイン／Webアカウント送信（開発中）", "Imgur login / web account uploads (in development)"));
@@ -3365,6 +3405,13 @@ public final class Haiagaru {
                 preferences.getBoolean("hideAd", true)
         );
         sections.begin(SettingsSections.Category.DISPLAY);
+        Switch directBodySelection = addSwitch(layout, activity,
+                text("レス本文を直接選択してコピー（本文長押しで範囲選択）", "Select and copy response text directly (long press body)"),
+                preferences.getBoolean("directBodySelection", false));
+        TextView directSelectionHelp = new TextView(activity);
+        directSelectionHelp.setText(text("オン時は本文の長押しメニューを無効にし、選択範囲を調整してコピーできます。ツールバー設定に追加した「長押しコピー」からも切り替え可能です。従来のレスメニューはレス番号・ヘッダーから開いてください。オフにすると従来の操作に戻ります。",
+                "When on, long press the body and adjust selection handles. Use the response number/header for the original menu. Turn off to restore original behavior."));
+        layout.addView(directSelectionHelp);
         Button importThemes = new Button(activity);
         importThemes.setText(text("自作テーマをファイル／フォルダから取り込む", "Import custom themes from files / folder"));
         importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
@@ -3529,6 +3576,13 @@ public final class Haiagaru {
         Switch xPostPreview = addSwitch(layout, activity,
                 text("X／Twitterの投稿内容をレス内に表示（追加通信あり）", "Show X/Twitter post text in responses (network access)"),
                 xPostPreviewEnabled());
+        Switch xPostFullText = addSwitch(layout, activity,
+                text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
+                xPostPreviewFullText());
+        Switch xPostCollapsible = addSwitch(layout, activity,
+                text("X投稿のプレビューを折りたたむ（タップで開閉）", "Collapse X previews (tap to expand/collapse)"),
+                xPostPreviewCollapsible());
+        XPostPreview.addCacheSettings(layout, activity);
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("URLメディア：動画の場合", "URL media: videos"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
@@ -3547,6 +3601,19 @@ public final class Haiagaru {
                 text("動画サムネイルの取得制限時間（秒、1〜600）", "Video thumbnail download timeout (seconds, 1–600)"),
                 Integer.toString(videoThumbnailTimeoutSeconds()));
         videoThumbnailTimeoutSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        Switch videoPreviewFour = addSwitch(layout, activity,
+                "動画サムネイルを時系列の分割画像で表示", videoPreviewFourEnabled());
+        EditText videoPreviewCount = addTextField(layout, activity,
+                "プレビューの分割数（1〜64）", Integer.toString(videoPreviewCount()));
+        videoPreviewCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoPreviewMinutes = addTextField(layout, activity,
+                "分割プレビューの対象時間：分（0〜1440）", Integer.toString(videoPreviewMinimumSeconds() / 60));
+        videoPreviewMinutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoPreviewSeconds = addTextField(layout, activity,
+                "分割プレビューの対象時間：秒（0〜59）。指定した長さ以上の動画が対象", Integer.toString(videoPreviewMinimumSeconds() % 60));
+        videoPreviewSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        Switch videoPreviewWifi = addSwitch(layout, activity,
+                "分割プレビューの取得はWi-Fi接続時のみ", videoPreviewWifiOnly());
         sections.begin(SettingsSections.Category.CHECKER);
         Spinner hissiViewerTheme = addSpinner(
                 layout,
@@ -3599,6 +3666,7 @@ public final class Haiagaru {
                 "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
                 preferences.getBoolean("keepQuickFilterPosition", false));
         sections.begin(SettingsSections.Category.NG);
+        HiddenIdNg.addSettingsButton(layout, activity);
         Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
                 "ワッチョイ長押しメニューをNG登録優先の順番にする",
                 preferences.getBoolean("wacchoiNgFirstMenu", false));
@@ -3727,6 +3795,7 @@ public final class Haiagaru {
         layout.addView(bypassPostPreflightDescription, rowParams(activity));
 
         sections.begin(SettingsSections.Category.HISTORY);
+        ClipboardHistory.addSettings(layout, activity);
         final SharedPreferences chMatePreferences =
                 PreferenceManager.getDefaultSharedPreferences(activity);
         final int savedPostHistoryCount = chMatePreferences.getInt(
@@ -3852,6 +3921,7 @@ public final class Haiagaru {
         responseArchive.setText(text("レスのアーカイブを開く", "Open saved responses"));
         responseArchive.setOnClickListener(v -> ResponseArchive.showList(activity));
         layout.addView(responseArchive);
+        ArchiveOrigins.addSettings(layout, activity);
         EditText archiveRouteTemplatesValue = null;
         try {
             archiveRouteTemplatesValue = addArchiveRouteControl(
@@ -3912,6 +3982,7 @@ public final class Haiagaru {
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
         sections.begin(SettingsSections.Category.DISPLAY);
+        PosterHighlight.addSettingsButton(layout, activity);
         if (StringReplacement.supported(activity)) {
             Button replaceStrings = new Button(activity);
             replaceStrings.setText("本文の文字列置換（外部TXT）");
@@ -4017,9 +4088,12 @@ public final class Haiagaru {
                                 .commit();
                     }
                     preferences.edit()
+                            .putBoolean("directBodySelection", directBodySelection.isChecked())
                             .putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition()))
                             .putBoolean("archiveThreadStandalone", archiveThreadStandalone.isChecked())
                             .putBoolean("xPostPreviewEnabled", xPostPreview.isChecked())
+                            .putBoolean("xPostPreviewFullText", xPostFullText.isChecked())
+                            .putBoolean("xPostPreviewCollapsible", xPostCollapsible.isChecked())
                             .putInt(POSTED_THREAD_DISPLAY_COUNT_KEY, displayCount)
                             .putBoolean("hideAd", hideAd.isChecked())
                             .putBoolean("topAlignShortThreads", topAlignShortThreadsSwitch != null
@@ -4054,6 +4128,11 @@ public final class Haiagaru {
                             .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
                             .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
                             .putInt("videoThumbnailTimeoutSeconds", boundedMediaSetting(value(videoThumbnailTimeoutSeconds), videoThumbnailTimeoutSeconds(), 600))
+                            .putBoolean("videoPreviewFour", videoPreviewFour.isChecked())
+                            .putInt("videoPreviewCount", boundedMediaSetting(value(videoPreviewCount), videoPreviewCount(), 64))
+                            .putBoolean("videoPreviewWifiOnly", videoPreviewWifi.isChecked())
+                            .putInt("videoPreviewMinimumSeconds", previewNumber(value(videoPreviewMinutes), videoPreviewMinimumSeconds() / 60, 1440) * 60
+                                    + previewNumber(value(videoPreviewSeconds), videoPreviewMinimumSeconds() % 60, 59))
                             .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
                             .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
                                     Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
@@ -4093,6 +4172,7 @@ public final class Haiagaru {
                                 .commit();
                     }
 
+                    ImgurAlbumAttachments.refreshVideoModels();
                     EmojiFontFallback.refreshVisibleRows();
                     ConfigSnapshot after = ConfigSnapshot.read(preferences);
                     boolean historyLimitsChanged = historyLimits.save();
@@ -4133,12 +4213,16 @@ public final class Haiagaru {
                         + "1行1経路で、行を並べ替えると探索順を変更できます。"
                         + "任意のHTTPS経路も追加できます。\n"
                         + "書式: auto| / dat| / kako| / itest| のいずれか + URL\n"
-                        + "変数: {$server} {$bbs} {$key} {$rand}",
+                        + "変数: {$server} {$host} {$bbs} {$key} {$rand}\n"
+                        + "部分取り出し: {$key:0:4}（先頭4桁）／{$key:0:5}（先頭5桁）。位置は0始まり・終端を含みません。\n"
+                        + "SS速報VIPは同じホストのkakoから自動取得します。",
                 "Automatic DAT routes (tried from top to bottom)\n"
                         + "Use one route per line. Reorder lines to change priority, or add "
                         + "another HTTPS route.\n"
                         + "Format: auto|, dat|, kako|, or itest| followed by a URL\n"
-                        + "Variables: {$server} {$bbs} {$key} {$rand}"
+                        + "Variables: {$server} {$host} {$bbs} {$key} {$rand}\n"
+                        + "Slices: {$key:0:4} (first 4), {$key:0:5} (first 5); zero-based, end-exclusive.\n"
+                        + "SS VIP archives are fetched from the same host's kako directory."
         ));
         description.setTextSize(13);
         layout.addView(description, rowParams(activity));
@@ -4960,9 +5044,46 @@ public final class Haiagaru {
         return Math.max(1, Math.min(600, prefs == null ? 20 : prefs.getInt("videoThumbnailTimeoutSeconds", 20)));
     }
 
+    private static int previewNumber(String raw, int fallback, int maximum) {
+        try { int n = Integer.parseInt(raw.trim()); if (n >= 0 && n <= maximum) return n; }
+        catch (RuntimeException ignored) {}
+        return fallback;
+    }
+    public static boolean videoPreviewFourEnabled() {
+        SharedPreferences p = preferencesOrNull();
+        return p != null && p.getBoolean("videoPreviewFour", false);
+    }
+    public static boolean videoPreviewWifiOnly() {
+        SharedPreferences p = preferencesOrNull();
+        return p == null || p.getBoolean("videoPreviewWifiOnly", true);
+    }
+    public static int videoPreviewMinimumSeconds() {
+        SharedPreferences p = preferencesOrNull();
+        return Math.max(0, Math.min(86459, p == null ? 60 : p.getInt("videoPreviewMinimumSeconds", 60)));
+    }
+    public static int videoPreviewCount() {
+        SharedPreferences p = preferencesOrNull();
+        return Math.max(1, Math.min(64, p == null ? 4 : p.getInt("videoPreviewCount", 4)));
+    }
+
+    public static boolean directBodySelectionEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("directBodySelection", false);
+    }
+
     public static boolean xPostPreviewEnabled() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean("xPostPreviewEnabled", false);
+    }
+
+    public static boolean xPostPreviewFullText() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean("xPostPreviewFullText", true);
+    }
+
+    public static boolean xPostPreviewCollapsible() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("xPostPreviewCollapsible", false);
     }
 
     static void refreshImgurAttachments() {

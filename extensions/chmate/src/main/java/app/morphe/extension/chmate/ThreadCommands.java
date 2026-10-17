@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -85,34 +84,38 @@ public final class ThreadCommands {
         new AlertDialog.Builder(c).setTitle("スレ立てコマンド")
                 .setItems(ThreadCommandRules.labels(profile), (d, index) -> edit(body, profile, index)).setNegativeButton("閉じる", null).show();
     }
-    private static void edit(EditText body, String profile, int index) {
+    private static AlertDialog edit(EditText body, String profile, int index) {
         Context c = body.getContext();
         SharedPreferences prefs = c.getSharedPreferences("haiagaru_thread_commands", 0);
         String key = profile + "." + index;
         String initial = ThreadCommandRules.values(profile)[index];
-        EditText input = new EditText(c); input.setSingleLine(true);
-        input.setText(prefs.getString(key, initial));
+        EditText input = new EditText(c);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        input.setSingleLine(false); input.setMinLines(3); input.setMaxLines(8);
+        input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+        input.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_ENTER_ACTION);
+        input.setText(ThreadCommandRules.editValue(initial, prefs.getString(key, null)));
         AlertDialog dialog = new AlertDialog.Builder(c).setTitle("コマンドを編集して追加")
-                .setMessage("本文の先頭に追加します。候補ごとの編集内容を保存します。掲示板の設定によっては無効です。IP表示コマンドはIPが公開されます。")
+                .setMessage("本文の先頭に追加します。ワッチョイ候補の初期値は3行です（投稿時に1行消費される場合に備えます）。改行・同じコマンドの再追加ができます。候補ごとの編集内容を保存します。掲示板の設定によっては無効です。IP表示コマンドはIPが公開されます。")
                 .setView(input).setNegativeButton("キャンセル", null)
                 .setNeutralButton("初期値", null).setPositiveButton("本文に追加", null).create();
         dialog.setOnShowListener(d -> {
             dialog.getButton(-3).setOnClickListener(v -> input.setText(initial));
             dialog.getButton(-1).setOnClickListener(v -> {
-                String command = input.getText().toString().trim();
-                if (command.isEmpty() || command.length() > 1024 || command.contains("\n") || command.contains("\r")) {
-                    input.setError("1行のコマンドを入力してください（1024文字まで）"); return;
+                String command = ThreadCommandRules.normalize(input.getText().toString());
+                if (command.isEmpty() || command.length() > 4096) {
+                    input.setError("コマンドを入力してください（改行可・4096文字まで）"); return;
                 }
                 String draft = body.getText().toString();
                 if (ThreadCommandRules.conflicts(draft, command)) {
                     input.setError("同系統のコマンドが本文にあります。本文で編集・削除してください"); return;
                 }
                 prefs.edit().putString(key, command).apply();
-                if (ThreadCommandRules.contains(draft, command)) Toast.makeText(c, "追加済みです", Toast.LENGTH_SHORT).show();
-                else { body.getText().insert(0, command + "\n"); body.setSelection(command.length() + 1); }
+                body.getText().insert(0, command + "\n"); body.setSelection(command.length() + 1);
                 dialog.dismiss();
             });
         });
         dialog.show();
+        return dialog;
     }
 }

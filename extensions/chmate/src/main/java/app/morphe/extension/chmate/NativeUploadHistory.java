@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Actions in ChMate's own upload history. Does not require the Imgur login patch. */
 public final class NativeUploadHistory {
-    private static final int SORT = 0x7e484901, DELETE = 0x7e484902;
+    private static final int SORT = 0x7e484901, DELETE = 0x7e484902, MANAGE = 0x7e484903;
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final AtomicBoolean BUSY = new AtomicBoolean();
     private static final ThreadLocal<String> TITLE = new ThreadLocal<>();
@@ -53,9 +53,16 @@ public final class NativeUploadHistory {
                 .setOnMenuItemClickListener(item -> handle(owner, item));
         menu.add(0, DELETE, 101, "サーバーから一括削除…")
                 .setOnMenuItemClickListener(item -> handle(owner, item));
+        menu.add(0, MANAGE, 102, "imgbox／imgpileのサーバー削除・管理…")
+                .setOnMenuItemClickListener(item -> handle(owner, item));
     }
 
     public static boolean handle(Object owner, MenuItem item) {
+        if (item.getItemId() == MANAGE) {
+            Activity activity = Haiagaru.toolbarActivity(owner);
+            if (activity != null && !activity.isFinishing()) MediaUploadManagement.show(activity, owner);
+            return true;
+        }
         if (item.getItemId() != SORT && item.getItemId() != DELETE) return false;
         action(owner, item.getItemId() == SORT);
         if (item.getItemId() == SORT) item.setChecked(newest());
@@ -98,9 +105,11 @@ public final class NativeUploadHistory {
             render.setAccessible(true);
             Object unit = unit(v242);
             final Method textMethod = text;
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 3; i++) {
+                final boolean managing = i == 2;
                 final boolean sorting = i == 0;
-                String label = sorting ? (newest() ? "✓ 新しい順（降順）" : "新しい順（降順）") : "サーバーから一括削除…";
+                String label = managing ? "imgbox／imgpileのサーバー削除・管理…"
+                        : sorting ? (newest() ? "✓ 新しい順（降順）" : "新しい順（降順）") : "サーバーから一括削除…";
                 Object title = proxy(render.getParameterTypes()[0], (p, m, args) -> {
                     TITLE.set(label);
                     try { return textMethod.invoke(null, args[0], args[1]); }
@@ -109,7 +118,10 @@ public final class NativeUploadHistory {
                 Object click = proxy(render.getParameterTypes()[1], (p, m, args) -> {
                     // Match native overflow dismissal before displaying Android selection/confirmation.
                     model.getClass().getDeclaredMethod("c").invoke(model);
-                    action(model, sorting);
+                    if (managing) {
+                        Activity activity = Haiagaru.toolbarActivity(model);
+                        if (activity != null && !activity.isFinishing()) MediaUploadManagement.show(activity, model);
+                    } else action(model, sorting);
                     return unit;
                 });
                 render.invoke(null, title, click, null, null, null, false,
@@ -156,7 +168,8 @@ public final class NativeUploadHistory {
         List<Object> eligible = new ArrayList<>();
         List<?> nativeRows = rows(owner);
         if (nativeRows != null) for (Object row : nativeRows) {
-            if ((((Number) get(row, "flags")).intValue() & 1) == 0 && !string(row, "key").isEmpty()) eligible.add(row);
+            if ((((Number) get(row, "flags")).intValue() & 1) == 0 && !string(row, "key").isEmpty()
+                    && MediaUploadManagementPolicy.imgur(string(row, "link"))) eligible.add(row);
         }
         sort(eligible);
         if (eligible.isEmpty()) { Toast.makeText(activity, "サーバーから削除できる画像がありません", Toast.LENGTH_LONG).show(); return; }
@@ -230,6 +243,7 @@ public final class NativeUploadHistory {
     }
 
     private static boolean delete(Context context, Object row) throws Exception {
+        if (!MediaUploadManagementPolicy.imgur(string(row, "link")) || string(row, "key").isEmpty()) return false;
         String rowType = row.getClass().getName();
         if (rowType.equals("o.onRewardedInterstitialAdDisplayed")) {
             Class<?> type = Class.forName("o.nm");
@@ -273,6 +287,15 @@ public final class NativeUploadHistory {
         Runnable writer = (Runnable) get(service, v191 ? "i" : "g");
         handler.removeCallbacks(writer); handler.post(writer);
         refresh(owner);
+    }
+
+    static void markExternalDeleted(Object owner, String link) {
+        if (owner == null || MediaUploadManagementPolicy.imgur(link)) return;
+        try {
+            List<?> current = rows(owner);
+            if (current == null) return;
+            for (Object row : new ArrayList<>(current)) if (link.equals(string(row, "link"))) markDeleted(owner, row);
+        } catch (Exception ignored) { /* Private management state remains authoritative; no network retry. */ }
     }
 
     private static Object unit(boolean v242) throws Exception {

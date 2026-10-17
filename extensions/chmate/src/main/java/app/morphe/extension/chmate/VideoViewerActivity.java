@@ -25,6 +25,7 @@ public final class VideoViewerActivity extends Activity {
     private int position;
     private boolean prepared, foreground, playWhenReady = true;
     private boolean rotated;
+    private boolean savePermissionPending;
     private VideoViewerGestures gestures;
     private VideoTouchControls touchControls;
     private Runnable unregisterBack;
@@ -61,6 +62,7 @@ public final class VideoViewerActivity extends Activity {
             position = state.getInt("position", 0);
             playWhenReady = state.getBoolean("playing", true);
             rotated = state.getBoolean("rotated", false);
+            savePermissionPending = state.getBoolean("savePermissionPending", false);
         }
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.BLACK);
@@ -114,6 +116,8 @@ public final class VideoViewerActivity extends Activity {
             }
         };
         controls.setAnchorView(frame); video.setMediaController(controls);
+        // The save menu must work before preparation completes, or even after a playback error.
+        controls.setMediaPlayer(video);
         video.setOnPreparedListener(player -> {
             prepared = true;
             if (position > 0) video.seekTo(position);
@@ -222,6 +226,7 @@ public final class VideoViewerActivity extends Activity {
         menu.getMenu().add(0, 3, 2, "再読み込み");
         menu.getMenu().add(0, 4, 3, "画面を回転");
         menu.getMenu().add(0, 5, 4, "操作設定");
+        menu.getMenu().add(0, 6, 5, "動画を保存");
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1:
@@ -246,10 +251,26 @@ public final class VideoViewerActivity extends Activity {
                     setRequestedOrientation(rotated ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED); return true;
                 case 5: VideoViewerSettings.show(this); return true;
+                case 6: VideoDownloads.confirm(this, url, this::saveVideo); return true;
                 default: return false;
             }
         });
         menu.show();
+    }
+    private void saveVideo() {
+        if (savePermissionPending) return;
+        if (VideoDownloads.needsStoragePermission(this)) {
+            savePermissionPending = true;
+            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, VideoDownloads.REQUEST_STORAGE);
+        } else VideoDownloads.enqueue(this, url);
+    }
+    @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request != VideoDownloads.REQUEST_STORAGE || !savePermissionPending) return;
+        savePermissionPending = false;
+        if (results.length > 0 && results[0] == android.content.pm.PackageManager.PERMISSION_GRANTED)
+            VideoDownloads.enqueue(this, url);
+        else VideoDownloads.message(this, "動画を保存するには保存先へのアクセス許可が必要です");
     }
     private void pausePlayback() {
         if (prepared) {
@@ -275,6 +296,7 @@ public final class VideoViewerActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) {
         state.putInt("position", prepared ? video.getCurrentPosition() : position);
         state.putBoolean("playing", prepared ? video.isPlaying() : playWhenReady);
+        state.putBoolean("savePermissionPending", savePermissionPending);
         state.putBoolean("rotated", rotated); super.onSaveInstanceState(state);
     }
     @Override protected void onDestroy() {

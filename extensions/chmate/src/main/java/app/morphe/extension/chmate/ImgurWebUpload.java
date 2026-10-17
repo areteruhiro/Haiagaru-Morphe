@@ -52,6 +52,8 @@ public final class ImgurWebUpload {
         return invoke(method, receiver, arguments, "o.zzbtj");
     }
     private static Object invoke(Method method, Object receiver, Object[] arguments, String type) throws Throwable {
+        if (MediaUploadHosts.handles(arguments)) return MediaUploadHosts.upload(arguments,
+                Class.forName(type, true, ImgurWebUpload.class.getClassLoader()));
         if (enabled()) return upload(arguments, Class.forName(type, true, ImgurWebUpload.class.getClassLoader()));
         try { return method.invoke(receiver, arguments); }
         catch (InvocationTargetException e) { throw e.getCause() == null ? e : e.getCause(); }

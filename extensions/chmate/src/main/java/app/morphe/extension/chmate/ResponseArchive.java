@@ -65,6 +65,23 @@ public final class ResponseArchive {
         return false;
     }
 
+    /** 242's ordinary icon menu has a separate selected-response model from its sheet. */
+    public static void appendDialog242(Object dialog, Object menu) {
+        appendViewMenu(menu);
+        try {
+            Object parent = dialog.getClass().getMethod("getParentFragment").invoke(dialog);
+            Object response = ResponseArchiveEntry.field(ResponseArchiveEntry.field(parent, "o"), "c");
+            Object board = ResponseArchiveEntry.field(ResponseArchiveEntry.field(parent, "r"), "b");
+            append(parent, menu, response, board);
+            if (menu instanceof Menu) {
+                Menu nativeMenu = (Menu) menu;
+                MenuItem save = nativeMenu.findItem(ITEM), highlight = nativeMenu.findItem(0x7e484b01);
+                if (save != null) save.setTitle("レスを保存");
+                if (highlight != null) highlight.setTitle("投稿者を強調");
+            }
+        } catch (Exception error) { report(error); }
+    }
+
     /** 191's ordinary response menu is separate from its link/name popups. */
     public static void captureDialog(Object dialog) { ACTIVE_DIALOG.set(dialog); }
 
@@ -79,6 +96,7 @@ public final class ResponseArchive {
         Menu menu = (Menu) object;
         if (menu.findItem(VIEW_ARCHIVE) == null)
             menu.add(Menu.NONE, VIEW_ARCHIVE, menu.size(), "過去レスを見る")
+                    .setIcon(android.R.drawable.ic_menu_recent_history)
                     .setOnMenuItemClickListener(ResponseArchive::handle);
     }
 
@@ -88,17 +106,20 @@ public final class ResponseArchive {
     }
 
     private static void append(Object owner, Object menuObject, Object response, Object board) throws Exception {
+        PosterHighlight.append(menuObject, response, board);
         appendViewMenu(menuObject);
         if (!(menuObject instanceof Menu) || response == null || board == null) return;
         Menu menu = (Menu) menuObject;
         if (menu.findItem(ITEM) != null) return;
         ResponseArchiveEntry entry = snapshot(response, board);
         menu.add(Menu.NONE, ITEM, menu.size(), "このレスをアーカイブに保存")
+                .setIcon(android.R.drawable.ic_menu_save)
                 .setIntent(new Intent().putExtra(EXTRA, json(entry).toString()))
                 .setOnMenuItemClickListener(ResponseArchive::handle);
     }
 
     public static boolean handle(Object object) {
+        if (PosterHighlight.handle(object)) return true;
         if (!(object instanceof MenuItem)) return false;
         int id = ((MenuItem) object).getItemId();
         if (id != ITEM && id != VIEW_ARCHIVE) return false;
@@ -124,7 +145,9 @@ public final class ResponseArchive {
         try {
             Object flow = ResponseArchiveEntry.field(model, "af");
             Method get = flow.getClass().getMethod("d"); get.setAccessible(true);
-            ResponseArchiveEntry entry = snapshot(response, get.invoke(flow));
+            Object board = get.invoke(flow);
+            PosterHighlight.appendSheet(builder, response, board);
+            ResponseArchiveEntry entry = snapshot(response, board);
             appendSheetAction(builder, "このレスをアーカイブに保存", android.R.drawable.ic_menu_save, () -> {
                 Activity a = Haiagaru.toolbarActivity(null);
                 if (a != null) confirm(a, entry);
@@ -132,7 +155,7 @@ public final class ResponseArchive {
         } catch (Exception e) { report(e); }
     }
 
-    private static void appendSheetAction(Object builder, String title, int icon, Runnable action) throws Exception {
+    static void appendSheetAction(Object builder, String title, int icon, Runnable action) throws Exception {
             for (Method method : builder.getClass().getDeclaredMethods()) {
                 Class<?>[] p = method.getParameterTypes();
                 if (Modifier.isStatic(method.getModifiers()) || p.length != 6 || p[0] != String.class
@@ -525,6 +548,7 @@ public final class ResponseArchive {
             button.setOnClickListener(v -> showList(a));
             content.removeView(nativeList);
             container.addView(button, new LinearLayout.LayoutParams(-1, -2));
+            ArchiveOrigins.addSettings(container, a);
             container.addView(nativeList, new LinearLayout.LayoutParams(-1, 0, 1));
             content.addView(container, original);
         });
