@@ -3640,6 +3640,7 @@ public final class Haiagaru {
                 preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
         );
         sections.begin(SettingsSections.Category.DISPLAY);
+        ToolbarIcons.addSettingsButton(layout, activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,

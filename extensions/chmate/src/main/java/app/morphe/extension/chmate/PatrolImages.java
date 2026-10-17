@@ -33,6 +33,17 @@ public final class PatrolImages {
     /** Replaced with validated native bindings by the bytecode patch. */
     public static String bindings() { return ""; }
 
+    /** Shared startup/manual/periodic patrol argument, not a preference override. */
+    public static boolean needsDat(boolean nativeDownload) {
+        Context app = context;
+        if (nativeDownload || app == null) return nativeDownload;
+        SharedPreferences settings = prefs();
+        if (!settings.getBoolean("patrolImagesEnabled", false)) return false;
+        return !settings.getBoolean("patrolImageFilterEnabled", true)
+                || !settings.getString("patrolImageKeywords", "").trim().isEmpty()
+                || !settings.getString("patrolImageUrls", "").trim().isEmpty();
+    }
+
     public static void onThread(Object result, Object board) {
         Context app = context;
         if (app == null || result == null || board == null || !prefs().getBoolean("patrolImagesEnabled", false)
@@ -252,7 +263,9 @@ public final class PatrolImages {
                 new String[]{"ChMateの画像キャッシュ", "Download/Haiagaru/スレごとのフォルダ"}));
         destination.setSelection(p.getInt("patrolImageDestination", 0) == 1 ? 1 : 0); body.addView(destination);
         TextView note = new TextView(activity);
-        note.setText("ChMate標準の自動巡回と「本文(dat)もダウンロード」を有効にしてください。"
+        note.setText("ChMate標準の起動時・手動・定期巡回に連動します。画像自動保存が有効で対象条件がある場合、"
+                + "「本文(dat)もダウンロード」がオフでも、その巡回では本文取得を有効にします（標準設定は変更しません）。"
+                + "本文は巡回対象全体の更新判定に従って取得し、画像保存のみ下記の絞り込みを適用するため、本文の通信量も増えます。"
                 + "巡回で本文を取得したスレが対象です。未表示でも画像を取得します。独自の巡回は行いません。"
                 + "登録内容は部分一致（大文字小文字は区別しません）、空行は無視します。動画は対象外です。"
                 + "絞り込みオンで条件が空欄なら取得しません。オフならChMate標準の巡回対象全体から取得します。"

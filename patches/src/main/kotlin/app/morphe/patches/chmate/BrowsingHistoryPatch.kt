@@ -16,7 +16,8 @@ internal fun BytecodePatchContext.patchGroupedBrowsingHistory(version: String) {
                 "Lo/ApiApiOptionsHasAccountOptions;", "I", "I")
         }
         check(ctor.implementation!!.registerCount <= 16)
-        // p2 is the layout type. p5, stored as AdapterData.b, is the history/sort mode.
+        // p2 is the layout type. p5, stored as AdapterData.b, is the HOME sort ID:
+        // 101 = unread, 103 = browsing history, 104 = posted history.
         ctor.addInstructions(0, """
             invoke-static {p1, p5}, $HISTORY->transform(Ljava/util/List;I)Ljava/util/List;
             move-result-object p1
