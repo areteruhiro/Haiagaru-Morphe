@@ -13,7 +13,8 @@ Morpheでパッチを適用しようとした際にエラーが発生する場�
 設定変更後、もう一度パッチ適用をお試しください。
 
 プレ版をパッチ
-https://github.com/user-attachments/assets/db68d4d0-0b34-4635-ac31-17ca15c6ecaa
+https://github.com/user-attachments/assets/4a78bf3a-75ad-4821-ad68-d12c704a3704
+
 
 
 ---
