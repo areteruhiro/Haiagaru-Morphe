@@ -10,14 +10,14 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.9](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.9)
+最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.10](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.10)
 
 以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.8.9` の概要: [1.8.9の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.9)
+プレ版 `1.8.10` の概要: [1.8.10の更新内容](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.10)
 
 ## 主な機能
 
@@ -47,7 +47,13 @@ ChMateに追加設定・閲覧・メディア・バックアップ機能を組�
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」
 * NGワード・NG ID・NG名前などの登録上限をHaiagaru設定から変更（0で無制限、191 dev／226 dev／242 dev共通）
 
-## 1.8.8・1.8.9の追加機能
+## 最近の追加機能
+
+### 1.8.10：複数の保存用スレ・226のタブ選択補正
+
+- **保存用スレ**：レス長押しの「このレスをアーカイブに保存」から、名前付きの保存先を複数作成できます。「過去レスを見る」で保存用スレを選ぶと、レスを続けて閲覧できます。掲示板への投稿は行いません。従来の保存レスも保持します。[詳細](docs/response-archive.md)
+- **バックアップ**：保存用スレの名前・保存レスは、ローカル／MEGAバックアップの「レスのアーカイブ・保存用スレ」に含まれます。MEGAは導入時に対応パッチの選択が必要です。
+- **226 devのタブ選択補正**：タブレットモードのタブ一覧更新中に、反映途中の選択位置を書き戻さないよう変更しました。[検証範囲](docs/tablet-tabs-226.md)
 
 ### 1.8.9：外部板の認証・登録板編集
 
