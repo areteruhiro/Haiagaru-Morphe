@@ -1495,6 +1495,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         if (packageMetadata.versionName == "0.8.10.226 dev") {
             patchExternalBrowserLongPress226()
             patchSearchThreadForwardToTablet226()
+            patchTabletTabSelection226()
         }
         if (packageMetadata.versionName in listOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchReadThreadsFirst(packageMetadata.versionName)
@@ -2929,9 +2930,26 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
     println("Wacchoi response-menu hook: selected ChMate 191 response")
 }
 
-/** Add the same in-viewer 90-degree rotation control to the older image viewers. */
+/** Hook the ordinary response menu as well as the older link/name popups. */
 private fun BytecodePatchContext.patchResponseArchive(version: String) {
-    if (version != "0.8.10.242 dev") return // 191/226 share their existing exact-target menu hooks.
+    if (version == "0.8.10.191 dev") {
+        val dialog = mutableClassDefBy("Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;")
+        val menu = dialog.methods.single {
+            it.name == "c" && it.parameterTypes.isEmpty() && it.returnType == "Lo/m6fExternalSyntheticLambda0;"
+        }
+        val exits = menu.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_OBJECT }
+        check(exits.isNotEmpty()) { "191 ordinary response menu return changed" }
+        exits.asReversed().forEach { (index, instruction) ->
+            val register = (instruction as OneRegisterInstruction).registerA
+            menu.addInstructionsWithLabels(index,
+                "invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/ResponseArchive;->appendCapturedDialog(Ljava/lang/Object;)V")
+        }
+        menu.addInstruction(0,
+            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/ResponseArchive;->captureDialog(Ljava/lang/Object;)V")
+        println("Response archive: 191 ordinary response menu -> ${dialog.type}")
+        return
+    }
+    if (version != "0.8.10.242 dev") return // 226 uses the existing exact-target dialog hook.
     val owner = "Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;"
     val method = mutableClassDefBy(owner).methods.single {
         it.accessFlags and 8 != 0 && it.returnType == "V" && it.parameterTypes == listOf(
