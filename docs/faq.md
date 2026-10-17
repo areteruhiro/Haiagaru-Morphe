@@ -10,6 +10,10 @@ Morpheでパッチを適用しようとした際にエラーが発生する場�
 
 設定変更後、もう一度パッチ適用をお試しください。
 
+プレ版をパッチ
+https://github.com/user-attachments/assets/db68d4d0-0b34-4635-ac31-17ca15c6ecaa
+
+
 ---
 
 ## `strings.xml: open failed: ENOENT` エラーが発生する
