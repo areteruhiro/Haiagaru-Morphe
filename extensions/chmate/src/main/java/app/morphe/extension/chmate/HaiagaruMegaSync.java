@@ -56,7 +56,7 @@ final class HaiagaruMegaSync {
             "お気に入り・閲覧履歴", "NGワード・NG IDなど", "ChMate・Haiagaruの設定",
             "書き込み履歴 (postDataList.json)", "書き込みメモ (kakikomi.txt)",
             "Cookie（ログイン状態を含む・初期OFF）",
-            "レスのアーカイブ", "スレのアーカイブ", "取得済みスレログ（DAT・大容量／初期OFF）",
+            "レスのアーカイブ・保存用スレ", "スレのアーカイブ", "取得済みスレログ（DAT・大容量／初期OFF）",
             "フォント・テーマ・キーワードグループ",
             "認証情報・WebView Cookie・MEGAセッション（機密・初期OFF）",
             "端末依存の暗号化済みデータ（同じインストール専用・初期OFF）",

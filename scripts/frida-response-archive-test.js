@@ -55,7 +55,7 @@ Java.perform(function () {
         let matched = false;
         function own(v) {
             const Text = Java.use('android.widget.TextView'), Group = Java.use('android.view.ViewGroup');
-            if (Text.class.isInstance(v) && /レスのアーカイブ|レス保存検証|レス 42 を保存/.test(String(Java.cast(v,Text).getText()))) return true;
+            if (Text.class.isInstance(v) && /レスのアーカイブ|レス保存検証|レス 42 を保存|保存先のスレ|保存用スレ/.test(String(Java.cast(v,Text).getText()))) return true;
             if (Group.class.isInstance(v)) {
                 const g = Java.cast(v,Group); for(let i=0;i<g.getChildCount();i++) if(own(g.getChildAt(i))) return true;
             }
@@ -75,7 +75,7 @@ Java.perform(function () {
     }
     // Keep a snapshot for UI checks; remove exactly this synthetic fixture on completion.
     Java.scheduleOnMainThread(function () {
-        A.showList(Java.cast(activity, Java.use('android.app.Activity')));
+        A.showLegacyList(Java.cast(activity, Java.use('android.app.Activity')), 0);
     });
     setTimeout(function () { Java.perform(function () {
         dialog(function (d) {
@@ -98,20 +98,76 @@ Java.perform(function () {
                     detail.dismiss();
                     Atomic.$new(file).delete();
                     check(!file.exists() && !backup.exists(), 'only synthetic fixture removed');
+                    const collection = A.createCollection(app, 'レス保存検証 ' + version + ' ' + Date.now());
+                    const other = A.createCollection(app, 'レス保存検証 other ' + Date.now());
+                    const File = Java.use('java.io.File');
+                    const root = File.$new(app.getFilesDir(), 'haiagaru-response-archive/threads');
+                    const dir = File.$new(root, String(collection.id.value));
+                    const otherDir = File.$new(root, String(other.id.value));
+                    const groupedFile = File.$new(dir, String(file.getName()));
+                    A.saveToCollection(app, String(other.id.value), entry);
+                    check(File.$new(otherDir, String(file.getName())).exists(), 'independent archive thread saves response');
                     const a = Java.cast(activity, Java.use('android.app.Activity'));
                     const popup = Java.use('android.widget.PopupMenu').$new(a, a.getWindow().getDecorView());
                     A.append(null, popup.getMenu(), response, board);
                     const menuItem = popup.getMenu().findItem(0x7e484a01);
                     check(menuItem !== null, 'native Menu action appended');
+                    const browseItem = popup.getMenu().findItem(0x7e484a03);
+                    check(browseItem !== null && String(browseItem.getTitle()) === '過去レスを見る', 'archive browse action appended');
+                    A.append(null, popup.getMenu(), response, board);
+                    check(popup.getMenu().size() === 2, 'save and browse actions do not duplicate');
+                    const nativeItem = popup.getMenu().add.overload('int','int','int','java.lang.CharSequence')
+                        .call(popup.getMenu(),0,12345,0,Java.use('java.lang.String').$new('native fixture'));
+                    check(!A.handle(nativeItem), 'native action not consumed');
                     check(A.handle(menuItem), 'custom popup dispatch consumes only archive action');
-                    dialog(function (confirm) {
+                    dialog(function (chooser) {
+                        const choices = chooser.getListView();
+                        let target = -1;
+                        for (let i = 0; i < choices.getAdapter().getCount(); i++)
+                            if (String(choices.getAdapter().getItem(i)) === String(collection.title.value)) target = i;
+                        check(target >= 0, 'save destination listed');
+                        choices.performItemClick(choices.getChildAt(target), target, 0);
+                        dialog(function (confirm) {
                         check(!file.exists(), 'confirmation does not save before acceptance');
                         confirm.getButton(-1).performClick();
                         setTimeout(function () { Java.perform(function () {
-                            check(file.exists() && String(A.read(file).body.value) === body, 'confirmation save persists selected body');
-                            Atomic.$new(file).delete();
-                            console.log('COMPLETE ' + version + ' response archive ' + checks + ' checks');
+                            check(groupedFile.exists() && String(A.read(groupedFile).body.value) === body, 'confirmation saves selected body to chosen thread');
+                            check(!file.exists(), 'group save does not modify legacy archive');
+                            A.saveToCollection(app, String(collection.id.value), entry);
+                            check(Array.from(dir.listFiles()).filter(f => String(f.getName()) === String(file.getName())).length === 1, 'grouped response deduplicates');
+                            Java.scheduleOnMainThread(function () {
+                                check(A.handle(browseItem), 'archive browse dispatch consumed');
+                                dialog(function (browse) {
+                                    check(!file.exists(), 'browse does not create an archive');
+                                    const choices = browse.getListView();
+                                    let target = -1;
+                                    for (let i = 0; i < choices.getAdapter().getCount(); i++)
+                                        if (String(choices.getAdapter().getItem(i)) === String(collection.title.value)) target = i;
+                                    check(target >= 0, 'saved thread listed for viewing');
+                                    choices.performItemClick(choices.getChildAt(target),target,0);
+                                    dialog(function (viewer) {
+                                    let texts = [];
+                                    function inspect(v) {
+                                        if (Text.class.isInstance(v)) texts.push(String(Java.cast(v,Text).getText()));
+                                        if (Group.class.isInstance(v)) {
+                                            const group = Java.cast(v,Group);
+                                            for(let i=0;i<group.getChildCount();i++)inspect(group.getChildAt(i));
+                                        }
+                                    }
+                                    inspect(viewer.getWindow().getDecorView());
+                                    check(texts.some(t=>t.indexOf('保存確認\nline2 & + /')>=0), 'saved-thread viewer displays decoded body');
+                                    check(texts.some(t=>t.indexOf('1レス')>=0), 'saved-thread viewer shows response count');
+                                    viewer.dismiss();
+                                    for (const group of [dir, otherDir]) {
+                                        for (const child of Array.from(group.listFiles())) check(child.delete(), 'remove isolated collection fixture file');
+                                        check(group.delete(), 'remove isolated collection fixture directory');
+                                    }
+                                    console.log('COMPLETE ' + version + ' response archive ' + checks + ' checks');
+                                    });
+                                });
+                            });
                         }); },1500);
+                        });
                     });
                 });
             }); },600);
