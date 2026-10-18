@@ -373,14 +373,24 @@ public final class WacchoiLongPressMenu {
         ACTIVE_DIALOG.set(dialogFragment);
     }
 
+    public static void appendDialogActions(Object dialogFragment, Object menuObject) {
+        if (!(menuObject instanceof Menu)) return;
+        Object parent=invokeNoArg(dialogFragment,"getParentFragment");
+        append((Menu)menuObject,dialogFragment,parent,findContext(dialogFragment,parent));
+    }
+
     /** Called just before ChMate returns the menu for a long-pressed response. */
     public static void appendForCurrentDialog(Object menuObject) {
         Object dialogFragment = ACTIVE_DIALOG.get();
         ACTIVE_DIALOG.remove();
         if (!(menuObject instanceof Menu) || dialogFragment == null) return;
+        ResponseMenuSettings.prepare(menuObject);
         ResponseArchive.appendDialog(dialogFragment, menuObject);
         Menu menu = (Menu) menuObject;
         removeToolbarOnlyChoices(menu);
+        if (!ResponseMenuSettings.visible(ITEM_ID)) menu.removeItem(ITEM_ID);
+        if (!ResponseMenuSettings.visible(76)) menu.removeItem(76);
+        if (!ResponseMenuSettings.visible(SUFFIX_SEARCH_ITEM_ID)) menu.removeItem(SUFFIX_SEARCH_ITEM_ID);
         if (menu.findItem(ITEM_ID) != null) return;
         Object parent = invokeNoArg(dialogFragment, "getParentFragment");
         SearchContext context = findContext(dialogFragment, parent);
@@ -418,7 +428,7 @@ public final class WacchoiLongPressMenu {
         if (!(activity instanceof Context)) return;
 
         final Context ngContext = (Context) activity;
-        if (WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
+        if (ResponseMenuSettings.visible(76) && WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
             MenuItem suffixItem = menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁をNG登録")
                     .setOnMenuItemClickListener(item -> {
                         WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard);
@@ -435,10 +445,11 @@ public final class WacchoiLongPressMenu {
         intent.putExtra("haiagaru.wacchoi.host", context.host);
         intent.putExtra("haiagaru.wacchoi.board", context.board);
         menu.add(Menu.NONE, ITEM_ID, menu.size(), "ﾜｯﾁｮｲで検索")
+                .setVisible(ResponseMenuSettings.visible(ITEM_ID))
                 .setIntent(intent)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         String suffix = WacchoiSuffixNg.suffix(context.query);
-        if (suffix != null && menu.findItem(SUFFIX_SEARCH_ITEM_ID) == null) {
+        if (ResponseMenuSettings.visible(SUFFIX_SEARCH_ITEM_ID) && suffix != null && menu.findItem(SUFFIX_SEARCH_ITEM_ID) == null) {
             menu.add(Menu.NONE, SUFFIX_SEARCH_ITEM_ID, menu.size(), "ﾜｯﾁｮｲ下4桁で検索")
                     .setIntent(new Intent(intent).putExtra("haiagaru.wacchoi.query", "-" + suffix))
                     .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);

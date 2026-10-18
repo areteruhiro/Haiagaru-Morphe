@@ -49,16 +49,21 @@ public final class VideoViewerSettings {
                 + "YouTubeは公式Webプレーヤーの操作を使います。広告・地域制限・埋め込み制限などは回避しません。");
         body.addView(note);
         ScrollView scroll = new ScrollView(activity); scroll.addView(body);
+        LiveSettings live=new LiveSettings(prefs,()->body.invalidate());
+        live.toggle(brightness,"videoSwipeBrightness");live.toggle(volume,"videoSwipeVolume");
+        live.toggle(doubleTap,"videoDoubleTapSeek");live.toggle(youtube,"videoYoutubeEnabled");
+        final int[] previous={seconds.getSelectedItemPosition()};
+        seconds.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(android.widget.AdapterView<?> parent,android.view.View view,int position,long id){
+                if(previous[0]==position)return;previous[0]=position;
+                prefs.edit().putInt("videoDoubleTapSeconds",values[position]).apply();
+            }
+            public void onNothingSelected(android.widget.AdapterView<?> parent){}
+        });
         new AlertDialog.Builder(activity).setTitle("動画ビューアの操作設定").setView(scroll)
-                .setNegativeButton("キャンセル", null).setPositiveButton("保存", (dialog, which) -> {
-                    prefs.edit().putBoolean("videoSwipeBrightness", brightness.isChecked())
-                            .putBoolean("videoSwipeVolume", volume.isChecked())
-                            .putBoolean("videoDoubleTapSeek", doubleTap.isChecked())
-                            .putInt("videoDoubleTapSeconds", values[seconds.getSelectedItemPosition()])
-                            .putBoolean("videoYoutubeEnabled", youtube.isChecked()).apply();
-                }).show();
+                .setNegativeButton("戻る",null).show();
     }
     private static Switch toggle(LinearLayout body, Context context, String title, boolean checked) {
-        Switch view = new Switch(context); view.setText(title); view.setChecked(checked); body.addView(view); return view;
+        Switch view = new LiveSettings.Toggle(context); view.setText(title); view.setChecked(checked); body.addView(view); return view;
     }
 }

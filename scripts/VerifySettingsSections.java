@@ -4,9 +4,9 @@ public final class VerifySettingsSections {
     static int checks;
     static void check(boolean result) { if (!result) throw new AssertionError("case " + checks); checks++; }
     public static void main(String[] args) {
-        check(SettingsSections.Category.values().length == 10);
+        check(SettingsSections.Category.values().length == 12);
         check(SettingsSections.Category.values()[0] == SettingsSections.Category.GENERAL);
-        check(SettingsSections.Category.values()[9] == SettingsSections.Category.ADVANCED);
+        check(SettingsSections.Category.values()[11] == SettingsSections.Category.ADVANCED);
         check(SettingsSections.matches("画像・動画・X／Twitter", "twitter"));
         check(SettingsSections.matches("画像・動画・X／Twitter", "ＴＷＩＴＴＥＲ"));
         check(SettingsSections.matches("画像・動画・X／Twitter", "画像 twitter"));

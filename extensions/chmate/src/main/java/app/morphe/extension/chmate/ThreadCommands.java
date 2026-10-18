@@ -33,14 +33,18 @@ public final class ThreadCommands {
     public static void attach(Object fragment, View root) {
         root.post(() -> attachReady(fragment, root));
     }
+    private static String postingUrl(Object target, boolean thread, String threadMethod, String boardMethod) throws Exception {
+        return (String) target.getClass().getMethod(thread ? boardMethod : threadMethod).invoke(target);
+    }
     private static void attachReady(Object fragment, View root) {
         try {
             if (root.findViewWithTag(TAG) != null) return;
             Object binding, model;
-            String bodyName, nameName, targetName, modeName, urlMethod;
+            String bodyName, nameName, targetName, modeName, urlMethod, boardUrlMethod;
             if (fragment.getClass().getName().equals("o.p9ExternalSyntheticLambda6")) {
                 binding = field(fragment, "d"); model = field(fragment, "y");
                 bodyName = "f"; nameName = "p"; targetName = "w"; modeName = "o"; urlMethod = "i";
+                boardUrlMethod = "i";
             } else {
                 boolean modern242;
                 try {
@@ -50,17 +54,22 @@ public final class ThreadCommands {
                 if (modern242) {
                     binding = field(fragment, "i"); model = unwrap(field(fragment, "y"));
                     bodyName = "b"; nameName = "n"; targetName = "T"; modeName = "x"; urlMethod = "A";
+                    boardUrlMethod = "y";
                 } else {
                     binding = field(fragment, "h"); model = unwrap(field(fragment, "u"));
                     bodyName = "a"; nameName = "l"; targetName = "P"; modeName = "r"; urlMethod = "G";
+                    boardUrlMethod = "v";
                 }
             }
             Object target = field(model, targetName);
-            String url = (String) target.getClass().getMethod(urlMethod).invoke(target);
-            ExternalBoardAuth.target(fragment, url);
             Object mode = field(model, modeName);
             if (!(mode instanceof Enum)) return;
             boolean thread = ((Enum<?>) mode).name().equals("Thread");
+            // A new thread has no thread ID: the native thread URL is null.
+            // Use the board URL for commands, per-board settings and authentication.
+            String url = postingUrl(target, thread, urlMethod, boardUrlMethod);
+            ExternalBoardAuth.target(fragment, url);
+            BeAutoLogout.editor(fragment, target, thread, url);
             // Commands belong only to thread creation, not ordinary replies.
             // Keep target registration above for external-board authentication.
             if (!thread) return;

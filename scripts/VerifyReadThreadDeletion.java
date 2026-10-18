@@ -5,14 +5,12 @@ public final class VerifyReadThreadDeletion {
     static int checks;
     static void check(boolean value,String name){if(!value)throw new AssertionError(name);checks++;}
     public static void main(String[] args) {
-        check(!DeleteReadThreads.eligible(-1,10,10),"unopened threads excluded");
-        check(!DeleteReadThreads.eligible(0,10,10),"no local history excluded");
-        check(!DeleteReadThreads.eligible(1,10,9),"unread thread excluded");
-        check(!DeleteReadThreads.eligible(1,11,10),"newly arrived response excluded");
-        check(!DeleteReadThreads.eligible(1,0,0),"empty thread excluded");
-        check(!DeleteReadThreads.eligible(1,-1,0),"unknown total excluded");
-        check(DeleteReadThreads.eligible(1,10,10),"fully read local thread included");
-        check(DeleteReadThreads.eligible(1,10,11),"truncated total allowed");
+        check(!DeleteReadThreads.eligible(-1,10),"unopened threads excluded");
+        check(!DeleteReadThreads.eligible(0,10),"no local history excluded");
+        check(!DeleteReadThreads.eligible(1,0),"unread starred or patrol-only thread excluded");
+        check(!DeleteReadThreads.eligible(1,-1),"unknown read state excluded");
+        check(DeleteReadThreads.eligible(1,1),"partially read local thread included");
+        check(DeleteReadThreads.eligible(1,10),"fully read local thread included");
         boolean[] checked={true,true,true};
         check(DeleteReadThreads.selectionCount(checked)==3,"initial all checked");
         checked[1]=false;

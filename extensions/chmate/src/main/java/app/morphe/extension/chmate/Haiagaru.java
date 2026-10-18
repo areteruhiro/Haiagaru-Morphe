@@ -3357,15 +3357,66 @@ public final class Haiagaru {
     }
 
     private static void showSettingsDialog(Activity activity) {
-        SharedPreferences preferences = preferences(activity);
-
+        long started = android.os.SystemClock.uptimeMillis();
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        int padding = dp(activity, 20);
-        layout.setPadding(padding, padding, padding, padding);
+        int padding = dp(activity,16);
+        layout.setPadding(padding,padding,padding,padding);
+        SettingsSections sections = new SettingsSections(layout,"en".equals(text("ja","en")));
+        sections.defer(SettingsSections.Category.UPLOAD, "アップロード Imgur imgbox imgpile Sendvid ログイン 投稿一覧 upload login", () -> settingsUPLOAD(activity));
+        sections.defer(SettingsSections.Category.GENERAL, "言語 日本語 英語 広告 language ads", () -> settingsGENERAL(activity));
+        sections.defer(SettingsSections.Category.DISPLAY, "行間 フォント 文字サイズ テーマ 回転 ツールバー アイコン フィルタ 並び順 コピー 自動リロード 記者ID 強調 置換 spacing font toolbar copy", () -> settingsDISPLAY(activity));
+        sections.defer(SettingsSections.Category.POSTING, "書き込み 入力 文字サイズ 投稿 本文チェック モバイル回線 posting text size", () -> settingsPOSTING(activity));
+        sections.defer(SettingsSections.Category.ADVANCED, "User-Agent MonaKey HTTPS HTTP 通信 IP タイムアウト 接続 進捗 外部板 認証 板名 URL", () -> settingsADVANCED(activity));
+        sections.defer(SettingsSections.Category.CHECKER, "必死チェッカー Kyodemo hissi ID ワッチョイ 検索 テーマ 文字サイズ ジェスチャー", () -> settingsCHECKER(activity));
+        sections.defer(SettingsSections.Category.MEDIA, "画像 動画 サムネイル キャッシュ 容量 自動保存 巡回 ダウンロード 回転 VPN ビューア 分割 Wi-Fi video thumbnail download", () -> settingsMEDIA(activity));
+        sections.defer(SettingsSections.Category.SOCIAL, "X Twitter ツイート 投稿 本文 全文 折りたたみ キャッシュ preview cache", () -> settingsSOCIAL(activity));
+        sections.defer(SettingsSections.Category.NG, "NG 非表示 名前 ワッチョイ ID コピペ 荒らし 高度なNG 正規表現", () -> settingsNG(activity));
+        sections.defer(SettingsSections.Category.ARCHIVE, "DAT 過去ログ エッヂ アーカイブ レス保存 元スレ URL archive", () -> settingsARCHIVE(activity));
+        sections.defer(SettingsSections.Category.HISTORY, "閲覧 書き込み 検索 履歴 保存 件数 無制限 送信済み クリップボード コピー history clipboard", () -> settingsHISTORY(activity));
+        sections.defer(SettingsSections.Category.BACKUP, "バックアップ 復元 移行 MEGA 同期 ローカル ファイル backup restore sync", () -> settingsBACKUP(activity));
+        sections.finish();
+        ScrollView scroll = new ScrollView(activity);
+        scroll.setFillViewport(true);
+        scroll.addView(layout);
+        AlertDialog dialog = new AlertDialog(activity) {
+            @Override public void onBackPressed() {
+                if (!sections.goBack()) dismiss();
+            }
+        };
+        dialog.setTitle(text("Haiagaru設定","Haiagaru settings"));
+        dialog.setView(scroll);
+        sections.setCloseAction(dialog::dismiss);
+        dialog.show();
+        if(android.os.Build.VERSION.SDK_INT>=33)
+            dialog.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY,
+                    ()->{if(!sections.goBack())dialog.dismiss();});
+        if(dialog.getWindow()!=null){
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT);
+            dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setOnDismissListener(d->{
+            ImgurAlbumAttachments.refreshVideoModels();
+            EmojiFontFallback.refreshVisibleRows();
+            refreshBoardListAfterReadSortChange();
+        });
+        Log.d(LOG_TAG,"Settings index created in "+(android.os.SystemClock.uptimeMillis()-started)+"ms");
+    }
 
-        SettingsSections sections = new SettingsSections(layout, "en".equals(text("ja", "en")));
-        sections.begin(SettingsSections.Category.MEDIA);
+    private static LinearLayout settingsUPLOAD(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
         Button uploadHosts = new Button(activity);
         uploadHosts.setText(text("画像・動画のアップロード先（Imgur／imgbox／imgpile）", "Image / video upload destination (Imgur / imgbox / imgpile)"));
         uploadHosts.setOnClickListener(view -> MediaUploadHosts.showSettings(activity));
@@ -3382,7 +3433,23 @@ public final class Haiagaru {
             layout.addView(imgurUploads);
         }
 
-        sections.begin(SettingsSections.Category.GENERAL);
+
+
+        return layout;
+    }
+
+    private static LinearLayout settingsGENERAL(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,
                 "Haiagaruの表示言語 / Haiagaru language",
@@ -3390,8 +3457,8 @@ public final class Haiagaru {
                 initialSettingsLanguage);
         TextView settingsLanguageDescription = new TextView(activity);
         settingsLanguageDescription.setText(text(
-                "端末・ChMate本体の言語は変更しません。「保存」を押し、次回設定を開くと反映されます。",
-                "Does not change the device or ChMate language. Tap Save; applies when settings are reopened."));
+                "表示言語を選ぶと保存され、次に設定を開いたときに反映されます。",
+                "The selected language is saved immediately and appears when settings are reopened."));
         settingsLanguageDescription.setTextSize(13);
         layout.addView(settingsLanguageDescription, rowParams(activity));
 
@@ -3401,7 +3468,24 @@ public final class Haiagaru {
                 text("広告を削除", "Remove ads"),
                 preferences.getBoolean("hideAd", true)
         );
-        sections.begin(SettingsSections.Category.DISPLAY);
+
+        live.choice(settingsLanguage, () -> preferences.edit().putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition())).apply());
+        live.toggle(hideAd, "hideAd");
+        return layout;
+    }
+
+    private static LinearLayout settingsDISPLAY(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
         Switch directBodySelection = addSwitch(layout, activity,
                 text("レス本文を直接選択してコピー（本文長押しで範囲選択）", "Select and copy response text directly (long press body)"),
                 preferences.getBoolean("directBodySelection", false));
@@ -3440,7 +3524,78 @@ public final class Haiagaru {
         Spinner threadTitleSpacing = addSpinner(layout, activity,
                 text("スレ一覧のタイトル行間（標準に対する割合）", "Thread-list title line spacing (relative to default)"),
                 titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
-        sections.begin(SettingsSections.Category.POSTING);
+
+        ToolbarIcons.addSettingsButton(layout, activity);
+        Switch compactFilters = null;
+        if (QuickFilterToolbar.supported(activity)) {
+            compactFilters = addSwitch(layout, activity,
+                    "上部のフィルタを削除する（ツールバーの「フィルタ」は常に使用できます）",
+                    preferences.getBoolean("compactQuickFilters", false));
+        }
+        final Switch compactQuickFiltersSwitch = compactFilters;
+        Switch keepFilterPosition = addSwitch(layout, activity,
+                "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
+                preferences.getBoolean("keepQuickFilterPosition", false));
+
+        final boolean initialHideNgThreadGroup = hideNgThreadGroup();
+        Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
+                text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
+                initialHideNgThreadGroup);
+        Switch readThreadsFirst = null;
+        // 191/241/242/243 expose this in ChMate's board display options.
+        // 226 keeps the Haiagaru toggle until its settings UI is migrated.
+        if ("0.8.10.226 dev".equals(chMateVersion)) {
+            readThreadsFirst = addSwitch(layout, activity,
+                    text("板のスレ一覧で既読スレを上に", "Show read threads first in board lists"),
+                    ReadThreadsFirst.enabled());
+        }
+        final Switch readThreadsFirstSwitch = readThreadsFirst;
+        if (readThreadsFirstSwitch != null) {
+            readThreadsFirstSwitch.setOnCheckedChangeListener((button, checked) -> {
+                if (checked) ReadThreadsFirst.chooseScope(activity);
+            });
+        }
+        Switch edgeReporterId = addSwitch(
+                layout,
+                activity,
+                text("エッヂのスレタイ末尾に記者IDを表示", "Show Edge reporter IDs in thread titles"),
+                preferences.getBoolean("edgeReporterId", true)
+        );
+
+        PosterHighlight.addSettingsButton(layout, activity);
+        if (StringReplacement.supported(activity)) {
+            Button replaceStrings = new Button(activity);
+            replaceStrings.setText("本文の文字列置換（外部TXT）");
+            replaceStrings.setOnClickListener(v -> activity.startActivity(
+                    new Intent(activity, ReplacementSettingsActivity.class)));
+            layout.addView(replaceStrings, rowParams(activity));
+        }
+
+
+        live.toggle(directBodySelection,"directBodySelection");
+        live.toggle(topAlignShortThreadsSwitch,"topAlignShortThreads");
+        live.number(autoReloadInterval,"autoReloadInterval",10,1800);
+        live.choice(threadTitleSpacing,"threadTitleSpacingPercent",i->100+i*5);
+        live.toggle(compactQuickFiltersSwitch,"compactQuickFilters");
+        live.toggle(keepFilterPosition,"keepQuickFilterPosition");
+        live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
+        live.toggle(readThreadsFirstSwitch,"readThreadsFirst",Haiagaru::refreshBoardListAfterReadSortChange);
+        live.toggle(edgeReporterId,"edgeReporterId");
+        return layout;
+    }
+
+    private static LinearLayout settingsPOSTING(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
         String[] postSizeChoices = new String[29];
         postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
         for (int index = 1; index < 28; index++)
@@ -3466,7 +3621,72 @@ public final class Haiagaru {
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
-        sections.begin(SettingsSections.Category.ADVANCED);
+
+        Switch refreshCellularNetwork = addSwitch(
+                layout,
+                activity,
+                text("投稿時にモバイル回線を再取得する", "Refresh the cellular network before posting"),
+                preferences.getBoolean("refreshCellularNetwork", true)
+        );
+        Switch beLogoutAfterThread = addSwitch(layout, activity,
+                text("5chのスレ立て時にBEへ自動ログイン／成功後ログアウト", "Automatically log in to BE for a 5ch thread and log out after success"),
+                preferences.getBoolean(BeAutoLogout.KEY, false));
+        live.toggle(beLogoutAfterThread, BeAutoLogout.KEY);
+        TextView beLogoutDescription = new TextView(activity);
+        beLogoutDescription.setText(text("保存済みのBE情報を使い、スレ立て送信直前だけ自動ログインします。認証失敗時は送信しません。成功後にログアウトします。スレ立て失敗時は再試行用にログインを維持します。通常レスでは自動ログインしません。ログアウト完了を確認してから次の投稿をしてください。",
+                "Uses saved BE credentials immediately before creating a thread; authentication failure stops submission. Logs out after success, but retains login after failed creation for retry. Replies never trigger automatic login. Wait for logout confirmation before posting again."));
+        beLogoutDescription.setTextSize(13);layout.addView(beLogoutDescription, rowParams(activity));
+        TextView refreshCellularNetworkDescription = new TextView(activity);
+        refreshCellularNetworkDescription.setText(text(
+                "ON（推奨）では、古いNetwork IDを使わず投稿前にセルラー回線を再要求します。"
+                        + " OFFにするとChMate本来の接続選択へ戻ります。",
+                "ON (recommended) requests a fresh cellular network before posting instead of reusing "
+                        + "a stale Network ID. OFF restores ChMate's original selection."
+        ));
+        refreshCellularNetworkDescription.setTextSize(13);
+        layout.addView(refreshCellularNetworkDescription, rowParams(activity));
+        Switch bypassPostPreflight = addSwitch(
+                layout,
+                activity,
+                text("投稿前の本文チェックを無効化",
+                        "Disable the local post body check"),
+                preferences.getBoolean("bypassPostPreflight", true)
+        );
+        TextView bypassPostPreflightDescription = new TextView(activity);
+        bypassPostPreflightDescription.setText(text(
+                "ONにすると、空欄・端末情報のみかどうかの判定を投稿先サーバーに任せます。"
+                        + " 誤判定される場合はON、ChMate本来の確認を使う場合はOFFにしてください。",
+                "When enabled, empty-body and device-info-only validation is left to the server. "
+                        + "Enable this if ChMate rejects non-empty text; disable it to restore ChMate's check."
+        ));
+        bypassPostPreflightDescription.setTextSize(13);
+        layout.addView(bypassPostPreflightDescription, rowParams(activity));
+
+
+        Runnable saveSize=()->{
+         int index=postEditorTextSize.getSelectedItemPosition();
+         float size=index==0?0:index==28?PostEditorSizeValue.parse(value(customPostSize)):index+9;
+         if(size<0){customPostSize.setError("1〜200");return;}
+         customPostSize.setError(null);preferences.edit().putFloat("postEditorCustomTextSizeSp",size).apply();
+        };
+        live.choice(postEditorTextSize,saveSize);LiveSettings.watch(customPostSize,saveSize);
+        live.toggle(refreshCellularNetwork,"refreshCellularNetwork");
+        live.toggle(bypassPostPreflight,"bypassPostPreflight");
+        return layout;
+    }
+
+    private static LinearLayout settingsADVANCED(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
 
         Switch removeMonaKey = addSwitch(
                 layout,
@@ -3504,198 +3724,7 @@ public final class Haiagaru {
                 "chtoio",
                 preferences.getBoolean("chtoio", true)
         );
-        sections.begin(SettingsSections.Category.CHECKER);
-        Spinner hissiCheckerMode = addSpinner(
-                layout,
-                activity,
-                text("ID長押しの必死チェッカー", "ID long-press checker"),
-                new String[]{
-                        text("自動（5chはhissi.org／外部板はKyodemo）", "Automatic (hissi.org for 5ch, Kyodemo for external boards)"),
-                        text("hissi.orgを使用", "Use hissi.org"),
-                        text("Kyodemoを使用", "Use Kyodemo"),
-                        text("両方（画面上で切り替え）", "Both (switch on the checker screen)")
-                },
-                preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
-        );
-        Switch dedicatedViewerEnabled = addSwitch(
-                layout,
-                activity,
-                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
-                        "Open in dedicated viewer (off: ChMate web view)"),
-                preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
-        );
-        sections.begin(SettingsSections.Category.MEDIA);
-        Switch imageVpnSetting = null;
-        if (ImageVpnController.available()) {
-            imageVpnSetting = addSwitch(layout, activity,
-                    text("VPN Gateで対象の画像を取得（実験的）", "Fetch eligible images through VPN Gate (experimental)"),
-                    preferences.getBoolean("imageVpnEnabled", false));
-            TextView warning = new TextView(activity);
-            warning.setText(text("検証中の機能です。対象の画像だけをVPN経由で取得します。VPN取得失敗時は直接取得しません。VPN運営者には接続元IPが見え、通信が記録される可能性があります。固有URLによる識別は防げません。状態: ",
-                    "Under validation. Only eligible images use the VPN. No direct fallback on VPN fetch failure. VPN operators see your source IP and may log traffic; unique URLs can still identify viewers. Status: ")
-                    + ImageVpnController.status());
-            layout.addView(warning, rowParams(activity));
-        }
-        final Switch imageVpnEnabledSetting = imageVpnSetting;
-        PatrolImages.addSettingsButton(layout, activity);
-        Switch imageRotationButton = null;
-        try {
-            String version = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
-            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)) {
-                imageRotationButton = addSwitch(layout, activity,
-                        text("画像ビューアの回転ボタン", "Image viewer rotation button"),
-                        preferences.getBoolean("imageViewerRotationButton", true));
-            }
-        } catch (Exception error) { Log.w(LOG_TAG, "Rotation setting version check failed", error); }
-        final Switch imageRotationButtonSetting = imageRotationButton;
-        Switch videoViewer = addSwitch(layout, activity,
-                text("動画を専用ビューアで開く（オフなら従来の動作）", "Open videos in dedicated viewer (off: original behavior)"),
-                preferences.getBoolean("videoViewerEnabled", true));
-        if (!VideoViewerActivity.installed(activity)) {
-            videoViewer.setChecked(false);
-            videoViewer.setEnabled(false);
-            videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
-                    "Dedicated video viewer (select the patch when patching)"));
-        }
-        VideoViewerSettings.addSettingsButton(layout, activity);
-        Switch xPostPreview = addSwitch(layout, activity,
-                text("X／Twitterの投稿内容をレス内に表示（追加通信あり）", "Show X/Twitter post text in responses (network access)"),
-                xPostPreviewEnabled());
-        Switch xPostFullText = addSwitch(layout, activity,
-                text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
-                xPostPreviewFullText());
-        Switch xPostCollapsible = addSwitch(layout, activity,
-                text("X投稿のプレビューを折りたたむ（タップで開閉）", "Collapse X previews (tap to expand/collapse)"),
-                xPostPreviewCollapsible());
-        XPostPreview.addCacheSettings(layout, activity);
-        Spinner mediaAutoFetch = addSpinner(layout, activity,
-                text("URLメディア：動画の場合", "URL media: videos"),
-                new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
-                        text("画像＋動画", "Thumbnail and video"),
-                        text("動画のみ", "Video only"), text("取得しない", "Do not retrieve")},
-                mediaAutoFetchMode());
-        Spinner imageAutoFetch = addSpinner(layout, activity,
-                text("URLメディア：画像の場合", "URL media: images"),
-                new String[]{text("画像を取得", "Retrieve images"), text("取得しない", "Do not retrieve")},
-                mediaImageFetchEnabled() ? 0 : 1);
-        EditText videoThumbnailMaxMb = addTextField(layout, activity,
-                text("動画サムネイルの取得上限（MB、1〜1024）", "Video thumbnail download limit (MB, 1–1024)"),
-                Integer.toString(videoThumbnailMaxMb()));
-        videoThumbnailMaxMb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        EditText videoThumbnailTimeoutSeconds = addTextField(layout, activity,
-                text("動画サムネイルの取得制限時間（秒、1〜600）", "Video thumbnail download timeout (seconds, 1–600)"),
-                Integer.toString(videoThumbnailTimeoutSeconds()));
-        videoThumbnailTimeoutSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        Switch videoPreviewFour = addSwitch(layout, activity,
-                "動画サムネイルを時系列の分割画像で表示", videoPreviewFourEnabled());
-        EditText videoPreviewCount = addTextField(layout, activity,
-                "プレビューの分割数（1〜64）", Integer.toString(videoPreviewCount()));
-        videoPreviewCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        EditText videoPreviewMinutes = addTextField(layout, activity,
-                "分割プレビューの対象時間：分（0〜1440）", Integer.toString(videoPreviewMinimumSeconds() / 60));
-        videoPreviewMinutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        EditText videoPreviewSeconds = addTextField(layout, activity,
-                "分割プレビューの対象時間：秒（0〜59）。指定した長さ以上の動画が対象", Integer.toString(videoPreviewMinimumSeconds() % 60));
-        videoPreviewSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        Switch videoPreviewWifi = addSwitch(layout, activity,
-                "分割プレビューの取得はWi-Fi接続時のみ", videoPreviewWifiOnly());
-        sections.begin(SettingsSections.Category.CHECKER);
-        Spinner hissiViewerTheme = addSpinner(
-                layout,
-                activity,
-                text("必死チェッカーの表示テーマ", "Checker viewer theme"),
-                new String[]{
-                        text("端末設定に合わせる", "Follow system"),
-                        text("ダーク", "Dark"),
-                        text("AMOLEDブラック", "AMOLED black"),
-                        text("ライト", "Light")
-                },
-                preferences.getInt(HISSI_VIEWER_THEME_KEY, 0)
-        );
-        Spinner hissiViewerTextZoom = addSpinner(
-                layout,
-                activity,
-                text("必死チェッカーの文字サイズ", "Checker viewer text size"),
-                new String[]{"100%", "115%", "130%"},
-                viewerTextZoomIndex(preferences.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100))
-        );
-        addHissiViewerToolbarButtonControl(activity, layout, preferences);
-        Switch hissiViewerFullscreen = addSwitch(
-                layout,
-                activity,
-                text("必死チェッカーを全画面で表示", "Fullscreen checker viewer"),
-                preferences.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false)
-        );
-        Spinner hissiViewerSwipeHistory = addSpinner(
-                layout,
-                activity,
-                text("専用ビュワーの左右スワイプ", "Viewer horizontal swipe"),
-                new String[]{"無効", "左で戻る／右で進む", "左で進む／右で戻る"},
-                Math.max(0, Math.min(2, preferences.getInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, 0)))
-        );
-        Switch kyodemoEnhancedViewer = addSwitch(
-                layout,
-                activity,
-                text("KyodemoのID/ﾜｯﾁｮｲ検索を専用表示", "Enhanced Kyodemo ID/Wacchoi viewer"),
-                preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
-        );
-        sections.begin(SettingsSections.Category.DISPLAY);
-        ToolbarIcons.addSettingsButton(layout, activity);
-        Switch compactFilters = null;
-        if (QuickFilterToolbar.supported(activity)) {
-            compactFilters = addSwitch(layout, activity,
-                    "上部のフィルタを削除する（ツールバーの「フィルタ」は常に使用できます）",
-                    preferences.getBoolean("compactQuickFilters", false));
-        }
-        final Switch compactQuickFiltersSwitch = compactFilters;
-        Switch keepFilterPosition = addSwitch(layout, activity,
-                "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
-                preferences.getBoolean("keepQuickFilterPosition", false));
-        sections.begin(SettingsSections.Category.NG);
-        HiddenIdNg.addSettingsButton(layout, activity);
-        Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
-                "ワッチョイ長押しメニューをNG登録優先の順番にする",
-                preferences.getBoolean("wacchoiNgFirstMenu", false));
-        Switch hideShowHiddenNgMenu = addSwitch(layout, activity,
-                text("右上メニューの「非表示NGを表示」を隠す", "Hide Show hidden NG in the overflow menu"),
-                preferences.getBoolean("hideShowHiddenNgMenu", false));
-        TextView hiddenNgMenuDescription = new TextView(activity);
-        hiddenNgMenuDescription.setText(text(
-                "メニュー項目だけを隠します。NG登録やレスの表示状態は変更しません。変更は次にメニューを開いたときに反映します。",
-                "Hides only the menu action, without changing NG rules or response visibility. Applies the next time the menu opens."));
-        hiddenNgMenuDescription.setTextSize(13);
-        layout.addView(hiddenNgMenuDescription, rowParams(activity));
-        sections.begin(SettingsSections.Category.DISPLAY);
-        final boolean initialHideNgThreadGroup = hideNgThreadGroup();
-        Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
-                text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
-                initialHideNgThreadGroup);
-        Switch readThreadsFirst = null;
-        // 191/241/242/243 expose this in ChMate's board display options.
-        // 226 keeps the Haiagaru toggle until its settings UI is migrated.
-        String chMateVersion = "";
-        try {
-            chMateVersion = activity.getPackageManager()
-                    .getPackageInfo(activity.getPackageName(), 0).versionName;
-        } catch (Throwable ignored) { }
-        if ("0.8.10.226 dev".equals(chMateVersion)) {
-            readThreadsFirst = addSwitch(layout, activity,
-                    text("板のスレ一覧で既読スレを上に", "Show read threads first in board lists"),
-                    ReadThreadsFirst.enabled());
-        }
-        final Switch readThreadsFirstSwitch = readThreadsFirst;
-        if (readThreadsFirstSwitch != null) {
-            readThreadsFirstSwitch.setOnCheckedChangeListener((button, checked) -> {
-                if (checked) ReadThreadsFirst.chooseScope(activity);
-            });
-        }
-        Switch edgeReporterId = addSwitch(
-                layout,
-                activity,
-                text("エッヂのスレタイ末尾に記者IDを表示", "Show Edge reporter IDs in thread titles"),
-                preferences.getBoolean("edgeReporterId", true)
-        );
-        sections.begin(SettingsSections.Category.ADVANCED);
+
         Switch forceHttps = addSwitch(
                 layout,
                 activity,
@@ -3740,99 +3769,259 @@ public final class Haiagaru {
         final Switch update191ProgressSetting = update191Progress;
         final Switch update191ConnectSetting = update191Connect;
         final Spinner update191TimeoutSetting = update191Timeout;
-        sections.begin(SettingsSections.Category.ARCHIVE);
-        Switch automaticDat = addSwitch(
-                layout,
-                activity,
-                text("自動DAT取得", "Automatic DAT retrieval"),
-                preferences.getBoolean("automaticDat", true)
-        );
-        sections.begin(SettingsSections.Category.POSTING);
-        Switch refreshCellularNetwork = addSwitch(
-                layout,
-                activity,
-                text("投稿時にモバイル回線を再取得する", "Refresh the cellular network before posting"),
-                preferences.getBoolean("refreshCellularNetwork", true)
-        );
-        TextView refreshCellularNetworkDescription = new TextView(activity);
-        refreshCellularNetworkDescription.setText(text(
-                "ON（推奨）では、古いNetwork IDを使わず投稿前にセルラー回線を再要求します。"
-                        + " OFFにするとChMate本来の接続選択へ戻ります。",
-                "ON (recommended) requests a fresh cellular network before posting instead of reusing "
-                        + "a stale Network ID. OFF restores ChMate's original selection."
-        ));
-        refreshCellularNetworkDescription.setTextSize(13);
-        layout.addView(refreshCellularNetworkDescription, rowParams(activity));
-        Switch bypassPostPreflight = addSwitch(
-                layout,
-                activity,
-                text("投稿前の本文チェックを無効化",
-                        "Disable the local post body check"),
-                preferences.getBoolean("bypassPostPreflight", true)
-        );
-        TextView bypassPostPreflightDescription = new TextView(activity);
-        bypassPostPreflightDescription.setText(text(
-                "ONにすると、空欄・端末情報のみかどうかの判定を投稿先サーバーに任せます。"
-                        + " 誤判定される場合はON、ChMate本来の確認を使う場合はOFFにしてください。",
-                "When enabled, empty-body and device-info-only validation is left to the server. "
-                        + "Enable this if ChMate rejects non-empty text; disable it to restore ChMate's check."
-        ));
-        bypassPostPreflightDescription.setTextSize(13);
-        layout.addView(bypassPostPreflightDescription, rowParams(activity));
 
-        sections.begin(SettingsSections.Category.HISTORY);
-        ClipboardHistory.addSettings(layout, activity);
-        final SharedPreferences chMatePreferences =
-                PreferenceManager.getDefaultSharedPreferences(activity);
-        final int savedPostHistoryCount = chMatePreferences.getInt(
-                CHMATE_POST_DATA_LIST_COUNT_KEY, DEFAULT_CHMATE_POST_DATA_LIST_COUNT);
-        Switch unlimitedPostHistory = addSwitch(layout, activity,
-                text("書き込み履歴を無制限に保存", "Keep unlimited post history"),
-                savedPostHistoryCount == Integer.MAX_VALUE);
-        EditText postDataListCount = addTextField(
+        ExternalBoardAuth.addSettingsButton(layout, activity);
+        addOptionalSettingsSection(
+                "duplicate board cleanup",
+                () -> addBoardDuplicateCleanupControl(activity, layout)
+        );
+
+        
+        live.toggle(removeMonaKey,"removeMonaKey");live.string(cookieClass,"cookieClass");
+        live.string(monaKeyFile,"prefMonaKeyFile");live.string(monaKeyName,"prefMonaKeyName");
+        live.string(adClass,"adClass");live.toggle(chtoio,"chtoio");
+        live.toggle(forceHttps,"forceHttps",()->HttpsTransport.setEnabled(forceHttps.isChecked()));
+        live.toggle(update191ProgressSetting,"optimize191UpdateProgress");
+        live.toggle(update191ConnectSetting,"fast191UpdateConnect");
+        live.choice(update191TimeoutSetting,"update191TimeoutSeconds",i->new int[]{0,30,60,120}[i]);
+        return layout;
+    }
+
+    private static LinearLayout settingsCHECKER(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        Spinner hissiCheckerMode = addSpinner(
                 layout,
                 activity,
-                text("書き込み履歴に残す件数（0で残さない）",
-                        "Posts to keep in post history (0 keeps none)"),
-                Integer.toString(savedPostHistoryCount == Integer.MAX_VALUE
-                        ? DEFAULT_CHMATE_POST_DATA_LIST_COUNT : savedPostHistoryCount)
+                text("ID長押しの必死チェッカー", "ID long-press checker"),
+                new String[]{
+                        text("自動（5chはhissi.org／外部板はKyodemo）", "Automatic (hissi.org for 5ch, Kyodemo for external boards)"),
+                        text("hissi.orgを使用", "Use hissi.org"),
+                        text("Kyodemoを使用", "Use Kyodemo"),
+                        text("両方（画面上で切り替え）", "Both (switch on the checker screen)")
+                },
+                preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
         );
-        postDataListCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        postDataListCount.setEnabled(!unlimitedPostHistory.isChecked());
-        unlimitedPostHistory.setOnCheckedChangeListener((button, checked) ->
-                postDataListCount.setEnabled(!checked));
-        TextView postDataListCountDescription = new TextView(activity);
-        postDataListCountDescription.setText(text(
-                "書き込み履歴の古い項目から削除します。件数変更時はアプリを再起動し、"
-                        + "次に送信済み履歴を保存する際に反映します。削除された履歴は戻せません。"
-                        + " 1〜10000、または0を指定できます。無制限を有効にすると件数による削除を行いません。"
-                        + "保存容量・バックアップサイズや読み込み負荷が増える場合があります。",
-                "Oldest post-history entries are removed first. Changing the count restarts the app; "
-                        + "the limit applies when sent history is next saved. Removed history cannot be restored. Choose 0 to 10000, "
-                        + "or enable unlimited to disable count-based pruning. Storage, backup size and load time may increase."
-        ));
-        postDataListCountDescription.setTextSize(13);
-        layout.addView(postDataListCountDescription, rowParams(activity));
+        Switch dedicatedViewerEnabled = addSwitch(
+                layout,
+                activity,
+                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
+                        "Open in dedicated viewer (off: ChMate web view)"),
+                preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
+        );
 
-        EditText postedThreads = null;
-        if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
-                || "0.8.10.241".equals(chMateVersion) || "0.8.10.242 dev".equals(chMateVersion)
-                || "0.8.10.243 dev".equals(chMateVersion)) {
-            postedThreads = addTextField(layout, activity,
-                    text("書き込んだスレの表示数（0で無制限）", "Number of posted threads to display (0: unlimited)"),
-                    Integer.toString(getPostedThreadDisplayCountSetting()));
-            postedThreads.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-            TextView description = new TextView(activity);
-            description.setText(text("1〜10000件、0で無制限。件数を変更するとアプリを再起動して反映します。"
-                            + "「書き込んだスレ」の表示件数のみを変更します。下の「送信済み」の件数や、保存済みの履歴は変更しません。",
-                    "1–10000, or 0 for unlimited. Changing the count restarts the app to refresh the list. Only posted threads are limited; sent posts and saved history are unchanged."));
-            description.setTextSize(13);
-            layout.addView(description, rowParams(activity));
+        Spinner hissiViewerTheme = addSpinner(
+                layout,
+                activity,
+                text("必死チェッカーの表示テーマ", "Checker viewer theme"),
+                new String[]{
+                        text("端末設定に合わせる", "Follow system"),
+                        text("ダーク", "Dark"),
+                        text("AMOLEDブラック", "AMOLED black"),
+                        text("ライト", "Light")
+                },
+                preferences.getInt(HISSI_VIEWER_THEME_KEY, 0)
+        );
+        Spinner hissiViewerTextZoom = addSpinner(
+                layout,
+                activity,
+                text("必死チェッカーの文字サイズ", "Checker viewer text size"),
+                new String[]{"100%", "115%", "130%"},
+                viewerTextZoomIndex(preferences.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100))
+        );
+        addHissiViewerToolbarButtonControl(activity, layout, preferences);
+        Switch hissiViewerFullscreen = addSwitch(
+                layout,
+                activity,
+                text("必死チェッカーを全画面で表示", "Fullscreen checker viewer"),
+                preferences.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false)
+        );
+        Spinner hissiViewerSwipeHistory = addSpinner(
+                layout,
+                activity,
+                text("専用ビュワーの左右スワイプ", "Viewer horizontal swipe"),
+                new String[]{"無効", "左で戻る／右で進む", "左で進む／右で戻る"},
+                Math.max(0, Math.min(2, preferences.getInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, 0)))
+        );
+        Switch kyodemoEnhancedViewer = addSwitch(
+                layout,
+                activity,
+                text("KyodemoのID/ﾜｯﾁｮｲ検索を専用表示", "Enhanced Kyodemo ID/Wacchoi viewer"),
+                preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
+        );
+
+        live.choice(hissiCheckerMode,HISSI_CHECKER_MODE_KEY);
+        live.toggle(dedicatedViewerEnabled,DEDICATED_VIEWER_ENABLED_KEY);
+        live.choice(hissiViewerTheme,HISSI_VIEWER_THEME_KEY);
+        live.choice(hissiViewerTextZoom,HISSI_VIEWER_TEXT_ZOOM_KEY,i->new int[]{100,115,130}[i]);
+        live.toggle(hissiViewerFullscreen,HISSI_VIEWER_FULLSCREEN_KEY);
+        live.choice(hissiViewerSwipeHistory,HISSI_VIEWER_SWIPE_HISTORY_KEY);
+        live.toggle(kyodemoEnhancedViewer,KYODEMO_ENHANCED_VIEWER_KEY);
+        return layout;
+    }
+
+    private static LinearLayout settingsMEDIA(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        Switch imageVpnSetting = null;
+        if (ImageVpnController.available()) {
+            imageVpnSetting = addSwitch(layout, activity,
+                    text("VPN Gateで対象の画像を取得（実験的）", "Fetch eligible images through VPN Gate (experimental)"),
+                    preferences.getBoolean("imageVpnEnabled", false));
+            TextView warning = new TextView(activity);
+            warning.setText(text("検証中の機能です。対象の画像だけをVPN経由で取得します。VPN取得失敗時は直接取得しません。VPN運営者には接続元IPが見え、通信が記録される可能性があります。固有URLによる識別は防げません。状態: ",
+                    "Under validation. Only eligible images use the VPN. No direct fallback on VPN fetch failure. VPN operators see your source IP and may log traffic; unique URLs can still identify viewers. Status: ")
+                    + ImageVpnController.status());
+            layout.addView(warning, rowParams(activity));
         }
-        final EditText postedThreadDisplayCount = postedThreads;
-        final HistoryLimits.Settings historyLimits = HistoryLimits.addSettings(layout, activity);
+        final Switch imageVpnEnabledSetting = imageVpnSetting;
+        PatrolImages.addSettingsButton(layout, activity);
+        Switch imageRotationButton = null;
+        try {
+            String version = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
+            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)) {
+                imageRotationButton = addSwitch(layout, activity,
+                        text("画像ビューアの回転ボタン", "Image viewer rotation button"),
+                        preferences.getBoolean("imageViewerRotationButton", true));
+            }
+        } catch (Exception error) { Log.w(LOG_TAG, "Rotation setting version check failed", error); }
+        final Switch imageRotationButtonSetting = imageRotationButton;
+        Switch videoViewer = addSwitch(layout, activity,
+                text("動画を専用ビューアで開く（オフなら従来の動作）", "Open videos in dedicated viewer (off: original behavior)"),
+                preferences.getBoolean("videoViewerEnabled", true));
+        if (!VideoViewerActivity.installed(activity)) {
+            videoViewer.setChecked(false);
+            videoViewer.setEnabled(false);
+            videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
+                    "Dedicated video viewer (select the patch when patching)"));
+        }
+        VideoViewerSettings.addSettingsButton(layout, activity);
 
-        sections.begin(SettingsSections.Category.NG);
+        Spinner mediaAutoFetch = addSpinner(layout, activity,
+                text("動画リンクから自動で読み込むもの", "What to load from video links"),
+                new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
+                        text("画像＋動画", "Thumbnail and video"),
+                        text("動画のみ", "Video only"), text("取得しない", "Do not retrieve")},
+                mediaAutoFetchMode());
+        Spinner imageAutoFetch = addSpinner(layout, activity,
+                text("画像リンクの画像を自動で読み込む", "Automatically load images from image links"),
+                new String[]{text("画像を取得", "Retrieve images"), text("取得しない", "Do not retrieve")},
+                mediaImageFetchEnabled() ? 0 : 1);
+        EditText videoThumbnailMaxMb = addTextField(layout, activity,
+                text("動画サムネイルの取得上限（MB、1〜1024）", "Video thumbnail download limit (MB, 1–1024)"),
+                Integer.toString(videoThumbnailMaxMb()));
+        videoThumbnailMaxMb.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoThumbnailTimeoutSeconds = addTextField(layout, activity,
+                text("動画サムネイルの取得制限時間（秒、1〜600）", "Video thumbnail download timeout (seconds, 1–600)"),
+                Integer.toString(videoThumbnailTimeoutSeconds()));
+        videoThumbnailTimeoutSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        Switch videoPreviewFour = addSwitch(layout, activity,
+                "動画サムネイルを時系列の分割画像で表示", videoPreviewFourEnabled());
+        EditText videoPreviewCount = addTextField(layout, activity,
+                "プレビューの分割数（1〜64）", Integer.toString(videoPreviewCount()));
+        videoPreviewCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoPreviewMinutes = addTextField(layout, activity,
+                "分割プレビューの対象時間：分（0〜1440）", Integer.toString(videoPreviewMinimumSeconds() / 60));
+        videoPreviewMinutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoPreviewSeconds = addTextField(layout, activity,
+                "分割プレビューの対象時間：秒（0〜59）。指定した長さ以上の動画が対象", Integer.toString(videoPreviewMinimumSeconds() % 60));
+        videoPreviewSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        Switch videoPreviewWifi = addSwitch(layout, activity,
+                "分割プレビューの取得はWi-Fi接続時のみ", videoPreviewWifiOnly());
+
+        live.toggle(imageVpnEnabledSetting,"imageVpnEnabled",()->ImageVpnController.setEnabled(imageVpnEnabledSetting.isChecked()));
+        live.toggle(imageRotationButtonSetting,"imageViewerRotationButton");
+        live.toggle(videoViewer,"videoViewerEnabled");
+        live.choice(mediaAutoFetch,"urlVideoFetchMode");
+        live.choice(imageAutoFetch,()->preferences.edit().putBoolean("urlImageFetchEnabled",imageAutoFetch.getSelectedItemPosition()==0).apply());
+        live.number(videoThumbnailMaxMb,"videoThumbnailMaxMb",1,1024);
+        live.number(videoThumbnailTimeoutSeconds,"videoThumbnailTimeoutSeconds",1,600);
+        live.toggle(videoPreviewFour,"videoPreviewFour");live.number(videoPreviewCount,"videoPreviewCount",1,64);
+        live.toggle(videoPreviewWifi,"videoPreviewWifiOnly");
+        Runnable saveDuration=()->{
+         try{int minutes=Integer.parseInt(value(videoPreviewMinutes).trim()),seconds=Integer.parseInt(value(videoPreviewSeconds).trim());
+         if(minutes<0||minutes>1440||seconds<0||seconds>59)throw new NumberFormatException();
+         videoPreviewMinutes.setError(null);videoPreviewSeconds.setError(null);
+         preferences.edit().putInt("videoPreviewMinimumSeconds",minutes*60+seconds).apply();
+         }catch(NumberFormatException e){videoPreviewSeconds.setError("分: 0〜1440 / 秒: 0〜59");}
+        };
+        LiveSettings.watch(videoPreviewMinutes,saveDuration);LiveSettings.watch(videoPreviewSeconds,saveDuration);
+        return layout;
+    }
+
+    private static LinearLayout settingsSOCIAL(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        Switch xPostPreview = addSwitch(layout, activity,
+                text("X／Twitterの投稿内容をレス内に表示（追加通信あり）", "Show X/Twitter post text in responses (network access)"),
+                xPostPreviewEnabled());
+        Switch xPostFullText = addSwitch(layout, activity,
+                text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
+                xPostPreviewFullText());
+        Switch xPostCollapsible = addSwitch(layout, activity,
+                text("X投稿のプレビューを折りたたむ（タップで開閉）", "Collapse X previews (tap to expand/collapse)"),
+                xPostPreviewCollapsible());
+        XPostPreview.addCacheSettings(layout, activity);
+
+        live.toggle(xPostPreview,"xPostPreviewEnabled");
+        live.toggle(xPostFullText,"xPostPreviewFullText");
+        live.toggle(xPostCollapsible,"xPostPreviewCollapsible");
+        return layout;
+    }
+
+    private static LinearLayout settingsNG(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        HiddenIdNg.addSettingsButton(layout, activity);
+        Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
+                "ワッチョイ長押しメニューをNG登録優先の順番にする",
+                preferences.getBoolean("wacchoiNgFirstMenu", false));
+        Switch hideShowHiddenNgMenu = addSwitch(layout, activity,
+                text("右上メニューの「非表示NGを表示」を隠す", "Hide Show hidden NG in the overflow menu"),
+                preferences.getBoolean("hideShowHiddenNgMenu", false));
+        TextView hiddenNgMenuDescription = new TextView(activity);
+        hiddenNgMenuDescription.setText(text(
+                "メニュー項目だけを隠します。NG登録やレスの表示状態は変更しません。変更は次にメニューを開いたときに反映します。",
+                "Hides only the menu action, without changing NG rules or response visibility. Applies the next time the menu opens."));
+        hiddenNgMenuDescription.setTextSize(13);
+        layout.addView(hiddenNgMenuDescription, rowParams(activity));
+
         EditText ngRegistrationLimit = addTextField(
                 layout,
                 activity,
@@ -3902,7 +4091,44 @@ public final class Haiagaru {
         final Switch copipeNg2 = copipeNg2Value;
         final Switch arashiNg = arashiNgValue;
 
-        sections.begin(SettingsSections.Category.ARCHIVE);
+
+        addOptionalSettingsSection(
+                "programmable NG",
+                () -> ProgrammableNgController.addSettingsButton(layout, activity)
+        );
+        addOptionalSettingsSection(
+                "native NG management",
+                () -> NgManagement.addSettingsButton(layout, activity)
+        );
+
+        live.toggle(wacchoiNgFirstMenu,"wacchoiNgFirstMenu");live.toggle(hideShowHiddenNgMenu,"hideShowHiddenNgMenu");
+        live.number(ngRegistrationLimit,NG_REGISTRATION_LIMIT_KEY,0,100000);
+        LiveSettings nativeLive=new LiveSettings(chMatePreferences,()->layout.invalidate());
+        nativeLive.toggle(abbrevSingleId,CHMATE_ABBREV_SINGLE_ID_KEY);
+        nativeLive.toggle(copipeNg2,CHMATE_COPIPE_NG2_KEY,()->{if(copipeNg2.isChecked())chMatePreferences.edit().putBoolean(CHMATE_COPIPE_NG_KEY,true).apply();});
+        nativeLive.toggle(arashiNg,CHMATE_ARASHI_NG_KEY,()->{if(arashiNg.isChecked())chMatePreferences.edit().putBoolean(CHMATE_COPIPE_NG_AR_KEY,true).apply();});
+        return layout;
+    }
+
+    private static LinearLayout settingsARCHIVE(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        Switch automaticDat = addSwitch(
+                layout,
+                activity,
+                text("自動DAT取得", "Automatic DAT retrieval"),
+                preferences.getBoolean("automaticDat", true)
+        );
+
         Button responseArchive = new Button(activity);
         responseArchive.setText(text("レスのアーカイブを開く", "Open saved responses"));
         responseArchive.setOnClickListener(v -> ResponseArchive.showList(activity));
@@ -3942,240 +4168,112 @@ public final class Haiagaru {
                 "archived-thread preset",
                 () -> addArchiveSearchPresetControl(activity, layout)
         );
-        sections.begin(SettingsSections.Category.BACKUP);
+
+        live.toggle(automaticDat,"automaticDat");live.string(archiveRouteTemplates,ARCHIVE_ROUTE_TEMPLATES_KEY);
+        live.toggle(archiveThreadStandalone,"archiveThreadStandalone");
+        return layout;
+    }
+
+    private static LinearLayout settingsHISTORY(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        ClipboardHistory.addSettings(layout, activity);
+        final int savedPostHistoryCount = chMatePreferences.getInt(
+                CHMATE_POST_DATA_LIST_COUNT_KEY, DEFAULT_CHMATE_POST_DATA_LIST_COUNT);
+        Switch unlimitedPostHistory = addSwitch(layout, activity,
+                text("書き込み履歴を無制限に保存", "Keep unlimited post history"),
+                savedPostHistoryCount == Integer.MAX_VALUE);
+        EditText postDataListCount = addTextField(
+                layout,
+                activity,
+                text("書き込み履歴に残す件数（0で残さない）",
+                        "Posts to keep in post history (0 keeps none)"),
+                Integer.toString(savedPostHistoryCount == Integer.MAX_VALUE
+                        ? DEFAULT_CHMATE_POST_DATA_LIST_COUNT : savedPostHistoryCount)
+        );
+        postDataListCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        postDataListCount.setEnabled(!unlimitedPostHistory.isChecked());
+        unlimitedPostHistory.setOnCheckedChangeListener((button, checked) ->
+                postDataListCount.setEnabled(!checked));
+        TextView postDataListCountDescription = new TextView(activity);
+        postDataListCountDescription.setText(text(
+                "書き込み履歴の古い項目から削除します。件数は自動で保存され、"
+                        + "次に送信済み履歴を保存する際に反映します。削除された履歴は戻せません。"
+                        + " 1〜10000、または0を指定できます。無制限を有効にすると件数による削除を行いません。"
+                        + "保存容量・バックアップサイズや読み込み負荷が増える場合があります。",
+                "Oldest post-history entries are removed first. Changes are saved immediately; "
+                        + "the limit applies when sent history is next saved. Removed history cannot be restored. Choose 0 to 10000, "
+                        + "or enable unlimited to disable count-based pruning. Storage, backup size and load time may increase."
+        ));
+        postDataListCountDescription.setTextSize(13);
+        layout.addView(postDataListCountDescription, rowParams(activity));
+
+        EditText postedThreads = null;
+        if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
+                || "0.8.10.241".equals(chMateVersion) || "0.8.10.242 dev".equals(chMateVersion)
+                || "0.8.10.243 dev".equals(chMateVersion)) {
+            postedThreads = addTextField(layout, activity,
+                    text("書き込んだスレの表示数（0で無制限）", "Number of posted threads to display (0: unlimited)"),
+                    Integer.toString(getPostedThreadDisplayCountSetting()));
+            postedThreads.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+            TextView description = new TextView(activity);
+            description.setText(text("1〜10000件、0で無制限。件数は変更後、次に一覧を開くと反映されます。"
+                            + "「書き込んだスレ」の表示件数のみを変更します。下の「送信済み」の件数や、保存済みの履歴は変更しません。",
+                    "1–10000, or 0 for unlimited. The new limit applies when the list is next opened. Only posted threads are limited; sent posts and saved history are unchanged."));
+            description.setTextSize(13);
+            layout.addView(description, rowParams(activity));
+        }
+        final EditText postedThreadDisplayCount = postedThreads;
+        final HistoryLimits.Settings historyLimits = HistoryLimits.addSettings(layout, activity);
+
+
+        LiveSettings nativeLive=new LiveSettings(chMatePreferences,()->layout.invalidate());
+        Runnable saveSent=()->{
+         try {int count=unlimitedPostHistory.isChecked()?Integer.MAX_VALUE:Integer.parseInt(value(postDataListCount).trim());
+         if(count<0||(count>10000&&count!=Integer.MAX_VALUE))throw new NumberFormatException();
+         postDataListCount.setError(null);chMatePreferences.edit().putInt(CHMATE_POST_DATA_LIST_COUNT_KEY,count).apply();
+         }catch(NumberFormatException e){postDataListCount.setError("0〜10000");}
+        };
+        unlimitedPostHistory.setOnCheckedChangeListener((button,checked)->{postDataListCount.setEnabled(!checked);saveSent.run();});
+        LiveSettings.watch(postDataListCount,saveSent);
+        live.number(postedThreadDisplayCount,POSTED_THREAD_DISPLAY_COUNT_KEY,0,10000);
+        historyLimits.enableImmediateSaving();
+        return layout;
+    }
+
+    private static LinearLayout settingsBACKUP(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        String chMateVersion = "";
+        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
+        catch (Exception ignored) { }
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
         addOptionalSettingsSection(
                 "package data migration",
                 () -> addPackageMigrationControl(activity, layout)
         );
-        sections.begin(SettingsSections.Category.ADVANCED);
-        ExternalBoardAuth.addSettingsButton(layout, activity);
-        addOptionalSettingsSection(
-                "duplicate board cleanup",
-                () -> addBoardDuplicateCleanupControl(activity, layout)
-        );
-        sections.begin(SettingsSections.Category.NG);
-        addOptionalSettingsSection(
-                "programmable NG",
-                () -> ProgrammableNgController.addSettingsButton(layout, activity)
-        );
-        addOptionalSettingsSection(
-                "native NG management",
-                () -> NgManagement.addSettingsButton(layout, activity)
-        );
-        sections.begin(SettingsSections.Category.BACKUP);
+
         addOptionalSettingsSection(
                 "local/optional MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
-        sections.begin(SettingsSections.Category.DISPLAY);
-        PosterHighlight.addSettingsButton(layout, activity);
-        if (StringReplacement.supported(activity)) {
-            Button replaceStrings = new Button(activity);
-            replaceStrings.setText("本文の文字列置換（外部TXT）");
-            replaceStrings.setOnClickListener(v -> activity.startActivity(
-                    new Intent(activity, ReplacementSettingsActivity.class)));
-            layout.addView(replaceStrings, rowParams(activity));
-        }
 
-        sections.finish();
-        ScrollView scrollView = new ScrollView(activity);
-        scrollView.addView(layout);
 
-        ConfigSnapshot before = ConfigSnapshot.read(preferences);
-        final int initialPostedThreadDisplayCount = getPostedThreadDisplayCountSetting();
-        final int initialPostHistoryRetentionCount = getPostHistoryRetentionCount();
-        AlertDialog settingsDialog = new AlertDialog.Builder(activity)
-                .setTitle("Haiagaru")
-                .setCancelable(true)
-                .setView(scrollView)
-                .setPositiveButton(text("保存", "Save"), null)
-                .setNegativeButton(text("キャンセル", "Cancel"), null)
-                .create();
-        settingsDialog.setOnShowListener(ignored -> settingsDialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(saveView -> {
-                    if (!historyLimits.validate()) { sections.revealCategory(SettingsSections.Category.HISTORY); return; }
-                    int displayCount = postedThreadDisplayCount == null ? getPostedThreadDisplayCountSetting()
-                            : PostedThreadCountValue.parse(value(postedThreadDisplayCount));
-                    if (displayCount < 0) {
-                        if (postedThreadDisplayCount != null) sections.reveal(postedThreadDisplayCount);
-                        Toast.makeText(activity, text("書き込んだスレの表示数は0〜10000で入力してください（0は無制限）。設定は保存されませんでした。",
-                                "Enter 0 to 10000 (0: unlimited). Settings were not saved."), Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    int postSizeChoice = postEditorTextSize.getSelectedItemPosition();
-                    float selectedPostSize = postSizeChoice == 0 ? 0 : postSizeChoice == 28
-                            ? PostEditorSizeValue.parse(value(customPostSize)) : postSizeChoice + 9;
-                    if (selectedPostSize < 0) {
-                        sections.reveal(customPostSize);
-                        Toast.makeText(activity, text("文字サイズは1〜200spの数値で入力してください。設定は保存されませんでした。",
-                                "Enter a text size from 1 to 200sp. Settings were not saved."), Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    boolean legacyPlusChanged = false;
-                    if (legacyPlusSupported) {
-                        SharedPreferences.Editor chMateEditor = chMatePreferences.edit();
-                        int postHistoryCount = unlimitedPostHistory.isChecked() ? Integer.MAX_VALUE : parsePostHistoryCount(
-                                value(postDataListCount),
-                                chMatePreferences.getInt(
-                                        CHMATE_POST_DATA_LIST_COUNT_KEY,
-                                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
-                                )
-                        );
-                        chMateEditor.putInt(CHMATE_POST_DATA_LIST_COUNT_KEY, postHistoryCount);
-                        if (abbrevSingleId != null) {
-                            boolean checked = abbrevSingleId.isChecked();
-                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
-                                    CHMATE_ABBREV_SINGLE_ID_KEY,
-                                    false
-                            );
-                            chMateEditor.putBoolean(CHMATE_ABBREV_SINGLE_ID_KEY, checked);
-                        }
-                        if (copipeNg2 != null) {
-                            boolean checked = copipeNg2.isChecked();
-                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
-                                    CHMATE_COPIPE_NG2_KEY,
-                                    false
-                            );
-                            chMateEditor.putBoolean(CHMATE_COPIPE_NG2_KEY, checked);
-                            if (checked) {
-                                legacyPlusChanged |= !chMatePreferences.getBoolean(
-                                        CHMATE_COPIPE_NG_KEY,
-                                        false
-                                );
-                                chMateEditor.putBoolean(CHMATE_COPIPE_NG_KEY, true);
-                            }
-                        }
-                        if (arashiNg != null) {
-                            boolean checked = arashiNg.isChecked();
-                            legacyPlusChanged |= checked != chMatePreferences.getBoolean(
-                                    CHMATE_ARASHI_NG_KEY,
-                                    false
-                            );
-                            chMateEditor.putBoolean(CHMATE_ARASHI_NG_KEY, checked);
-                            if (checked) {
-                                legacyPlusChanged |= !chMatePreferences.getBoolean(
-                                        CHMATE_COPIPE_NG_AR_KEY,
-                                        false
-                                );
-                                chMateEditor.putBoolean(CHMATE_COPIPE_NG_AR_KEY, true);
-                            }
-                        }
-                        chMateEditor.commit();
-                    } else {
-                        int postHistoryCount = unlimitedPostHistory.isChecked() ? Integer.MAX_VALUE : parsePostHistoryCount(
-                                value(postDataListCount),
-                                chMatePreferences.getInt(
-                                        CHMATE_POST_DATA_LIST_COUNT_KEY,
-                                        DEFAULT_CHMATE_POST_DATA_LIST_COUNT
-                                )
-                        );
-                        chMatePreferences.edit()
-                                .putInt(CHMATE_POST_DATA_LIST_COUNT_KEY, postHistoryCount)
-                                .commit();
-                    }
-                    preferences.edit()
-                            .putBoolean("directBodySelection", directBodySelection.isChecked())
-                            .putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition()))
-                            .putBoolean("archiveThreadStandalone", archiveThreadStandalone.isChecked())
-                            .putBoolean("xPostPreviewEnabled", xPostPreview.isChecked())
-                            .putBoolean("xPostPreviewFullText", xPostFullText.isChecked())
-                            .putBoolean("xPostPreviewCollapsible", xPostCollapsible.isChecked())
-                            .putInt(POSTED_THREAD_DISPLAY_COUNT_KEY, displayCount)
-                            .putBoolean("hideAd", hideAd.isChecked())
-                            .putBoolean("topAlignShortThreads", topAlignShortThreadsSwitch != null
-                                    && topAlignShortThreadsSwitch.isChecked())
-                            .putBoolean("removeMonaKey", removeMonaKey.isChecked())
-                            .putString("cookieClass", value(cookieClass))
-                            .putString("prefMonaKeyFile", value(monaKeyFile))
-                            .putString("prefMonaKeyName", value(monaKeyName))
-                            .putString("adClass", value(adClass).trim())
-                            .putBoolean("chtoio", chtoio.isChecked())
-                            .putBoolean("optimize191UpdateProgress", update191ProgressSetting == null
-                                    ? optimize191UpdateProgress() : update191ProgressSetting.isChecked())
-                            .putBoolean("fast191UpdateConnect", update191ConnectSetting == null
-                                    ? fast191UpdateConnect() : update191ConnectSetting.isChecked())
-                            .putInt("update191TimeoutSeconds", update191TimeoutSetting == null
-                                    ? update191TimeoutSeconds() : new int[]{0, 30, 60, 120}[update191TimeoutSetting.getSelectedItemPosition()])
-                            .putInt(HISSI_CHECKER_MODE_KEY, hissiCheckerMode.getSelectedItemPosition())
-                            .putBoolean(DEDICATED_VIEWER_ENABLED_KEY, dedicatedViewerEnabled.isChecked())
-                            .putBoolean("imageVpnEnabled", imageVpnEnabledSetting != null && imageVpnEnabledSetting.isChecked())
-                            .putBoolean("imageViewerRotationButton", imageRotationButtonSetting == null
-                                    ? preferences.getBoolean("imageViewerRotationButton", true)
-                                    : imageRotationButtonSetting.isChecked())
-                            .putInt("autoReloadInterval", autoReloadInterval == null ? autoReloadIntervalSeconds()
-                                    : Math.max(10, boundedMediaSetting(value(autoReloadInterval), autoReloadIntervalSeconds(), 1800)))
-                            .putInt("threadTitleSpacingPercent", 100 + threadTitleSpacing.getSelectedItemPosition() * 5)
-                            .putFloat("postEditorCustomTextSizeSp", selectedPostSize)
-                            .putInt("urlVideoFetchMode", mediaAutoFetch.getSelectedItemPosition())
-                            .putBoolean("videoViewerEnabled", VideoViewerActivity.installed(activity)
-                                    ? videoViewer.isChecked() : preferences.getBoolean("videoViewerEnabled", true))
-                            .putBoolean("urlImageFetchEnabled", imageAutoFetch.getSelectedItemPosition() == 0)
-                            .putInt("videoThumbnailMaxMb", boundedMediaSetting(value(videoThumbnailMaxMb), videoThumbnailMaxMb(), 1024))
-                            .putInt("videoThumbnailTimeoutSeconds", boundedMediaSetting(value(videoThumbnailTimeoutSeconds), videoThumbnailTimeoutSeconds(), 600))
-                            .putBoolean("videoPreviewFour", videoPreviewFour.isChecked())
-                            .putInt("videoPreviewCount", boundedMediaSetting(value(videoPreviewCount), videoPreviewCount(), 64))
-                            .putBoolean("videoPreviewWifiOnly", videoPreviewWifi.isChecked())
-                            .putInt("videoPreviewMinimumSeconds", previewNumber(value(videoPreviewMinutes), videoPreviewMinimumSeconds() / 60, 1440) * 60
-                                    + previewNumber(value(videoPreviewSeconds), videoPreviewMinimumSeconds() % 60, 59))
-                            .putInt(HISSI_VIEWER_THEME_KEY, hissiViewerTheme.getSelectedItemPosition())
-                            .putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, new int[]{100, 115, 130}[
-                                    Math.max(0, Math.min(2, hissiViewerTextZoom.getSelectedItemPosition()))
-                            ])
-                            .putBoolean(HISSI_VIEWER_FULLSCREEN_KEY, hissiViewerFullscreen.isChecked())
-                            .putInt(HISSI_VIEWER_SWIPE_HISTORY_KEY, hissiViewerSwipeHistory.getSelectedItemPosition())
-                            .putBoolean(KYODEMO_ENHANCED_VIEWER_KEY, kyodemoEnhancedViewer.isChecked())
-                            .putBoolean("compactQuickFilters", compactQuickFiltersSwitch != null && compactQuickFiltersSwitch.isChecked())
-                            .putBoolean("keepQuickFilterPosition", keepFilterPosition.isChecked())
-                            .putBoolean("wacchoiNgFirstMenu", wacchoiNgFirstMenu.isChecked())
-                            .putBoolean("hideShowHiddenNgMenu", hideShowHiddenNgMenu.isChecked())
-                            .putBoolean("hideNgThreadGroup", hideNgThreadGroupSwitch.isChecked())
-                            .putBoolean("readThreadsFirst", readThreadsFirstSwitch == null
-                                    ? ReadThreadsFirst.enabled() : readThreadsFirstSwitch.isChecked())
-                            .putBoolean("edgeReporterId", edgeReporterId.isChecked())
-                            .putBoolean("forceHttps", forceHttps.isChecked())
-                            .putBoolean("automaticDat", automaticDat.isChecked())
-                            .putBoolean("refreshCellularNetwork", refreshCellularNetwork.isChecked())
-                            .putBoolean("bypassPostPreflight", bypassPostPreflight.isChecked())
-                            .putInt(
-                                    NG_REGISTRATION_LIMIT_KEY,
-                                    parseNgRegistrationLimit(
-                                            value(ngRegistrationLimit),
-                                            preferences.getInt(
-                                                    NG_REGISTRATION_LIMIT_KEY,
-                                                    DEFAULT_NG_REGISTRATION_LIMIT
-                                            )
-                                    )
-                            )
-                            .commit();
-                    if (archiveRouteTemplates != null) {
-                        preferences.edit()
-                                .putString(
-                                        ARCHIVE_ROUTE_TEMPLATES_KEY,
-                                        value(archiveRouteTemplates).trim()
-                                )
-                                .commit();
-                    }
-
-                    ImgurAlbumAttachments.refreshVideoModels();
-                    EmojiFontFallback.refreshVisibleRows();
-                    ConfigSnapshot after = ConfigSnapshot.read(preferences);
-                    boolean historyLimitsChanged = historyLimits.save();
-                    boolean imageVpnChanged = ImageVpnController.enabled() != preferences.getBoolean("imageVpnEnabled", false);
-                    ImageVpnController.setEnabled(preferences.getBoolean("imageVpnEnabled", false));
-                    if (!before.equals(after) || legacyPlusChanged || historyLimitsChanged
-                            || imageVpnChanged || initialPostedThreadDisplayCount != displayCount
-                            || initialPostHistoryRetentionCount != getPostHistoryRetentionCount()
-                            || initialThreadTitleSpacing != threadTitleSpacingPercent()
-                            || initialHideNgThreadGroup != hideNgThreadGroup()) restart(activity);
-                    else if (initialSettingsLanguage != settingsLanguage.getSelectedItemPosition()) {
-                        Toast.makeText(activity, text("表示言語を変更しました。設定を開き直すと反映されます。",
-                                "Language saved. Reopen settings to apply."), Toast.LENGTH_SHORT).show();
-                    }
-                    settingsDialog.dismiss();
-                }));
-        settingsDialog.show();
-        // Back dismisses without saving; accidental taps outside keep settings open.
-        settingsDialog.setCanceledOnTouchOutside(false);
+        return layout;
     }
 
     private static void addOptionalSettingsSection(String name, Runnable section) {
@@ -4745,7 +4843,7 @@ public final class Haiagaru {
             String title,
             boolean checked
     ) {
-        Switch widget = new Switch(context);
+        Switch widget = new LiveSettings.Toggle(context);
         widget.setText(title);
         widget.setChecked(checked);
         LinearLayout.LayoutParams params = rowParams(context);
@@ -4834,7 +4932,7 @@ public final class Haiagaru {
         TextView label = new TextView(context);
         label.setText(title);
         layout.addView(label, rowParams(context));
-        Spinner spinner = new Spinner(context);
+        Spinner spinner = new LiveSettings.Choice(context);
         spinner.setAdapter(new ArrayAdapter<>(context,
                 android.R.layout.simple_spinner_dropdown_item, values));
         spinner.setSelection(Math.max(0, Math.min(selected, values.length - 1)));

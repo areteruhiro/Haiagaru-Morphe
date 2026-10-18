@@ -1944,6 +1944,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPatrolImages(packageMetadata.versionName)
         patchPatrolInterval(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)
+        patchBeAutoLogout(packageMetadata.versionName)
         patchExternalBoardEditor(packageMetadata.versionName)
         patchPosterHighlight(packageMetadata.versionName)
     }
@@ -2661,6 +2662,24 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         "Expected one ${versionName} response context-menu builder, found ${candidates.size}"
     }
     val builder = candidates.single()
+    if (versionName == "0.8.10.226 dev") {
+        val catalogOwner = mutableClassDefBy("Lo/LyD;")
+        val catalog = catalogOwner.methods.single { it.name == "invoke" && it.parameterTypes == listOf("Ljava/lang/Object;") }
+        val nativeCatalog = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(catalogOwner.type,
+            "haiagaruNativeCatalog", catalog.parameters, catalog.returnType, catalog.accessFlags,
+            catalog.annotations, catalog.hiddenApiRestrictions, catalog.implementation))
+        val entry = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(catalogOwner.type,
+            catalog.name, catalog.parameters, catalog.returnType, catalog.accessFlags,
+            catalog.annotations, catalog.hiddenApiRestrictions,
+            com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(3, emptyList(), emptyList(), emptyList())))
+        entry.addInstructions(0, """
+            invoke-virtual {p0, p1}, $nativeCatalog
+            move-result-object v0
+            invoke-static {p1}, Lapp/morphe/extension/chmate/ResponseMenuSettings;->catalog226(Ljava/lang/Object;)V
+            return-object v0
+        """.trimIndent())
+        catalogOwner.methods.remove(catalog); catalogOwner.methods.add(nativeCatalog); catalogOwner.methods.add(entry)
+    }
     val builderInstructions = builder.implementation!!.instructions.toList()
     val returns = builderInstructions.mapIndexedNotNull { index, instruction ->
         if (instruction.opcode == Opcode.RETURN_OBJECT) {
@@ -2668,14 +2687,38 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
         } else null
     }.asReversed()
     val mutableBuilder = mutableClassDefBy(owner).findMutableMethodOf(builder)
-    returns.forEach { (index, register) ->
+    returns.filter { versionName != "0.8.10.226 dev" }.forEach { (index, register) ->
         mutableBuilder.addInstructionsWithLabels(index, """
             invoke-static/range {v$register .. v$register}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendForCurrentDialog(Ljava/lang/Object;)V
         """.trimIndent())
     }
-    mutableBuilder.addInstructionsWithLabels(0, """
+    if (versionName != "0.8.10.226 dev") mutableBuilder.addInstructionsWithLabels(0, """
         invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->captureDialog(Ljava/lang/Object;)V
     """.trimIndent())
+    // A native branch jumps directly to the shared return when action 35 is
+    // hidden. Return-site insertion alone leaves that path unhooked. A wrapper
+    // has one unconditional post-processing boundary for every native exit.
+    if (versionName == "0.8.10.226 dev") {
+        val klass = mutableClassDefBy(owner)
+        val delegate = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(owner,
+            "haiagaruNativeResponseMenu", builder.parameters, builder.returnType, builder.accessFlags,
+            builder.annotations, builder.hiddenApiRestrictions, builder.implementation))
+        val entry = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(owner,
+            builder.name, builder.parameters, builder.returnType, builder.accessFlags,
+            builder.annotations, builder.hiddenApiRestrictions,
+            com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(2, emptyList(), emptyList(), emptyList())))
+        val call = if (builder.accessFlags and 2 != 0) "invoke-direct" else "invoke-virtual"
+        entry.addInstructions(0, """
+            $call {p0}, $delegate
+            move-result-object v0
+            invoke-static {p0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->captureDialog(Ljava/lang/Object;)V
+            invoke-static {v0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendForCurrentDialog(Ljava/lang/Object;)V
+            return-object v0
+        """.trimIndent())
+        klass.methods.remove(mutableBuilder)
+        klass.methods.add(delegate)
+        klass.methods.add(entry)
+    }
 
     var dispatcherCount = 0
     classDefForEach { classDef ->
@@ -3019,6 +3062,30 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
 
 /** Hook the ordinary response menu as well as the older link/name popups. */
 private fun BytecodePatchContext.patchResponseArchive(version: String) {
+    if (version == "0.8.10.191 dev" || version == "0.8.10.242 dev") {
+        val owners = if(version == "0.8.10.191 dev") listOf(mutableClassDefBy("Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;"))
+            else {
+                val found=mutableListOf<String>()
+                classDefForEach { if(it.type.startsWith("Ljp/syoboi/a2chMate/fragment/ResMenuDialogFragment\$"))found.add(it.type) }
+                found.map { mutableClassDefBy(it) }
+            }
+        val resultType=if(version == "0.8.10.191 dev") "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;" else "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
+        var hooks=0
+        owners.forEach { owner -> owner.methods.filter { it.accessFlags and 8 != 0 && it.parameterTypes.isEmpty() && it.returnType==resultType }.toList().forEach { method ->
+            val delegate=MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(owner.type,"haiagaruCatalog_"+method.name,method.parameters,method.returnType,method.accessFlags,method.annotations,method.hiddenApiRestrictions,method.implementation))
+            val wrapper=MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(owner.type,method.name,method.parameters,method.returnType,method.accessFlags,method.annotations,method.hiddenApiRestrictions,com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(1,emptyList(),emptyList(),emptyList())))
+            wrapper.addInstructions(0,"""
+                invoke-static {}, $delegate
+                move-result-object v0
+                invoke-static {v0}, Lapp/morphe/extension/chmate/ResponseMenuSettings;->catalog(Ljava/lang/Object;)Ljava/lang/Object;
+                move-result-object v0
+                check-cast v0, $resultType
+                return-object v0
+            """.trimIndent())
+            owner.methods.remove(method);owner.methods.add(delegate);owner.methods.add(wrapper);hooks++
+        } }
+        check(hooks>0) { "$version response customization catalog missing" }
+    }
     if (version == "0.8.10.191 dev") {
         val dialog = mutableClassDefBy("Lo/r8lambdafLXKIgI8H4VR9SponZBKnK7_9gE;")
         val menu = dialog.methods.single {
@@ -4684,6 +4751,19 @@ val haiagaruPatch = resourcePatch(
             entry.setAttribute("name", "haiagaru_quick_filter")
             entry.textContent = "フィルタ"
             strings.documentElement.appendChild(entry)
+        }
+        val responseLabels = listOf("投稿者を強調", "レスを保存", "過去レスを見る", "ﾜｯﾁｮｲで検索", "ﾜｯﾁｮｲ下4桁をNG登録", "ﾜｯﾁｮｲ下4桁で検索")
+        val responseStrings = responseLabels.mapIndexed { index, label -> "haiagaru_response_action_$index" to label } +
+            (0..4).map { "haiagaru_response_share_$it" to "共有(記憶) ${it + 1}" }
+        document("res/values/strings.xml").use { strings ->
+            responseStrings.forEach { (name, label) ->
+                val entry = strings.createElement("string")
+                entry.setAttribute("name", name); entry.textContent = label
+                strings.documentElement.appendChild(entry)
+            }
+        }
+        PublicXmlManager(get("res/values/public.xml")).use { manager ->
+            responseStrings.forEach { (name, _) -> manager.createPublicId("string", name) }
         }
         PublicXmlManager(get("res/values/public.xml")).use {
             it.createPublicId("string", "haiagaru_quick_filter")

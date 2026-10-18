@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 public final class ExternalBoardEditorActivity extends Activity {
     private LinearLayout list;
     private boolean busy;
+    private boolean includeBbsMenu;
     static final class Board {
         final long row; final String id,title,original;
         Board(long row,String id,String title,String original) {
@@ -35,6 +37,8 @@ public final class ExternalBoardEditorActivity extends Activity {
         });
         Button back=new Button(this);back.setText("戻る");back.setOnClickListener(v->finish());root.addView(back);
         TextView help=new TextView(this);help.setText("登録した外部板の名前・URLを編集\n保存後はChMateを再起動してください。お気に入り・取得済みログの識別子は変更しません。異なる板への付け替えではなく、同じ板の名前変更・移転に使用してください。認証設定は新しい接続先で再設定してください。");root.addView(help);
+        CheckBox all=new CheckBox(this);all.setText("BBSMENUの板も表示（追加した板が見つからない場合）");
+        all.setOnCheckedChangeListener((button,on)->{includeBbsMenu=on;load();});root.addView(all);
         ScrollView scroll=new ScrollView(this);list=new LinearLayout(this);list.setOrientation(1);scroll.addView(list);
         root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);root.requestApplyInsets();load();
     }
@@ -43,23 +47,29 @@ public final class ExternalBoardEditorActivity extends Activity {
     }
     private ArrayList<Board> boards(SQLiteDatabase db,boolean all) throws Exception {
         ArrayList<Board> rows=new ArrayList<>();
-        try(Cursor c=db.rawQuery("SELECT _id,name,title,server FROM boards "+(all?"":"WHERE is_external<>0 ")+"ORDER BY title",null)) {
+        // is_external is a native engine flag, not a reliable record of manual registration.
+        // BBSMENU imports and several native add-board paths leave it zero.
+        try(Cursor c=db.rawQuery("SELECT _id,name,title,server,is_external FROM boards ORDER BY title",null)) {
             while(c.moveToNext()) {
                 String id=c.getString(1), decoded=URLDecoder.decode(id,"UTF-8");
                 String path=decoded.contains("/")?decoded.substring(decoded.indexOf('/')+1):decoded;
-                rows.add(new Board(c.getLong(0),id,c.getString(2),"https://"+c.getString(3)+"/"+path+"/"));
+                String original="https://"+c.getString(3)+"/"+path+"/";
+                if(all || BoardAddress.externalRegistration(c.getInt(4),original))
+                    rows.add(new Board(c.getLong(0),id,c.getString(2),original));
             }
         }
         return rows;
     }
     private void load() {
         if(busy)return;busy=true;list.removeAllViews();
+        final boolean showingAll=includeBbsMenu;
         new Thread(()->{
             try(SQLiteDatabase db=database()) {
-                ArrayList<Board> rows=boards(db,false);
+                ArrayList<Board> rows=boards(db,showingAll);
                 runOnUiThread(()->{
                     busy=false;if(isFinishing())return;
-                    if(rows.isEmpty()){TextView empty=new TextView(this);empty.setText("登録された外部板はありません。");list.addView(empty);}
+                    if(showingAll!=includeBbsMenu){load();return;}
+                    if(rows.isEmpty()){TextView empty=new TextView(this);empty.setText("外部板が見つかりません。「BBSMENUの板も表示」をオンにして確認してください。");list.addView(empty);}
                     for(Board b:rows) {
                         Button item=new Button(this);item.setAllCaps(false);
                         item.setText(b.title+"\n"+ExternalBoardEditor.prefs(this).getString("target:"+b.id,b.original));
@@ -108,7 +118,7 @@ public final class ExternalBoardEditorActivity extends Activity {
                         throw new Exception("設定を保存できませんでした。");
                     try {
                         ContentValues values=new ContentValues();values.put("title",name);
-                        if(db.update("boards",values,"_id=? AND name=? AND is_external<>0",new String[]{Long.toString(b.row),b.id})!=1)
+                        if(db.update("boards",values,"_id=? AND name=?",new String[]{Long.toString(b.row),b.id})!=1)
                             throw new Exception("板が変更されたため保存できませんでした。開き直してください。");
                     } catch(Exception e) {
                         SharedPreferences.Editor rollback=p.edit();

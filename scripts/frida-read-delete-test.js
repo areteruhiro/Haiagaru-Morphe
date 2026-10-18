@@ -8,10 +8,10 @@ Java.perform(function () {
   let checks=0;function check(ok,label){if(!ok)throw Error(label);checks++;console.log('PASS '+label);}
   Java.scheduleOnMainThread(function(){
     try {
-      check(D.eligible(1,10,10),'fully read included');
-      check(!D.eligible(-1,10,10),'unopened excluded');
-      check(!D.eligible(1,10,9),'unread excluded');
-      check(!D.eligible(1,0,0),'empty excluded');
+      check(D.eligible(1,10),'fully read included');
+      check(!D.eligible(-1,10),'unopened excluded');
+      check(D.eligible(1,1),'partially read included');
+      check(!D.eligible(1,0),'never-read bookmark excluded');
       const legacy=pkg.endsWith('191'), mid=pkg.endsWith('226');
       const Board=Java.use(legacy?'jp.syoboi.a2chMate.client.BBSUrlInfo$BoardID':'jp.syoboi.a2chMate.client.BoardID');
       const board=D.parseBoard(Board.class,'android');
@@ -33,7 +33,11 @@ Java.perform(function () {
       const list=Java.use('android.widget.ListView').$new(app);
       list.setAdapter(Java.use('android.widget.ArrayAdapter').$new(app,17367043,rows));
       const found=Java.use('java.util.LinkedHashMap').$new();D.collectRows(list,found);
-      check(found.size()===1&&found.containsKey(Java.use('java.lang.Long').valueOf(101)),'actual native row types filter only fully-read local row');
+      check(found.size()===3&&found.containsKey(Java.use('java.lang.Long').valueOf(101)),'local row IDs collected before authoritative database read check');
+      check(!found.containsKey(Java.use('java.lang.Long').valueOf(-1)),'unopened row has no local ID');
+      list.addHeaderView(Java.use('android.view.View').$new(app));
+      const wrapped=Java.use('java.util.LinkedHashMap').$new();D.collectRows(list,wrapped);
+      check(wrapped.size()===3,'header-wrapped adapter preserves local rows');
       let active=null;
       for(const object of Thread.currentActivityThread().mActivities.value.values().toArray()){
         const record=Java.cast(object,Java.use('android.app.ActivityThread$ActivityClientRecord'));
@@ -43,7 +47,7 @@ Java.perform(function () {
       const fragment=Java.use(legacy?'o.r8lambdaGCnF6WpW_bFarRe7yCX2B6KzQ':mid?'o.Yhp5':'jp.syoboi.a2chMate.ui.threadlist.ThreadListFragment').$new();
       const Candidate=Java.use('app.morphe.extension.chmate.DeleteReadThreads$Candidate');
       const candidates=Java.use('java.util.ArrayList').$new();
-      for(let i=0;i<3;i++)candidates.add(Candidate.$new(900000+i,'5ch.net/android',1700000000+i,'【検証用・実データではありません】既読スレ '+(i+1)));
+      for(let i=0;i<3;i++)candidates.add(Candidate.$new(900000+i,'5ch.net/android',1700000000+i,'【検証用・実データではありません】既読スレ '+(i+1),i===0?606:0));
       D.confirm(active,fragment,candidates);
       setTimeout(function(){Java.choose('android.app.AlertDialog',{
         onMatch:function(value){if(value.isShowing() && value.getButton(-1)!==null && value.getButton(-1).getText().toString()==='削除（3件）') {const dialog=Java.retain(value);Java.scheduleOnMainThread(function(){try{verify(dialog);}catch(error){console.log('FAIL '+error.stack);}});return 'stop';}},
@@ -54,6 +58,7 @@ Java.perform(function () {
       function caption(){return dialog.getButton(-1).getText().toString();}
       check(caption()==='削除（3件）','confirmation initially selects all: '+caption());
       const choices=dialog.getListView();
+      check(String(choices.getAdapter().getItem(0)).includes('未読606件'),'confirmation identifies remaining unread responses');
       choices.performItemClick(choices.getAdapter().getView(1,null,choices),1,1);
       check(caption()==='削除（2件）','individual checkbox toggles off');
       dialog.getButton(-3).performClick();

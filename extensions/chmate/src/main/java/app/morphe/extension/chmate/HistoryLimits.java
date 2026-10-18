@@ -107,7 +107,7 @@ public final class HistoryLimits {
                     + "手動削除は維持します。有限の保存数はChMate標準の自動整理タイミングで適用されます。"
                     + "検索履歴はChMateの「検索履歴を保存」をオフにすると保存しません。"
                     + "板の履歴には元々件数制限がありません。無制限では容量・読み込み負荷が増える場合があります。"
-                    + "設定変更時はアプリを再起動します。削除済みの履歴は復元できません。");
+                    + "変更は自動で保存され、次に一覧を開くと反映されます。削除済みの履歴は復元できません。");
             description.setTextSize(13);
             layout.addView(description);
         }
@@ -120,6 +120,18 @@ public final class HistoryLimits {
             try { return Integer.parseInt(field.getText().toString().trim()); }
             catch (RuntimeException ignored) { return -1; }
         }
+        void enableImmediateSaving() {
+            Runnable saveValid=()->{if(valid())save();};
+            grouped.setOnCheckedChangeListener((v,on)->{historyDays.setEnabled(on);saveValid.run();});
+            unlimited.setOnCheckedChangeListener((v,on)->{retained.setEnabled(!on);saveValid.run();});
+            for(EditText field:new EditText[]{retained,displayed,searches,historyDays})
+                LiveSettings.watch(field,()->{if(valid()){field.setError(null);save();}else field.setError("表示された範囲の数値を入力してください");});
+        }
+        private boolean valid() {
+            return (unlimited.isChecked()||number(retained)>=1&&number(retained)<=10000)
+                    &&number(displayed)>=0&&number(displayed)<=10000&&number(searches)>=0&&number(searches)<=10000
+                    &&(!grouped.isChecked()||number(historyDays)>=0&&number(historyDays)<=36500);
+        }
         boolean validate() {
             int retention = number(retained), display = number(displayed), search = number(searches);
             boolean valid = (unlimited.isChecked() || retention >= 1 && retention <= 10000)
@@ -129,13 +141,13 @@ public final class HistoryLimits {
             return valid;
         }
         boolean save() {
-            int retention = unlimited.isChecked() ? oldRetained : number(retained);
+            int retention = unlimited.isChecked() ? nativePrefs().getInt("autoDelete",300) : number(retained);
             int display = number(displayed), search = number(searches);
             prefs().edit().putBoolean("unlimitedThreadHistory", unlimited.isChecked())
                     .putBoolean("groupBrowsingHistoryByBoard", grouped.isChecked())
-                    .putInt("browsingHistoryDays", grouped.isChecked() ? number(historyDays) : oldHistoryDays)
-                    .putInt("recentThreadDisplayCount", display).putInt("searchHistoryCount", search).commit();
-            if (retention != oldRetained) nativePrefs().edit().putInt("autoDelete", retention).commit();
+                    .putInt("browsingHistoryDays", grouped.isChecked() ? number(historyDays) : prefs().getInt("browsingHistoryDays",2))
+                    .putInt("recentThreadDisplayCount", display).putInt("searchHistoryCount", search).apply();
+            if (retention != nativePrefs().getInt("autoDelete",300)) nativePrefs().edit().putInt("autoDelete", retention).apply();
             return oldUnlimited != unlimited.isChecked() || oldRetained != retention
                     || oldDisplayed != display || oldSearches != search || oldGrouped != grouped.isChecked()
                     || grouped.isChecked() && oldHistoryDays != number(historyDays);

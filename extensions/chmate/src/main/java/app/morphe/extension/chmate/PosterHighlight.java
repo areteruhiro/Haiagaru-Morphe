@@ -188,7 +188,7 @@ public final class PosterHighlight {
     public static void append(Object menuObject,Object response,Object nativeBoard) {
         if(context==null || !(menuObject instanceof Menu) || response==null || nativeBoard==null)return;
         Menu menu=(Menu)menuObject;
-        if(menu.findItem(ITEM)!=null)return;
+        if(!ResponseMenuSettings.visible(ITEM) || menu.findItem(ITEM)!=null)return;
         try {
             Identity identity=new Identity(response,nativeBoard,number(response)==1?poster(response):FIRST.get(response));
             MenuItem item=menu.add(Menu.NONE,ITEM,menu.size(),"この人の書き込みを強調");

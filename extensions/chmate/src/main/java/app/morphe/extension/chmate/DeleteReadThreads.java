@@ -24,7 +24,6 @@ import java.util.WeakHashMap;
 public final class DeleteReadThreads {
     public static final String KEY = "haiagaruGestureDeleteReadThreads";
     private static final Map<Object, Boolean> dialogs = new WeakHashMap<>();
-    private static final Map<View, Boolean> bindings = new WeakHashMap<>();
     private DeleteReadThreads() {}
 
     static boolean boardList(Object fragment) {
@@ -41,32 +40,15 @@ public final class DeleteReadThreads {
         return true;
     }
 
-    /** Also enable long-click when the native refresh item has no long-click caption. */
+    /** Kept for existing lifecycle hooks. Native toolbar long presses already reach
+     * RoidonListFragment.onLongClick, which the patch intercepts for action 5.
+     * Never attach a listener to findViewById(5): the toolbar's only child is a
+     * reusable dispatch/anchor View, not a refresh button. Making it long-clickable
+     * causes ViewGroup dispatch to deliver later taps to that child instead of
+     * the native toolbar, swallowing refresh/patrol clicks after the first use.
+     */
     public static void bind(Object fragment) {
-        if (!boardList(fragment)) return;
-        try {
-            View root = (View) fragment.getClass().getMethod("getView").invoke(fragment);
-            if (root == null || bindings.put(root, true) != null) return;
-            java.lang.ref.WeakReference<Object> owner = new java.lang.ref.WeakReference<>(fragment);
-            android.view.ViewTreeObserver.OnGlobalLayoutListener listener = () -> {
-                Object current = owner.get();
-                View button = root.findViewById(5);
-                if (current != null && button != null) {
-                    button.setOnLongClickListener(v -> longClick(current, v));
-                }
-            };
-            root.getViewTreeObserver().addOnGlobalLayoutListener(listener);
-            root.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-                public void onViewAttachedToWindow(View view) {
-                    view.getViewTreeObserver().addOnGlobalLayoutListener(listener);
-                }
-                public void onViewDetachedFromWindow(View view) {
-                    if (view.getViewTreeObserver().isAlive())
-                        view.getViewTreeObserver().removeOnGlobalLayoutListener(listener);
-                }
-            });
-            root.post(listener::onGlobalLayout);
-        } catch (Exception error) { log(error); }
+        // Intentionally no View mutation. Use the native long-click hook only.
     }
 
     public static boolean gesture(View view, PointF start) {
@@ -112,9 +94,12 @@ public final class DeleteReadThreads {
     }
 
     static final class Candidate {
-        final long id, created; final String board, title;
+        final long id, created; final String board, title; final int unread;
         Candidate(long id, String board, long created, String title) {
-            this.id=id; this.board=board; this.created=created; this.title=title;
+            this(id,board,created,title,0);
+        }
+        Candidate(long id, String board, long created, String title,int unread) {
+            this.id=id; this.board=board; this.created=created; this.title=title; this.unread=unread;
         }
     }
 
@@ -124,7 +109,7 @@ public final class DeleteReadThreads {
         if (activity == null || activity.isFinishing()) return;
         dialogs.put(fragment, true);
         try {
-            Map<Long, Object> rows = eligibleRows(fragment);
+            Map<Long, Integer> rows = localRows(fragment);
             new Thread(() -> {
                 try {
                     List<Candidate> candidates = readCandidates(activity, rows);
@@ -149,14 +134,17 @@ public final class DeleteReadThreads {
     private static void confirm(Activity activity, Object fragment, List<Candidate> candidates) {
         boolean[] checked = new boolean[candidates.size()]; java.util.Arrays.fill(checked, true);
         String[] labels = new String[candidates.size()];
-        for (int i=0; i<labels.length; i++) labels[i]=candidates.get(i).title;
+        for (int i=0; i<labels.length; i++) {
+            Candidate item=candidates.get(i);
+            labels[i]=item.title+(item.unread>0?"（未読"+item.unread+"件）":"");
+        }
         android.widget.LinearLayout heading = new android.widget.LinearLayout(activity);
         heading.setOrientation(1); int pad=Math.round(20*activity.getResources().getDisplayMetrics().density);
         heading.setPadding(pad,pad,pad,0);
         android.widget.TextView title = new android.widget.TextView(activity);
         title.setText("既読スレを削除"); title.setTextSize(20); heading.addView(title);
         android.widget.TextView warning = new android.widget.TextView(activity);
-        warning.setText("この一覧の取得済み・未読0件のスレです。チェックしたスレの履歴と取得済みログを削除します。元に戻せません。未選択のスレと保存済みアーカイブは削除しません。");
+        warning.setText("この一覧で一度読んだスレが対象です。未読レスが残るスレも含みます。チェックしたスレの履歴と取得済みログを削除します。元に戻せません。未閲覧・未選択のスレと保存済みアーカイブは削除しません。");
         heading.addView(warning);
         AlertDialog dialog = new AlertDialog.Builder(activity).setCustomTitle(heading)
                 .setMultiChoiceItems(labels, checked, (d,which,on) -> updateCount((AlertDialog)d, checked))
@@ -173,7 +161,7 @@ public final class DeleteReadThreads {
             dialog.getButton(-1).setOnClickListener(v -> {
                 if (!attached(fragment)) { dialog.dismiss(); return; }
                 try {
-                    Map<Long,Object> current = eligibleRows(fragment);
+                    Map<Long,Integer> current = localRows(fragment);
                     ArrayList<Candidate> selected=new ArrayList<>();
                     for(int i=0;i<checked.length;i++) if(checked[i] && current.containsKey(candidates.get(i).id))
                         selected.add(candidates.get(i));
@@ -192,11 +180,11 @@ public final class DeleteReadThreads {
                         int deleted=0, skipped=0, failed=0;
                         for(Candidate item:selected) {
                             try {
-                                // Fail closed if the bookmark was replaced, became unread, or was removed.
+                                // Unread responses are intentionally included; identity must still match.
                                 if(!stillRead(activity,item)) { skipped++; continue; }
                                 java.util.concurrent.FutureTask<Boolean> action = new java.util.concurrent.FutureTask<>(() -> {
-                                    if(activity.isFinishing() || !attached(fragment)
-                                            || !eligibleRows(fragment).containsKey(item.id)) return false;
+                                    if(activity.isFinishing() || !attached(fragment)) return false;
+                                    if(!localRows(fragment).containsKey(item.id)) return false;
                                     // Native deletion publishes UI events. Keep it on the main thread,
                                     // yielding between items; database discovery remains off-thread.
                                     delete.invoke(table,boards.get(item.board),item.created);
@@ -221,19 +209,26 @@ public final class DeleteReadThreads {
         dialog.getButton(-3).setText(count==checked.length?"すべて解除":"すべて選択");
     }
 
-    static boolean eligible(long id, int total, int read) { return id>0 && total>0 && read>=total; }
+    // A starred/patrol-only bookmark is not evidence of reading. Persisted read_count
+    // must be positive; remaining unread responses do not exclude a previously read thread.
+    static boolean eligible(long id, int read) { return id>0 && read>0; }
     static int selectionCount(boolean[] checked) { int n=0;for(boolean value:checked)if(value)n++;return n; }
     static void toggleAll(boolean[] checked) { java.util.Arrays.fill(checked,selectionCount(checked)!=checked.length); }
 
-    private static Map<Long,Object> eligibleRows(Object fragment) throws Exception {
+    private static Map<Long,Integer> localRows(Object fragment) throws Exception {
         View root=(View)fragment.getClass().getMethod("getView").invoke(fragment);
         if(root==null) throw new IllegalStateException("No board view");
-        Map<Long,Object> result=new LinkedHashMap<>(); collectRows(root,result); return result;
+        Map<Long,Integer> result=new LinkedHashMap<>(); collectRows(root,result); return result;
     }
 
-    private static void collectRows(View view, Map<Long,Object> result) throws Exception {
+    private static void collectRows(View view, Map<Long,Integer> result) throws Exception {
         Object adapter=null;
-        if(view instanceof AdapterView) adapter=((AdapterView<?>)view).getAdapter();
+        if(view instanceof AdapterView) {
+            // getItem follows the displayed/filter order and unwraps header/footer adapters.
+            // Scanning every List field can miss wrappers and includes hidden backing rows.
+            android.widget.Adapter displayed=((AdapterView<?>)view).getAdapter();
+            if(displayed!=null)for(int i=0;i<displayed.getCount();i++)collectRow(displayed.getItem(i),result);
+        }
         else for(Class<?> cls=view.getClass();cls!=null;cls=cls.getSuperclass())
             if(cls.getName().equals("androidx.recyclerview.widget.RecyclerView")) {
                 adapter=view.getClass().getMethod("getAdapter").invoke(view);break;
@@ -242,20 +237,23 @@ public final class DeleteReadThreads {
             for(Class<?> cls=adapter.getClass();cls!=null;cls=cls.getSuperclass()) for(Field field:cls.getDeclaredFields()) {
                 if(Modifier.isStatic(field.getModifiers()) || !List.class.isAssignableFrom(field.getType())) continue;
                 field.setAccessible(true); Object value=field.get(adapter); if(!(value instanceof List))continue;
-                for(Object row:(List<?>)value) {
-                    Object model=ReadThreadsFirst.thread(row); if(model==null)continue;
-                    String name=model.getClass().getName();
-                    String id=name.equals("o.zzauw")?"d":name.equals("o.verifyHostname")?"b":"e";
-                    String total=name.equals("o.zzauw")?"a":name.equals("o.verifyHostname")?"c":"d";
-                    String read=name.equals("o.zzauw")?"g":name.equals("o.verifyHostname")?"e":"b";
-                    if(!name.equals("o.zzauw")&&!name.equals("o.verifyHostname")&&!name.equals("o.MaxAdViewImplExternalSyntheticLambda2"))continue;
-                    long key=number(model,id).longValue();
-                    if(eligible(key,number(model,total).intValue(),number(model,read).intValue()))result.put(key,model);
-                }
+                for(Object row:(List<?>)value)collectRow(row,result);
             }
         }
         if(view instanceof ViewGroup) { ViewGroup group=(ViewGroup)view;
             for(int i=0;i<group.getChildCount();i++)collectRows(group.getChildAt(i),result); }
+    }
+
+    private static void collectRow(Object row,Map<Long,Integer> result) throws Exception {
+        Object model=ReadThreadsFirst.thread(row); if(model==null)return;
+        String name=model.getClass().getName();
+        if(!name.equals("o.zzauw")&&!name.equals("o.verifyHostname")&&!name.equals("o.MaxAdViewImplExternalSyntheticLambda2"))return;
+        String id=name.equals("o.zzauw")?"d":name.equals("o.verifyHostname")?"b":"e";
+        String total=name.equals("o.zzauw")?"a":name.equals("o.verifyHostname")?"c":"d";
+        long key=number(model,id).longValue(); int count=number(model,total).intValue();
+        // The native read-count snapshot can lag behind the right-hand tablet pane.
+        // Select local IDs here; only persisted evidence of reading authorizes deletion.
+        if(key>0)result.put(key,Math.max(count,result.containsKey(key)?result.get(key):0));
     }
 
     private static Number number(Object value,String name) throws Exception {
@@ -264,24 +262,26 @@ public final class DeleteReadThreads {
     private static SQLiteDatabase database(Context context) {
         return SQLiteDatabase.openDatabase(context.getDatabasePath("roidon.sqlite").getAbsolutePath(),null,SQLiteDatabase.OPEN_READONLY);
     }
-    private static List<Candidate> readCandidates(Context context,Map<Long,Object> rows) {
+    private static List<Candidate> readCandidates(Context context,Map<Long,Integer> rows) {
         Map<Long,Candidate> found=new LinkedHashMap<>();
         // One scan, not a per-thread SQL query; only native-visible IDs can be selected.
         try(SQLiteDatabase db=database(context); Cursor cursor=db.rawQuery(
                 "SELECT _id,name,created,title,read_count,res_count,server_res_count FROM bookmarks",null)) {
             while(cursor.moveToNext()) {
                 long id=cursor.getLong(0);
-                if(rows.containsKey(id)&&eligible(id,Math.max(cursor.getInt(5),cursor.getInt(6)),cursor.getInt(4)))
-                    found.put(id,new Candidate(id,cursor.getString(1),cursor.getLong(2),cursor.getString(3)));
+                if(rows.containsKey(id)&&eligible(id,cursor.getInt(4))) {
+                    int total=Math.max(rows.get(id),Math.max(cursor.getInt(5),cursor.getInt(6)));
+                    found.put(id,new Candidate(id,cursor.getString(1),cursor.getLong(2),cursor.getString(3),Math.max(0,total-cursor.getInt(4))));
+                }
             }
         }
         List<Candidate> result=new ArrayList<>();for(Long id:rows.keySet())if(found.containsKey(id))result.add(found.get(id));return result;
     }
     private static boolean stillRead(Context context,Candidate item) {
         try(SQLiteDatabase db=database(context);Cursor cursor=db.rawQuery(
-                "SELECT read_count,res_count,server_res_count FROM bookmarks WHERE _id=? AND name=? AND created=?",
+                "SELECT read_count FROM bookmarks WHERE _id=? AND name=? AND created=?",
                 new String[]{Long.toString(item.id),item.board,Long.toString(item.created)})) {
-            return cursor.moveToFirst()&&eligible(item.id,Math.max(cursor.getInt(1),cursor.getInt(2)),cursor.getInt(0));
+            return cursor.moveToFirst()&&eligible(item.id,cursor.getInt(0));
         }
     }
     private static Object nativeTable(Object fragment,Context context) throws Exception {

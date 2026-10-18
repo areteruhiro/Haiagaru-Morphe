@@ -12,6 +12,12 @@ public final class VerifyBoardAddress {
         check(BoardAddress.parse("https://jbbs.shitaraba.net/test/123/").engine().equals("shitaraba"),"shitaraba");
         check(BoardAddress.parse("https://egg.5ch.io/android/").engine().equals("5ch"),"5ch");
         check(BoardAddress.parse("https://talk.jp/boards/operation/").engine().equals("talk"),"Talk");
+        check(BoardAddress.externalRegistration(0,"https://bbs.eddibb.cc/liveedge/"),"imported Edge without native flag");
+        check(BoardAddress.externalRegistration(0,"https://jbbs.shitaraba.net/game/123/"),"native Shitaraba without flag");
+        check(BoardAddress.externalRegistration(0,"https://hayabusa.open2ch.net/livejupiter/"),"native open2ch without flag");
+        check(BoardAddress.externalRegistration(1,"https://egg.5ch.io/android/"),"explicit registration flag preserved");
+        check(!BoardAddress.externalRegistration(0,"https://egg.5ch.io/android/"),"standard 5ch hidden by default");
+        check(BoardAddress.externalRegistration(0,"https://not5ch.io/test/"),"domain boundary");
         for(String url:new String[]{"file:///tmp/a/","javascript:alert(1)","https://a.example/","https://a.example/test/read.cgi/a/1234567890/",
                 "https://user:pass@a.example/a/","https://a.example/a/?q=1","https://a.example/a/#x","https://a.example/a/../b/",
                 "https://a.example/%2f/","https://a.example/a//b/","https://a.example/a/subject.txt","https://a.example:99999/a/"})bad(url);

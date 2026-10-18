@@ -49,11 +49,13 @@ public final class ResponseArchive {
     }
 
     public static void appendDialog(Object dialog, Object menu) {
+        ResponseMenuSettings.prepare(menu);
         appendViewMenu(menu);
         try {
             Object parent = dialog.getClass().getMethod("getParentFragment").invoke(dialog);
             if (isLegacyParent(parent)) {
                 Object selection = ResponseArchiveEntry.field(parent, "v");
+                WacchoiLongPressMenu.appendLegacyForResponse(parent, menu, ResponseArchiveEntry.field(selection, "c"));
                 append(parent, menu, ResponseArchiveEntry.field(selection, "c"), ResponseArchiveEntry.field(parent, "W"));
                 return;
             }
@@ -70,11 +72,13 @@ public final class ResponseArchive {
 
     /** 242's ordinary icon menu has a separate selected-response model from its sheet. */
     public static void appendDialog242(Object dialog, Object menu) {
+        ResponseMenuSettings.prepare(menu);
         appendViewMenu(menu);
         try {
             Object parent = dialog.getClass().getMethod("getParentFragment").invoke(dialog);
             Object response = ResponseArchiveEntry.field(ResponseArchiveEntry.field(parent, "o"), "c");
             Object board = ResponseArchiveEntry.field(ResponseArchiveEntry.field(parent, "r"), "b");
+            WacchoiLongPressMenu.appendDialogActions(dialog,menu);
             append(parent, menu, response, board);
             if (menu instanceof Menu) {
                 Menu nativeMenu = (Menu) menu;
@@ -97,7 +101,7 @@ public final class ResponseArchive {
     private static void appendViewMenu(Object object) {
         if (!(object instanceof Menu)) return;
         Menu menu = (Menu) object;
-        if (menu.findItem(VIEW_ARCHIVE) == null)
+        if (ResponseMenuSettings.visible(VIEW_ARCHIVE) && menu.findItem(VIEW_ARCHIVE) == null)
             menu.add(Menu.NONE, VIEW_ARCHIVE, menu.size(), "過去レスを見る")
                     .setIcon(android.R.drawable.ic_menu_recent_history)
                     .setOnMenuItemClickListener(ResponseArchive::handle);
@@ -113,7 +117,7 @@ public final class ResponseArchive {
         appendViewMenu(menuObject);
         if (!(menuObject instanceof Menu) || response == null || board == null) return;
         Menu menu = (Menu) menuObject;
-        if (menu.findItem(ITEM) != null) return;
+        if (!ResponseMenuSettings.visible(ITEM) || menu.findItem(ITEM) != null) return;
         ResponseArchiveEntry entry = snapshot(response, board);
         menu.add(Menu.NONE, ITEM, menu.size(), "このレスをアーカイブに保存")
                 .setIcon(android.R.drawable.ic_menu_save)

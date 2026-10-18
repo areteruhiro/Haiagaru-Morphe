@@ -29,6 +29,18 @@ public final class BoardAddress {
         } catch(Exception e) { throw new IllegalArgumentException("板のURLを http(s)://ホスト/板名/ の形式で入力してください（スレURLは指定できません）。"); }
     }
     public String key() { return server+"/"+path; }
+    /** Native is_external is not set for every manually added or imported board. */
+    public static boolean externalRegistration(int flag,String url) {
+        if(flag!=0)return true;
+        try {
+            String host=URI.create(url).getHost();
+            if(host==null)return false;
+            host=host.toLowerCase(Locale.ROOT);
+            for(String domain:new String[]{"5ch.net","5ch.io","2ch.net","2ch.sc","bbspink.com"})
+                if(host.equals(domain)||host.endsWith("."+domain))return false;
+            return true;
+        }catch(IllegalArgumentException error){return false;}
+    }
     public String engine() {
         String host=URI.create(url).getHost();
         if(host.equals("talk.jp") || host.endsWith(".talk.jp")) return "talk";
