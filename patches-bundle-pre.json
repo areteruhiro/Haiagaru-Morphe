@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-18T15:28:03",
-  "description": "Haiagaru 1.9.0 正式版: 正式1.7.1／プレ1.8.15からの差分案内。四文字必須解除、KyodemoエッヂID・スレ名・レス本文検索、走査／通信回数上限、履歴・バックアップ、表示・ジェスチャー・動画改善。191/226/242 dev対応。versionCode最大化が初期有効。docs/release-1.9.0.md参照。",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.9.0/haiagaru_patches-1.9.0.mpp",
+  "created_at": "2026-10-18T16:01:28",
+  "description": "Haiagaru 1.9.1 正式版: エッヂのKyodemo検索に投稿ID／ワッチョイ上4桁・下4桁の選択を追加。スレ名・レス本文との組み合わせ、履歴・バックグラウンド・再開に対応。通知から戻る際の検索条件消失を修正。191/226/242 dev対応。操作・注意事項は docs/release-1.9.1.md。",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.9.1/haiagaru_patches-1.9.1.mpp",
   "signature_download_url": "",
-  "version": "1.9.0"
+  "version": "1.9.1"
 }

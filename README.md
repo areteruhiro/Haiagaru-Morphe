@@ -10,7 +10,7 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.9.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ プレ版の取得先も同じ [1.9.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.0)
+最新正式版: [1.9.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ プレ版の取得先も同じ [1.9.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.1)
 
 更新前にバックアップしてください。**[正式版1.7.1からの変更](docs/release-1.9.0-from-1.7.1.md)** ／ **[プレ版1.8.15からの差分・操作案内](docs/release-1.9.0.md)**。versionCode最大化が初期有効です。
 
@@ -25,6 +25,8 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 導入時の問題は[インストールできない場合](#インストールできない場合)、不具合の報告・相談は[サポート](#サポート)をご覧ください。
 
 ## 最新版の案内
+
+**1.9.1:** [エッヂの投稿ID・ワッチョイ上／下4桁検索](docs/release-1.9.1.md)。スレ名・レス本文との組み合わせ、バックグラウンド・履歴にも対応。通知から戻った際の検索キーワード消失も修正。
 
 **1.9.0:** [1.8.15からの差分・操作案内・確認範囲](docs/release-1.9.0.md)。KyodemoのエッヂID・レス本文検索、通信回数上限、表示設定・ジェスチャー、動画サムネイル等を統合しました。
 
