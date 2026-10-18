@@ -8,6 +8,6 @@
 - **正式版1.7.1をご利用の方:** [累積の追加機能・変更点・注意事項](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-1.9.0-from-1.7.1.md)
 - **プレ版1.8.15をご利用の方:** [累積の差分・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-1.9.0.md)
 
-対応はChMate **191 dev／226 dev／242 dev**。元APKへ再度パッチを適用してください。versionCode最大化（2,100,000,000）は初期有効、241／243 devは非対応です。更新前にバックアップしてください。全端末・全機能の通し確認は未完了です。
+対応はChMate **191 dev／226 dev／242 dev**。元APKへ再度パッチを適用してください。versionCode最大化（2,100,000,000）は初期有効、241／243 devは非対応です。更新前にバックアップしてください。Android用MPPビルドと191／226／242へのパッチ適用を確認。今回の実機検証・インストールは利用者の指示で省略しています。
 
 `haiagaru_patches-1.9.1.mpp` と `patches-1.9.1.mpp` は同一のAndroid向けMPPです。正式・プレ双方の取得先を1.9.1へ更新しています。
