@@ -10,7 +10,7 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.14](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.14)
+最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.15](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.15)
 
 以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
 
@@ -31,7 +31,7 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 1.8.11: [コピー履歴・分類](docs/clipboard-history.md)。Haiagaru設定の「履歴・保存件数」または書き込み画面の︙から、ChMate内でコピーした本文を検索・再コピー・カテゴリ分けできます。記録は初期オフ、最新100件まで。他アプリのコピーは収集しません。
 正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
 
-プレ版 `1.8.14` の概要: [1.8.13からの更新内容・注意事項](docs/release-1.8.14.md)。[設定画面の分類・個別検索・自動保存](docs/settings-navigation.md)、[レスメニューの個別表示](docs/response-menu-settings.md)、既読スレ削除と巡回ボタン修正、外部板編集・コマンド判定の改善、[BE自動ログイン／ログアウト](docs/be-auto-logout.md)を含みます。
+プレ版 `1.8.15` の概要: [1.8.14からの更新内容・注意事項](docs/release-1.8.15.md)。[★スレタブ](docs/favorite-threads.md)、投稿者ごとの強調色、[ローカル自動バックアップ](docs/local-auto-backup.md)、コピー・アンカー操作、巡回ボタン・外部板検索・アイコンの改善を含みます。
 
 ## 主な機能
 
