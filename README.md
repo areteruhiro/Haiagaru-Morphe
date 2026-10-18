@@ -10,9 +10,9 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.15](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.15)
+最新正式版: [1.8.16](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ プレ版の取得先も同じ [1.8.16](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.16)
 
-以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
+更新前にバックアップしてください。[正式版1.7.1からの変更](docs/release-1.8.16-from-1.7.1.md) ／ [プレ版1.8.15からの変更](docs/release-1.8.16.md)。versionCode最大化が初期有効になります。241／243は非対応です。任意・開発中機能の制限と未確認範囲も各案内をご覧ください。
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 操作案内: [使い方.md](使い方.md)
@@ -29,9 +29,9 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 1.8.11: [アーカイブの元スレURL確認・コピー](docs/archive-original-url.md)。アーカイブ一覧またはHaiagaru設定の「過去ログ・エッヂ検索」から確認でき、元URL情報もスレアーカイブと一緒にMEGA／ローカルへバックアップできます。
 
 1.8.11: [コピー履歴・分類](docs/clipboard-history.md)。Haiagaru設定の「履歴・保存件数」または書き込み画面の︙から、ChMate内でコピーした本文を検索・再コピー・カテゴリ分けできます。記録は初期オフ、最新100件まで。他アプリのコピーは収集しません。
-正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
+正式版 `1.8.16` の概要: [1.7.1からの更新内容・注意事項](docs/release-1.8.16-from-1.7.1.md)
 
-プレ版 `1.8.15` の概要: [1.8.14からの更新内容・注意事項](docs/release-1.8.15.md)。[★スレタブ](docs/favorite-threads.md)、投稿者ごとの強調色、[ローカル自動バックアップ](docs/local-auto-backup.md)、コピー・アンカー操作、巡回ボタン・外部板検索・アイコンの改善を含みます。
+プレ版利用者向け: [1.8.15からの更新内容・注意事項](docs/release-1.8.16.md)。上／下4桁検索・保存履歴と結果内検索・保持上限設定・バックアップ、人気レスポップアップ、Xプレビュー軽量化・カード表示、動画速度切替などを追加しました。正式・プレの取得先を同じ1.8.16へ更新しています。
 
 ## 主な機能
 
@@ -54,7 +54,7 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 * レス本文の直接選択・コピー: 本文長押しで一部を選択し、Android標準メニューからコピーできます。Haiagaru設定、またはスレ内ツールバー設定に追加した「長押しコピー」でオン／オフ可能（初期オフ）。191／226／242 dev対応。[使い方](docs/direct-body-selection.md)
 * 画像／動画のアップロード先切り替え: Imgur、画像専用imgbox（10MB）、imgpile（API不要100MB／API方式97MB）、動画専用Sendvidを選択可能。標準添付の成功結果を本文へ挿入し標準履歴へ記録します。imgbox／imgpileの保存済み管理情報から選択・確認付きの一括削除も追加。権限・画像単位のフォーム・成功応答を確認できない場合は停止します。手動Web画面は別操作です（開発中・実送信／実削除成功は未確認）。[使い方・制限](docs/upload-hosts.md)
 * 専用ビュワーの追加　<オフに出来ないとの報告があります>
-* 動画専用ビューアの左右上下スワイプ（明るさ／音量）・左右ダブルタップの相対シーク設定、およびYouTube公式プレーヤーのアプリ内表示。[操作と制限](docs/video-viewer-controls.md)
+* 動画専用ビューアの再生速度切替・画面長押し2倍速、左右上下スワイプ（明るさ／音量）・左右ダブルタップの相対シーク、およびYouTube公式プレーヤーのアプリ内表示。[操作と制限](docs/video-viewer-controls.md)
 * エッヂ過去ログビューアーで開けない場合はエラーコードを表示し、`Download/Haiagaru` に診断ログを保存
 * ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のChMate+互換設定
   * 単発ID表示を省略
