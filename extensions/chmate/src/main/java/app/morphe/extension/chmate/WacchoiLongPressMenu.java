@@ -324,7 +324,7 @@ public final class WacchoiLongPressMenu {
                 if (found.host != null && found.board != null) {
                     if (ResponseMenuSettings.visible(ITEM_ID)) {
                         appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "必死チェッカーもどき(ﾜｯﾁｮｲ)" : "ﾜｯﾁｮｲで検索",
-                                android.R.drawable.ic_menu_search, callback);
+                                ResponseMenuSettings.wacchoiSearchIcon(), callback);
                         moveLastSheetItem(builder, ResponseMenuSettings.order(ITEM_ID, Integer.MAX_VALUE));
                     }
                     String suffix = WacchoiSuffixNg.suffix(query);
@@ -487,6 +487,7 @@ public final class WacchoiLongPressMenu {
         intent.putExtra("haiagaru.wacchoi.host", context.host);
         intent.putExtra("haiagaru.wacchoi.board", context.board);
         menu.add(Menu.NONE, ITEM_ID, ResponseMenuSettings.order(ITEM_ID, menu.size()), "ﾜｯﾁｮｲで検索")
+                .setIcon(ResponseMenuSettings.wacchoiSearchIcon())
                 .setVisible(ResponseMenuSettings.visible(ITEM_ID))
                 .setIntent(intent)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);

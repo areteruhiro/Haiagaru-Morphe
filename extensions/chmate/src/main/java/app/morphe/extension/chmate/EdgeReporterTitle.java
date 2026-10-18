@@ -5,6 +5,7 @@ public final class EdgeReporterTitle {
     private EdgeReporterTitle() {}
 
     public static String preserve(String selected, String history) {
+        if(!EdgeReporterOptions.menu()&&history!=null&&!history.isEmpty())return history;
         if (history == null || history.isEmpty()) return selected;
         if (selected == null) return history;
         String suffix = EdgeReporterId.suffix(selected);

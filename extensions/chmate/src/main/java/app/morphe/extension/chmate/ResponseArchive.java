@@ -170,6 +170,8 @@ public final class ResponseArchive {
     }
 
     static void appendSheetAction(Object builder, String title, int icon, Runnable action) throws Exception {
+            int actionId=title.equals("過去レスを見る")?VIEW_ARCHIVE:title.equals("このレスをアーカイブに保存")||title.equals("レスを保存")?ITEM:title.equals("投稿者を強調")?0x7e484b01:0;
+            if(actionId!=0&&!ResponseMenuSettings.visible(actionId))return;
             for (Method method : builder.getClass().getDeclaredMethods()) {
                 Class<?>[] p = method.getParameterTypes();
                 if (Modifier.isStatic(method.getModifiers()) || p.length != 6 || p[0] != String.class
@@ -194,6 +196,7 @@ public final class ResponseArchive {
     }
 
     private static void confirm(Activity a, ResponseArchiveEntry entry) {
+        if(!FeatureSwitches.enabled("responseArchiveEnabled",true))return;
         if (a.isFinishing()) return;
         chooseCollection(a, entry);
     }
@@ -203,6 +206,7 @@ public final class ResponseArchive {
         new AlertDialog.Builder(a).setTitle("「" + collection.title + "」に保存")
                 .setMessage("選んだレスの名前・日時・本文・URLを端末内に保存します。画像・動画ファイルは含みません。\n同じURLのレスは上書きします。")
                 .setNegativeButton("キャンセル", null).setPositiveButton("保存", (d, w) -> IO.execute(() -> {
+                    if(!FeatureSwitches.enabled("responseArchiveEnabled",true))return;
                     try {
                         saveToCollection(a, collection.id, entry);
                         MAIN.post(() -> toast(a, "「" + collection.title + "」に保存しました"));

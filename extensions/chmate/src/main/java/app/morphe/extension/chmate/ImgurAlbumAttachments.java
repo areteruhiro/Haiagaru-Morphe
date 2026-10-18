@@ -146,6 +146,10 @@ public final class ImgurAlbumAttachments {
                 append(model, cacheFieldName, TwimgImageUrls.extract((String) raw));
             if (mode != 3)
                 append(model, cacheFieldName, XMediaAttachments.directVideos((String) raw));
+            if (mode != 3)
+                append(model, cacheFieldName, ImgurDirectVideos.extract((String) raw));
+            if (mode != 3)
+                append(model, cacheFieldName, DirectVideoUrls.extract((String) raw));
             Matcher albums = ALBUM.matcher((String) raw);
             LinkedHashSet<String> ids = new LinkedHashSet<>();
             while ((mode != 3 || Haiagaru.mediaImageFetchEnabled()) && albums.find() && ids.size() < 8) ids.add(albums.group(1));
@@ -357,7 +361,7 @@ public final class ImgurAlbumAttachments {
                     changed = true;
                     continue;
                 }
-                boolean directVideo = XMediaAttachments.isVideo(url);
+                boolean directVideo = DirectVideoUrls.supported(url);
                 if (directVideo && (mode == 0 || mode == 3)) {
                     changed = true;
                     if (mode == 0) {
@@ -369,7 +373,7 @@ public final class ImgurAlbumAttachments {
                 } else changed |= !urls.add(url);
             }
             for (String image : images) {
-                boolean video = XMediaAttachments.isVideo(image);
+                boolean video = DirectVideoUrls.supported(image);
                 if (video && mode == 3) continue;
                 if (!video && XMediaAttachments.isPoster(image) && mode != 0 && mode != 1) continue;
                 if (!video && !Haiagaru.mediaImageFetchEnabled() && !XMediaAttachments.isPoster(image)) continue;

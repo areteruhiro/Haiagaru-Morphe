@@ -72,7 +72,7 @@ public final class ThreadCommands {
             BeAutoLogout.editor(fragment, target, thread, url);
             // Commands belong only to thread creation, not ordinary replies.
             // Keep target registration above for external-board authentication.
-            if (!thread) return;
+            if (!thread||!FeatureSwitches.enabled("threadCommandsEnabled",true)) return;
             EditText body = (EditText) field(binding, bodyName);
             EditText name = (EditText) field(binding, nameName);
             String profile = ThreadCommandRules.profile(url);

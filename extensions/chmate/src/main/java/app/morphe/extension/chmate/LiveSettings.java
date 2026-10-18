@@ -41,7 +41,7 @@ final class LiveSettings {
         if(v==null)return;
         final boolean[] previous={v.isChecked()};
         ((Toggle)v).changed=()->{boolean value=v.isChecked();if(previous[0]==value)return;previous[0]=value;
-            prefs.edit().putBoolean(key,value).apply();if(effect!=null)effect.run();refreshed.run();};
+            prefs.edit().putBoolean(key,value).apply();if(effect!=null)effect.run();refreshed.run();SettingsEffects.changed(v.getContext(),key,value);};
     }
     void choice(Spinner v,String key){choice(v,key,i->i);}
     interface NumberValue { int value(int position); }

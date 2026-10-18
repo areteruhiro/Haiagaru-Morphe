@@ -128,6 +128,21 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         }) candidates.add(cls)
     }
     check(candidates.size == 1) { "$version gesture layout changed (${candidates.size})" }
+    val gestureFields = candidates.single().fields.map { it.type }.toSet()
+    val recognizers = mutableListOf<ClassDef>()
+    classDefForEach { cls ->
+        if (cls.type in gestureFields && cls.methods.any {
+            it.parameterTypes == listOf("Landroid/view/MotionEvent;") && it.returnType == "Z"
+        } && cls.methods.any {
+            val parameters = it.parameterTypes
+            it.name == "<init>" && parameters.size == 2 && parameters[0] == "Landroid/content/Context;"
+        }) recognizers.add(cls)
+    }
+    check(recognizers.size == 1) { "$version settings gesture recognizer changed (${recognizers.size})" }
+    val recognizerName = recognizers.single().type.removePrefix("L").removeSuffix(";").replace('/', '.')
+    mutableClassDefBy("Lapp/morphe/extension/chmate/HaiagaruSettingsGestures;")
+        .methods.single { it.name == "recognizerClassName" }
+        .replaceInstruction(0, "const-string v0, \"$recognizerName\"")
     val owner = mutableClassDefBy(candidates.single())
     val complete = owner.methods.single {
         it.parameterTypes == listOf("I", "Landroid/graphics/PointF;", "Landroid/graphics/PointF;")
@@ -1590,6 +1605,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
         patchGroupedBrowsingHistory(packageMetadata.versionName)
         patchFavoriteThreads(packageMetadata.versionName)
+        patchHomeRefreshKeywords(packageMetadata.versionName)
         patchClipboardHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
         patchToolbarIcons(packageMetadata.versionName)
@@ -1600,6 +1616,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchArchiveOrigins(packageMetadata.versionName)
         patchThreadArchiveOrder(packageMetadata.versionName)
         patchRelatedThreads(packageMetadata.versionName)
+        patchThreadKeywordOrder(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
@@ -1644,6 +1661,17 @@ private val haiagaruBytecodePatch = bytecodePatch {
         applicationOnCreate.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onApplicationCreate(Landroid/app/Application;)V"
         )
+        // A private media worker must not initialize native ChMate/Firebase singletons.
+        // FirebaseInitProvider runs only in the main process; native onCreate would crash here.
+        check(applicationOnCreate.implementation!!.registerCount > 1)
+        val mainApplicationEntry = applicationOnCreate.implementation!!.instructions.first()
+        applicationOnCreate.addInstructionsWithLabels(0, """
+            invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/VideoFrameDecodeService;->decoderProcess(Landroid/content/Context;)Z
+            move-result v0
+            if-eqz v0, :haiagaru_main_application
+            invoke-super/range {p0 .. p0}, ${mutableClassDefBy(profile.applicationClass).superclass}->onCreate()V
+            return-void
+        """.trimIndent(), ExternalLabel("haiagaru_main_application", mainApplicationEntry))
         // The URL/DAT recovery entry exists in all supported generations, but
         // 0.8.10.241 and 0.8.10.243 route lifecycle creation through the Hilt
         // activity base class while 0.8.10.191 keeps it on the concrete activity.
@@ -4725,10 +4753,18 @@ val haiagaruPatch = resourcePatch(
             readFirst.setAttribute("name", "haiagaru_read_threads_first")
             readFirst.textContent = "既読スレを上に"
             strings.documentElement.appendChild(readFirst)
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name","haiagaru_hide_dropped_threads")
+                textContent="DAT落ちスレを非表示（未読・履歴・スレ）"
+            })
             val favorites = strings.createElement("string")
             favorites.setAttribute("name", "haiagaru_favorite_threads")
             favorites.textContent = "★スレ"
             strings.documentElement.appendChild(favorites)
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_favorite_threads_description")
+                textContent = "★スレのみ巡回"
+            })
         }
         document("res/values-en/strings.xml").use { strings ->
             val entry = strings.createElement("string")
@@ -4743,18 +4779,28 @@ val haiagaruPatch = resourcePatch(
             readFirst.setAttribute("name", "haiagaru_read_threads_first")
             readFirst.textContent = "Show read threads first"
             strings.documentElement.appendChild(readFirst)
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name","haiagaru_hide_dropped_threads")
+                textContent="Hide dropped threads (Unread / History / Threads)"
+            })
             val favorites = strings.createElement("string")
             favorites.setAttribute("name", "haiagaru_favorite_threads")
             favorites.textContent = "★ Threads"
             strings.documentElement.appendChild(favorites)
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_favorite_threads_description")
+                textContent = "Shows starred threads across boards"
+            })
         }
         PublicXmlManager(get("res/values/public.xml")).use { publicResources ->
             publicResources.createPublicId("string", "haiagaru_edge_archive")
             publicResources.createPublicId("drawable", "haiagaru_edge_archive")
             publicResources.createPublicId("string", "haiagaru_mark_all_read")
             publicResources.createPublicId("string", "haiagaru_read_threads_first")
+            publicResources.createPublicId("string", "haiagaru_hide_dropped_threads")
             publicResources.createPublicId("drawable", "haiagaru_mark_all_read")
             publicResources.createPublicId("string", "haiagaru_favorite_threads")
+            publicResources.createPublicId("string", "haiagaru_favorite_threads_description")
             publicResources.createPublicId("drawable", "haiagaru_favorite_threads")
         }
         get("res").resolve("drawable/haiagaru_favorite_threads.xml").writeText("""
@@ -4832,6 +4878,7 @@ val haiagaruPatch = resourcePatch(
         """.trimIndent())
         val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
         for ((name, label) in listOf(
+            "haiagaru_wacchoi_search" to "ﾜｯﾁｮｲで検索",
             "haiagaru_wacchoi_lower" to "ﾜｯﾁｮｲ下4桁で検索",
             "haiagaru_wacchoi_upper" to "ﾜｯﾁｮｲ上4桁で検索",
         )) {
@@ -4847,9 +4894,17 @@ val haiagaruPatch = resourcePatch(
                 it.createPublicId("string", name)
                 it.createPublicId("drawable", name)
             }
+            val iconPath = when (name) {
+                "haiagaru_wacchoi_search" ->
+                    "M15.5,14h-0.79l-0.28,-0.27C15.41,12.59 16,11.11 16,9.5C16,5.91 13.09,3 9.5,3S3,5.91 3,9.5S5.91,16 9.5,16c1.61,0 3.09,-0.59 4.23,-1.57l0.27,0.28v0.79l5,4.99L20.49,19l-4.99,-5zM9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5S14,7.01 14,9.5S11.99,14 9.5,14z"
+                "haiagaru_wacchoi_upper" ->
+                    "M16,11l-4,-4 -4,4 1.41,1.41L11,11.83V19h2v-7.17l1.59,1.58L16,11zM5,5v2h14V5H5z"
+                else ->
+                    "M16,13l-4,4 -4,-4 1.41,-1.41L11,13.17V5h2v8.17l1.59,-1.58L16,13zM5,19v-2h14v2H5z"
+            }
             get("res").resolve("drawable/$name.xml").writeText("""
                 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-                    <path android:fillColor="#FFFFFFFF" android:pathData="M9.5,3a6.5,6.5 0,1 0,4.1 11.5L19,20l1,-1 -5.5,-5.4A6.5,6.5 0,0 0,9.5 3zM9.5,5a4.5,4.5 0,1 1,0 9,4.5 4.5,0 0,1 0,-9z"/>
+                    <path android:fillColor="#FFFFFFFF" android:pathData="$iconPath"/>
                 </vector>
             """.trimIndent())
         }
@@ -5146,6 +5201,11 @@ val haiagaruPatch = resourcePatch(
                     setAttributeNS(ANDROID_XML_NAMESPACE,"android:name",permission)
                 })
             }
+            application.appendChild(document.createElement("service").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.VideoFrameDecodeService")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:process",":haiagaru_video_decoder")
+            })
             application.appendChild(document.createElement("service").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.WacchoiSearchService")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")

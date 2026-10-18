@@ -21,7 +21,7 @@ public final class EdgeReporterDisplay {
 
     public static void begin(Object adapter) {
         end();
-        if (adapter == null || !Haiagaru.edgeReporterIdsEnabled()) return;
+        if (adapter == null) return;
         String name = adapter.getClass().getName();
         String boardField = name.equals("o.m8a") ? "r"
                 : name.equals("o.getWriteBytesTotal") ? "g"
@@ -58,6 +58,7 @@ public final class EdgeReporterDisplay {
         Long thread = THREAD.get();
         THREAD.remove();
         if (!Boolean.TRUE.equals(EDGE.get()) || thread == null) return original;
+        if(!EdgeReporterOptions.board())return EdgeReporterId.titleForNextThreadMatch(original);
         return EdgeReporterHistory.displayTitle(thread, original);
     }
 

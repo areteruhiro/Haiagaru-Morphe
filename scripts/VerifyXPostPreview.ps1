@@ -14,6 +14,7 @@ $compiled = 'extensions/chmate/build/intermediates/javac/release/compileReleaseJ
 if ($LASTEXITCODE -ne 0) { throw 'Fixture compilation failed' }
 $packagePath = 'app/morphe/extension/chmate'
 Copy-Item -LiteralPath "$compiled/$packagePath/XMediaAttachments.class" -Destination "$output/$packagePath"
+Copy-Item -LiteralPath "$compiled/$packagePath/DirectVideoUrls.class" -Destination "$output/$packagePath"
 Copy-Item -LiteralPath "$compiled/$packagePath/XMediaAttachments`$1.class" -Destination "$output/$packagePath"
 & "$Java/bin/jar.exe" cf "$output/fixture.jar" -C $output app
 if ($LASTEXITCODE -ne 0) { throw 'Fixture packaging failed' }

@@ -8,7 +8,7 @@ import android.graphics.drawable.Drawable;
 import java.io.File;
 import java.lang.reflect.Field;
 
-/** Only Haiagaru's four toolbar actions; stock icons and stored toolbar layouts stay untouched. */
+/** Haiagaru toolbar actions; stock icons and stored toolbar order stay untouched. */
 public final class ToolbarIcons {
     static final String PREFS = "haiagaru_toolbar_icons";
     static final String[] NAMES = {"エッヂ過去ログ", "フィルタ", "すべて既読", "長押しコピー", "ﾜｯﾁｮｲ下4桁で検索", "ﾜｯﾁｮｲ上4桁で検索"};
@@ -18,7 +18,8 @@ public final class ToolbarIcons {
     static int index(int action) { int i = action - 0x7e000001; return i >= 0 && i < NAMES.length ? i : -1; }
     public static boolean visible(Context context, int action) {
         int i = index(action);
-        return i < 0 || context.getSharedPreferences(PREFS, 0).getBoolean("visible." + i, true);
+        if((i==4||i==5)&&!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return false;
+        return i < 0 || context.getSharedPreferences(PREFS, 0).getBoolean("visible." + i, i<4);
     }
     static File file(Context context, int i) { return new File(context.getFilesDir(), "haiagaru-toolbar-icons/" + i + ".png"); }
     static synchronized void invalidate(int i) { CACHE[i] = null; }
@@ -40,9 +41,12 @@ public final class ToolbarIcons {
             for (Field field : item.getClass().getDeclaredFields()) {
                 if (field.getType() != int.class || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
                 field.setAccessible(true); int action = field.getInt(item);
-                if (index(action) < 0 || visible(context, action)) continue;
+                int index=index(action);
+                if (index < 0) continue;
+                android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);
+                if(!prefs.contains("visible."+index)&&visible(context,action))return;
                 Field flag = item.getClass().getDeclaredField(visibilityField());
-                flag.setAccessible(true); flag.setBoolean(item, false); return;
+                flag.setAccessible(true); flag.setBoolean(item, visible(context,action)); return;
             }
         } catch (ReflectiveOperationException | RuntimeException ignored) { }
     }

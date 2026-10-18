@@ -513,6 +513,9 @@ public final class Haiagaru {
             int iconId = context.getResources().getIdentifier(
                     resourceName, "drawable", context.getPackageName());
             if (titleId == 0 || iconId == 0) return toolbarModel;
+            int summaryId=actionId==FavoriteThreads.TAB?context.getResources().getIdentifier(
+                    "haiagaru_favorite_threads_description","string",context.getPackageName()):titleId;
+            if(summaryId==0)summaryId=titleId;
             if (toolbarModel instanceof List) {
                 List<?> source = (List<?>) toolbarModel;
                 if (containsToolbarChoice(source, actionId)) return toolbarModel;
@@ -522,7 +525,7 @@ public final class Haiagaru {
                         false, toolbarModel.getClass().getClassLoader());
                 Object item = itemClass.getConstructor(int.class, int.class, int.class,
                         int.class, boolean.class).newInstance(
-                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, titleId, actionId == FavoriteThreads.TAB);
+                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, actionId == FavoriteThreads.TAB);
                 buttons.add(item);
                 return toolbarModel;
             }
@@ -544,7 +547,7 @@ public final class Haiagaru {
                     "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
             Object item = specClass.getConstructor(int.class, int.class, int.class,
                     int.class, boolean.class).newInstance(
-                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, titleId, actionId == FavoriteThreads.TAB);
+                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, actionId == FavoriteThreads.TAB);
             // Modern ToolbarDefault keeps a mutable button list. Extending that
             // list preserves its position and configuration objects; rebuilding
             // the model can silently lose the new choice on some versions.
@@ -923,6 +926,7 @@ public final class Haiagaru {
         ExternalBoardAuth.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
+        EdgeReporterOptions.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
         HiddenIdNg.initialize(appContext);
         PosterHighlight.initialize(appContext);
@@ -1525,12 +1529,11 @@ public final class Haiagaru {
 
     /** Redirects Edge's subject list to the metadata feed that includes reporter IDs. */
     public static String rewriteSubjectUrl(String original) {
-        return EdgeSubjectUrl.rewrite(original, edgeReporterIdsEnabled());
+        return EdgeSubjectUrl.rewrite(original, EdgeReporterOptions.fetch());
     }
 
     public static boolean edgeReporterIdsEnabled() {
-        SharedPreferences preferences = preferencesOrNull();
-        return preferences == null || preferences.getBoolean("edgeReporterId", true);
+        return EdgeReporterOptions.menu();
     }
 
     /**
@@ -3398,7 +3401,7 @@ public final class Haiagaru {
         sections.defer(SettingsSections.Category.HISTORY, "閲覧 書き込み 検索 履歴 保存 件数 無制限 送信済み クリップボード コピー history clipboard", () -> settingsHISTORY(activity));
         sections.defer(SettingsSections.Category.BACKUP, "バックアップ 復元 移行 MEGA 同期 ローカル ファイル backup restore sync", () -> settingsBACKUP(activity));
         sections.finish();
-        ScrollView scroll = new ScrollView(activity);
+        HaiagaruSettingsGestures.GestureScrollView scroll = new HaiagaruSettingsGestures.GestureScrollView(activity);
         scroll.setFillViewport(true);
         scroll.addView(layout);
         AlertDialog dialog = new AlertDialog(activity) {
@@ -3410,6 +3413,9 @@ public final class Haiagaru {
         dialog.setView(scroll);
         sections.setCloseAction(dialog::dismiss);
         dialog.show();
+        HaiagaruSettingsGestures settingsGestures = new HaiagaruSettingsGestures(activity, scroll, sections);
+        settingsGestures.setCloseAction(dialog::dismiss);
+        scroll.setGestures(settingsGestures);
         if(android.os.Build.VERSION.SDK_INT>=33)
             dialog.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_OVERLAY,
@@ -3420,6 +3426,7 @@ public final class Haiagaru {
         }
         dialog.setCanceledOnTouchOutside(false);
         dialog.setOnDismissListener(d->{
+            settingsGestures.close();
             ImgurAlbumAttachments.refreshVideoModels();
             EmojiFontFallback.refreshVisibleRows();
             refreshBoardListAfterReadSortChange();
@@ -3462,6 +3469,7 @@ public final class Haiagaru {
 
     private static LinearLayout settingsGENERAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
+        FeatureSwitches.addSettings(layout,activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
@@ -3552,6 +3560,7 @@ public final class Haiagaru {
 
         ToolbarIcons.addSettingsButton(layout, activity);
         WacchoiSearchOptions.addSettings(layout,activity);
+        ResponseMenuSettings.addSettings(layout,activity);
         PopularReplies.addSettings(layout,activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
@@ -3565,6 +3574,9 @@ public final class Haiagaru {
                 preferences.getBoolean("keepQuickFilterPosition", false));
 
         final boolean initialHideNgThreadGroup = hideNgThreadGroup();
+        Switch hideDroppedThreadsSwitch=addSwitch(layout,activity,
+                "未読・履歴・スレのタブでDAT落ちスレを非表示（ログは削除しない）",
+                preferences.getBoolean(HiddenDroppedThreads.KEY,false));
         Switch deleteReadLongPress = addSwitch(layout, activity,
                 text("更新ボタン長押しで既読スレを削除", "Delete read threads by long-pressing Refresh"),
                 preferences.getBoolean(DeleteReadThreads.LONG_PRESS_KEY, true));
@@ -3588,9 +3600,13 @@ public final class Haiagaru {
         Switch edgeReporterId = addSwitch(
                 layout,
                 activity,
-                text("エッヂのスレタイ末尾に記者IDを表示", "Show Edge reporter IDs in thread titles"),
+                text(EdgeReporterOptions.MENU_LABEL, "Edge reporter IDs: long press / NG Threads"),
                 preferences.getBoolean("edgeReporterId", true)
         );
+        Switch edgeReporterBoardList=addSwitch(layout,activity,
+                text(EdgeReporterOptions.BOARD_LABEL,"Edge reporter IDs: board thread list"),EdgeReporterOptions.board());
+        TextView reporterHelp=new TextView(activity);
+        reporterHelp.setText("長押し・NG追加・Threadsと、板を開いたスレ一覧への表示を別々に設定できます。既存の設定は両方へ引き継ぎます。表示を変えた後は一覧を開き直してください。未取得の記者IDは板を更新すると反映されます。");layout.addView(reporterHelp);
 
         PosterHighlight.addSettingsButton(layout, activity);
         if (StringReplacement.supported(activity)) {
@@ -3611,8 +3627,10 @@ public final class Haiagaru {
         live.toggle(keepFilterPosition,"keepQuickFilterPosition");
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
+        live.toggle(hideDroppedThreadsSwitch,HiddenDroppedThreads.KEY);
         live.toggle(readThreadsFirstSwitch,"readThreadsFirst",Haiagaru::refreshBoardListAfterReadSortChange);
         live.toggle(edgeReporterId,"edgeReporterId");
+        live.toggle(edgeReporterBoardList,EdgeReporterOptions.BOARD);
         return layout;
     }
 

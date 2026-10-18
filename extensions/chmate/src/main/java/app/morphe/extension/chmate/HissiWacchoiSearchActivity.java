@@ -23,6 +23,7 @@ import android.widget.Toast;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -54,12 +55,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
     // Cleartext is enabled only for this host in hissi_network_security_config.xml.
     private static final String ORIGIN = "http://hissi.org";
     private static final String ZZZSEARCH_URL = "https://zzzsearch.com/2ch/";
-    private static final String EDGE_SUBJECT =
-            "https://bbs.eddibb.cc/liveedge/subject-metadent.txt";
-    private static final String EDGE_DAT = "https://bbs.eddibb.cc/liveedge/dat/";
+    private static final String EDGE_BOARD =
+            "https://www.kyodemo.net/sdemo/b/e_e_liveedge/?kt=k_&j=1";
+    private static final String EDGE_THREAD =
+            "https://www.kyodemo.net/sdemo/r/e_e_liveedge/";
     private static final long MIN_INTERVAL_MS = 10_000L;
     private static final int RESPONSE_LIMIT = 2 * 1024 * 1024;
-    private static final int MAX_LIST_PAGES = 1000;
+    private static final int MAX_LIST_PAGES = 10_000;
     private static final int MAX_SEARCH_DAYS = 36525;
     private static final int MAX_PROFILES = 25;
     private static final int MAX_VISIBLE_BOARDS = 120;
@@ -71,8 +73,18 @@ public final class HissiWacchoiSearchActivity extends Activity {
     private static final Pattern SLIP = WacchoiSearch.SLIP;
     private static final Pattern THREAD_LINK = Pattern.compile(
             "(?i)href=['\\\"]?(https?://[a-z0-9.-]+\\.5ch\\.(?:io|net)/test/read\\.cgi/[^\\s'\\\">]+)");
-    private static final Pattern EDGE_SUBJECT_ROW = Pattern.compile(
-            "(?m)^\\s*([0-9]{10,})\\.dat<>.*$");
+    private static final Pattern EDGE_THREAD_LINK = Pattern.compile(
+            "(?i)href\\s*=\\s*['\\\"](?:https?://(?:www\\.)?kyodemo\\.net)?/sdemo/r/e_e_liveedge/([0-9]{10,})/");
+    private static final Pattern EDGE_BOARD_NEXT = Pattern.compile(
+            "(?i)href\\s*=\\s*['\\\"]((?:https?://(?:www\\.)?kyodemo\\.net)?/sdemo/b/e_e_liveedge/[0-9]+[^'\\\"]*)['\\\"]");
+    private static final Pattern EDGE_POST_START = Pattern.compile(
+            "(?is)<div\\s+class=['\\\"]post\\s+p([0-9]+)\\b[^'\\\"]*['\\\"][^>]*>");
+    private static final Pattern EDGE_ID = Pattern.compile(
+            "(?is)<span\\s+class=['\\\"]clid['\\\"][^>]*>(.*?)</span>");
+    private static final Pattern EDGE_MORE = Pattern.compile(
+            "(?is)data-url=['\\\"]([^'\\\"]+)['\\\"]\\s+data-tag=['\\\"]rlist['\\\"]");
+    private static final Pattern EDGE_TITLE = Pattern.compile(
+            "(?is)<title>(.*?)\\s+-\\s*エッヂ</title>");
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private volatile Future<?> job;
@@ -84,6 +96,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
     private final Set<String> selectedBoards = new LinkedHashSet<>();
     private final List<BoardEntry> availableBoards = new ArrayList<>();
     private EditText boardFilter, fromInput, toInput, fourInput, pageLimitInput;
+    private EditText titleKeywordInput, bodyKeywordInput, requestLimitInput;
+    private String edgeTitleWords = "", edgeBodyWords = "";
+    private CheckBox edgePast;
+    private boolean edgeArchive;
+    private String edgeNextBoard, edgeResumeUrl, edgeResumeTitle = "";
+    private WacchoiSearch.RequestBudget requestBudget = new WacchoiSearch.RequestBudget(0);
+    private final Set<String> edgeVisitedBoards = new LinkedHashSet<>();
     private LinearLayout boardChoices, boardSection;
     private Button boardToggle;
     private TextView boardStatus;
@@ -134,6 +153,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true)){Toast.makeText(this,"4桁検索は設定でオフになっています",Toast.LENGTH_SHORT).show();finish();return;}
         buildUi();
         String half = getIntent().getStringExtra(EXTRA_HALF);
         if (HALF_UPPER.equals(half)) halfGroup.check(halfGroup.getChildAt(0).getId());
@@ -151,13 +171,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
         root.setPadding(pad, pad, pad, pad);
 
         TextView title = new TextView(this);
-        title.setText("未取得の投稿をワッチョイ4桁で検索");
+        title.setText("投稿をワッチョイ・ID・本文で検索");
         title.setTextSize(19);
         title.setTypeface(null, Typeface.BOLD);
         root.addView(title, row());
 
         TextView note = new TextView(this);
-        note.setText("端末で未取得の投稿も対象です。Hissiは板を複数選び、カレンダーで日付を指定して日別一覧を照合します。「全対応板を選択」でHissiの掲載板すべてを対象にできます。エッヂは現行スレのDATを照合します。上4桁／下4桁は英字の大小を区別し、+ と / にも対応します。通信は最低10秒間隔で、上限や停止後は続きから検索できます。Hissiは公開HTTPページを利用します。ZZZSearchは5ch・2ch.sc・過去ログ等の全文検索をアプリ内で開きます。結果に表記ゆれが混ざるためリンク先で確認してください。各検索サービスに未収録の投稿は検索できません。");
+        note.setText("Hissiは板・日付ごとのワッチョイを検索します。エッヂはKyodemoに収録された現行／過去スレのID・スレ名・各レス本文を検索します。絞り込み文字は任意です。最低10秒間隔で取得し、上限や停止後は続きから再開できます。検索サービスに未収録の投稿は対象外です。");
         note.setTextSize(13);
         root.addView(note, row());
         Button historyButton=new Button(this);historyButton.setText("上・下4桁の検索履歴・保存結果");
@@ -237,63 +257,76 @@ public final class HissiWacchoiSearchActivity extends Activity {
         dates.addView(toInput, new LinearLayout.LayoutParams(0, dp(52), 1));
         root.addView(dates, row());
 
-        fourInput = field("例: Sdff、Q8ld、o+Mz", "");
-        root.addView(label("照合する4文字（英字の大文字・小文字を区別）"));
+        fourInput = field("エッヂID例: ID:/GNQXmAUz（空欄可）", "");
+        root.addView(label(getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean("showEdgeSearch",true) ? "絞り込み（Hissiはワッチョイ、エッヂは投稿ID。部分一致・空欄可）" : "ワッチョイで絞り込み（部分一致・空欄可）"));
         root.addView(fourInput, row());
         halfGroup = new RadioGroup(this);
         halfGroup.setOrientation(RadioGroup.HORIZONTAL);
         RadioButton first = new RadioButton(this);
-        first.setText("上4桁（ハイフン前：例 Sdff）"); first.setId(View.generateViewId());
+        first.setText("上側（ハイフン前）"); first.setId(View.generateViewId());
         RadioButton last = new RadioButton(this);
-        last.setText("下4桁（ハイフン後：例 Q8ld）"); last.setId(View.generateViewId());
+        last.setText("下側（ハイフン後）"); last.setId(View.generateViewId());
         halfGroup.addView(first); halfGroup.addView(last); last.setChecked(true);
         root.addView(halfGroup, row());
 
-        root.addView(label("ZZZSearchの追加条件（4桁を空にしてキーワードだけでも検索できます）"));
-        EditText titleKeyword = field("スレ名のキーワード（任意）", "");
-        EditText bodyKeyword = field("書き込み内容のキーワード（任意）", "");
-        root.addView(titleKeyword, row());
-        root.addView(bodyKeyword, row());
-        root.addView(label("スレ名はタイトル条件、書き込み内容は全文条件として検索します。本文だけの厳密な照合ではありません。Hissi・エッヂDAT検索は4桁条件を使います。"));
+        boolean showZzz = getSharedPreferences(WacchoiSearchOptions.PREFS, 0).getBoolean("showZzzSearch", true);
+        boolean showEdge = getSharedPreferences(WacchoiSearchOptions.PREFS, 0).getBoolean("showEdgeSearch", true);
+        TextView keywordLabel = label("スレ名・レス本文の検索条件（任意）");
+        root.addView(keywordLabel);
+        if (!showEdge) fourInput.setHint("ワッチョイ文字（部分一致・空欄可）");
+        titleKeywordInput = field("スレ名のキーワード（任意）", "");
+        bodyKeywordInput = field("書き込み内容のキーワード（任意）", "");
+        root.addView(titleKeywordInput, row());
+        root.addView(bodyKeywordInput, row());
+        TextView keywordNote = label(showEdge ? "エッヂはKyodemoのスレ名・各レス本文を照合します。空白区切りAND検索。IDなしでも検索できます。" : "ZZZSearchでスレ名・書き込み内容を検索できます。");
+        root.addView(keywordNote);
+        if (!showZzz && !showEdge) {
+            keywordLabel.setVisibility(View.GONE); keywordNote.setVisibility(View.GONE);
+            titleKeywordInput.setVisibility(View.GONE); bodyKeywordInput.setVisibility(View.GONE);
+        }
+
+        Button titleOnlySearch = new Button(this);
+        titleOnlySearch.setText("スレ名だけで検索（ZZZSearch）");
+        titleOnlySearch.setAllCaps(false);
+        titleOnlySearch.setOnClickListener(v -> launchZzzSearch("", titleKeywordInput.getText().toString(), "", false));
+        root.addView(titleOnlySearch, row());
+
+        Button bodyOnlySearch = new Button(this);
+        bodyOnlySearch.setText("書き込み内容だけで検索（ZZZSearch）");
+        bodyOnlySearch.setAllCaps(false);
+        bodyOnlySearch.setOnClickListener(v -> launchZzzSearch("", "", bodyKeywordInput.getText().toString(), false));
+        root.addView(bodyOnlySearch, row());
 
         Button broadSearch = new Button(this);
-        broadSearch.setText("ZZZSearchで検索（4桁・スレ名・書き込み内容）");
+        broadSearch.setText("入力した条件を組み合わせて検索（ZZZSearch）");
         broadSearch.setAllCaps(false);
         broadSearch.setOnClickListener(v -> {
             String token = fourInput.getText().toString().trim();
-            String titleWords = titleKeyword.getText().toString().trim();
-            String bodyWords = bodyKeyword.getText().toString().trim();
-            if (!token.isEmpty() && !WacchoiSearch.validToken(token)) {
-                fourInput.setError("英数字・+・/ の4文字を指定してください");
-                return;
-            }
+            String titleWords = titleKeywordInput.getText().toString().trim();
+            String bodyWords = bodyKeywordInput.getText().toString().trim();
             boolean upper = halfGroup.getCheckedRadioButtonId()
                     == halfGroup.getChildAt(0).getId();
-            StringBuilder query = new StringBuilder();
-            if (!token.isEmpty()) query.append('"').append(upper ? token + "-" : "-" + token).append('"');
-            if (!titleWords.isEmpty()) query.append(" intitle:\"")
-                    .append(titleWords.replace('"', ' ')).append('"');
-            if (!bodyWords.isEmpty()) query.append(' ').append(bodyWords);
-            if (query.toString().trim().isEmpty()) {
-                Toast.makeText(this, "4桁・スレ名・書き込み内容のいずれかを入力してください", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            // Search the public cross-board index (s=5: all supported sources). The
-            // service renders its own result list and can search 5ch, 2ch.sc, and
-            // archived-log indexes without this app crawling those servers.
-            openZzzSearch(ZZZSEARCH_URL + "?s=5&query=" + Uri.encode(query.toString().trim()));
+            launchZzzSearch(token, titleWords, bodyWords, upper);
         });
         root.addView(broadSearch, row());
+        if (!showZzz) { titleOnlySearch.setVisibility(View.GONE); bodyOnlySearch.setVisibility(View.GONE); broadSearch.setVisibility(View.GONE); }
+        edgePast = new CheckBox(this); edgePast.setText("エッヂの過去ログを検索（オフなら現行スレ）");
+        edgePast.setChecked(true); root.addView(edgePast, row());
+        if (!showEdge) edgePast.setVisibility(View.GONE);
 
         edgeStartButton = new Button(this);
-        edgeStartButton.setText("エッヂ現行スレのDATを検索");
+        edgeStartButton.setText("Kyodemoのエッヂスレを検索");
         edgeStartButton.setAllCaps(false);
         edgeStartButton.setOnClickListener(v -> startEdgeSearch());
         root.addView(edgeStartButton, row());
+        if (!showEdge) edgeStartButton.setVisibility(View.GONE);
 
-        pageLimitInput = field("一覧ページ上限（通信数の目安）", "20");
-        root.addView(label("一覧ページ上限（最大1000）"));
+        pageLimitInput = field("Hissiの一覧ページ数／エッヂのスレ件数", "100");
+        root.addView(label("走査上限（最大10000。エッヂはスレ件数）"));
         root.addView(pageLimitInput, row());
+        requestLimitInput = field("通信回数上限（0＝無制限）", "0");
+        root.addView(label("通信回数上限（開始／再開1回ごと。0＝無制限）"));
+        root.addView(requestLimitInput, row());
 
         LinearLayout buttons = new LinearLayout(this);
         startButton = new Button(this); startButton.setText("検索開始");
@@ -320,6 +353,35 @@ public final class HissiWacchoiSearchActivity extends Activity {
         startButton.setOnClickListener(v -> startSearch());
         stopButton.setOnClickListener(v -> stopSearch());
         loadBoards();
+    }
+
+    private void launchZzzSearch(String token, String titleWords, String bodyWords, boolean upper) {
+        fourInput.setError(null);
+        token = token.trim();
+        titleWords = titleWords.trim();
+        bodyWords = bodyWords.trim();
+        if (!WacchoiSearch.validFilter(token)) {
+            if (titleWords.isEmpty() && bodyWords.isEmpty()) {
+                fourInput.setError("英数字・+・/・-のみ入力してください");
+                return;
+            }
+            token = "";
+        }
+        StringBuilder query = new StringBuilder();
+        if (!token.isEmpty()) {
+            String slipQuery = token.indexOf('-') >= 0 || token.length() > 4
+                    ? token : upper ? token + "-" : "-" + token;
+            query.append('"').append(slipQuery).append('"');
+        }
+        if (!titleWords.isEmpty()) query.append(" intitle:\"")
+                .append(titleWords.replace('"', ' ')).append('"');
+        if (!bodyWords.isEmpty()) query.append(' ').append(bodyWords);
+        if (query.toString().trim().isEmpty()) {
+            Toast.makeText(this, "検索するスレ名または書き込み内容を入力してください", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // ZZZSearch's public index supports partial slip tokens and keyword-only searches.
+        openZzzSearch(ZZZSEARCH_URL + "?s=5&query=" + Uri.encode(query.toString().trim()));
     }
 
     private void loadBoards() {
@@ -415,6 +477,14 @@ public final class HissiWacchoiSearchActivity extends Activity {
     }
 
     private void startSearch() {
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
+        fourInput.setError(null);
+        final String four = fourInput.getText().toString().trim();
+        if (four.isEmpty() && getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean("showZzzSearch",true) && launchKeywordSearchIfAvailable()) return;
+        if (!WacchoiSearch.validFilter(four)) {
+            fourInput.setError("英数字・+・/・-のみ入力してください");
+            return;
+        }
         final String board;
         if (WacchoiSearch.allBoardsSelected(availableBoardCodes(), selectedBoards)) {
             // Preserve the all-board scope in the search cursor while avoiding
@@ -430,7 +500,6 @@ public final class HissiWacchoiSearchActivity extends Activity {
         }
         final String from = fromInput.getText().toString().trim();
         final String to = toInput.getText().toString().trim();
-        final String four = fourInput.getText().toString().trim();
         final boolean firstHalf = halfGroup.getCheckedRadioButtonId() == halfGroup.getChildAt(0).getId();
         int parsedPageLimit;
         try { parsedPageLimit = Integer.parseInt(pageLimitInput.getText().toString().trim()); }
@@ -441,15 +510,15 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 || daysBetween(from, to) >= MAX_SEARCH_DAYS) {
             fromInput.setError("日付はYYYYMMDD、期間は最大100年です"); return;
         }
-        if (!WacchoiSearch.validToken(four)) { fourInput.setError("英数字・+・/ の4文字を指定してください"); return; }
-        if (pageLimit < 1 || pageLimit > MAX_LIST_PAGES) { pageLimitInput.setError("1〜1000を指定してください"); return; }
+        if (pageLimit < 1 || pageLimit > MAX_LIST_PAGES) { pageLimitInput.setError("1〜10000を指定してください"); return; }
 
+        if (!configureRequestBudget()) return;
         if(startBackground(new Intent().putExtra("boards",board).putExtra("from",from).putExtra("to",to)
-                .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit)))return;
+                .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit).putExtra("requestLimit",requestBudget.limit)))return;
         WacchoiSearchService.current=null;observedBackground=null;
         showingHistory=false;
         localHistory=WacchoiHistory.begin(this,new Intent().putExtra("boards",board).putExtra("from",from).putExtra("to",to)
-                .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit));
+                .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit).putExtra("requestLimit",requestBudget.limit));
 
         cancelled = false;
         resumeCursor = null;
@@ -512,7 +581,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
                             }
                         }
                         publishStatus("日付 " + date + " / 板 " + board + " / 一覧 " + scanned
-                                + "ページ / 通信 " + requests + "回 / 一致 " + found);
+                                + "ページ / 通信 " + requestBudget.used + "回 / 一致 " + found);
                         int nextNumber = WacchoiSearch.nextPage(body, page);
                         if (nextNumber < 0) break;
                         page = nextNumber;
@@ -527,11 +596,11 @@ public final class HissiWacchoiSearchActivity extends Activity {
                     ? "ページ上限に達しました。「続きから検索」で再開できます"
                     : "検索範囲の確認が終わりました";
             publishStatus(finalState + "。対象板 " + boardsDone.size() + " / 日別一覧 " + scanned
-                    + "ページ / 通信 " + requests + "回 / 一致 " + found
+                    + "ページ / 通信 " + requestBudget.used + "回 / 一致 " + found
                     + "。これはHissiに収録された範囲です。");
         } catch (Exception error) {
             publishStatus((cancelled ? "停止しました" : "検索を中断しました") + ": " + error.getMessage()
-                    + "。通信 " + requests + "回、一覧 " + scanned + "ページ。");
+                    + "。通信 " + requestBudget.used + "回、一覧 " + scanned + "ページ。");
         } finally {
             runOnUiThread(() -> {
                 startButton.setEnabled(true); edgeStartButton.setEnabled(true);
@@ -542,85 +611,181 @@ public final class HissiWacchoiSearchActivity extends Activity {
     }
 
     private void startEdgeSearch() {
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
+        fourInput.setError(null);
         final String four = fourInput.getText().toString().trim();
+        if (!WacchoiSearch.normalizeEdgeIdFilter(four).matches("[A-Za-z0-9._+/-]*")) {
+            fourInput.setError("投稿IDを入力してください（ID:付きでも可）");
+            return;
+        }
         final boolean firstHalf = halfGroup.getCheckedRadioButtonId()
                 == halfGroup.getChildAt(0).getId();
         int parsedLimit;
         try { parsedLimit = Integer.parseInt(pageLimitInput.getText().toString().trim()); }
         catch (RuntimeException invalid) { parsedLimit = -1; }
         final int threadLimit = parsedLimit;
-        if (!WacchoiSearch.validToken(four)) {
-            fourInput.setError("英数字・+・/ の4文字を指定してください"); return;
-        }
         if (threadLimit < 1 || threadLimit > MAX_LIST_PAGES) {
-            pageLimitInput.setError("1〜1000を指定してください"); return;
+            pageLimitInput.setError("1〜10000を指定してください"); return;
         }
+        if (!configureRequestBudget()) return;
+        edgeTitleWords = titleKeywordInput.getText().toString().trim();
+        edgeBodyWords = bodyKeywordInput.getText().toString().trim();
+        edgeArchive = edgePast.isChecked();
         if(startBackground(new Intent().putExtra("edge",true).putExtra("four",four)
-                .putExtra("upper",firstHalf).putExtra("limit",threadLimit)))return;
+                .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
+                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive)))return;
         WacchoiSearchService.current=null;observedBackground=null;
         showingHistory=false;
         localHistory=WacchoiHistory.begin(this,new Intent().putExtra("edge",true).putExtra("four",four)
-                .putExtra("upper",firstHalf).putExtra("limit",threadLimit));
+                .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
+                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive));
         cancelled = false;
         resumeCursor = null;
         displayedResults.clear();
         resumeButton.setEnabled(false);
         startButton.setEnabled(false); edgeStartButton.setEnabled(false);
         stopButton.setEnabled(true); resultsLayout.removeAllViews();
-        statusView.setText("エッヂの現行スレ一覧を取得しています。DATは最低10秒間隔で照合します。");
+        statusView.setText("Kyodemoのエッヂ板からスレ一覧を取得しています。通信は最低10秒間隔です。");
         job = executor.submit(() -> runEdgeSearch(four, firstHalf, threadLimit, null));
     }
 
+    private boolean configureRequestBudget() {
+        try {
+            int limit = Integer.parseInt(requestLimitInput.getText().toString().trim());
+            if (limit < 0) throw new NumberFormatException();
+            requestBudget = new WacchoiSearch.RequestBudget(limit);
+            return true;
+        } catch (NumberFormatException invalid) {
+            requestLimitInput.setError("0以上の整数を指定してください（0＝無制限）");
+            return false;
+        }
+    }
+
+    private boolean launchKeywordSearchIfAvailable() {
+        String titleWords = titleKeywordInput == null ? "" : titleKeywordInput.getText().toString().trim();
+        String bodyWords = bodyKeywordInput == null ? "" : bodyKeywordInput.getText().toString().trim();
+        if (titleWords.isEmpty() && bodyWords.isEmpty()) return false;
+        launchZzzSearch("", titleWords, bodyWords, false);
+        return true;
+    }
+
     private void runEdgeSearch(String four, boolean firstHalf, int threadLimit, SearchCursor resume) {
-        int requests = 0, scanned = 0, found = 0;
+        int requests = 0, scanned = 0, found = 0, unavailable = 0;
         try {
             List<String> ids = resume == null ? new ArrayList<>() : resume.edgeIds;
             if (resume == null) {
-                String subject = fetchEdge(EDGE_SUBJECT); requests++;
-                Matcher threads = EDGE_SUBJECT_ROW.matcher(subject);
-                while (threads.find()) ids.add(threads.group(1));
+                edgeVisitedBoards.clear();
+                edgeResumeUrl = null; edgeResumeTitle = "";
+                String pageUrl = WacchoiSearch.edgeBoardUrl(edgeArchive, edgeTitleWords);
+                Set<String> uniqueIds = new LinkedHashSet<>();
+                while (pageUrl != null && uniqueIds.isEmpty() && !cancelled) {
+                    if (edgeVisitedBoards.contains(pageUrl)) break;
+                    String boardHtml = fetchEdge(pageUrl); requests++;
+                    edgeVisitedBoards.add(pageUrl);
+                    Matcher threads = EDGE_THREAD_LINK.matcher(boardHtml);
+                    while (threads.find()) uniqueIds.add(threads.group(1));
+                    Matcher next = EDGE_BOARD_NEXT.matcher(boardHtml);
+                    String nextPage = null;
+                    while (next.find()) nextPage = next.group(1).replace("&amp;", "&");
+                    pageUrl = nextPage == null ? null
+                            : new URL(new URL(EDGE_BOARD), nextPage).toString();
+                }
+                edgeNextBoard = pageUrl;
+                ids.addAll(uniqueIds);
             }
             if (ids.isEmpty()) {
-                throw new IllegalStateException("現行スレ一覧からスレIDを読み取れませんでした");
+                throw new IllegalStateException("Kyodemoのスレ一覧からスレIDを読み取れませんでした");
             }
             int index = resume == null ? 0 : resume.edgeIndex;
-            for (; index < ids.size(); index++) {
+            for (; index < ids.size() || edgeNextBoard != null; index++) {
+                if (cancelled || (threadLimit > 0 && scanned >= threadLimit)) break;
+                if (index >= ids.size()) {
+                    if (edgeVisitedBoards.contains(edgeNextBoard)) { edgeNextBoard = null; break; }
+                    String boardHtml = fetchEdge(edgeNextBoard); requests++;
+                    edgeVisitedBoards.add(edgeNextBoard);
+                    Matcher links = EDGE_THREAD_LINK.matcher(boardHtml);
+                    while (links.find()) if (!ids.contains(links.group(1))) ids.add(links.group(1));
+                    Matcher next = EDGE_BOARD_NEXT.matcher(boardHtml);
+                    String nextPage = null;
+                    while (next.find()) nextPage = next.group(1).replace("&amp;", "&");
+                    edgeNextBoard = nextPage == null ? null : new URL(new URL(EDGE_BOARD), nextPage).toString();
+                    if (index >= ids.size()) { index--; continue; }
+                }
                 String id = ids.get(index);
                 resumeCursor = new SearchCursor(null, "", "", "", "", 0, four,
                         firstHalf, threadLimit, ids, index);
-                if (cancelled || scanned >= threadLimit) break;
-                String dat = fetchEdge(EDGE_DAT + id + ".dat"); requests++; scanned++;
-                String[] lines = dat.split("\\r?\\n");
-                for (int i = 0; i < lines.length; i++) {
-                    String[] columns = lines[i].split("<>", -1);
-                    String identity = columns.length > 0 ? columns[0] : "";
-                    if (columns.length > 2) identity += " " + columns[2];
-                    Matcher slip = SLIP.matcher(identity);
-                    while (slip.find()) {
-                        if ((firstHalf ? slip.group(1) : slip.group(2)).equals(four)) {
-                            found++;
-                            String threadUrl = "https://bbs.eddibb.cc/test/read.cgi/liveedge/"
-                                    + id + "/" + (i + 1) + "/";
-                            publishEdgeResult(threadUrl, "現行スレ " + id + " / "
-                                    + (i + 1) + "レス", slip.group(), identity);
-                            break;
-                        }
+                if (cancelled || (threadLimit > 0 && scanned >= threadLimit)) break;
+                String threadUrl = EDGE_THREAD + id + "/";
+                String pageUrl = edgeResumeUrl == null ? threadUrl : edgeResumeUrl;
+                String title = edgeResumeUrl == null ? "" : edgeResumeTitle;
+                Set<String> visitedPages = new LinkedHashSet<>();
+                int threadMatches = 0;
+                try {
+                do {
+                    if (!visitedPages.add(pageUrl)) throw new IllegalStateException("続きページが循環しています");
+                    edgeResumeUrl = pageUrl; edgeResumeTitle = title;
+                    requests++; String html = fetchEdge(pageUrl);
+                    if (title.isEmpty()) {
+                        Matcher titleMatcher = EDGE_TITLE.matcher(html);
+                        if (titleMatcher.find()) title = Html.fromHtml(
+                                titleMatcher.group(1), Html.FROM_HTML_MODE_LEGACY).toString().trim();
                     }
+                    if (!WacchoiHistorySearch.matches(title, edgeTitleWords)) break;
+                    Matcher posts = EDGE_POST_START.matcher(html);
+                    List<Integer> starts = new ArrayList<>();
+                    List<String> numbers = new ArrayList<>();
+                    List<Integer> contentStarts = new ArrayList<>();
+                    while (posts.find()) {
+                        numbers.add(posts.group(1));
+                        starts.add(posts.start());
+                        contentStarts.add(posts.end());
+                    }
+                    Matcher more = EDGE_MORE.matcher(html);
+                    String nextUrl = more.find()
+                            ? new URL(new URL(EDGE_BOARD), more.group(1).replace("&amp;", "&")).toString()
+                            : null;
+                    for (int postIndex = 0; postIndex < numbers.size(); postIndex++) {
+                        int end = postIndex + 1 < starts.size() ? starts.get(postIndex + 1)
+                                : (nextUrl == null ? html.length() : more.start());
+                        String postHtml = html.substring(contentStarts.get(postIndex), end);
+                        Matcher edgeId = EDGE_ID.matcher(postHtml);
+                        String identity = edgeId.find() ? Html.fromHtml(edgeId.group(1), Html.FROM_HTML_MODE_LEGACY)
+                                .toString().trim() : "";
+                        if (!WacchoiSearch.matchesEdgeId(four, identity)) continue;
+                        String postText = Html.fromHtml(WacchoiSearch.edgeBodyHtml(postHtml), Html.FROM_HTML_MODE_LEGACY)
+                                .toString().replaceAll("\\s+", " ").trim();
+                        if (!WacchoiHistorySearch.matches(postText, edgeBodyWords)) continue;
+                        publishEdgeResult(threadUrl + "n" + numbers.get(postIndex) + "-", "エッヂ「" + title + "」 "
+                                + numbers.get(postIndex) + "レス", "ID:" + identity,
+                                "ID:" + identity + (postText.isEmpty() ? "" : " / " + postText));
+                        threadMatches++;
+                    }
+                    pageUrl = nextUrl;
+                    edgeResumeUrl = pageUrl; edgeResumeTitle = title;
+                } while (pageUrl != null && !cancelled);
+                } catch (FileNotFoundException missing) {
+                    unavailable++;
+                    android.util.Log.w("HaiagaruKyodemo", missing.getMessage());
                 }
-                publishStatus("エッヂ現行スレ " + scanned + "/" + Math.min(ids.size(), threadLimit)
-                        + "件 / 通信 " + requests + "回 / 一致 " + found);
+                if (cancelled) break;
+                edgeResumeUrl = null; edgeResumeTitle = "";
+                scanned++;
+                found += threadMatches;
+                publishStatus("Kyodemoエッヂスレ " + scanned + "/" + (threadLimit == 0 ? ids.size() : Math.min(ids.size(), threadLimit))
+                        + "件 / 通信 " + requestBudget.used + "回 / 一致 " + found + " / 未収録 " + unavailable + "スレ");
                 resumeCursor = new SearchCursor(null, "", "", "", "", 0, four,
                         firstHalf, threadLimit, ids, index + 1);
             }
-            if (index >= ids.size()) resumeCursor = null;
-            String state = cancelled ? "停止しました" : scanned >= threadLimit && ids.size() > scanned
-                    ? "スレ件数上限に達しました" : "現行スレの走査が完了しました";
-            publishStatus(state + "。現行スレ " + scanned + "/" + ids.size()
-                    + "件 / 通信 " + requests + "回 / 一致 " + found
-                    + "。過去ログは対象外です。");
+            if (index >= ids.size() && edgeNextBoard == null) resumeCursor = null;
+            else resumeCursor = new SearchCursor(null, "", "", "", "", 0, four, firstHalf, threadLimit, ids, index);
+            String state = cancelled ? "停止しました" : (threadLimit > 0 && scanned >= threadLimit) && resumeCursor != null
+                    ? "スレ件数上限に達しました" : "スレ一覧の走査が完了しました";
+            publishStatus(state + "。Kyodemoエッヂスレ " + scanned + "/" + ids.size()
+                    + "件 / 通信 " + requestBudget.used + "回 / 一致 " + found + " / 未収録 " + unavailable + "スレ"
+                    + "。板一覧に収録されたスレを対象にします。");
         } catch (Exception error) {
             publishStatus((cancelled ? "停止しました" : "エッヂ検索を中断しました") + ": "
-                    + error.getMessage() + "。通信 " + requests + "回、照合 " + scanned + "スレ。");
+                    + error.getMessage() + "。通信 " + requestBudget.used + "回、照合 " + scanned + "スレ。");
         } finally {
             runOnUiThread(() -> {
                 startButton.setEnabled(true); edgeStartButton.setEnabled(true);
@@ -631,6 +796,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
     }
 
     private String fetchEdge(String address) throws Exception {
+        requestBudget.check();
         long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
         if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
         if (cancelled || Thread.currentThread().isInterrupted())
@@ -641,10 +807,12 @@ public final class HissiWacchoiSearchActivity extends Activity {
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) Haiagaru/1.0");
         lastRequestAt = SystemClock.elapsedRealtime();
         try {
+            requestBudget.take();
             int code = connection.getResponseCode();
+            if (code == 404) throw new FileNotFoundException("Kyodemo未収録（404）: " + address);
             if (code == 403 || code == 429 || code >= 500)
                 throw new IllegalStateException("エッヂ応答 " + code + "。負荷・制限のため停止しました");
-            if (code < 200 || code >= 300) throw new IllegalStateException("エッヂ応答 " + code);
+            if (code < 200 || code >= 300) throw new IllegalStateException("Kyodemo応答 " + code + ": " + address);
             byte[] bytes;
             try (InputStream in = connection.getInputStream()) { bytes = readBytes(in); }
             return new String(bytes, Charset.forName("Shift_JIS"));
@@ -673,7 +841,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
                     .replace('\u00a0', ' ').replace('\u3000', ' ').trim();
             Matcher slip = SLIP.matcher(names);
             while (slip.find()) {
-                if ((firstHalf ? slip.group(1) : slip.group(2)).equals(four)) {
+                if (WacchoiSearch.matchesFilter(four, slip, firstHalf)) {
                     found.add(profileUrl + "\n" + names + "\n" + slip.group());
                     break;
                 }
@@ -683,10 +851,12 @@ public final class HissiWacchoiSearchActivity extends Activity {
     }
 
     private String fetch(String address) throws Exception {
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))throw new InterruptedException("検索は設定でオフになっています");
         File cache = cacheFile(address);
         if (WacchoiStorageLimits.fresh(this,cache)) {
             try (InputStream in = new FileInputStream(cache)) { return readText(in); }
         }
+        requestBudget.check();
         long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
         if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedException("停止しました");
@@ -697,6 +867,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
         connection.setInstanceFollowRedirects(true);
         lastRequestAt = SystemClock.elapsedRealtime();
         try {
+            requestBudget.take();
             int code = connection.getResponseCode();
             if (code == 403 || code == 429 || code >= 500)
                 throw new IllegalStateException("Hissi応答 " + code + "。サーバー負荷のため停止しました");
@@ -810,8 +981,11 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 if((WacchoiSearchService.current!=null&&WacchoiSearchService.current.running)||(job!=null&&!job.isDone())){
                     Toast.makeText(this,"実行中の検索を停止してから履歴を開いてください",Toast.LENGTH_SHORT).show();return;
                 }
+                titleKeywordInput.setText(saved.optString("titleWords")); bodyKeywordInput.setText(saved.optString("bodyWords"));
+                edgePast.setChecked(saved.optBoolean("edgeArchive",true));
                 fourInput.setText(saved.optString("four"));halfGroup.check(halfGroup.getChildAt(saved.optBoolean("upper")?0:1).getId());
-                fromInput.setText(saved.optString("from"));toInput.setText(saved.optString("to"));pageLimitInput.setText(String.valueOf(saved.optInt("limit",20)));
+                fromInput.setText(saved.optString("from"));toInput.setText(saved.optString("to"));pageLimitInput.setText(String.valueOf(saved.optInt("limit",100)));
+                requestLimitInput.setText(String.valueOf(saved.optInt("requestLimit",0)));
                 selectedBoards.clear();String boards=saved.optString("boards");
                 if("*".equals(boards))selectedBoards.addAll(availableBoardCodes());
                 else for(String board:boards.split(","))if(!board.isEmpty())selectedBoards.add(board);
@@ -924,6 +1098,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
         cancelled = false;
         startButton.setEnabled(false); edgeStartButton.setEnabled(false);
         resumeButton.setEnabled(false); stopButton.setEnabled(true);
+        requestBudget.reset();
         statusView.setText("前回の続きから検索しています。");
         job = executor.submit(() -> {
             if (cursor.edgeIds != null) runEdgeSearch(cursor.four, cursor.firstHalf, cursor.limit, cursor);

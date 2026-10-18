@@ -21,6 +21,7 @@ public final class BrowsingHistory {
         Field value = owner.getClass().getDeclaredField(name); value.setAccessible(true); return value;
     }
     public static List<?> transform(List<?> input, int mode) {
+        input=HiddenDroppedThreads.filter(input,mode);
         // Native HOME IDs: 101 = unread, 103 = browsing history, 104 = posted.
         // Never override unread sorting (including its native board-sort option).
         if (input == null || Math.abs(mode) != 103 || !enabled()) return input;
@@ -51,7 +52,7 @@ public final class BrowsingHistory {
     }
     /** Run only after the exact legacy home-sort method has completed. */
     public static void applyLegacy(Object fragment, int mode) {
-        if (fragment == null || Math.abs(mode) != 103 || !enabled()) return;
+        if (fragment == null || !HiddenDroppedThreads.target(mode)) return;
         try {
             boolean legacy191 = fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk");
             Object adapter = field(fragment, legacy191 ? "e" : "i").get(fragment);
@@ -62,9 +63,11 @@ public final class BrowsingHistory {
             for (int i = 0; i < fields.length; i++) {
                 Object original = field(adapter, fields[i]).get(adapter);
                 if (!(original instanceof List)) return;
-                List<?> ordered = transform((List<?>) original, mode);
-                if (ordered == original) return;
+                List<?> source=HiddenDroppedThreads.source(original,(List<?>)original);
+                List<?> ordered = transform(source, mode);
+                if(ordered==original){replacements[i]=original;continue;}
                 replacements[i] = original.getClass().getConstructor(List.class).newInstance(ordered);
+                HiddenDroppedThreads.remember(replacements[i],source);
             }
             for (int i = 0; i < fields.length; i++) field(adapter, fields[i]).set(adapter, replacements[i]);
             ((BaseAdapter) adapter).notifyDataSetChanged();

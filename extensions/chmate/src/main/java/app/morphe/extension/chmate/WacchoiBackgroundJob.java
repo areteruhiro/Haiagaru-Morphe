@@ -23,6 +23,7 @@ import android.widget.Toast;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -50,12 +51,11 @@ import java.util.regex.Pattern;
 final class WacchoiBackgroundJob {
     private static final String ORIGIN = "http://hissi.org";
     private static final String ZZZSEARCH_URL = "https://zzzsearch.com/2ch/";
-    private static final String EDGE_SUBJECT =
-            "https://bbs.eddibb.cc/liveedge/subject-metadent.txt";
-    private static final String EDGE_DAT = "https://bbs.eddibb.cc/liveedge/dat/";
+    private static final String EDGE_BOARD = "https://www.kyodemo.net/sdemo/b/e_e_liveedge/?kt=k_&j=1";
+    private static final String EDGE_THREAD = "https://www.kyodemo.net/sdemo/r/e_e_liveedge/";
     private static final long MIN_INTERVAL_MS = 10_000L;
     private static final int RESPONSE_LIMIT = 2 * 1024 * 1024;
-    private static final int MAX_LIST_PAGES = 1000;
+    private static final int MAX_LIST_PAGES = 10_000;
     private static final int MAX_SEARCH_DAYS = 36525;
     private static final int MAX_PROFILES = 25;
     private static final int MAX_VISIBLE_BOARDS = 120;
@@ -67,8 +67,18 @@ final class WacchoiBackgroundJob {
     private static final Pattern SLIP = WacchoiSearch.SLIP;
     private static final Pattern THREAD_LINK = Pattern.compile(
             "(?i)href=['\\\"]?(https?://[a-z0-9.-]+\\.5ch\\.(?:io|net)/test/read\\.cgi/[^\\s'\\\">]+)");
-    private static final Pattern EDGE_SUBJECT_ROW = Pattern.compile(
-            "(?m)^\\s*([0-9]{10,})\\.dat<>.*$");
+    private static final Pattern EDGE_THREAD_LINK = Pattern.compile(
+            "(?i)href\\s*=\\s*['\\\"](?:https?://(?:www\\.)?kyodemo\\.net)?/sdemo/r/e_e_liveedge/([0-9]{10,})/");
+    private static final Pattern EDGE_BOARD_NEXT = Pattern.compile(
+            "(?i)href\\s*=\\s*['\\\"]((?:https?://(?:www\\.)?kyodemo\\.net)?/sdemo/b/e_e_liveedge/[0-9]+[^'\\\"]*)['\\\"]");
+    private static final Pattern EDGE_POST_START = Pattern.compile(
+            "(?is)<div\\s+class=['\\\"]post\\s+p([0-9]+)\\b[^'\\\"]*['\\\"][^>]*>");
+    private static final Pattern EDGE_ID = Pattern.compile(
+            "(?is)<span\\s+class=['\\\"]clid['\\\"][^>]*>(.*?)</span>");
+    private static final Pattern EDGE_MORE = Pattern.compile(
+            "(?is)data-url=['\\\"]([^'\\\"]+)['\\\"]\\s+data-tag=['\\\"]rlist['\\\"]");
+    private static final Pattern EDGE_TITLE = Pattern.compile(
+            "(?is)<title>(.*?)\\s+-\\s*エッヂ</title>");
 
 
     private final android.content.Context context;
@@ -79,6 +89,11 @@ final class WacchoiBackgroundJob {
     private volatile long lastRequestAt;
     private volatile HttpURLConnection activeConnection;
     private volatile SearchCursor resumeCursor;
+    private String edgeTitleWords = "", edgeBodyWords = "";
+    private boolean edgeArchive;
+    private String edgeNextBoard, edgeResumeUrl, edgeResumeTitle = "";
+    private WacchoiSearch.RequestBudget requestBudget = new WacchoiSearch.RequestBudget(0);
+    private final Set<String> edgeVisitedBoards = new LinkedHashSet<>();
     volatile boolean running;
     volatile String status="開始しています";
     private WacchoiHistory.Session history;
@@ -92,19 +107,25 @@ final class WacchoiBackgroundJob {
     boolean canResume(){return resumeCursor!=null;}
     void setListener(Runnable listener){changed=listener;}
     void start(android.content.Intent args){
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
         if(running)return;
+        requestBudget = new WacchoiSearch.RequestBudget(args.getIntExtra("requestLimit",0));
         history=WacchoiHistory.begin(context,args);
         running=true;cancelled=false;
+        edgeTitleWords=args.getStringExtra("titleWords"); edgeBodyWords=args.getStringExtra("bodyWords");
+        edgeArchive=args.getBooleanExtra("edgeArchive",true);
         String four=args.getStringExtra("four");
         boolean upper=args.getBooleanExtra("upper",false);
-        int limit=args.getIntExtra("limit",20);
+        int limit=Math.max(1,Math.min(MAX_LIST_PAGES,args.getIntExtra("limit",100)));
         job=executor.submit(()->{
             if(args.getBooleanExtra("edge",false))runEdgeSearch(four,upper,limit,null);
             else runSearch(args.getStringExtra("boards"),args.getStringExtra("from"),args.getStringExtra("to"),four,upper,limit,null);
         });
     }
     void resume(){
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
         SearchCursor cursor=resumeCursor;if(running||cursor==null)return;
+        requestBudget.reset();
         running=true;cancelled=false;
         job=executor.submit(()->{
             if(cursor.edgeIds!=null)runEdgeSearch(cursor.four,cursor.firstHalf,cursor.limit,cursor);
@@ -180,7 +201,7 @@ final class WacchoiBackgroundJob {
                             }
                         }
                         publishStatus("日付 " + date + " / 板 " + board + " / 一覧 " + scanned
-                                + "ページ / 通信 " + requests + "回 / 一致 " + found);
+                                + "ページ / 通信 " + requestBudget.used + "回 / 一致 " + found);
                         int nextNumber = WacchoiSearch.nextPage(body, page);
                         if (nextNumber < 0) break;
                         page = nextNumber;
@@ -195,72 +216,141 @@ final class WacchoiBackgroundJob {
                     ? "ページ上限に達しました。「続きから検索」で再開できます"
                     : "検索範囲の確認が終わりました";
             publishStatus(finalState + "。対象板 " + boardsDone.size() + " / 日別一覧 " + scanned
-                    + "ページ / 通信 " + requests + "回 / 一致 " + found
+                    + "ページ / 通信 " + requestBudget.used + "回 / 一致 " + found
                     + "。これはHissiに収録された範囲です。");
         } catch (Exception error) {
             publishStatus((cancelled ? "停止しました" : "検索を中断しました") + ": " + error.getMessage()
-                    + "。通信 " + requests + "回、一覧 " + scanned + "ページ。");
+                    + "。通信 " + requestBudget.used + "回、一覧 " + scanned + "ページ。");
         } finally {
             finish();
         }
     }
 
     private void runEdgeSearch(String four, boolean firstHalf, int threadLimit, SearchCursor resume) {
-        int requests = 0, scanned = 0, found = 0;
+        int requests = 0, scanned = 0, found = 0, unavailable = 0;
         try {
             List<String> ids = resume == null ? new ArrayList<>() : resume.edgeIds;
             if (resume == null) {
-                String subject = fetchEdge(EDGE_SUBJECT); requests++;
-                Matcher threads = EDGE_SUBJECT_ROW.matcher(subject);
-                while (threads.find()) ids.add(threads.group(1));
+                edgeVisitedBoards.clear();
+                edgeResumeUrl = null; edgeResumeTitle = "";
+                String pageUrl = WacchoiSearch.edgeBoardUrl(edgeArchive, edgeTitleWords);
+                Set<String> uniqueIds = new LinkedHashSet<>();
+                while (pageUrl != null && uniqueIds.isEmpty() && !cancelled) {
+                    if (edgeVisitedBoards.contains(pageUrl)) break;
+                    String boardHtml = fetchEdge(pageUrl); requests++;
+                    edgeVisitedBoards.add(pageUrl);
+                    Matcher threads = EDGE_THREAD_LINK.matcher(boardHtml);
+                    while (threads.find()) uniqueIds.add(threads.group(1));
+                    Matcher next = EDGE_BOARD_NEXT.matcher(boardHtml);
+                    String nextPage = null;
+                    while (next.find()) nextPage = next.group(1).replace("&amp;", "&");
+                    pageUrl = nextPage == null ? null
+                            : new URL(new URL(EDGE_BOARD), nextPage).toString();
+                }
+                edgeNextBoard = pageUrl;
+                ids.addAll(uniqueIds);
             }
             if (ids.isEmpty()) {
-                throw new IllegalStateException("現行スレ一覧からスレIDを読み取れませんでした");
+                throw new IllegalStateException("Kyodemoのスレ一覧からスレIDを読み取れませんでした");
             }
             int index = resume == null ? 0 : resume.edgeIndex;
-            for (; index < ids.size(); index++) {
+            for (; index < ids.size() || edgeNextBoard != null; index++) {
+                if (cancelled || (threadLimit > 0 && scanned >= threadLimit)) break;
+                if (index >= ids.size()) {
+                    if (edgeVisitedBoards.contains(edgeNextBoard)) { edgeNextBoard = null; break; }
+                    String boardHtml = fetchEdge(edgeNextBoard); requests++;
+                    edgeVisitedBoards.add(edgeNextBoard);
+                    Matcher links = EDGE_THREAD_LINK.matcher(boardHtml);
+                    while (links.find()) if (!ids.contains(links.group(1))) ids.add(links.group(1));
+                    Matcher next = EDGE_BOARD_NEXT.matcher(boardHtml);
+                    String nextPage = null;
+                    while (next.find()) nextPage = next.group(1).replace("&amp;", "&");
+                    edgeNextBoard = nextPage == null ? null : new URL(new URL(EDGE_BOARD), nextPage).toString();
+                    if (index >= ids.size()) { index--; continue; }
+                }
                 String id = ids.get(index);
                 resumeCursor = new SearchCursor(null, "", "", "", "", 0, four,
                         firstHalf, threadLimit, ids, index);
-                if (cancelled || scanned >= threadLimit) break;
-                String dat = fetchEdge(EDGE_DAT + id + ".dat"); requests++; scanned++;
-                String[] lines = dat.split("\\r?\\n");
-                for (int i = 0; i < lines.length; i++) {
-                    String[] columns = lines[i].split("<>", -1);
-                    String identity = columns.length > 0 ? columns[0] : "";
-                    if (columns.length > 2) identity += " " + columns[2];
-                    Matcher slip = SLIP.matcher(identity);
-                    while (slip.find()) {
-                        if ((firstHalf ? slip.group(1) : slip.group(2)).equals(four)) {
-                            found++;
-                            String threadUrl = "https://bbs.eddibb.cc/test/read.cgi/liveedge/"
-                                    + id + "/" + (i + 1) + "/";
-                            publishEdgeResult(threadUrl, "現行スレ " + id + " / "
-                                    + (i + 1) + "レス", slip.group(), identity);
-                            break;
-                        }
+                if (cancelled || (threadLimit > 0 && scanned >= threadLimit)) break;
+                String threadUrl = EDGE_THREAD + id + "/";
+                String pageUrl = edgeResumeUrl == null ? threadUrl : edgeResumeUrl;
+                String title = edgeResumeUrl == null ? "" : edgeResumeTitle;
+                Set<String> visitedPages = new LinkedHashSet<>();
+                int threadMatches = 0;
+                try {
+                do {
+                    if (!visitedPages.add(pageUrl)) throw new IllegalStateException("続きページが循環しています");
+                    edgeResumeUrl = pageUrl; edgeResumeTitle = title;
+                    requests++; String html = fetchEdge(pageUrl);
+                    if (title.isEmpty()) {
+                        Matcher titleMatcher = EDGE_TITLE.matcher(html);
+                        if (titleMatcher.find()) title = Html.fromHtml(
+                                titleMatcher.group(1), Html.FROM_HTML_MODE_LEGACY).toString().trim();
                     }
+                    if (!WacchoiHistorySearch.matches(title, edgeTitleWords)) break;
+                    Matcher posts = EDGE_POST_START.matcher(html);
+                    List<Integer> starts = new ArrayList<>();
+                    List<String> numbers = new ArrayList<>();
+                    List<Integer> contentStarts = new ArrayList<>();
+                    while (posts.find()) {
+                        numbers.add(posts.group(1));
+                        starts.add(posts.start());
+                        contentStarts.add(posts.end());
+                    }
+                    Matcher more = EDGE_MORE.matcher(html);
+                    String nextUrl = more.find()
+                            ? new URL(new URL(EDGE_BOARD), more.group(1).replace("&amp;", "&")).toString()
+                            : null;
+                    for (int postIndex = 0; postIndex < numbers.size(); postIndex++) {
+                        int end = postIndex + 1 < starts.size() ? starts.get(postIndex + 1)
+                                : (nextUrl == null ? html.length() : more.start());
+                        String postHtml = html.substring(contentStarts.get(postIndex), end);
+                        Matcher edgeId = EDGE_ID.matcher(postHtml);
+                        String identity = edgeId.find() ? Html.fromHtml(edgeId.group(1), Html.FROM_HTML_MODE_LEGACY)
+                                .toString().trim() : "";
+                        if (!WacchoiSearch.matchesEdgeId(four, identity)) continue;
+                        String postText = Html.fromHtml(WacchoiSearch.edgeBodyHtml(postHtml), Html.FROM_HTML_MODE_LEGACY)
+                                .toString().replaceAll("\\s+", " ").trim();
+                        if (!WacchoiHistorySearch.matches(postText, edgeBodyWords)) continue;
+                        publishEdgeResult(threadUrl + "n" + numbers.get(postIndex) + "-",
+                                "エッヂ「" + title + "」 " + numbers.get(postIndex) + "レス",
+                                "ID:" + identity, "ID:" + identity
+                                        + (postText.isEmpty() ? "" : " / " + postText));
+                        threadMatches++;
+                    }
+                    pageUrl = nextUrl;
+                    edgeResumeUrl = pageUrl; edgeResumeTitle = title;
+                } while (pageUrl != null && !cancelled);
+                } catch (FileNotFoundException missing) {
+                    unavailable++;
+                    android.util.Log.w("HaiagaruKyodemo", missing.getMessage());
                 }
-                publishStatus("エッヂ現行スレ " + scanned + "/" + Math.min(ids.size(), threadLimit)
-                        + "件 / 通信 " + requests + "回 / 一致 " + found);
+                if (cancelled) break;
+                edgeResumeUrl = null; edgeResumeTitle = "";
+                scanned++;
+                found += threadMatches;
+                publishStatus("Kyodemoエッヂスレ " + scanned + "/" + (threadLimit == 0 ? ids.size() : Math.min(ids.size(), threadLimit))
+                        + "件 / 通信 " + requestBudget.used + "回 / 一致 " + found + " / 未収録 " + unavailable + "スレ");
                 resumeCursor = new SearchCursor(null, "", "", "", "", 0, four,
                         firstHalf, threadLimit, ids, index + 1);
             }
-            if (index >= ids.size()) resumeCursor = null;
-            String state = cancelled ? "停止しました" : scanned >= threadLimit && ids.size() > scanned
-                    ? "スレ件数上限に達しました" : "現行スレの走査が完了しました";
-            publishStatus(state + "。現行スレ " + scanned + "/" + ids.size()
-                    + "件 / 通信 " + requests + "回 / 一致 " + found
-                    + "。過去ログは対象外です。");
+            if (index >= ids.size() && edgeNextBoard == null) resumeCursor = null;
+            else resumeCursor = new SearchCursor(null, "", "", "", "", 0, four, firstHalf, threadLimit, ids, index);
+            String state = cancelled ? "停止しました" : (threadLimit > 0 && scanned >= threadLimit) && resumeCursor != null
+                    ? "スレ件数上限に達しました" : "スレ一覧の走査が完了しました";
+            publishStatus(state + "。Kyodemoエッヂスレ " + scanned + "/" + ids.size()
+                    + "件 / 通信 " + requestBudget.used + "回 / 一致 " + found + " / 未収録 " + unavailable + "スレ"
+                    + "。Kyodemoに収録されたスレが対象です。");
         } catch (Exception error) {
             publishStatus((cancelled ? "停止しました" : "エッヂ検索を中断しました") + ": "
-                    + error.getMessage() + "。通信 " + requests + "回、照合 " + scanned + "スレ。");
+                    + error.getMessage() + "。通信 " + requestBudget.used + "回、照合 " + scanned + "スレ。");
         } finally {
             finish();
         }
     }
 
     private String fetchEdge(String address) throws Exception {
+        requestBudget.check();
         long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
         if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
         if (cancelled || Thread.currentThread().isInterrupted())
@@ -271,10 +361,12 @@ final class WacchoiBackgroundJob {
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) Haiagaru/1.0");
         lastRequestAt = SystemClock.elapsedRealtime();
         try {
+            requestBudget.take();
             int code = connection.getResponseCode();
+            if (code == 404) throw new FileNotFoundException("Kyodemo未収録（404）: " + address);
             if (code == 403 || code == 429 || code >= 500)
                 throw new IllegalStateException("エッヂ応答 " + code + "。負荷・制限のため停止しました");
-            if (code < 200 || code >= 300) throw new IllegalStateException("エッヂ応答 " + code);
+            if (code < 200 || code >= 300) throw new IllegalStateException("Kyodemo応答 " + code + ": " + address);
             byte[] bytes;
             try (InputStream in = connection.getInputStream()) { bytes = readBytes(in); }
             return new String(bytes, Charset.forName("Shift_JIS"));
@@ -303,7 +395,7 @@ final class WacchoiBackgroundJob {
                     .replace('\u00a0', ' ').replace('\u3000', ' ').trim();
             Matcher slip = SLIP.matcher(names);
             while (slip.find()) {
-                if ((firstHalf ? slip.group(1) : slip.group(2)).equals(four)) {
+                if (WacchoiSearch.matchesFilter(four, slip, firstHalf)) {
                     found.add(profileUrl + "\n" + names + "\n" + slip.group());
                     break;
                 }
@@ -313,10 +405,12 @@ final class WacchoiBackgroundJob {
     }
 
     private String fetch(String address) throws Exception {
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))throw new InterruptedException("検索は設定でオフになっています");
         File cache = cacheFile(address);
         if (WacchoiStorageLimits.fresh(context,cache)) {
             try (InputStream in = new FileInputStream(cache)) { return readText(in); }
         }
+        requestBudget.check();
         long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
         if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedException("停止しました");
@@ -327,6 +421,7 @@ final class WacchoiBackgroundJob {
         connection.setInstanceFollowRedirects(true);
         lastRequestAt = SystemClock.elapsedRealtime();
         try {
+            requestBudget.take();
             int code = connection.getResponseCode();
             if (code == 403 || code == 429 || code >= 500)
                 throw new IllegalStateException("Hissi応答 " + code + "。サーバー負荷のため停止しました");

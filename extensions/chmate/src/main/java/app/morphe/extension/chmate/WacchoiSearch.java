@@ -1,6 +1,7 @@
 package app.morphe.extension.chmate;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -8,6 +9,17 @@ import java.util.regex.Pattern;
 
 /** Shared parsing rules for public slip indexes; independent of Android UI. */
 final class WacchoiSearch {
+    static final class RequestBudget {
+        final int limit;
+        int used;
+        RequestBudget(int limit) { this.limit = Math.max(0, limit); }
+        void check() throws java.io.IOException {
+            if (limit > 0 && used >= limit)
+                throw new java.io.IOException("通信回数上限（" + limit + "回）に達しました。「続きから検索」で再開できます");
+        }
+        void take() throws java.io.IOException { check(); used++; }
+        void reset() { used = 0; }
+    }
     static final Pattern SLIP = Pattern.compile(
             "(?<![A-Za-z0-9+/])([A-Za-z0-9+/]{4})-([A-Za-z0-9+/]{4})(?![A-Za-z0-9+/])");
     private static final Pattern PAGE = Pattern.compile(
@@ -15,6 +27,60 @@ final class WacchoiSearch {
 
     static boolean validToken(String token) {
         return token != null && token.matches("[A-Za-z0-9+/]{4}");
+    }
+
+    static boolean validFilter(String token) {
+        return token == null || token.isEmpty()
+                || token.matches("[A-Za-z0-9+/\\-]+")
+                || token.matches("(?i)ID:/[A-Za-z0-9._+/-]{1,32}/?");
+    }
+
+    static String normalizeEdgeIdFilter(String token) {
+        if (token == null) return "";
+        String value = token.trim();
+        if (value.regionMatches(true, 0, "ID:", 0, 3)) value = value.substring(3);
+        return value;
+    }
+
+    static boolean matchesEdgeId(String filter, String id) {
+        String query = normalizeEdgeIdFilter(filter);
+        return query.isEmpty() || (id != null && id.contains(query));
+    }
+
+    static String edgeBoardUrl(boolean archive, String title) {
+        String base = "https://www.kyodemo.net/sdemo/b/e_e_liveedge/";
+        if (title == null || title.trim().isEmpty()) return archive ? base + "?kt=k_&j=1" : base;
+        try {
+            // Kyodemo uses Shift_JIS for its search form and pagination links.
+            return base + "?bs=&kt=" + (archive ? "k_" : "") + "&fr=&to=&k="
+                    + URLEncoder.encode(title.trim(), "Windows-31J");
+        } catch (java.io.UnsupportedEncodingException unavailable) {
+            throw new IllegalStateException(unavailable);
+        }
+    }
+
+    /** Extract only the post body, excluding name, ID, menus and the page footer. */
+    static String edgeBodyHtml(String post) {
+        Matcher start = Pattern.compile("(?is)<div\\b[^>]*class=['\"]clmess['\"][^>]*>").matcher(post);
+        if (!start.find()) return "";
+        int from = start.end(), depth = 1;
+        Matcher tags = Pattern.compile("(?is)</?div\\b[^>]*>").matcher(post);
+        tags.region(from, post.length());
+        while (tags.find()) {
+            if (tags.group().startsWith("</")) depth--; else depth++;
+            if (depth == 0) return post.substring(from, tags.start());
+        }
+        return "";
+    }
+
+    static boolean matchesFilter(String token, Matcher slip, boolean firstHalf) {
+        if (token == null || token.isEmpty()) return true;
+        String query = token;
+        String upper = slip.group(1);
+        String lower = slip.group(2);
+        if (query.indexOf('-') >= 0 || query.length() > 4)
+            return (upper + "-" + lower).contains(query);
+        return (firstHalf ? upper : lower).contains(query);
     }
 
     static void selectAllBoards(List<String> available, Set<String> selected) {

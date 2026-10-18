@@ -1,5 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][ValidateSet('master','main')][string]$Branch,
+    [Parameter(Mandatory=$true)][ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version,
     [Parameter(Mandatory=$true)][string]$ExpectedParent,
     [Parameter(Mandatory=$true)][string[]]$Paths
 )
@@ -16,11 +17,11 @@ if($ref.object.sha -ne $ExpectedParent){throw 'Remote branch advanced. Review be
 $parent=Api "git/commits/$ExpectedParent"
 $entries=@()
 foreach($path in $Paths){
-    if($path -notmatch '^(docs/[^\\]+\.md|README\.md|CHANGELOG\.md|patches-bundle(?:-pre|-1\.8\.16)?\.json)$'){throw "Not a release documentation/metadata path: $path"}
+    if($path -notmatch '^(docs/[^\\]+\.md|README\.md|CHANGELOG\.md|release-notes-\d+\.\d+\.\d+\.md|patches-bundle(?:-pre|-\d+\.\d+\.\d+)?\.json)$'){throw "Not a release documentation/metadata path: $path"}
     $entries+=@{path=$path;mode='100644';type='blob';content=[IO.File]::ReadAllText((Join-Path (Get-Location) $path))}
 }
 $tree=Api 'git/trees' @{base_tree=$parent.tree.sha;tree=$entries}
-$commit=Api 'git/commits' @{message='release: update stable and preview sources to Haiagaru 1.8.16';tree=$tree.sha;parents=@($ExpectedParent)}
+$commit=Api 'git/commits' @{message="release: update stable and preview sources to Haiagaru $Version";tree=$tree.sha;parents=@($ExpectedParent)}
 $body=@{sha=$commit.sha;force=$false}|ConvertTo-Json -Compress
 $result=$body | & gh api "repos/$repo/git/refs/heads/$Branch" --method PATCH --input -
 if($LASTEXITCODE -ne 0){throw "Failed to advance $Branch"}

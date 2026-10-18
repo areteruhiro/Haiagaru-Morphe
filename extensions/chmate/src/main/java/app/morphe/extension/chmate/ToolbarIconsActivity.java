@@ -27,12 +27,12 @@ public final class ToolbarIconsActivity extends Activity {
     private void render() {
         rows.removeAllViews();
         TextView help = new TextView(this);
-        help.setText("追加アイコンの表示を切り替え、端末の画像に変更できます。標準のツールバー設定でも表示・順番を変更できます。ここでオフにした項目は全画面で隠します。変更後はChMateを再起動してください。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
-        for (int i=0;i<4;i++) {
+        help.setText("追加アイコンの表示を切り替え、端末の画像に変更できます。ここで明示したオン／オフは標準ツールバーの表示チェックより優先し、配置順は標準設定に従います。変更後は再起動の確認が出ます。検索機能自体がオフの場合、検索ボタンは表示しません。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
+        for (int i=0;i<ToolbarIcons.NAMES.length;i++) {
             final int n=i;
             CheckBox visible = new CheckBox(this); visible.setText(ToolbarIcons.NAMES[i]);
             visible.setChecked(ToolbarIcons.visible(this,0x7e000001+i));
-            visible.setOnCheckedChangeListener((v,on)->getSharedPreferences(ToolbarIcons.PREFS,0).edit().putBoolean("visible."+n,on).apply());
+            visible.setOnCheckedChangeListener((v,on)->{getSharedPreferences(ToolbarIcons.PREFS,0).edit().putBoolean("visible."+n,on).apply();SettingsRestart.confirm(this);});
             rows.addView(visible);
             ImageView preview = new ImageView(this);
             preview.setImageDrawable(ToolbarIcons.preview(this, i, visible.getCurrentTextColor()));
@@ -49,7 +49,7 @@ public final class ToolbarIconsActivity extends Activity {
             reset.setOnClickListener(v->new AlertDialog.Builder(this).setMessage(ToolbarIcons.NAMES[n]+"の画像を標準に戻しますか？")
                 .setNegativeButton("キャンセル",null).setPositiveButton("戻す",(d,w)->{
                     File f=ToolbarIcons.file(this,n); if(f.exists()&&!f.delete()){toast("画像を削除できませんでした");return;}
-                    ToolbarIcons.invalidate(n);render();
+                    ToolbarIcons.invalidate(n);render();SettingsRestart.confirm(this);
                 }).show());rows.addView(reset);
         }
         Button close=new Button(this);close.setText("閉じる");close.setOnClickListener(v->finish());rows.addView(close);
@@ -57,20 +57,20 @@ public final class ToolbarIconsActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state){state.putInt("selected",selected);super.onSaveInstanceState(state);}
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);
-        if(request!=71||result!=RESULT_OK||data==null||data.getData()==null||selected<0||selected>3||busy)return;
+        if(request!=71||result!=RESULT_OK||data==null||data.getData()==null||selected<0||selected>=ToolbarIcons.NAMES.length||busy)return;
         final int target=selected; final android.net.Uri uri=data.getData(); busy=true;
         java.util.concurrent.ExecutorService io=Executors.newSingleThreadExecutor();
         io.execute(()->{
-            String message;
+            String message;boolean saved=false;
             try(InputStream in=getContentResolver().openInputStream(uri)) {
-                importImage(this,target,in);message="画像を保存しました。ChMateを再起動すると反映されます";
+                importImage(this,target,in);saved=true;message="画像を保存しました。ChMateを再起動すると反映されます";
             }catch(Exception|OutOfMemoryError e){message="画像を保存できませんでした。16MiB以下のPNG/JPEG/WebP等を選んでください";}
-            final String done=message;
-            runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){toast(done);render();}});io.shutdown();
+            final String done=message;final boolean success=saved;
+            runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){toast(done);render();if(success)SettingsRestart.confirm(this);}});io.shutdown();
         });
     }
     static void importImage(android.content.Context context,int target,InputStream in)throws IOException {
-        if(target<0||target>3||in==null)throw new IOException("Invalid image");
+        if(target<0||target>=ToolbarIcons.NAMES.length||in==null)throw new IOException("Invalid image");
         ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;
         while((n=in.read(buffer))!=-1){if(bytes.size()+n>16*1024*1024)throw new IOException("Image too large");bytes.write(buffer,0,n);}
         byte[] data=bytes.toByteArray();BitmapFactory.Options options=new BitmapFactory.Options();options.inJustDecodeBounds=true;

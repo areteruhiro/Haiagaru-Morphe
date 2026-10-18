@@ -62,6 +62,7 @@ public final class ReadThreadsFirst {
     private static volatile int compose242LabelId;
     private static volatile Object compose241CheckedState;
     private static volatile Object compose226CheckedState;
+    private static volatile Object compose226DroppedState;
 
     private ReadThreadsFirst() { }
 
@@ -84,7 +85,7 @@ public final class ReadThreadsFirst {
             if (star == null || !(star.getParent() instanceof LinearLayout)) return;
             LinearLayout rows = (LinearLayout) star.getParent();
             for (int i = 0; i < rows.getChildCount(); i++) {
-                if ("haiagaru.readThreadsFirst".equals(rows.getChildAt(i).getTag())) return;
+                if ("haiagaru.readThreadsFirst".equals(rows.getChildAt(i).getTag())) {DroppedThreadDisplaySettings.legacy(rows,star);return;}
             }
             CheckBox readFirst = new CheckBox(star.getContext());
             readFirst.setTag("haiagaru.readThreadsFirst");
@@ -116,6 +117,7 @@ public final class ReadThreadsFirst {
             placement.gravity = original.gravity;
             placement.weight = original.weight;
             rows.addView(readFirst, placement);
+            DroppedThreadDisplaySettings.legacy(rows,star);
         } catch (Throwable failure) {
             Log.w(TAG, "Could not add legacy display-setting checkbox", failure);
         }
@@ -173,6 +175,7 @@ public final class ReadThreadsFirst {
                     boolean.class, int.class, actionType);
             constructor.setAccessible(true);
             items.add(constructor.newInstance(enabled(), labelId, action));
+            if(version242)DroppedThreadDisplaySettings.append242(items,loader);
         } catch (Throwable failure) {
             Log.w(TAG, "Could not add Compose display-setting checkbox", failure);
         }
@@ -186,7 +189,12 @@ public final class ReadThreadsFirst {
             if (!"o.zzaxj".equals(type.getName())) return;
             Field labelField = type.getDeclaredField("b");
             labelField.setAccessible(true);
-            if (labelField.getInt(item) != compose242LabelId) return;
+            int itemLabel=labelField.getInt(item);
+            if(DroppedThreadDisplaySettings.handles242(itemLabel)){
+                Field checked=type.getDeclaredField("a");checked.setAccessible(true);
+                checked.setBoolean(item,DroppedThreadDisplaySettings.checked242(itemLabel,false,type.getClassLoader()));return;
+            }
+            if (itemLabel != compose242LabelId) return;
             Object state = compose242CheckedState;
             if (state == null) {
                 state = type.getClassLoader().loadClass("o.b7bb")
@@ -215,6 +223,7 @@ public final class ReadThreadsFirst {
 
     /** Observe the state inside the actual checkbox composable, where invalidation is tracked. */
     public static boolean compose242CheckedForLabel(int labelId, boolean original) {
+        if(DroppedThreadDisplaySettings.handles242(labelId))try{return DroppedThreadDisplaySettings.checked242(labelId,original,Haiagaru.applicationContextForExtension().getClassLoader());}catch(Exception error){Log.w(TAG,"DAT-drop checkbox state",error);return HiddenDroppedThreads.enabled();}
         if (labelId != compose242LabelId || labelId == 0) return original;
         Object state = compose242CheckedState;
         if (state == null) return enabled();
@@ -228,16 +237,21 @@ public final class ReadThreadsFirst {
 
     /** 226 renders its board-only options directly rather than as row models. */
     public static void render226(Object composer) {
+        render226Option(composer,false);
+        render226Option(composer,true);
+    }
+    private static void render226Option(Object composer,boolean dropped) {
         if (composer == null) return;
         try {
             ClassLoader loader = composer.getClass().getClassLoader();
-            Object state = compose226CheckedState;
+            Object state = dropped?compose226DroppedState:compose226CheckedState;
             if (state == null) {
                 state = loader.loadClass("o.a1").getDeclaredMethod("d", Object.class)
-                        .invoke(null, Boolean.valueOf(enabled()));
-                compose226CheckedState = state;
+                        .invoke(null, Boolean.valueOf(dropped?HiddenDroppedThreads.enabled():enabled()));
+                if(dropped)compose226DroppedState=state;else compose226CheckedState = state;
             }
             boolean checked = (Boolean) state.getClass().getMethod("c").invoke(state);
+            if(dropped&&checked!=HiddenDroppedThreads.enabled()){checked=HiddenDroppedThreads.enabled();state.getClass().getMethod("a",Object.class).invoke(state,checked);}
             Class<?> modifierType = loader.loadClass("o.setAdVideoPlaybackListener");
             Class<?> actionType = loader.loadClass("o.IPMiBroadcastReceiver1");
             Class<?> labelType = loader.loadClass("o.DeviceUtils2");
@@ -256,18 +270,18 @@ public final class ReadThreadsFirst {
                 if (!"invoke".equals(method.getName())) return proxyMethod(proxy, method, args);
                 SharedPreferences prefs = preferences();
                 if (prefs != null && args != null && args.length > 0 && args[0] instanceof Boolean) {
-                    prefs.edit().putBoolean(KEY, (Boolean) args[0]).apply();
-                    Object checkedState = compose226CheckedState;
+                    prefs.edit().putBoolean(dropped?HiddenDroppedThreads.KEY:KEY, (Boolean) args[0]).apply();
+                    Object checkedState = dropped?compose226DroppedState:compose226CheckedState;
                     if (checkedState != null) checkedState.getClass().getMethod("a", Object.class)
                             .invoke(checkedState, args[0]);
                     Haiagaru.refreshBoardListAfterReadSortChange();
-                    chooseScopeIfEnabled();
+                    if(!dropped)chooseScopeIfEnabled();
                 }
                 return value;
             });
             Object label = Proxy.newProxyInstance(loader, new Class<?>[]{labelType}, (proxy, method, args) -> {
                 if (!"invoke".equals(method.getName())) return proxyMethod(proxy, method, args);
-                drawLabel226(args[0]);
+                drawLabel226(args[0],dropped);
                 return value;
             });
             Field baseField = modifierType.getField("b");
@@ -278,7 +292,7 @@ public final class ReadThreadsFirst {
         }
     }
 
-    private static void drawLabel226(Object composer) throws Exception {
+    private static void drawLabel226(Object composer,boolean dropped) throws Exception {
         Method draw = text226;
         if (draw == null) {
             for (Method candidate : composer.getClass().getClassLoader()
@@ -302,7 +316,7 @@ public final class ReadThreadsFirst {
             else if (types[i] == long.class) values[i] = 0L;
             else if (types[i] == boolean.class) values[i] = false;
         }
-        values[0] = "既読スレを上に";
+        values[0] = dropped?DroppedThreadDisplaySettings.LABEL:"既読スレを上に";
         values[17] = composer;
         values[20] = 131070;
         draw.invoke(null, values);

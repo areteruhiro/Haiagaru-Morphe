@@ -12,7 +12,7 @@ $extension = 'extensions/chmate/src/main/java/app/morphe/extension/chmate'
     scripts/x-post-preview/PerformanceTest.java scripts/x-post-preview/RetryTest.java scripts/x-post-preview/CardRenderTest.java `
     scripts/x-post-preview/PositionTest.java `
     "$extension/XPostPreview.java" "$extension/XPostPreviewTouch.java" `
-    "$extension/XPostPreviewPosition.java" "$extension/XPostPreviewCard.java" "$extension/XMediaAttachments.java" "$extension/TwimgImageUrls.java"
+    "$extension/XPostPreviewPosition.java" "$extension/XPostPreviewCard.java" "$extension/XMediaAttachments.java" "$extension/TwimgImageUrls.java" "$extension/DirectVideoUrls.java"
 if ($LASTEXITCODE -ne 0) { throw 'Fixture compilation failed' }
 & "$Java/bin/jar.exe" cf "$output/fixture.jar" -C $output app
 if ($LASTEXITCODE -ne 0) { throw 'Fixture packaging failed' }

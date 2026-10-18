@@ -30,6 +30,8 @@ final class VideoFrameThumbnail {
         } catch (RuntimeException ignored) { return false; }
     }
     static void request(String url) {
+        if(!DirectVideoUrls.supported(url))return;
+        if(!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true))return;
         boolean four = fourAllowed();
         int minimumSeconds = Haiagaru.videoPreviewMinimumSeconds(), count = Haiagaru.videoPreviewCount();
         String variant = variant(four, minimumSeconds, count);
@@ -57,10 +59,9 @@ final class VideoFrameThumbnail {
     private static void generate(String url, boolean four, String variant, String attempt, int minimumSeconds, int count) {
         Context context = Haiagaru.applicationContextForExtension();
         if (context == null) return;
+        if(!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true))return;
         File video = null;
         HttpURLConnection connection = null;
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        Bitmap frame = null;
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest((variant + ":" + url).getBytes("UTF-8"));
             StringBuilder key = new StringBuilder();
@@ -69,6 +70,7 @@ final class VideoFrameThumbnail {
             if (!directory.exists() && !directory.mkdirs()) return;
             File image = new File(directory, key + ".jpg");
             if (!image.exists()) {
+                if (VideoFrameDecodeService.blocked(context)) return;
                 if (Haiagaru.mediaAutoFetchMode() == 3) return;
                 // Settings/network may have changed while this request was queued.
                 if (four && !fourAllowed()) { ATTEMPTED.remove(attempt); return; }
@@ -91,6 +93,7 @@ final class VideoFrameThumbnail {
                     long total = 0;
                         int bytesRead;
                     while (true) {
+                        if(!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true))return;
                         if (four && !fourAllowed()) { ATTEMPTED.remove(attempt); return; }
                         long remaining = timeoutMs - (android.os.SystemClock.elapsedRealtime() - started);
                         if (remaining <= 0) return;
@@ -102,26 +105,10 @@ final class VideoFrameThumbnail {
                         output.write(buffer, 0, bytesRead);
                     }
                 }
-                retriever.setDataSource(video.getAbsolutePath());
-                long duration = 0;
-                try { duration = Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)); }
-                catch (RuntimeException ignored) {}
-                frame = VideoPreviewPolicy.split(four, false, true, duration, minimumSeconds)
-                        ? grid(retriever, duration, count) : scaledFrame(retriever, 0);
-                if (frame == null) frame = scaledFrame(retriever, 0);
-                if (frame == null) return;
-                if (frame.getWidth() > 640 || frame.getHeight() > 640) {
-                    float scale = 640f / Math.max(frame.getWidth(), frame.getHeight());
-                    Bitmap scaled = Bitmap.createScaledBitmap(frame, Math.max(1, Math.round(frame.getWidth() * scale)),
-                            Math.max(1, Math.round(frame.getHeight() * scale)), true);
-                    if (scaled != frame) frame.recycle();
-                    frame = scaled;
-                }
                 File staging = File.createTempFile("preview-", ".jpg", directory);
                 try {
-                    try (OutputStream output = new FileOutputStream(staging)) {
-                        if (!frame.compress(Bitmap.CompressFormat.JPEG, 85, output)) return;
-                    }
+                    if(!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true))return;
+                    if (!VideoFrameDecodeService.decode(context,video,staging,four,minimumSeconds,count)) return;
                     if (!staging.renameTo(image)) return;
                 } finally { staging.delete(); }
             }
@@ -134,11 +121,25 @@ final class VideoFrameThumbnail {
         } catch (OutOfMemoryError error) {
             android.util.Log.w("HaiagaruMedia", "Video frame exceeded available memory");
         } finally {
-            if (frame != null) frame.recycle();
-            try { retriever.release(); } catch (Exception ignored) {}
             if (connection != null) connection.disconnect();
             if (video != null) video.delete();
         }
+    }
+
+    /** Called only inside the private decoder process, never the UI/app process. */
+    static boolean decodeFile(File video,File image,boolean four,int minimumSeconds,int count)throws Exception {
+        MediaMetadataRetriever retriever=null;Bitmap frame=null;
+        try {
+            retriever=new MediaMetadataRetriever();
+            retriever.setDataSource(video.getAbsolutePath());
+            long duration=0;
+            try{duration=Long.parseLong(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));}catch(RuntimeException ignored){}
+            frame=VideoPreviewPolicy.split(four,false,true,duration,minimumSeconds)?grid(retriever,duration,count):scaledFrame(retriever,0);
+            if(frame==null)frame=scaledFrame(retriever,0);
+            if(frame==null)return false;
+            if(Math.max(frame.getWidth(),frame.getHeight())>640){float scale=640f/Math.max(frame.getWidth(),frame.getHeight());Bitmap smaller=Bitmap.createScaledBitmap(frame,Math.max(1,Math.round(frame.getWidth()*scale)),Math.max(1,Math.round(frame.getHeight()*scale)),true);if(smaller!=frame)frame.recycle();frame=smaller;}
+            try(OutputStream out=new FileOutputStream(image)){return frame.compress(Bitmap.CompressFormat.JPEG,85,out);}
+        }finally{if(frame!=null)frame.recycle();if(retriever!=null)try{retriever.release();}catch(Exception ignored){}}
     }
 
     private static Bitmap scaledFrame(MediaMetadataRetriever retriever, long milliseconds) {

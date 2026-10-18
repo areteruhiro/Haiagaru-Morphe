@@ -32,7 +32,7 @@ public final class XMediaAttachments {
     private XMediaAttachments() {}
 
     public static Object nativeVideo(String url, String className) {
-        if (url == null || !validMedia(url, true)) return null;
+        if (!isVideo(url)) return null;
         int mode = Haiagaru.mediaAutoFetchMode();
         if (mode == 0 || mode == 3) return null;
         if (!POSTERS.containsKey(url) || VideoFrameThumbnail.fourAllowed()) VideoFrameThumbnail.request(url);
@@ -57,7 +57,7 @@ public final class XMediaAttachments {
         String frame = FRAME_POSTERS.get(VideoFrameThumbnail.currentVariant() + ":" + url);
         return frame != null ? frame : POSTERS.get(url);
     }
-    public static boolean isVideo(String url) { return validMedia(url, true); }
+    public static boolean isVideo(String url) { return DirectVideoUrls.supported(url); }
 
     public static String[] postIds(String body) {
         LinkedHashSet<String> ids = new LinkedHashSet<>();

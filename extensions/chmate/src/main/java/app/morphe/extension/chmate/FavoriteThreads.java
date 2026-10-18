@@ -36,7 +36,7 @@ public final class FavoriteThreads {
         }
         Context context = Haiagaru.applicationContextForExtension();
         if (context == null) return original;
-        int id = context.getResources().getIdentifier("haiagaru_favorite_threads", "string", context.getPackageName());
+        int id = context.getResources().getIdentifier("haiagaru_favorite_threads_description", "string", context.getPackageName());
         return id == 0 ? original : id;
     }
     public static String title(Object home, String original) {
