@@ -24,7 +24,7 @@ public final class WacchoiSearchService extends Service {
         }
         if(current!=null)current.release();
         owned=new WacchoiBackgroundJob(this,()->main.post(this::update));current=owned;
-        foreground();owned.start(intent);return START_NOT_STICKY;
+        owned.rememberArguments(intent);foreground();owned.start(intent);return START_NOT_STICKY;
     }
     private void foreground(){
         NotificationManager manager=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);
@@ -35,7 +35,9 @@ public final class WacchoiSearchService extends Service {
     private Notification notification(){
         int flags=PendingIntent.FLAG_UPDATE_CURRENT;
         if(Build.VERSION.SDK_INT>=23)flags|=PendingIntent.FLAG_IMMUTABLE;
-        PendingIntent open=PendingIntent.getActivity(this,NOTIFICATION,new Intent(this,HissiWacchoiSearchActivity.class),flags);
+        Intent returnToSearch=WacchoiSearchState.notificationArguments(owned==null?null:owned.searchArguments())
+                .setClass(this,HissiWacchoiSearchActivity.class);
+        PendingIntent open=PendingIntent.getActivity(this,NOTIFICATION,returnToSearch,flags);
         PendingIntent stop=PendingIntent.getService(this,NOTIFICATION,new Intent(this,WacchoiSearchService.class).setAction("stop"),flags);
         Notification.Builder builder=Build.VERSION.SDK_INT>=26?new Notification.Builder(this,CHANNEL):new Notification.Builder(this);
         boolean running=owned==null||owned.running;

@@ -28,7 +28,7 @@ final class WacchoiHistory {
                     .put("four",args.getStringExtra("four")).put("upper",args.getBooleanExtra("upper",false))
                     .put("requestLimit",args.getIntExtra("requestLimit",0))
                     .put("titleWords",args.getStringExtra("titleWords")).put("bodyWords",args.getStringExtra("bodyWords"))
-                    .put("edgeArchive",args.getBooleanExtra("edgeArchive",true))
+                    .put("edgeArchive",args.getBooleanExtra("edgeArchive",true)).put("edgeMatchMode",args.getIntExtra("edgeMatchMode",0))
                     .put("edge",args.getBooleanExtra("edge",false)).put("boards",args.getStringExtra("boards"))
                     .put("from",args.getStringExtra("from")).put("to",args.getStringExtra("to"))
                     .put("limit",args.getIntExtra("limit",20)).put("status","開始しています");
@@ -83,7 +83,7 @@ final class WacchoiHistory {
     private static String searchText(JSONObject r,String label){StringBuilder text=new StringBuilder(label).append('\n').append(r.optString("from")).append('\n').append(r.optString("to"));JSONArray records=r.optJSONArray("results");if(records!=null)for(int i=0;i<records.length();i++){JSONObject record=records.optJSONObject(i);if(record!=null)text.append('\n').append(recordText(record));}return text.toString();}
     static void show(Activity a,Selected selected){IO.execute(()->{try{
         List<JSONObject> rows=read(a);String[] labels=new String[rows.size()],texts=new String[rows.size()];
-        for(int i=0;i<rows.size();i++){JSONObject r=rows.get(i);labels[i]=(r.optBoolean("upper")?"上4桁 ":"下4桁 ")+r.optString("four")+"　"+(r.optBoolean("edge")?"エッヂ":r.optString("boards"))+"\n"+new SimpleDateFormat("yyyy/MM/dd HH:mm",Locale.JAPAN).format(new Date(r.optLong("time")))+"　"+r.optString("status");texts[i]=searchText(r,labels[i]);}
+        for(int i=0;i<rows.size();i++){JSONObject r=rows.get(i);labels[i]=(r.optBoolean("edge")?(r.optInt("edgeMatchMode",0)==0?"ID ":r.optInt("edgeMatchMode",0)==1?"上4桁 ":"下4桁 "):(r.optBoolean("upper")?"上4桁 ":"下4桁 "))+r.optString("four")+"　"+(r.optBoolean("edge")?"エッヂ":r.optString("boards"))+"\n"+new SimpleDateFormat("yyyy/MM/dd HH:mm",Locale.JAPAN).format(new Date(r.optLong("time")))+"　"+r.optString("status");texts[i]=searchText(r,labels[i]);}
         a.runOnUiThread(()->{if(a.isFinishing()||a.isDestroyed())return;
             LinearLayout panel=new LinearLayout(a);panel.setOrientation(1);
             EditText input=new EditText(a);input.setSingleLine(true);input.setHint("4桁・板・ID・スレ名・保存本文を検索（空白区切りAND）");panel.addView(input);

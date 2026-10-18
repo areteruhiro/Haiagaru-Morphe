@@ -2,6 +2,7 @@ package app.morphe.extension.chmate;
 
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -45,6 +46,26 @@ final class WacchoiSearch {
     static boolean matchesEdgeId(String filter, String id) {
         String query = normalizeEdgeIdFilter(filter);
         return query.isEmpty() || (id != null && id.contains(query));
+    }
+
+    static String edgeWacchoi(String postHtml) {
+        Matcher body = Pattern.compile("(?is)<div\\b[^>]*class=['\"]clmess['\"][^>]*>").matcher(postHtml);
+        String header = body.find() ? postHtml.substring(0, body.start()) : postHtml;
+        Matcher link = Pattern.compile("(?i)(?:[?&]|&amp;)wc=([^&'\"\\s>]+)").matcher(header);
+        while (link.find()) {
+            try {
+                String value = URLDecoder.decode(link.group(1), "UTF-8");
+                Matcher slip = SLIP.matcher(value);
+                if (slip.find()) return slip.group();
+            } catch (java.io.UnsupportedEncodingException | IllegalArgumentException ignored) { }
+        }
+        return "";
+    }
+
+    static boolean matchesEdgeWacchoi(String filter, String value, boolean upper) {
+        if (filter == null || filter.isEmpty()) return true;
+        Matcher slip = SLIP.matcher(value == null ? "" : value);
+        return slip.find() && matchesFilter(filter, slip, upper);
     }
 
     static String edgeBoardUrl(boolean archive, String title) {

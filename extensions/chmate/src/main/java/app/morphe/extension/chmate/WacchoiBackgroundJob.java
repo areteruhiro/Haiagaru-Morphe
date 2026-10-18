@@ -91,12 +91,16 @@ final class WacchoiBackgroundJob {
     private volatile SearchCursor resumeCursor;
     private String edgeTitleWords = "", edgeBodyWords = "";
     private boolean edgeArchive;
+    private int edgeMatchMode;
     private String edgeNextBoard, edgeResumeUrl, edgeResumeTitle = "";
     private WacchoiSearch.RequestBudget requestBudget = new WacchoiSearch.RequestBudget(0);
     private final Set<String> edgeVisitedBoards = new LinkedHashSet<>();
     volatile boolean running;
     volatile String status="開始しています";
     private WacchoiHistory.Session history;
+    private volatile Intent searchArguments;
+    void rememberArguments(Intent args){searchArguments=WacchoiSearchState.copy(args);}
+    Intent searchArguments(){return WacchoiSearchState.copy(searchArguments);}
     static final class Record {
         final int kind; final String a,b,c,d;
         Record(int kind,String a,String b,String c,String d){this.kind=kind;this.a=a;this.b=b;this.c=c;this.d=d;}
@@ -109,11 +113,13 @@ final class WacchoiBackgroundJob {
     void start(android.content.Intent args){
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
         if(running)return;
+        rememberArguments(args);
         requestBudget = new WacchoiSearch.RequestBudget(args.getIntExtra("requestLimit",0));
         history=WacchoiHistory.begin(context,args);
         running=true;cancelled=false;
         edgeTitleWords=args.getStringExtra("titleWords"); edgeBodyWords=args.getStringExtra("bodyWords");
         edgeArchive=args.getBooleanExtra("edgeArchive",true);
+        edgeMatchMode=args.getIntExtra("edgeMatchMode",0);
         String four=args.getStringExtra("four");
         boolean upper=args.getBooleanExtra("upper",false);
         int limit=Math.max(1,Math.min(MAX_LIST_PAGES,args.getIntExtra("limit",100)));
@@ -308,13 +314,16 @@ final class WacchoiBackgroundJob {
                         Matcher edgeId = EDGE_ID.matcher(postHtml);
                         String identity = edgeId.find() ? Html.fromHtml(edgeId.group(1), Html.FROM_HTML_MODE_LEGACY)
                                 .toString().trim() : "";
-                        if (!WacchoiSearch.matchesEdgeId(four, identity)) continue;
+                        String wacchoi = WacchoiSearch.edgeWacchoi(postHtml);
+                        if (edgeMatchMode == 0 ? !WacchoiSearch.matchesEdgeId(four, identity)
+                                : !WacchoiSearch.matchesEdgeWacchoi(four, wacchoi, firstHalf)) continue;
+                        String poster = "ID:" + identity + (wacchoi.isEmpty() ? "" : " / ﾜｯﾁｮｲ:" + wacchoi);
                         String postText = Html.fromHtml(WacchoiSearch.edgeBodyHtml(postHtml), Html.FROM_HTML_MODE_LEGACY)
                                 .toString().replaceAll("\\s+", " ").trim();
                         if (!WacchoiHistorySearch.matches(postText, edgeBodyWords)) continue;
                         publishEdgeResult(threadUrl + "n" + numbers.get(postIndex) + "-",
                                 "エッヂ「" + title + "」 " + numbers.get(postIndex) + "レス",
-                                "ID:" + identity, "ID:" + identity
+                                poster, poster
                                         + (postText.isEmpty() ? "" : " / " + postText));
                         threadMatches++;
                     }

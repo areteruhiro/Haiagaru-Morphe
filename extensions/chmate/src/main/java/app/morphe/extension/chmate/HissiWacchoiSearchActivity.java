@@ -99,6 +99,8 @@ public final class HissiWacchoiSearchActivity extends Activity {
     private EditText titleKeywordInput, bodyKeywordInput, requestLimitInput;
     private String edgeTitleWords = "", edgeBodyWords = "";
     private CheckBox edgePast;
+    private android.widget.Spinner edgeMode;
+    private int edgeMatchMode;
     private boolean edgeArchive;
     private String edgeNextBoard, edgeResumeUrl, edgeResumeTitle = "";
     private WacchoiSearch.RequestBudget requestBudget = new WacchoiSearch.RequestBudget(0);
@@ -117,10 +119,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
     private int backgroundRecordCount;
     private WacchoiHistory.Session localHistory;
     private boolean showingHistory;
+    private boolean restoredDraft, restoredBoards, restoreAllBoards;
     private final Runnable refreshBackground=new Runnable(){public void run(){
         WacchoiBackgroundJob current=WacchoiSearchService.current;
         if(current!=null && !showingHistory){
-            if(observedBackground!=current){observedBackground=current;backgroundRecordCount=0;displayedResults.clear();resultsLayout.removeAllViews();}
+            if(observedBackground!=current){
+                if(restoredDraft)restoredDraft=false;else restoreSearchFields(current.searchArguments());
+                observedBackground=current;backgroundRecordCount=0;displayedResults.clear();resultsLayout.removeAllViews();}
             java.util.List<WacchoiBackgroundJob.Record> records=current.records();
             while(backgroundRecordCount<records.size()){
                 WacchoiBackgroundJob.Record r=records.get(backgroundRecordCount++);
@@ -142,6 +147,9 @@ public final class HissiWacchoiSearchActivity extends Activity {
             Toast.makeText(this,"実行中の検索を停止してから開始してください",Toast.LENGTH_SHORT).show();return true;
         }
         if(!backgroundEnabled())return false;
+        Bundle form = captureSearchFields().getExtras();
+        if(args.getExtras()!=null)form.putAll(args.getExtras());
+        args.replaceExtras(form);
         localHistory=null;
         showingHistory=false;
         WacchoiSearchService.launch(this,args);
@@ -156,11 +164,72 @@ public final class HissiWacchoiSearchActivity extends Activity {
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true)){Toast.makeText(this,"4桁検索は設定でオフになっています",Toast.LENGTH_SHORT).show();finish();return;}
         buildUi();
         String half = getIntent().getStringExtra(EXTRA_HALF);
-        if (HALF_UPPER.equals(half)) halfGroup.check(halfGroup.getChildAt(0).getId());
+        if (HALF_UPPER.equals(half)) { halfGroup.check(halfGroup.getChildAt(0).getId()); edgeMode.setSelection(1); }
+        else if ("lower".equals(half)) edgeMode.setSelection(2);
         String query = getIntent().getStringExtra("haiagaru.wacchoi.query");
-        if (query != null && query.matches("-[A-Za-z0-9+/]{4}")) fourInput.setText(query.substring(1));
+        if (query != null && query.matches("-[A-Za-z0-9+/]{4}")) { fourInput.setText(query.substring(1)); edgeMode.setSelection(2); }
         if (query != null && query.matches("[A-Za-z0-9+/]{4}-")) {
-            fourInput.setText(query.substring(0,4));halfGroup.check(halfGroup.getChildAt(0).getId());
+            fourInput.setText(query.substring(0,4));edgeMode.setSelection(1);halfGroup.check(halfGroup.getChildAt(0).getId());
+        }
+        Intent fields = state == null ? null : state.getParcelable("haiagaru.searchForm");
+        if (fields != null) {
+            restoreSearchFields(fields); restoredDraft=true;
+        } else if (getIntent().getBooleanExtra(WacchoiSearchState.RESTORE,false)) {
+            restoreSearchFields(getIntent());
+        }
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent); setIntent(intent);
+        if(intent.getBooleanExtra(WacchoiSearchState.RESTORE,false)) {
+            showingHistory=false; localHistory=null; observedBackground=null; restoredDraft=false;
+            restoreSearchFields(intent);
+            backgroundUi.removeCallbacks(refreshBackground); backgroundUi.post(refreshBackground);
+        }
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        state.putParcelable("haiagaru.searchForm",captureSearchFields());
+        super.onSaveInstanceState(state);
+    }
+
+    private Intent captureSearchFields() {
+        String boards = restoreAllBoards ? "*" : android.text.TextUtils.join(",",selectedBoards);
+        return new Intent().putExtra("four",fourInput.getText().toString())
+                .putExtra("titleWords",titleKeywordInput.getText().toString())
+                .putExtra("bodyWords",bodyKeywordInput.getText().toString())
+                .putExtra("from",fromInput.getText().toString()).putExtra("to",toInput.getText().toString())
+                .putExtra("boards",boards).putExtra("boardFilter",boardFilter.getText().toString())
+                .putExtra("upper",halfGroup.getCheckedRadioButtonId()==halfGroup.getChildAt(0).getId())
+                .putExtra("edgeArchive",edgePast.isChecked()).putExtra("edgeMatchMode",edgeMode.getSelectedItemPosition())
+                .putExtra("ui.limitText",pageLimitInput.getText().toString())
+                .putExtra("ui.requestLimitText",requestLimitInput.getText().toString());
+    }
+
+    private String conditionText(Intent args,String key,String fallback) {
+        String value=args.getStringExtra(key); return value==null?fallback:value;
+    }
+
+    private void restoreSearchFields(Intent args) {
+        if(args==null)return;
+        fourInput.setText(conditionText(args,"four",""));
+        titleKeywordInput.setText(conditionText(args,"titleWords",""));
+        bodyKeywordInput.setText(conditionText(args,"bodyWords",""));
+        fromInput.setText(conditionText(args,"from",fromInput.getText().toString()));
+        toInput.setText(conditionText(args,"to",toInput.getText().toString()));
+        pageLimitInput.setText(conditionText(args,"ui.limitText",String.valueOf(args.getIntExtra("limit",100))));
+        requestLimitInput.setText(conditionText(args,"ui.requestLimitText",String.valueOf(args.getIntExtra("requestLimit",0))));
+        halfGroup.check(halfGroup.getChildAt(args.getBooleanExtra("upper",false)?0:1).getId());
+        edgePast.setChecked(args.getBooleanExtra("edgeArchive",true));
+        edgeMode.setSelection(Math.max(0,Math.min(2,args.getIntExtra("edgeMatchMode",0))));
+        boardFilter.setText(conditionText(args,"boardFilter",""));
+        if(args.hasExtra("boards")) {
+            restoredBoards=true; String boards=conditionText(args,"boards","");
+            boolean allBoards="*".equals(boards);
+            restoreAllBoards=allBoards && availableBoards.isEmpty(); selectedBoards.clear();
+            if(allBoards)selectedBoards.addAll(availableBoardCodes());
+            else for(String board:boards.split(","))if(!board.isEmpty())selectedBoards.add(board);
+            renderBoardChoices();
         }
     }
 
@@ -257,8 +326,8 @@ public final class HissiWacchoiSearchActivity extends Activity {
         dates.addView(toInput, new LinearLayout.LayoutParams(0, dp(52), 1));
         root.addView(dates, row());
 
-        fourInput = field("エッヂID例: ID:/GNQXmAUz（空欄可）", "");
-        root.addView(label(getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean("showEdgeSearch",true) ? "絞り込み（Hissiはワッチョイ、エッヂは投稿ID。部分一致・空欄可）" : "ワッチョイで絞り込み（部分一致・空欄可）"));
+        fourInput = field("ID:6Nd.uJWxg／ワッチョイ文字（空欄可）", "");
+        root.addView(label(getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean("showEdgeSearch",true) ? "絞り込み（Hissiはワッチョイ、エッヂは下の照合対象で選択。空欄可）" : "ワッチョイで絞り込み（部分一致・空欄可）"));
         root.addView(fourInput, row());
         halfGroup = new RadioGroup(this);
         halfGroup.setOrientation(RadioGroup.HORIZONTAL);
@@ -310,6 +379,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
         });
         root.addView(broadSearch, row());
         if (!showZzz) { titleOnlySearch.setVisibility(View.GONE); bodyOnlySearch.setVisibility(View.GONE); broadSearch.setVisibility(View.GONE); }
+        TextView edgeModeLabel = label("エッヂで照合する情報"); root.addView(edgeModeLabel);
+        edgeMode = new android.widget.Spinner(this);
+        android.widget.ArrayAdapter<String> edgeModes = new android.widget.ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, new String[]{"投稿ID", "ワッチョイ上4桁", "ワッチョイ下4桁"});
+        edgeModes.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        edgeMode.setAdapter(edgeModes); root.addView(edgeMode, row());
+        if (!showEdge) { edgeModeLabel.setVisibility(View.GONE); edgeMode.setVisibility(View.GONE); }
         edgePast = new CheckBox(this); edgePast.setText("エッヂの過去ログを検索（オフなら現行スレ）");
         edgePast.setChecked(true); root.addView(edgePast, row());
         if (!showEdge) edgePast.setVisibility(View.GONE);
@@ -403,7 +479,8 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
                     availableBoards.clear(); availableBoards.addAll(loaded);
-                    if (selectedBoards.isEmpty() && seen.contains("android")) selectedBoards.add("android");
+                    if(restoreAllBoards){selectedBoards.addAll(seen);restoreAllBoards=false;}
+                    else if (!restoredBoards && selectedBoards.isEmpty() && seen.contains("android")) selectedBoards.add("android");
                     renderBoardChoices();
                     boardStatus.setText(availableBoards.size() + "板を取得しました（選択中 "
                             + selectedBoards.size() + "板）");
@@ -614,12 +691,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
         fourInput.setError(null);
         final String four = fourInput.getText().toString().trim();
-        if (!WacchoiSearch.normalizeEdgeIdFilter(four).matches("[A-Za-z0-9._+/-]*")) {
-            fourInput.setError("投稿IDを入力してください（ID:付きでも可）");
+        edgeMatchMode = edgeMode.getSelectedItemPosition();
+        if (edgeMatchMode == 0 ? !WacchoiSearch.normalizeEdgeIdFilter(four).matches("[A-Za-z0-9._+/-]*")
+                : !four.matches("[A-Za-z0-9+/-]*")) {
+            fourInput.setError(edgeMatchMode == 0 ? "投稿IDを入力してください（ID:付きでも可）" : "ワッチョイ文字を英数字・+・/・-で入力してください（空欄可）");
             return;
         }
-        final boolean firstHalf = halfGroup.getCheckedRadioButtonId()
-                == halfGroup.getChildAt(0).getId();
+        final boolean firstHalf = edgeMatchMode == 1;
         int parsedLimit;
         try { parsedLimit = Integer.parseInt(pageLimitInput.getText().toString().trim()); }
         catch (RuntimeException invalid) { parsedLimit = -1; }
@@ -633,12 +711,12 @@ public final class HissiWacchoiSearchActivity extends Activity {
         edgeArchive = edgePast.isChecked();
         if(startBackground(new Intent().putExtra("edge",true).putExtra("four",four)
                 .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
-                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive)))return;
+                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive).putExtra("edgeMatchMode",edgeMatchMode)))return;
         WacchoiSearchService.current=null;observedBackground=null;
         showingHistory=false;
         localHistory=WacchoiHistory.begin(this,new Intent().putExtra("edge",true).putExtra("four",four)
                 .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
-                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive));
+                .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive).putExtra("edgeMatchMode",edgeMatchMode));
         cancelled = false;
         resumeCursor = null;
         displayedResults.clear();
@@ -751,13 +829,16 @@ public final class HissiWacchoiSearchActivity extends Activity {
                         Matcher edgeId = EDGE_ID.matcher(postHtml);
                         String identity = edgeId.find() ? Html.fromHtml(edgeId.group(1), Html.FROM_HTML_MODE_LEGACY)
                                 .toString().trim() : "";
-                        if (!WacchoiSearch.matchesEdgeId(four, identity)) continue;
+                        String wacchoi = WacchoiSearch.edgeWacchoi(postHtml);
+                        if (edgeMatchMode == 0 ? !WacchoiSearch.matchesEdgeId(four, identity)
+                                : !WacchoiSearch.matchesEdgeWacchoi(four, wacchoi, firstHalf)) continue;
+                        String poster = "ID:" + identity + (wacchoi.isEmpty() ? "" : " / ﾜｯﾁｮｲ:" + wacchoi);
                         String postText = Html.fromHtml(WacchoiSearch.edgeBodyHtml(postHtml), Html.FROM_HTML_MODE_LEGACY)
                                 .toString().replaceAll("\\s+", " ").trim();
                         if (!WacchoiHistorySearch.matches(postText, edgeBodyWords)) continue;
                         publishEdgeResult(threadUrl + "n" + numbers.get(postIndex) + "-", "エッヂ「" + title + "」 "
-                                + numbers.get(postIndex) + "レス", "ID:" + identity,
-                                "ID:" + identity + (postText.isEmpty() ? "" : " / " + postText));
+                                + numbers.get(postIndex) + "レス", poster,
+                                poster + (postText.isEmpty() ? "" : " / " + postText));
                         threadMatches++;
                     }
                     pageUrl = nextUrl;
@@ -983,6 +1064,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 }
                 titleKeywordInput.setText(saved.optString("titleWords")); bodyKeywordInput.setText(saved.optString("bodyWords"));
                 edgePast.setChecked(saved.optBoolean("edgeArchive",true));
+                edgeMode.setSelection(Math.max(0,Math.min(2,saved.optInt("edgeMatchMode",0))));
                 fourInput.setText(saved.optString("four"));halfGroup.check(halfGroup.getChildAt(saved.optBoolean("upper")?0:1).getId());
                 fromInput.setText(saved.optString("from"));toInput.setText(saved.optString("to"));pageLimitInput.setText(String.valueOf(saved.optInt("limit",100)));
                 requestLimitInput.setText(String.valueOf(saved.optInt("requestLimit",0)));
@@ -1085,7 +1167,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     public static void openFromToolbar(Activity activity, boolean upper) {
         Intent intent = new Intent(activity, HissiWacchoiSearchActivity.class);
-        if (upper) intent.putExtra(EXTRA_HALF, HALF_UPPER);
+        intent.putExtra(EXTRA_HALF, upper ? HALF_UPPER : "lower");
         activity.startActivity(intent);
     }
 
