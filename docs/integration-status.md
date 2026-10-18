@@ -80,3 +80,5 @@
 2026-10-19 1.9.1候補: エッヂの照合対象を投稿ID／ワッチョイ上4桁／下4桁から選択できるよう追加。Kyodemo投稿ヘッダーのwcから抽出し、本文引用を除外。IDとワッチョイを結果に併記し、通常／バックグラウンド・履歴／再開へモードを引き継ぐ。合成ケースと実際の50レスを合わせた64項目の解析確認は成功。通知から検索画面へ戻るIntentへ検索条件を保持し、Activity再接続・再作成時に復元。画面再作成では編集中の条件を優先し、復元後の板選択も保持。通知からの復元操作を含む実画面の通し確認は未実施。ユーザー指示で今回の実機検証・インストールを省略して公開へ進む。
 
 1.9.1公開候補のAndroid用MPPビルド成功。created_atは3配布JSONすべてタイムゾーンなしのYYYY-MM-DDTHH:mm:ss形式（Zなし）。MPP SHA-256: B03F58C96174CDE8090D290F55E96F441D37FB9290A9B715A53DB15381436517。
+
+2026-10-19 1.9.1公開完了: タグ1.9.1のソース3755909、GitHub Releaseはdraft=false・prerelease=false・Latest=1.9.1。Android MPP2名称・JSON3点・SHA256SUMSの6配布物を登録し、全配布物のGitHub digestをローカルと照合。公開MPPを再ダウンロードしてSHA-256 B03F58C96174CDE8090D290F55E96F441D37FB9290A9B715A53DB15381436517と一致。最終MPPの191／226／242元APKへのパッチ適用成功。master/main/devの正式・プレJSON計6取得先を公開raw URLから再取得し、version=1.9.1・download_url・created_at=2026-10-18T16:01:28（Zなし）を確認。公開操作案内も取得成功。並行して行われた1.9.0の日時修正をdevへマージし、master/mainでも保持。1.8.16のversioned JSONをmaster/main/devとRelease添付から取得し、全4点が既に2026-10-18T20:00:00（Zなし）であることを確認、追加変更は不要。ユーザー指示により今回の実機検証・インストール・Morphe端末表示確認を省略。公開URL: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.1
