@@ -19,6 +19,14 @@ import java.util.regex.Pattern;
 public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
     private static final int SUFFIX_SEARCH_ITEM_ID = 0x7e000077;
+    private static final int PREFIX_SEARCH_ITEM_ID = 0x7e000078;
+    private static Intent upperSearch(Context context,String query){
+        java.util.regex.Matcher m=WacchoiSearch.SLIP.matcher(query);
+        if(!m.find())return null;
+        return new Intent(context,HissiWacchoiSearchActivity.class)
+                .putExtra(HissiWacchoiSearchActivity.EXTRA_HALF,HissiWacchoiSearchActivity.HALF_UPPER)
+                .putExtra("haiagaru.wacchoi.query",m.group(1)+"-");
+    }
     // These are toolbar-only choices. Some ChMate builds reuse the toolbar
     // action catalog for the response long-press Menu as well, so explicitly
     // strip them from that transient menu without removing toolbar choices.
@@ -253,7 +261,7 @@ public final class WacchoiLongPressMenu {
         if (item.getItemId() != 76) return false;
         try {
             for (Class<?> type = item.getClass(); type != null; type = type.getSuperclass()) {
-                for (Field field : type.getDeclaredFields()) {
+                for (java.lang.reflect.Field field : type.getDeclaredFields()) {
                     if (Modifier.isStatic(field.getModifiers())
                             || !MenuItem.OnMenuItemClickListener.class.isAssignableFrom(field.getType())) continue;
                     field.setAccessible(true);
@@ -314,18 +322,28 @@ public final class WacchoiLongPressMenu {
                 Object callback = searchCallback(callbackType, launchContext, intent);
                 method.setAccessible(true);
                 if (found.host != null && found.board != null) {
-                    appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "必死チェッカーもどき(ﾜｯﾁｮｲ)" : "ﾜｯﾁｮｲで検索",
-                            android.R.drawable.ic_menu_search, callback);
+                    if (ResponseMenuSettings.visible(ITEM_ID)) {
+                        appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "必死チェッカーもどき(ﾜｯﾁｮｲ)" : "ﾜｯﾁｮｲで検索",
+                                android.R.drawable.ic_menu_search, callback);
+                        moveLastSheetItem(builder, ResponseMenuSettings.order(ITEM_ID, Integer.MAX_VALUE));
+                    }
                     String suffix = WacchoiSuffixNg.suffix(query);
-                    if (suffix != null) {
+                    Intent upper=upperSearch(launchContext,query);
+                    if(upper!=null && ResponseMenuSettings.visible(PREFIX_SEARCH_ITEM_ID)){
+                        appendSheetItem(method,builder,hasIcon,"ﾜｯﾁｮｲ上4桁で検索",android.R.drawable.ic_menu_search,
+                                searchCallback(callbackType,launchContext,upper));
+                        moveLastSheetItem(builder,ResponseMenuSettings.order(PREFIX_SEARCH_ITEM_ID,Integer.MAX_VALUE));
+                    }
+                    if (suffix != null && ResponseMenuSettings.visible(SUFFIX_SEARCH_ITEM_ID)) {
                         Intent suffixIntent = new Intent(intent)
                                 .putExtra("haiagaru.wacchoi.query", "-" + suffix);
                         appendSheetItem(method, builder, hasIcon, "ﾜｯﾁｮｲ下4桁で検索",
                                 android.R.drawable.ic_menu_search,
                                 searchCallback(callbackType, launchContext, suffixIntent));
+                        moveLastSheetItem(builder, ResponseMenuSettings.order(SUFFIX_SEARCH_ITEM_ID, Integer.MAX_VALUE));
                     }
                 }
-                if (WacchoiSuffixNg.suffix(query) != null) {
+                if (WacchoiSuffixNg.suffix(query) != null && ResponseMenuSettings.visible(76)) {
                     Object ngCallback = java.lang.reflect.Proxy.newProxyInstance(
                             callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
                                 if (invoked.getDeclaringClass() == Object.class) {
@@ -340,6 +358,7 @@ public final class WacchoiLongPressMenu {
                     SUFFIX_LONG_PRESS.put(ngCallback, () -> WacchoiSuffixNg.copyAndEdit(launchContext, query));
                     appendSheetItem(method, builder, hasIcon, preferredOrderEnabled() ? "ﾜｯﾁｮｲ下4桁でNGName登録" : "ﾜｯﾁｮｲ下4桁をNG登録",
                             android.R.drawable.ic_menu_delete, ngCallback);
+                    moveLastSheetItem(builder, ResponseMenuSettings.order(76, Integer.MAX_VALUE));
                 }
                 return;
             }
@@ -366,6 +385,29 @@ public final class WacchoiLongPressMenu {
             String title, int icon, Object callback) throws ReflectiveOperationException {
         if (hasIcon) method.invoke(builder, title, null, true, false, Integer.valueOf(icon), callback);
         else method.invoke(builder, title, null, true, false, callback);
+    }
+
+    /** Reposition a just-added Compose sheet action using ChMate's saved toolbar order. */
+    private static void moveLastSheetItem(Object builder, int requestedIndex) {
+        if (builder == null || requestedIndex == Integer.MAX_VALUE) return;
+        try {
+            java.util.List<?> rows = null;
+            for (Class<?> type = builder.getClass(); type != null && rows == null; type = type.getSuperclass()) {
+                for (java.lang.reflect.Field field : type.getDeclaredFields()) {
+                    if (!java.util.List.class.isAssignableFrom(field.getType())) continue;
+                    field.setAccessible(true);
+                    Object value = field.get(builder);
+                    if (value instanceof java.util.List) { rows = (java.util.List<?>) value; break; }
+                }
+            }
+            if (rows == null || rows.size() < 2) return;
+            @SuppressWarnings("unchecked") java.util.List<Object> mutable = (java.util.List<Object>) rows;
+            Object item = mutable.remove(mutable.size() - 1);
+            mutable.add(Math.max(0, Math.min(requestedIndex, mutable.size())), item);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            // The underlying native sheet can be immutable in some releases;
+            // keep its native order rather than breaking menu construction.
+        }
     }
 
     /** Marks the response-menu builder; its return hook supplies the built menu. */
@@ -429,7 +471,7 @@ public final class WacchoiLongPressMenu {
 
         final Context ngContext = (Context) activity;
         if (ResponseMenuSettings.visible(76) && WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
-            MenuItem suffixItem = menu.add(Menu.NONE, 76, menu.size(), "ﾜｯﾁｮｲ下4桁をNG登録")
+            MenuItem suffixItem = menu.add(Menu.NONE, 76, ResponseMenuSettings.order(76, menu.size()), "ﾜｯﾁｮｲ下4桁をNG登録")
                     .setOnMenuItemClickListener(item -> {
                         WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard);
                         return true;
@@ -444,13 +486,18 @@ public final class WacchoiLongPressMenu {
         intent.putExtra("haiagaru.wacchoi.query", context.query);
         intent.putExtra("haiagaru.wacchoi.host", context.host);
         intent.putExtra("haiagaru.wacchoi.board", context.board);
-        menu.add(Menu.NONE, ITEM_ID, menu.size(), "ﾜｯﾁｮｲで検索")
+        menu.add(Menu.NONE, ITEM_ID, ResponseMenuSettings.order(ITEM_ID, menu.size()), "ﾜｯﾁｮｲで検索")
                 .setVisible(ResponseMenuSettings.visible(ITEM_ID))
                 .setIntent(intent)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         String suffix = WacchoiSuffixNg.suffix(context.query);
+        Intent upper=upperSearch((Context)activity,context.query);
+        if(upper!=null && ResponseMenuSettings.visible(PREFIX_SEARCH_ITEM_ID) && menu.findItem(PREFIX_SEARCH_ITEM_ID)==null){
+            menu.add(Menu.NONE,PREFIX_SEARCH_ITEM_ID,ResponseMenuSettings.order(PREFIX_SEARCH_ITEM_ID,menu.size()),"ﾜｯﾁｮｲ上4桁で検索")
+                    .setIntent(upper).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+        }
         if (ResponseMenuSettings.visible(SUFFIX_SEARCH_ITEM_ID) && suffix != null && menu.findItem(SUFFIX_SEARCH_ITEM_ID) == null) {
-            menu.add(Menu.NONE, SUFFIX_SEARCH_ITEM_ID, menu.size(), "ﾜｯﾁｮｲ下4桁で検索")
+            menu.add(Menu.NONE, SUFFIX_SEARCH_ITEM_ID, ResponseMenuSettings.order(SUFFIX_SEARCH_ITEM_ID, menu.size()), "ﾜｯﾁｮｲ下4桁で検索")
                     .setIntent(new Intent(intent).putExtra("haiagaru.wacchoi.query", "-" + suffix))
                     .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         }

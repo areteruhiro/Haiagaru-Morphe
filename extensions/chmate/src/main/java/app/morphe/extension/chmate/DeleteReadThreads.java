@@ -57,7 +57,7 @@ public final class DeleteReadThreads {
         Activity activity = activity(view.getContext());
         if (activity == null) return true;
         try {
-            Object manager = activity.getClass().getMethod("getSupportFragmentManager").invoke(activity);
+            Object manager = fragmentManager(activity);
             ArrayList<Object> candidates = new ArrayList<>();
             find(manager, view, start, candidates);
             // Never fall back to another pane or a globally last-used fragment.
@@ -68,9 +68,11 @@ public final class DeleteReadThreads {
     }
 
     private static void find(Object manager, View input, PointF start, List<Object> result) throws Exception {
-        List<?> fragments = (List<?>) manager.getClass().getMethod("getFragments").invoke(manager);
+        List<?> fragments = (List<?>) fragmentsMethod(manager).invoke(manager);
         for (Object fragment : fragments) {
-            if (fragment == null) continue;
+            // A removed tab can remain in the manager during a transition. Its child
+            // manager getter throws before attachment; it must not abort another pane.
+            if (fragment == null || !attached(fragment)) continue;
             View root = (View) fragment.getClass().getMethod("getView").invoke(fragment);
             if (boardList(fragment) && root != null && root.isShown()) {
                 boolean belongs = descendant(input, root);
@@ -84,6 +86,41 @@ public final class DeleteReadThreads {
             }
             find(fragment.getClass().getMethod("getChildFragmentManager").invoke(fragment), input, start, result);
         }
+    }
+
+    private static Object fragmentManager(Activity activity) throws Exception {
+        ClassLoader loader = activity.getClass().getClassLoader();
+        Class<?> owner = Class.forName("androidx.fragment.app.FragmentActivity", false, loader);
+        Class<?> result = Class.forName("androidx.fragment.app.FragmentManager", false, loader);
+        return noArgMethod(owner, "getSupportFragmentManager", result).invoke(activity);
+    }
+
+    private static Method fragmentsMethod(Object manager) throws Exception {
+        Class<?> owner = Class.forName("androidx.fragment.app.FragmentManager", false,
+                manager.getClass().getClassLoader());
+        return noArgMethod(owner, "getFragments", List.class);
+    }
+
+    /** ChMate obfuscates AndroidX getters (e.g. n()/q() in 226).
+     * Resolve only the framework owner and exact signature, never an arbitrary
+     * activity method or an arbitrary list field (which may contain back-stack tabs).
+     * An ambiguous/changed API fails closed before any deletion confirmation.
+     */
+    private static Method noArgMethod(Class<?> owner, String name, Class<?> result) throws Exception {
+        try {
+            Method named = owner.getMethod(name);
+            if (named.getReturnType() == result && !Modifier.isStatic(named.getModifiers())) return named;
+        } catch (NoSuchMethodException ignored) { }
+        Method found = null;
+        for (Method method : owner.getDeclaredMethods()) {
+            if (!Modifier.isPublic(method.getModifiers()) || Modifier.isStatic(method.getModifiers())
+                    || method.getParameterTypes().length != 0 || method.getReturnType() != result
+                    || method.isBridge() || method.isSynthetic()) continue;
+            if (found != null) throw new NoSuchMethodException("Ambiguous fragment API: " + owner.getName());
+            found = method;
+        }
+        if (found == null) throw new NoSuchMethodException(owner.getName() + "." + name);
+        return found;
     }
 
     private static boolean descendant(View child, View root) {

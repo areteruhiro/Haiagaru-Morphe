@@ -139,6 +139,10 @@ public final class QuickFilterToolbar {
         AlertDialog filterDialog = new AlertDialog.Builder(activity).setTitle("フィルタ")
                 .setMultiChoiceItems(new String[]{"人気レス", "リンク", "画像", "動画"}, displayed,
                         (dialog, which, enabled) -> {
+                            if(which==0 && PopularReplies.openModel(model)) {
+                                ((AlertDialog)dialog).getListView().setItemChecked(which,checked[which]);
+                                return;
+                            }
                             if (checked[which] == enabled) return;
                             try {
                                 toggle.toggle(which);
@@ -229,6 +233,10 @@ public final class QuickFilterToolbar {
             for (int index = 0; index < buttons.length; index++) checked[index] = buttons[index].isChecked();
             AlertDialog filterDialog = new AlertDialog.Builder(activity).setTitle("フィルタ")
                     .setMultiChoiceItems(labels, checked, (dialog, which, enabled) -> {
+                        if(which==0 && PopularReplies.enabledFor(buttons[which].getContext())) {
+                            ((AlertDialog)dialog).getListView().setItemChecked(which,buttons[which].isChecked());
+                            PopularReplies.show(fragment);return;
+                        }
                         if (buttons[which].isChecked() != enabled) buttons[which].performClick();
                     })
                     .setNegativeButton("閉じる", null).show();
@@ -271,6 +279,10 @@ public final class QuickFilterToolbar {
                 .setMultiChoiceItems(new String[]{"人気レス", "リンク", "画像", "動画"}, checked,
                         (dialog, which, enabled) -> {
                             try {
+                                if(which==0 && PopularReplies.enabledFor(activity)) {
+                                    ((AlertDialog)dialog).getListView().setItemChecked(which,checked[which]);
+                                    PopularReplies.show(fragment);return;
+                                }
                                 Object observable = observables[which];
                                 java.lang.reflect.Field value = observable.getClass().getDeclaredField("mValue");
                                 value.setAccessible(true);

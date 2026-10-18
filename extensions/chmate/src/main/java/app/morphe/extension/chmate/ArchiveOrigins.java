@@ -86,6 +86,7 @@ public final class ArchiveOrigins {
     }
     private static void ui(Activity a, Runnable r) { a.runOnUiThread(() -> { if (!a.isFinishing() && !a.isDestroyed()) r.run(); }); }
     public static void addSettings(LinearLayout root, Activity a) {
+        ThreadArchiveOrder.addSettings(root,a);
         Button button = new Button(a); button.setText("アーカイブの元スレURLを確認"); button.setOnClickListener(v -> show(a)); root.addView(button);
     }
     public static void show(Activity a) { work(a, () -> browse(a, archiveRoot(a), 0)); }
@@ -94,7 +95,8 @@ public final class ArchiveOrigins {
         if (!current.equals(root) && !current.getPath().startsWith(root.getPath()+File.separator)) throw new IOException("保存領域外です");
         File[] listed = current.listFiles(file -> file.isDirectory() || file.getName().endsWith(".dat"));
         if (listed == null) listed = new File[0];
-        Arrays.sort(listed, Comparator.comparing(File::getName));
+        int sort=ThreadArchiveOrder.mode(a);
+        Arrays.sort(listed, sort==0?Comparator.comparing(File::getName):(x,y)->ThreadArchiveOrder.compareFiles(x,y,sort));
         File[] files = listed; int end = Math.min(files.length, offset+100);
         ArrayList<String> labels = new ArrayList<>(); ArrayList<File> choices = new ArrayList<>();
         if (!current.equals(root)) { labels.add("↑ 一つ上へ"); choices.add(current.getParentFile()); }

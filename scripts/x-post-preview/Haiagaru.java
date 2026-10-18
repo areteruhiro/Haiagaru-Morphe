@@ -6,8 +6,13 @@ public final class Haiagaru {
     static boolean enabled;
     static boolean full = true;
     static boolean collapsible;
+    static boolean card;
+    static boolean actions;
+    public static boolean xPostPreviewActions() { return actions; }
+    public static boolean xPostPreviewBrowser() { return true; }
     public static boolean xPostPreviewEnabled() { return enabled; }
     public static boolean xPostPreviewFullText() { return full; }
     public static int mediaAutoFetchMode() { return 3; }
     public static boolean xPostPreviewCollapsible() { return collapsible; }
+    public static boolean xPostPreviewCard() { return card; }
 }

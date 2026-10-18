@@ -13,7 +13,8 @@ final class HaiagaruBackupArchive {
     static final int FILE_FLAGS = HaiagaruSyncSnapshot.RESPONSES | HaiagaruSyncSnapshot.THREAD_ARCHIVES
             | HaiagaruSyncSnapshot.DAT | HaiagaruSyncSnapshot.RESOURCES
             | HaiagaruSyncSnapshot.POST_HISTORY | HaiagaruSyncSnapshot.KAKIKOMI
-            | HaiagaruSyncSnapshot.UPLOAD_HISTORY;
+            | HaiagaruSyncSnapshot.UPLOAD_HISTORY | HaiagaruSyncSnapshot.WACCHOI_HISTORY
+            | HaiagaruSyncSnapshot.WACCHOI_CACHE;
     private static final long RESERVE = 8L * 1024 * 1024;
 
     static final class Backup implements Closeable {
@@ -52,6 +53,8 @@ final class HaiagaruBackupArchive {
         roots.add(new Root("keywords", HaiagaruSyncSnapshot.RESOURCES,
                 context.getFileStreamPath("keyword_group_list.json"), true));
         roots.add(new Root("uploads", HaiagaruSyncSnapshot.UPLOAD_HISTORY, new File(external, "upload.json"), true));
+        roots.add(new Root("wacchoi-history", HaiagaruSyncSnapshot.WACCHOI_HISTORY, WacchoiHistory.directory(context), false));
+        roots.add(new Root("wacchoi-pages", HaiagaruSyncSnapshot.WACCHOI_CACHE, new File(context.getFilesDir(), "hissi-public-pages"), false));
         return roots;
     }
 

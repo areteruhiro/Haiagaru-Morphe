@@ -27,7 +27,11 @@ public final class PreviewTest {
     static final class BoundTextView extends TextView {
         boolean armed, failWrite;
         int depth, maximumDepth, bindings;
-        BoundTextView(Context context) { super(context); armed = true; }
+        BoundTextView(Context context) {
+            super(context);
+            setLayoutParams(new android.view.ViewGroup.LayoutParams(900,android.view.ViewGroup.LayoutParams.WRAP_CONTENT));
+            armed = true;
+        }
         @Override public boolean isShown() { return true; }
         @Override public void setText(CharSequence text, BufferType type) {
             if (failWrite) { failWrite = false; throw new IllegalStateException("test write failed"); }
@@ -182,7 +186,69 @@ public final class PreviewTest {
         XPostPreview.apply(view);
         check(view.getText().toString().equals(original), "Hidden body receives no preview");
         checkNativeReentry(context, source, original, data.text);
+        checkCards(context, source, original, data.text);
+        checkActions(context, source);
         System.out.println("PASS: " + checks + " Android tweet-preview checks; no network or account access.");
+    }
+
+    static void checkActions(Context context, CharSequence source) {
+        Haiagaru.enabled=true; Haiagaru.collapsible=false; Haiagaru.actions=true;
+        RecordingContext recording=new RecordingContext(context);
+        BoundTextView view=new BoundTextView(recording);
+        view.setText(source, TextView.BufferType.SPANNABLE);
+        XPostPreview.apply(view);
+        Spanned text=(Spanned)view.getText();
+        XPostPreviewTouch.ActionLink[] actions=text.getSpans(0,text.length(),XPostPreviewTouch.ActionLink.class);
+        check(actions.length==4,"Four optional actions rendered");
+        check(recording.opened==null,"Rendering actions opens no page");
+        String[] urls={"https://x.com/intent/tweet?in_reply_to=123", "https://x.com/intent/retweet?tweet_id=123", "https://x.com/intent/like?tweet_id=123"};
+        for(int i=0;i<3;i++) {
+            actions[i].onClick(view);
+            check(urls[i].equals(recording.opened.getDataString()),"Official action URL "+i);
+            check(recording.opened.hasExtra("android.support.customtabs.extra.SESSION"),"Custom tab requested "+i);
+        }
+        check(actions[3].copy && actions[3].getURL().equals("https://x.com/example/status/123"),"Copy uses canonical post URL, not intent URL");
+        check(!XPostPreviewTouch.browserIntent(urls[0],false).hasExtra("android.support.customtabs.extra.SESSION"),"External browser option omits custom tab session");
+        try { XPostPreviewTouch.actionUrl("like","123&evil=1"); throw new AssertionError("Invalid ID accepted"); }
+        catch(IllegalArgumentException expected) { checks++; }
+        Haiagaru.actions=false;
+        XPostPreview.apply(view);
+        text=(Spanned)view.getText();
+        check(text.getSpans(0,text.length(),XPostPreviewTouch.ActionLink.class).length==0,"Actions setting off removes spans without rebinding source");
+        Haiagaru.card=false;
+    }
+
+    static void checkCards(Context context,CharSequence source,String original,String body) {
+        Haiagaru.enabled=true;Haiagaru.full=true;Haiagaru.collapsible=false;Haiagaru.card=true;
+        BoundTextView view=new BoundTextView(context);
+        view.setTextColor(0xffe7e9ea);view.setTextSize(16);
+        view.setText(source,TextView.BufferType.SPANNABLE);
+        Spanned text=(Spanned)view.getText();
+        check(text.getSpans(0,text.length(),XPostPreviewCard.class).length==1,"Card uses one native decoration");
+        check(text.toString().contains(body)&&text.toString().startsWith(original),"Card keeps original response and full post");
+        check(text.getSpans(0,text.length(),XPostPreviewTouch.PostLink.class).length==1,"Card preserves open-post link");
+        check(text.getSpans(0,text.length(),android.text.style.QuoteSpan.class).length==0,"Card replaces legacy quote border");
+        view.measure(View.MeasureSpec.makeMeasureSpec(900,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(20000,View.MeasureSpec.AT_MOST));
+        view.layout(0,0,900,view.getMeasuredHeight());
+        android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(900,view.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);canvas.drawColor(0xff17221e);view.draw(canvas);
+        int painted=0;for(int y=0;y<bitmap.getHeight();y++)if(bitmap.getPixel(450,y)==0xff15202b)painted++;
+        check(painted>10,"Dark card background is actually drawn");
+        view.setTextColor(0xff0f1419);canvas.drawColor(0xffffffff);view.draw(canvas);
+        painted=0;for(int y=0;y<bitmap.getHeight();y++)if(bitmap.getPixel(450,y)==0xfff8f9fb)painted++;
+        check(painted>10,"Light card background follows dark text theme");
+        int writes=view.bindings;
+        for(int i=0;i<100;i++){XPostPreview.onBound(view);XPostPreview.apply(view);}
+        check(view.bindings==writes,"Stable card does not trigger repeated text layouts");
+        Haiagaru.collapsible=true;XPostPreview.apply(view);
+        check(!view.getText().toString().contains(body),"Card can be collapsed");
+        tapToggle(view);
+        check(view.getText().toString().contains(body),"Card expands with existing toggle link");
+        Haiagaru.card=false;Haiagaru.collapsible=false;XPostPreview.apply(view);
+        text=(Spanned)view.getText();
+        check(text.getSpans(0,text.length(),XPostPreviewCard.class).length==0,"Turning card mode off restores legacy preview");
+        check(text.getSpans(0,text.length(),android.text.style.QuoteSpan.class).length==1,"Legacy preview border restored");
+        bitmap.recycle();
     }
 
     static void checkNativeReentry(Context context, CharSequence source, String original, String body) {
@@ -192,8 +258,10 @@ public final class PreviewTest {
         check(nativeView.maximumDepth == 2 && nativeView.bindings == 2, "Native setText reentry is bounded");
         check(nativeView.getText().toString().contains(body), "Cached preview survives native binding");
         String expected = nativeView.getText().toString();
+        int writesBefore = nativeView.bindings;
         for (int i = 0; i < 20; i++) XPostPreview.onBound(nativeView);
         check(nativeView.getText().toString().equals(expected), "Repeated native binding never duplicates preview");
+        check(nativeView.bindings == writesBefore, "Unchanged native binding performs no additional setText/layout");
         check(nativeView.maximumDepth == 2, "Repeated rebind does not grow the stack");
         Haiagaru.collapsible = true;
         nativeView.setText(source, TextView.BufferType.SPANNABLE);

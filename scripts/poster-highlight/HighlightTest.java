@@ -58,6 +58,24 @@ public final class HighlightTest {
                 PosterHighlight.save(List.of(new PosterHighlightRules.Rule(1,0,thread,poster.id,true)));
                 PosterHighlight.apply(view);
                 check(tinted((Spanned)view.getText()),"Live re-enable by ID");
+                CharSequence stableText=view.getText();
+                final int[] replacements={0};
+                view.addTextChangedListener(new TextWatcher(){
+                    public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+                    public void onTextChanged(CharSequence s,int start,int before,int count){replacements[0]++;}
+                    public void afterTextChanged(Editable s){}
+                });
+                StyleSpan[] beforeBold=((Spanned)stableText).getSpans(0,stableText.length(),StyleSpan.class);
+                PosterHighlight.save(List.of(new PosterHighlightRules.Rule(1,0,thread,poster.id,true,1),
+                        new PosterHighlightRules.Rule(1,0,thread,"second-person",true,2)));
+                PosterHighlight.apply(view);
+                check(view.getText()==stableText && replacements[0]==0,"Two people/color update keeps native text/layout instance");
+                StyleSpan[] afterBold=((Spanned)view.getText()).getSpans(0,view.length(),StyleSpan.class);
+                check(beforeBold.length==1 && afterBold.length==1 && beforeBold[0]==afterBold[0],"Color change retains metric-affecting bold span");
+                BackgroundColorSpan[] current=((Spanned)view.getText()).getSpans(0,view.length(),BackgroundColorSpan.class);
+                check(Arrays.stream(current).anyMatch(s->s.getBackgroundColor()==PosterHighlightRules.COLORS[1]),"Individual color retained");
+                for(int repeat=0;repeat<100;repeat++)PosterHighlight.apply(view);
+                check(view.getText()==stableText && replacements[0]==0,"Repeated visible-row checks never replace text");
                 prefs.edit().putBoolean("enabled",false).apply();PosterHighlight.save(List.of(new PosterHighlightRules.Rule(1,0,thread,poster.id,true)));
                 PosterHighlight.apply(view);
                 check(!tinted((Spanned)view.getText()) && ((Spanned)view.getText()).getSpanStart(nativeColor)==0,"Master OFF removes only own styles");

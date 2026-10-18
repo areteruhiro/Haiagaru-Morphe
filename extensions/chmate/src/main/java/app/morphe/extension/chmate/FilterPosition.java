@@ -23,6 +23,7 @@ public final class FilterPosition {
     private FilterPosition() {}
 
     public static void register(Object fragment) {
+        PopularReplies.register(fragment);
         fragments.removeIf(ref -> ref.get() == null || ref.get() == fragment);
         fragments.add(new WeakReference<>(fragment));
     }
@@ -69,6 +70,33 @@ public final class FilterPosition {
             }
         }
         return null;
+    }
+
+    /** Explicit user-requested navigation only; never used when simply closing a popup. */
+    static boolean jumpToResponse(Object fragment,int number) throws Exception {
+        View root=(View)fragment.getClass().getMethod("getView").invoke(fragment);
+        View list=findList(root);
+        if(list==null)return false;
+        Object adapter=call(list,"getAdapter",new Class<?>[0]);
+        if(adapter==null)return false;
+        Method item=list instanceof ListView?adapter.getClass().getMethod("getItem",int.class):findItem(adapter);
+        item.setAccessible(true);
+        int count=((Number)call(adapter,list instanceof ListView?"getCount":"getItemCount",new Class<?>[0])).intValue();
+        for(int i=0;i<count;i++) {
+            Object row=item.invoke(adapter,i);
+            if(row==null)continue;
+            for(Class<?> type=row.getClass();type!=null;type=type.getSuperclass())for(Field field:type.getDeclaredFields()) {
+                String name=field.getType().getName();
+                if(!name.equals("o.processAdDisplayErrorPostbackForUserError")&&!name.equals("o.BouncyCastleSocketAdapterCompanion")&&!name.equals("o.KeJ11"))continue;
+                field.setAccessible(true);Object response=field.get(row);if(response==null)continue;
+                String key=name.equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o";
+                if(((Number)ResponseArchiveEntry.field(response,key)).intValue()!=number)continue;
+                if(list instanceof ListView)((ListView)list).setSelectionFromTop(i,0);
+                else call(list,"scrollToPosition",new Class<?>[]{int.class},i);
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Object call(Object target, String name, Class<?>[] types, Object... args) throws Exception {

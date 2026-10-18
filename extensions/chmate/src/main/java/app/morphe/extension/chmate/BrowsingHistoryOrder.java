@@ -38,7 +38,11 @@ public final class BrowsingHistoryOrder {
             // A null board denotes a native section heading, not a thread.
             if (board == null) continue;
             long visited = access.visited(value);
-            if (visited > 0 && visited >= cutoff) rows.add(new Row(value, board, visited));
+            // With cutoff 0 the user explicitly requested the full native history.
+            // Older ChMate history rows can have no last-visited timestamp (0), but
+            // are still valid rows in the history list. Keep them in the stable tail
+            // so they participate in board grouping instead of silently disappearing.
+            if (cutoff == 0 || visited > 0 && visited >= cutoff) rows.add(new Row(value, board, visited));
         }
         // Stable sorting retains native order when timestamps tie.
         Collections.sort(rows, (a, b) -> Long.compare(b.visited, a.visited));

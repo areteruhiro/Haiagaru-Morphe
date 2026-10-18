@@ -215,7 +215,8 @@ public final class ClipboardHistory {
         try { return (Activity)owner.getClass().getMethod("getActivity").invoke(owner); } catch (Exception ignored) { return null; }
     }
     public static void addPostingMenu(Object owner, Menu menu) {
-        Activity a = activity(owner); if (a == null || menu == null || menu.findItem(MENU_ID) != null) return;
+        Activity a = activity(owner);
+        if (!Haiagaru.preparePostingMenu(a, menu, MENU_ID, "showClipboardHistoryMenu")) return;
         MenuItem item = menu.add(Menu.NONE, MENU_ID, Menu.NONE, "コピー履歴・分類"); item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         OWNERS.put(item, new java.lang.ref.WeakReference<>(a)); item.setOnMenuItemClickListener(i -> handlePostingMenu(owner, i));
     }

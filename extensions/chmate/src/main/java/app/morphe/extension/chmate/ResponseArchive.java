@@ -109,7 +109,7 @@ public final class ResponseArchive {
         if (!(object instanceof Menu)) return;
         Menu menu = (Menu) object;
         if (ResponseMenuSettings.visible(VIEW_ARCHIVE) && menu.findItem(VIEW_ARCHIVE) == null)
-            menu.add(Menu.NONE, VIEW_ARCHIVE, menu.size(), "過去レスを見る")
+            menu.add(Menu.NONE, VIEW_ARCHIVE, ResponseMenuSettings.order(VIEW_ARCHIVE, menu.size()), "過去レスを見る")
                     .setIcon(archiveIcon(false))
                     .setOnMenuItemClickListener(ResponseArchive::handle);
     }
@@ -126,7 +126,7 @@ public final class ResponseArchive {
         Menu menu = (Menu) menuObject;
         if (!ResponseMenuSettings.visible(ITEM) || menu.findItem(ITEM) != null) return;
         ResponseArchiveEntry entry = snapshot(response, board);
-        menu.add(Menu.NONE, ITEM, menu.size(), "このレスをアーカイブに保存")
+        menu.add(Menu.NONE, ITEM, ResponseMenuSettings.order(ITEM, menu.size()), "このレスをアーカイブに保存")
                 .setIcon(archiveIcon(true))
                 .setIntent(new Intent().putExtra(EXTRA, json(entry).toString()))
                 .setOnMenuItemClickListener(ResponseArchive::handle);
@@ -389,6 +389,162 @@ public final class ResponseArchive {
         chooser.show();
     }
 
+    private static boolean deleteTree(File file) {
+        if (file == null || !file.exists()) return true;
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) if (!deleteTree(child)) return false;
+        return file.delete();
+    }
+
+    private static void manageCollections(Activity a, int offset) {
+        if (a == null || a.isFinishing()) return;
+        IO.execute(() -> {
+            try {
+                List<Collection> all = collections(a);
+                int end = Math.min(all.size(), offset + 100);
+                List<Collection> page = new ArrayList<>(all.subList(offset, end));
+                ArrayList<String> labels = new ArrayList<>();
+                for (Collection item : page) labels.add(item.title);
+                boolean hasNext = end < all.size(), hasPrevious = offset > 0;
+                MAIN.post(() -> {
+                    if (a.isFinishing() || a.isDestroyed()) return;
+                    boolean[] selected = new boolean[page.size()];
+                    LinearLayout content = new LinearLayout(a); content.setOrientation(LinearLayout.VERTICAL);
+                    ScrollView choices = new ScrollView(a); LinearLayout choiceList = new LinearLayout(a); choiceList.setOrientation(LinearLayout.VERTICAL);
+                    choices.addView(choiceList);
+                    int pad = (int) (12 * a.getResources().getDisplayMetrics().density);
+                    for (int i = 0; i < page.size(); i++) {
+                        final int index = i;
+                        android.widget.CheckBox box = new android.widget.CheckBox(a); box.setText(labels.get(i));
+                        box.setPadding(pad, pad / 2, pad, pad / 2); box.setOnCheckedChangeListener((button, checked) -> selected[index] = checked);
+                        choiceList.addView(box);
+                    }
+                    content.addView(choices, new LinearLayout.LayoutParams(-1, 0, 1));
+                    LinearLayout actions = new LinearLayout(a); actions.setOrientation(LinearLayout.HORIZONTAL);
+                    Button allDelete = new Button(a); allDelete.setText("全て削除");
+                    Button rename = new Button(a); rename.setText("名前を変更");
+                    actions.addView(allDelete, new LinearLayout.LayoutParams(0, -2, 1));
+                    actions.addView(rename, new LinearLayout.LayoutParams(0, -2, 1));
+                    if (hasPrevious) { Button previous = new Button(a); previous.setText("前の100件"); previous.setOnClickListener(v -> manageCollections(a, Math.max(0, offset - 100))); actions.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); }
+                    if (hasNext) { Button next = new Button(a); next.setText("次の100件"); next.setOnClickListener(v -> manageCollections(a, end)); actions.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); }
+                    content.addView(actions);
+                    AlertDialog dialog = new AlertDialog.Builder(a).setTitle("保存用スレを管理（" + all.size() + "件）")
+                            .setView(content).setNegativeButton("閉じる", null).setPositiveButton("選択を削除", null).create();
+                    dialog.setOnShowListener(ignored -> {
+                        dialog.getButton(-1).setOnClickListener(v -> {
+                            ArrayList<Collection> targets = new ArrayList<>();
+                            for (int i = 0; i < selected.length; i++) if (selected[i]) targets.add(page.get(i));
+                            if (targets.isEmpty()) { toast(a, "削除する保存用スレを選択してください"); return; }
+                            confirmDeleteCollections(a, targets, false, () -> { dialog.dismiss(); manageCollections(a, offset); });
+                        });
+                        rename.setOnClickListener(v -> {
+                            int chosen = -1;
+                            for (int i = 0; i < selected.length; i++) if (selected[i]) {
+                                if (chosen >= 0) { toast(a, "名前を変更する保存用スレを1つだけ選択してください"); return; }
+                                chosen = i;
+                            }
+                            if (chosen < 0) { toast(a, "名前を変更する保存用スレを選択してください"); return; }
+                            dialog.dismiss();
+                            editCollection(a, page.get(chosen), null);
+                        });
+                        allDelete.setOnClickListener(v -> confirmDeleteCollections(a, all, true, () -> { dialog.dismiss(); manageCollections(a, 0); }));
+                    });
+                    dialog.show();
+                });
+            } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
+        });
+    }
+
+    private static void confirmDeleteCollections(Activity a, List<Collection> targets, boolean all, Runnable done) {
+        if (targets.isEmpty()) { toast(a, "削除する保存用スレはありません"); return; }
+        String message = all
+                ? "保存用スレ " + targets.size() + "件と、各スレ内の保存レスを全て削除します。この操作は取り消せません。"
+                : "選択した保存用スレ " + targets.size() + "件と、その中の保存レスを削除します。この操作は取り消せません。";
+        new AlertDialog.Builder(a).setTitle("保存用スレを削除")
+                .setMessage(message).setNegativeButton("キャンセル", null)
+                .setPositiveButton("削除", (d, w) -> IO.execute(() -> {
+                    try {
+                        for (Collection target : targets) {
+                            File dir = collectionDirectory(a, target.id);
+                            if (!deleteTree(dir)) throw new IOException("Cannot delete archive thread " + target.id);
+                        }
+                        MAIN.post(() -> { toast(a, "保存用スレを削除しました"); done.run(); });
+                    } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
+                })).show();
+    }
+
+    private static void manageResponses(Activity a, Collection collection, int offset) {
+        if (a == null || a.isFinishing()) return;
+        IO.execute(() -> {
+            try {
+                File[] files = sortedArchiveFiles(a, collection == null ? directory(a) : collectionDirectory(a, collection.id));
+                int end = Math.min(files.length, offset + 100);
+                ArrayList<ResponseArchiveEntry> rows = new ArrayList<>();
+                for (int i = offset; i < end; i++) try {
+                    ResponseArchiveEntry e = read(files[i]);
+                    rows.add(new ResponseArchiveEntry(e.url, e.title, e.number, e.name, e.date, "", e.mail));
+                } catch (Exception error) { report(error); }
+                ArrayList<String> labels = new ArrayList<>();
+                for (ResponseArchiveEntry e : rows) labels.add(e.title + "\nレス " + e.number + "  " + plain(e.name) + "\n" + plain(e.date));
+                boolean hasNext = end < files.length, hasPrevious = offset > 0;
+                MAIN.post(() -> {
+                    if (a.isFinishing() || a.isDestroyed()) return;
+                    boolean[] selected = new boolean[rows.size()];
+                    LinearLayout content = new LinearLayout(a); content.setOrientation(LinearLayout.VERTICAL);
+                    ScrollView choices = new ScrollView(a); LinearLayout choiceList = new LinearLayout(a); choiceList.setOrientation(LinearLayout.VERTICAL);
+                    choices.addView(choiceList);
+                    int pad = (int) (12 * a.getResources().getDisplayMetrics().density);
+                    for (int i = 0; i < rows.size(); i++) {
+                        final int index = i;
+                        android.widget.CheckBox box = new android.widget.CheckBox(a); box.setText(labels.get(i));
+                        box.setPadding(pad, pad / 2, pad, pad / 2); box.setOnCheckedChangeListener((button, checked) -> selected[index] = checked);
+                        choiceList.addView(box);
+                    }
+                    content.addView(choices, new LinearLayout.LayoutParams(-1, 0, 1));
+                    LinearLayout actions = new LinearLayout(a); actions.setOrientation(LinearLayout.HORIZONTAL);
+                    Button allDelete = new Button(a); allDelete.setText("全て削除");
+                    Button sort = new Button(a); sort.setText("並び順"); sort.setOnClickListener(v -> showSort(a, collection, offset));
+                    actions.addView(allDelete, new LinearLayout.LayoutParams(0, -2, 1));
+                    actions.addView(sort, new LinearLayout.LayoutParams(0, -2, 1));
+                    if (hasPrevious) { Button previous = new Button(a); previous.setText("前の100件"); previous.setOnClickListener(v -> manageResponses(a, collection, Math.max(0, offset - 100))); actions.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); }
+                    if (hasNext) { Button next = new Button(a); next.setText("次の100件"); next.setOnClickListener(v -> manageResponses(a, collection, end)); actions.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); }
+                    content.addView(actions);
+                    AlertDialog dialog = new AlertDialog.Builder(a).setTitle("保存したレスを管理（" + files.length + "件）")
+                            .setView(content).setNegativeButton("閉じる", null).setPositiveButton("選択を削除", null).create();
+                    dialog.setOnShowListener(ignored -> dialog.getButton(-1).setOnClickListener(v -> {
+                        ArrayList<File> targets = new ArrayList<>();
+                        for (int i = 0; i < selected.length; i++) if (selected[i]) {
+                            try { targets.add(fileIn(collection == null ? directory(a) : collectionDirectory(a, collection.id), rows.get(i).url)); }
+                            catch (Exception error) { failure(a, error); return; }
+                        }
+                        if (targets.isEmpty()) { toast(a, "削除するレスを選択してください"); return; }
+                        confirmDeleteResponses(a, targets, false, () -> { dialog.dismiss(); manageResponses(a, collection, offset); });
+                    }));
+                    dialog.show();
+                    allDelete.setOnClickListener(v -> confirmDeleteResponses(a, Arrays.asList(files), true, () -> {
+                        dialog.dismiss(); manageResponses(a, collection, 0);
+                    }));
+                });
+            } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
+        });
+    }
+
+    private static void confirmDeleteResponses(Activity a, List<File> targets, boolean all, Runnable done) {
+        if (targets.isEmpty()) { toast(a, "削除する保存レスはありません"); return; }
+        new AlertDialog.Builder(a).setTitle("保存したレスを削除")
+                .setMessage((all ? "この一覧の保存レスを全て削除します。" : "選択した保存レス " + targets.size() + "件を削除します。")
+                        + " 元のスレやスレ単位のアーカイブは削除されません。この操作は取り消せません。")
+                .setNegativeButton("キャンセル", null).setPositiveButton("削除", (d, w) -> IO.execute(() -> {
+                    try {
+                        for (File target : targets) if (target.exists()) {
+                            new AtomicFile(target).delete();
+                            if (target.exists()) throw new IOException("Cannot delete response archive " + target.getName());
+                        }
+                        MAIN.post(() -> { toast(a, "保存レスを削除しました"); done.run(); });
+                    } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
+                })).show();
+    }
+
     public static void showList(Activity a) { chooseCollection(a, null); }
 
     private static void chooseCollection(Activity a, ResponseArchiveEntry entry) { chooseCollection(a, entry, 0); }
@@ -402,7 +558,10 @@ public final class ResponseArchive {
                 ArrayList<String> labels = new ArrayList<>();
                 for (Collection collection : page) labels.add(collection.title);
                 int create = labels.size(); labels.add("＋ 新しい保存用スレを作成");
+                int manage = labels.size(); if (entry == null) labels.add("保存用スレを管理（編集・削除）");
                 int legacy = labels.size(); if (entry == null) labels.add("従来の保存レスを見る");
+                int manageLegacy = labels.size(); if (entry == null) labels.add("従来の保存レスを管理・削除");
+                int managePage = labels.size(); if (entry == null) labels.add("保存用スレのレスを管理・削除");
                 int next = labels.size(); if (end < stored.size()) labels.add("次の100件");
                 MAIN.post(() -> {
                     if (a.isFinishing() || a.isDestroyed()) return;
@@ -412,12 +571,26 @@ public final class ResponseArchive {
                                     if (entry == null) showCollection(a, page.get(which), 0);
                                     else confirmSave(a, entry, page.get(which));
                                 } else if (which == create) editCollection(a, null, entry);
+                                else if (entry == null && which == manage) manageCollections(a, 0);
                                 else if (entry == null && which == legacy) showLegacyList(a, 0);
+                                else if (entry == null && which == manageLegacy) manageResponses(a, null, 0);
+                                else if (entry == null && which == managePage) {
+                                    if (page.isEmpty()) toast(a, "管理する保存用スレがありません");
+                                    else chooseManageCollection(a, page, 0);
+                                }
                                 else if (which == next) chooseCollection(a, entry, end);
                             }).setNegativeButton("閉じる", null).show();
                 });
             } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
         });
+    }
+
+    private static void chooseManageCollection(Activity a, List<Collection> page, int offset) {
+        ArrayList<String> labels = new ArrayList<>();
+        for (Collection item : page) labels.add(item.title);
+        new AlertDialog.Builder(a).setTitle("レスを管理する保存用スレ")
+                .setItems(labels.toArray(new String[0]), (d, which) -> manageResponses(a, page.get(which), 0))
+                .setNegativeButton("戻る", (d, w) -> chooseCollection(a, null, offset)).show();
     }
 
     private static void editCollection(Activity a, Collection existing, ResponseArchiveEntry entry) {
@@ -492,7 +665,7 @@ public final class ResponseArchive {
                     }
                     AlertDialog viewer = new AlertDialog.Builder(a).setTitle(current.title + "（" + files.length + "レス）")
                             .setView(scroll).setNegativeButton("スレ一覧", (d, w) -> showList(a))
-                            .setNeutralButton("並び順", (d, w) -> showSort(a, current, offset))
+                            .setNeutralButton("管理・並び順", (d, w) -> showCollectionManagement(a, current, offset))
                             .setPositiveButton(end < files.length ? "次の10件" : offset > 0 ? "先頭へ" : "閉じる",
                                     (d, w) -> { if (end < files.length || offset > 0) showCollection(a, current, end < files.length ? end : 0); })
                             .create();
@@ -510,6 +683,15 @@ public final class ResponseArchive {
                 });
             } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
         });
+    }
+
+    private static void showCollectionManagement(Activity a, Collection collection, int offset) {
+        new AlertDialog.Builder(a).setTitle(collection.title).setItems(new String[]{"この保存用スレのレスを管理・削除", "保存用スレの名前を変更", "並び順を変更", "保存用スレを削除"}, (d, which) -> {
+            if (which == 0) manageResponses(a, collection, 0);
+            else if (which == 1) editCollection(a, collection, null);
+            else if (which == 2) showSort(a, collection, offset);
+            else confirmDeleteCollections(a, Collections.singletonList(collection), false, () -> showList(a));
+        }).setNegativeButton("戻る", (d, w) -> showCollection(a, collection, offset)).show();
     }
 
     private static void showLegacyList(Activity a, int offset) {
@@ -539,12 +721,20 @@ public final class ResponseArchive {
                                 if (which < rows.size()) loadDetail(a, rows.get(which));
                                 else showLegacyList(a, more && which == rows.size() ? end : 0);
                             }).setMessage(labels.isEmpty() ? "保存したレスはありません。レス本文を長押しして保存できます。" : null)
-                            .setNeutralButton("並び順", (d, w) -> showSort(a, null, offset))
+                            .setNeutralButton("管理・並び順", (d, w) -> showLegacyManagement(a, offset))
                             .setNegativeButton("閉じる", null).show();
                     if (bad > 0) toast(a, "読み込めない保存レスを" + bad + "件スキップしました");
                 });
             } catch (Exception e) { MAIN.post(() -> failure(a, e)); }
         });
+    }
+
+    private static void showLegacyManagement(Activity a, int offset) {
+        new AlertDialog.Builder(a).setTitle("保存レスの管理")
+                .setItems(new String[]{"保存レスを選択して削除", "全て削除", "並び順を変更"}, (d, which) -> {
+                    if (which == 0 || which == 1) manageResponses(a, null, 0);
+                    else showSort(a, null, offset);
+                }).setNegativeButton("戻る", (d, w) -> showLegacyList(a, offset)).show();
     }
 
     @SuppressWarnings("deprecation")

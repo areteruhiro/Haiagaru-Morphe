@@ -38,7 +38,9 @@ final class HaiagaruSyncSnapshot {
     static final int AUTH = 1024;
     static final int DEVICE_DATA = 2048;
     static final int UPLOAD_HISTORY = 4096;
-    static final int ALL = 8191;
+    static final int WACCHOI_HISTORY = 8192;
+    static final int WACCHOI_CACHE = 16384;
+    static final int ALL = 32767;
     static final int DEFAULT = BOOKMARKS | NG | SETTINGS | POST_HISTORY | KAKIKOMI
             | RESPONSES | THREAD_ARCHIVES | RESOURCES;
     private static final int SCHEMA = 1;

@@ -17,9 +17,10 @@ public final class VerifyBrowsingHistoryOrder {
                 new Row("a-new", "host/a", 50), new Row("b-old", "host/b", 20),
                 new Row("other-host", "other/a", 30), new Row("heading", null, 99), new Row("not-visited", "host/c", 0));
         List<Row> ordered = BrowsingHistoryOrder.arrange(rows, ACCESS, 0);
-        check(ordered.stream().map(Row::title).toList().equals(List.of("a-new", "a-old", "b-new", "b-old", "other-host")), "Latest board, newest thread first; hosts isolated; headings removed");
+        check(ordered.stream().map(Row::title).toList().equals(List.of("a-new", "a-old", "b-new", "b-old", "other-host", "not-visited")), "All-period mode retains zero-timestamp legacy rows in stable board-grouped tail");
         check(rows.size() == 7 && rows.get(0).title.equals("a-old"), "Original saved model untouched");
         check(BrowsingHistoryOrder.arrange(rows, ACCESS, 30).stream().map(Row::title).toList().equals(List.of("a-new", "b-new", "other-host")), "Inclusive cutoff and old threads hidden only");
+        check(BrowsingHistoryOrder.arrange(rows, ACCESS, 1).stream().noneMatch(row -> row.visited == 0), "Bounded mode still excludes rows with no last-visited timestamp");
         check(BrowsingHistoryOrder.arrange(rows, ACCESS, 51).isEmpty(), "Empty results");
         check(BrowsingHistoryOrder.arrange(Collections.<Row>emptyList(), ACCESS, 0).isEmpty(), "Empty input");
         List<Row> ties = Arrays.asList(new Row("b1", "b", Long.MAX_VALUE),new Row("a1", "a", Long.MAX_VALUE),new Row("b2", "b", Long.MAX_VALUE));

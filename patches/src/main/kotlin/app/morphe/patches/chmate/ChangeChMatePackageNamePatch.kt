@@ -66,8 +66,9 @@ val changeChMatePackageNamePatch = resourcePatch(
 
     val versionCodeOption = intOption(
         key = "versionCode",
+        default = 2_100_000_000,
         title = "Version code",
-        description = "Positive integer from 1 to 2100000000. Leave unset to keep the original version code.",
+        description = "Defaults to the maximum Android distribution version code (2100000000). Allows switching between supported ChMate versions when package and signing key match. A lower-code APK cannot normally overwrite it. Clear to keep the original version code. Does not add support for unsupported versions.",
     ) { value ->
         value == null || value in 1..2_100_000_000
     }

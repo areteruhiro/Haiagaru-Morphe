@@ -36,6 +36,8 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -496,6 +498,8 @@ public final class Haiagaru {
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
         } catch (Exception ignored) { }
+        result = addToolbarChoice(result, 0x7e000005, "haiagaru_wacchoi_lower");
+        result = addToolbarChoice(result, 0x7e000006, "haiagaru_wacchoi_upper");
         return result;
     }
 
@@ -626,6 +630,12 @@ public final class Haiagaru {
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
         if (FavoriteThreads.refresh(fragment, itemId)) return true;
+        if (itemId == 0x7e000005 || itemId == 0x7e000006) {
+            Activity activity = toolbarActivity(fragment);
+            if (activity != null && !activity.isFinishing())
+                HissiWacchoiSearchActivity.openFromToolbar(activity, itemId == 0x7e000006);
+            return true;
+        }
         if (itemId == DIRECT_COPY_TOOLBAR_ID) {
             Activity activity = toolbarActivity(fragment);
             if (activity == null || activity.isFinishing()) return true;
@@ -2426,6 +2436,13 @@ public final class Haiagaru {
             // ChMate would otherwise continue its regular network load while
             // the importer is fetching the same .io DAT. The importer opens a
             // retry Activity after publishing the local cache.
+            if (talkThread) {
+                // Import can finish this first instance before ChMate initializes
+                // its result for the caller's forward history. Match its native
+                // result (including fwRequestCode/fwFragmentTag and any nested
+                // forwardIntent) even when onCreate returns early.
+                activity.setResult(Activity.RESULT_CANCELED, new Intent(intent));
+            }
             activity.finish();
             return;
         }
@@ -3371,13 +3388,13 @@ public final class Haiagaru {
         sections.defer(SettingsSections.Category.UPLOAD, "アップロード Imgur imgbox imgpile Sendvid ログイン 投稿一覧 upload login", () -> settingsUPLOAD(activity));
         sections.defer(SettingsSections.Category.GENERAL, "言語 日本語 英語 広告 language ads", () -> settingsGENERAL(activity));
         sections.defer(SettingsSections.Category.DISPLAY, "行間 フォント 文字サイズ テーマ 回転 ツールバー アイコン フィルタ 並び順 コピー 自動リロード 記者ID 強調 置換 spacing font toolbar copy", () -> settingsDISPLAY(activity));
-        sections.defer(SettingsSections.Category.POSTING, "書き込み 入力 文字サイズ 投稿 本文チェック モバイル回線 posting text size", () -> settingsPOSTING(activity));
+        sections.defer(SettingsSections.Category.POSTING, "書き込み 入力 文字サイズ 投稿 本文チェック モバイル回線 メニュー 非表示 コピー履歴 分類 アップロード先 外部板 認証 posting text size menu", () -> settingsPOSTING(activity));
         sections.defer(SettingsSections.Category.ADVANCED, "User-Agent MonaKey HTTPS HTTP 通信 IP タイムアウト 接続 進捗 外部板 認証 板名 URL", () -> settingsADVANCED(activity));
         sections.defer(SettingsSections.Category.CHECKER, "必死チェッカー Kyodemo hissi ID ワッチョイ 検索 テーマ 文字サイズ ジェスチャー", () -> settingsCHECKER(activity));
         sections.defer(SettingsSections.Category.MEDIA, "画像 動画 サムネイル キャッシュ 容量 自動保存 巡回 ダウンロード 回転 VPN ビューア 分割 Wi-Fi video thumbnail download", () -> settingsMEDIA(activity));
         sections.defer(SettingsSections.Category.SOCIAL, "X Twitter ツイート 投稿 本文 全文 折りたたみ キャッシュ preview cache", () -> settingsSOCIAL(activity));
         sections.defer(SettingsSections.Category.NG, "NG 非表示 名前 ワッチョイ ID コピペ 荒らし 高度なNG 正規表現", () -> settingsNG(activity));
-        sections.defer(SettingsSections.Category.ARCHIVE, "DAT 過去ログ エッヂ アーカイブ レス保存 元スレ URL archive", () -> settingsARCHIVE(activity));
+        sections.defer(SettingsSections.Category.ARCHIVE, "DAT 過去ログ エッヂ アーカイブ レス保存 元スレ URL 次スレ 関連 候補 archive", () -> settingsARCHIVE(activity));
         sections.defer(SettingsSections.Category.HISTORY, "閲覧 書き込み 検索 履歴 保存 件数 無制限 送信済み クリップボード コピー history clipboard", () -> settingsHISTORY(activity));
         sections.defer(SettingsSections.Category.BACKUP, "バックアップ 復元 移行 MEGA 同期 ローカル ファイル backup restore sync", () -> settingsBACKUP(activity));
         sections.finish();
@@ -3534,6 +3551,8 @@ public final class Haiagaru {
                 titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
 
         ToolbarIcons.addSettingsButton(layout, activity);
+        WacchoiSearchOptions.addSettings(layout,activity);
+        PopularReplies.addSettings(layout,activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,
@@ -3609,6 +3628,20 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        String[][] menuOptions = {
+                {"showClipboardHistoryMenu", text("メニューに「コピー履歴・分類」を表示", "Show clipboard history in the menu")},
+                {"showUploadHostMenu", text("メニューに「アップロード先を変更」を表示", "Show upload destination in the menu")},
+                {"showExternalBoardAuthMenu", text("メニューに「外部板の認証ページ」を表示", "Show external board authentication in the menu")}
+        };
+        for (String[] option : menuOptions) {
+            Switch toggle = addSwitch(layout, activity, option[1], preferences.getBoolean(option[0], false));
+            live.toggle(toggle, option[0]);
+        }
+        TextView menuDescription = new TextView(activity);
+        menuDescription.setText(text("オフにした項目は、次にメニューを開くと非表示になります。機能自体や認証が必要な際の案内は無効になりません。",
+                "Disabled entries are hidden the next time the menu opens. Features and authentication prompts remain available."));
+        menuDescription.setTextSize(13);
+        layout.addView(menuDescription, rowParams(activity));
         String[] postSizeChoices = new String[29];
         postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
         for (int index = 1; index < 28; index++)
@@ -4005,11 +4038,28 @@ public final class Haiagaru {
         Switch xPostCollapsible = addSwitch(layout, activity,
                 text("X投稿のプレビューを折りたたむ（タップで開閉）", "Collapse X previews (tap to expand/collapse)"),
                 xPostPreviewCollapsible());
+        Switch xPostCard = addSwitch(layout, activity,
+                text("X投稿のプレビューをカード形式で表示", "Display X previews as cards"), xPostPreviewCard());
+        TextView xPostCardNote = new TextView(activity);
+        xPostCardNote.setText(text("投稿者・本文・日時を枠付きで表示します。X公式の埋め込みではなく、プロフィール画像の追加取得は行いません。",
+                "Shows author, text and date in a native card, not an official X embed. No extra profile-image downloads."));
+        xPostCardNote.setTextSize(13); layout.addView(xPostCardNote);
+        Switch xPostActions = addSwitch(layout, activity,
+                text("Xプレビューに返信・リポスト・いいね・リンクコピーを表示", "Show reply, repost, like and copy link actions"), xPostPreviewActions());
+        Switch xPostBrowser = addSwitch(layout, activity,
+                text("X投稿・操作をブラウザのアプリ内タブで開く", "Open X posts and actions in browser in-app tabs"), xPostPreviewBrowser());
+        TextView xPostActionsNote = new TextView(activity);
+        xPostActionsNote.setText(text("操作はX公式ページで確認します。ログインが必要な場合があります。自動で投稿・いいねは行いません。アプリ内タブ非対応のブラウザでは通常表示になります。",
+                "Confirm actions on X. Login may be required. Nothing is posted or liked automatically. Unsupported browsers open normally."));
+        xPostActionsNote.setTextSize(13); layout.addView(xPostActionsNote);
         XPostPreview.addCacheSettings(layout, activity);
 
         live.toggle(xPostPreview,"xPostPreviewEnabled");
         live.toggle(xPostFullText,"xPostPreviewFullText");
         live.toggle(xPostCollapsible,"xPostPreviewCollapsible");
+        live.toggle(xPostCard,"xPostPreviewCard");
+        live.toggle(xPostActions,"xPostPreviewActions");
+        live.toggle(xPostBrowser,"xPostPreviewBrowser");
         return layout;
     }
 
@@ -4151,6 +4201,7 @@ public final class Haiagaru {
         responseArchive.setOnClickListener(v -> ResponseArchive.showList(activity));
         layout.addView(responseArchive);
         ArchiveOrigins.addSettings(layout, activity);
+        RelatedThreads.addSettings(layout, activity);
         EditText archiveRouteTemplatesValue = null;
         try {
             archiveRouteTemplatesValue = addArchiveRouteControl(
@@ -5025,6 +5076,14 @@ public final class Haiagaru {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    static boolean preparePostingMenu(Context context, Menu menu, int itemId, String key) {
+        if (context == null || menu == null) return false;
+        boolean visible = preferences(context).getBoolean(key, false);
+        MenuItem existing = menu.findItem(itemId);
+        if (existing != null) existing.setVisible(visible);
+        return visible && existing == null;
+    }
+
     private static SharedPreferences preferencesOrNull() {
         Context context = applicationContext;
         return context == null ? null : preferences(context);
@@ -5182,6 +5241,20 @@ public final class Haiagaru {
     public static boolean xPostPreviewCollapsible() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean("xPostPreviewCollapsible", false);
+    }
+    public static boolean xPostPreviewActions() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("xPostPreviewActions", false);
+    }
+
+    public static boolean xPostPreviewBrowser() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("xPostPreviewBrowser", true);
+    }
+
+    public static boolean xPostPreviewCard() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("xPostPreviewCard", false);
     }
 
     static void refreshImgurAttachments() {

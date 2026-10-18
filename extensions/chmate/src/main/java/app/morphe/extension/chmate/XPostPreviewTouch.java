@@ -18,15 +18,69 @@ public final class XPostPreviewTouch {
     static class PostLink extends URLSpan {
         PostLink(String url) { super(url); }
         @Override public void onClick(View view) {
+            open(view, getURL());
+        }
+    }
+    static void open(View view, String url) {
             try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getURL()));
-                intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                Intent intent = browserIntent(url, Haiagaru.xPostPreviewBrowser());
+                if (Haiagaru.xPostPreviewBrowser()) {
+                    android.content.pm.PackageManager manager = view.getContext().getPackageManager();
+                    java.util.List<android.content.pm.ResolveInfo> browsers = manager.queryIntentServices(
+                            new Intent("android.support.customtabs.action.CustomTabsService"), 0);
+                    android.content.pm.ResolveInfo preferred = manager.resolveActivity(
+                            new Intent(Intent.ACTION_VIEW, Uri.parse("https://x.com/")),
+                            android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+                    String selected = null;
+                    for (android.content.pm.ResolveInfo browser : browsers) {
+                        if (browser.serviceInfo == null) continue;
+                        String name = browser.serviceInfo.packageName;
+                        if (selected == null) selected = name;
+                        if (preferred != null && preferred.activityInfo != null
+                                && name.equals(preferred.activityInfo.packageName)) { selected = name; break; }
+                    }
+                    if (selected != null) intent.setPackage(selected);
+                }
                 view.getContext().startActivity(intent);
             } catch (android.content.ActivityNotFoundException error) {
-                Toast.makeText(view.getContext(), "投稿を開けるアプリがありません", Toast.LENGTH_SHORT).show();
+                try { view.getContext().startActivity(browserIntent(url, false)); }
+                catch (android.content.ActivityNotFoundException missing) {
+                    Toast.makeText(view.getContext(), "投稿を開けるアプリがありません", Toast.LENGTH_SHORT).show();
+                }
             }
+    }
+    static Intent browserIntent(String url, boolean internal) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                intent.addCategory(Intent.CATEGORY_BROWSABLE);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (internal) {
+                    // Standard Custom Tabs protocol: supporting browsers show their own secure
+                    // in-app tab and reuse browser login. Others ignore these optional extras.
+                    android.os.Bundle extras = new android.os.Bundle();
+                    extras.putBinder("android.support.customtabs.extra.SESSION", null);
+                    extras.putBoolean("android.support.customtabs.extra.SHARE_MENU_ITEM", true);
+                    intent.putExtras(extras);
+                }
+                return intent;
+    }
+    static final class ActionLink extends PostLink {
+        final boolean copy;
+        ActionLink(String url, boolean copy) { super(url); this.copy = copy; }
+        @Override public void onClick(View view) {
+            if (!copy) { super.onClick(view); return; }
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)
+                    view.getContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            if (clipboard == null) return;
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("X投稿", getURL()));
+            Toast.makeText(view.getContext(), "投稿リンクをコピーしました", Toast.LENGTH_SHORT).show();
         }
+    }
+    static String actionUrl(String action, String id) {
+        if (id == null || !id.matches("[0-9]{1,25}")) throw new IllegalArgumentException("Invalid post ID");
+        if ("reply".equals(action)) return "https://x.com/intent/tweet?in_reply_to=" + id;
+        if ("like".equals(action)) return "https://x.com/intent/like?tweet_id=" + id;
+        if ("repost".equals(action)) return "https://x.com/intent/retweet?tweet_id=" + id;
+        throw new IllegalArgumentException("Invalid post action");
     }
     static final class ToggleLink extends PostLink {
         final String id;

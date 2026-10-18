@@ -25,6 +25,9 @@ final class VideoTouchControls {
                 }
                 return false;
             }
+            @Override public void onLongPress(MotionEvent e) {
+                activity.beginHoldSpeed();
+            }
             @Override public boolean onSingleTapConfirmed(MotionEvent e) {
                 activity.toggleControls(); return true;
             }
@@ -63,6 +66,7 @@ final class VideoTouchControls {
                 24 * activity.getResources().getDisplayMetrics().density);
         if (action == MotionEvent.ACTION_MOVE && enabled && !adjusting && Math.abs(dy) > slop && Math.abs(dy) > Math.abs(dx) * 1.3f) {
             adjusting = true;
+            activity.endHoldSpeed();
             cancelTap(); activity.cancelNativeVideoGesture();
             MotionEvent cancel = MotionEvent.obtain(event); cancel.setAction(MotionEvent.ACTION_CANCEL);
             activity.dispatchVideoTouch(cancel); cancel.recycle();
@@ -73,6 +77,7 @@ final class VideoTouchControls {
             return true;
         }
         taps.onTouchEvent(event);
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) activity.endHoldSpeed();
         if (action == MotionEvent.ACTION_UP) tracking = false;
         return false;
     }
@@ -94,5 +99,5 @@ final class VideoTouchControls {
         MotionEvent cancel = MotionEvent.obtain(0, 0, MotionEvent.ACTION_CANCEL, 0, 0, 0);
         taps.onTouchEvent(cancel); cancel.recycle();
     }
-    void cancel() { cancelTap(); tracking = adjusting = false; }
+    void cancel() { cancelTap(); activity.endHoldSpeed(); tracking = adjusting = false; }
 }

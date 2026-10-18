@@ -37,6 +37,7 @@ public final class XPostPreview {
                         XPostMetadata.clear();
                         MAIN.post(() -> {
                             synchronized (CACHE) { CACHE.clear(); ++revision; }
+                            IDS.evictAll(); DIRTY.clear();
                             if (!activity.isFinishing() && !activity.isDestroyed()) {
                                 button.setEnabled(true);
                                 android.widget.Toast.makeText(activity,"X投稿プレビューのキャッシュを削除しました",android.widget.Toast.LENGTH_SHORT).show();
@@ -49,6 +50,12 @@ public final class XPostPreview {
             TimeUnit.SECONDS, new ArrayBlockingQueue<>(32), new ThreadPoolExecutor.AbortPolicy());
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final LinkedHashMap<String, Entry> CACHE = new LinkedHashMap<>();
+    // At most 128 small bodies / 256K characters. Never cache rendered spans or Views.
+    private static final android.util.LruCache<String, String[]> IDS = new android.util.LruCache<String, String[]>(262_144) {
+        @Override protected int sizeOf(String body, String[] ids) { return Math.max(2048, body.length()); }
+    };
+    private static final java.util.WeakHashMap<TextView, Boolean> DIRTY = new java.util.WeakHashMap<>();
+    private static boolean refreshPosted;
     private static volatile int revision;
     private static final java.util.WeakHashMap<TextView, Boolean> BOUND = new java.util.WeakHashMap<>();
     private static final java.util.WeakHashMap<TextView, RowState> ROWS = new java.util.WeakHashMap<>();
@@ -72,16 +79,52 @@ public final class XPostPreview {
         final int revision;
         final boolean full;
         final boolean collapsible;
-        Marker(int revision) {
+        final boolean card;
+        final boolean actions;
+        final String[] ids;
+        final Data[] data;
+        final boolean[] expanded;
+        final boolean needsFetch;
+        Marker(int revision, String[] ids, Data[] data, boolean[] expanded, boolean needsFetch) {
             this.revision = revision;
             this.full = Haiagaru.xPostPreviewFullText();
             this.collapsible = Haiagaru.xPostPreviewCollapsible();
+            this.card = Haiagaru.xPostPreviewCard();
+            this.actions = Haiagaru.xPostPreviewActions();
+            this.ids = ids; this.data = data; this.expanded = expanded; this.needsFetch = needsFetch;
+        }
+        boolean current(TextView view, boolean fetch) {
+            if (revision != XPostPreview.revision || full != Haiagaru.xPostPreviewFullText()
+                    || collapsible != Haiagaru.xPostPreviewCollapsible() || card != Haiagaru.xPostPreviewCard()
+                    || actions != Haiagaru.xPostPreviewActions()
+                    || fetch && needsFetch) return false;
+            RowState state = view == null ? null : ROWS.get(view);
+            synchronized (CACHE) {
+                long now = android.os.SystemClock.elapsedRealtime();
+                for (int i = 0; i < ids.length; i++) {
+                    boolean open = !collapsible || state != null && state.expanded.contains(ids[i]);
+                    if (open != expanded[i]) return false;
+                    if (open && cached(CACHE.get(ids[i]), now) != data[i]) return false;
+                }
+            }
+            return true;
         }
     }
+    private static Data cached(Entry entry, long now) {
+        return entry == null || now >= entry.expires ? null : entry.data;
+    }
+    private static String[] ids(CharSequence source) {
+        String text = source.toString();
+        String[] ids = IDS.get(text);
+        if (ids == null) { ids = XMediaAttachments.postIds(text); IDS.put(text, ids); }
+        return ids;
+    }
     static final class Data {
-        final String id, author, handle, text, date;
+        final String id, author, handle, text, date, excerpt;
         Data(String id, String author, String handle, String text, String date) {
             this.id = id; this.author = author; this.handle = handle; this.text = text; this.date = date;
+            excerpt = text.codePointCount(0, text.length()) > 140
+                    ? text.substring(0, text.offsetByCodePoints(0, 140)) + "…" : text;
         }
     }
 
@@ -122,8 +165,7 @@ public final class XPostPreview {
         Marker[] markers = spans.getSpans(0, source.length(), Marker.class);
         boolean enabled = Haiagaru.xPostPreviewEnabled();
         if (markers.length > 0) {
-            if (!force && enabled && markers[0].revision == revision && markers[0].full == Haiagaru.xPostPreviewFullText()
-                    && markers[0].collapsible == Haiagaru.xPostPreviewCollapsible()) return;
+            if (!force && enabled && markers[0].current(view, true)) return;
             source = source.subSequence(0, spans.getSpanStart(markers[0]));
         }
         if (!enabled) {
@@ -132,8 +174,6 @@ public final class XPostPreview {
         }
         if (!view.isShown()) return;
         if (source.length() > 100_000) return;
-        String[] ids = XMediaAttachments.postIds(source.toString());
-        if (ids.length == 0) return;
         CharSequence result = decorate(source, view, true);
         if (result != source) setText(view, result);
         else if (markers.length > 0) setText(view, source);
@@ -149,19 +189,28 @@ public final class XPostPreview {
                 || source.length() > 100_000) return source;
         Spanned spanned = (Spanned) source;
         Marker[] markers = spanned.getSpans(0, source.length(), Marker.class);
-        if (markers.length > 0) source = source.subSequence(0, spanned.getSpanStart(markers[0]));
+        if (markers.length > 0) {
+            if (markers[0].current(view, false)) return source;
+            source = source.subSequence(0, spanned.getSpanStart(markers[0]));
+        }
         return decorate(source, view, false);
     }
 
     /** Called after native binding; covers recycled rows even when no global layout fires. */
     public static void onBound(Object object) {
-        if (object == WRITING.get()) return;
+        if (object == WRITING.get() || Looper.myLooper() != Looper.getMainLooper()) return;
         DirectBodySelection.prepare(object);
         if (!(object instanceof TextView) || object instanceof EditText || !Haiagaru.xPostPreviewEnabled()) return;
         TextView view = (TextView) object;
         CharSequence source = view.getText();
+        if (!(source instanceof Spanned) || source instanceof Editable || source.length() > 100_000) return;
         CharSequence cached = prepare(source, view);
         if (cached != source) setText(view, cached);
+        if (cached instanceof Spanned) {
+            Marker[] markers = ((Spanned) cached).getSpans(0, cached.length(), Marker.class);
+            if (markers.length > 0 && markers[0].current(view, true)) return;
+        }
+        if (ids(source).length == 0) return;
         if (BOUND.put(view, Boolean.TRUE) != null) return;
         WeakReference<TextView> reference = new WeakReference<>(view);
         view.post(() -> {
@@ -190,7 +239,7 @@ public final class XPostPreview {
         Spanned spans=(Spanned)source;
         Marker[] markers=spans.getSpans(0,source.length(),Marker.class);
         if(markers.length>0)source=source.subSequence(0,spans.getSpanStart(markers[0]));
-        if (!java.util.Arrays.asList(XMediaAttachments.postIds(source.toString())).contains(id)) return;
+        if (!java.util.Arrays.asList(ids(source)).contains(id)) return;
         RowState state=rowState(view,source);
         if(!state.expanded.remove(id))state.expanded.add(id);
         apply(view,true);
@@ -207,11 +256,22 @@ public final class XPostPreview {
         SpannableStringBuilder result = null;
         int currentRevision = revision;
         boolean collapsible=Haiagaru.xPostPreviewCollapsible();
-        for (String id : XMediaAttachments.postIds(source.toString())) {
-            boolean expanded=!collapsible || view!=null && rowState(view,source).expanded.contains(id);
+        boolean card=Haiagaru.xPostPreviewCard();
+        String[] ids = ids(source);
+        if (ids.length == 0) return source;
+        Data[] snapshot = new Data[ids.length];
+        boolean[] open = new boolean[ids.length];
+        boolean needsFetch = false;
+        RowState state = collapsible && view != null ? rowState(view, source) : null;
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            boolean expanded=!collapsible || state!=null && state.expanded.contains(id);
+            open[i] = expanded;
             Data data;
             if (fetch && expanded && view != null) data = lookup(id, view);
-            else synchronized (CACHE) { Entry entry = CACHE.get(id); data = entry == null || android.os.SystemClock.elapsedRealtime() >= entry.expires ? null : entry.data; }
+            else synchronized (CACHE) { data = cached(CACHE.get(id), android.os.SystemClock.elapsedRealtime()); }
+            snapshot[i] = expanded ? data : null;
+            if (expanded && data == null && !fetch) needsFetch = true;
             if (data == null && !collapsible) continue;
             if (result == null) result = new SpannableStringBuilder(source);
             int start = result.length();
@@ -220,29 +280,49 @@ public final class XPostPreview {
                 int toggleStart=result.length();
                 result.append(expanded ? "▼ X投稿のプレビューを閉じる" : "▶ X投稿のプレビューを表示");
                 result.setSpan(new XPostPreviewTouch.ToggleLink(id),toggleStart,result.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                if(!expanded)continue;
+                if(!expanded) { if(card)XPostPreviewCard.add(result,start+2,view); continue; }
                 result.append("\n");
-                if(data==null) { result.append("読み込み中／取得できない場合は元のURLを開いてください"); continue; }
+                if(data==null) {
+                    result.append("読み込み中／取得できない場合は元のURLを開いてください");
+                    if(card)XPostPreviewCard.add(result,start+2,view);
+                    continue;
+                }
             }
             int author = result.length();
-            result.append(data.author).append("  @").append(data.handle).append("  · X\n");
+            if (card) result.append(data.author).append("  · X\n@").append(data.handle).append("\n\n");
+            else result.append(data.author).append("  @").append(data.handle).append("  · X\n");
             result.setSpan(new StyleSpan(Typeface.BOLD), author, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            String body = data.text;
-            if (!Haiagaru.xPostPreviewFullText() && body.codePointCount(0, body.length()) > 140)
-                body = body.substring(0, body.offsetByCodePoints(0, Math.min(140, body.codePointCount(0, body.length())))) + "…";
+            String body = Haiagaru.xPostPreviewFullText() ? data.text : data.excerpt;
             result.append(body);
-            if (!data.date.isEmpty()) result.append("\n").append(data.date);
-            result.append("\n投稿を開く");
+            if (!data.date.isEmpty()) result.append(card ? "\n\n" : "\n").append(data.date);
+            result.append(card ? "\n\n投稿を開く" : "\n投稿を開く");
             result.setSpan(new XPostPreviewTouch.PostLink("https://x.com/" + data.handle + "/status/" + id),
                     result.length() - 5, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            result.setSpan(new QuoteSpan(), start + 2, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (Haiagaru.xPostPreviewActions()) {
+                result.append("\n\n");
+                appendAction(result, "返信", XPostPreviewTouch.actionUrl("reply", id), false);
+                result.append("　");
+                appendAction(result, "リポスト", XPostPreviewTouch.actionUrl("repost", id), false);
+                result.append("　");
+                appendAction(result, "いいね", XPostPreviewTouch.actionUrl("like", id), false);
+                result.append("\n");
+                appendAction(result, "リンクをコピー", "https://x.com/" + data.handle + "/status/" + id, true);
+            }
+            if (card) XPostPreviewCard.add(result,start+2,view);
+            else result.setSpan(new QuoteSpan(), start + 2, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             result.setSpan(new RelativeSizeSpan(.9f), start, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         if (result != null) {
-            result.setSpan(new Marker(currentRevision), source.length(), result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            result.setSpan(new Marker(currentRevision, ids, snapshot, open, needsFetch), source.length(), result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             return result;
         }
         return source;
+    }
+
+    private static void appendAction(SpannableStringBuilder result, String label, String url, boolean copy) {
+        int start = result.length();
+        result.append(label);
+        result.setSpan(new XPostPreviewTouch.ActionLink(url, copy), start, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
     private static Data lookup(String id, TextView view) {
@@ -274,7 +354,7 @@ public final class XPostPreview {
                 catch (java.util.concurrent.RejectedExecutionException full) {
                     entry.pending = false;
                     entry.retry = android.os.SystemClock.elapsedRealtime() + 10_000;
-                    scheduleRetry(entry, 10_000);
+                    scheduleRetry(id, entry, 10_000);
                 }
             }
         }
@@ -282,6 +362,7 @@ public final class XPostPreview {
     }
 
     private static void resolve(String id, Entry entry) {
+        synchronized (CACHE) { if (CACHE.get(id) != entry) return; }
         Data data = null;
         try {
             if (Haiagaru.xPostPreviewEnabled()) {
@@ -293,6 +374,7 @@ public final class XPostPreview {
         }
         List<WeakReference<TextView>> views;
         synchronized (CACHE) {
+            if (CACHE.get(id) != entry) return; // Clear/eviction invalidated this in-flight request.
             entry.data = data;
             entry.expires = android.os.SystemClock.elapsedRealtime() + 900_000;
             entry.pending = false;
@@ -301,26 +383,52 @@ public final class XPostPreview {
             views = new ArrayList<>(entry.views);
             entry.views.clear();
             if (data == null && entry.failures <= 2) entry.views.addAll(views);
-            ++revision;
         }
+        refresh(views);
+        if (data == null && entry.failures <= 2) scheduleRetry(id, entry, 10_100);
+    }
+
+    // Several completed posts in a row should cause one rewrite, not one per post.
+    // Limit each turn so a large visible thread cannot monopolize the UI queue.
+    private static void refresh(List<WeakReference<TextView>> views) {
+        refresh(views, false);
+    }
+    private static void refresh(List<WeakReference<TextView>> views, boolean retry) {
         MAIN.post(() -> {
             for (WeakReference<TextView> reference : views) {
                 TextView view = reference.get();
-                if (view != null && view.isAttachedToWindow() && view.isShown()) apply(view);
+                if (view != null) DIRTY.put(view, retry || Boolean.TRUE.equals(DIRTY.get(view)));
+            }
+            if (!refreshPosted && !DIRTY.isEmpty()) {
+                refreshPosted = true;
+                MAIN.postDelayed(XPostPreview::refreshBatch, 16);
             }
         });
-        if (data == null && entry.failures <= 2) scheduleRetry(entry, 10_100);
+    }
+    private static void refreshBatch() {
+        List<TextView> batch = new ArrayList<>();
+        List<Boolean> retry = new ArrayList<>();
+        java.util.Iterator<TextView> iterator = DIRTY.keySet().iterator();
+        while (iterator.hasNext() && batch.size() < 8) {
+            TextView view = iterator.next(); batch.add(view); retry.add(DIRTY.get(view)); iterator.remove();
+        }
+        for (int i = 0; i < batch.size(); i++) {
+            TextView view = batch.get(i);
+            if (view != null && view.isAttachedToWindow() && view.isShown()) apply(view, Boolean.TRUE.equals(retry.get(i)));
+        }
+        refreshPosted = !DIRTY.isEmpty();
+        if (refreshPosted) MAIN.postDelayed(XPostPreview::refreshBatch, 16);
     }
 
-    private static void scheduleRetry(Entry entry, long delay) {
+    private static void scheduleRetry(String id, Entry entry, long delay) {
         MAIN.postDelayed(() -> {
             List<WeakReference<TextView>> views;
-            synchronized (CACHE) { views = new ArrayList<>(entry.views); entry.views.clear(); ++revision; }
-            if (!Haiagaru.xPostPreviewEnabled()) return;
-            for (WeakReference<TextView> reference : views) {
-                TextView view = reference.get();
-                if (view != null && view.isAttachedToWindow() && view.isShown()) apply(view);
+            synchronized (CACHE) {
+                if (CACHE.get(id) != entry) return;
+                views = new ArrayList<>(entry.views); entry.views.clear();
             }
+            if (!Haiagaru.xPostPreviewEnabled()) return;
+            refresh(views, true);
         }, delay);
     }
 }

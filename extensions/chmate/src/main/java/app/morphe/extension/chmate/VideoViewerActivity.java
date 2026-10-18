@@ -28,7 +28,13 @@ public final class VideoViewerActivity extends Activity {
     private boolean savePermissionPending;
     private VideoViewerGestures gestures;
     private VideoTouchControls touchControls;
+    private android.media.MediaPlayer mediaPlayer;
     private Runnable unregisterBack;
+    private Button speedButton;
+    private float playbackSpeed = 1f;
+    private float speedBeforeHold = 1f;
+    private boolean holdSpeedActive;
+    private static final float[] PLAYBACK_SPEEDS = {0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
 
     public static boolean installed(Context context) {
         if (context == null) return false;
@@ -63,6 +69,7 @@ public final class VideoViewerActivity extends Activity {
             playWhenReady = state.getBoolean("playing", true);
             rotated = state.getBoolean("rotated", false);
             savePermissionPending = state.getBoolean("savePermissionPending", false);
+            playbackSpeed = state.getFloat("playbackSpeed", 1f);
         }
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.BLACK);
@@ -76,6 +83,24 @@ public final class VideoViewerActivity extends Activity {
         toolbar.addView(back, new LinearLayout.LayoutParams(-2, -2));
         toolbar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
         Button more = overlayButton("︙"); more.setContentDescription("動画メニュー");
+        speedButton = overlayButton(speedLabel(playbackSpeed));
+        speedButton.setContentDescription("再生速度");
+        speedButton.setOnClickListener(v -> cyclePlaybackSpeed());
+        speedButton.setOnLongClickListener(v -> {
+            beginHoldSpeed();
+            return true;
+        });
+        speedButton.setOnTouchListener((view, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_UP
+                    || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                if (holdSpeedActive) {
+                    holdSpeedActive = false;
+                    applyPlaybackSpeed(speedBeforeHold);
+                }
+            }
+            return false;
+        });
+        toolbar.addView(speedButton);
         more.setOnClickListener(this::showMenu); toolbar.addView(more);
         FrameLayout frame = new FrameLayout(this);
         video = new VideoView(this);
@@ -120,6 +145,8 @@ public final class VideoViewerActivity extends Activity {
         controls.setMediaPlayer(video);
         video.setOnPreparedListener(player -> {
             prepared = true;
+            mediaPlayer = player;
+            applyPlaybackSpeed(player, playbackSpeed);
             if (position > 0) video.seekTo(position);
             setStatus("");
             if (foreground && playWhenReady) video.start();
@@ -130,7 +157,7 @@ public final class VideoViewerActivity extends Activity {
             setStatus("再生が終了しました。再生ボタンで最初から再生できます"); controls.show(0);
         });
         video.setOnErrorListener((player, what, extra) -> {
-            prepared = false; playWhenReady = false;
+            prepared = false; mediaPlayer = null; playWhenReady = false;
             setStatus("動画を再生できません（エラー " + what + "/" + extra
                     + "）。︙から再読み込み、または外部アプリで開いてください");
             return true;
@@ -155,8 +182,64 @@ public final class VideoViewerActivity extends Activity {
         return button;
     }
 
+    private static String speedLabel(float speed) {
+        return (speed == (int) speed ? Integer.toString((int) speed) : Float.toString(speed)) + "×";
+    }
+
+    private void cyclePlaybackSpeed() {
+        if (!prepared) {
+            Toast.makeText(this, "動画の読み込み後に変更できます", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (android.os.Build.VERSION.SDK_INT < 23) {
+            Toast.makeText(this, "再生速度の変更にはAndroid 6.0以降が必要です", Toast.LENGTH_LONG).show();
+            return;
+        }
+        int next = 0;
+        for (int i = 0; i < PLAYBACK_SPEEDS.length; i++) {
+            if (Math.abs(PLAYBACK_SPEEDS[i] - playbackSpeed) < 0.001f) {
+                next = (i + 1) % PLAYBACK_SPEEDS.length;
+                break;
+            }
+        }
+        applyPlaybackSpeed(PLAYBACK_SPEEDS[next]);
+    }
+
+    private void applyPlaybackSpeed(float speed) {
+        if (!prepared || mediaPlayer == null || android.os.Build.VERSION.SDK_INT < 23) return;
+        applyPlaybackSpeed(mediaPlayer, speed);
+    }
+
+    private void applyPlaybackSpeed(android.media.MediaPlayer player, float speed) {
+        if (android.os.Build.VERSION.SDK_INT < 23) return;
+        try {
+            player.setPlaybackParams(player.getPlaybackParams().setSpeed(speed));
+            playbackSpeed = speed;
+            if (speedButton != null) {
+                speedButton.setText(speedLabel(speed));
+                speedButton.setContentDescription("再生速度 " + speedLabel(speed));
+            }
+        } catch (RuntimeException error) {
+            Toast.makeText(this, "この動画では再生速度を変更できません", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    void beginHoldSpeed() {
+        if (holdSpeedActive || !prepared || android.os.Build.VERSION.SDK_INT < 23) return;
+        speedBeforeHold = playbackSpeed;
+        holdSpeedActive = true;
+        applyPlaybackSpeed(2f);
+    }
+
+    void endHoldSpeed() {
+        if (!holdSpeedActive) return;
+        holdSpeedActive = false;
+        applyPlaybackSpeed(speedBeforeHold);
+    }
+
     private void load() {
         prepared = false;
+        mediaPlayer = null;
         setStatus("動画を読み込み中…（通信が発生します）");
         video.setVideoURI(Uri.parse(url));
     }
@@ -303,6 +386,7 @@ public final class VideoViewerActivity extends Activity {
         state.putInt("position", prepared ? video.getCurrentPosition() : position);
         state.putBoolean("playing", prepared ? video.isPlaying() : playWhenReady);
         state.putBoolean("savePermissionPending", savePermissionPending);
+        state.putFloat("playbackSpeed", playbackSpeed);
         state.putBoolean("rotated", rotated); super.onSaveInstanceState(state);
     }
     @Override protected void onDestroy() {
@@ -311,6 +395,7 @@ public final class VideoViewerActivity extends Activity {
         if (gestures != null) gestures.close();
         if (controls != null) controls.hide();
         if (video != null) video.stopPlayback();
+        mediaPlayer = null;
         super.onDestroy();
     }
     @Override public void onBackPressed() { finish(); }

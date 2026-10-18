@@ -1562,8 +1562,10 @@ private val haiagaruBytecodePatch = bytecodePatch {
             )
         }
 
+        patchRestoredDatRows()
         patchEdgeArchiveToolbar(profile, packageMetadata.versionName)
         patchQuickFilterToolbar(packageMetadata.versionName)
+        patchPopularReplies(packageMetadata.versionName)
         if (packageMetadata.versionName == "0.8.10.191 dev") {
             patchNativeRestore191()
             patchConsumedPopupMenu191()
@@ -1596,6 +1598,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostingOverflowMenu(packageMetadata.versionName, "MediaUploadHosts", "upload_hosts")
         patchResponseArchive(packageMetadata.versionName)
         patchArchiveOrigins(packageMetadata.versionName)
+        patchThreadArchiveOrder(packageMetadata.versionName)
+        patchRelatedThreads(packageMetadata.versionName)
 
         // ChMate 226/241 remove the device-info footer with a greedy regular
         // expression before deciding whether the user wrote any other text.
@@ -4769,7 +4773,7 @@ val haiagaruPatch = resourcePatch(
             entry.textContent = "フィルタ"
             strings.documentElement.appendChild(entry)
         }
-        val responseLabels = listOf("投稿者を強調", "レスを保存", "過去レスを見る", "ﾜｯﾁｮｲで検索", "ﾜｯﾁｮｲ下4桁をNG登録", "ﾜｯﾁｮｲ下4桁で検索")
+        val responseLabels = listOf("投稿者を強調", "レスを保存", "過去レスを見る", "ﾜｯﾁｮｲで検索", "ﾜｯﾁｮｲ下4桁をNG登録", "ﾜｯﾁｮｲ下4桁で検索", "ﾜｯﾁｮｲ上4桁で検索")
         val archiveIcons = mapOf(
             "haiagaru_response_history" to "M13,3c-4.97,0 -9,4.03 -9,9H1l3.89,3.89 .07,.14L9,12H6c0,-3.87 3.13,-7 7,-7s7,3.13 7,7 -3.13,7 -7,7c-1.93,0 -3.68,-.79 -4.94,-2.06l-1.42,1.42C8.27,19.99 10.51,21 13,21c4.97,0 9,-4.03 9,-9s-4.03,-9 -9,-9zM12,8v5l4.28,2.54 .72,-1.21 -3.5,-2.08V8H12z",
             "haiagaru_response_save" to "M17,3H5c-1.11,0 -2,.9 -2,2v14c0,1.1 .89,2 2,2h14c1.1,0 2,-.9 2,-2V7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9H5V5h10v4z",
@@ -4827,6 +4831,28 @@ val haiagaruPatch = resourcePatch(
             </vector>
         """.trimIndent())
         val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
+        for ((name, label) in listOf(
+            "haiagaru_wacchoi_lower" to "ﾜｯﾁｮｲ下4桁で検索",
+            "haiagaru_wacchoi_upper" to "ﾜｯﾁｮｲ上4桁で検索",
+        )) {
+            for (values in listOf("values", "values-en")) {
+                document("res/$values/strings.xml").use { strings ->
+                    strings.documentElement.appendChild(strings.createElement("string").apply {
+                        setAttribute("name", name)
+                        textContent = label
+                    })
+                }
+            }
+            PublicXmlManager(get("res/values/public.xml")).use {
+                it.createPublicId("string", name)
+                it.createPublicId("drawable", name)
+            }
+            get("res").resolve("drawable/$name.xml").writeText("""
+                <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                    <path android:fillColor="#FFFFFFFF" android:pathData="M9.5,3a6.5,6.5 0,1 0,4.1 11.5L19,20l1,-1 -5.5,-5.4A6.5,6.5 0,0 0,9.5 3zM9.5,5a4.5,4.5 0,1 1,0 9,4.5 4.5,0 0,1 0,-9z"/>
+                </vector>
+            """.trimIndent())
+        }
         for (name in listOf("LICENSE", "NOTICE.md")) {
             val notice = get("assets").resolve("haiagaru/licenses/material-icons/$name")
             notice.parentFile.mkdirs()
@@ -5104,6 +5130,27 @@ val haiagaruPatch = resourcePatch(
                     "@android:style/Theme.Material.Light.NoActionBar",
                 )
             }
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name",
+                    "app.morphe.extension.chmate.HissiWacchoiSearchActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
+                    "@android:style/Theme.Material.Light.NoActionBar")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
+            })
+            for(permission in listOf("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC", "android.permission.POST_NOTIFICATIONS")){
+                val exists=(0 until document.getElementsByTagName("uses-permission").length).any {
+                    (document.getElementsByTagName("uses-permission").item(it) as Element).getAttributeNS(ANDROID_XML_NAMESPACE,"name")==permission
+                }
+                if(!exists)document.documentElement.appendChild(document.createElement("uses-permission").apply {
+                    setAttributeNS(ANDROID_XML_NAMESPACE,"android:name",permission)
+                })
+            }
+            application.appendChild(document.createElement("service").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.WacchoiSearchService")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:foregroundServiceType","dataSync")
+            })
             document.addOpenUrlFilter(
                 hissiActivity,
                 listOf("haiagaru-eddi", "http", "https"),

@@ -1,4 +1,4 @@
-param([string]$Serial = 'emulator-5558',
+param([string]$Serial = 'emulator-5554',
       [string]$Sdk = 'C:/Users/narum/AppData/Local/Android/Sdk',
       [string]$Java = 'C:/Users/narum/jdk-21.0.9+10')
 $ErrorActionPreference = 'Stop'
@@ -9,7 +9,8 @@ $compiled = 'extensions/chmate/build/intermediates/javac/release/compileReleaseJ
 & "$Java/bin/javac.exe" -encoding UTF-8 -cp "$android;$compiled" -d $output `
     scripts/x-post-preview/Haiagaru.java scripts/x-post-preview/XPostMetadata.java `
     scripts/x-post-preview/PreviewTest.java `
-    extensions/chmate/src/main/java/app/morphe/extension/chmate/XPostPreview.java
+    extensions/chmate/src/main/java/app/morphe/extension/chmate/XPostPreview.java `
+    extensions/chmate/src/main/java/app/morphe/extension/chmate/XPostPreviewCard.java
 if ($LASTEXITCODE -ne 0) { throw 'Fixture compilation failed' }
 $packagePath = 'app/morphe/extension/chmate'
 Copy-Item -LiteralPath "$compiled/$packagePath/XMediaAttachments.class" -Destination "$output/$packagePath"

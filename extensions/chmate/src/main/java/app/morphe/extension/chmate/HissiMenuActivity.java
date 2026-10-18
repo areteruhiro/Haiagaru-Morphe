@@ -127,6 +127,12 @@ public final class HissiMenuActivity extends Activity {
         int checkerMode = Haiagaru.hissiCheckerMode();
         String target;
         if (wacchoiSearchLaunch) {
+            if (initialWacchoiQuery != null && initialWacchoiQuery.matches("-[^\\s()（）<>]{4}")) {
+                startActivity(new android.content.Intent(this, HissiWacchoiSearchActivity.class)
+                        .putExtra("haiagaru.wacchoi.query", initialWacchoiQuery));
+                finish();
+                return;
+            }
             currentUsesKyodemo = true;
             hissiTarget = null;
             kyodemoTarget = KyodemoRouting.wacchoiSearchUrl(sourceHost, sourceBoard,
@@ -663,6 +669,35 @@ public final class HissiMenuActivity extends Activity {
         return tabs;
     }
 
+    private void showUnsupportedSuffixSearch(String suffix) {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int)(20 * getResources().getDisplayMetrics().density);
+        content.setPadding(padding, padding, padding, padding);
+        TextView note = new TextView(this);
+        note.setText("Kyodemoは下4桁だけ（" + suffix + "）の検索を受け付けません。検索結果が0件という意味ではありません。\n\nIDまたは完全なワッチョイを入力して検索できます。下4桁のNG登録はChMate側で利用できます。");
+        content.addView(note);
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint("例：L20 abcd-EFGH / ﾜｯﾁｮｲ abcd-EFGH");
+        content.addView(input);
+        Button search = new Button(this);
+        search.setText("入力したID／ﾜｯﾁｮｲで検索");
+        search.setOnClickListener(view -> {
+            String query = input.getText().toString().trim();
+            if (query.isEmpty() || query.matches("-[^\\s()（）<>]{4}")) {
+                input.setError("IDまたは完全なワッチョイを入力してください");
+                return;
+            }
+            Intent next = new Intent(getIntent());
+            next.putExtra("haiagaru.wacchoi.query", query);
+            startActivity(next);
+            finish();
+        });
+        content.addView(search);
+        setContentView(content);
+    }
+
     private void showKyodemoSearch(WebView webView, String initialValue) {
         EditText input = new EditText(this);
         input.setSingleLine(true);
@@ -686,6 +721,10 @@ public final class HissiMenuActivity extends Activity {
                 .setNegativeButton("キャンセル", null)
                 .setPositiveButton("検索", (dialog, which) -> {
                     String query = input.getText().toString().trim();
+                    if (query.matches("-[^\\s()（）<>]{4}")) {
+                        Toast.makeText(this, "Kyodemoは下4桁だけの検索には対応していません。IDまたは完全なﾜｯﾁｮｲを入力してください", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     String url = KyodemoRouting.wacchoiSearchUrl(sourceHost,
                             sourceBoard, query);
                     if (url == null) {
@@ -1190,10 +1229,12 @@ public final class HissiMenuActivity extends Activity {
             String fg = dark ? "#ebebf0" : "#1e1e1e";
             String link = dark ? "#8ab4f8" : "#1558a6";
             String script = "javascript:(function(){var hissi=location.hostname==='hissi.org'||location.hostname==='www.hissi.org';"
+                    + "var kyodemo=location.hostname==='www.kyodemo.net'||location.hostname==='kyodemo.net';"
                     + "var eddi=location.hostname==='eddiarchive3rd.boy.jp'||location.hostname.endsWith('.eddiarchive3rd.boy.jp');"
                     + "if(hissi){document.body.setAttribute('data-haiagaru-hissi','');"
                     + "if(!document.querySelector('meta[name=viewport]')){var m=document.createElement('meta');"
                     + "m.name='viewport';m.content='width=device-width,initial-scale=1';document.head.appendChild(m);}}"
+                    + "if(kyodemo){document.body.setAttribute('data-haiagaru-kyodemo','');}"
                     + "if(eddi){document.body.setAttribute('data-haiagaru-eddi','');"
                     + "if(!document.querySelector('meta[name=viewport]')){var m2=document.createElement('meta');"
                     + "m2.name='viewport';m2.content='width=device-width,initial-scale=1';document.head.appendChild(m2);}}"

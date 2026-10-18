@@ -50,7 +50,8 @@ final class HaiagaruMegaSync {
             HaiagaruSyncSnapshot.KAKIKOMI, HaiagaruSyncSnapshot.COOKIES,
             HaiagaruSyncSnapshot.RESPONSES, HaiagaruSyncSnapshot.THREAD_ARCHIVES,
             HaiagaruSyncSnapshot.DAT, HaiagaruSyncSnapshot.RESOURCES,
-            HaiagaruSyncSnapshot.AUTH, HaiagaruSyncSnapshot.DEVICE_DATA, HaiagaruSyncSnapshot.UPLOAD_HISTORY
+            HaiagaruSyncSnapshot.AUTH, HaiagaruSyncSnapshot.DEVICE_DATA, HaiagaruSyncSnapshot.UPLOAD_HISTORY,
+            HaiagaruSyncSnapshot.WACCHOI_HISTORY, HaiagaruSyncSnapshot.WACCHOI_CACHE
     };
     static final String[] CATEGORY_NAMES = {
             "お気に入り・閲覧履歴", "NG設定（高度なNGルールを含む）", "ChMate・Haiagaruの設定",
@@ -60,7 +61,9 @@ final class HaiagaruMegaSync {
             "フォント・テーマ・キーワードグループ",
             "認証情報・WebView Cookie・MEGAセッション（機密・初期OFF）",
             "端末依存の暗号化済みデータ（同じインストール専用・初期OFF）",
-            "標準画像アップロード履歴（削除用情報を含む・初期OFF）"
+            "標準画像アップロード履歴（削除用情報を含む・初期OFF）",
+            "ワッチョイ4桁検索の履歴・保存結果（検索条件・本文を含む・初期OFF）",
+            "ワッチョイ4桁検索の取得ページキャッシュ（大容量・初期OFF）"
     };
     private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
     private static final AtomicBoolean REGISTERED = new AtomicBoolean(false);

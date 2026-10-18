@@ -59,7 +59,7 @@ public final class ExternalBoardAuth {
     }
     public static void addPostingMenu(Object owner, Menu menu) {
         Activity a=activity(owner);
-        if(a==null || menu==null || menu.findItem(MENU)!=null) return;
+        if(!Haiagaru.preparePostingMenu(a,menu,MENU,"showExternalBoardAuthMenu")) return;
         MenuItem item=menu.add(Menu.NONE,MENU,Menu.NONE,"外部板の認証ページ");
         menus.put(item,new WeakReference<>(a));
         item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);

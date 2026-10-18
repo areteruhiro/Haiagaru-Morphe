@@ -11,7 +11,7 @@ import org.json.JSONArray;
 /** Stable IDs shared by the native customization catalog and response actions. */
 public final class ResponseMenuSettings {
     private ResponseMenuSettings() {}
-    static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077};
+    static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077, 0x7e000078};
     private static int icon(int id) {
         if(id==0x7e484a01)return ResponseArchive.archiveIcon(true);
         if(id==0x7e484a03)return ResponseArchive.archiveIcon(false);
@@ -73,18 +73,70 @@ public final class ResponseMenuSettings {
         } catch(Exception error) { android.util.Log.w("Haiagaru","Response toolbar catalog",error); }
     }
     static boolean visible(int id) {
+        if((id==0x7e000077||id==0x7e000078)&&!WacchoiSearchOptions.menu(id))return false;
+        JSONObject settings = savedSettings();
+        if (settings == null) return true;
+        try {
+            JSONArray rows = settings.optJSONArray("buttons");
+            if (rows != null) for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row != null && rowId(row) == id)
+                    return row.optBoolean("visible", true);
+            }
+        } catch (RuntimeException error) {
+            android.util.Log.w("Haiagaru", "Response toolbar visibility", error);
+        }
+        return true;
+    }
+
+    /**
+     * Native response actions are created before Haiagaru's actions. Supplying the
+     * saved catalog index as MenuItem order lets Android interleave those later
+     * additions at the position chosen in ChMate's toolbar settings.
+     */
+    static int order(int id, int fallback) {
+        JSONObject settings = savedSettings();
+        if (settings == null) return fallback;
+        try {
+            JSONArray rows = settings.optJSONArray("buttons");
+            if (rows != null) for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row == null || rowId(row) != id) continue;
+                // ChMate normally persists order by array position. Some newer
+                // settings writers also retain an explicit slot alongside it;
+                // prefer that value so all added actions follow drag-reordering.
+                if (row.has("position")) return Math.max(0, row.optInt("position", i));
+                if (row.has("order")) return Math.max(0, row.optInt("order", i));
+                return i;
+            }
+        } catch (RuntimeException error) {
+            android.util.Log.w("Haiagaru", "Response toolbar order", error);
+        }
+        return fallback;
+    }
+
+    private static int rowId(JSONObject row) {
+        Object raw = row.opt("id");
+        if (raw instanceof Number) return ((Number) raw).intValue();
+        if (raw instanceof String) {
+            String value = ((String) raw).trim();
+            try { return value.startsWith("0x") || value.startsWith("0X")
+                    ? (int) Long.parseLong(value.substring(2), 16) : Integer.parseInt(value); }
+            catch (NumberFormatException ignored) { }
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    private static JSONObject savedSettings() {
         Context context=Haiagaru.applicationContextForExtension();
-        if(context==null)return true;
+        if(context==null)return null;
         try {
             String saved=context.getSharedPreferences("resMenuDialog",0).getString("toolbarSettings","");
-            if(saved.isEmpty())return true;
-            JSONArray rows=new JSONObject(saved).optJSONArray("buttons");
-            if(rows!=null)for(int i=0;i<rows.length();i++) {
-                JSONObject row=rows.getJSONObject(i);
-                if(row.optInt("id")==id)return row.optBoolean("visible",true);
-            }
-        }catch(Exception error){android.util.Log.w("Haiagaru","Response toolbar settings",error);}
-        return true;
+            return saved.isEmpty() ? null : new JSONObject(saved);
+        } catch(Exception error) {
+            android.util.Log.w("Haiagaru","Response toolbar settings",error);
+            return null;
+        }
     }
     public static void prepare(Object object) {
         if(!(object instanceof Menu))return;

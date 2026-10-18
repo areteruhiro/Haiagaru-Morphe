@@ -114,7 +114,7 @@ public final class MediaUploadHosts {
     }
     public static void addPostingMenu(Object owner,Menu menu) {
         Activity activity=Haiagaru.toolbarActivity(owner);
-        if(activity==null || menu==null || menu.findItem(MENU_ID)!=null) return;
+        if(!Haiagaru.preparePostingMenu(activity,menu,MENU_ID,"showUploadHostMenu")) return;
         MenuItem item=menu.add(Menu.NONE,MENU_ID,Menu.NONE,"アップロード先を変更");
         item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         ACTIVITIES.put(item,new WeakReference<>(activity));

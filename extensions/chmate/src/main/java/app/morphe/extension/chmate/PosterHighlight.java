@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.text.Html;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.Spannable;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.Menu;
@@ -35,13 +36,18 @@ public final class PosterHighlight {
         final String thread, board;
         Identity(Object response, Object board, PosterHighlightRules.Poster first) throws Exception {
             this.poster=poster(response); this.first=first; this.response=new WeakReference<>(response);
-            String url=ResponseArchiveEntry.snapshot(response,board,"").url;
+            // Matching needs only the thread URL, not a snapshot/copy of the whole body.
+            String method=response.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError")?"d":
+                    response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"e":"c";
+            java.lang.reflect.Method urlMethod=board.getClass().getDeclaredMethod(method,int.class);
+            urlMethod.setAccessible(true);
+            String url=(String)urlMethod.invoke(board,number(response));
             thread=PosterHighlightRules.thread(url); this.board=PosterHighlightRules.board(thread);
         }
     }
     private static final class Tint extends BackgroundColorSpan { Tint(int color){super(color);} }
     private static final class Bold extends StyleSpan { Bold(){super(Typeface.BOLD);} }
-    private static final class Applied { final int revision; Applied(){revision=PosterHighlight.revision;} }
+    private static final class Applied { int revision; Applied(){revision=PosterHighlight.revision;} }
     public static void initialize(Context supplied) {
         if(supplied==null || context!=null)return;
         context=supplied.getApplicationContext();
@@ -147,7 +153,7 @@ public final class PosterHighlight {
     public static Spanned decorate(Spanned source,Object owner,Object response) {
         if(context==null || source==null || source.length()==0)return source;
         try {
-            return decorateResponse(source,response,board(owner),starter(owner,response));
+            return decorateResponse(source,response,board(owner),hasStarterRule()?starter(owner,response):null);
         }catch(Exception error){report(error);return source;}
     }
     static Spanned decorateResponse(Spanned source,Object response,Object board,PosterHighlightRules.Poster first) throws Exception {
@@ -168,14 +174,28 @@ public final class PosterHighlight {
         }
         return null;
     }
-    private static Spanned styled(SpannableStringBuilder text,Identity identity) {
-        for(Tint span:text.getSpans(0,text.length(),Tint.class))text.removeSpan(span);
-        for(Bold span:text.getSpans(0,text.length(),Bold.class))text.removeSpan(span);
-        for(Applied span:text.getSpans(0,text.length(),Applied.class))text.removeSpan(span);
+    private static boolean hasStyle(Spanned text,PosterHighlightRules.Rule match) {
+        Tint[] tints=text.getSpans(0,text.length(),Tint.class);
+        Bold[] bold=text.getSpans(0,text.length(),Bold.class);
+        if(match==null)return tints.length==0 && bold.length==0;
+        return tints.length==1 && bold.length==1 && tints[0].getBackgroundColor()==match.color(color)
+                && text.getSpanStart(tints[0])==0 && text.getSpanEnd(tints[0])==text.length()
+                && text.getSpanStart(bold[0])==0 && text.getSpanEnd(bold[0])==text.length();
+    }
+    private static Spanned styled(Spannable text,Identity identity) {
         PosterHighlightRules.Rule match=matchingRule(identity);
+        if(hasStyle(text,match)) {
+            Applied[] applied=text.getSpans(0,text.length(),Applied.class);
+            if(applied.length==1){applied[0].revision=revision;return text;}
+        }
+        for(Tint span:text.getSpans(0,text.length(),Tint.class))text.removeSpan(span);
+        for(Applied span:text.getSpans(0,text.length(),Applied.class))text.removeSpan(span);
+        Bold[] bold=text.getSpans(0,text.length(),Bold.class);
+        // A color change is draw-only. Keep metric-affecting bold spans intact.
+        if(match==null)for(Bold span:bold)text.removeSpan(span);
         if(match!=null) {
             text.setSpan(new Tint(match.color(color)),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            text.setSpan(new Bold(),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if(bold.length==0)text.setSpan(new Bold(),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         text.setSpan(new Applied(),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return text;
@@ -187,8 +207,10 @@ public final class PosterHighlight {
         if(identities.length==0)return;
         Applied[] applied=text.getSpans(0,text.length(),Applied.class);
         if(applied.length>0 && applied[0].revision==revision)return;
-        XPostPreviewPosition.beforeChange(view);
-        view.setText(styled(new SpannableStringBuilder(text),identities[0]),TextView.BufferType.SPANNABLE);
+        // Never reset the list's scroll anchor for a highlight refresh. In particular,
+        // registering a second person must not snap an active fling to an older offset.
+        if(text instanceof Spannable)styled((Spannable)text,identities[0]);
+        else view.setText(styled(new SpannableStringBuilder(text),identities[0]),TextView.BufferType.SPANNABLE);
     }
     public static void append(Object menuObject,Object response,Object nativeBoard) {
         if(context==null || !(menuObject instanceof Menu) || response==null || nativeBoard==null)return;
@@ -196,7 +218,7 @@ public final class PosterHighlight {
         if(!ResponseMenuSettings.visible(ITEM) || menu.findItem(ITEM)!=null)return;
         try {
             Identity identity=new Identity(response,nativeBoard,number(response)==1?poster(response):FIRST.get(response));
-            MenuItem item=menu.add(Menu.NONE,ITEM,menu.size(),"この人の書き込みを強調");
+            MenuItem item=menu.add(Menu.NONE,ITEM,ResponseMenuSettings.order(ITEM,menu.size()),"この人の書き込みを強調");
             MENU_TARGETS.put(item,identity);
             item.setOnMenuItemClickListener(PosterHighlight::handle);
         }catch(Exception error){report(error);}

@@ -67,7 +67,7 @@ public final class HistoryTest {
             check(BrowsingHistory.transform(source,107)==source,"Board screen unchanged");
             check(BrowsingHistory.transform(source,-103).equals(result),"Signed history sort");
             prefs.edit().putInt("browsingHistoryDays",0).commit();
-            check(BrowsingHistory.transform(source,103).equals(Arrays.asList(a1,a2,b1,old,c1)),"All-period grouping, zero access excluded");
+            check(BrowsingHistory.transform(source,103).equals(Arrays.asList(a1,a2,never,b1,old,c1)),"All-period grouping retains zero-timestamp legacy rows");
             prefs.edit().putBoolean("groupBrowsingHistoryByBoard",false).commit();
             check(BrowsingHistory.transform(source,103)==source,"Feature off retains native reference");
             prefs.edit().putBoolean("groupBrowsingHistoryByBoard",true).putInt("browsingHistoryDays",2).commit();

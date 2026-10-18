@@ -11,11 +11,11 @@ import java.lang.reflect.Field;
 /** Only Haiagaru's four toolbar actions; stock icons and stored toolbar layouts stay untouched. */
 public final class ToolbarIcons {
     static final String PREFS = "haiagaru_toolbar_icons";
-    static final String[] NAMES = {"エッヂ過去ログ", "フィルタ", "すべて既読", "長押しコピー"};
-    static final String[] RESOURCES = {"haiagaru_edge_archive", "haiagaru_quick_filter", "haiagaru_mark_all_read", "haiagaru_direct_copy"};
-    private static final Bitmap[] CACHE = new Bitmap[4];
+    static final String[] NAMES = {"エッヂ過去ログ", "フィルタ", "すべて既読", "長押しコピー", "ﾜｯﾁｮｲ下4桁で検索", "ﾜｯﾁｮｲ上4桁で検索"};
+    static final String[] RESOURCES = {"haiagaru_edge_archive", "haiagaru_quick_filter", "haiagaru_mark_all_read", "haiagaru_direct_copy", "haiagaru_wacchoi_lower", "haiagaru_wacchoi_upper"};
+    private static final Bitmap[] CACHE = new Bitmap[NAMES.length];
     private ToolbarIcons() {}
-    static int index(int action) { int i = action - 0x7e000001; return i >= 0 && i < 4 ? i : -1; }
+    static int index(int action) { int i = action - 0x7e000001; return i >= 0 && i < NAMES.length ? i : -1; }
     public static boolean visible(Context context, int action) {
         int i = index(action);
         return i < 0 || context.getSharedPreferences(PREFS, 0).getBoolean("visible." + i, true);
