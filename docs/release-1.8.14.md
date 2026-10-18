@@ -2,15 +2,17 @@
 
 1.8.13からの変更です。ChMate 0.8.10.191 dev／226 dev／242 devに対応します。
 
+[使い方・設定場所](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/%E4%BD%BF%E3%81%84%E6%96%B9.md)
+
 ## 更新内容
 
-- Haiagaru設定を目的別に整理しました。検索では一致する設定を個別に表示し、タップで移動、戻ると検索結果へ復帰できます。変更は自動保存され、空欄や範囲外の数値は反映しません。カテゴリを開いたときだけ部品を作成・再利用して初期表示を軽量化しました。[使い方](settings-navigation.md)
-- レスのツールバー設定に「投稿者を強調」「レスを保存」などを追加し、各項目のオン／オフを反映しました。226で「ここまで読んだ」をオフにすると独自項目も消える問題を修正。同一IDの重複を除去し、標準の共有先5枠は番号で区別します。[詳細](response-menu-settings.md)
-- 「既読スレをすべて削除」の候補を、一度読んだスレへ変更しました。未読が残っていても候補になり、未読件数を表示します。未閲覧や巡回取得だけのスレは対象外です。確認画面で選んだ履歴・ログだけを削除します。[操作・注意](delete-read-threads.md)
+- Haiagaru設定を目的別に整理しました。検索では一致する設定を個別に表示し、タップで移動、戻ると検索結果へ復帰できます。変更は自動保存され、空欄や範囲外の数値は反映しません。カテゴリを開いたときだけ部品を作成・再利用して初期表示を軽量化しました。[使い方](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/settings-navigation.md)
+- レスのツールバー設定に「投稿者を強調」「レスを保存」などを追加し、各項目のオン／オフを反映しました。226で「ここまで読んだ」をオフにすると独自項目も消える問題を修正。同一IDの重複を除去し、標準の共有先5枠は番号で区別します。[詳細](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/response-menu-settings.md)
+- 「既読スレをすべて削除」の候補を、一度読んだスレへ変更しました。未読が残っていても候補になり、未読件数を表示します。未閲覧や巡回取得だけのスレは対象外です。確認画面で選んだ履歴・ログだけを削除します。[操作・注意](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/delete-read-threads.md)
 - 226で板一覧の更新／巡回ボタンが反応しなくなる問題を修正しました。共用Viewへの長押しリスナーを取り除き、標準の長押しイベントを使います。
 - 226／242のスレ立て画面で「コマンド（カスタム）」になる問題を修正しました。新規スレのURLではなく板URLから候補を判定します。通常返信にはコマンドボタンを表示しません。
-- 外部板の名前／URL編集で「登録された外部板はありません」となる判定を改善しました。見つからない板には「BBSMENUの板も表示」を利用できます。[詳細](external-board-editor.md)
-- 5chのスレ立て直前にBEへ自動ログインし、成功後にログアウトする設定を追加しました。Haiagaru設定の書き込みカテゴリで有効にし、標準BE設定へID・パスワードを保存してください。初期オフです。[詳細](be-auto-logout.md)
+- 外部板の名前／URL編集で「登録された外部板はありません」となる判定を改善しました。見つからない板には「BBSMENUの板も表示」を利用できます。[詳細](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/external-board-editor.md)
+- 5chのスレ立て直前にBEへ自動ログインし、成功後にログアウトする設定を追加しました。Haiagaru設定の書き込みカテゴリで有効にし、標準BE設定へID・パスワードを保存してください。初期オフです。[詳細](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/be-auto-logout.md)
 
 ## 注意事項・検証範囲
 
