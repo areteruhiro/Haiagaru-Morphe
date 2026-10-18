@@ -81,4 +81,8 @@
 
 1.9.1公開候補のAndroid用MPPビルド成功。created_atは3配布JSONすべてタイムゾーンなしのYYYY-MM-DDTHH:mm:ss形式（Zなし）。MPP SHA-256: B03F58C96174CDE8090D290F55E96F441D37FB9290A9B715A53DB15381436517。
 
+2026-10-19 Morpheメタデータ修正: 公開JSONのcreated_atに`Z`が付いた版があり、Morphe側のタイムゾーンなし日時形式と不一致だった。master/main/devの正式・プレ・版別JSONを確認し、1.9.0版別JSONと現在の正式／プレ取得先を修正。Raw URLを再取得し、現在の正式／プレは1.9.1・created_atにZなし、参照MPPはHTTP 200を確認。Raw配信の最大キャッシュ時間は300秒で、更新直後に旧本文を返すことも確認。`scripts/PublishHaiagaruMetadata.ps1`はdevブランチ対応と、公開前のversion／created_at形式（YYYY-MM-DDTHH:mm:ss、Z／オフセットなし）検証を追加。Morpheアプリ内の更新表示はADB未接続のため未確認。
+
 2026-10-19 1.9.1公開完了: タグ1.9.1のソース3755909、GitHub Releaseはdraft=false・prerelease=false・Latest=1.9.1。Android MPP2名称・JSON3点・SHA256SUMSの6配布物を登録し、全配布物のGitHub digestをローカルと照合。公開MPPを再ダウンロードしてSHA-256 B03F58C96174CDE8090D290F55E96F441D37FB9290A9B715A53DB15381436517と一致。最終MPPの191／226／242元APKへのパッチ適用成功。master/main/devの正式・プレJSON計6取得先を公開raw URLから再取得し、version=1.9.1・download_url・created_at=2026-10-18T16:01:28（Zなし）を確認。公開操作案内も取得成功。並行して行われた1.9.0の日時修正をdevへマージし、master/mainでも保持。1.8.16のversioned JSONをmaster/main/devとRelease添付から取得し、全4点が既に2026-10-18T20:00:00（Zなし）であることを確認、追加変更は不要。ユーザー指示により今回の実機検証・インストール・Morphe端末表示確認を省略。公開URL: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.1
+
+2026-10-19 1.9.2候補: DAT落ち非表示はnative DROPフラグのみを参照し、設定変更時も板一覧向け再描画しか行っていなかった。未更新フラグを公式5chの過去ログ格納済みバナーで非同期補完し、HOME表示コピーと191／226の元リスト復元を更新。404・現行一覧不掲載・通信エラーだけでは非表示にしない。報告スレ1792155688はDAT404・現行一覧不掲載・公式HTML過去ログ表示を確認。実HTMLを含む判定21項目、API36エミュレータで191／226各51・242で17項目のネイティブ接続確認に成功。3版で報告スレのフラグ0からの確認、オフ復元、元モデル・flags不変、191／226の36回切替、242のAdapterData更新を確認。Android用MPPビルドと3版への適用成功、DEX接続・ポップアップ非接続も確認。署名SHA256は既存と一致。実機と実ユーザーの大量履歴を含む全画面確認は未実施。候補MPP SHA256: 9358D67880D2D07538DA27C714DFE0E8E205DDC02C3190C502B6B1EAA9D53129。created_atは3JSONともZなし。

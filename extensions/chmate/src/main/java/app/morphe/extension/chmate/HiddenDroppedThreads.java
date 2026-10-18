@@ -4,10 +4,14 @@ import android.content.Context;
 import java.lang.reflect.Field;
 import java.util.*;
 
-/** Display copies only; exact native STATE_DROP bit, never inferred from response counts. */
+/** Display copies only; native STATE_DROP or positively confirmed official archive status. */
 public final class HiddenDroppedThreads {
     static final String KEY="hideDroppedHomeThreads";
-    private static final Map<Object,List<?>> originals=Collections.synchronizedMap(new IdentityHashMap<>());
+    private static final List<Original> originals=new ArrayList<>();
+    private static final class Original {
+        final java.lang.ref.WeakReference<Object> wrapper;final List<?> source;
+        Original(Object w,List<?> s){wrapper=new java.lang.ref.WeakReference<>(w);source=s;}
+    }
     static boolean enabled(){Context c=Haiagaru.applicationContextForExtension();return c!=null&&c.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(KEY,false);}
     static boolean target(int mode){int id=Math.abs(mode);return id==101||id==102||id==103;}
     static boolean dropped(Object row)throws Exception{
@@ -24,11 +28,11 @@ public final class HiddenDroppedThreads {
     }
     static List<?> filter(List<?> source,int mode,boolean active){
         if(source==null||!target(mode)||!active)return source;
-        try{ArrayList<Object> out=new ArrayList<>();for(Object row:source)if(!dropped(row))out.add(row);return out.size()==source.size()?source:out;}
+        try{ArrayList<Object> out=new ArrayList<>();for(Object row:source)if(!dropped(row)&&!DroppedThreadStatus.dropped(row))out.add(row);return out.size()==source.size()?source:out;}
         catch(Exception error){android.util.Log.w("Haiagaru","DAT-drop display filter left unchanged",error);return source;}
     }
     // Native legacy list wrappers are recreated during sorting. Remember their source to restore OFF.
-    static List<?> source(Object wrapper,List<?> fallback){synchronized(originals){List<?> original=originals.get(wrapper);return original==null?fallback:original;}}
-    static void remember(Object wrapper,List<?> source){synchronized(originals){if(originals.size()>=24)originals.clear();originals.put(wrapper,source);}}
+    static List<?> source(Object wrapper,List<?> fallback){synchronized(originals){for(Original o:originals)if(o.wrapper.get()==wrapper)return o.source;return fallback;}}
+    static void remember(Object wrapper,List<?> source){synchronized(originals){originals.removeIf(o->o.wrapper.get()==null||o.wrapper.get()==wrapper);if(originals.size()>=64)originals.remove(0);originals.add(new Original(wrapper,source));}}
     private HiddenDroppedThreads(){}
 }

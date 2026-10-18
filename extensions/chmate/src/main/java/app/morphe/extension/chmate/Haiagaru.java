@@ -5310,6 +5310,7 @@ public final class Haiagaru {
     static void refreshBoardListAfterReadSortChange() {
         Activity activity = resumedActivity.get();
         if (activity != null) activity.runOnUiThread(() -> {
+            BrowsingHistory.refreshVisible(activity);
             if (!ReadThreadsFirst.refreshLegacyAdapterInPlace(activity)) {
                 ReadThreadsFirst.refreshRecyclerAdapterInPlace(activity);
             }
