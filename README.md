@@ -10,9 +10,9 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.7.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ 最新プレ版: [1.8.15](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.8.15)
+最新正式版: [1.9.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ プレ版の取得先も同じ [1.9.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.0)
 
-以下の機能紹介にはプレ版で追加した機能も含みます。正式版1.7.1ですべての機能が使えるわけではありません。
+更新前にバックアップしてください。**[正式版1.7.1からの変更](docs/release-1.9.0-from-1.7.1.md)** ／ **[プレ版1.8.15からの差分・操作案内](docs/release-1.9.0.md)**。versionCode最大化が初期有効です。
 
 更新履歴: [CHANGELOG.md](CHANGELOG.md)  
 操作案内: [使い方.md](使い方.md)
@@ -26,12 +26,14 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 
 ## 最新版の案内
 
+**1.9.0:** [1.8.15からの差分・操作案内・確認範囲](docs/release-1.9.0.md)。KyodemoのエッヂID・レス本文検索、通信回数上限、表示設定・ジェスチャー、動画サムネイル等を統合しました。
+
 1.8.11: [アーカイブの元スレURL確認・コピー](docs/archive-original-url.md)。アーカイブ一覧またはHaiagaru設定の「過去ログ・エッヂ検索」から確認でき、元URL情報もスレアーカイブと一緒にMEGA／ローカルへバックアップできます。
 
 1.8.11: [コピー履歴・分類](docs/clipboard-history.md)。Haiagaru設定の「履歴・保存件数」または書き込み画面の︙から、ChMate内でコピーした本文を検索・再コピー・カテゴリ分けできます。記録は初期オフ、最新100件まで。他アプリのコピーは収集しません。
-正式版 `1.7.1` の概要: [1.7.1の更新内容](release-notes-1.7.1.md)
+正式版 `1.9.0` の概要: [1.7.1からの追加機能・注意事項](docs/release-1.9.0-from-1.7.1.md)
 
-プレ版 `1.8.15` の概要: [1.8.14からの更新内容・注意事項](docs/release-1.8.15.md)。[★スレタブ](docs/favorite-threads.md)、投稿者ごとの強調色、[ローカル自動バックアップ](docs/local-auto-backup.md)、コピー・アンカー操作、巡回ボタン・外部板検索・アイコンの改善を含みます。
+旧プレ版 `1.8.15` の概要: [1.8.14からの更新内容・注意事項](docs/release-1.8.15.md)。[★スレタブ](docs/favorite-threads.md)、投稿者ごとの強調色、[ローカル自動バックアップ](docs/local-auto-backup.md)、コピー・アンカー操作、巡回ボタン・外部板検索・アイコンの改善を含みます。
 
 ## 主な機能
 
