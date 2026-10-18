@@ -23,6 +23,7 @@ import java.util.WeakHashMap;
 /** Destructive actions stay scoped to the board list that received the input. */
 public final class DeleteReadThreads {
     public static final String KEY = "haiagaruGestureDeleteReadThreads";
+    public static final String LONG_PRESS_KEY = "deleteReadThreadsLongPress";
     private static final Map<Object, Boolean> dialogs = new WeakHashMap<>();
     private DeleteReadThreads() {}
 
@@ -36,11 +37,12 @@ public final class DeleteReadThreads {
 
     public static boolean longClick(Object fragment, View button) {
         if (!boardList(fragment) || button == null || button.getId() != 5) return false;
+        if (!Haiagaru.deleteReadThreadsLongPressEnabled()) return false;
         show(fragment);
         return true;
     }
 
-    /** Kept for existing lifecycle hooks. Native toolbar long presses already reach
+    /** Compatibility no-op for older lifecycle hooks. On 191/226/242 native toolbar long presses reach
      * RoidonListFragment.onLongClick, which the patch intercepts for action 5.
      * Never attach a listener to findViewById(5): the toolbar's only child is a
      * reusable dispatch/anchor View, not a refresh button. Making it long-clickable

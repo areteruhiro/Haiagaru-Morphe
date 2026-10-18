@@ -42,6 +42,13 @@ public final class ResponseArchive {
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private ResponseArchive() { }
 
+    static int archiveIcon(boolean save) {
+        Context context = Haiagaru.applicationContextForExtension();
+        int id = context == null ? 0 : context.getResources().getIdentifier(
+                save ? "haiagaru_response_save" : "haiagaru_response_history", "drawable", context.getPackageName());
+        return id != 0 ? id : (save ? android.R.drawable.ic_menu_save : android.R.drawable.ic_menu_recent_history);
+    }
+
     public static void appendLegacy(Object fragment, Object menu, Object response) {
         appendViewMenu(menu);
         try { append(fragment, menu, response, ResponseArchiveEntry.field(fragment, "W")); }
@@ -103,7 +110,7 @@ public final class ResponseArchive {
         Menu menu = (Menu) object;
         if (ResponseMenuSettings.visible(VIEW_ARCHIVE) && menu.findItem(VIEW_ARCHIVE) == null)
             menu.add(Menu.NONE, VIEW_ARCHIVE, menu.size(), "過去レスを見る")
-                    .setIcon(android.R.drawable.ic_menu_recent_history)
+                    .setIcon(archiveIcon(false))
                     .setOnMenuItemClickListener(ResponseArchive::handle);
     }
 
@@ -120,7 +127,7 @@ public final class ResponseArchive {
         if (!ResponseMenuSettings.visible(ITEM) || menu.findItem(ITEM) != null) return;
         ResponseArchiveEntry entry = snapshot(response, board);
         menu.add(Menu.NONE, ITEM, menu.size(), "このレスをアーカイブに保存")
-                .setIcon(android.R.drawable.ic_menu_save)
+                .setIcon(archiveIcon(true))
                 .setIntent(new Intent().putExtra(EXTRA, json(entry).toString()))
                 .setOnMenuItemClickListener(ResponseArchive::handle);
     }
@@ -146,7 +153,7 @@ public final class ResponseArchive {
     /** 242's response-body sheet passes its exact target as the third argument. */
     public static void appendSheet(Object model, Object builder, Object response) {
         try {
-            appendSheetAction(builder, "過去レスを見る", android.R.drawable.ic_menu_recent_history,
+            appendSheetAction(builder, "過去レスを見る", archiveIcon(false),
                     () -> showList(Haiagaru.toolbarActivity(null)));
         } catch (Exception e) { report(e); }
         try {
@@ -155,7 +162,7 @@ public final class ResponseArchive {
             Object board = get.invoke(flow);
             PosterHighlight.appendSheet(builder, response, board);
             ResponseArchiveEntry entry = snapshot(response, board);
-            appendSheetAction(builder, "このレスをアーカイブに保存", android.R.drawable.ic_menu_save, () -> {
+            appendSheetAction(builder, "このレスをアーカイブに保存", archiveIcon(true), () -> {
                 Activity a = Haiagaru.toolbarActivity(null);
                 if (a != null) confirm(a, entry);
             });

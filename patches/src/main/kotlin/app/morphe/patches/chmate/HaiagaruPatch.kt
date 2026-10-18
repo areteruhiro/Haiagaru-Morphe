@@ -202,10 +202,10 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         if-eqz v$free, :native_long_click
         return v$free
     """.trimIndent(), ExternalLabel("native_long_click", original))
-    val viewCreated = listBase.methods.single { it.name == "onViewCreated" && it.implementation != null }
-    viewCreated.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
-        .map { it.index }.asReversed().forEach { position -> viewCreated.addInstruction(position,
-            "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/DeleteReadThreads;->bind(Ljava/lang/Object;)V") }
+    // All supported native toolbars reuse one dummy child for action dispatch.
+    // Never bind a listener to findViewById(5) in onViewCreated/global layout:
+    // that makes the dummy consume subsequent taps. The native long-click
+    // callback above is sufficient on 191, 226 and 242 alike.
     println("Read-thread deletion gesture and refresh long press: $version")
     if (version != "0.8.10.241") {
         val table = when (version) {
@@ -848,7 +848,7 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
         "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
     }
 
-    fun MutableMethod.wrapModelReturns(includeMarkAllRead: Boolean = false) {
+    fun MutableMethod.wrapModelReturns(includeMarkAllRead: Boolean = false, favorites: Boolean = false) {
         val indexes = implementation?.instructions
             ?.withIndex()
             ?.filter { it.value.opcode == Opcode.RETURN_OBJECT }
@@ -866,6 +866,7 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
                     invoke-static/range { v$register .. v$register }, $EXTENSION->addEdgeArchiveToolbarChoice(Ljava/lang/Object;)Ljava/lang/Object;
                     move-result-object v$register
                     $markAllRead
+                    ${if (favorites) "invoke-static/range { v$register .. v$register }, $EXTENSION->addFavoriteThreadsTab(Ljava/lang/Object;)Ljava/lang/Object;\nmove-result-object v$register" else ""}
                 check-cast v$register, $toolbarModelType
                 """.trimIndent(),
             )
@@ -879,7 +880,7 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
         throw PatchException("ホームツールバーの生成メソッドを特定できません: $versionName")
     }
     homeToolbarMethods.forEach { method ->
-        mutableClassDefBy(profile.homeFragmentClass).findMutableMethodOf(method).wrapModelReturns(includeMarkAllRead = true)
+        mutableClassDefBy(profile.homeFragmentClass).findMutableMethodOf(method).wrapModelReturns(includeMarkAllRead = true, favorites = true)
     }
 
     // A board's thread list owns a separate toolbar model.  Patching the
@@ -1586,6 +1587,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostHistoryRetentionCount(packageMetadata.versionName)
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
         patchGroupedBrowsingHistory(packageMetadata.versionName)
+        patchFavoriteThreads(packageMetadata.versionName)
         patchClipboardHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
         patchToolbarIcons(packageMetadata.versionName)
@@ -4719,6 +4721,10 @@ val haiagaruPatch = resourcePatch(
             readFirst.setAttribute("name", "haiagaru_read_threads_first")
             readFirst.textContent = "既読スレを上に"
             strings.documentElement.appendChild(readFirst)
+            val favorites = strings.createElement("string")
+            favorites.setAttribute("name", "haiagaru_favorite_threads")
+            favorites.textContent = "★スレ"
+            strings.documentElement.appendChild(favorites)
         }
         document("res/values-en/strings.xml").use { strings ->
             val entry = strings.createElement("string")
@@ -4733,6 +4739,10 @@ val haiagaruPatch = resourcePatch(
             readFirst.setAttribute("name", "haiagaru_read_threads_first")
             readFirst.textContent = "Show read threads first"
             strings.documentElement.appendChild(readFirst)
+            val favorites = strings.createElement("string")
+            favorites.setAttribute("name", "haiagaru_favorite_threads")
+            favorites.textContent = "★ Threads"
+            strings.documentElement.appendChild(favorites)
         }
         PublicXmlManager(get("res/values/public.xml")).use { publicResources ->
             publicResources.createPublicId("string", "haiagaru_edge_archive")
@@ -4740,7 +4750,14 @@ val haiagaruPatch = resourcePatch(
             publicResources.createPublicId("string", "haiagaru_mark_all_read")
             publicResources.createPublicId("string", "haiagaru_read_threads_first")
             publicResources.createPublicId("drawable", "haiagaru_mark_all_read")
+            publicResources.createPublicId("string", "haiagaru_favorite_threads")
+            publicResources.createPublicId("drawable", "haiagaru_favorite_threads")
         }
+        get("res").resolve("drawable/haiagaru_favorite_threads.xml").writeText("""
+            <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                <path android:fillColor="#FFFFFFFF" android:pathData="M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z"/>
+            </vector>
+        """.trimIndent())
         get("res").resolve("drawable/haiagaru_mark_all_read.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
                 <path android:fillColor="#FFFFFFFF" android:pathData="M18,7l-1.41,-1.41 -6.34,6.34 1.41,1.41L18,7zM22.24,5.59L11.66,16.17 7.48,12l-1.41,1.41L11.66,19l12,-12 -1.42,-1.41zM0.41,13.41L6,19l1.41,-1.41L1.83,12 0.41,13.41z"/>
@@ -4753,6 +4770,20 @@ val haiagaruPatch = resourcePatch(
             strings.documentElement.appendChild(entry)
         }
         val responseLabels = listOf("投稿者を強調", "レスを保存", "過去レスを見る", "ﾜｯﾁｮｲで検索", "ﾜｯﾁｮｲ下4桁をNG登録", "ﾜｯﾁｮｲ下4桁で検索")
+        val archiveIcons = mapOf(
+            "haiagaru_response_history" to "M13,3c-4.97,0 -9,4.03 -9,9H1l3.89,3.89 .07,.14L9,12H6c0,-3.87 3.13,-7 7,-7s7,3.13 7,7 -3.13,7 -7,7c-1.93,0 -3.68,-.79 -4.94,-2.06l-1.42,1.42C8.27,19.99 10.51,21 13,21c4.97,0 9,-4.03 9,-9s-4.03,-9 -9,-9zM12,8v5l4.28,2.54 .72,-1.21 -3.5,-2.08V8H12z",
+            "haiagaru_response_save" to "M17,3H5c-1.11,0 -2,.9 -2,2v14c0,1.1 .89,2 2,2h14c1.1,0 2,-.9 2,-2V7l-4,-4zM12,19c-1.66,0 -3,-1.34 -3,-3s1.34,-3 3,-3 3,1.34 3,3 -1.34,3 -3,3zM15,9H5V5h10v4z",
+        )
+        PublicXmlManager(get("res/values/public.xml")).use { manager ->
+            archiveIcons.forEach { (name, path) ->
+                manager.createPublicId("drawable", name)
+                get("res").resolve("drawable/$name.xml").writeText("""
+                    <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                        <path android:fillColor="#FFFFFFFF" android:pathData="$path"/>
+                    </vector>
+                """.trimIndent())
+            }
+        }
         val responseStrings = responseLabels.mapIndexed { index, label -> "haiagaru_response_action_$index" to label } +
             (0..4).map { "haiagaru_response_share_$it" to "共有(記憶) ${it + 1}" }
         document("res/values/strings.xml").use { strings ->

@@ -3,10 +3,17 @@ import android.text.method.MovementMethod;
 import android.view.MotionEvent;
 import android.view.ActionMode;
 public class TextView extends android.view.View {
+    public CharSequence text="ordinary body";
+    public CharSequence getText(){return text;}
+    public android.text.Layout getLayout(){return new android.text.Layout();}
+    public int getTotalPaddingLeft(){return 0;} public int getTotalPaddingTop(){return 0;}
+    public int getScrollX(){return 0;} public int getScrollY(){return 0;}
     boolean selectable,focusable,touchFocusable,clickable,longClickable;
     MovementMethod movement;
     ActionMode.Callback selectionCallback;
     public boolean selected; public int frameworkEvents,cancels,nativeDown,nativeUp;
+    public int longPressRetries;
+    public boolean performLongClick(){longPressRetries++;return true;}
     public Object getContext(){return null;}
     public boolean isTextSelectable(){return selectable;}
     public void setTextIsSelectable(boolean value){selectable=value;focusable=value;touchFocusable=value;clickable=value;longClickable=value;}

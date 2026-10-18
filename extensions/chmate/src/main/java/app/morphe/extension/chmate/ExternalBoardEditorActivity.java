@@ -7,6 +7,10 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -21,6 +25,10 @@ public final class ExternalBoardEditorActivity extends Activity {
     private LinearLayout list;
     private boolean busy;
     private boolean includeBbsMenu;
+    private EditText search;
+    private final ArrayList<Board> loadedBoards=new ArrayList<>();
+    private final Handler searchHandler=new Handler(Looper.getMainLooper());
+    private final Runnable searchUpdate=()->renderBoards();
     static final class Board {
         final long row; final String id,title,original;
         Board(long row,String id,String title,String original) {
@@ -39,6 +47,14 @@ public final class ExternalBoardEditorActivity extends Activity {
         TextView help=new TextView(this);help.setText("登録した外部板の名前・URLを編集\n保存後はChMateを再起動してください。お気に入り・取得済みログの識別子は変更しません。異なる板への付け替えではなく、同じ板の名前変更・移転に使用してください。認証設定は新しい接続先で再設定してください。");root.addView(help);
         CheckBox all=new CheckBox(this);all.setText("BBSMENUの板も表示（追加した板が見つからない場合）");
         all.setOnCheckedChangeListener((button,on)->{includeBbsMenu=on;load();});root.addView(all);
+        search=new EditText(this);search.setSingleLine(true);search.setHint("板名・URLで検索");root.addView(search);
+        search.addTextChangedListener(new TextWatcher(){
+            public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+            public void onTextChanged(CharSequence s,int start,int before,int count){
+                searchHandler.removeCallbacks(searchUpdate);searchHandler.postDelayed(searchUpdate,180);
+            }
+            public void afterTextChanged(Editable s){}
+        });
         ScrollView scroll=new ScrollView(this);list=new LinearLayout(this);list.setOrientation(1);scroll.addView(list);
         root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);root.requestApplyInsets();load();
     }
@@ -69,15 +85,31 @@ public final class ExternalBoardEditorActivity extends Activity {
                 runOnUiThread(()->{
                     busy=false;if(isFinishing())return;
                     if(showingAll!=includeBbsMenu){load();return;}
-                    if(rows.isEmpty()){TextView empty=new TextView(this);empty.setText("外部板が見つかりません。「BBSMENUの板も表示」をオンにして確認してください。");list.addView(empty);}
-                    for(Board b:rows) {
-                        Button item=new Button(this);item.setAllCaps(false);
-                        item.setText(b.title+"\n"+ExternalBoardEditor.prefs(this).getString("target:"+b.id,b.original));
-                        item.setOnClickListener(v->edit(b));list.addView(item);
-                    }
+                    loadedBoards.clear();loadedBoards.addAll(rows);renderBoards();
                 });
             } catch(Exception e){runOnUiThread(()->{busy=false;error("板一覧を読み込めませんでした。");});}
         },"Haiagaru-board-list").start();
+    }
+    private void renderBoards() {
+        if(isFinishing() || isDestroyed() || busy || list==null)return;
+        list.removeAllViews();
+        String query=search.getText().toString();
+        SharedPreferences preferences=ExternalBoardEditor.prefs(this);
+        int count=0;
+        for(Board b:loadedBoards) {
+            String url=preferences.getString("target:"+b.id,b.original);
+            if(!ExternalBoardSearch.matches(query,b.title,url))continue;
+            Button item=new Button(this);item.setAllCaps(false);item.setText(b.title+"\n"+url);
+            item.setOnClickListener(v->edit(b));list.addView(item);count++;
+        }
+        if(count==0) {
+            TextView empty=new TextView(this);
+            empty.setText(loadedBoards.isEmpty()?"外部板が見つかりません。「BBSMENUの板も表示」をオンにして確認してください。":"検索条件に一致する板はありません。");
+            list.addView(empty);
+        }
+    }
+    @Override protected void onDestroy() {
+        searchHandler.removeCallbacks(searchUpdate);super.onDestroy();
     }
     private void edit(Board b) {
         LinearLayout box=new LinearLayout(this);box.setOrientation(1);

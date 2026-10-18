@@ -473,6 +473,9 @@ public final class Haiagaru {
     public static Object addMarkAllReadToolbarChoice(Object toolbarModel) {
         return addToolbarChoice(toolbarModel, MARK_ALL_READ_TOOLBAR_ID, "haiagaru_mark_all_read");
     }
+    public static Object addFavoriteThreadsTab(Object toolbarModel) {
+        return addToolbarChoice(toolbarModel, FavoriteThreads.TAB, "haiagaru_favorite_threads");
+    }
 
     public static boolean keepQuickFilterPosition() {
         return applicationContext != null
@@ -515,7 +518,7 @@ public final class Haiagaru {
                         false, toolbarModel.getClass().getClassLoader());
                 Object item = itemClass.getConstructor(int.class, int.class, int.class,
                         int.class, boolean.class).newInstance(
-                        actionId, iconId, titleId, titleId, false);
+                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, titleId, actionId == FavoriteThreads.TAB);
                 buttons.add(item);
                 return toolbarModel;
             }
@@ -537,7 +540,7 @@ public final class Haiagaru {
                     "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
             Object item = specClass.getConstructor(int.class, int.class, int.class,
                     int.class, boolean.class).newInstance(
-                    actionId, iconId, titleId, titleId, false);
+                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, titleId, actionId == FavoriteThreads.TAB);
             // Modern ToolbarDefault keeps a mutable button list. Extending that
             // list preserves its position and configuration objects; rebuilding
             // the model can silently lose the new choice on some versions.
@@ -622,6 +625,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if (FavoriteThreads.refresh(fragment, itemId)) return true;
         if (itemId == DIRECT_COPY_TOOLBAR_ID) {
             Activity activity = toolbarActivity(fragment);
             if (activity == null || activity.isFinishing()) return true;
@@ -900,6 +904,7 @@ public final class Haiagaru {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
         MediaUploadHosts.init(appContext);
@@ -3493,6 +3498,9 @@ public final class Haiagaru {
         directSelectionHelp.setText(text("オン時は本文の長押しメニューを無効にし、選択範囲を調整してコピーできます。ツールバー設定に追加した「長押しコピー」からも切り替え可能です。従来のレスメニューはレス番号・ヘッダーから開いてください。オフにすると従来の操作に戻ります。",
                 "When on, long press the body and adjust selection handles. Use the response number/header for the original menu. Turn off to restore original behavior."));
         layout.addView(directSelectionHelp);
+        Switch directCopyAnchors = addSwitch(layout, activity,
+                text("長押しコピー中も >>番号の長押し操作を優先", "Keep native >>anchor long presses while copying"),
+                preferences.getBoolean("directCopyAnchors", true));
         Button importThemes = new Button(activity);
         importThemes.setText(text("自作テーマをファイル／フォルダから取り込む", "Import custom themes from files / folder"));
         importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
@@ -3538,6 +3546,9 @@ public final class Haiagaru {
                 preferences.getBoolean("keepQuickFilterPosition", false));
 
         final boolean initialHideNgThreadGroup = hideNgThreadGroup();
+        Switch deleteReadLongPress = addSwitch(layout, activity,
+                text("更新ボタン長押しで既読スレを削除", "Delete read threads by long-pressing Refresh"),
+                preferences.getBoolean(DeleteReadThreads.LONG_PRESS_KEY, true));
         Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
                 text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
                 initialHideNgThreadGroup);
@@ -3573,11 +3584,13 @@ public final class Haiagaru {
 
 
         live.toggle(directBodySelection,"directBodySelection");
+        live.toggle(directCopyAnchors,"directCopyAnchors");
         live.toggle(topAlignShortThreadsSwitch,"topAlignShortThreads");
         live.number(autoReloadInterval,"autoReloadInterval",10,1800);
         live.choice(threadTitleSpacing,"threadTitleSpacingPercent",i->100+i*5);
         live.toggle(compactQuickFiltersSwitch,"compactQuickFilters");
         live.toggle(keepFilterPosition,"keepQuickFilterPosition");
+        live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
         live.toggle(readThreadsFirstSwitch,"readThreadsFirst",Haiagaru::refreshBoardListAfterReadSortChange);
         live.toggle(edgeReporterId,"edgeReporterId");
@@ -3938,12 +3951,17 @@ public final class Haiagaru {
         EditText videoPreviewCount = addTextField(layout, activity,
                 "プレビューの分割数（1〜64）", Integer.toString(videoPreviewCount()));
         videoPreviewCount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        EditText videoPreviewMinutes = addTextField(layout, activity,
-                "分割プレビューの対象時間：分（0〜1440）", Integer.toString(videoPreviewMinimumSeconds() / 60));
-        videoPreviewMinutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        EditText videoPreviewSeconds = addTextField(layout, activity,
-                "分割プレビューの対象時間：秒（0〜59）。指定した長さ以上の動画が対象", Integer.toString(videoPreviewMinimumSeconds() % 60));
-        videoPreviewSeconds.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        EditText videoPreviewDuration = addTextField(layout, activity,
+                "分割プレビューの対象時間（分:秒）", PreviewDuration.format(videoPreviewMinimumSeconds()));
+        videoPreviewDuration.setSingleLine(true);
+        videoPreviewDuration.setInputType(android.text.InputType.TYPE_CLASS_DATETIME
+                | android.text.InputType.TYPE_DATETIME_VARIATION_TIME);
+        videoPreviewDuration.setHint("例 1:30＝1分30秒以上、0:00＝すべて（最大1440:59）");
+        videoPreviewDuration.setContentDescription("分割プレビューの対象時間。分と秒をコロンで区切って入力");
+        TextView durationHelp = new TextView(activity);
+        durationHelp.setText("例：1:30＝1分30秒以上の動画。0:00＝すべての動画（最大1440:59）。");
+        durationHelp.setTextSize(13);
+        layout.addView(durationHelp);
         Switch videoPreviewWifi = addSwitch(layout, activity,
                 "分割プレビューの取得はWi-Fi接続時のみ", videoPreviewWifiOnly());
 
@@ -3957,13 +3975,12 @@ public final class Haiagaru {
         live.toggle(videoPreviewFour,"videoPreviewFour");live.number(videoPreviewCount,"videoPreviewCount",1,64);
         live.toggle(videoPreviewWifi,"videoPreviewWifiOnly");
         Runnable saveDuration=()->{
-         try{int minutes=Integer.parseInt(value(videoPreviewMinutes).trim()),seconds=Integer.parseInt(value(videoPreviewSeconds).trim());
-         if(minutes<0||minutes>1440||seconds<0||seconds>59)throw new NumberFormatException();
-         videoPreviewMinutes.setError(null);videoPreviewSeconds.setError(null);
-         preferences.edit().putInt("videoPreviewMinimumSeconds",minutes*60+seconds).apply();
-         }catch(NumberFormatException e){videoPreviewSeconds.setError("分: 0〜1440 / 秒: 0〜59");}
+         try{int seconds=PreviewDuration.parse(value(videoPreviewDuration));
+         videoPreviewDuration.setError(null);
+         preferences.edit().putInt("videoPreviewMinimumSeconds",seconds).apply();
+         }catch(IllegalArgumentException e){videoPreviewDuration.setError("分:秒で入力（例 1:30、分は0〜1440・秒は0〜59）");}
         };
-        LiveSettings.watch(videoPreviewMinutes,saveDuration);LiveSettings.watch(videoPreviewSeconds,saveDuration);
+        LiveSettings.watch(videoPreviewDuration,saveDuration);
         return layout;
     }
 
@@ -5018,6 +5035,11 @@ public final class Haiagaru {
         return prefs != null && prefs.getBoolean("hideShowHiddenNgMenu", false);
     }
 
+    public static boolean deleteReadThreadsLongPressEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean(DeleteReadThreads.LONG_PRESS_KEY, true);
+    }
+
     /** 0=automatic, 1=hissi.org, 2=Kyodemo, 3=both. Shared by all supported ChMate versions. */
     public static int hissiCheckerMode() {
         SharedPreferences prefs = preferencesOrNull();
@@ -5141,6 +5163,10 @@ public final class Haiagaru {
     public static boolean directBodySelectionEnabled() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean("directBodySelection", false);
+    }
+    public static boolean directCopyAnchorsEnabled() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean("directCopyAnchors", true);
     }
 
     public static boolean xPostPreviewEnabled() {

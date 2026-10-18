@@ -12,6 +12,11 @@ import org.json.JSONArray;
 public final class ResponseMenuSettings {
     private ResponseMenuSettings() {}
     static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077};
+    private static int icon(int id) {
+        if(id==0x7e484a01)return ResponseArchive.archiveIcon(true);
+        if(id==0x7e484a03)return ResponseArchive.archiveIcon(false);
+        return android.R.drawable.ic_menu_more;
+    }
     public static Object catalog(Object model) {
         try {
             Context context=Haiagaru.applicationContextForExtension();
@@ -35,7 +40,7 @@ public final class ResponseMenuSettings {
             }
             for(int i=0;i<IDS.length;i++)if(seen.add(IDS[i])) {
                 int text=context.getResources().getIdentifier("haiagaru_response_action_"+i,"string",context.getPackageName());
-                list.add(spec.getConstructor(int.class,int.class,int.class,int.class,boolean.class).newInstance(IDS[i],android.R.drawable.ic_menu_more,text,text,true));
+                list.add(spec.getConstructor(int.class,int.class,int.class,int.class,boolean.class).newInstance(IDS[i],icon(IDS[i]),text,text,true));
             }
         }catch(Exception error){android.util.Log.w("Haiagaru","Response toolbar catalog",error);}
         return model;
@@ -63,7 +68,7 @@ public final class ResponseMenuSettings {
             for(int i=0;i<IDS.length;i++) if(seen.add(IDS[i])) {
                 int text=context.getResources().getIdentifier("haiagaru_response_action_"+i,"string",context.getPackageName());
                 list.add(spec.getConstructor(int.class,int.class,int.class,int.class,boolean.class)
-                        .newInstance(IDS[i],android.R.drawable.ic_menu_more,text,text,true));
+                        .newInstance(IDS[i],icon(IDS[i]),text,text,true));
             }
         } catch(Exception error) { android.util.Log.w("Haiagaru","Response toolbar catalog",error); }
     }

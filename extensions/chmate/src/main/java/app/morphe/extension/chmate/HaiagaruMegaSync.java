@@ -327,6 +327,7 @@ final class HaiagaruMegaSync {
             activity.startActivity(intent);
         });
         content.addView(saveLocal);
+        LocalAutoBackup.addButton(content, activity);
 
         Button openLocal = new Button(activity);
         openLocal.setText("端末のバックアップファイルから復元");

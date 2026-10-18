@@ -34,6 +34,10 @@ public final class SelectionTest {
             check(DirectBodySelection.longClickListener(view,null)==null,"null listener preserved");
             check(DirectBodySelection.prepare(view),"repeat prepare idempotent");
             check(view.getCustomSelectionActionModeCallback()==null,"native suppressing callback disabled during direct selection");
+            view.setMovementMethod(original);view.setLongClickable(false);view.setFocusableInTouchMode(false);
+            DirectBodySelection.prepare(view);
+            check(view.getMovementMethod() instanceof android.text.method.ArrowKeyMovementMethod
+                    &&view.isLongClickable()&&view.isFocusableInTouchMode(),"rebound row restores framework selection state");
             final boolean[] intercept={false};
             view.parent=disallow->intercept[0]=disallow;
             touch(view,0,0,0);
@@ -58,6 +62,19 @@ public final class SelectionTest {
             check(view.nativeDown==1,"dismiss selection without opening underlying link");
             touch(view,0,4000,0);touch(view,3,4010,0);
             check(view.nativeDown==1,"cancel does not activate link");
+            view.text=">>123 body";
+            touch(view,0,5000,2);
+            check(!DirectBodySelection.selectionContext(view),"anchor permits native context menu");
+            check(wrapped.onLongClick(view),"anchor retains native long click listener");
+            touch(view,1,5700,2);
+            check(view.nativeDown==2&&view.nativeUp==2,"anchor long press dispatches native down and up");
+            check(DirectBodySelection.selectionContext(view),"ordinary selection restored after anchor");
+            Haiagaru.anchors=false;
+            touch(view,0,6000,2);touch(view,1,6700,2);
+            check(view.nativeDown==2,"anchor toggle off retains text selection");
+            check(view.longPressRetries>0,"missing long press selection retried");
+            Haiagaru.anchors=true;
+            view.text="ordinary body";
             Haiagaru.enabled=false;
             check(!DirectBodySelection.prepare(view),"off switches to native");
             check(wrapped.onLongClick(view),"native menu listener restored while disabled");

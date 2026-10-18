@@ -24,7 +24,7 @@ public final class PosterHighlight {
     private static final int ITEM=0x7e484b01;
     private static final Map<Object, PosterHighlightRules.Poster> FIRST=Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<MenuItem, Identity> MENU_TARGETS=Collections.synchronizedMap(new WeakHashMap<>());
-    private static final int[] COLORS={0x55ffc107,0x5542a5f5,0x5566bb6a};
+    private static final int[] COLORS=PosterHighlightRules.COLORS;
     private static Context context;
     private static volatile boolean enabled;
     private static volatile int color=COLORS[0], revision;
@@ -58,7 +58,7 @@ public final class PosterHighlight {
             for(int i=0;i<array.length() && i<500;i++) {
                 JSONObject j=array.getJSONObject(i);
                 loaded.add(new PosterHighlightRules.Rule(j.getInt("kind"),j.getInt("scope"),j.getString("target"),
-                        j.getString("value"),j.optBoolean("enabled",true)));
+                        j.getString("value"),j.optBoolean("enabled",true),j.optInt("colorIndex",-1)));
             }
             rules=Collections.unmodifiableList(loaded);
         } catch(Exception error) { enabled=false; rules=Collections.emptyList(); report(error); }
@@ -69,7 +69,7 @@ public final class PosterHighlight {
         try {
             JSONArray array=new JSONArray();
             for(PosterHighlightRules.Rule r:values) array.put(new JSONObject().put("kind",r.kind).put("scope",r.scope)
-                    .put("target",r.target).put("value",r.value).put("enabled",r.enabled));
+                    .put("target",r.target).put("value",r.value).put("enabled",r.enabled).put("colorIndex",r.colorIndex));
             prefs().edit().putString("rules",array.toString()).apply(); reload(); refresh();
         } catch(Exception error){throw new IllegalStateException("強調ルールを保存できませんでした",error);}
     }
@@ -157,19 +157,24 @@ public final class PosterHighlight {
         copy.setSpan(identity,0,copy.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return styled(copy,identity);
     }
-    private static boolean matches(Identity identity) {
-        if(!enabled)return false;
+    private static PosterHighlightRules.Rule matchingRule(Identity identity) {
+        if(!enabled)return null;
         PosterHighlightRules.Poster first=identity.first;
         if(first==null)first=FIRST.get(identity.response.get());
-        for(PosterHighlightRules.Rule rule:rules)if(rule.matches(identity.poster,first,identity.thread,identity.board))return true;
-        return false;
+        // The last registered matching rule wins, so a new person-specific color overrides older broad rules.
+        for(int i=rules.size()-1;i>=0;i--) {
+            PosterHighlightRules.Rule rule=rules.get(i);
+            if(rule.matches(identity.poster,first,identity.thread,identity.board))return rule;
+        }
+        return null;
     }
     private static Spanned styled(SpannableStringBuilder text,Identity identity) {
         for(Tint span:text.getSpans(0,text.length(),Tint.class))text.removeSpan(span);
         for(Bold span:text.getSpans(0,text.length(),Bold.class))text.removeSpan(span);
         for(Applied span:text.getSpans(0,text.length(),Applied.class))text.removeSpan(span);
-        if(matches(identity)) {
-            text.setSpan(new Tint(color),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        PosterHighlightRules.Rule match=matchingRule(identity);
+        if(match!=null) {
+            text.setSpan(new Tint(match.color(color)),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             text.setSpan(new Bold(),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         text.setSpan(new Applied(),0,text.length(),Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -241,8 +246,20 @@ public final class PosterHighlight {
         if(kind!=0)content.addView(input);
         Spinner scope=new Spinner(activity);scope.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,PosterHighlightRules.SCOPES));
         content.addView(scope);
+        TextView colorLabel=new TextView(activity);colorLabel.setText("この登録の背景色");content.addView(colorLabel);
+        Spinner ruleColor=colorSpinner(activity,true);content.addView(ruleColor);
+        TextView sample=new TextView(activity);sample.setText("名前・本文の強調色の見本");sample.setTypeface(null,Typeface.BOLD);
+        content.addView(sample);
+        ruleColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            public void onNothingSelected(AdapterView<?> p){}
+            public void onItemSelected(AdapterView<?> p,android.view.View v,int position,long id){
+                sample.setBackgroundColor(position==0?color:COLORS[position-1]);
+            }
+        });
+        TextView priority=new TextView(activity);priority.setText("複数の登録に一致した場合は、最後に登録した条件の色を使います。");content.addView(priority);
+        ScrollView scroll=new ScrollView(activity);scroll.addView(content);
         AlertDialog dialog=new AlertDialog.Builder(activity).setTitle(PosterHighlightRules.KINDS[kind]+"で強調")
-                .setView(content).setNegativeButton("キャンセル",null).setNeutralButton("登録一覧",(d,w)->showSettings(activity))
+                .setView(scroll).setNegativeButton("キャンセル",null).setNeutralButton("登録一覧",(d,w)->showSettings(activity))
                 .setPositiveButton("登録",null).create();
         dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
             try {
@@ -251,7 +268,7 @@ public final class PosterHighlight {
                 String raw=kind==0?"":input.getText().toString().trim();
                 if(kind==3 && raw.startsWith("-"))raw=raw.substring(1);
                 if(kind==4 && raw.startsWith("◆"))raw=raw.substring(1);
-                PosterHighlightRules.Rule rule=new PosterHighlightRules.Rule(kind,selected,target,raw,true);
+                PosterHighlightRules.Rule rule=new PosterHighlightRules.Rule(kind,selected,target,raw,true,ruleColor.getSelectedItemPosition()-1);
                 ArrayList<PosterHighlightRules.Rule> copy=new ArrayList<>(rules);
                 for(int i=copy.size()-1;i>=0;i--) {
                     PosterHighlightRules.Rule old=copy.get(i);
@@ -266,14 +283,23 @@ public final class PosterHighlight {
         Button button=new Button(activity);button.setText("投稿者の強調（スレ主・ID・ﾜｯﾁｮｲ・トリップ）");
         button.setOnClickListener(v->showSettings(activity));parent.addView(button);
     }
+    private static Spinner colorSpinner(Activity activity,boolean inherit) {
+        ArrayList<String> labels=new ArrayList<>();
+        if(inherit)labels.add("共通設定の色");
+        for(String name:PosterHighlightRules.COLOR_NAMES)labels.add("背景色："+name);
+        Spinner spinner=new Spinner(activity);
+        spinner.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,labels));
+        return spinner;
+    }
     public static void showSettings(Activity activity) {
         if(context==null || activity==null || activity.isFinishing())return;
         LinearLayout content=new LinearLayout(activity);content.setOrientation(LinearLayout.VERTICAL);
         Switch master=new Switch(activity);master.setText("投稿者の強調を有効にする");master.setChecked(enabled);content.addView(master);
         master.setOnCheckedChangeListener((b,on)->{prefs().edit().putBoolean("enabled",on).apply();reload();refresh();});
         TextView help=new TextView(activity);help.setText("レス本文を長押し →「この人の書き込みを強調」から条件を登録できます。\n下のチェックで登録ごとのオン／オフを切り替えます。変更は即時保存されます。");content.addView(help);
-        Spinner colors=new Spinner(activity);colors.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"背景色：黄","背景色：青","背景色：緑"}));
-        colors.setSelection(Math.max(0,Math.min(2,prefs().getInt("color",0))));content.addView(colors);
+        TextView commonLabel=new TextView(activity);commonLabel.setText("共通設定の色（個別に色を指定していない登録に適用）");content.addView(commonLabel);
+        Spinner colors=colorSpinner(activity,false);
+        colors.setSelection(Math.max(0,Math.min(COLORS.length-1,prefs().getInt("color",0))));content.addView(colors);
         colors.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
             public void onNothingSelected(android.widget.AdapterView<?> p){}
             public void onItemSelected(android.widget.AdapterView<?> p,android.view.View v,int position,long id){
@@ -289,7 +315,18 @@ public final class PosterHighlight {
                 ArrayList<PosterHighlightRules.Rule> copy=new ArrayList<>(rules);
                 if(index>=copy.size())return;
                 PosterHighlightRules.Rule old=copy.get(index);
-                copy.set(index,new PosterHighlightRules.Rule(old.kind,old.scope,old.target,old.value,on));save(copy);
+                copy.set(index,new PosterHighlightRules.Rule(old.kind,old.scope,old.target,old.value,on,old.colorIndex));save(copy);
+            });
+            Spinner individualColor=colorSpinner(activity,true);individualColor.setSelection(r.colorIndex+1);content.addView(individualColor);
+            individualColor.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+                public void onNothingSelected(AdapterView<?> p){}
+                public void onItemSelected(AdapterView<?> p,android.view.View v,int position,long id){
+                    ArrayList<PosterHighlightRules.Rule> copy=new ArrayList<>(rules);
+                    if(index>=copy.size())return;
+                    PosterHighlightRules.Rule old=copy.get(index);
+                    if(old.colorIndex==position-1)return;
+                    copy.set(index,new PosterHighlightRules.Rule(old.kind,old.scope,old.target,old.value,old.enabled,position-1));save(copy);
+                }
             });
         }
         if(displayed.isEmpty()){TextView empty=new TextView(activity);empty.setText("登録はありません");content.addView(empty);}

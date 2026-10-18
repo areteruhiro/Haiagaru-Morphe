@@ -51,6 +51,18 @@ public final class VerifyPosterHighlightRules {
         check(op.matches(a,slipFirst,thread,board),"OP full slip fallback");
         try {new PosterHighlightRules.Rule(3,2,"","x",true);throw new AssertionError("Expected suffix validation");}
         catch(IllegalArgumentException expected){checks++;}
+        check(PosterHighlightRules.COLORS.length==12,"12 highlight colors available");
+        check(PosterHighlightRules.COLOR_NAMES.length==PosterHighlightRules.COLORS.length,"Every color has a label");
+        check(id.colorIndex==-1 && id.color(123)==123,"Legacy rule inherits shared color");
+        java.util.Set<Integer> palette=new java.util.HashSet<>();
+        for(int i=0;i<PosterHighlightRules.COLORS.length;i++) {
+            var colored=new PosterHighlightRules.Rule(1,0,thread,a.id,true,i);
+            check(colored.color(123)==PosterHighlightRules.COLORS[i],"Individual color "+i);
+            check(colored.matches(a,null,thread,board),"Color does not alter matching "+i);
+            palette.add(colored.color(123));
+        }
+        check(palette.size()==12,"All colors distinct");
+        check(new PosterHighlightRules.Rule(1,0,thread,a.id,true,999).color(123)==123,"Invalid stored color falls back safely");
         System.out.println("PASS "+checks+" literal poster-highlight identity and scope checks");
     }
 }

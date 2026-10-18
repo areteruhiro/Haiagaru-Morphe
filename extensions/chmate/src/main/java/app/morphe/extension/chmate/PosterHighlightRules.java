@@ -8,6 +8,9 @@ import java.util.regex.Pattern;
 final class PosterHighlightRules {
     static final String[] KINDS = {"スレ主", "ID", "ﾜｯﾁｮｲ", "ﾜｯﾁｮｲ下4桁", "トリップ"};
     static final String[] SCOPES = {"このスレ", "この板", "すべての板"};
+    static final String[] COLOR_NAMES = {"黄", "青", "緑", "赤", "オレンジ", "ピンク", "紫", "水色", "青緑", "黄緑", "茶", "グレー"};
+    static final int[] COLORS = {0x55ffc107,0x5542a5f5,0x5566bb6a,0x55ef5350,0x55ff9800,0x55ec407a,
+            0x55ab47bc,0x5526c6da,0x5526a69a,0x55cddc39,0x55a1887f,0x559e9e9e};
     private static final Pattern SLIP = Pattern.compile("(?<![^\\s()（）\\[\\]<>])([^\\s()（）\\[\\]<>]{4}-[^\\s()（）\\[\\]<>]{4})(?=$|[\\s()（）\\[\\]<>])");
     private static final Pattern TRIP = Pattern.compile("[◆◇]([^\\s◆◇()（）<>]+)");
 
@@ -43,17 +46,22 @@ final class PosterHighlightRules {
     }
 
     static final class Rule {
-        final int kind, scope;
+        final int kind, scope, colorIndex;
         final String target, value;
         final boolean enabled;
         Rule(int kind, int scope, String target, String value, boolean enabled) {
+            this(kind,scope,target,value,enabled,-1);
+        }
+        Rule(int kind, int scope, String target, String value, boolean enabled, int colorIndex) {
             if (kind < 0 || kind >= KINDS.length || scope < 0 || scope >= SCOPES.length
                     || target == null || value == null || value.length() > 256
                     || (scope != 2 && target.isEmpty()) || (kind != 0 && value.isEmpty())
                     || kind == 3 && value.length() != 4)
                 throw new IllegalArgumentException("Invalid poster highlight rule");
             this.kind=kind; this.scope=scope; this.target=target; this.value=value; this.enabled=enabled;
+            this.colorIndex=colorIndex>=0 && colorIndex<COLORS.length?colorIndex:-1;
         }
+        int color(int fallback) { return colorIndex<0?fallback:COLORS[colorIndex]; }
         boolean matches(Poster poster, Poster first, String thread, String board) {
             if (!enabled || scope == 0 && !target.equals(thread) || scope == 1 && !target.equals(board)) return false;
             return kind == 0 ? poster.sameAsStarter(first) : value.equals(poster.value(kind));

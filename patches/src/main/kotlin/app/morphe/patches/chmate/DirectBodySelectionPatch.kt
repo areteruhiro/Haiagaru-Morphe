@@ -61,7 +61,7 @@ internal fun BytecodePatchContext.patchDirectBodySelection(version: String) {
             emptySet(), emptySet(), ImmutableMethodImplementation(parameters.size + 2, emptyList(), emptyList(), emptyList())))
         val registers = (0..parameters.size).joinToString(", ") { "p$it" }
         contextMenu.addInstructions(0, """
-            invoke-static {p0}, Lapp/morphe/extension/chmate/DirectBodySelection;->prepare(Ljava/lang/Object;)Z
+            invoke-static {p0}, Lapp/morphe/extension/chmate/DirectBodySelection;->selectionContext(Ljava/lang/Object;)Z
             move-result v0
             if-eqz v0, :native_context
             const/4 v0, 0x0
