@@ -20,6 +20,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.3.2")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 }
@@ -31,6 +32,13 @@ configure<ApplicationExtension> {
     buildTypes {
         getByName("release") {
             proguardFiles("proguard-rules.pro")
+            // MPE ships DEX without META-INF/services. Keep the Android fast
+            // loader instead of consumer rules that force ServiceLoader.
+            optimization.keepRules {
+                ignoreFrom("org.jetbrains.kotlinx:kotlinx-coroutines-core",
+                    "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm",
+                    "org.jetbrains.kotlinx:kotlinx-coroutines-android")
+            }
         }
     }
 

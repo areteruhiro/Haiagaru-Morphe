@@ -1543,7 +1543,7 @@ private fun BytecodePatchContext.patchUnreadToolbarCount(version: String) {
 
 private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
-    extendWith("extensions/chmate.mpe")
+    extendWith { ChMateExtensionIsolation.open() }
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
