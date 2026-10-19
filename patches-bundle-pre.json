@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-19T11:51:38",
-  "description": "# Haiagaru 1.10.0-dev.2\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.2/docs/release-1.10.0-dev.2.md)\n\n\n### 🐛 Bug Fixes\n\n* Composeの起動時クラッシュと本体ライブラリとの衝突を修正 ([2f98772](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2f98772a21f9c46601095b11fb64af8282b6fc28))",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.10.0-dev.2/patches-1.10.0-dev.2.mpp",
+  "created_at": "2026-10-19T17:11:29",
+  "description": "# Haiagaru 1.10.0-dev.3\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.3/docs/release-1.10.0-dev.3.md)\n\n\n### 🐛 Bug Fixes\n\n* ワッチョイ全文検索の検索先切替とUIを改善 ([451d6f4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/451d6f4f1f70f7dfd96fbb0d7791933c7b33e33e))\n* ワッチョイ長押し検索の設定とDAT取得説明の全文表示を追加 ([7a8ade1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7a8ade12dfa22152965fff889c342ebd11a1cb8c))\n* 投稿検索の設定トグルを即時反映 ([73ee9bc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/73ee9bc37880ea8f0a959f617522472975ddd5f8))\n\n### ✨ New Features\n\n* integrate Compose dialogs, site cards and optional assets ([52c0f2e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/52c0f2e9d54adebdec088fdee4a3ebf703da07cb))",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.10.0-dev.3/patches-1.10.0-dev.3.mpp",
   "signature_download_url": "",
-  "version": "1.10.0-dev.2"
+  "version": "1.10.0-dev.3"
 }

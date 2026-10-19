@@ -1,3 +1,18 @@
+# Haiagaru 1.10.0-dev.3
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.3/docs/release-1.10.0-dev.3.md)
+
+
+### 🐛 Bug Fixes
+
+* ワッチョイ全文検索の検索先切替とUIを改善 ([451d6f4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/451d6f4f1f70f7dfd96fbb0d7791933c7b33e33e))
+* ワッチョイ長押し検索の設定とDAT取得説明の全文表示を追加 ([7a8ade1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7a8ade12dfa22152965fff889c342ebd11a1cb8c))
+* 投稿検索の設定トグルを即時反映 ([73ee9bc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/73ee9bc37880ea8f0a959f617522472975ddd5f8))
+
+### ✨ New Features
+
+* integrate Compose dialogs, site cards and optional assets ([52c0f2e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/52c0f2e9d54adebdec088fdee4a3ebf703da07cb))
+
 # Haiagaru 1.10.0-dev.2
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.2/docs/release-1.10.0-dev.2.md)
