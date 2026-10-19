@@ -34,22 +34,38 @@ object SearchComposeUi {
     }
 }
 
+private val searchToggleDefaults = mapOf(
+    "wacchoiSearchEnabled" to true,
+    "wacchoiBackgroundSearch" to false,
+    "wacchoiSearchHistory" to true,
+    "showEdgeSearch" to true,
+    "showZzzSearch" to true
+)
+
+private fun searchToggleValues(prefs: SharedPreferences) =
+    searchToggleDefaults.mapValues { (key, default) -> prefs.getBoolean(key, default) }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchScreen(a: HissiWacchoiSearchActivity) {
     var revision by remember { mutableIntStateOf(0) }
     val prefs = remember { a.getSharedPreferences(WacchoiSearchOptions.PREFS, 0) }
+    var toggleValues by remember(prefs) { mutableStateOf(searchToggleValues(prefs)) }
     val changed: () -> Unit = { revision++ }
-    DisposableEffect(a) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
+    DisposableEffect(a, prefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            toggleValues = searchToggleValues(prefs)
+            revision++
+        }
         prefs.registerOnSharedPreferenceChangeListener(listener)
+        toggleValues = searchToggleValues(prefs)
         a.setComposeChanged { revision++ }
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener); a.setComposeChanged(null) }
     }
     @Suppress("UNUSED_VARIABLE") val refresh = revision
-    val enabled = prefs.getBoolean("wacchoiSearchEnabled", true)
-    val edge = prefs.getBoolean("showEdgeSearch", true)
-    val zzz = prefs.getBoolean("showZzzSearch", true)
+    val enabled = toggleValues.getValue("wacchoiSearchEnabled")
+    val edge = toggleValues.getValue("showEdgeSearch")
+    val zzz = toggleValues.getValue("showZzzSearch")
     val source = a.searchSource
     val fullWacchoi = a.isFullWacchoiSearch()
     val running = a.stopButton.isEnabled
@@ -222,7 +238,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
         }
     }
     if (options) ModalBottomSheet(onDismissRequest = { options = false }) {
-        SearchOptionsSheet(a, prefs, changed)
+        SearchOptionsSheet(a, prefs, toggleValues, changed)
     }
     if (boardPicker) ModalBottomSheet(onDismissRequest = { boardPicker = false }) {
         LazyColumn(Modifier.fillMaxWidth().imePadding(), contentPadding = PaddingValues(16.dp),
@@ -298,7 +314,8 @@ private fun SearchResultCard(result: View) {
 }
 
 @Composable
-private fun SearchOptionsSheet(a: HissiWacchoiSearchActivity, prefs: SharedPreferences, changed: () -> Unit) {
+private fun SearchOptionsSheet(a: HissiWacchoiSearchActivity, prefs: SharedPreferences,
+                               toggleValues: Map<String, Boolean>, changed: () -> Unit) {
     var confirm by remember { mutableIntStateOf(0) }
     var retention by rememberSaveable { mutableStateOf(false) }
     if (retention) {
@@ -312,8 +329,8 @@ private fun SearchOptionsSheet(a: HissiWacchoiSearchActivity, prefs: SharedPrefe
             Triple("wacchoiSearchHistory", "検索条件と結果を保存する", "履歴から再検索・通信なしの閲覧ができます"),
             Triple("showEdgeSearch", "エッヂを検索先に表示", "Kyodemoの現行スレ・過去ログを検索します"),
             Triple("showZzzSearch", "ZZZSearchを検索先に表示", "検索条件を渡してアプリ内で開きます")
-        ).forEach { (key, label, summary) -> item {
-            HaiagaruUi.Group { SearchToggle(label, summary, prefs.getBoolean(key, key != "wacchoiBackgroundSearch")) {
+        ).forEach { (key, label, summary) -> item(key = key) {
+            HaiagaruUi.Group { SearchToggle(label, summary, toggleValues.getValue(key)) {
                 prefs.edit().putBoolean(key, it).apply(); SettingsEffects.changed(a, key, it); changed()
             } }
         } }
