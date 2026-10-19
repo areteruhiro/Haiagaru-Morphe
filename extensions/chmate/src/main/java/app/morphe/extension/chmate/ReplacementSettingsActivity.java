@@ -20,7 +20,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 /** A document URI lets external editors keep control of the user's replacement TXT. */
-public final class ReplacementSettingsActivity extends Activity {
+public final class ReplacementSettingsActivity extends HaiagaruComposeActivity {
     private TextView status;
     private Button create;
     @Override public void onCreate(Bundle state) {
@@ -62,7 +62,7 @@ public final class ReplacementSettingsActivity extends Activity {
         button(layout, "再読み込み", () -> reload());
         button(layout, "戻る", this::finish);
         status = new TextView(this); layout.addView(status);
-        ScrollView scroll = new ScrollView(this); scroll.addView(layout); setContentView(scroll);
+        ScrollView scroll = new ScrollView(this); scroll.addView(layout); HaiagaruUi.showModel(this, "置換TXTの設定", scroll);
     }
     @Override protected void onResume() { super.onResume(); reload(); }
     private void reload() {

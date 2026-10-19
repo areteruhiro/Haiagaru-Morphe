@@ -119,6 +119,10 @@
           },
           {
             "path": "patches-bundle-pre.json"
+          },
+          {
+            "path": "optional-assets/haiagaru-image-ng.zip",
+            "label": "任意導入: 191画像判定の修正ライブラリ（展開不要）"
           }
         ],
         "successComment": false

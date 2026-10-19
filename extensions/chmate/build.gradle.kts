@@ -58,6 +58,17 @@ configure<ApplicationExtension> {
     }
 }
 
+// The upstream plugin renames every DEX to chmate.mpe. Preserve all R8 shards
+// with distinct names instead of dropping classes when the extension grows.
+tasks.named<Sync>("syncExtension") {
+    eachFile {
+        val dexName = file.name
+        require(dexName.matches(Regex("classes(\\d+)?\\.dex"))) { "Unexpected extension DEX: $dexName" }
+        name = if (dexName == "classes.dex") "chmate.mpe"
+            else "chmate-${dexName.removePrefix("classes").removeSuffix(".dex")}.mpe"
+    }
+}
+
 // The extension contributes bytecode; Compose also needs its strings and view tags.
 // Ship a resource-only APK with a separate package ID, never host resource IDs.
 val composeResourceArchive = tasks.register<Zip>("composeResourceArchive") {

@@ -13,12 +13,65 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.Opcode
 
 private const val POLICY = "Lapp/morphe/extension/chmate/NativeUpdatePolicy;"
 private const val CALLBACK191 = "Lo/r8lambdamHWy7omJVz7G9M7u2KSo5IaRp90;"
 
 internal fun BytecodePatchContext.patchNativeUpdatePolicy(version: String) {
-    if (version != "0.8.10.191 dev") return
+    if (version !in setOf("0.8.10.191 dev", "0.8.10.242 dev")) return
+
+    // Track activity resumes independently from Fragment resumes. A tablet pane switch
+    // resumes its thread Fragment while TabletHomeActivity itself stays resumed.
+    val tabletHome = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
+    val tabletResume = tabletHome.methods.single {
+        it.name == "onResume" && it.parameterTypes.isEmpty()
+    }
+    tabletResume.addInstruction(0,
+        "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NativeUpdatePolicy;->tabletActivityResume(Ljava/lang/Object;)V")
+
+    // Guard only the automatic resume refresh in the thread Fragment. Explicit refresh
+    // actions and first view creation use separate call sites.
+    val legacy191 = version == "0.8.10.191 dev"
+    val threadFragment = mutableClassDefBy(if (legacy191) "Lo/pa;"
+        else "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
+    val threadResume = threadFragment.methods.single {
+        it.name == "onResume" && it.parameterTypes.isEmpty()
+    }
+    val resumeInstructions = threadResume.implementation!!.instructions.toList()
+    val reloadSites = resumeInstructions.withIndex().filter { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        instruction.opcode in setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_DIRECT)
+                && if (legacy191) {
+                    ref?.definingClass == "Lo/pa;" && ref.name == "d"
+                            && ref.parameterTypes == listOf("Z", "Z") && ref.returnType == "V"
+                } else {
+                    ref?.definingClass == "Ljp/syoboi/a2chMate/fragment/RoidonListFragment;"
+                            && ref.name == "e"
+                            && ref.parameterTypes == listOf("I", "Ljava/lang/Object;")
+                            && ref.returnType == "Z"
+                }
+    }
+    check(reloadSites.size == 1) { "$version thread onResume reload site changed: ${reloadSites.size}" }
+    val (reloadIndex, _) = reloadSites.single()
+    check(threadResume.implementation!!.registerCount >= threadResume.parameterTypes.size + 2) {
+        "$version thread onResume has no safe guard register"
+    }
+    // Skip a result move too if this build consumes the Boolean returned by e(...).
+    val resultMoveOpcodes = setOf(Opcode.MOVE_RESULT, Opcode.MOVE_RESULT_OBJECT, Opcode.MOVE_RESULT_WIDE)
+    val afterReloadIndex = reloadIndex + if (resumeInstructions.getOrNull(reloadIndex + 1)?.opcode
+            in resultMoveOpcodes) 2 else 1
+    val afterReload = resumeInstructions.getOrNull(afterReloadIndex)
+        ?: error("$version thread onResume reload is the final instruction")
+    threadResume.addInstructionsWithLabels(reloadIndex, """
+        invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NativeUpdatePolicy;->shouldSkipTabletResumeReload(Ljava/lang/Object;)Z
+        move-result v0
+        if-nez v0, :haiagaru_after_tablet_resume_reload
+    """.trimIndent(), ExternalLabel("haiagaru_after_tablet_resume_reload", afterReload))
+
+    // The rest of this patch is specific to the 191 transport implementation.
+    if (!legacy191) return
+
     val bridge = mutableClassDefBy(POLICY)
     fun newBridge(name: String, registers: Int): MutableMethod {
         val old = bridge.methods.single { it.name == name }

@@ -40,6 +40,7 @@ internal fun BytecodePatchContext.patchGroupedBrowsingHistory(version: String) {
             ImmutableMethodImplementation(3, emptyList(), emptyList(), emptyList())))
         val invoke = if(original.accessFlags and 2 != 0) "invoke-direct/range" else "invoke-virtual/range"
         wrapper.addInstructions(0, """
+            invoke-static/range {p0 .. p1}, $HISTORY->prepareLegacy(Ljava/lang/Object;I)V
             $invoke {p0 .. p2}, $renamed
             invoke-static/range {p0 .. p1}, $HISTORY->applyLegacy(Ljava/lang/Object;I)V
             return-void
@@ -47,6 +48,19 @@ internal fun BytecodePatchContext.patchGroupedBrowsingHistory(version: String) {
         klass.methods.remove(original)
         klass.methods.add(renamed)
         klass.methods.add(wrapper)
+        val adapter = if(version == "0.8.10.191 dev") "Lo/r8lambdaXZREaGE4vvLAA2ZOtsKBd3knAPA;" else "Lo/bea1;"
+        val adapterClass = mutableClassDefBy(adapter)
+        for (notify in listOf("notifyDataSetChanged", "notifyDataSetInvalidated")) {
+            check(adapterClass.methods.none { it.name == notify && it.parameterTypes.isEmpty() })
+            val hook = MutableMethod(ImmutableMethod(adapter, notify, emptyList(), "V", 1,
+                emptySet(), emptySet(), ImmutableMethodImplementation(1, emptyList(), emptyList(), emptyList())))
+            hook.addInstructions(0, """
+                invoke-static {p0}, $HISTORY->beforeLegacyNotify(Ljava/lang/Object;)V
+                invoke-super {p0}, Landroid/widget/BaseAdapter;->$notify()V
+                return-void
+            """.trimIndent())
+            adapterClass.methods.add(hook)
+        }
     }
     println("Board-grouped normal browsing history: $version (popup unchanged)")
 }

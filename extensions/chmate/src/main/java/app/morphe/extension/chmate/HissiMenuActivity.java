@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.Context;
@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Displays the Hissi menu destination inside ChMate's task. */
-public final class HissiMenuActivity extends Activity {
+public final class HissiMenuActivity extends HaiagaruComposeActivity {
     private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
@@ -102,7 +102,7 @@ public final class HissiMenuActivity extends Activity {
                 failure.setText("エッヂ過去ログを開けませんでした（VIEWER_START_FAILED）。\n"
                         + "Download/Haiagaru の診断ログを確認してください。");
                 failure.setPadding(32, 48, 32, 32);
-                setContentView(failure);
+                HaiagaruUi.showModel(this, "投稿検索・結果", failure);
             }
             return;
         }
@@ -179,7 +179,7 @@ public final class HissiMenuActivity extends Activity {
             error.setBackgroundColor(theme == 2 ? Color.BLACK
                     : dark ? Color.rgb(30, 30, 32) : Color.WHITE);
             error.setPadding(32, 32, 32, 32);
-            setContentView(error);
+            HaiagaruUi.showModel(this, "投稿検索・結果", error);
             return;
         }
 
@@ -423,7 +423,12 @@ public final class HissiMenuActivity extends Activity {
                 // Receive that first navigation in a temporary hidden window.
                 WebView popup = new WebView(HissiMenuActivity.this);
                 popup.setVisibility(View.INVISIBLE);
-                layout.addView(popup, new LinearLayout.LayoutParams(1, 1));
+                boolean[] disposed = {false};
+                Runnable disposePopup = () -> {
+                    if (disposed[0]) return;
+                    disposed[0] = true;
+                    popup.destroy();
+                };
                 popup.setWebViewClient(new WebViewClient() {
                     private boolean dispatched;
 
@@ -431,10 +436,7 @@ public final class HissiMenuActivity extends Activity {
                         if (dispatched) return;
                         dispatched = true;
                         if (!openThreadInChMate(url)) source.loadUrl(url);
-                        popup.post(() -> {
-                            layout.removeView(popup);
-                            popup.destroy();
-                        });
+                        new android.os.Handler(android.os.Looper.getMainLooper()).post(disposePopup);
                     }
 
                     @Override
@@ -457,12 +459,7 @@ public final class HissiMenuActivity extends Activity {
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(popup);
                 resultMsg.sendToTarget();
-                popup.postDelayed(() -> {
-                    if (popup.getParent() != null) {
-                        layout.removeView(popup);
-                        popup.destroy();
-                    }
-                }, 10000);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(disposePopup, 10000);
                 return true;
             }
         });
@@ -525,7 +522,7 @@ public final class HissiMenuActivity extends Activity {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     48 * getResources().getDisplayMetrics().densityDpi / 160));
         }
-        setContentView(layout);
+        HaiagaruUi.showModel(this, "投稿検索・結果", layout);
         if (!fullscreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             layout.requestApplyInsets();
         }
@@ -549,7 +546,7 @@ public final class HissiMenuActivity extends Activity {
     private void showAnalysisFailure(String url) {
         if (isFinishing() || url.equals(lastAnalysisFailureUrl)) return;
         lastAnalysisFailureUrl = url;
-        new AlertDialog.Builder(this).setTitle("AI解析")
+        new HaiagaruDialog.Builder(this).setTitle("AI解析")
                 .setMessage("しばらくしてもう一度お試しください")
                 .setPositiveButton("OK", null).show();
     }
@@ -722,7 +719,7 @@ public final class HissiMenuActivity extends Activity {
             finish();
         });
         content.addView(search);
-        setContentView(content);
+        HaiagaruUi.showModel(this, "投稿検索・結果", content);
     }
 
     private void showKyodemoSearch(WebView webView, String initialValue) {
@@ -742,7 +739,7 @@ public final class HissiMenuActivity extends Activity {
         }
         int padding = (int) (20 * getResources().getDisplayMetrics().density);
         input.setPadding(padding, input.getPaddingTop(), padding, input.getPaddingBottom());
-        new AlertDialog.Builder(this)
+        new HaiagaruDialog.Builder(this)
                 .setTitle("KyodemoでID/ﾜｯﾁｮｲを検索")
                 .setView(input)
                 .setNegativeButton("キャンセル", null)
@@ -783,14 +780,14 @@ public final class HissiMenuActivity extends Activity {
             if (!java.util.Objects.equals(pageUrl, webView.getUrl()) || isFinishing()) return;
             String executionUrl = decodeJavascriptString(result);
             if (KyodemoRouting.analysisResultUrl(executionUrl) == null) {
-                new AlertDialog.Builder(this).setTitle("分析リクエスト")
+                new HaiagaruDialog.Builder(this).setTitle("分析リクエスト")
                         .setMessage("この検索結果にはKyodemoの分析リクエスト用リンクがありません。"
                                 + "分析済みの場合は「分析」で結果を表示できます。"
                                 + "未分析の場合は、サイト側の対象条件や利用制限によって実行できないことがあります。")
                         .setPositiveButton("OK", null).show();
                 return;
             }
-            new AlertDialog.Builder(this).setTitle("分析リクエスト")
+            new HaiagaruDialog.Builder(this).setTitle("分析リクエスト")
                     .setMessage("表示中のID・ﾜｯﾁｮｲについて、Kyodemoへ分析をリクエストします。"
                             + "完了後に結果を再取得します。サイトの混雑や利用制限で失敗する場合があります。")
                     .setNegativeButton("キャンセル", null)
@@ -922,7 +919,7 @@ public final class HissiMenuActivity extends Activity {
                 } catch (RuntimeException ignored) { }
             }
         }
-        new DatePickerDialog(this, (picker, year, month, day) -> {
+        HaiagaruDates.show(this, initial, (year, month, day) -> {
             String date = String.format(java.util.Locale.ROOT, "%04d%02d%02d",
                     year, month + 1, day);
             String nextUrl = checkerUrlForDate(date);
@@ -931,7 +928,7 @@ public final class HissiMenuActivity extends Activity {
                 return;
             }
             webView.loadUrl(nextUrl);
-        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).show();
+        });
     }
 
     private String checkerUrlForDate(String date) {
@@ -1100,7 +1097,7 @@ public final class HissiMenuActivity extends Activity {
         labels.add("選択");
         final String selectableText = full;
         final String postUrl = url;
-        AlertDialog postCopyDialog = new AlertDialog.Builder(this)
+        HaiagaruDialog postCopyDialog = new HaiagaruDialog.Builder(this)
                 .setTitle("レスをコピー")
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> {
                     if (which < copyCount) {
@@ -1168,7 +1165,7 @@ public final class HissiMenuActivity extends Activity {
         preview.setTextIsSelectable(true);
         int padding = (int) (20 * getResources().getDisplayMetrics().density);
         preview.setPadding(padding, padding / 2, padding, padding / 2);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(this)
                 .setTitle("文字を選択")
                 .setView(preview)
                 .setNegativeButton("閉じる", null)

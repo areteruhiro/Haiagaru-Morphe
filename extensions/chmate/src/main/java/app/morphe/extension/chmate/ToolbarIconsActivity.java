@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -44,7 +44,7 @@ public final class ToolbarIconsActivity extends HaiagaruComposeActivity {
                 try {startActivityForResult(picker,71);}catch(RuntimeException e){toast("画像を選択できるアプリがありません");}
             });rows.addView(image);
             Button reset=new Button(this);reset.setText("標準のアイコンに戻す");
-            reset.setOnClickListener(v->new AlertDialog.Builder(this).setMessage(ToolbarIcons.NAMES[n]+"の画像を標準に戻しますか？")
+            reset.setOnClickListener(v->new HaiagaruDialog.Builder(this).setMessage(ToolbarIcons.NAMES[n]+"の画像を標準に戻しますか？")
                 .setNegativeButton("キャンセル",null).setPositiveButton("戻す",(d,w)->{
                     File f=ToolbarIcons.file(this,n); if(f.exists()&&!f.delete()){toast("画像を削除できませんでした");return;}
                     ToolbarIcons.invalidate(n);render();SettingsRestart.confirm(this);

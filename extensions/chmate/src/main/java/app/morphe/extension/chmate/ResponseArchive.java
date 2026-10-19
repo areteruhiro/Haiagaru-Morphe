@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -203,7 +203,7 @@ public final class ResponseArchive {
 
     private static void confirmSave(Activity a, ResponseArchiveEntry entry, Collection collection) {
         if (a.isFinishing()) return;
-        new AlertDialog.Builder(a).setTitle("「" + collection.title + "」に保存")
+        new HaiagaruDialog.Builder(a).setTitle("「" + collection.title + "」に保存")
                 .setMessage("選んだレスの名前・日時・本文・URLを端末内に保存します。画像・動画ファイルは含みません。\n同じURLのレスは上書きします。")
                 .setNegativeButton("キャンセル", null).setPositiveButton("保存", (d, w) -> IO.execute(() -> {
                     if(!FeatureSwitches.enabled("responseArchiveEnabled",true))return;
@@ -383,7 +383,7 @@ public final class ResponseArchive {
     }
 
     private static void showSort(Activity a, Collection collection, int offset) {
-        AlertDialog.Builder chooser = new AlertDialog.Builder(a).setTitle("レスの並び順")
+        HaiagaruDialog.Builder chooser = new HaiagaruDialog.Builder(a).setTitle("レスの並び順")
                 .setSingleChoiceItems(SORT_LABELS, sortMode(a), (dialog, which) -> {
                     a.getSharedPreferences(SORT_PREFS, 0).edit().putInt("sort", which).apply();
                     dialog.dismiss();
@@ -432,7 +432,7 @@ public final class ResponseArchive {
                     if (hasPrevious) { Button previous = new Button(a); previous.setText("前の100件"); previous.setOnClickListener(v -> manageCollections(a, Math.max(0, offset - 100))); actions.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); }
                     if (hasNext) { Button next = new Button(a); next.setText("次の100件"); next.setOnClickListener(v -> manageCollections(a, end)); actions.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); }
                     content.addView(actions);
-                    AlertDialog dialog = new AlertDialog.Builder(a).setTitle("保存用スレを管理（" + all.size() + "件）")
+                    HaiagaruDialog dialog = new HaiagaruDialog.Builder(a).setTitle("保存用スレを管理（" + all.size() + "件）")
                             .setView(content).setNegativeButton("閉じる", null).setPositiveButton("選択を削除", null).create();
                     dialog.setOnShowListener(ignored -> {
                         dialog.getButton(-1).setOnClickListener(v -> {
@@ -464,7 +464,7 @@ public final class ResponseArchive {
         String message = all
                 ? "保存用スレ " + targets.size() + "件と、各スレ内の保存レスを全て削除します。この操作は取り消せません。"
                 : "選択した保存用スレ " + targets.size() + "件と、その中の保存レスを削除します。この操作は取り消せません。";
-        new AlertDialog.Builder(a).setTitle("保存用スレを削除")
+        new HaiagaruDialog.Builder(a).setTitle("保存用スレを削除")
                 .setMessage(message).setNegativeButton("キャンセル", null)
                 .setPositiveButton("削除", (d, w) -> IO.execute(() -> {
                     try {
@@ -513,7 +513,7 @@ public final class ResponseArchive {
                     if (hasPrevious) { Button previous = new Button(a); previous.setText("前の100件"); previous.setOnClickListener(v -> manageResponses(a, collection, Math.max(0, offset - 100))); actions.addView(previous, new LinearLayout.LayoutParams(0, -2, 1)); }
                     if (hasNext) { Button next = new Button(a); next.setText("次の100件"); next.setOnClickListener(v -> manageResponses(a, collection, end)); actions.addView(next, new LinearLayout.LayoutParams(0, -2, 1)); }
                     content.addView(actions);
-                    AlertDialog dialog = new AlertDialog.Builder(a).setTitle("保存したレスを管理（" + files.length + "件）")
+                    HaiagaruDialog dialog = new HaiagaruDialog.Builder(a).setTitle("保存したレスを管理（" + files.length + "件）")
                             .setView(content).setNegativeButton("閉じる", null).setPositiveButton("選択を削除", null).create();
                     dialog.setOnShowListener(ignored -> dialog.getButton(-1).setOnClickListener(v -> {
                         ArrayList<File> targets = new ArrayList<>();
@@ -535,7 +535,7 @@ public final class ResponseArchive {
 
     private static void confirmDeleteResponses(Activity a, List<File> targets, boolean all, Runnable done) {
         if (targets.isEmpty()) { toast(a, "削除する保存レスはありません"); return; }
-        new AlertDialog.Builder(a).setTitle("保存したレスを削除")
+        new HaiagaruDialog.Builder(a).setTitle("保存したレスを削除")
                 .setMessage((all ? "この一覧の保存レスを全て削除します。" : "選択した保存レス " + targets.size() + "件を削除します。")
                         + " 元のスレやスレ単位のアーカイブは削除されません。この操作は取り消せません。")
                 .setNegativeButton("キャンセル", null).setPositiveButton("削除", (d, w) -> IO.execute(() -> {
@@ -571,7 +571,7 @@ public final class ResponseArchive {
                 int next = labels.size(); if (end < stored.size()) labels.add("次の100件");
                 MAIN.post(() -> {
                     if (a.isFinishing() || a.isDestroyed()) return;
-                    new AlertDialog.Builder(a).setTitle(entry == null ? "保存用スレ" : "保存先のスレを選択")
+                    new HaiagaruDialog.Builder(a).setTitle(entry == null ? "保存用スレ" : "保存先のスレを選択")
                             .setItems(labels.toArray(new String[0]), (d, which) -> {
                                 if (which < page.size()) {
                                     if (entry == null) showCollection(a, page.get(which), 0);
@@ -599,7 +599,7 @@ public final class ResponseArchive {
     private static void chooseManageCollection(Activity a, List<Collection> page, int offset) {
         ArrayList<String> labels = new ArrayList<>();
         for (Collection item : page) labels.add(item.title);
-        new AlertDialog.Builder(a).setTitle("レスを管理する保存用スレ")
+        new HaiagaruDialog.Builder(a).setTitle("レスを管理する保存用スレ")
                 .setItems(labels.toArray(new String[0]), (d, which) -> manageResponses(a, page.get(which), 0))
                 .setNegativeButton("戻る", (d, w) -> chooseCollection(a, null, offset)).show();
     }
@@ -610,7 +610,7 @@ public final class ResponseArchive {
         input.setHint("保存用スレの名前");
         String initial = existing != null ? existing.title : entry == null ? "" : entry.title;
         input.setText(initial.substring(0, Math.min(initial.length(), 200)));
-        AlertDialog dialog = new AlertDialog.Builder(a).setTitle(existing == null ? "保存用スレを作成" : "名前を変更")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(a).setTitle(existing == null ? "保存用スレを作成" : "名前を変更")
                 .setView(input).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(-1).setOnClickListener(v -> {
             final String title;
@@ -674,7 +674,7 @@ public final class ResponseArchive {
                         empty.setText("保存したレスはありません。レス長押しからこのスレを選んで保存してください。");
                         posts.addView(empty);
                     }
-                    AlertDialog viewer = new AlertDialog.Builder(a).setTitle(current.title + "（" + files.length + "レス）")
+                    HaiagaruDialog viewer = new HaiagaruDialog.Builder(a).setTitle(current.title + "（" + files.length + "レス）")
                             .setView(scroll).setNegativeButton("スレ一覧", (d, w) -> showList(a))
                             .setNeutralButton("管理・並び順", (d, w) -> showCollectionManagement(a, current, offset))
                             .setPositiveButton(end < files.length ? "次の10件" : offset > 0 ? "先頭へ" : "閉じる",
@@ -697,7 +697,7 @@ public final class ResponseArchive {
     }
 
     private static void showCollectionManagement(Activity a, Collection collection, int offset) {
-        new AlertDialog.Builder(a).setTitle(collection.title).setItems(new String[]{"この保存用スレのレスを管理・削除", "保存用スレの名前を変更", "並び順を変更", "保存用スレを削除"}, (d, which) -> {
+        new HaiagaruDialog.Builder(a).setTitle(collection.title).setItems(new String[]{"この保存用スレのレスを管理・削除", "保存用スレの名前を変更", "並び順を変更", "保存用スレを削除"}, (d, which) -> {
             if (which == 0) manageResponses(a, collection, 0);
             else if (which == 1) editCollection(a, collection, null);
             else if (which == 2) showSort(a, collection, offset);
@@ -727,7 +727,7 @@ public final class ResponseArchive {
                 if (offset > 0) labels.add("先頭に戻る");
                 MAIN.post(() -> {
                     if (a.isFinishing() || a.isDestroyed()) return;
-                    new AlertDialog.Builder(a).setTitle("レスのアーカイブ（" + files.length + "件）")
+                    new HaiagaruDialog.Builder(a).setTitle("レスのアーカイブ（" + files.length + "件）")
                             .setItems(labels.toArray(new String[0]), (d, which) -> {
                                 if (which < rows.size()) loadDetail(a, rows.get(which));
                                 else showLegacyList(a, more && which == rows.size() ? end : 0);
@@ -741,7 +741,7 @@ public final class ResponseArchive {
     }
 
     private static void showLegacyManagement(Activity a, int offset) {
-        new AlertDialog.Builder(a).setTitle("保存レスの管理")
+        new HaiagaruDialog.Builder(a).setTitle("保存レスの管理")
                 .setItems(new String[]{"保存レスを選択して削除", "全て削除", "並び順を変更"}, (d, which) -> {
                     if (which == 0 || which == 1) manageResponses(a, null, 0);
                     else showSort(a, null, offset);
@@ -785,13 +785,13 @@ public final class ResponseArchive {
         contents.addView(copy, new LinearLayout.LayoutParams(-1, -2));
         contents.addView(text);
         scroll.addView(contents);
-        new AlertDialog.Builder(a).setTitle(e.title).setView(scroll)
+        new HaiagaruDialog.Builder(a).setTitle(e.title).setView(scroll)
                 .setNegativeButton("一覧へ", (d, w) -> returnToList(a, collection, offset))
                 .setPositiveButton("URLをコピー", (d, w) -> {
                     ClipboardManager c = (ClipboardManager) a.getSystemService(Context.CLIPBOARD_SERVICE);
                     if (c != null) c.setPrimaryClip(ClipData.newPlainText("レスURL", e.url));
                     returnToList(a, collection, offset);
-                }).setNeutralButton("削除", (d, w) -> new AlertDialog.Builder(a)
+                }).setNeutralButton("削除", (d, w) -> new HaiagaruDialog.Builder(a)
                         .setMessage("この保存レスだけを削除しますか？ 元のスレやスレ単位のアーカイブは削除しません。")
                         .setNegativeButton("キャンセル", (x, y) -> detail(a, e, collection, offset))
                         .setPositiveButton("削除", (x, y) -> IO.execute(() -> {

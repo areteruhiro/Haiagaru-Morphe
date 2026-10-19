@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.ContentValues;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -21,7 +21,7 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 
 /** Entry lives in ChMate's native 掲示板/BBSMENU preference screen. */
-public final class ExternalBoardEditorActivity extends Activity {
+public final class ExternalBoardEditorActivity extends HaiagaruComposeActivity {
     private LinearLayout list;
     private boolean busy;
     private boolean includeBbsMenu;
@@ -56,7 +56,7 @@ public final class ExternalBoardEditorActivity extends Activity {
             public void afterTextChanged(Editable s){}
         });
         ScrollView scroll=new ScrollView(this);list=new LinearLayout(this);list.setOrientation(1);scroll.addView(list);
-        root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);root.requestApplyInsets();load();
+        root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));HaiagaruUi.showModel(this, "外部板の編集", root);root.requestApplyInsets();load();
     }
     private SQLiteDatabase database() {
         return SQLiteDatabase.openDatabase(getDatabasePath("roidon.sqlite").getPath(),null,SQLiteDatabase.OPEN_READWRITE);
@@ -116,7 +116,7 @@ public final class ExternalBoardEditorActivity extends Activity {
         EditText title=new EditText(this);title.setSingleLine();title.setHint("板名");title.setText(b.title);box.addView(title);
         EditText url=new EditText(this);url.setSingleLine();url.setInputType(17);url.setHint("板のURL");
         url.setText(ExternalBoardEditor.prefs(this).getString("target:"+b.id,b.original));box.addView(url);
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("外部板の名前・URLを編集").setView(box)
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(this).setTitle("外部板の名前・URLを編集").setView(box)
                 .setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
         dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
             String name=title.getText().toString().trim();
@@ -162,10 +162,10 @@ public final class ExternalBoardEditorActivity extends Activity {
                 runOnUiThread(()->{
                     busy=false;if(isFinishing())return;
                     if(result!=null){dialog.getButton(-1).setEnabled(true);error(result);}
-                    else {dialog.dismiss();load();new AlertDialog.Builder(this).setMessage("保存しました。ChMateを終了して起動し直すと反映されます。").setPositiveButton("OK",null).show();}
+                    else {dialog.dismiss();load();new HaiagaruDialog.Builder(this).setMessage("保存しました。ChMateを終了して起動し直すと反映されます。").setPositiveButton("OK",null).show();}
                 });
             },"Haiagaru-board-save").start();
         }));dialog.show();
     }
-    private void error(String message){if(!isFinishing())new AlertDialog.Builder(this).setMessage(message).setPositiveButton("OK",null).show();}
+    private void error(String message){if(!isFinishing())new HaiagaruDialog.Builder(this).setMessage(message).setPositiveButton("OK",null).show();}
 }

@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.ClipData;
 import android.content.Intent;
 import android.database.Cursor;
@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 /** Uses Android's document picker, without all-files access or Android/data access. */
-public final class ThemeImportActivity extends Activity {
+public final class ThemeImportActivity extends HaiagaruComposeActivity {
     private static final int FILES = 41, FOLDER = 42;
     private static final long MAX_TOTAL = 64L * 1024 * 1024;
     private static final Object IMPORT_LOCK = new Object();
@@ -63,7 +63,7 @@ public final class ThemeImportActivity extends Activity {
         android.widget.ScrollView scroll = new android.widget.ScrollView(this);
         scroll.setFitsSystemWindows(true);
         scroll.addView(layout);
-        setContentView(scroll);
+        HaiagaruUi.showModel(this, "カスタムテーマの取り込み", scroll);
     }
 
     private void button(LinearLayout layout, String label, int request) {
@@ -121,7 +121,7 @@ public final class ThemeImportActivity extends Activity {
                 runOnUiThread(() -> {
                     if (isFinishing() || isDestroyed()) { remove(ready); return; }
                     staged = ready;
-                    new AlertDialog.Builder(this).setTitle("テーマを取り込みますか？")
+                    new HaiagaruDialog.Builder(this).setTitle("テーマを取り込みますか？")
                             .setMessage("テーマ " + batch.themes + "件、素材 " + (batch.names.size() - batch.themes) + "件\n"
                                     + (conflicts == 0 ? "同名のファイルはありません。" : "同名の既存ファイル " + conflicts + "件を置き換えます。")
                                     + "\n選択元のファイルは変更しません。")

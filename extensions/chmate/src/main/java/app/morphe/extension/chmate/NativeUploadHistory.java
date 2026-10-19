@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Handler;
@@ -177,7 +177,7 @@ public final class NativeUploadHistory {
         boolean[] selected = new boolean[eligible.size()];
         DateFormat date = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
         for (int i = 0; i < labels.length; i++) labels[i] = date.format(new Date(time(eligible.get(i)))) + "\n" + string(eligible.get(i), "link");
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("サーバーから削除する画像を選択")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("サーバーから削除する画像を選択")
                 .setMultiChoiceItems(labels, selected, (d, which, checked) -> selected[which] = checked)
                 .setNeutralButton("全選択／解除", null).setNegativeButton("キャンセル", null)
                 .setPositiveButton("確認", null).create();
@@ -193,7 +193,7 @@ public final class NativeUploadHistory {
                 List<Object> chosen = new ArrayList<>();
                 for (int i = 0; i < selected.length; i++) if (selected[i]) chosen.add(eligible.get(i));
                 if (chosen.isEmpty()) { Toast.makeText(activity, "画像を選択してください", Toast.LENGTH_SHORT).show(); return; }
-                new AlertDialog.Builder(activity).setTitle("サーバーから" + chosen.size() + "件削除しますか？")
+                new HaiagaruDialog.Builder(activity).setTitle("サーバーから" + chosen.size() + "件削除しますか？")
                         .setMessage("削除は取り消せません。履歴は削除済みとして残ります。失敗した画像は変更しません。")
                         .setNegativeButton("キャンセル", null).setPositiveButton("削除", (c, w) -> {
                             dialog.dismiss(); start(activity, owner, chosen);
@@ -205,7 +205,7 @@ public final class NativeUploadHistory {
     private static void start(Activity activity, Object owner, List<Object> chosen) {
         if (!BUSY.compareAndSet(false, true)) return;
         AtomicBoolean cancel = new AtomicBoolean();
-        ProgressDialog progress = new ProgressDialog(activity);
+        HaiagaruDialog progress = HaiagaruDialog.progress(activity, "処理を準備しています…");
         progress.setTitle("サーバーから削除中"); progress.setMessage("0 / " + chosen.size());
         progress.setCanceledOnTouchOutside(false);
         progress.setOnCancelListener(d -> cancel.set(true));
@@ -233,7 +233,7 @@ public final class NativeUploadHistory {
                 MAIN.post(() -> {
                     BUSY.set(false);
                     if (progress.isShowing()) progress.dismiss();
-                    if (!activity.isFinishing() && !activity.isDestroyed()) new AlertDialog.Builder(activity)
+                    if (!activity.isFinishing() && !activity.isDestroyed()) new HaiagaruDialog.Builder(activity)
                             .setTitle("一括削除の結果").setMessage("削除済み: " + ok + "件\n失敗: " + errors
                                     + "件\n未処理: " + (chosen.size() - ok - errors) + "件")
                             .setPositiveButton("OK", null).show();

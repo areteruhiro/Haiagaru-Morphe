@@ -176,7 +176,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
 
 private fun sectionTitle(source: String, english: Boolean) = (when (source) {
     "DISPLAY" -> "画面と操作" to "Display and controls"
-    "SOCIAL" -> "Xのプレビュー" to "X previews"
+    "SOCIAL" -> "リンクカード・Xのプレビュー" to "Link cards and X previews"
     "POSTING" -> "入力と送信" to "Editor and sending"
     "UPLOAD" -> "画像・動画の投稿" to "Media uploads"
     "CHECKER" -> "IDチェッカー" to "ID checker"
@@ -191,7 +191,7 @@ private data class SettingsGroup(val id: String, val ja: String, val en: String,
 }
 
 private fun settingsGroups() = listOf(
-    SettingsGroup("reading", "スレを読む", "Reading", "文字・一覧の並び方・コピー・Xプレビュー", "Text, thread lists, copying and X previews", "Aa", listOf("DISPLAY", "SOCIAL")),
+    SettingsGroup("reading", "スレを読む", "Reading", "画面・文字・コピー・リンクカード", "Layout, text, copying and link cards", "Aa", listOf("DISPLAY", "SOCIAL")),
     SettingsGroup("search", "探す・過去ログ", "Find posts and old threads", "IDチェッカー・DAT取得・保存したレス", "ID checker, DAT retrieval and saved posts", "↗", listOf("CHECKER", "ARCHIVE")),
     SettingsGroup("posting", "書き込む", "Posting", "入力・送信・画像や動画のアップロード", "Editor, sending and media uploads", "✎", listOf("POSTING", "UPLOAD")),
     SettingsGroup("media", "画像・動画", "Images and video", "再生・サムネイル・保存・キャッシュ", "Playback, thumbnails, downloads and cache", "▷", listOf("MEDIA")),

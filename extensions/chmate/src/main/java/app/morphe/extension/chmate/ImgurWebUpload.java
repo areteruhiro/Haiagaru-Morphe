@@ -178,6 +178,11 @@ public final class ImgurWebUpload {
     }
 
     private static final int POSTING_UPLOADS_MENU_ID = 0x48690041;
+    static final String SHOW_UPLOADS_MENU = "showUploadsMenu";
+
+    static boolean uploadsMenuVisible(Context context) {
+        return prefs(context).getBoolean(SHOW_UPLOADS_MENU, true);
+    }
     private static final java.util.WeakHashMap<android.view.MenuItem, java.lang.ref.WeakReference<android.app.Activity>> POSTING_MENU_ACTIVITIES = new java.util.WeakHashMap<>();
 
     private static android.app.Activity postingActivity(Object fragment) {
@@ -198,7 +203,7 @@ public final class ImgurWebUpload {
     public static void addPostingMenu(Object fragment, android.view.Menu menu) {
         android.app.Activity activity = postingActivity(fragment);
         if (activity == null || !supported(activity) || menu == null) return;
-        if (!Haiagaru.isPostingOverflowMenu(activity, menu)) {
+        if (!uploadsMenuVisible(activity) || !Haiagaru.isPostingOverflowMenu(activity, menu)) {
             menu.removeItem(POSTING_UPLOADS_MENU_ID);
             return;
         }
@@ -214,7 +219,7 @@ public final class ImgurWebUpload {
     public static boolean handlePostingMenu(Object fragment, android.view.MenuItem item) {
         if (item == null || item.getItemId() != POSTING_UPLOADS_MENU_ID) return false;
         android.app.Activity activity = postingActivity(fragment);
-        if (activity == null || activity.isFinishing() || !supported(activity)) return false;
+        if (activity == null || activity.isFinishing() || !supported(activity) || !uploadsMenuVisible(activity)) return false;
         activity.startActivity(new android.content.Intent(activity, ImgurUploadsActivity.class));
         return true;
     }

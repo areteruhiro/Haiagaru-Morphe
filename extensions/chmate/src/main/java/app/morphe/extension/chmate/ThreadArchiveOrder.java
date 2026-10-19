@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -35,10 +35,10 @@ public final class ThreadArchiveOrder {
     }
     public static void addSettings(LinearLayout root,Activity a){
         Button b=new Button(a);b.setText("スレッドアーカイブ一覧の並び順");root.addView(b);
-        b.setOnClickListener(v->new AlertDialog.Builder(a).setTitle("スレッドアーカイブ一覧の並び順")
+        b.setOnClickListener(v->new HaiagaruDialog.Builder(a).setTitle("スレッドアーカイブ一覧の並び順")
                 .setSingleChoiceItems(LABELS,mode(a),(d,which)->{
                     a.getSharedPreferences(PREFS,0).edit().putInt("sort",which).apply();d.dismiss();
-                    new AlertDialog.Builder(a).setMessage("並び順を保存しました。アーカイブ一覧を開き直すと反映します。\n作成日時不明は末尾に表示します。保存ファイル更新日時は復元・コピー等で変わる場合があります。")
+                    new HaiagaruDialog.Builder(a).setMessage("並び順を保存しました。アーカイブ一覧を開き直すと反映します。\n作成日時不明は末尾に表示します。保存ファイル更新日時は復元・コピー等で変わる場合があります。")
                             .setPositiveButton("OK",null).show();
                 }).setNegativeButton("キャンセル",null).show());
     }

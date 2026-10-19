@@ -661,12 +661,12 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
             Date current = format.parse(target.getText().toString());
             if (current != null) calendar.setTime(current);
         } catch (Exception ignored) { }
-        new DatePickerDialog(this, (picker, year, month, day) -> {
+        HaiagaruDates.show(this, calendar, (year, month, day) -> {
             Calendar selected = Calendar.getInstance();
             selected.set(year, month, day);
             target.setText(new SimpleDateFormat("yyyyMMdd", Locale.US).format(selected.getTime()));
             target.setError(null); searchUiChanged();
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
+        });
     }
 
     private void startSearch() {
@@ -1174,7 +1174,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         catch (Exception error) { Toast.makeText(this, "リンクを開けませんでした", Toast.LENGTH_SHORT).show(); }
     }
     private void openHistory(org.json.JSONObject saved){
-        new android.app.AlertDialog.Builder(this).setTitle("検索履歴")
+        new HaiagaruDialog.Builder(this).setTitle("検索履歴")
             .setItems(new String[]{"保存した結果を表示（通信なし）","同じ条件で再検索","保存した結果の中を検索（通信なし）"},(dialog,which)->{
                 if((WacchoiSearchService.current!=null&&WacchoiSearchService.current.running)||(job!=null&&!job.isDone())){
                     Toast.makeText(this,"実行中の検索を停止してから履歴を開いてください",Toast.LENGTH_SHORT).show();return;
@@ -1192,7 +1192,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                 if(which==1){if(saved.optBoolean("edge"))startEdgeSearch();else startSearch();return;}
                 if(which==2){
                     EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ID・スレ名・本文・URL（空白区切りAND）");
-                    new android.app.AlertDialog.Builder(this).setTitle("保存結果内検索").setView(query)
+                    new HaiagaruDialog.Builder(this).setTitle("保存結果内検索").setView(query)
                         .setNegativeButton("キャンセル",null).setPositiveButton("検索",(d,i)->showSavedHistory(saved,query.getText().toString())).show();return;
                 }
                 showSavedHistory(saved,"");
@@ -1219,10 +1219,8 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
 
     /** Keep the service's JavaScript-rendered search results inside the app. */
     private void openZzzSearch(String url) {
-        composeChanged = null;
         if (zzzDialog != null) zzzDialog.dismiss();
-        android.app.Dialog dialog = new android.app.Dialog(this,
-                android.R.style.Theme_Material_Light_NoActionBar);
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(this).setTitle("ZZZSearch").create();
         zzzDialog = dialog;
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
@@ -1277,7 +1275,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
             panel.removeView(web); web.destroy();
             if (zzzWebView == web) { zzzWebView = null; zzzDialog = null; }
         });
-        dialog.setContentView(panel);
+        dialog.setModelView(panel);
         dialog.show();
         dialog.getWindow().setLayout(-1, -1);
         web.loadUrl(url);

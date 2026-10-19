@@ -10,7 +10,7 @@ import org.json.JSONArray;
 import java.util.LinkedHashSet;
 
 /** API-key-free, user-operated uploads; WebView keeps each site's cookies and library. */
-public final class MediaUploadWebActivity extends Activity {
+public final class MediaUploadWebActivity extends HaiagaruComposeActivity {
     private static final int PICK = 6131;
     private WebView web;
     private ValueCallback<Uri[]> picker;
@@ -88,7 +88,7 @@ public final class MediaUploadWebActivity extends Activity {
                 return true;
             }
         });
-        root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));setContentView(root);
+        root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));HaiagaruUi.showModel(this, "画像・動画の投稿", root);
         if (saved == null || web.restoreState(saved) == null) web.loadUrl(MediaUploadWebPolicy.home(provider));
     }
     private void cancelPicker() {
@@ -124,7 +124,7 @@ public final class MediaUploadWebActivity extends Activity {
             } catch (Exception ignored) { }
             if (urls.isEmpty()) { status.setText("URLが見つかりません。送信結果の対象画像／動画ページを開いてください。");return; }
             String[] links = urls.toArray(new String[0]);
-            new AlertDialog.Builder(this).setTitle("コピーする画像／動画URLを選択")
+            new HaiagaruDialog.Builder(this).setTitle("コピーする画像／動画URLを選択")
                     .setItems(links, (d, index) -> {
                         ((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText(provider, links[index]));
                         Toast.makeText(this, "URLをコピーしました。書き込み本文へ貼り付けてください。", Toast.LENGTH_LONG).show();

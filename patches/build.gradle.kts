@@ -23,13 +23,10 @@ dependencies {
 }
 
 tasks.named<ProcessResources>("processResources") {
+    exclude("chmate/emoji/NotoColorEmoji.ttf", "chmate/tflite-226/**/*.so")
     dependsOn(":extensions:chmate:composeResources")
     from(project(":extensions:chmate").layout.buildDirectory.file("compose-resources/haiagaru-ui-res.apk")) {
         into("chmate/compose")
-    }
-    from(zipTree(rootProject.file("vpn/image-stack/prebuilt/image-stack.aar"))) {
-        include("jni/**/*.so")
-        into("chmate/image-vpn")
     }
     from(rootProject.file("third-party/open-sstp/LICENSE")) {
         into("chmate/image-vpn/licenses/open-sstp")
@@ -39,3 +36,14 @@ tasks.named<ProcessResources>("processResources") {
         into("chmate/image-vpn/licenses/image-stack")
     }
 }
+
+// Downloadable optional data stays outside the MPP. The release CI publishes it separately.
+val optionalImageNg = tasks.register<Zip>("optionalImageNg") {
+    from("src/main/resources/chmate/tflite-226")
+    archiveFileName.set("haiagaru-image-ng.zip")
+    // Keep a GitHub raw-download URL in the patch option and publish the same file as a release asset.
+    destinationDirectory.set(rootProject.layout.projectDirectory.dir("optional-assets"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+tasks.named("buildAndroid") { dependsOn(optionalImageNg) }

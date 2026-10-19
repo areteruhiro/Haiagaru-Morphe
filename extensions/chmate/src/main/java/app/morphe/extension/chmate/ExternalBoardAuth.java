@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -94,7 +94,7 @@ public final class ExternalBoardAuth {
                 }
                 a.runOnUiThread(()->{
                     if(a.isFinishing()) return;
-                    new AlertDialog.Builder(a).setTitle("認証する外部板")
+                    new HaiagaruDialog.Builder(a).setTitle("認証する外部板")
                         .setItems(names.toArray(new String[0]),(d,i)->configure(a,urls.get(i),""))
                         .setNeutralButton("URLを指定",(d,w)->configure(a,"",""))
                         .setNegativeButton("閉じる",null).show();
@@ -111,7 +111,7 @@ public final class ExternalBoardAuth {
         String origin=BoardAuthRules.origin(board);
         EditText auth=new EditText(a);auth.setSingleLine(true);auth.setHint("認証ページのURL（https://…）");
         auth.setText(prefs(a).getString("url:"+origin,suggestion.isEmpty()?BoardAuthRules.preset(board):suggestion));box.addView(auth);
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("外部板の認証")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("外部板の認証")
             .setMessage("サイト上で認証コードなどを入力してください。完了後は書き込み画面へ戻ります。投稿の自動再送信はしません。\n認証URLは板に応じて変更できます。")
             .setView(box).setNegativeButton("キャンセル",null)
             .setNeutralButton("連携を解除",(d,w)->{
@@ -159,11 +159,11 @@ public final class ExternalBoardAuth {
         TextView content=new TextView(a);content.setText(readable);content.setTextIsSelectable(true);
         content.setPadding(0,pad,0,pad);box.addView(content);
         ScrollView scroll=new ScrollView(a);scroll.addView(box);
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("書き込みエラー・板の認証")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("書き込みエラー・板の認証")
             .setView(scroll).setNegativeButton("後で",null)
             .setNeutralButton(code.isEmpty()?"エラー全文をコピー":"認証コードをコピー",null)
             .setPositiveButton("認証ページ",(d,w)->configure(a,board,suggested)).create();
-        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
+        dialog.setOnShowListener(d->dialog.getButton(HaiagaruDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
             ClipboardManager clipboard=(ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE);
             if(clipboard==null) return;
             ClipData clip=ClipData.newPlainText("板の認証",code.isEmpty()?readable:code);

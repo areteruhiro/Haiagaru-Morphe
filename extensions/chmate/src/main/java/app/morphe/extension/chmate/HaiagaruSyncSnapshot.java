@@ -200,7 +200,7 @@ final class HaiagaruSyncSnapshot {
         writeAtomic(recovery, capture(context, selected));
 
         if ((selected & BOOKMARKS) != 0) {
-            mergeBookmarks(context, snapshot.optJSONArray("bookmarks"));
+            mergeBookmarks(context, snapshot.optJSONArray("bookmarks"), false);
         }
         if ((selected & NG) != 0) {
             restoreNg(context, snapshot.optJSONObject("ng"));
@@ -229,7 +229,7 @@ final class HaiagaruSyncSnapshot {
     static void mergeMissing(Context context, JSONObject snapshot, int categories) throws Exception {
         validate(snapshot.toString().getBytes(StandardCharsets.UTF_8));
         int selected = categories & snapshot.optInt("categories", 0) & ALL;
-        if ((selected & BOOKMARKS) != 0) mergeBookmarks(context, snapshot.optJSONArray("bookmarks"));
+        if ((selected & BOOKMARKS) != 0) mergeBookmarks(context, snapshot.optJSONArray("bookmarks"), true);
         if ((selected & NG) != 0) restoreNg(context, snapshot.optJSONObject("ng"));
         if ((selected & SETTINGS) != 0) mergeMissingSettings(context,
                 snapshot.optJSONObject("settings"), snapshot.optString("sourcePackage", ""));
@@ -334,7 +334,7 @@ final class HaiagaruSyncSnapshot {
         return rows;
     }
 
-    private static void mergeBookmarks(Context context, JSONArray rows) throws Exception {
+    private static void mergeBookmarks(Context context, JSONArray rows, boolean missingOnly) throws Exception {
         if (rows == null || rows.length() > MAX_BOOKMARKS) {
             throw new IOException("履歴データが不正です");
         }
@@ -360,9 +360,24 @@ final class HaiagaruSyncSnapshot {
                     if (value instanceof String) values.put(column, (String) value);
                     else if (value instanceof Number) values.put(column, ((Number) value).longValue());
                 }
-                // Preserve existing local rows: importing must not clear a read mark,
-                // favourite flag, or a newer title on another device.
-                db.insertWithOnConflict("bookmarks", null, values, SQLiteDatabase.CONFLICT_IGNORE);
+                // Native flag is the star rating (BBSThread.rating), not a collection
+                // of unrelated bits. Restore it even when this thread already exists.
+                // Keep the local read position, counts and title of existing rows.
+                long inserted = db.insertWithOnConflict("bookmarks", null, values, SQLiteDatabase.CONFLICT_IGNORE);
+                if (inserted == -1 && values.containsKey("flag")) {
+                    String[] key = {name, Long.toString(created)};
+                    try (Cursor existing = db.query("bookmarks", new String[]{"flag"},
+                            "name=? AND created=?", key, null, null, null)) {
+                        if (!existing.moveToFirst()) throw new IOException("履歴を復元できませんでした");
+                        if (!missingOnly || existing.getLong(0) == 0) {
+                            ContentValues stars = new ContentValues();
+                            stars.put("flag", values.getAsLong("flag"));
+                            if (values.containsKey("bookmark_order"))
+                                stars.put("bookmark_order", values.getAsLong("bookmark_order"));
+                            db.update("bookmarks", stars, "name=? AND created=?", key);
+                        }
+                    }
+                }
             }
             db.setTransactionSuccessful();
         } finally {

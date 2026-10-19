@@ -88,6 +88,18 @@ internal fun BytecodePatchContext.patchNativeRestore191() {
         move-result v6
         if-nez v6, :prepared_database
     """.trimIndent(), ExternalLabel("prepared_database", ops[prepared]))
+    // Cookie-only Haiagaru archives contain snapshot.json, not roidon.sqlite.
+    // Never feed their container to SQLite or install a fabricated empty DB.
+    val prepareDatabase = preview.implementation!!.instructions.toList().indexOf(ops[prepared])
+    check(prepareDatabase >= 0)
+    preview.addInstructionsWithLabels(prepareDatabase, """
+        invoke-static {v2}, $helper->routeHaiagaruBackup(Ljava/lang/Object;)Z
+        move-result v6
+        if-eqz v6, :native_database
+        return-void
+        :native_database
+        nop
+    """.trimIndent())
     preview.implementation!!.instructions.toList().mapIndexedNotNull { i, op ->
         i.takeIf { op.opcode == Opcode.RETURN_VOID }
     }.asReversed().forEach { i ->

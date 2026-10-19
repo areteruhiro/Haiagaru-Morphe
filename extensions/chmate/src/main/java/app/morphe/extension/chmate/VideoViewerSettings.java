@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.widget.*;
@@ -60,7 +60,7 @@ public final class VideoViewerSettings {
             }
             public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
-        new AlertDialog.Builder(activity).setTitle("動画ビューアの操作設定").setView(scroll)
+        new HaiagaruDialog.Builder(activity).setTitle("動画ビューアの操作設定").setView(scroll)
                 .setNegativeButton("戻る",null).show();
     }
     private static Switch toggle(LinearLayout body, Context context, String title, boolean checked) {

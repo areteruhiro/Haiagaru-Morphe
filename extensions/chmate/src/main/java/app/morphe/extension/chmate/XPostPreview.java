@@ -29,7 +29,7 @@ public final class XPostPreview {
         layout.addView(note);
         android.widget.Button button = new android.widget.Button(activity);
         button.setText("X投稿プレビューのキャッシュを削除"); layout.addView(button);
-        button.setOnClickListener(v -> new android.app.AlertDialog.Builder(activity)
+        button.setOnClickListener(v -> new HaiagaruDialog.Builder(activity)
                 .setMessage("保存済みのX投稿プレビューを削除しますか？次に表示する際は再取得します。")
                 .setNegativeButton("キャンセル", null).setPositiveButton("削除", (d, w) -> {
                     button.setEnabled(false);
@@ -159,7 +159,8 @@ public final class XPostPreview {
 
     private static void apply(TextView view, boolean force) {
         if (view instanceof EditText || Looper.myLooper() != Looper.getMainLooper()) return;
-        CharSequence source = view.getText();
+        SiteCards.onBound(view);
+        CharSequence source = SiteCards.strip(view.getText());
         if (!(source instanceof Spanned) || source instanceof Editable) return;
         Spanned spans = (Spanned) source;
         Marker[] markers = spans.getSpans(0, source.length(), Marker.class);
@@ -185,6 +186,7 @@ public final class XPostPreview {
     }
 
     private static CharSequence prepare(CharSequence source, TextView view) {
+        source = SiteCards.strip(source);
         if (!Haiagaru.xPostPreviewEnabled() || !(source instanceof Spanned)
                 || source.length() > 100_000) return source;
         Spanned spanned = (Spanned) source;
@@ -198,11 +200,12 @@ public final class XPostPreview {
 
     /** Called after native binding; covers recycled rows even when no global layout fires. */
     public static void onBound(Object object) {
-        if (object == WRITING.get() || Looper.myLooper() != Looper.getMainLooper()) return;
+        if (object == WRITING.get() || SiteCards.writing(object) || Looper.myLooper() != Looper.getMainLooper()) return;
         DirectBodySelection.prepare(object);
+        SiteCards.onBound(object);
         if (!(object instanceof TextView) || object instanceof EditText || !Haiagaru.xPostPreviewEnabled()) return;
         TextView view = (TextView) object;
-        CharSequence source = view.getText();
+        CharSequence source = SiteCards.strip(view.getText());
         if (!(source instanceof Spanned) || source instanceof Editable || source.length() > 100_000) return;
         CharSequence cached = prepare(source, view);
         if (cached != source) setText(view, cached);
@@ -226,11 +229,20 @@ public final class XPostPreview {
         WRITING.set(view);
         try {
             XPostPreviewPosition.beforeChange(view);
-            view.setText(source, TextView.BufferType.SPANNABLE);
+            view.setText(SiteCards.decorate(source, view), TextView.BufferType.SPANNABLE);
         } finally {
             if (previous == null) WRITING.remove();
             else WRITING.set(previous);
         }
+    }
+
+    static String originalText(CharSequence source) {
+        if (source instanceof Spanned) {
+            Spanned spans = (Spanned) source;
+            Marker[] markers = spans.getSpans(0, source.length(), Marker.class);
+            if (markers.length > 0) source = source.subSequence(0, spans.getSpanStart(markers[0]));
+        }
+        return source.toString();
     }
 
     static void toggle(TextView view, String id) {

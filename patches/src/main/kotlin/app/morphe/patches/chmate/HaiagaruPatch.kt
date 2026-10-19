@@ -1043,6 +1043,7 @@ private fun BytecodePatchContext.patchConsumedPopupMenu191() {
 }
 
 private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
+    patchExtraQuickFilters(version)
     patchQuickFilterPosition(version)
     if (version == "0.8.10.191 dev") {
         val toolbarModelType = "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
@@ -1543,10 +1544,11 @@ private fun BytecodePatchContext.patchUnreadToolbarCount(version: String) {
 
 private val haiagaruBytecodePatch = bytecodePatch {
     compatibleWith(chMateCompatibility)
-    extendWith { ChMateExtensionIsolation.open() }
+    extendWithAll { ChMateExtensionIsolation.openAll() }
 
     execute {
         val profile = profileFor(packageMetadata.versionName)
+        patchReadingPosition(packageMetadata.versionName)
         patchUnreadToolbarCount(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
 
@@ -4585,7 +4587,7 @@ private fun Document.addOpenUrlFilter(
 @Suppress("unused")
 val haiagaruPatch = resourcePatch(
     name = "Haiagaru",
-    description = "Haiagaruの機能とアプリ内設定を追加します。対応バージョンはChMate 0.8.10.191 dev／0.8.10.226 dev／0.8.10.242 devです。",
+    description = "Haiagaruの機能と設定を追加します。対応:191／226／242 dev。基本機能は追加ダウンロード不要です。絵文字フォント・191画像判定修正・VPNは必要なものだけGitHubから保存し、各オプションのファイル選択で指定してください。未選択なら端末標準の絵文字と本体の画像判定を維持します。初めての方向け手順・配布元: $OPTIONAL_ASSET_GUIDE",
 ) {
     compatibleWith(chMateCompatibility)
     dependsOn(haiagaruBytecodePatch)
@@ -4604,11 +4606,12 @@ val haiagaruPatch = resourcePatch(
         description = "missing=端末にない絵文字だけ（推奨）、all=全絵文字、off=無効。",
     )
 
-    val emojiFontPath = stringOption(
+    val emojiFontPath = filePathOption(
         key = "emojiFontPath",
         default = "",
-        title = "任意の絵文字フォント（任意）",
-        description = "パッチ実行PC上のTTF/OTFファイルの絶対パス。空欄なら内蔵Noto Color Emojiを使用します。",
+        title = "絵文字フォントを選択（任意）",
+        description = "GitHubからNotoColorEmoji.ttfを保存して選択: $OPTIONAL_ASSET_EMOJI_URL 空欄は端末標準の絵文字を使用。手順・ライセンス: $OPTIONAL_ASSET_GUIDE",
+        allowedExtensions = listOf("ttf", "otf"),
     )
 
     val dedicatedCheckerViewer = stringOption(
@@ -4630,7 +4633,12 @@ val haiagaruPatch = resourcePatch(
         key = "imageNgTfliteFix",
         default = "true",
         title = "191の自動NG画像判定クラッシュを修正",
-        description = "true=修正版TFLiteを適用（推奨）、false=元のライブラリを維持。191 devのみ対象です。",
+        description = "191 devのみ。trueと下の修正ファイル選択の両方で適用します。ファイル未選択またはfalseなら本体のライブラリを維持します。自動NG画像判定でクラッシュする方は導入手順を確認してください。$OPTIONAL_ASSET_GUIDE",
+    )
+    val imageNgLibraryFile = filePathOption(
+        key = "imageNgLibraryFile", default = "", title = "191画像判定の修正ファイルを選択（任意）",
+        description = "GitHubからhaiagaru-image-ng.zipを保存して選択: $OPTIONAL_ASSET_IMAGE_NG_URL ZIPは展開不要。226／242には不要です。手順・ソース: $OPTIONAL_ASSET_GUIDE",
+        allowedExtensions = listOf("zip", "apk"),
     )
 
     execute {
@@ -4711,7 +4719,7 @@ val haiagaruPatch = resourcePatch(
                 anchor.parentNode.insertBefore(deleteRead, entry.nextSibling)
             }
         }
-        if (replaceImageNgTflite && packageMetadata.versionName == "0.8.10.191 dev") {
+        if (replaceImageNgTflite && imageNgLibraryFile.value.orEmpty().isNotBlank() && packageMetadata.versionName == "0.8.10.191 dev") {
             // 191's bundled TFLite JNI crashes in NativeInterpreterWrapper_run
             // during automatic image NG classification. Keep the model and Java
             // classifier intact; replace only the affected native runtime with
@@ -4722,14 +4730,8 @@ val haiagaruPatch = resourcePatch(
                 "x86" to "1a8bad7f404050f259b9224e572106beb1326bc1c66c9856b4ecc58f5358df74",
                 "x86_64" to "a7597671e6685259cd27959040959786c2c5e8f5dfd8303746554b3644315f5b",
             )
-            tfliteLibraries.forEach { (abi, expectedHash) ->
-                val resource = "/chmate/tflite-226/$abi/libtensorflowlite_jni.so"
-                val bytes = checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(resource)) {
-                    "Bundled TFLite library is missing: $resource"
-                }.use { it.readBytes() }
-                val actualHash = MessageDigest.getInstance("SHA-256").digest(bytes)
-                    .joinToString("") { "%02x".format(it) }
-                check(actualHash == expectedHash) { "Bundled TFLite library hash mismatch: $abi" }
+            val libraries = optionalLibraries(imageNgLibraryFile.value.orEmpty(), tfliteLibraries, "libtensorflowlite_jni.so")
+            libraries.forEach { (abi, bytes) ->
                 get("lib").resolve("$abi/libtensorflowlite_jni.so").apply {
                     parentFile.mkdirs()
                     writeBytes(bytes)
@@ -4964,15 +4966,7 @@ val haiagaruPatch = resourcePatch(
                     + dedicatedCheckerViewer.value
             )
         }
-        if (requestedFontPath.isBlank()) {
-            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
-                "/chmate/emoji/NotoColorEmoji.ttf",
-            )) {
-                "Bundled Noto Color Emoji font is missing from the Haiagaru patch bundle"
-            }.use { source ->
-                bundledEmojiFont.outputStream().use(source::copyTo)
-            }
-        } else {
+        if (requestedFontPath.isNotBlank() && requestedEmojiMode != "off") {
             val customFont = File(requestedFontPath)
             if (!customFont.isFile || !customFont.canRead()) {
                 throw PatchException("emojiFontPathのフォントファイルを読み込めません: $requestedFontPath")
@@ -4982,7 +4976,7 @@ val haiagaruPatch = resourcePatch(
             }
         }
         bundledEmojiFont.parentFile.resolve("emoji.properties").writeText(
-            "mode=$requestedEmojiMode\n",
+            "mode=${if (requestedFontPath.isBlank()) "off" else requestedEmojiMode}\n",
             Charsets.UTF_8,
         )
         if (dedicatedViewerEnabled) {
@@ -5126,6 +5120,11 @@ val haiagaruPatch = resourcePatch(
                     "android:theme",
                     "@android:style/Theme.Material.Light.NoActionBar",
                 )
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:name", "app.morphe.extension.chmate.BackupSettingsActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
+                setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
             })
             application.appendChild(document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:name",
@@ -5480,9 +5479,16 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyPlusFeature
                     && ref?.definingClass == "Ljp/syoboi/a2chMate/Prefs;"
                     && ref.name == fieldName && ref.type == "Lo/m1b\$read;"
             }
-            val gate = preferenceIndex - 1
-            check(gate >= 0 && instructions[gate].opcode == Opcode.IF_EQZ) {
-                "ChMate legacy $fieldName filter entitlement branch was not found"
+            // Other hooks may insert bookkeeping between the entitlement gate
+            // and this preference read. The stock 191 method still has the
+            // gate immediately before this small block, so locate it within a
+            // tight window and retain the shared-register check below.
+            val gate = (preferenceIndex - 1 downTo maxOf(0, preferenceIndex - 8))
+                .firstOrNull { instructions[it].opcode == Opcode.IF_EQZ }
+            check(gate != null) {
+                "ChMate legacy $fieldName filter entitlement branch was not found: " +
+                    instructions.subList(maxOf(0, preferenceIndex - 16), preferenceIndex)
+                        .joinToString { it.opcode.name }
             }
             gate
         }

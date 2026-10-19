@@ -119,9 +119,9 @@ public final class ResponseMenuSettings {
             android.widget.TextView help=new android.widget.TextView(activity);help.setText("項目ごとに「標準のツールバー設定に従う／常に表示／常に非表示」を指定します。未設定の追加6項目は初期オフ。既存の配置順は変更しません。画面を開き直すと反映します。");panel.addView(help);
             android.content.SharedPreferences prefs=activity.getSharedPreferences("haiagaru_response_actions",0);
             for(int i=0;i<IDS.length;i++){final int id=IDS[i];final String name=NAMES[i];android.widget.Button row=new android.widget.Button(activity);Runnable update=()->{int mode=prefs.getInt("visibility."+id,0);row.setText(name+"："+(mode==1?"常に表示":mode==2?"常に非表示":"標準設定"));};update.run();panel.addView(row);
-                row.setOnClickListener(w->new android.app.AlertDialog.Builder(activity).setTitle(name).setSingleChoiceItems(new String[]{"標準のツールバー設定に従う","常に表示","常に非表示"},prefs.getInt("visibility."+id,0),(d,n)->{prefs.edit().putInt("visibility."+id,n).apply();update.run();d.dismiss();}).setNegativeButton("キャンセル",null).show());
+                row.setOnClickListener(w->new HaiagaruDialog.Builder(activity).setTitle(name).setSingleChoiceItems(new String[]{"標準のツールバー設定に従う","常に表示","常に非表示"},prefs.getInt("visibility."+id,0),(d,n)->{prefs.edit().putInt("visibility."+id,n).apply();update.run();d.dismiss();}).setNegativeButton("キャンセル",null).show());
             }
-            android.widget.ScrollView scroll=new android.widget.ScrollView(activity);scroll.addView(panel);new android.app.AlertDialog.Builder(activity).setTitle("レスメニューの項目別設定").setView(scroll).setPositiveButton("閉じる",null).show();
+            android.widget.ScrollView scroll=new android.widget.ScrollView(activity);scroll.addView(panel);new HaiagaruDialog.Builder(activity).setTitle("レスメニューの項目別設定").setView(scroll).setPositiveButton("閉じる",null).show();
         });
     }
 

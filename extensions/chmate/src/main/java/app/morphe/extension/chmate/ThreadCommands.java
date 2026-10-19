@@ -1,6 +1,6 @@
 package app.morphe.extension.chmate;
 
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.view.View;
@@ -107,7 +107,7 @@ public final class ThreadCommands {
         java.util.ArrayList<Integer> indices = new java.util.ArrayList<>();
         String[] all = ThreadCommandRules.labels(profile);
         for (int i = 0; i < all.length; i++) if (ThreadCommandRules.available(profile, i, thread)) { labels.add(all[i]); indices.add(i); }
-        AlertDialog.Builder chooser = new AlertDialog.Builder(body.getContext()).setTitle((thread ? "スレ立て" : "レス") + "コマンド・" + serviceName(profile))
+        HaiagaruDialog.Builder chooser = new HaiagaruDialog.Builder(body.getContext()).setTitle((thread ? "スレ立て" : "レス") + "コマンド・" + serviceName(profile))
                 .setItems(labels.toArray(new String[0]), (d, index) -> edit(body, name, profile, url, indices.get(index)))
                 .setNeutralButton("仕様・使い方", (d, w) -> help(body.getContext(), profile))
                 .setNegativeButton("閉じる", null);
@@ -129,12 +129,12 @@ public final class ThreadCommands {
         view.setAutoLinkMask(android.text.util.Linkify.WEB_URLS); view.setText(message);
         view.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
         android.widget.ScrollView scroll = new android.widget.ScrollView(c); scroll.addView(view);
-        new AlertDialog.Builder(c).setTitle("コマンドの仕様・注意").setView(scroll).setPositiveButton("閉じる", null).show();
+        new HaiagaruDialog.Builder(c).setTitle("コマンドの仕様・注意").setView(scroll).setPositiveButton("閉じる", null).show();
     }
-    private static AlertDialog edit(EditText body, String profile, int index) {
+    private static HaiagaruDialog edit(EditText body, String profile, int index) {
         return edit(body, null, profile, "", index);
     }
-    private static AlertDialog edit(EditText body, EditText name, String profile, String url, int index) {
+    private static HaiagaruDialog edit(EditText body, EditText name, String profile, String url, int index) {
         Context c = body.getContext();
         SharedPreferences prefs = c.getSharedPreferences("haiagaru_thread_commands", 0);
         String legacyKey = profile + "." + index;
@@ -148,7 +148,7 @@ public final class ThreadCommands {
         input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
         input.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_ENTER_ACTION);
         input.setText(ThreadCommandRules.editValue(initial, prefs.getString(key, prefs.getString(legacyKey, null))));
-        AlertDialog dialog = new AlertDialog.Builder(c).setTitle("コマンドを編集して追加")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(c).setTitle("コマンドを編集して追加")
                 .setMessage((toName ? "名前欄へ追加します。!donguriは大砲不可のスレでも攻撃対象になる場合があります。" : "本文の先頭に追加します。ワッチョイ候補は3行です。改行・同じコマンドの再追加ができます。")
                         + "編集内容は板・候補ごとに保存します。IP表示はIPが公開されます。板設定によっては使えません。" + (profile.equals("5ch") ? "!extendにはBBS_USE_VIPQ2=2以上が必要です。" : ""))
                 .setView(input).setNegativeButton("キャンセル", null)

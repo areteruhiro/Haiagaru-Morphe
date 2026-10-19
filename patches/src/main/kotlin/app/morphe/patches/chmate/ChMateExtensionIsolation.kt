@@ -17,17 +17,26 @@ import com.android.tools.smali.dexlib2.writer.io.MemoryDataStore
 import com.android.tools.smali.dexlib2.writer.pool.DexPool
 import java.io.ByteArrayInputStream
 import java.io.InputStream
+import java.util.function.Supplier
 
 /** R8 keep rules leave some Compose classes unrenamed. Relocate the extension's
  * own AndroidX/Kotlin types before merging, so ChMate's copies are never replaced.
  * Framework types, native JNI names and Haiagaru entry points stay unchanged. */
 internal object ChMateExtensionIsolation {
-    fun open(): InputStream {
-        val bytes = checkNotNull(javaClass.getResourceAsStream("/extensions/chmate.mpe")) {
+    fun openAll(): List<Supplier<InputStream>> {
+        val primary = checkNotNull(javaClass.getResourceAsStream("/extensions/chmate.mpe")) {
             "ChMate extension is missing"
         }.use { it.readBytes() }
-        val dex = DexBackedDexFile(null, java.nio.ByteBuffer.wrap(bytes))
-        val names = dex.classes.map { it.type }.filter {
+        val shards = mutableListOf(primary)
+        var index = 2
+        while (true) {
+            val stream = javaClass.getResourceAsStream("/extensions/chmate-$index.mpe") ?: break
+            shards += stream.use { it.readBytes() }
+            index++
+        }
+        val dexes = shards.map { DexBackedDexFile(null, java.nio.ByteBuffer.wrap(it)) }
+        // References may cross shard boundaries, so every shard uses one map.
+        val names = dexes.flatMap { dex -> dex.classes.map { it.type } }.filter {
             it.startsWith("Landroidx/") || it.startsWith("Lkotlin/") || it.startsWith("Lkotlinx/")
         }.associateWith { "Lapp/morphe/extension/isolated/original/" + it.substring(1) }
         val strings = names + names.mapKeys { it.key.substring(1, it.key.length - 1).replace('/', '.') }
@@ -63,9 +72,13 @@ internal object ChMateExtensionIsolation {
                 }
             }
         })
-        val output = MemoryDataStore(bytes.size)
-        DexPool.writeTo(output, rewriter.dexFileRewriter.rewrite(dex))
-        println("ChMate extension: isolated ${names.size} retained AndroidX/Kotlin classes")
-        return ByteArrayInputStream(output.data)
+        println("ChMate extension: ${dexes.size} DEX shards, isolating ${names.size} retained AndroidX/Kotlin classes")
+        return dexes.mapIndexed { shard, dex ->
+            Supplier<InputStream> {
+                val output = MemoryDataStore(shards[shard].size)
+                DexPool.writeTo(output, rewriter.dexFileRewriter.rewrite(dex))
+                ByteArrayInputStream(output.data)
+            }
+        }
     }
 }

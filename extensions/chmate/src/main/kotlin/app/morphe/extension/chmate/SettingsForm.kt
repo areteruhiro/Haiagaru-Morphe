@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
@@ -85,6 +86,7 @@ internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
     return result
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
     val view = item.control
@@ -95,10 +97,20 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
         }
     }
     when (view) {
+        is android.widget.RadioButton -> {
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = item.enabled) {
+                view.performClick()
+                changed()
+            }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = item.checked == true, onClick = null, enabled = item.enabled)
+                Text(item.label, Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+            }
+        }
         is CompoundButton -> {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
                 .toggleable(item.checked == true, enabled = item.enabled, role = Role.Switch) {
-                    view.isChecked = it; changed()
+                    if (view.isChecked != it) view.performClick()
+                    changed()
                 }.padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(item.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
@@ -109,7 +121,9 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
         is EditText -> BoundTextField(view, item.label, enabled = item.enabled, changed = changed)
         is ImageView -> view.drawable?.let { drawable ->
             val bitmap = remember(drawable) { drawable.toBitmap(width = 96, height = 96).asImageBitmap() }
-            Image(bitmap, view.contentDescription?.toString(), modifier = Modifier.size(56.dp).padding(8.dp),
+            Image(bitmap, view.contentDescription?.toString(), modifier = Modifier.size(56.dp).padding(8.dp)
+                .combinedClickable(enabled = view.isEnabled && (view.hasOnClickListeners() || view.isLongClickable),
+                    onClick = { view.performClick(); changed() }, onLongClick = { view.performLongClick(); changed() }),
                 colorFilter = if (view.tag == false) androidx.compose.ui.graphics.ColorFilter.tint(MaterialTheme.colorScheme.onSurface) else null)
         }
         is Spinner -> {
@@ -139,12 +153,22 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
         is Button -> ListItem(headlineContent = { Text(item.label) },
             trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
             colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            modifier = Modifier.fillMaxWidth().clickable(enabled = view.isEnabled) { view.performClick(); changed() })
+            modifier = Modifier.fillMaxWidth().combinedClickable(enabled = view.isEnabled,
+                onClick = { view.performClick(); changed() }, onLongClick = { view.performLongClick(); changed() }))
         is TextView -> {
             if (view.hasOnClickListeners()) TextButton(onClick = { view.performClick(); changed() },
                 modifier = Modifier.fillMaxWidth()) { Text(view.text.toString()) }
-            else if (view.text.isNotBlank()) Text(view.text.toString(), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
+            else if (view.text.isNotBlank()) androidx.compose.foundation.text.selection.SelectionContainer {
+                val content = androidx.compose.ui.text.buildAnnotatedString {
+                    append(view.text.toString())
+                    val spanned = view.text as? android.text.Spanned
+                    spanned?.getSpans(0, spanned.length, android.text.style.URLSpan::class.java)?.forEach { link ->
+                        addLink(androidx.compose.ui.text.LinkAnnotation.Url(link.url), spanned.getSpanStart(link), spanned.getSpanEnd(link))
+                    }
+                }
+                Text(content, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
+            }
         }
     }
 }
@@ -156,6 +180,7 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
     val native = view.text.toString()
     if (value.text != native) value = androidx.compose.ui.text.input.TextFieldValue(native)
     val numeric = view.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_NUMBER
+    val decimal = numeric && view.inputType and InputType.TYPE_NUMBER_FLAG_DECIMAL != 0
     val secret = view.inputType and InputType.TYPE_MASK_VARIATION == InputType.TYPE_TEXT_VARIATION_PASSWORD
     OutlinedTextField(value = value, onValueChange = {
         value = it
@@ -165,7 +190,11 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         enabled = enabled, singleLine = view.maxLines == 1,
         minLines = if (view.maxLines == 1) 1 else view.minLines.coerceIn(1, 12),
-        keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text),
+        keyboardOptions = KeyboardOptions(keyboardType = when {
+            decimal -> KeyboardType.Decimal
+            numeric -> KeyboardType.Number
+            else -> KeyboardType.Text
+        }),
         visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         isError = view.error != null,
         supportingText = if (view.error != null) ({ Text(view.error.toString()) }) else null,

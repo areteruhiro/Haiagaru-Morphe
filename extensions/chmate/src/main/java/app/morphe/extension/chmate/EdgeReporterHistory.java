@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -157,7 +157,7 @@ public final class EdgeReporterHistory {
             Log.w("HaiagaruReporter", "NG editor unavailable", error);
             return false;
         }
-        new AlertDialog.Builder(activity).setTitle("NGThreadに追加")
+        new HaiagaruDialog.Builder(activity).setTitle("NGThreadに追加")
                 .setItems(new String[]{"記者IDだけをNG  " + suffix, "スレタイでNG"}, (dialog, which) -> {
                     try {
                         OPENING.set(true);

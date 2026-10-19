@@ -31,9 +31,15 @@ final class DroppedThreadStatus {
         return (String)url.invoke(model);
     }
     static boolean dropped(Object row){
+        try{
+            Context context=Haiagaru.applicationContextForExtension();if(context==null)return false;
+            return droppedUrl(rowUrl(row,context));
+        }catch(Exception ignored){return false;}
+    }
+    static boolean droppedUrl(String url){
         Context context=Haiagaru.applicationContextForExtension();if(context==null)return false;
         try{
-            DroppedThreadRules.Thread thread=DroppedThreadRules.thread(rowUrl(row,context));if(thread==null)return false;
+            DroppedThreadRules.Thread thread=DroppedThreadRules.thread(url);if(thread==null)return false;
             long now=System.currentTimeMillis();
             synchronized(results){
                 Result saved=results.get(thread.key);if(saved!=null&&saved.until>now)return saved.dropped;
@@ -54,7 +60,7 @@ final class DroppedThreadStatus {
     private static void check(Context context,DroppedThreadRules.Thread thread){
         boolean dropped=false;
         try{
-            if(!HiddenDroppedThreads.enabled())return;
+            if(!HiddenDroppedThreads.anyEnabled())return;
             String boardKey=thread.origin+"/"+thread.board;Board board;
             synchronized(boards){board=boards.get(boardKey);}
             if(board==null||board.until<=System.currentTimeMillis()){

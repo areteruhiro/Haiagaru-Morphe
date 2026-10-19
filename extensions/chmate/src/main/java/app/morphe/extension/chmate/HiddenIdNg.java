@@ -45,7 +45,7 @@ public final class HiddenIdNg {
                     + "意図的なID非表示かは断定できないため、取得済みレスに通常のIDがあるスレだけが対象です。全レスIDなしのスレ、削除済み・システム投稿は対象外です。\n\n"
                     + "保存後はスレを閉じて開き直してください。オフにするとこの機能による非表示を解除します（既存のNG設定は維持）。");
             panel.addView(help);
-            new AlertDialog.Builder(activity).setTitle("5chのIDなしレスを非表示").setView(panel)
+            new HaiagaruDialog.Builder(activity).setTitle("5chのIDなしレスを非表示").setView(panel)
                     .setNegativeButton("キャンセル", null).setPositiveButton("保存", (dialog, which) -> {
                         enabled = toggle.isChecked();
                         context.getSharedPreferences(PREFS, 0).edit().putBoolean("enabled", enabled).apply();

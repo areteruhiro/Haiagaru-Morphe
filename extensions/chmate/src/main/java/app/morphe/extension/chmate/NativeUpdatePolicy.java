@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -19,6 +20,9 @@ import javax.net.SocketFactory;
 public final class NativeUpdatePolicy {
     private static final UpdateProgressGate PROGRESS = new UpdateProgressGate();
     private static final Map<Object, Socket> READY = new IdentityHashMap<>();
+    private static final Object TABLET_RESUME_LOCK = new Object();
+    private static final Map<Object, Integer> TABLET_ACTIVITY_RESUMES = new WeakHashMap<>();
+    private static final Map<Object, Integer> TABLET_FRAGMENT_RESUMES = new WeakHashMap<>();
     private static final ScheduledExecutorService CLEANUP = Executors.newSingleThreadScheduledExecutor(
             new ThreadFactory() {
                 @Override public Thread newThread(Runnable task) {
@@ -34,6 +38,39 @@ public final class NativeUpdatePolicy {
 
     /** Replaced with native Call.timeout access; must run before execute(). */
     public static void configure191(Object call) { }
+
+    /** Records a real TabletHomeActivity resume, distinguishing it from pane/tab changes. */
+    public static void tabletActivityResume(Object activity) {
+        if (activity == null || !"jp.syoboi.a2chMate.activity.TabletHomeActivity"
+                .equals(activity.getClass().getName())) return;
+        synchronized (TABLET_RESUME_LOCK) {
+            Integer current = TABLET_ACTIVITY_RESUMES.get(activity);
+            TABLET_ACTIVITY_RESUMES.put(activity, current == null ? 1 : current + 1);
+        }
+    }
+
+    /**
+     * ChMate calls its automatic refresh action from a thread Fragment's onResume. In the
+     * tablet pager, revisiting a thread can resume the same Fragment without resuming the
+     * activity. Skip only that second in-activity resume; real activity resumes still refresh.
+     */
+    public static boolean shouldSkipTabletResumeReload(Object fragment) {
+        if (fragment == null || !Haiagaru.suppressTabletThreadResumeReload()) return false;
+        try {
+            Object activity = fragment.getClass().getMethod("getActivity").invoke(fragment);
+            if (activity == null || !"jp.syoboi.a2chMate.activity.TabletHomeActivity"
+                    .equals(activity.getClass().getName())) return false;
+            synchronized (TABLET_RESUME_LOCK) {
+                Integer generation = TABLET_ACTIVITY_RESUMES.get(activity);
+                int currentGeneration = generation == null ? 0 : generation;
+                Integer previousGeneration = TABLET_FRAGMENT_RESUMES.put(fragment, currentGeneration);
+                return previousGeneration != null && previousGeneration == currentGeneration;
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // Keep ChMate's native refresh behavior if the host lifecycle shape changes.
+            return false;
+        }
+    }
 
     public static boolean shouldReport(Object listener, int current, int total) {
         return !Haiagaru.optimize191UpdateProgress()

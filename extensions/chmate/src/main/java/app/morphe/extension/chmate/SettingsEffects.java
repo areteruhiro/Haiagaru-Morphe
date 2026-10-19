@@ -20,7 +20,8 @@ final class SettingsEffects {
         if(!on&&("wacchoiSearchEnabled".equals(key)||"wacchoiBackgroundSearch".equals(key))){
             WacchoiBackgroundJob job=WacchoiSearchService.current;if(job!=null&&job.running)job.cancel();
         }
-        if("readThreadsFirst".equals(key)||HiddenDroppedThreads.KEY.equals(key)||"groupBrowsingHistoryByBoard".equals(key)
+        if("readThreadsFirst".equals(key)||HiddenDroppedThreads.KEY.equals(key)||HiddenDroppedThreads.DRAFTS.equals(key)
+                ||HiddenDroppedThreads.SENT.equals(key)||"groupBrowsingHistoryByBoard".equals(key)
                 ||EdgeReporterOptions.MENU.equals(key)||EdgeReporterOptions.BOARD.equals(key))
             Haiagaru.refreshBoardListAfterReadSortChange();
         if(needsRestart(key)&&context instanceof Activity)SettingsRestart.confirm((Activity)context);

@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -185,8 +185,8 @@ public final class DeleteReadThreads {
         android.widget.TextView warning = new android.widget.TextView(activity);
         warning.setText("この一覧で一度読んだスレが対象です。未読レスが残るスレも含みます。チェックしたスレの履歴と取得済みログを削除します。元に戻せません。未閲覧・未選択のスレと保存済みアーカイブは削除しません。");
         heading.addView(warning);
-        AlertDialog dialog = new AlertDialog.Builder(activity).setCustomTitle(heading)
-                .setMultiChoiceItems(labels, checked, (d,which,on) -> updateCount((AlertDialog)d, checked))
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setCustomTitle(heading)
+                .setMultiChoiceItems(labels, checked, (d,which,on) -> updateCount((HaiagaruDialog)d, checked))
                 .setNegativeButton("キャンセル", null).setNeutralButton("すべて解除", null)
                 .setPositiveButton("削除", null).create();
         dialog.setOnDismissListener(d -> dialogs.remove(fragment));
@@ -242,7 +242,7 @@ public final class DeleteReadThreads {
         dialog.show();
     }
 
-    private static void updateCount(AlertDialog dialog, boolean[] checked) {
+    private static void updateCount(HaiagaruDialog dialog, boolean[] checked) {
         int count=selectionCount(checked);
         dialog.getButton(-1).setText("削除（"+count+"件）"); dialog.getButton(-1).setEnabled(count>0);
         dialog.getButton(-3).setText(count==checked.length?"すべて解除":"すべて選択");

@@ -160,7 +160,10 @@ final class EmojiFontFallback {
         Paint fallbackPaint = new Paint(devicePaint);
         fallbackPaint.setTypeface(fallback);
         SpannableStringBuilder result = null;
-        for (int start = 0; start < source.length();) {
+        // Website cards draw their own text. Splitting a ReplacementSpan with an
+        // emoji metric span can make Android measure/draw the card multiple times.
+        int bodyEnd = SiteCards.strip(source).length();
+        for (int start = 0; start < bodyEnd;) {
             int codePoint = Character.codePointAt(source, start);
             int end = start + Character.charCount(codePoint);
             if (!isEmojiBase(codePoint) && !isKeycapBase(source, start, codePoint)) {

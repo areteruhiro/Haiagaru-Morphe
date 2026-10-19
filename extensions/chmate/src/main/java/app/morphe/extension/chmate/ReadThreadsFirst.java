@@ -35,7 +35,7 @@ public final class ReadThreadsFirst {
         if (activity == null || activity.isFinishing()) return;
         SharedPreferences prefs = preferences();
         if (prefs == null) return;
-        new android.app.AlertDialog.Builder(activity)
+        new HaiagaruDialog.Builder(activity)
                 .setTitle("上に表示する既読スレ")
                 .setSingleChoiceItems(new String[]{"既読スレすべて", "新着レスがある既読スレのみを上に"},
                         prefs.getBoolean(NEW_ONLY_KEY, false) ? 1 : 0, (dialog, which) -> {
@@ -85,13 +85,13 @@ public final class ReadThreadsFirst {
             if (star == null || !(star.getParent() instanceof LinearLayout)) return;
             LinearLayout rows = (LinearLayout) star.getParent();
             for (int i = 0; i < rows.getChildCount(); i++) {
-                if ("haiagaru.readThreadsFirst".equals(rows.getChildAt(i).getTag())) {DroppedThreadDisplaySettings.legacy(rows,star);return;}
+                if ("haiagaru.readThreadsFirst".equals(rows.getChildAt(i).getTag())) {DroppedThreadDisplaySettings.legacy(rows,(CheckBox)rows.getChildAt(i));return;}
             }
             CheckBox readFirst = new CheckBox(star.getContext());
             readFirst.setTag("haiagaru.readThreadsFirst");
             readFirst.setText("既読スレを上に");
             readFirst.setTextColor(star.getCurrentTextColor());
-            readFirst.setTextSize(star.getTextSize() / star.getResources().getDisplayMetrics().scaledDensity);
+            readFirst.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, star.getTextSize());
             readFirst.setTypeface(star.getTypeface());
             readFirst.setGravity(star.getGravity());
             readFirst.setMinimumHeight(star.getMinimumHeight());
@@ -117,7 +117,7 @@ public final class ReadThreadsFirst {
             placement.gravity = original.gravity;
             placement.weight = original.weight;
             rows.addView(readFirst, placement);
-            DroppedThreadDisplaySettings.legacy(rows,star);
+            DroppedThreadDisplaySettings.legacy(rows,readFirst);
         } catch (Throwable failure) {
             Log.w(TAG, "Could not add legacy display-setting checkbox", failure);
         }

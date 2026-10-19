@@ -252,7 +252,7 @@ public final class PosterHighlight {
         if(activity==null || activity.isFinishing())return;
         String[] labels=PosterHighlightRules.KINDS.clone();
         for(int i=1;i<labels.length;i++)labels[i]+="："+(identity.poster.value(i).isEmpty()?"取得できません":identity.poster.value(i));
-        new AlertDialog.Builder(activity).setTitle("強調する条件")
+        new HaiagaruDialog.Builder(activity).setTitle("強調する条件")
                 .setItems(labels,(d,kind)->edit(activity,identity,kind)).setNegativeButton("キャンセル",null).show();
     }
     private static void edit(Activity activity,Identity identity,int kind) {
@@ -280,7 +280,7 @@ public final class PosterHighlight {
         });
         TextView priority=new TextView(activity);priority.setText("複数の登録に一致した場合は、最後に登録した条件の色を使います。");content.addView(priority);
         ScrollView scroll=new ScrollView(activity);scroll.addView(content);
-        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle(PosterHighlightRules.KINDS[kind]+"で強調")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle(PosterHighlightRules.KINDS[kind]+"で強調")
                 .setView(scroll).setNegativeButton("キャンセル",null).setNeutralButton("登録一覧",(d,w)->showSettings(activity))
                 .setPositiveButton("登録",null).create();
         dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
@@ -354,12 +354,12 @@ public final class PosterHighlight {
         if(displayed.isEmpty()){TextView empty=new TextView(activity);empty.setText("登録はありません");content.addView(empty);}
         Button remove=new Button(activity);remove.setText("登録を選んで削除");content.addView(remove);
         ScrollView scroll=new ScrollView(activity);scroll.addView(content);
-        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("投稿者の強調").setView(scroll).setPositiveButton("閉じる",null).create();
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("投稿者の強調").setView(scroll).setPositiveButton("閉じる",null).create();
         remove.setOnClickListener(v->{
             List<PosterHighlightRules.Rule> selectedRules=rules;
             String[] labels=new String[selectedRules.size()];boolean[] checked=new boolean[labels.length];
             for(int i=0;i<labels.length;i++)labels[i]=selectedRules.get(i).label();
-            new AlertDialog.Builder(activity).setTitle("削除する登録を選択").setMultiChoiceItems(labels,checked,(d,i,on)->checked[i]=on)
+            new HaiagaruDialog.Builder(activity).setTitle("削除する登録を選択").setMultiChoiceItems(labels,checked,(d,i,on)->checked[i]=on)
                     .setNegativeButton("キャンセル",null).setPositiveButton("削除",(d,w)->{
                         ArrayList<PosterHighlightRules.Rule> keep=new ArrayList<>();
                         for(int i=0;i<labels.length;i++)if(!checked[i])keep.add(selectedRules.get(i));

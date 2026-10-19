@@ -22,8 +22,8 @@ final class WacchoiStorageLimits {
         EditText[] inputs=new EditText[KEYS.length];
         for(int i=0;i<inputs.length;i++){TextView label=new TextView(a);label.setText(LABELS[i]);panel.addView(label);EditText input=new EditText(a);input.setSingleLine(true);input.setInputType(InputType.TYPE_CLASS_NUMBER);input.setText(Long.toString(value(a,i)));panel.addView(input);inputs[i]=input;}
         ScrollView scroll=new ScrollView(a);scroll.addView(panel);
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("検索履歴・キャッシュの保持設定").setView(scroll).setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
-        dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(w->{
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("検索履歴・キャッシュの保持設定").setView(scroll).setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
+        dialog.setOnShowListener(v->dialog.getButton(HaiagaruDialog.BUTTON_POSITIVE).setOnClickListener(w->{
             long[] values=new long[inputs.length];
             for(int i=0;i<values.length;i++)try{values[i]=Long.parseLong(inputs[i].getText().toString().trim());if(values[i]<0)throw new NumberFormatException();}catch(NumberFormatException e){inputs[i].setError("0以上の整数を入力してください");return;}
             SharedPreferences.Editor edit=a.getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit();for(int i=0;i<values.length;i++)edit.putLong("wacchoiLimit."+KEYS[i],values[i]);edit.apply();dialog.dismiss();

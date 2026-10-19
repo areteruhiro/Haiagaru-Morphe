@@ -2,7 +2,7 @@ package app.morphe.extension.chmate;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -23,11 +23,12 @@ public final class VideoDownloads {
     private VideoDownloads() { }
 
     static void confirm(Activity activity, String url, Runnable approved) {
-        if (!XMediaAttachments.isVideo(url)) {
+        boolean gif = GifViewerActivity.supported(url);
+        if (!gif && !XMediaAttachments.isVideo(url)) {
             message(activity, "この動画URLは保存できません"); return;
         }
-        new AlertDialog.Builder(activity).setTitle("動画を保存")
-                .setMessage("Download/Haiagaru にMP4を保存します。再生とは別に動画全体を取得するため、"
+        new HaiagaruDialog.Builder(activity).setTitle(gif ? "GIFを保存" : "動画を保存")
+                .setMessage("Download/Haiagaru に" + (gif ? "GIF" : "MP4") + "を保存します。再生とは別にファイル全体を取得するため、"
                         + "通信量と空き容量にご注意ください。画面を閉じても保存は続きます。"
                         + "進捗・完了・失敗はAndroidのダウンロード通知で確認できます。")
                 .setNegativeButton("キャンセル", null)
@@ -42,16 +43,18 @@ public final class VideoDownloads {
     /** Called only after the user confirms saving (and grants legacy storage access, if needed). */
     public static void enqueue(Context context, String url) {
         Context app = context.getApplicationContext();
-        if (!XMediaAttachments.isVideo(url)) { message(app, "この動画URLは保存できません"); return; }
+        boolean gif = GifViewerActivity.supported(url);
+        if (!gif && !XMediaAttachments.isVideo(url)) { message(app, "この動画URLは保存できません"); return; }
         WORKER.execute(() -> {
             try {
                 DownloadManager manager = (DownloadManager) app.getSystemService(Context.DOWNLOAD_SERVICE);
                 if (manager == null) throw new IllegalStateException("ダウンロード機能が利用できません");
                 String filename = VideoDownloadNames.filename(url);
+                if (gif) filename = filename.substring(0, filename.length() - 4) + ".gif";
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
                 request.setTitle(filename);
-                request.setDescription("Haiagaru 動画保存");
-                request.setMimeType("video/mp4");
+                request.setDescription(gif ? "Haiagaru GIF保存" : "Haiagaru 動画保存");
+                request.setMimeType(gif ? "image/gif" : "video/mp4");
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Haiagaru/" + filename);
                 // Preserve the exact playback URL, including signed query parameters. Do not pass login cookies.
