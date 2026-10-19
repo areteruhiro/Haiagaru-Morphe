@@ -41,13 +41,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Mirror official metadata to existing manager source URLs
-        if: github.ref_name == 'master' && steps.release.outputs.new_release_published == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{ steps.release.outputs.new_release_version }}
-        run: node .github/scripts/mirror-release-metadata.mjs
-
       - name: Attest
         if: steps.release.outputs.new_release_published == 'true'
         uses: actions/attest-build-provenance@v4

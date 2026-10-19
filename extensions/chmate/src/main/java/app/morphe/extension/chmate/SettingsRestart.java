@@ -18,6 +18,9 @@ final class SettingsRestart {
     private static void restart(Activity activity){
         // Flush pending apply() writes before ending the process. Do not touch
         // credentials or user data; these empty commits are only write barriers.
+        if(!android.preference.PreferenceManager.getDefaultSharedPreferences(activity).edit().commit()){
+            android.widget.Toast.makeText(activity,"設定の保存を確認できません。再起動せず、後でもう一度お試しください",1).show();return;
+        }
         for(String name:new String[]{WacchoiSearchOptions.PREFS,ToolbarIcons.PREFS,"haiagaru_response_actions"})
             if(!activity.getSharedPreferences(name,0).edit().commit()){
                 android.widget.Toast.makeText(activity,"設定の保存を確認できません。再起動せず、後でもう一度お試しください",1).show();return;

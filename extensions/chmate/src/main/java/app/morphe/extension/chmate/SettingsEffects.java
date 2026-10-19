@@ -10,7 +10,10 @@ final class SettingsEffects {
         return "hideAd".equals(key)||"removeMonaKey".equals(key)
                 ||"chtoio".equals(key)||"topAlignShortThreads".equals(key)
                 ||"compactQuickFilters".equals(key)||"threadCommandsEnabled".equals(key)
-                ||"imageViewerRotationButton".equals(key)||"wacchoiSearchEnabled".equals(key);
+                ||"imageViewerRotationButton".equals(key)||"wacchoiSearchEnabled".equals(key)
+                // Native response filters are assembled when a thread is opened.
+                // Invalidating the settings layout cannot rebuild those filters.
+                ||"copipeNg2".equals(key)||"arashiNg".equals(key)||"abbrevSingleId".equals(key);
     }
     static void changed(Context context,String key,boolean on){
         if("forceHttps".equals(key))HttpsTransport.setEnabled(on);

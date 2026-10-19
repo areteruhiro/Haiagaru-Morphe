@@ -4139,9 +4139,9 @@ public final class Haiagaru {
                 TextView plusDescription = new TextView(activity);
                 plusDescription.setText(text(
                         "ChMate+互換機能（191/226/243 dev）\n"
-                                + "アプリに含まれている表示・省略機能をここから切り替えます。",
+                                + "アプリに含まれている表示・省略機能をここから切り替えます。変更後は再起動して、開いているスレにも反映してください。",
                         "ChMate+ compatibility (191/226/243 dev)\n"
-                                + "Toggle the built-in display and abbreviation features here."
+                                + "Toggle the built-in display and abbreviation features here. Restart after changing them to update open threads."
                 ));
                 plusDescription.setTextSize(13);
                 layout.addView(plusDescription, rowParams(activity));
