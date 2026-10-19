@@ -1,3 +1,12 @@
+# Haiagaru 1.10.0-dev.2
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.2/docs/release-1.10.0-dev.2.md)
+
+
+### 🐛 Bug Fixes
+
+* Composeの起動時クラッシュと本体ライブラリとの衝突を修正 ([2f98772](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2f98772a21f9c46601095b11fb64af8282b6fc28))
+
 # Haiagaru 1.10.0-dev.1
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.1/docs/release-1.10.0-dev.1.md)
