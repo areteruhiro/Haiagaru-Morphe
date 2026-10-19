@@ -5059,8 +5059,32 @@ public final class Haiagaru {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    /** ResEdit also prepares the BE account popup; only its main overflow owns upload actions. */
+    static boolean isPostingOverflowMenu(Context context, Menu menu) {
+        if (context == null || menu == null) return false;
+        final String version;
+        try {
+            version = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException ignored) { return false; }
+        final int versionItem, uploadHistoryItem;
+        // Native menu IDs verified in both the activity and dialog overflow XMLs.
+        // Require both markers even when native visibility rules hide either item.
+        switch (version) {
+            case "0.8.10.191 dev": versionItem = 0x7f0a018f; uploadHistoryItem = 0x7f0a02f7; break;
+            case "0.8.10.226 dev": versionItem = 0x7f090128; uploadHistoryItem = 0x7f090304; break;
+            case "0.8.10.241": versionItem = 0x7f09017a; uploadHistoryItem = 0x7f0902f7; break;
+            case "0.8.10.242 dev": versionItem = 0x7f09017e; uploadHistoryItem = 0x7f090301; break;
+            default: return false;
+        }
+        return menu.findItem(versionItem) != null && menu.findItem(uploadHistoryItem) != null;
+    }
+
     static boolean preparePostingMenu(Context context, Menu menu, int itemId, String key) {
         if (context == null || menu == null) return false;
+        if (!isPostingOverflowMenu(context, menu)) {
+            menu.removeItem(itemId);
+            return false;
+        }
         boolean visible = preferences(context).getBoolean(key, false);
         MenuItem existing = menu.findItem(itemId);
         if (existing != null) existing.setVisible(visible);

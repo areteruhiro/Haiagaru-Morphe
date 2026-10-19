@@ -197,8 +197,12 @@ public final class ImgurWebUpload {
     /** Adds to ChMate's existing posting overflow menu without wrapping the editor. */
     public static void addPostingMenu(Object fragment, android.view.Menu menu) {
         android.app.Activity activity = postingActivity(fragment);
-        if (activity == null || !supported(activity) || menu == null
-                || menu.findItem(POSTING_UPLOADS_MENU_ID) != null) return;
+        if (activity == null || !supported(activity) || menu == null) return;
+        if (!Haiagaru.isPostingOverflowMenu(activity, menu)) {
+            menu.removeItem(POSTING_UPLOADS_MENU_ID);
+            return;
+        }
+        if (menu.findItem(POSTING_UPLOADS_MENU_ID) != null) return;
         android.view.MenuItem item = menu.add(android.view.Menu.NONE, POSTING_UPLOADS_MENU_ID,
                 android.view.Menu.NONE, "Imgur投稿一覧");
         POSTING_MENU_ACTIVITIES.put(item, new java.lang.ref.WeakReference<>(activity));
