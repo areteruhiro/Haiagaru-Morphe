@@ -133,6 +133,12 @@ public final class HissiMenuActivity extends Activity {
                 finish();
                 return;
             }
+            if ((checkerMode == 1 || (checkerMode == 3
+                    && !getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
+                            .getBoolean(choiceKey(), true))) && openHissiWacchoiSearch()) {
+                finish();
+                return;
+            }
             currentUsesKyodemo = true;
             hissiTarget = null;
             kyodemoTarget = KyodemoRouting.wacchoiSearchUrl(sourceHost, sourceBoard,
@@ -467,6 +473,9 @@ public final class HissiMenuActivity extends Activity {
             alternate.setPadding(20, 12, 20, 12);
             alternate.setOnClickListener(view -> {
                 boolean nextUsesKyodemo = !currentUsesKyodemo;
+                // Hissi has no Kyodemo-style full-SLIP result URL. Use our existing
+                // Hissi daily-index search, preserving the source board and both halves.
+                if (!nextUsesKyodemo && wacchoiSearchLaunch && openHissiWacchoiSearch()) return;
                 String nextTarget = nextUsesKyodemo ? kyodemoTarget : hissiTarget;
                 if (nextTarget == null) {
                     Toast.makeText(this, "この板では選択した検索先を利用できません", Toast.LENGTH_SHORT).show();
@@ -1631,6 +1640,21 @@ public final class HissiMenuActivity extends Activity {
             board.append(path.get(index));
         }
         return board.toString();
+    }
+
+    private boolean openHissiWacchoiSearch() {
+        if (sourceHost == null || !isHissiHost(sourceHost) || sourceBoard == null
+                || !sourceBoard.matches("[A-Za-z0-9_-]+")) return false;
+        java.util.regex.Matcher slip = WacchoiSearch.SLIP.matcher(
+                initialWacchoiQuery == null ? "" : initialWacchoiQuery);
+        if (!slip.find()) return false;
+        startActivity(new Intent(this, HissiWacchoiSearchActivity.class)
+                .putExtra("haiagaru.wacchoi.hissi", true)
+                .putExtra("haiagaru.wacchoi.query", slip.group())
+                .putExtra("haiagaru.wacchoi.board", sourceBoard));
+        getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(choiceKey(), false).apply();
+        return true;
     }
 
     private String choiceKey() {

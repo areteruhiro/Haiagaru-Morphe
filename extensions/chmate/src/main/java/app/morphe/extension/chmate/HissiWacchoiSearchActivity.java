@@ -174,6 +174,18 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         if (query != null && query.matches("[A-Za-z0-9+/]{4}-")) {
             fourInput.setText(query.substring(0,4));edgeMode.setSelection(1);halfGroup.check(halfGroup.getChildAt(0).getId());
         }
+        if (getIntent().getBooleanExtra("haiagaru.wacchoi.hissi", false)) {
+            // A full-SLIP menu search must not inherit a previously used Edge/ZZZ
+            // source, drop either half, or silently change to the Android board.
+            searchSource = 0;
+            if (query != null && WacchoiSearch.SLIP.matcher(query).matches()) fourInput.setText(query);
+            String board = getIntent().getStringExtra("haiagaru.wacchoi.board");
+            if (board != null && board.matches("[A-Za-z0-9_-]+")) {
+                selectedBoards.clear(); selectedBoards.add(board); restoredBoards = true;
+                renderBoardChoices();
+            }
+            restoredDraft = true;
+        }
         Intent fields = state == null ? null : state.getParcelable("haiagaru.searchForm");
         if (fields != null) {
             restoreSearchFields(fields); restoredDraft=true;
