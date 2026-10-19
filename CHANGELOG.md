@@ -1,3 +1,25 @@
+# Haiagaru 1.10.0
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0/docs/release-1.10.0.md)
+
+
+### 🐛 Bug Fixes
+
+* 5chのワッチョイ検索からHissiへの切替を修正 ([809245b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/809245ba5707cde33daedd4fb784fc446dbfe47f))
+* BEログインメニューへの画像投稿項目の混入を防止 ([93f203f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/93f203f2ee7031c1a357f78f96d78cea1e4cf59d))
+* Composeの起動時クラッシュと本体ライブラリとの衝突を修正 ([2f98772](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2f98772a21f9c46601095b11fb64af8282b6fc28))
+* prevent thread resume verifier crashes across supported ChMate versions ([8aeb382](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8aeb382fd4fa9f2a0695f0acbb6a9b3ea680e5e0))
+* ワッチョイ全文検索の検索先切替とUIを改善 ([451d6f4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/451d6f4f1f70f7dfd96fbb0d7791933c7b33e33e))
+* ワッチョイ長押し検索の設定とDAT取得説明の全文表示を追加 ([7a8ade1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7a8ade12dfa22152965fff889c342ebd11a1cb8c))
+* 投稿検索の設定トグルを即時反映 ([73ee9bc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/73ee9bc37880ea8f0a959f617522472975ddd5f8))
+* 設定検索結果からのオンオフと状態反映を改善 ([7515f9b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7515f9bc3547ef5ca05404dedf162e0d743f1a99))
+
+### ✨ New Features
+
+* ComposeとMaterial 3 Expressiveで設定と投稿検索を再構成 ([176b76a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/176b76a0a1b2c52e80c0618dfb035702a20ce447))
+* integrate Compose dialogs, site cards and optional assets ([52c0f2e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/52c0f2e9d54adebdec088fdee4a3ebf703da07cb))
+* release Haiagaru 1.10.0 with verified resume crash fixes ([82209b9](https://github.com/areteruhiro/Haiagaru-Morphe/commit/82209b9720050b21f5bbcd69724cc22775baec8d))
+
 # Haiagaru 1.10.0-dev.3
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.3/docs/release-1.10.0-dev.3.md)
