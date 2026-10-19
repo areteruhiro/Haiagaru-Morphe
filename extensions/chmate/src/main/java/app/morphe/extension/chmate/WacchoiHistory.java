@@ -95,7 +95,7 @@ final class WacchoiHistory {
             Button delete=new Button(a);delete.setText("選択を削除");delete.setEnabled(false);controls.addView(delete);
             Button all=new Button(a);all.setText("履歴を全削除");controls.addView(all);
             selection.setOnCheckedChangeListener((v,on)->{checked.clear();list.clearChoices();adapter.notifyDataSetChanged();delete.setEnabled(false);count.setText("該当 "+visible.size()+" / "+rows.size()+"件");});
-            AlertDialog dialog=new AlertDialog.Builder(a).setTitle("4桁検索履歴・保存結果内検索").setView(panel).setNegativeButton("閉じる",null).create();
+            HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("4桁検索履歴・保存結果内検索").setView(panel).setNegativeButton("閉じる",null).create();
             list.setOnItemClickListener((p,v,i,id)->{JSONObject row=visible.get(i);
                 if(selection.isChecked()){String key=row.optString("id");if(!checked.add(key))checked.remove(key);list.setItemChecked(i,checked.contains(key));delete.setEnabled(!checked.isEmpty());count.setText("選択 "+checked.size()+"件（非表示の選択を含む）");}
                 else {list.clearChoices();dialog.dismiss();selected.open(row);}
@@ -112,9 +112,9 @@ final class WacchoiHistory {
                 });}
             });dialog.show();});
     }catch(Exception e){report(e);}});}
-    private static void confirmDelete(Activity a,AlertDialog list,Selected selected,Set<String> ids,boolean all){
+    private static void confirmDelete(Activity a,HaiagaruDialog list,Selected selected,Set<String> ids,boolean all){
         if(!all&&ids.isEmpty())return;
-        new AlertDialog.Builder(a).setTitle(all?"検索履歴を全削除":"選択した履歴を削除")
+        new HaiagaruDialog.Builder(a).setTitle(all?"検索履歴を全削除":"選択した履歴を削除")
                 .setMessage((all?"検索条件にかかわらず、上／下4桁の全履歴と保存結果を削除します。":ids.size()+"件の履歴と保存結果を削除します。")+"検索用ページキャッシュは残します。削除は元に戻せません。実行中の検索の履歴も再作成されません。")
                 .setNegativeButton("キャンセル",null).setPositiveButton("削除",(d,w)->{
                     IO.execute(()->{int failures=deleteNow(a,ids,all);a.runOnUiThread(()->{

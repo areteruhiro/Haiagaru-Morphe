@@ -114,7 +114,7 @@ public final class PopularReplies {
         boolean dark=darkBackground(a,fragment);
         Context themed=new android.view.ContextThemeWrapper(a,dark?
                 android.R.style.Theme_Material_Dialog_Alert:android.R.style.Theme_Material_Light_Dialog_Alert);
-        AlertDialog loading=new AlertDialog.Builder(themed).setMessage("人気レスを集計しています…")
+        HaiagaruDialog loading=new HaiagaruDialog.Builder(themed).setMessage("人気レスを集計しています…")
                 .setNegativeButton("キャンセル",null).create();
         loading.show();
         WORKER.execute(()->{
@@ -155,7 +155,7 @@ public final class PopularReplies {
         };
         ListView list=new ListView(themed);list.setAdapter(adapter);
         list.setBackgroundColor(dark?0xff171717:android.graphics.Color.WHITE);
-        AlertDialog dialog=new AlertDialog.Builder(themed).setTitle("人気レス（直接返信"+threshold+"件以上・"+matches.size()+"件）")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(themed).setTitle("人気レス（直接返信"+threshold+"件以上・"+matches.size()+"件）")
                 .setView(list).setPositiveButton("閉じる",null)
                 .setNeutralButton("閾値を変更",(d,w)->threshold(a,()->render(a,fragment,entries))).create();
         list.setOnItemClickListener((parent,view,position,id)->{
@@ -184,7 +184,7 @@ public final class PopularReplies {
     private static void threshold(Activity a,Runnable after) {
         EditText input=new EditText(a);input.setInputType(2);
         input.setText(String.valueOf(prefs(a).getInt("popularReplyThreshold",3)));
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("直接返信数の閾値（1〜9999）")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("直接返信数の閾値（1〜9999）")
                 .setView(input).setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
         dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
             try {int n=Integer.parseInt(input.getText().toString());if(n<1||n>9999)throw new NumberFormatException();

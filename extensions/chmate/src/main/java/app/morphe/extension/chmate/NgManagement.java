@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -109,7 +109,7 @@ public final class NgManagement {
                 public void onTextChanged(CharSequence s, int start, int before, int count) { refresh.run(); }
                 public void afterTextChanged(Editable text) {}
             });
-            AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("登録NGの管理")
+            HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("登録NGの管理")
                     .setView(content).setNegativeButton("閉じる", null).create();
             list.setOnItemClickListener((parent, view, position, id) -> {
                 NativeNgStore store = stores.get(categories[category.getSelectedItemPosition()]);
@@ -124,9 +124,9 @@ public final class NgManagement {
 
     private static void editScope(Activity activity, NativeNgStore store, NativeNgStore.Entry entry, Runnable done) {
         NgBoardScopePicker picker = new NgBoardScopePicker(activity, null, entry.board);
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("NGの対象板: " + entry.pattern)
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("NGの対象板: " + entry.pattern)
                 .setView(picker).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        dialog.setOnShowListener(d -> dialog.getButton(HaiagaruDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 String scope = picker.value();
                 if (store.entries().stream().noneMatch(entry::same))
@@ -165,15 +165,15 @@ public final class NgManagement {
         boolean[] selected = new boolean[groups.size()];
         CheckBox remove = new CheckBox(activity);
         remove.setText("統合した元のNGNameを削除する（選択した対象のみ）");
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("統合する下4桁を選択")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("統合する下4桁を選択")
                 .setMultiChoiceItems(labels.toArray(new String[0]), selected, (d, which, checked) -> selected[which] = checked)
                 .setNegativeButton("キャンセル", null).setPositiveButton("適用", null).create();
-        // A custom panel alongside AlertDialog's choice list gives that list
+        // A custom panel alongside HaiagaruDialog's choice list gives that list
         // WRAP_CONTENT/zero weight on some framework themes. Many multi-line
         // rows then push the button bar off-screen. Keep just the native list
         // panel, and scroll the optional deletion checkbox as its footer.
         dialog.getListView().addFooterView(remove, null, false);
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        dialog.setOnShowListener(d -> dialog.getButton(HaiagaruDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 List<Object> after = new ArrayList<>();
                 for (NativeNgStore.Entry entry : snapshot) after.add(entry.nativeItem);

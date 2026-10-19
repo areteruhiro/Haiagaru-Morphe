@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.Context;
@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Displays the Hissi menu destination inside ChMate's task. */
-public final class HissiMenuActivity extends Activity {
+public final class HissiMenuActivity extends HaiagaruComposeActivity {
     private static final String LOG_TAG = "HaiagaruHissi";
     private static final String HISSI_SCHEME = "haiagaru-hissi";
     private static final String HISSI_SECURE_SCHEME = "haiagaru-hissis";
@@ -72,6 +72,7 @@ public final class HissiMenuActivity extends Activity {
     private float historySwipeStartX;
     private float historySwipeStartY;
     private String initialWacchoiQuery;
+    private TextView wacchoiConditionView;
     private String lastArchiveErrorKey;
     private Button kyodemoAnalysisButton;
     private String analysisRecoveryAttempt;
@@ -101,7 +102,7 @@ public final class HissiMenuActivity extends Activity {
                 failure.setText("エッヂ過去ログを開けませんでした（VIEWER_START_FAILED）。\n"
                         + "Download/Haiagaru の診断ログを確認してください。");
                 failure.setPadding(32, 48, 32, 32);
-                setContentView(failure);
+                HaiagaruUi.showModel(this, "投稿検索・結果", failure);
             }
             return;
         }
@@ -130,6 +131,13 @@ public final class HissiMenuActivity extends Activity {
             if (initialWacchoiQuery != null && initialWacchoiQuery.matches("-[^\\s()（）<>]{4}")) {
                 startActivity(new android.content.Intent(this, HissiWacchoiSearchActivity.class)
                         .putExtra("haiagaru.wacchoi.query", initialWacchoiQuery));
+                finish();
+                return;
+            }
+            if (!getIntent().getBooleanExtra("haiagaru.wacchoi.kyodemo", false)
+                    && (checkerMode == 1 || (checkerMode == 3
+                    && !getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
+                            .getBoolean(choiceKey(), true))) && openHissiWacchoiSearch()) {
                 finish();
                 return;
             }
@@ -171,7 +179,7 @@ public final class HissiMenuActivity extends Activity {
             error.setBackgroundColor(theme == 2 ? Color.BLACK
                     : dark ? Color.rgb(30, 30, 32) : Color.WHITE);
             error.setPadding(32, 32, 32, 32);
-            setContentView(error);
+            HaiagaruUi.showModel(this, "投稿検索・結果", error);
             return;
         }
 
@@ -210,6 +218,7 @@ public final class HissiMenuActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(eddiArchiveMode
                 ? "‹   エッヂ過去ログ  ·  ChMateビュー"
+                : wacchoiSearchLaunch ? "‹   ワッチョイ全文検索  ·  Kyodemo"
                 : currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
                         : "‹   必死チェッカー  ·  ChMateビュー");
@@ -223,9 +232,12 @@ public final class HissiMenuActivity extends Activity {
         TextView hint = new TextView(this);
         hint.setText(eddiArchiveMode
                 ? "エッヂの過去ログを検索できます。スレをタップするとChMateで開きます。"
+                : wacchoiSearchLaunch ? "検索条件：" + initialWacchoiQuery + "  ·  " + sourceBoard
+                        + "\nKyodemoの検索結果を表示します。Hissiでは板・日付を指定して全文を照合できます。"
                 : "IDごとの投稿を見やすく整理。リンクはChMateでそのまま開けます。");
         hint.setTextColor(darkViewer ? Color.rgb(190, 190, 198) : Color.rgb(90, 90, 100));
         hint.setTextSize(12);
+        if (wacchoiSearchLaunch) wacchoiConditionView = hint;
         hint.setPadding(24, 0, 24, 8);
         layout.addView(hint, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -411,7 +423,12 @@ public final class HissiMenuActivity extends Activity {
                 // Receive that first navigation in a temporary hidden window.
                 WebView popup = new WebView(HissiMenuActivity.this);
                 popup.setVisibility(View.INVISIBLE);
-                layout.addView(popup, new LinearLayout.LayoutParams(1, 1));
+                boolean[] disposed = {false};
+                Runnable disposePopup = () -> {
+                    if (disposed[0]) return;
+                    disposed[0] = true;
+                    popup.destroy();
+                };
                 popup.setWebViewClient(new WebViewClient() {
                     private boolean dispatched;
 
@@ -419,10 +436,7 @@ public final class HissiMenuActivity extends Activity {
                         if (dispatched) return;
                         dispatched = true;
                         if (!openThreadInChMate(url)) source.loadUrl(url);
-                        popup.post(() -> {
-                            layout.removeView(popup);
-                            popup.destroy();
-                        });
+                        new android.os.Handler(android.os.Looper.getMainLooper()).post(disposePopup);
                     }
 
                     @Override
@@ -445,12 +459,7 @@ public final class HissiMenuActivity extends Activity {
                 WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(popup);
                 resultMsg.sendToTarget();
-                popup.postDelayed(() -> {
-                    if (popup.getParent() != null) {
-                        layout.removeView(popup);
-                        popup.destroy();
-                    }
-                }, 10000);
+                new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(disposePopup, 10000);
                 return true;
             }
         });
@@ -459,7 +468,19 @@ public final class HissiMenuActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 48 * getResources().getDisplayMetrics().densityDpi / 160
         ));
-        if (!eddiArchiveMode && checkerMode == 3) {
+        if (wacchoiSearchLaunch && sourceHost != null && isHissiHost(sourceHost)) {
+            LinearLayout providers = new LinearLayout(this);
+            providers.setPadding(16, 8, 16, 8);
+            Button selected = toolbarButton("✓ Kyodemo");
+            selected.setContentDescription("現在の検索先：Kyodemo");
+            selected.setEnabled(false);
+            providers.addView(selected, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            Button hissi = toolbarButton("Hissiに切替");
+            hissi.setContentDescription("ワッチョイ全文を引き継いでHissiで検索");
+            hissi.setOnClickListener(view -> { if (openHissiWacchoiSearch()) finish(); });
+            providers.addView(hissi, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            layout.addView(providers);
+        } else if (!eddiArchiveMode && checkerMode == 3) {
             TextView alternate = new TextView(this);
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
@@ -467,6 +488,9 @@ public final class HissiMenuActivity extends Activity {
             alternate.setPadding(20, 12, 20, 12);
             alternate.setOnClickListener(view -> {
                 boolean nextUsesKyodemo = !currentUsesKyodemo;
+                // Hissi has no Kyodemo-style full-SLIP result URL. Use our existing
+                // Hissi daily-index search, preserving the source board and both halves.
+                if (!nextUsesKyodemo && wacchoiSearchLaunch && openHissiWacchoiSearch()) return;
                 String nextTarget = nextUsesKyodemo ? kyodemoTarget : hissiTarget;
                 if (nextTarget == null) {
                     Toast.makeText(this, "この板では選択した検索先を利用できません", Toast.LENGTH_SHORT).show();
@@ -498,7 +522,7 @@ public final class HissiMenuActivity extends Activity {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     48 * getResources().getDisplayMetrics().densityDpi / 160));
         }
-        setContentView(layout);
+        HaiagaruUi.showModel(this, "投稿検索・結果", layout);
         if (!fullscreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             layout.requestApplyInsets();
         }
@@ -522,7 +546,7 @@ public final class HissiMenuActivity extends Activity {
     private void showAnalysisFailure(String url) {
         if (isFinishing() || url.equals(lastAnalysisFailureUrl)) return;
         lastAnalysisFailureUrl = url;
-        new AlertDialog.Builder(this).setTitle("AI解析")
+        new HaiagaruDialog.Builder(this).setTitle("AI解析")
                 .setMessage("しばらくしてもう一度お試しください")
                 .setPositiveButton("OK", null).show();
     }
@@ -695,7 +719,7 @@ public final class HissiMenuActivity extends Activity {
             finish();
         });
         content.addView(search);
-        setContentView(content);
+        HaiagaruUi.showModel(this, "投稿検索・結果", content);
     }
 
     private void showKyodemoSearch(WebView webView, String initialValue) {
@@ -715,12 +739,17 @@ public final class HissiMenuActivity extends Activity {
         }
         int padding = (int) (20 * getResources().getDisplayMetrics().density);
         input.setPadding(padding, input.getPaddingTop(), padding, input.getPaddingBottom());
-        new AlertDialog.Builder(this)
+        new HaiagaruDialog.Builder(this)
                 .setTitle("KyodemoでID/ﾜｯﾁｮｲを検索")
                 .setView(input)
                 .setNegativeButton("キャンセル", null)
                 .setPositiveButton("検索", (dialog, which) -> {
                     String query = input.getText().toString().trim();
+                    if (getIntent().getBooleanExtra("haiagaru.wacchoi.search", false)
+                            && !WacchoiSearch.SLIP.matcher(query).find()) {
+                        Toast.makeText(this, "ワッチョイ全文を入力してください", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (query.matches("-[^\\s()（）<>]{4}")) {
                         Toast.makeText(this, "Kyodemoは下4桁だけの検索には対応していません。IDまたは完全なﾜｯﾁｮｲを入力してください", Toast.LENGTH_LONG).show();
                         return;
@@ -732,6 +761,7 @@ public final class HissiMenuActivity extends Activity {
                         return;
                     }
                     currentUsesKyodemo = true;
+                    updateWacchoiQuery(query);
                     webView.loadUrl(url);
                 }).show();
     }
@@ -750,14 +780,14 @@ public final class HissiMenuActivity extends Activity {
             if (!java.util.Objects.equals(pageUrl, webView.getUrl()) || isFinishing()) return;
             String executionUrl = decodeJavascriptString(result);
             if (KyodemoRouting.analysisResultUrl(executionUrl) == null) {
-                new AlertDialog.Builder(this).setTitle("分析リクエスト")
+                new HaiagaruDialog.Builder(this).setTitle("分析リクエスト")
                         .setMessage("この検索結果にはKyodemoの分析リクエスト用リンクがありません。"
                                 + "分析済みの場合は「分析」で結果を表示できます。"
                                 + "未分析の場合は、サイト側の対象条件や利用制限によって実行できないことがあります。")
                         .setPositiveButton("OK", null).show();
                 return;
             }
-            new AlertDialog.Builder(this).setTitle("分析リクエスト")
+            new HaiagaruDialog.Builder(this).setTitle("分析リクエスト")
                     .setMessage("表示中のID・ﾜｯﾁｮｲについて、Kyodemoへ分析をリクエストします。"
                             + "完了後に結果を再取得します。サイトの混雑や利用制限で失敗する場合があります。")
                     .setNegativeButton("キャンセル", null)
@@ -889,7 +919,7 @@ public final class HissiMenuActivity extends Activity {
                 } catch (RuntimeException ignored) { }
             }
         }
-        new DatePickerDialog(this, (picker, year, month, day) -> {
+        HaiagaruDates.show(this, initial, (year, month, day) -> {
             String date = String.format(java.util.Locale.ROOT, "%04d%02d%02d",
                     year, month + 1, day);
             String nextUrl = checkerUrlForDate(date);
@@ -898,7 +928,7 @@ public final class HissiMenuActivity extends Activity {
                 return;
             }
             webView.loadUrl(nextUrl);
-        }, initial.get(Calendar.YEAR), initial.get(Calendar.MONTH), initial.get(Calendar.DAY_OF_MONTH)).show();
+        });
     }
 
     private String checkerUrlForDate(String date) {
@@ -1067,7 +1097,7 @@ public final class HissiMenuActivity extends Activity {
         labels.add("選択");
         final String selectableText = full;
         final String postUrl = url;
-        AlertDialog postCopyDialog = new AlertDialog.Builder(this)
+        HaiagaruDialog postCopyDialog = new HaiagaruDialog.Builder(this)
                 .setTitle("レスをコピー")
                 .setItems(labels.toArray(new String[0]), (dialog, which) -> {
                     if (which < copyCount) {
@@ -1080,6 +1110,7 @@ public final class HissiMenuActivity extends Activity {
                                         sourceHost, sourceBoard, wacchoi);
                                 if (searchUrl != null) {
                                     currentUsesKyodemo = true;
+                                    updateWacchoiQuery(wacchoi);
                                     viewerWebView.loadUrl(searchUrl);
                                 } else {
                                     Toast.makeText(this, "ﾜｯﾁｮｲと板を確認してください",
@@ -1134,7 +1165,7 @@ public final class HissiMenuActivity extends Activity {
         preview.setTextIsSelectable(true);
         int padding = (int) (20 * getResources().getDisplayMetrics().density);
         preview.setPadding(padding, padding / 2, padding, padding / 2);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(this)
                 .setTitle("文字を選択")
                 .setView(preview)
                 .setNegativeButton("閉じる", null)
@@ -1631,6 +1662,31 @@ public final class HissiMenuActivity extends Activity {
             board.append(path.get(index));
         }
         return board.toString();
+    }
+
+    private void updateWacchoiQuery(String query) {
+        initialWacchoiQuery = query;
+        getIntent().putExtra("haiagaru.wacchoi.query", query);
+        if (wacchoiConditionView != null) wacchoiConditionView.setText("検索条件：" + query
+                + "  ·  " + sourceBoard + "\nKyodemoの検索結果を表示します。Hissiでは板・日付を指定して全文を照合できます。");
+    }
+
+    private boolean openHissiWacchoiSearch() {
+        if (sourceHost == null || !isHissiHost(sourceHost) || sourceBoard == null
+                || !sourceBoard.matches("[A-Za-z0-9_-]+")) return false;
+        java.util.regex.Matcher slip = WacchoiSearch.SLIP.matcher(
+                initialWacchoiQuery == null ? "" : initialWacchoiQuery);
+        if (!slip.find()) return false;
+        startActivity(new Intent(this, HissiWacchoiSearchActivity.class)
+                .putExtra("haiagaru.wacchoi.hissi", true)
+                .putExtra("haiagaru.wacchoi.query", slip.group())
+                .putExtra("haiagaru.wacchoi.original", initialWacchoiQuery)
+                .putExtra("haiagaru.wacchoi.host", sourceHost)
+                .putExtra("haiagaru.wacchoi.form", (Intent) getIntent().getParcelableExtra("haiagaru.wacchoi.form"))
+                .putExtra("haiagaru.wacchoi.board", sourceBoard));
+        getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
+                .edit().putBoolean(choiceKey(), false).apply();
+        return true;
     }
 
     private String choiceKey() {

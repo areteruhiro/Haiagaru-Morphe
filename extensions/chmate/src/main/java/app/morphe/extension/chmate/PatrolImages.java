@@ -2,7 +2,7 @@ package app.morphe.extension.chmate;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -273,7 +273,7 @@ public final class PatrolImages {
                 + "通信量・保存容量が増えます。失敗・時間切れは次に本文を取得する巡回で再試行します。\n" + status);
         body.addView(note);
         ScrollView scroll = new ScrollView(activity); scroll.addView(body);
-        new AlertDialog.Builder(activity).setTitle("巡回時の画像自動保存").setView(scroll)
+        new HaiagaruDialog.Builder(activity).setTitle("巡回時の画像自動保存").setView(scroll)
                 .setNegativeButton("キャンセル", null).setPositiveButton("保存", (d, which) -> {
                     p.edit().putBoolean("patrolImagesEnabled", enabled.isChecked())
                             .putBoolean("patrolImageFilterEnabled", filter.isChecked())

@@ -113,7 +113,8 @@ public final class XPostPreviewTouch {
                 || event.getPointerCount()!=1)press.moved=true;
         if(action==MotionEvent.ACTION_UP || action==MotionEvent.ACTION_CANCEL) {
             PRESSES.remove(view);
-            if(action==MotionEvent.ACTION_UP && !press.moved && Haiagaru.xPostPreviewEnabled()
+            if(action==MotionEvent.ACTION_UP && !press.moved
+                    && (press.link instanceof SiteCards.SiteLink ? Haiagaru.siteCardsEnabled() : Haiagaru.xPostPreviewEnabled())
                     && event.getEventTime()-event.getDownTime()<ViewConfiguration.getLongPressTimeout()
                     && hit(view,event)==press.link)press.link.onClick(view);
         }
@@ -130,7 +131,9 @@ public final class XPostPreviewTouch {
         int offset=layout.getOffsetForHorizontal(line,x);
         Spanned spans=(Spanned)text;
         for(PostLink link:spans.getSpans(offset,offset,PostLink.class))
-            if(offset>=spans.getSpanStart(link)&&offset<spans.getSpanEnd(link))return link;
+            if(offset>=spans.getSpanStart(link)&&(offset<spans.getSpanEnd(link)
+                    ||link instanceof SiteCards.SiteLink&&offset==spans.getSpanEnd(link)
+                    &&line==layout.getLineForOffset(spans.getSpanStart(link))))return link;
         return null;
     }
 }

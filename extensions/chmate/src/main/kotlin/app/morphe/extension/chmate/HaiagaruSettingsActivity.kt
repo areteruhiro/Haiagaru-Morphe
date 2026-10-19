@@ -1,0 +1,202 @@
+package app.morphe.extension.chmate
+
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.view.MotionEvent
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
+    private var revision by mutableIntStateOf(0)
+    private val preferences = mutableListOf<SharedPreferences>()
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> revision++ }
+    private var gestures: HaiagaruSettingsGestures? = null
+    private var top: () -> Unit = {}
+    private var bottom: () -> Unit = {}
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        listOf(WacchoiSearchOptions.PREFS, "haiagaru_response_actions", ToolbarIcons.PREFS).forEach {
+            preferences.add(getSharedPreferences(it, 0))
+        }
+        preferences.add(android.preference.PreferenceManager.getDefaultSharedPreferences(this))
+        preferences.forEach { it.registerOnSharedPreferenceChangeListener(listener) }
+        setContent { HaiagaruUi.Theme { SettingsScreen() } }
+        gestures = HaiagaruSettingsGestures(this, window.decorView,
+            { onBackPressedDispatcher.onBackPressed() }, { top() }, { bottom() }).also { it.setCloseAction { finish() } }
+    }
+
+    override fun onResume() { super.onResume(); revision++ }
+    override fun onDestroy() {
+        gestures?.close()
+        preferences.forEach { it.unregisterOnSharedPreferenceChangeListener(listener) }
+        Haiagaru.settingsClosed()
+        super.onDestroy()
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        val router = gestures
+        if (router != null) {
+            val intercepted = router.isIntercepted
+            if (router.dispatch(event)) {
+                if (!intercepted && router.isIntercepted) MotionEvent.obtain(event).also {
+                    it.action = MotionEvent.ACTION_CANCEL; super.dispatchTouchEvent(it); it.recycle()
+                }
+                return true
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun SettingsScreen() {
+        var selected by rememberSaveable { mutableIntStateOf(-1) }
+        var query by rememberSaveable { mutableStateOf("") }
+        val english = SettingsLanguage.text(getSharedPreferences(WacchoiSearchOptions.PREFS, 0)
+            .getString("settingsLanguage", "ja"), java.util.Locale.getDefault(), "ja", "en") == "en"
+        val groups = remember { settingsGroups() }
+        val bodies = remember { mutableMapOf<String, android.widget.LinearLayout>() }
+        fun body(key: String) = bodies.getOrPut(key) { Haiagaru.settingsCategory(this, key).also(::prepareSettingsBindings) }
+        var matches by remember { mutableStateOf<List<Pair<SettingsGroup, BoundSetting>>>(emptyList()) }
+        var searching by remember { mutableStateOf(false) }
+        var indexedQuery by remember { mutableStateOf("") }
+        val list = rememberLazyListState()
+        val scope = rememberCoroutineScope()
+        val invalidation = revision
+        // Snapshot native toggle values on every preference refresh, even while the
+        // asynchronous search index is being rebuilt. Keep the same controls/listeners.
+        val visibleMatches = matches.map { (group, option) -> group to option.refreshed() }
+        val update: () -> Unit = { revision++ }
+        val back = { if (selected >= 0) selected = -1 else if (query.isNotEmpty()) query = "" else finish() }
+        BackHandler { back() }
+        SideEffect {
+            top = { scope.launch { list.animateScrollToItem(0) }; Unit }
+            bottom = { scope.launch { list.animateScrollToItem((list.layoutInfo.totalItemsCount - 1).coerceAtLeast(0)) }; Unit }
+        }
+        LaunchedEffect(selected) { list.scrollToItem(0) }
+        LaunchedEffect(query, invalidation) {
+            if (query.isBlank()) { matches = emptyList(); searching = false; return@LaunchedEffect }
+            if (query != indexedQuery) { searching = true; delay(200) }
+            val found = mutableListOf<Pair<SettingsGroup, BoundSetting>>()
+            for (group in groups) {
+                group.sources.forEach { source -> settingsRows(body(source)).forEach {
+                    val control = it.control
+                    val actionable = control is android.widget.CompoundButton ||
+                        control is android.widget.Button || control is android.widget.EditText ||
+                        control is android.widget.Spinner || control.hasOnClickListeners()
+                    if (actionable && SettingsSections.matches(it.keywords + " " + group.ja + " " + group.en, query)) found.add(group to it)
+                } }
+                withFrameNanos { }
+            }
+            matches = found; indexedQuery = query; searching = false
+        }
+        Scaffold(topBar = {
+            if (selected < 0 && query.isBlank()) LargeTopAppBar(title = { Text("Haiagaru") },
+                navigationIcon = { IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, if (english) "Back" else "戻る") } })
+            else TopAppBar(title = { Text(if (selected < 0) (if (english) "Find a setting" else "設定を検索") else groups[selected].title(english),
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                navigationIcon = { IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, if (english) "Back" else "戻る") } })
+        }) { insets ->
+            LazyColumn(state = list, modifier = Modifier.fillMaxSize().padding(insets).imePadding(),
+                contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (selected < 0) {
+                    item { OutlinedTextField(query, { query = it }, label = { Text(if (english) "Find a setting" else "設定を検索") },
+                        leadingIcon = { Icon(Icons.Filled.Search, null) }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)) }
+                    if (query.isBlank()) {
+                        item { Text(if (english) "Saved automatically. Choose what you want to change." else "変更は自動で保存されます。変えたいことから選べます。",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp)) }
+                        items(groups, key = { it.id }) { group ->
+                            HaiagaruUi.Group {
+                                ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium) },
+                                    supportingContent = { Text(if (english) group.enSummary else group.summary) },
+                                    leadingContent = { Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+                                        Text(group.mark, Modifier.padding(14.dp), style = MaterialTheme.typography.titleMedium) } },
+                                    trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
+                                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                                    modifier = Modifier.clickable { selected = groups.indexOf(group) })
+                            }
+                        }
+                        item { Text(if (english) "Toolbar buttons: change visibility in ChMate's toolbar editor. Search options are on the search screen."
+                            else "ツールバーの表示はChMateのツールバー設定で。検索のオン／オフや履歴保存は検索画面で変更できます。",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(8.dp)) }
+                    } else {
+                        item { Text(if (searching) (if (english) "Searching…" else "検索中…") else if (matches.isEmpty())
+                            (if (english) "No settings found. Try a shorter word." else "見つかりませんでした。短い言葉で探してみてください。")
+                            else if (english) "${matches.size} settings" else "${matches.size}件の設定") }
+                        if (matches.isNotEmpty()) item {
+                            Text(if (english) "Change settings here. Changes are saved automatically."
+                                else "検索結果のスイッチでオン／オフできます。変更は自動で保存されます。",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        items(visibleMatches, key = { (group, option) -> "${group.id}:${System.identityHashCode(option.control)}" }) {
+                            (group, option) -> HaiagaruUi.Group(group.title(english)) { BoundSettingRow(option, update) }
+                        }
+                    }
+                } else {
+                    val group = groups[selected]
+                    item { Text(if (english) group.enSummary else group.summary, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp)) }
+                    group.sources.forEach { source ->
+                        val rows = settingsRows(body(source))
+                        if (group.sources.size > 1) item("heading:$source") {
+                            Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
+                        }
+                        items(rows, key = { "${source}:${System.identityHashCode(it.control)}" }) { option ->
+                            HaiagaruUi.Group { BoundSettingRow(option, update) }
+                        }
+                    }
+                }
+                item { Spacer(Modifier.height(12.dp)) }
+            }
+        }
+    }
+}
+
+private fun sectionTitle(source: String, english: Boolean) = (when (source) {
+    "DISPLAY" -> "画面と操作" to "Display and controls"
+    "SOCIAL" -> "リンクカード・Xのプレビュー" to "Link cards and X previews"
+    "POSTING" -> "入力と送信" to "Editor and sending"
+    "UPLOAD" -> "画像・動画の投稿" to "Media uploads"
+    "CHECKER" -> "IDチェッカー" to "ID checker"
+    "ARCHIVE" -> "過去ログと保存レス" to "Old threads and saved posts"
+    "GENERAL" -> "基本設定" to "Basics"
+    else -> "通信・外部板" to "Network and external boards"
+}).let { if (english) it.second else it.first }
+
+private data class SettingsGroup(val id: String, val ja: String, val en: String, val summary: String,
+    val enSummary: String, val mark: String, val sources: List<String>) {
+    fun title(english: Boolean) = if (english) en else ja
+}
+
+private fun settingsGroups() = listOf(
+    SettingsGroup("reading", "スレを読む", "Reading", "画面・文字・コピー・リンクカード", "Layout, text, copying and link cards", "Aa", listOf("DISPLAY", "SOCIAL")),
+    SettingsGroup("search", "探す・過去ログ", "Find posts and old threads", "IDチェッカー・DAT取得・保存したレス", "ID checker, DAT retrieval and saved posts", "↗", listOf("CHECKER", "ARCHIVE")),
+    SettingsGroup("posting", "書き込む", "Posting", "入力・送信・画像や動画のアップロード", "Editor, sending and media uploads", "✎", listOf("POSTING", "UPLOAD")),
+    SettingsGroup("media", "画像・動画", "Images and video", "再生・サムネイル・保存・キャッシュ", "Playback, thumbnails, downloads and cache", "▷", listOf("MEDIA")),
+    SettingsGroup("ng", "NG・ミュート", "NG and muting", "見たくない投稿・ID・名前を隠す", "Hide unwanted posts, IDs and names", "−", listOf("NG")),
+    SettingsGroup("history", "履歴・コピーした文章", "History and copied text", "閲覧・書き込みの履歴と保存件数", "Browsing, posting and retention", "↶", listOf("HISTORY")),
+    SettingsGroup("backup", "バックアップ・機種変更", "Backup and transfer", "ローカル保存・復元・MEGA同期・データ移行", "Local backups, restore, MEGA sync and transfer", "↓", listOf("BACKUP")),
+    SettingsGroup("system", "アプリ・通信", "App and network", "言語・広告・接続・外部板の認証", "Language, ads, connections and board sign-in", "⚙", listOf("GENERAL", "ADVANCED")),
+)

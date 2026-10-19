@@ -1,7 +1,7 @@
 package app.morphe.patches.chmate
 
 import app.morphe.patcher.patch.resourcePatch
-import java.security.MessageDigest
+import app.morphe.patcher.patch.filePathOption
 import org.w3c.dom.Element
 
 private object ImageVpnResources
@@ -10,11 +10,16 @@ private object ImageVpnResources
 @Suppress("unused")
 val imageVpnResourcesPatch = resourcePatch(
     name = "画像取得専用VPN（実験用・検証中）",
-    description = "ChMate単体のVPN Gate画像取得機能を追加します。初期状態は未選択。導入後もHaiagaru設定で有効化が必要です。対象の画像のみVPN経由で取得します。対象画像の表示・全経路の通信漏れ検証は未完了です。VPN運営者に接続元IPが見えることや、固有URLによる識別は防げません。",
+    description = "必要な方だけ選択してください。GitHubからimage-stack.aarを保存: $OPTIONAL_ASSET_VPN_URL → 下のオプションで選択 → パッチ適用後にHaiagaru設定でVPNを有効化。AARは展開不要です。全経路の検証は未完了です。導入・ソース: $OPTIONAL_ASSET_GUIDE",
     default = false,
 ) {
     compatibleWith(chMateCompatibility)
     dependsOn(imageVpnTransportPatch)
+    val libraryFile = filePathOption(
+        key = "imageVpnLibraryFile", default = "", title = "ダウンロードしたVPNライブラリを選択",
+        description = "GitHubからimage-stack.aarを保存して選択: $OPTIONAL_ASSET_VPN_URL AARは展開不要。$OPTIONAL_ASSET_GUIDE",
+        allowedExtensions = listOf("aar"),
+    )
     execute {
         val hashes = mapOf(
             "arm64-v8a" to "b58e5a0c803178e014641e835aea76e0674eac14e48d88e6b5a91fd9577ee450",
@@ -22,14 +27,9 @@ val imageVpnResourcesPatch = resourcePatch(
             "x86" to "41cdbaac181c549d7785fc56c5d8db0ebce23470a68268c222cc8f1518440adb",
             "x86_64" to "8d1452d71b0140d93bda2e27532df1bea788be044f909a17024d6a0db2b2380f",
         )
-        hashes.forEach { (abi, expected) ->
-            val path = "/chmate/image-vpn/jni/$abi/libgojni.so"
-            val bytes = requireNotNull(ImageVpnResources::class.java.getResourceAsStream(path)) {
-                "Missing image VPN native library: $abi"
-            }.use { it.readBytes() }
-            val hash = MessageDigest.getInstance("SHA-256").digest(bytes)
-                .joinToString("") { "%02x".format(it) }
-            check(hash == expected) { "Image VPN native library checksum mismatch: $abi" }
+        check(libraryFile.value.orEmpty().isNotBlank()) { "VPNライブラリを選択するか、この任意パッチのチェックを外してください。$OPTIONAL_ASSET_GUIDE" }
+        val libraries = optionalLibraries(libraryFile.value.orEmpty(), hashes, "libgojni.so")
+        libraries.forEach { (abi, bytes) ->
             get("lib").resolve("$abi/libgojni.so").apply {
                 check(!exists()) { "Image VPN JNI library collides with the input APK: $abi" }
                 parentFile.mkdirs()

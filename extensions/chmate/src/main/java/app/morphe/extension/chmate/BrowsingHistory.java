@@ -80,32 +80,57 @@ public final class BrowsingHistory {
     }
     /** Run only after the exact legacy home-sort method has completed. */
     public static void applyLegacy(Object fragment, int mode) {
-        if (fragment == null || !HiddenDroppedThreads.target(mode)) return;
+        if (fragment == null) return;
+        prepareLegacy(fragment, mode);
+        try {
+            boolean legacy191 = fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk");
+            Object adapter = field(fragment, legacy191 ? "e" : "i").get(fragment);
+            if (!(adapter instanceof BaseAdapter)) return;
+            filterLegacyAdapter(adapter, mode, true);
+            ((BaseAdapter) adapter).notifyDataSetChanged();
+        } catch (Exception error) {
+            Log.w("Haiagaru", "Normal history adapter left unchanged", error);
+        }
+    }
+    /** Set scope before native sorting/notifying, including leaving the target tabs. */
+    public static void prepareLegacy(Object fragment, int mode) {
+        if (fragment == null) return;
         synchronized(legacyFragments){
             legacyFragments.removeIf(e->e.fragment.get()==null||e.fragment.get()==fragment);
             if(legacyFragments.size()>=16)legacyFragments.remove(0);
             legacyFragments.add(new Legacy(fragment,mode));
         }
-        try {
-            boolean legacy191 = fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk");
-            Object adapter = field(fragment, legacy191 ? "e" : "i").get(fragment);
-            if (!(adapter instanceof BaseAdapter)) return;
-            // g/d is the displayed copy; i/g is the native filter source, not the all-history DB model.
-            String[] fields = legacy191 ? new String[]{"i", "g"} : new String[]{"g", "d"};
+    }
+    private static void filterLegacyAdapter(Object adapter,int mode,boolean group) throws Exception {
+            boolean legacy191 = adapter.getClass().getName().equals("o.r8lambdaXZREaGE4vvLAA2ZOtsKBd3knAPA");
+            // 191 getItem/getCount read j. Native b() and Filter.publishResults replace j later.
+            String[] fields = legacy191 ? new String[]{"g", "i", "j"} : new String[]{"g", "d"};
             Object[] replacements = new Object[fields.length];
             for (int i = 0; i < fields.length; i++) {
                 Object original = field(adapter, fields[i]).get(adapter);
                 if (!(original instanceof List)) return;
                 List<?> source=HiddenDroppedThreads.source(original,(List<?>)original);
-                List<?> ordered = transformValues(source, mode);
+                // Notification must preserve the native search result/order. The full sort
+                // path restores from its source; the final boundary only removes dropped rows.
+                List<?> ordered = group ? transformValues(source, mode)
+                        : HiddenDroppedThreads.active(mode) && HiddenDroppedThreads.target(mode)
+                                ? HiddenDroppedThreads.filter((List<?>)original, mode) : source;
                 if(ordered==original){replacements[i]=original;continue;}
                 replacements[i] = original.getClass().getConstructor(List.class).newInstance(ordered);
                 HiddenDroppedThreads.remember(replacements[i],source);
             }
             for (int i = 0; i < fields.length; i++) field(adapter, fields[i]).set(adapter, replacements[i]);
-            ((BaseAdapter) adapter).notifyDataSetChanged();
-        } catch (Exception error) {
-            Log.w("Haiagaru", "Normal history adapter left unchanged", error);
+    }
+    /** Runs at the final adapter notification boundary; never notifies recursively. */
+    public static void beforeLegacyNotify(Object adapter) {
+        List<Legacy> tracked; synchronized(legacyFragments){tracked=new ArrayList<>(legacyFragments);}
+        for(Legacy entry:tracked){
+            Object fragment=entry.fragment.get();if(fragment==null)continue;
+            try {
+                boolean v191=fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk");
+                if(field(fragment,v191?"e":"i").get(fragment)!=adapter)continue;
+                filterLegacyAdapter(adapter,entry.mode,false);return;
+            }catch(Exception error){Log.w("Haiagaru","HOME notification filter unavailable",error);}
         }
     }
     /** Reapply HOME copies when settings or asynchronously confirmed status change. */

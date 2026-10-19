@@ -10,7 +10,7 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.9.2](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ プレ版の取得先も同じ [1.9.2](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.9.2)
+最新正式版: [1.10.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ [変更内容・更新手順・確認範囲](docs/release-1.10.0.md)
 
 更新前にバックアップしてください。**[正式版1.7.1からの変更](docs/release-1.9.0-from-1.7.1.md)** ／ **[プレ版1.8.15からの差分・操作案内](docs/release-1.9.0.md)**。versionCode最大化が初期有効です。
 
@@ -25,6 +25,10 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 導入時の問題は[インストールできない場合](#インストールできない場合)、不具合の報告・相談は[サポート](#サポート)をご覧ください。
 
 ## 最新版の案内
+
+**1.10.0:** [スレ表示時のクラッシュ修正と更新案内](docs/release-1.10.0.md)。191／226／242のタブ復帰時の再読込抑制を修正。設定・ダイアログのCompose化、リンクカード、任意資材の分離、[NGWordから投稿者の別レスと返信へ連鎖する設定例](docs/ngword-poster-chain-example.md)を含みます。
+
+**1.9.3:** [修正内容・操作案内・確認範囲](docs/release-1.9.3.md)。コピペ省略2の設定変更後の反映、追加ツールバーアイコンの表示チェック、ローカルバックアップの保存先表示・復元項目を修正。
 
 **1.9.2:** [DAT落ちスレを非表示の修正・操作案内](docs/release-1.9.2.md)。フラグ未更新時の公式過去ログ確認、HOME一覧への反映、オフ時の表示復元を改善。
 
@@ -64,7 +68,7 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 * エッヂ過去ログビューアーで開けない場合はエラーコードを表示し、`Download/Haiagaru` に診断ログを保存
 * ChMate `0.8.10.191 dev`／`0.8.10.226 dev` のChMate+互換設定
   * 単発ID表示を省略
-  * コピペ省略2　<191でコピペ省略が機能していないとの報告があります>
+  * [コピペ省略2](docs/chmate-plus-compat.md)（変更後に再起動して反映。標準の判定条件を使用）
   * 荒らし省略
 * エッヂ板でスレタイ末尾に記者IDを表示（初期値ON、Haiagaru設定から切り替え）
 * 端末内JavaScriptで複雑なNG条件を作れる「高度なNGルール」

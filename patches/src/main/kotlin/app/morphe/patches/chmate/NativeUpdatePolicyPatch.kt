@@ -9,16 +9,81 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.Opcode
 
 private const val POLICY = "Lapp/morphe/extension/chmate/NativeUpdatePolicy;"
 private const val CALLBACK191 = "Lo/r8lambdamHWy7omJVz7G9M7u2KSo5IaRp90;"
 
 internal fun BytecodePatchContext.patchNativeUpdatePolicy(version: String) {
-    if (version != "0.8.10.191 dev") return
+    if (version !in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.242 dev")) return
+
+    // Track activity resumes independently from Fragment resumes. A tablet pane switch
+    // resumes its thread Fragment while TabletHomeActivity itself stays resumed.
+    val tabletHome = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/TabletHomeActivity;")
+    val tabletResume = tabletHome.methods.single {
+        it.name == "onResume" && it.parameterTypes.isEmpty()
+    }
+    tabletResume.addInstruction(0,
+        "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NativeUpdatePolicy;->tabletActivityResume(Ljava/lang/Object;)V")
+
+    // Guard only the automatic resume refresh in the thread Fragment. Explicit refresh
+    // actions and first view creation use separate call sites.
+    val legacy191 = version == "0.8.10.191 dev"
+    val threadFragment = mutableClassDefBy(if (legacy191) "Lo/pa;"
+        else "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
+    val threadResume = threadFragment.methods.single {
+        it.name == "onResume" && it.parameterTypes.isEmpty()
+    }
+    val resumeInstructions = threadResume.implementation!!.instructions.toList()
+    val reloadOwner = if (legacy191) "Lo/r8lambdahIGIGCNpKpFqE0lgDli724UCuDM;"
+        else "Ljp/syoboi/a2chMate/fragment/RoidonListFragment;"
+    val reloadName = if (version == "0.8.10.226 dev") "d" else "e"
+    val reloadSites = resumeInstructions.withIndex().filter { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        instruction.opcode in setOf(Opcode.INVOKE_VIRTUAL, Opcode.INVOKE_DIRECT)
+                && run {
+                    ref?.definingClass == reloadOwner
+                            && ref.name == reloadName
+                            && ref.parameterTypes == listOf("I", "Ljava/lang/Object;")
+                            && ref.returnType == "Z"
+                }
+    }
+    check(reloadSites.size == 1) { "$version thread onResume reload site changed: ${reloadSites.size}" }
+    val (reloadIndex, reloadInstruction) = reloadSites.single()
+    val reload = (reloadInstruction as ReferenceInstruction).reference as MethodReference
+    val call = reloadInstruction as FiveRegisterInstruction
+    check(call.registerCount == 3) { "$version resume reload argument layout changed" }
+    // Caller locals may be live across this call. Put the guard in
+    // a separate method so every caller register, branch and result stays native.
+    val wrapper = MutableMethod(ImmutableMethod(threadFragment.type, "haiagaruResumeReload",
+        (listOf(threadFragment.type) + reload.parameterTypes.map(CharSequence::toString)).map {
+            ImmutableMethodParameter(it, emptySet(), null)
+        }, reload.returnType, 0x1009, emptySet(), emptySet(),
+        ImmutableMethodImplementation(4, emptyList(), emptyList(), emptyList())))
+    val nativeInvoke = if (reloadInstruction.opcode == Opcode.INVOKE_DIRECT) "invoke-direct/range" else "invoke-virtual/range"
+    val result = if (reload.returnType == "V") "return-void" else "move-result v0\nreturn v0"
+    val skipped = if (reload.returnType == "V") "return-void" else "const/4 v0, 0x0\nreturn v0"
+    wrapper.addInstructions(0, """
+        invoke-static/range {p0 .. p0}, $POLICY->shouldSkipTabletResumeReload(Ljava/lang/Object;)Z
+        move-result v0
+        if-nez v0, :skip
+        $nativeInvoke {p0 .. p2}, $reload
+        $result
+        :skip
+        $skipped
+    """.trimIndent())
+    threadFragment.methods.add(wrapper)
+    threadResume.replaceInstruction(reloadIndex,
+        "invoke-static {v${call.registerC}, v${call.registerD}, v${call.registerE}}, $wrapper")
+
+    // The rest of this patch is specific to the 191 transport implementation.
+    if (!legacy191) return
+
     val bridge = mutableClassDefBy(POLICY)
     fun newBridge(name: String, registers: Int): MutableMethod {
         val old = bridge.methods.single { it.name == name }

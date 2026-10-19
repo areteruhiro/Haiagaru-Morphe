@@ -18,7 +18,7 @@
           },
           {
             "type": "feat",
-            "release": false
+            "release": "minor"
           },
           {
             "type": "bump",
@@ -69,7 +69,7 @@
           ]
         },
         "writerOpts": {
-          "headerPartial": "# Haiagaru {{version}}\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-{{version}}.md)\n\n"
+          "headerPartial": "# Haiagaru {{version}}\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/{{version}}/docs/release-{{version}}.md)\n\n"
         }
       }
     ],
@@ -119,6 +119,10 @@
           },
           {
             "path": "patches-bundle-pre.json"
+          },
+          {
+            "path": "optional-assets/haiagaru-image-ng.zip",
+            "label": "任意導入: 191画像判定の修正ライブラリ（展開不要）"
           }
         ],
         "successComment": false

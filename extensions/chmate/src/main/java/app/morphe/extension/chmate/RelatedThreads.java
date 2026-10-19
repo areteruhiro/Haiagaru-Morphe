@@ -67,7 +67,7 @@ public final class RelatedThreads {
             a.runOnUiThread(()->{
                 if(!attached(fragment,a)||!a.getSharedPreferences(PREFS,0).getBoolean(KEY,false)){OPEN.remove(fragment);return;}
                 String[] labels=new String[rows.size()];for(int i=0;i<labels.length;i++)labels[i]=Html.fromHtml(rows.get(i).title).toString();
-                AlertDialog.Builder dialog=new AlertDialog.Builder(a).setTitle(missing?"関連・次スレ候補":"次スレ検索・関連候補")
+                HaiagaruDialog.Builder dialog=new HaiagaruDialog.Builder(a).setTitle(missing?"関連・次スレ候補":"次スレ検索・関連候補")
                         .setNegativeButton("標準の検索結果に戻る",(d,w)->{});
                 if(rows.isEmpty())dialog.setMessage("関連候補は見つかりませんでした。標準の検索結果も確認できます。");
                 else dialog.setItems(labels,(d,index)->{

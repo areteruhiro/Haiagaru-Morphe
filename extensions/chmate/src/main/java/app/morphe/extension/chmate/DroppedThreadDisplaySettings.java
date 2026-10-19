@@ -13,8 +13,22 @@ final class DroppedThreadDisplaySettings {
     static void save(boolean on){Context c=Haiagaru.applicationContextForExtension();if(c!=null)c.getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putBoolean(HiddenDroppedThreads.KEY,on).apply();}
     static void legacy(LinearLayout panel,CheckBox template){
         for(int i=0;i<panel.getChildCount();i++)if("haiagaru.hideDropped".equals(panel.getChildAt(i).getTag()))return;
-        CheckBox view=new CheckBox(template.getContext());view.setTag("haiagaru.hideDropped");view.setText(LABEL);view.setTextColor(template.getCurrentTextColor());view.setTextSize(template.getTextSize()/template.getResources().getDisplayMetrics().scaledDensity);view.setButtonTintList(template.getButtonTintList());view.setPadding(template.getPaddingLeft(),template.getPaddingTop(),template.getPaddingRight(),template.getPaddingBottom());view.setChecked(HiddenDroppedThreads.enabled());
-        view.setOnCheckedChangeListener((v,on)->{save(on);Haiagaru.refreshBoardListAfterReadSortChange();});panel.addView(view,new LinearLayout.LayoutParams(-1,-2));
+        CheckBox view=new CheckBox(template.getContext());view.setTag("haiagaru.hideDropped");view.setText(LABEL);
+        view.setTextColor(template.getTextColors());
+        view.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,template.getTextSize());
+        view.setTypeface(template.getTypeface());view.setGravity(template.getGravity());
+        view.setMinimumHeight(template.getMinimumHeight());view.setMinimumWidth(template.getMinimumWidth());
+        view.setCompoundDrawablePadding(template.getCompoundDrawablePadding());
+        android.graphics.drawable.Drawable button=template.getButtonDrawable();
+        if(button!=null&&button.getConstantState()!=null)view.setButtonDrawable(button.getConstantState().newDrawable(template.getResources()).mutate());
+        view.setButtonTintList(template.getButtonTintList());
+        view.setPadding(template.getPaddingLeft(),template.getPaddingTop(),template.getPaddingRight(),template.getPaddingBottom());view.setChecked(HiddenDroppedThreads.enabled());
+        LinearLayout.LayoutParams source=(LinearLayout.LayoutParams)template.getLayoutParams();
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(source.width,source.height);
+        params.setMargins(source.leftMargin,source.topMargin,source.rightMargin,source.bottomMargin);
+        params.setMarginStart(source.getMarginStart());params.setMarginEnd(source.getMarginEnd());
+        params.gravity=source.gravity;params.weight=source.weight;
+        view.setOnCheckedChangeListener((v,on)->{save(on);Haiagaru.refreshBoardListAfterReadSortChange();});panel.addView(view,params);
     }
     static void append242(List<Object> items,ClassLoader loader)throws Exception{
         Context c=Haiagaru.applicationContextForExtension();label242=c.getResources().getIdentifier("haiagaru_hide_dropped_threads","string",c.getPackageName());if(label242==0)throw new IllegalStateException("Missing DAT-drop label");

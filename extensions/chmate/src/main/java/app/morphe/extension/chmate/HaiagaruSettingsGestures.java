@@ -15,17 +15,26 @@ import java.util.Arrays;
 /** Routes ChMate's assigned navigation gestures to the Haiagaru settings dialog. */
 final class HaiagaruSettingsGestures {
     private final Activity activity;
-    private final ScrollView surface;
-    private final SettingsSections sections;
+    private final View surface;
+    private final Runnable backAction, topAction, bottomAction;
     private Object recognizer;
     private Method touch, distance;
     private Runnable closeAction;
     private boolean tracking, intercepted, handled, closed, cancelling;
 
     HaiagaruSettingsGestures(Activity activity, ScrollView surface, SettingsSections sections) {
+        this(activity, surface, () -> sections.goBack(), () -> surface.smoothScrollTo(0, 0), () -> {
+            View child = surface.getChildAt(0);
+            if (child != null) surface.smoothScrollTo(0, Math.max(0, child.getHeight() - surface.getHeight()));
+        });
+    }
+
+    HaiagaruSettingsGestures(Activity activity, View surface, Runnable backAction, Runnable topAction, Runnable bottomAction) {
         this.activity = activity;
         this.surface = surface;
-        this.sections = sections;
+        this.backAction = backAction;
+        this.topAction = topAction;
+        this.bottomAction = bottomAction;
         try {
             Class<?> type = Class.forName(recognizerClassName(), false, activity.getClassLoader());
             Constructor<?> constructor = null;
@@ -104,14 +113,13 @@ final class HaiagaruSettingsGestures {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(activity);
         if (!preferences.getBoolean("gesture", true)) return false;
         if (preferences.getInt("gestureBack", 0) == code) {
-            if (!sections.goBack() && closeAction != null) closeAction.run();
+            backAction.run();
         } else if (preferences.getInt("gestureCloseTab", 0) == code) {
             if (closeAction != null) closeAction.run();
         } else if (preferences.getInt("gestureTop", 0) == code) {
-            surface.smoothScrollTo(0, 0);
+            topAction.run();
         } else if (preferences.getInt("gestureBottom", 0) == code) {
-            View child = surface.getChildAt(0);
-            if (child != null) surface.smoothScrollTo(0, Math.max(0, child.getHeight() - surface.getHeight()));
+            bottomAction.run();
         } else {
             return false;
         }

@@ -10,7 +10,7 @@ final class SettingsEffects {
         return "hideAd".equals(key)||"removeMonaKey".equals(key)
                 ||"chtoio".equals(key)||"topAlignShortThreads".equals(key)
                 ||"compactQuickFilters".equals(key)||"threadCommandsEnabled".equals(key)
-                ||"imageViewerRotationButton".equals(key)||"wacchoiSearchEnabled".equals(key)
+                ||"imageViewerRotationButton".equals(key)
                 // Native response filters are assembled when a thread is opened.
                 // Invalidating the settings layout cannot rebuild those filters.
                 ||"copipeNg2".equals(key)||"arashiNg".equals(key)||"abbrevSingleId".equals(key);
@@ -20,7 +20,8 @@ final class SettingsEffects {
         if(!on&&("wacchoiSearchEnabled".equals(key)||"wacchoiBackgroundSearch".equals(key))){
             WacchoiBackgroundJob job=WacchoiSearchService.current;if(job!=null&&job.running)job.cancel();
         }
-        if("readThreadsFirst".equals(key)||HiddenDroppedThreads.KEY.equals(key)||"groupBrowsingHistoryByBoard".equals(key)
+        if("readThreadsFirst".equals(key)||HiddenDroppedThreads.KEY.equals(key)||HiddenDroppedThreads.DRAFTS.equals(key)
+                ||HiddenDroppedThreads.SENT.equals(key)||"groupBrowsingHistoryByBoard".equals(key)
                 ||EdgeReporterOptions.MENU.equals(key)||EdgeReporterOptions.BOARD.equals(key))
             Haiagaru.refreshBoardListAfterReadSortChange();
         if(needsRestart(key)&&context instanceof Activity)SettingsRestart.confirm((Activity)context);

@@ -43,11 +43,58 @@ public final class ImgurAlbumAttachments {
     private static final Map<String, Entry> CACHE = new LinkedHashMap<>();
     private static final int MAX_CACHE = 128;
     private static final long RETRY_MS = 60_000L;
+    // Native thumbnail getters also run during measurement and for unloaded
+    // manual-download placeholders. Parse each response body once, not per bind.
+    private static final Map<Object, ParsedBody> PARSED = new java.util.WeakHashMap<>();
+    private static final class ParsedBody {
+        final String body;
+        final int mode;
+        final boolean images;
+        final String[] direct, ids;
+        ParsedBody(String body, int mode, boolean images) {
+            this.body = body; this.mode = mode; this.images = images;
+            LinkedHashSet<String> urls = new LinkedHashSet<>();
+            if (images) java.util.Collections.addAll(urls, TwimgImageUrls.extract(body));
+            if (mode != 3) {
+                java.util.Collections.addAll(urls, XMediaAttachments.directVideos(body));
+                java.util.Collections.addAll(urls, ImgurDirectVideos.extract(body));
+                java.util.Collections.addAll(urls, DirectVideoUrls.extract(body));
+            }
+            direct = urls.toArray(new String[0]);
+            LinkedHashSet<String> posts = new LinkedHashSet<>();
+            Matcher albums = ALBUM.matcher(body);
+            while ((mode != 3 || images) && albums.find() && posts.size() < 8) posts.add(albums.group(1));
+            for (String id : XMediaAttachments.postIds(body)) posts.add("x:" + id);
+            for (String id : InstagramMediaAttachments.postIds(body)) posts.add("ig:" + id);
+            ids = posts.toArray(new String[0]);
+        }
+    }
+    private static ParsedBody parsed(Object model, String body, int mode, boolean images) {
+        synchronized (PARSED) {
+            ParsedBody cached = PARSED.get(model);
+            if (cached != null && cached.body.equals(body) && cached.mode == mode && cached.images == images) return cached;
+        }
+        ParsedBody result = new ParsedBody(body, mode, images);
+        synchronized (PARSED) {
+            if (PARSED.size() >= 4096) {
+                java.util.Iterator<Object> entries = PARSED.keySet().iterator();
+                if (entries.hasNext()) { entries.next(); entries.remove(); }
+            }
+            PARSED.put(model, result);
+        }
+        return result;
+    }
     private static final Map<Object, Boolean> VIDEO_MODELS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static boolean videoRefreshPending;
 
     static void refreshVideoModels() {
-        new Handler(Looper.getMainLooper()).post(() -> {
+        synchronized (VIDEO_MODELS) {
+            if (videoRefreshPending) return;
+            videoRefreshPending = true;
+        }
+        MAIN.postDelayed(() -> {
             synchronized (VIDEO_MODELS) {
+                videoRefreshPending = false;
                 for (Object model : VIDEO_MODELS.keySet()) {
                     try {
                         for (Field field : model.getClass().getDeclaredFields()) {
@@ -61,7 +108,7 @@ public final class ImgurAlbumAttachments {
                 }
             }
             Haiagaru.refreshImgurAttachments();
-        });
+        }, 80);
     }
 
     private ImgurAlbumAttachments() {}
@@ -142,20 +189,9 @@ public final class ImgurAlbumAttachments {
             Object raw = bodyField.get(model);
             if (!(raw instanceof String)) return;
             if (((String) raw).contains("video.twimg.com")) VIDEO_MODELS.put(model, Boolean.TRUE);
-            if (Haiagaru.mediaImageFetchEnabled())
-                append(model, cacheFieldName, TwimgImageUrls.extract((String) raw));
-            if (mode != 3)
-                append(model, cacheFieldName, XMediaAttachments.directVideos((String) raw));
-            if (mode != 3)
-                append(model, cacheFieldName, ImgurDirectVideos.extract((String) raw));
-            if (mode != 3)
-                append(model, cacheFieldName, DirectVideoUrls.extract((String) raw));
-            Matcher albums = ALBUM.matcher((String) raw);
-            LinkedHashSet<String> ids = new LinkedHashSet<>();
-            while ((mode != 3 || Haiagaru.mediaImageFetchEnabled()) && albums.find() && ids.size() < 8) ids.add(albums.group(1));
-            for (String postId : XMediaAttachments.postIds((String) raw)) ids.add("x:" + postId);
-            for (String postId : InstagramMediaAttachments.postIds((String) raw)) ids.add("ig:" + postId);
-            for (String id : ids) {
+            ParsedBody parsed = parsed(model, (String) raw, mode, Haiagaru.mediaImageFetchEnabled());
+            append(model, cacheFieldName, parsed.direct);
+            for (String id : parsed.ids) {
                 Entry entry;
                 boolean request = false;
                 synchronized (CACHE) {
@@ -312,21 +348,22 @@ public final class ImgurAlbumAttachments {
             entry.subscribers.clear();
         }
         if (resolved != null) MAIN.post(() -> {
+            boolean changed = false;
             for (Subscriber subscriber : subscribers) {
                 Object model = subscriber.model.get();
-                if (model != null) append(model, subscriber.cacheFieldName, resolved);
+                if (model != null) changed |= append(model, subscriber.cacheFieldName, resolved);
             }
-            Haiagaru.refreshImgurAttachments();
+            if (changed) Haiagaru.refreshImgurAttachments();
         });
     }
 
-    private static void append(Object model, String fieldName, String[] images) {
+    private static boolean append(Object model, String fieldName, String[] images) {
         try {
             Field field = model.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             Object existing = field.get(model);
             // Leave native extraction intact when it has not run yet.
-            if (!(existing instanceof String[])) return;
+            if (!(existing instanceof String[])) return false;
             LinkedHashSet<String> urls = new LinkedHashSet<>();
             boolean changed = false;
             int mode = Haiagaru.mediaAutoFetchMode();
@@ -394,7 +431,9 @@ public final class ImgurAlbumAttachments {
                 changed |= urls.add(image);
             }
             if (changed) {
-                field.set(model, urls.toArray(new String[0]));
+                String[] updated = urls.toArray(new String[0]);
+                if (java.util.Arrays.equals((String[]) existing, updated)) return false;
+                field.set(model, updated);
                 // ChMate also caches thumbnail projections separately from the raw URL array.
                 // Let the native renderer rebuild them using the expanded attachments.
                 for (Field projection : model.getClass().getDeclaredFields()) {
@@ -403,10 +442,12 @@ public final class ImgurAlbumAttachments {
                     projection.setAccessible(true);
                     projection.set(model, null);
                 }
+                return true;
             }
         } catch (ReflectiveOperationException | RuntimeException error) {
             Log.w("HaiagaruImgur", "Could not append resolved image", error);
         }
+        return false;
     }
 
     private static final class Entry {

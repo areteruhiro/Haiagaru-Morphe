@@ -57,7 +57,7 @@ public final class FilterPosition {
         } catch (Exception error) { Log.w("Haiagaru", "Unable to retain filter position", error); }
     }
 
-    private static View findList(View root) {
+    static View findList(View root) {
         if (root == null) return null;
         if (root instanceof ListView) return root;
         for (Class<?> type = root.getClass(); type != null; type = type.getSuperclass())
@@ -74,6 +74,10 @@ public final class FilterPosition {
 
     /** Explicit user-requested navigation only; never used when simply closing a popup. */
     static boolean jumpToResponse(Object fragment,int number) throws Exception {
+        return jumpToResponse(fragment, number, 0);
+    }
+
+    static boolean jumpToResponse(Object fragment,int number,int offset) throws Exception {
         View root=(View)fragment.getClass().getMethod("getView").invoke(fragment);
         View list=findList(root);
         if(list==null)return false;
@@ -91,8 +95,15 @@ public final class FilterPosition {
                 field.setAccessible(true);Object response=field.get(row);if(response==null)continue;
                 String key=name.equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o";
                 if(((Number)ResponseArchiveEntry.field(response,key)).intValue()!=number)continue;
-                if(list instanceof ListView)((ListView)list).setSelectionFromTop(i,0);
-                else call(list,"scrollToPosition",new Class<?>[]{int.class},i);
+                if(list instanceof ListView)((ListView)list).setSelectionFromTop(i,offset);
+                else {
+                    Object manager=call(list,"getLayoutManager",new Class<?>[0]);
+                    if(item.getReturnType().getName().equals("o.zzadi")) {
+                        call(list,"scrollToPosition",new Class<?>[]{int.class},i);
+                        Field pendingOffset=manager.getClass().getDeclaredField("k");
+                        pendingOffset.setAccessible(true);pendingOffset.setInt(manager,offset);list.requestLayout();
+                    } else call(manager,"c",new Class<?>[]{int.class,int.class},i,offset);
+                }
                 return true;
             }
         }
@@ -209,7 +220,7 @@ public final class FilterPosition {
         @Override public void onViewAttachedToWindow(View view) {}
     }
 
-    private static Method findItem(Object adapter) throws Exception {
+    static Method findItem(Object adapter) throws Exception {
         // Exact typed accessors verified against the supported original APKs.
         for (Method method : adapter.getClass().getDeclaredMethods()) {
             if (method.getParameterTypes().length == 1 && method.getParameterTypes()[0] == int.class

@@ -13,6 +13,7 @@ private const val HIDDEN_ID_NG = "Lapp/morphe/extension/chmate/HiddenIdNg;"
 
 /** Exact legacy hooks. Structural checks abort instead of patching a similar-looking method. */
 internal fun BytecodePatchContext.patchProgrammableNg191() {
+    patchPosterIdChainNg()
     check(packageMetadata.versionName == "0.8.10.191 dev")
     val titleFilter = mutableClassDefBy("Lo/r8lambdaGCnF6WpW_bFarRe7yCX2B6KzQ;").methods.single {
         it.name == "c" && it.returnType == "Ljava/util/ArrayList;" &&
@@ -70,6 +71,7 @@ internal fun BytecodePatchContext.patchProgrammableNg191() {
 
 /** 226 dev still computes the standard NGWord bit per response. */
 internal fun BytecodePatchContext.patchProgrammableNg226() {
+    patchPosterIdChainNg()
     check(packageMetadata.versionName == "0.8.10.226 dev")
     val adapter = mutableClassDefBy("Lo/listener;")
     val rebuild = adapter.methods.single {
@@ -109,6 +111,7 @@ internal fun BytecodePatchContext.patchProgrammableNgModern(
     fullName: String,
     compactName: String,
 ) {
+    patchPosterIdChainNg()
     val target = mutableClassDefBy(owner)
     val full = target.methods.single {
         it.name == fullName && it.returnType == "Ljava/util/ArrayList;" &&

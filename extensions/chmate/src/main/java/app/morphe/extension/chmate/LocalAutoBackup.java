@@ -57,9 +57,8 @@ final class LocalAutoBackup {
         SharedPreferences p=prefs(a);
         LinearLayout body=new LinearLayout(a);body.setOrientation(1);
         int pad=(int)(16*a.getResources().getDisplayMetrics().density);body.setPadding(pad,pad,pad,pad);
-        TextView note=new TextView(a);note.setText("ChMateを開いたときと、開いている間は約1分ごとに確認し、前回の成功から指定間隔を過ぎていれば保存します。バックグラウンド・終了中は新しいバックアップを開始しません。開始済みの保存は続行します。\n"
-                +"ZIPは暗号化されません。Cookie・認証情報などを含める場合は保存先の管理に注意してください。"
-                +"アプリ専用フォルダ外の、端末内フォルダを選んでください。大量のログを含めると時間と空き容量が必要です。");body.addView(note);
+        TextView note=new TextView(a);note.setText("アプリを開いている間に、指定間隔で選択フォルダへ保存します。Cookie・認証情報を含める場合は保存先の管理に注意してください。");body.addView(note);
+        Button help=new Button(a);help.setText("詳しい使い方（GitHub）");help.setOnClickListener(v->a.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse("https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/local-auto-backup.md"))));body.addView(help);
         Switch enabled=new Switch(a);enabled.setText("ローカル自動バックアップを有効にする");enabled.setChecked(p.getBoolean("enabled",false));body.addView(enabled);
         TextView destination=new TextView(a);destination.setText("保存先："+folderLabel(p.getString("tree","")));body.addView(destination);
         Button folder=new Button(a);folder.setText("保存先フォルダを選ぶ");folder.setOnClickListener(v->{
@@ -83,12 +82,13 @@ final class LocalAutoBackup {
         status.setText("前回成功："+(last==0?"未実行":BackupTime.display(last))+"\n"+p.getString("status",""));body.addView(status);
         Button now=new Button(a);now.setText("今すぐバックアップ");now.setOnClickListener(v->run(a.getApplicationContext()));body.addView(now);
         ScrollView scroll=new ScrollView(a);scroll.addView(body);
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("ローカル自動バックアップ").setView(scroll).setNegativeButton("戻る",null).create();
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("ローカル自動バックアップ").setView(scroll).setNegativeButton("戻る",null).create();
         Runnable refresh=()->{
             if(a.isFinishing()||a.isDestroyed())return;
             destination.setText("保存先："+folderLabel(p.getString("tree","")));
             long latest=p.getLong("last",0);
             status.setText("前回成功："+(latest==0?"未実行":BackupTime.display(latest))+"\n"+p.getString("status",""));
+            dialog.refresh();
         };
         SharedPreferences.OnSharedPreferenceChangeListener listener=(changed,key)->{
             if(key==null||key.equals("tree")||key.equals("last")||key.equals("status"))a.runOnUiThread(refresh);
@@ -127,6 +127,8 @@ final class LocalAutoBackup {
         new Thread(()->{
             File snapshot=null;Uri created=null;boolean complete=false;
             SharedPreferences p=prefs(c);
+            BackupProgress notification=new BackupProgress(c,"ローカル自動バックアップ");
+            p.edit().putString("status","バックアップを作成しています…").apply();
             try{
                 String destination=p.getString("tree","");if(destination.isEmpty())throw new IOException("保存先フォルダを選んでください");
                 int flags=p.getInt("categories",HaiagaruSyncSnapshot.DEFAULT)&HaiagaruSyncSnapshot.ALL;
@@ -137,13 +139,15 @@ final class LocalAutoBackup {
                 created=DocumentsContract.createDocument(c.getContentResolver(),parent,"application/zip",
                         "haiagaru-auto-"+android.os.Build.MODEL.replaceAll("[^A-Za-z0-9_-]","_")+"-"+BackupTime.filename(System.currentTimeMillis())+".zip");
                 if(created==null)throw new IOException("保存ファイルを作成できません");
-                try(InputStream input=new FileInputStream(snapshot);OutputStream output=c.getContentResolver().openOutputStream(created,"w")){
-                    if(output==null)throw new IOException("保存先を開けません");
-                    if(HaiagaruBackupArchive.copy(input,output)!=snapshot.length())throw new IOException("保存サイズが一致しません");
-                }
+                p.edit().putString("status","バックアップを保存しています…").apply();
+                notification.update("バックアップを保存しています…",false);
+                BackupDocuments.save(c,snapshot,created,()->{
+                    notification.update("保存したバックアップを確認しています…",false);
+                    p.edit().putString("status","保存したバックアップを確認しています…").apply();
+                });
                 complete=true;
                 synchronized(LocalAutoBackup.class){
-                    if(!destination.equals(p.getString("tree","")))return;
+                    if(!destination.equals(p.getString("tree",""))){notification.update("変更前の保存先へバックアップしました",true);return;}
                     JSONArray files=new JSONArray(p.getString("files","[]"));files.put(created.toString());
                     // Persist ownership before pruning so a failed deletion can be retried safely.
                     if(!p.edit().putString("files",files.toString()).putLong("last",System.currentTimeMillis()).putString("status","バックアップ成功").commit())
@@ -163,7 +167,8 @@ final class LocalAutoBackup {
                     }
                     p.edit().putString("files",retained.toString()).apply();
                 }
-            }catch(Exception error){p.edit().putString("status","バックアップ失敗："+error.getMessage()).apply();android.util.Log.w("Haiagaru","Local auto backup failed",error);}
+                notification.update("バックアップが完了しました",true);
+            }catch(Exception error){notification.update("バックアップに失敗しました。アプリで詳細を確認してください",true);p.edit().putString("status","バックアップ失敗："+error.getMessage()).apply();android.util.Log.w("Haiagaru","Local auto backup failed",error);}
             finally{
                 if(snapshot!=null)snapshot.delete();
                 if(!complete&&created!=null)try{DocumentsContract.deleteDocument(c.getContentResolver(),created);}catch(Exception ignored){}

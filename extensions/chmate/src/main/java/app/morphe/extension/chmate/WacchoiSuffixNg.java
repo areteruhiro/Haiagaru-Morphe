@@ -1,6 +1,6 @@
 package app.morphe.extension.chmate;
 
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.widget.Toast;
 import android.widget.CheckBox;
@@ -141,9 +141,9 @@ public final class WacchoiSuffixNg {
             help.setText("NGNameを文字列で登録する人は\n-aabb\nNGのたびに新規登録\n―――――――――――――――――――\nNGNameを正規表現で登録する人は\n-aabb|\nベースとなるNGのところに追加登録\n\n正規表現では追加先を選択できます。末尾の | は追記用の区切りです。空の条件は保存しません。\nこのNG項目を長押しすると、下4桁をコピーして従来のNG編集画面を開きます。");
             content.addView(help);
             ScrollView scroll = new ScrollView(activity); scroll.addView(content);
-            AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("NGName追加")
+            HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("NGName追加")
                     .setView(scroll).setNegativeButton("キャンセル", null).setPositiveButton("OK", null).create();
-            dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            dialog.setOnShowListener(d -> dialog.getButton(HaiagaruDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 try {
                     String value = text.getText().toString();
                     if (value.trim().isEmpty()) { text.setError("登録文字列を入力してください"); return; }

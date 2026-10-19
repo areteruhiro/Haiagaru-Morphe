@@ -1,6 +1,6 @@
 package app.morphe.extension.chmate;
 
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -46,7 +46,7 @@ final class ThreadCommandSettings {
     static void show(Context context, String boardUrl) {
         String address = ThreadCommandRules.settingsUrl(boardUrl);
         if (address.isEmpty()) return;
-        AlertDialog progress = new AlertDialog.Builder(context).setTitle("板設定を取得")
+        HaiagaruDialog progress = new HaiagaruDialog.Builder(context).setTitle("板設定を取得")
                 .setMessage(address + "\n取得中…").setNegativeButton("閉じる", null).show();
         IO.execute(() -> {
             String result;
@@ -56,7 +56,7 @@ final class ThreadCommandSettings {
             new Handler(Looper.getMainLooper()).post(() -> {
                 if (!progress.isShowing()) return;
                 progress.dismiss();
-                new AlertDialog.Builder(context).setTitle("板設定（読み取り専用）")
+                new HaiagaruDialog.Builder(context).setTitle("板設定（読み取り専用）")
                         .setMessage(address + "\n\n" + message + "\n\n値を自動でコマンドとして実行・挿入することはありません。")
                         .setPositiveButton("閉じる", null).show();
             });

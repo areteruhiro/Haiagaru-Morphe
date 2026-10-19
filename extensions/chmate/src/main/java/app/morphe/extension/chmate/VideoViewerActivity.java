@@ -16,7 +16,7 @@ import android.view.KeyEvent;
 import android.widget.*;
 
 /** User-visible streaming player. No WebView, login cookies or automatic retries. */
-public final class VideoViewerActivity extends Activity {
+public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private VideoView video;
     private MediaController controls;
     private LinearLayout toolbar;
@@ -54,7 +54,8 @@ public final class VideoViewerActivity extends Activity {
         if (intent.getComponent() != null || intent.getPackage() != null) return;
         if (YouTubeUrls.videoId(uri.toString()) != null && VideoViewerSettings.youtubeEnabled(context)) {
             intent.setClass(context, YouTubeViewerActivity.class);
-        } else if (XMediaAttachments.isVideo(uri.toString())) intent.setClass(context, VideoViewerActivity.class);
+        } else if (GifViewerActivity.supported(uri.toString())) intent.setClass(context, GifViewerActivity.class);
+        else if (XMediaAttachments.isVideo(uri.toString())) intent.setClass(context, VideoViewerActivity.class);
     }
 
     @Override public void onCreate(Bundle state) {
@@ -100,8 +101,12 @@ public final class VideoViewerActivity extends Activity {
             }
             return false;
         });
+        HaiagaruUi.bindRelease(speedButton, this::endHoldSpeed);
         toolbar.addView(speedButton);
         more.setOnClickListener(this::showMenu); toolbar.addView(more);
+        LinearLayout toolbarModel = toolbar;
+        toolbar = new LinearLayout(this);
+        toolbar.addView(HaiagaruUi.controls(this, toolbarModel), new LinearLayout.LayoutParams(-1, -2));
         FrameLayout frame = new FrameLayout(this);
         video = new VideoView(this);
         setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
@@ -113,9 +118,9 @@ public final class VideoViewerActivity extends Activity {
         frame.addView(toolbar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
         root.addView(frame, new LinearLayout.LayoutParams(-1, 0, 1));
         status = new TextView(this); status.setTextColor(Color.WHITE); status.setPadding(16, 8, 16, 12);
-        root.addView(status);
-        setContentView(root); root.requestApplyInsets();
-        controls = new MediaController(this) {
+        root.addView(HaiagaruUi.controls(this, status));
+        HaiagaruUi.showPlayer(this, root); root.requestApplyInsets();
+        controls = new HaiagaruMediaController(this) {
             private Runnable unregisterControllerBack;
             @Override public void show(int timeout) {
                 // VideoView and MediaController also request timed shows after touch/seek/play.
@@ -306,7 +311,7 @@ public final class VideoViewerActivity extends Activity {
     }
     private void showMenu(View anchor) {
         controls.show(0);
-        PopupMenu menu = new PopupMenu(this, anchor);
+        HaiagaruPopupMenu menu = new HaiagaruPopupMenu(this, anchor);
         menu.setOnDismissListener(dismissed -> {
             if (foreground) controls.show(0);
         });

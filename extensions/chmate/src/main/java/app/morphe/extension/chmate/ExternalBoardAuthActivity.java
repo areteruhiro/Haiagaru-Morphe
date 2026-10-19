@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /** User-operated authentication only. Never auto-submits a code or reposts a draft. */
-public final class ExternalBoardAuthActivity extends Activity {
+public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
     private WebView web;
     private String board;
     private TextView location;
@@ -62,7 +62,7 @@ public final class ExternalBoardAuthActivity extends Activity {
                 String origin=BoardAuthRules.origin(url);
                 if(origin.isEmpty()) {location.setText("HTTPS以外の移動を停止しました。");return true;}
                 if(allowed.contains(origin)) return false;
-                new AlertDialog.Builder(ExternalBoardAuthActivity.this).setTitle("別のサイトへ移動します")
+                new HaiagaruDialog.Builder(ExternalBoardAuthActivity.this).setTitle("別のサイトへ移動します")
                     .setMessage(origin+"\nこの認証先を信頼できる場合のみ続行してください。")
                     .setNegativeButton("キャンセル",null).setPositiveButton("移動",(d,w)->{allowed.add(origin);view.loadUrl(url);}).show();
                 return true;
@@ -81,7 +81,7 @@ public final class ExternalBoardAuthActivity extends Activity {
                 if(request.isForMainFrame()) location.setText("認証ページを開けませんでした: "+error.getDescription());
             }
         });
-        root.addView(web,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
+        root.addView(web,new LinearLayout.LayoutParams(-1,0,1));HaiagaruUi.showModel(this, "外部板の認証", root);
         if(state==null || web.restoreState(state)==null) web.loadUrl(auth);
     }
     @Override protected void onSaveInstanceState(Bundle state){if(web!=null)web.saveState(state);super.onSaveInstanceState(state);}

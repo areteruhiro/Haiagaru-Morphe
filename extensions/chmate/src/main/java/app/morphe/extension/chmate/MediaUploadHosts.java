@@ -92,7 +92,7 @@ public final class MediaUploadHosts {
         Button manage = new Button(activity);manage.setText("imgbox／imgpileのサーバー削除・管理");
         manage.setOnClickListener(v -> MediaUploadManagement.show(activity));root.addView(manage);
         ScrollView scroll=new ScrollView(activity);scroll.addView(root);
-        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("画像・動画のアップロード先")
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("画像・動画のアップロード先")
                 .setView(scroll).setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
         dialog.show();
         dialog.getButton(-1).setOnClickListener(v->{

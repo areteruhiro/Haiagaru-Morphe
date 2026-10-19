@@ -1,6 +1,6 @@
 package app.morphe.extension.chmate;
 
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.view.View;
 import android.widget.*;
@@ -64,9 +64,9 @@ final class NgBoardScopePicker extends LinearLayout {
         TextView help = new TextView(getContext()); help.setText("タップで選択／解除。候補にない板は板IDを追加してください（例: android, poverty）。"); rows.addView(help);
         EditText extra = new EditText(getContext()); extra.setHint("追加する板ID（カンマ・改行区切り）"); rows.addView(extra);
         ScrollView scroll = new ScrollView(getContext()); scroll.addView(rows);
-        AlertDialog dialog = new AlertDialog.Builder(getContext()).setTitle(mode.getSelectedItemPosition() == 2 ? "除外する板" : "対象の板")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(getContext()).setTitle(mode.getSelectedItemPosition() == 2 ? "除外する板" : "対象の板")
                 .setView(scroll).setNegativeButton("キャンセル", null).setPositiveButton("OK", null).create();
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+        dialog.setOnShowListener(d -> dialog.getButton(HaiagaruDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 Set<String> result = new TreeSet<>(pending);
                 for (String board : extra.getText().toString().split("[,\\s]+")) if (!board.isEmpty()) result.add(board);

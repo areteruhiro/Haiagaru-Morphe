@@ -19,7 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /** Android document-picker transport for the same validated snapshot used by MEGA. */
-public final class HaiagaruLocalBackupActivity extends Activity {
+public final class HaiagaruLocalBackupActivity extends HaiagaruComposeActivity {
     public static final String EXTRA_MODE = "haiagaru.backup.mode";
     public static final String EXTRA_CATEGORIES = "haiagaru.backup.categories";
     public static final int MODE_SAVE = 1;
@@ -30,7 +30,8 @@ public final class HaiagaruLocalBackupActivity extends Activity {
     private int categories;
     private boolean pickerStarted;
     private HaiagaruBackupArchive.Backup openedBackup;
-    private ProgressDialog progress;
+    private HaiagaruDialog progress;
+    private BackupProgress notification;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -42,7 +43,10 @@ public final class HaiagaruLocalBackupActivity extends Activity {
             finish();
             return;
         }
-        if (!pickerStarted) launchPicker();
+        if (!pickerStarted && mode == MODE_OPEN && getIntent().getData() != null) {
+            pickerStarted = true;
+            open(getIntent().getData());
+        } else if (!pickerStarted) launchPicker();
     }
 
     @Override protected void onSaveInstanceState(Bundle state) {
@@ -101,31 +105,9 @@ public final class HaiagaruLocalBackupActivity extends Activity {
         run("端末のファイルにバックアップしました", () -> {
             File snapshot = HaiagaruBackupArchive.capture(getApplicationContext(), categories);
             try {
-                if (snapshot.length() == 0) throw new IOException("空のバックアップは保存できません");
-                runOnUiThread(() -> {
-                    if (progress != null) progress.setMessage("バックアップを保存しています…\n完了するまで保存先が0MBと表示される場合があります。");
-                });
-                // The output stream owns the descriptor. Do not close the descriptor twice:
-                // cloud document providers may commit asynchronously on close.
-                ParcelFileDescriptor file = getContentResolver().openFileDescriptor(uri, "wt");
-                if (file == null) throw new IOException("保存先を開けませんでした");
-                try (OutputStream output = new ParcelFileDescriptor.AutoCloseOutputStream(file);
-                     InputStream input = new FileInputStream(snapshot)) {
-                    long copied = HaiagaruBackupArchive.copy(input, output);
-                    output.flush();
-                    if (copied != snapshot.length()) throw new IOException("バックアップを最後まで保存できませんでした");
-                    file.checkError();
-                }
-                // Local providers expose the committed size; remote providers may not.
-                String authority = uri.getAuthority();
-                if ("com.android.externalstorage.documents".equals(authority)
-                        || "com.android.providers.downloads.documents".equals(authority))
-                try (android.database.Cursor cursor = getContentResolver().query(uri,
-                        new String[]{android.provider.OpenableColumns.SIZE}, null, null, null)) {
-                    if (cursor != null && cursor.moveToFirst() && !cursor.isNull(0)
-                            && cursor.getLong(0) != snapshot.length())
-                        throw new IOException("保存先のファイルサイズが一致しません。保存先の空き容量や接続を確認してください");
-                }
+                phase("バックアップを保存しています…");
+                BackupDocuments.save(this, snapshot, uri,
+                        () -> phase("保存したバックアップを確認しています…"));
             } finally { snapshot.delete(); }
         });
     }
@@ -172,7 +154,7 @@ public final class HaiagaruLocalBackupActivity extends Activity {
             showError("変更内容を確認できませんでした");
             return;
         }
-        new AlertDialog.Builder(this).setTitle("端末のバックアップから復元")
+        new HaiagaruDialog.Builder(this).setTitle("端末のバックアップから復元")
                 .setMultiChoiceItems(names, selected, (dialog, index, checked) ->
                         selected[index] = checked && (available & bits[index]) != 0)
                 .setNegativeButton("キャンセル", (dialog, which) -> finish())
@@ -180,7 +162,7 @@ public final class HaiagaruLocalBackupActivity extends Activity {
                     int selectedFlags=0;
                     for(int i=0;i<bits.length;i++)if(selected[i])selectedFlags|=bits[i];
                     categories=selectedFlags;
-                    new AlertDialog.Builder(this)
+                    new HaiagaruDialog.Builder(this)
                         .setMessage("復元前に現在のデータをアプリ内へ退避します。\n" + summary + "\n" + HaiagaruBackupSecrets.WARNING)
                         .setPositiveButton("項目選択に戻る", (info, chosen) -> confirmRestore(backup))
                         .setOnCancelListener(info -> finish()).show();
@@ -207,21 +189,34 @@ public final class HaiagaruLocalBackupActivity extends Activity {
                 .setOnCancelListener(dialog -> finish()).show();
     }
 
+    private void phase(String text) {
+        BackupProgress current = notification;
+        if (current != null) current.update(text, false);
+        runOnUiThread(() -> {
+            if (progress != null && !isFinishing() && !isDestroyed()) progress.setMessage(text);
+        });
+    }
+
     private void run(String success, Operation operation) {
-        progress = new ProgressDialog(this);
+        final BackupProgress operationNotification = new BackupProgress(this,
+                mode == MODE_SAVE ? "ローカルバックアップ" : "バックアップの読み込み・復元");
+        notification = operationNotification;
+        progress = HaiagaruDialog.progress(this, "処理を準備しています…");
         progress.setMessage(mode == MODE_SAVE ? "バックアップを作成しています…\n完了するまで保存先が0MBと表示される場合があります。" : "バックアップを読み込んでいます…");
-        progress.setIndeterminate(true);
         progress.setCancelable(false);
         progress.show();
         new Thread(() -> {
             try {
                 operation.perform();
+                if (success != null) operationNotification.update(success, true);
+                else operationNotification.dismiss();
                 runOnUiThread(this::hideProgress);
                 if (success != null) runOnUiThread(() -> {
                     Toast.makeText(this, success, Toast.LENGTH_LONG).show();
                     finish();
                 });
             } catch (Exception error) {
+                operationNotification.update("処理に失敗しました。アプリでエラーを確認してください", true);
                 android.util.Log.e("HaiagaruLocalBackup", "Backup operation failed (mode=" + mode + ")", error);
                 runOnUiThread(() -> {
                     hideProgress();
@@ -237,7 +232,7 @@ public final class HaiagaruLocalBackupActivity extends Activity {
     }
 
     private void showError(String message) {
-        new AlertDialog.Builder(this).setTitle("バックアップを処理できませんでした")
+        new HaiagaruDialog.Builder(this).setTitle("バックアップを処理できませんでした")
                 .setMessage(message).setPositiveButton("閉じる", (dialog, which) -> finish())
                 .setOnCancelListener(dialog -> finish()).show();
     }

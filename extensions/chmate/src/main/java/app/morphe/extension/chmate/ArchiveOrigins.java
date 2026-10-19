@@ -103,7 +103,7 @@ public final class ArchiveOrigins {
         for (int i=offset;i<end;i++) { labels.add((files[i].isDirectory()?"📁 ":"")+files[i].getName()); choices.add(files[i]); }
         if (offset>0) { labels.add("前の100件"); choices.add(null); }
         if (end<files.length) { labels.add("次の100件"); choices.add(null); }
-        ui(a, () -> new AlertDialog.Builder(a).setTitle(current.equals(root)?"元URLを確認するアーカイブを選択":current.getName())
+        ui(a, () -> new HaiagaruDialog.Builder(a).setTitle(current.equals(root)?"元URLを確認するアーカイブを選択":current.getName())
                 .setItems(labels.isEmpty()?new String[]{"アーカイブはありません"}:labels.toArray(new String[0]), (d,p) -> {
                     if (choices.isEmpty()) return; File file=choices.get(p);
                     if (file==null) work(a, () -> browse(a,current,labels.get(p).startsWith("前")?Math.max(0,offset-100):end));
@@ -122,7 +122,7 @@ public final class ArchiveOrigins {
                         "reconstructed".equals(kind)?"保存名から復元したURL（HTTPSを使用。保存時のURLと異なる可能性があります）\n\n"+url:
                         "manual".equals(kind)?"手動登録した元スレURL\n\n"+url:"保存時の元スレURL\n\n"+url)+"\n\n保存先（変更しません）\n"+file.toURI());
                 ScrollView scroll=new ScrollView(a); scroll.addView(text);
-                AlertDialog.Builder builder=new AlertDialog.Builder(a).setTitle("アーカイブの元スレURL").setView(scroll)
+                HaiagaruDialog.Builder builder=new HaiagaruDialog.Builder(a).setTitle("アーカイブの元スレURL").setView(scroll)
                         .setNegativeButton("閉じる",null).setNeutralButton("元URLを登録・修正",(d,p)->edit(a,file,relative,url));
                 if(url!=null) builder.setPositiveButton("元URLをコピー",(d,p)-> {
                     ClipboardHistory.setPrimaryClip((ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE),ClipData.newPlainText("元スレURL",url));
@@ -134,7 +134,7 @@ public final class ArchiveOrigins {
     private static void edit(Activity a, File file, String relative, String current) {
         EditText input=new EditText(a); input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
         input.setText(current==null?"":current); input.setHint("https://…/test/read.cgi/板名/スレ番号/");
-        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("元URLを登録（端末内のみ）").setView(input).setPositiveButton("保存",null).setNegativeButton("キャンセル",null).create();
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("元URLを登録（端末内のみ）").setView(input).setPositiveButton("保存",null).setNegativeButton("キャンセル",null).create();
         dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{
             String url=input.getText().toString().trim(); if(ArchiveOriginPaths.threadKey(url)==null){input.setError("スレのHTTP(S) URLを入力してください");return;}
             work(a,()->{write(a,relative,url,"manual");ui(a,()->{dialog.dismiss();detail(a,file);});});

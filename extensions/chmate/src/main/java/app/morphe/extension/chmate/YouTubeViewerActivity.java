@@ -10,7 +10,7 @@ import android.webkit.*;
 import android.widget.*;
 
 /** Official embedded player only. No stream extraction, login automation or ad bypass. */
-public final class YouTubeViewerActivity extends Activity {
+public final class YouTubeViewerActivity extends HaiagaruComposeActivity {
     private WebView web;
     private LinearLayout root, toolbar;
     private FrameLayout content;
@@ -34,6 +34,9 @@ public final class YouTubeViewerActivity extends Activity {
         Button back = button("戻る"); back.setOnClickListener(v -> onBackPressed()); toolbar.addView(back);
         toolbar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
         Button more = button("︙"); more.setContentDescription("YouTubeメニュー"); more.setOnClickListener(this::menu); toolbar.addView(more);
+        LinearLayout toolbarModel = toolbar;
+        toolbar = new LinearLayout(this);
+        toolbar.addView(HaiagaruUi.controls(this, toolbarModel), new LinearLayout.LayoutParams(-1, -2));
         root.addView(toolbar);
         content = new FrameLayout(this); root.addView(content, new LinearLayout.LayoutParams(-1, 0, 1));
         web = new WebView(this); content.addView(web, new FrameLayout.LayoutParams(-1, -1));
@@ -57,7 +60,7 @@ public final class YouTubeViewerActivity extends Activity {
             }
             @Override public void onHideCustomView() { hideFullscreen(); }
         });
-        setContentView(root); root.requestApplyInsets();
+        HaiagaruUi.showPlayer(this, root); root.requestApplyInsets();
         // A stable app-identifying HTTPS base supplies the Referer required by official embeds.
         // Do not impersonate another client or extract protected media URLs.
         String html = "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -86,7 +89,7 @@ public final class YouTubeViewerActivity extends Activity {
         catch (RuntimeException failure) { Toast.makeText(this, "外部で開けませんでした", Toast.LENGTH_SHORT).show(); }
     }
     private void menu(View anchor) {
-        PopupMenu menu = new PopupMenu(this, anchor);
+        HaiagaruPopupMenu menu = new HaiagaruPopupMenu(this, anchor);
         menu.getMenu().add(0, 1, 0, "外部アプリで開く");
         menu.getMenu().add(0, 2, 1, "URLをコピー");
         menu.getMenu().add(0, 3, 2, "再読み込み");

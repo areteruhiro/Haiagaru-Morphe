@@ -55,7 +55,7 @@ val videoViewerPatch = resourcePatch(
             AppTarget(version = "0.8.10.242 dev", minSdk = 23),
         ),
     ))
-    dependsOn(videoViewerGesturesPatch)
+    dependsOn(videoViewerGesturesPatch, gifViewerRoutingPatch)
     execute {
         get("assets").resolve("haiagaru/video-viewer/installed").apply {
             parentFile.mkdirs()
@@ -63,7 +63,7 @@ val videoViewerPatch = resourcePatch(
         }
         document("AndroidManifest.xml").use { manifest ->
             val application = manifest.getElementsByTagName("application").item(0) as Element
-            for (activity in listOf("VideoViewerActivity", "YouTubeViewerActivity")) application.appendChild(manifest.createElement("activity").apply {
+            for (activity in listOf("VideoViewerActivity", "YouTubeViewerActivity", "GifViewerActivity")) application.appendChild(manifest.createElement("activity").apply {
                 val ns = "http://schemas.android.com/apk/res/android"
                 setAttributeNS(ns, "android:name", "app.morphe.extension.chmate.$activity")
                 setAttributeNS(ns, "android:exported", "false")

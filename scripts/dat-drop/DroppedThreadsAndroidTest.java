@@ -83,12 +83,17 @@ public final class DroppedThreadsAndroidTest {
                 Object input=wrapper.getConstructor(List.class).newInstance(source);
                 Object adapter=Class.forName(v191?"o.r8lambdaXZREaGE4vvLAA2ZOtsKBd3knAPA":"o.bea1",true,context.getClassLoader()).getConstructor(Context.class).newInstance(context);
                 field(adapter,v191?"i":"g").set(adapter,input);field(adapter,v191?"g":"d").set(adapter,input);
+                if(v191)field(adapter,"j").set(adapter,input);
                 Object fragment=Class.forName(v191?"o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk":"jp.syoboi.a2chMate.fragment.HomeFragment",true,context.getClassLoader()).getConstructor().newInstance();
                 field(fragment,v191?"e":"i").set(fragment,adapter);
                 for(int i=0;i<36;i++){
                     prefs.edit().putBoolean(key,(i&1)==0).commit();
                     call(context,"BrowsingHistory","applyLegacy",new Class<?>[]{Object.class,int.class},fragment,101);
                     check(((List<?>)field(adapter,v191?"g":"d").get(adapter)).size()==((i&1)==0?1:2),"legacy ON/OFF source retention "+i);
+                    check(((android.widget.BaseAdapter)adapter).getCount()==((i&1)==0?1:2),"actual getCount respects DAT switch "+i);
+                    field(adapter,v191?"j":"d").set(adapter,wrapper.getConstructor(List.class).newInstance(source));
+                    call(context,"BrowsingHistory","beforeLegacyNotify",new Class<?>[]{Object.class},adapter);
+                    check(((android.widget.BaseAdapter)adapter).getCount()==((i&1)==0?1:2),"late filter publication respects DAT switch "+i);
                 }
                 return null;
                 });

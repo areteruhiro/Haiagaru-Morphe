@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Intent;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -225,6 +225,10 @@ final class EddiArchiveSearchUi {
                 return super.dispatchTouchEvent(event);
             }
         };
+        HaiagaruUi.bindSwipe(scroll, right -> {
+            int mode = Haiagaru.hissiViewerSwipeHistory();
+            if (mode != 0) navigateBySwipe(right == (mode == 1));
+        });
         results = new LinearLayout(activity);
         results.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(results);
@@ -248,7 +252,7 @@ final class EddiArchiveSearchUi {
         });
         root.addView(original);
         applyAppearance();
-        activity.setContentView(root);
+        HaiagaruUi.showModel((HaiagaruComposeActivity) activity, "エッヂ過去ログ検索", root);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
 
         if (!restoreSavedSearch(source, state)) {
@@ -263,7 +267,7 @@ final class EddiArchiveSearchUi {
             JSONObject saved = new JSONObject();
             saved.put("query", queryUri(page).toString());
             saved.put("page", page);
-            saved.put("scroll", scroll.getScrollY());
+            saved.put("scroll", HaiagaruUi.scrollPosition(scroll));
             saved.put("expanded", advancedScroll.getVisibility() == View.VISIBLE);
             if (displayedPage != null) {
                 saved.put("resultQuery", displayedQuery);
@@ -326,7 +330,7 @@ final class EddiArchiveSearchUi {
                 status.setText("前回の検索結果 " + totalResults + "件 · " + page
                         + "ページ目（「検索」で更新）");
                 int position = Math.max(0, saved.optInt("scroll"));
-                scroll.post(() -> scroll.scrollTo(0, position));
+                HaiagaruUi.scrollTo(scroll, position);
             } else {
                 restoreScrollY = Math.max(0, saved.optInt("scroll"));
                 search(page);
@@ -510,11 +514,11 @@ final class EddiArchiveSearchUi {
         }
         previous.setEnabled(page > 1);
         next.setEnabled(result.threads.size() == 50 && (long) page * 50 < totalResults);
-        scroll.scrollTo(0, 0);
+        HaiagaruUi.scrollTo(scroll, 0);
         if (restoreScrollY >= 0) {
             int position = restoreScrollY;
             restoreScrollY = -1;
-            scroll.post(() -> scroll.scrollTo(0, position));
+            HaiagaruUi.scrollTo(scroll, position);
         }
     }
 
@@ -590,7 +594,7 @@ final class EddiArchiveSearchUi {
     }
 
     private void applyAppearance() {
-        int position = scroll.getScrollY();
+        int position = HaiagaruUi.scrollPosition(scroll);
         for (java.util.Map.Entry<TextView, Float> entry : controlTextSizes.entrySet()) {
             TextView view = entry.getKey();
             view.setTextSize(scaledTextSize(entry.getValue(), controlScale));
@@ -610,7 +614,7 @@ final class EddiArchiveSearchUi {
         advancedScroll.getLayoutParams().height = dp(Math.round(240 * controlScale / 100f));
         advancedScroll.requestLayout();
         sortAdapter.notifyDataSetChanged();
-        scroll.post(() -> scroll.scrollTo(0, position));
+        HaiagaruUi.scrollTo(scroll, position);
     }
 
     private void showAppearanceSettings() {
@@ -626,7 +630,7 @@ final class EddiArchiveSearchUi {
         TextView help = new TextView(activity);
         help.setText("検索欄を隠しても「表示」から再表示できます。文字サイズは次回も保持します。");
         content.addView(help);
-        new AlertDialog.Builder(activity).setTitle("過去ログ検索の表示設定")
+        new HaiagaruDialog.Builder(activity).setTitle("過去ログ検索の表示設定")
                 .setView(content).setNegativeButton("キャンセル", null)
                 .setNeutralButton("標準に戻す", (dialog, which) -> saveAppearance(100, 100, false))
                 .setPositiveButton("適用", (dialog, which) -> saveAppearance(

@@ -78,6 +78,24 @@ public final class ImgurThumbnailLoader implements AutoCloseable {
         }));
     }
 
+    /** Compose preview callback, with the same bounded, cookie-free loader. */
+    void loadPreview(String url, java.util.function.Consumer<Bitmap> result) {
+        if (url == null || closed) { result.accept(null); return; }
+        Bitmap cached = cache.get(url);
+        if (cached != null) { result.accept(cached); return; }
+        final int requestGeneration = generation;
+        tasks.add(workers.submit(() -> {
+            Bitmap bitmap = null;
+            try { bitmap = fetch(url, requestGeneration); } catch (Exception ignored) {}
+            final Bitmap preview = bitmap;
+            main.post(() -> {
+                if (closed || requestGeneration != generation) return;
+                if (preview != null) cache.put(url, preview);
+                result.accept(preview);
+            });
+        }));
+    }
+
     private Bitmap fetch(String url, int requestGeneration) throws IOException {
         if (!url.matches("https://i\\.imgur\\.com/[A-Za-z0-9]{1,64}m\\.jpg")) throw new IOException("Invalid preview URL");
         Request request = new Request.Builder().url(url).header("Accept", "image/*").get().build();

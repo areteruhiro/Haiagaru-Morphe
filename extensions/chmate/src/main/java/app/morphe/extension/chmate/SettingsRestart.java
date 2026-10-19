@@ -6,11 +6,11 @@ import android.os.*;
 
 /** Never terminates the app without a fresh, explicit confirmation. */
 final class SettingsRestart {
-    private static final java.util.WeakHashMap<Activity,AlertDialog> OPEN=new java.util.WeakHashMap<>();
+    private static final java.util.WeakHashMap<Activity,HaiagaruDialog> OPEN=new java.util.WeakHashMap<>();
     static void confirm(Activity activity){
         if(activity.isFinishing()||activity.isDestroyed())return;
-        AlertDialog previous=OPEN.get(activity);if(previous!=null&&previous.isShowing())return;
-        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("変更の反映には再起動が必要です")
+        HaiagaruDialog previous=OPEN.get(activity);if(previous!=null&&previous.isShowing())return;
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("変更の反映には再起動が必要です")
                 .setMessage("今すぐChMateを再起動しますか？未保存の入力や実行中のアップロード・検索は中断されます。「あとで」を選んでも設定は保存され、次の起動時に反映されます。")
                 .setNegativeButton("あとで",null).setPositiveButton("今すぐ再起動",(d,w)->restart(activity)).create();
         OPEN.put(activity,dialog);dialog.setOnDismissListener(d->OPEN.remove(activity));dialog.show();

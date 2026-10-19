@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.util.Log;
@@ -42,6 +42,7 @@ public final class QuickFilterToolbar {
 
     public static boolean click(Object fragment, int id) {
         if (id != ID || fragment == null) return false;
+        if (ExtraQuickFilters.open(fragment)) return true;
         Activity activity = null;
         try {
             activity = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
@@ -134,13 +135,13 @@ public final class QuickFilterToolbar {
             throws Exception {
         boolean[] checked = readModelFilterStates(model, version);
         if (checked == null) throw new IllegalStateException("Filter selection state unavailable");
-        // AlertDialog mutates its checkedItems array before invoking this listener.
+        // HaiagaruDialog mutates its checkedItems array before invoking this listener.
         boolean[] displayed = checked.clone();
-        AlertDialog filterDialog = new AlertDialog.Builder(activity).setTitle("フィルタ")
+        HaiagaruDialog filterDialog = new HaiagaruDialog.Builder(activity).setTitle("フィルタ")
                 .setMultiChoiceItems(new String[]{"人気レス", "リンク", "画像", "動画"}, displayed,
                         (dialog, which, enabled) -> {
                             if(which==0 && PopularReplies.openModel(model)) {
-                                ((AlertDialog)dialog).getListView().setItemChecked(which,checked[which]);
+                                ((HaiagaruDialog)dialog).getListView().setItemChecked(which,checked[which]);
                                 return;
                             }
                             if (checked[which] == enabled) return;
@@ -149,7 +150,7 @@ public final class QuickFilterToolbar {
                                 checked[which] = enabled;
                             } catch (Exception error) {
                                 Log.e("Haiagaru", "Quick filter failed", error);
-                                ((AlertDialog) dialog).getListView().setItemChecked(which, checked[which]);
+                                ((HaiagaruDialog) dialog).getListView().setItemChecked(which, checked[which]);
                                 Toast.makeText(activity, "フィルタを切り替えられませんでした", Toast.LENGTH_LONG).show();
                             }
                         }).setNegativeButton("閉じる", null).show();
@@ -157,7 +158,7 @@ public final class QuickFilterToolbar {
     }
 
     /** Invoke the same model-bound action as the original Compose image button. */
-    private static void attachModelImageLongPress(AlertDialog dialog, Activity activity,
+    private static void attachModelImageLongPress(HaiagaruDialog dialog, Activity activity,
             Object model, String version, Object imageFilter) {
         String callbackName = "0.8.10.226 dev".equals(version)
                 ? "o.listener$setContentView$RemoteActionCompatParcelizer"
@@ -213,6 +214,7 @@ public final class QuickFilterToolbar {
     /** Legacy 191 keeps its four quick filters as data-bound ToggleButtons. */
     public static boolean clickLegacy(Object fragment, int id) {
         if (id != ID || fragment == null) return false;
+        if (ExtraQuickFilters.open(fragment)) return true;
         Activity activity = null;
         try {
             activity = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
@@ -231,10 +233,10 @@ public final class QuickFilterToolbar {
             String[] labels = {"人気レス", "リンク", "画像", "動画"};
             boolean[] checked = new boolean[buttons.length];
             for (int index = 0; index < buttons.length; index++) checked[index] = buttons[index].isChecked();
-            AlertDialog filterDialog = new AlertDialog.Builder(activity).setTitle("フィルタ")
+            HaiagaruDialog filterDialog = new HaiagaruDialog.Builder(activity).setTitle("フィルタ")
                     .setMultiChoiceItems(labels, checked, (dialog, which, enabled) -> {
                         if(which==0 && PopularReplies.enabledFor(buttons[which].getContext())) {
-                            ((AlertDialog)dialog).getListView().setItemChecked(which,buttons[which].isChecked());
+                            ((HaiagaruDialog)dialog).getListView().setItemChecked(which,buttons[which].isChecked());
                             PopularReplies.show(fragment);return;
                         }
                         if (buttons[which].isChecked() != enabled) buttons[which].performClick();
@@ -275,12 +277,12 @@ public final class QuickFilterToolbar {
             value.setAccessible(true);
             checked[i] = value.getBoolean(observables[i]);
         }
-        AlertDialog filterDialog = new AlertDialog.Builder(activity).setTitle("フィルタ")
+        HaiagaruDialog filterDialog = new HaiagaruDialog.Builder(activity).setTitle("フィルタ")
                 .setMultiChoiceItems(new String[]{"人気レス", "リンク", "画像", "動画"}, checked,
                         (dialog, which, enabled) -> {
                             try {
                                 if(which==0 && PopularReplies.enabledFor(activity)) {
-                                    ((AlertDialog)dialog).getListView().setItemChecked(which,checked[which]);
+                                    ((HaiagaruDialog)dialog).getListView().setItemChecked(which,checked[which]);
                                     PopularReplies.show(fragment);return;
                                 }
                                 Object observable = observables[which];
@@ -300,7 +302,7 @@ public final class QuickFilterToolbar {
     }
 
     /** Reuse the selected fragment's original image-list action without needing its header. */
-    private static void attachLegacyImageLongPress(AlertDialog dialog, Object fragment, Activity activity) {
+    private static void attachLegacyImageLongPress(HaiagaruDialog dialog, Object fragment, Activity activity) {
         dialog.getListView().setOnItemLongClickListener((parent, view, position, id) -> {
             if (position != 2) return false;
             try {
@@ -492,6 +494,28 @@ public final class QuickFilterToolbar {
             }
         }
         return null;
+    }
+
+    static boolean openImageList(Object adapter) {
+        try {
+            boolean old=adapter.getClass().getName().equals("o.m9ExternalSyntheticLambda1");
+            boolean middle=adapter.getClass().getName().equals("o.listener");
+            if(old) {
+                Object callback=ResponseArchiveEntry.field(adapter,"B");
+                android.view.View button=new android.view.View(Haiagaru.applicationContextForExtension());
+                button.setId(0x7f0a0143);
+                Method method=callback.getClass().getMethod("b",android.view.View.class);method.setAccessible(true);
+                return Boolean.TRUE.equals(method.invoke(callback,button));
+            }
+            Object model=ResponseArchiveEntry.field(adapter,middle?"L":"k");
+            ClassLoader loader=adapter.getClass().getClassLoader();
+            Class<?> kind=loader.loadClass(middle?"o.setLastGoodStreamIdokhttp":"o.isAtLeastLollipop");
+            Object image=Enum.valueOf((Class)kind,"IMAGE");
+            Class<?> callback=loader.loadClass(middle?"o.listener$setContentView$RemoteActionCompatParcelizer":"o.zzacr$ComponentActivity");
+            java.lang.reflect.Constructor<?> constructor=callback.getDeclaredConstructor(Object.class);constructor.setAccessible(true);
+            Method invoke=callback.getDeclaredMethod("invoke",Object.class);invoke.setAccessible(true);
+            invoke.invoke(constructor.newInstance(model),image);return true;
+        }catch(Exception error){Log.w("Haiagaru","Image list from extended filters",error);return false;}
     }
 
     private static boolean containsFilterKinds(Object[] constants) {

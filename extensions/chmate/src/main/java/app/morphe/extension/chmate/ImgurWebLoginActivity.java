@@ -1,14 +1,14 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.*;
 import android.widget.*;
 
 /** A visible, app-local login session. No JS bridge, password collection or cookie export. */
-public final class ImgurWebLoginActivity extends Activity {
+public final class ImgurWebLoginActivity extends HaiagaruComposeActivity {
     private WebView web;
     private FrameLayout browserFrame;
     private TextView location;
@@ -64,7 +64,7 @@ public final class ImgurWebLoginActivity extends Activity {
             web.loadUrl("https://imgur.com/signin");
         });
         verify = button(buttons, "確認・有効化", this::verify);
-        button(buttons, "解除", () -> new AlertDialog.Builder(this).setMessage("Imgurのログイン情報をこのアプリから削除しますか？")
+        button(buttons, "解除", () -> new HaiagaruDialog.Builder(this).setMessage("Imgurのログイン情報をこのアプリから削除しますか？")
                 .setNegativeButton("キャンセル", null).setPositiveButton("解除", (d, w) -> clearSession()).show());
         button(buttons, "戻る", this::finish);
         LinearLayout mediaButtons = new LinearLayout(this); root.addView(mediaButtons);
@@ -83,7 +83,7 @@ public final class ImgurWebLoginActivity extends Activity {
         location = new TextView(this); root.addView(location);
         browserFrame = new FrameLayout(this);
         root.addView(browserFrame, new LinearLayout.LayoutParams(-1, 0, 1));
-        setContentView(root);
+        HaiagaruUi.showModel(this, "Imgurログイン・設定", root);
         web = newLoginWindow();
         web.loadUrl("https://imgur.com/signin");
     }
@@ -277,7 +277,7 @@ public final class ImgurWebLoginActivity extends Activity {
         EditText input = new EditText(this);
         input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         input.setText(Integer.toString(ImgurWebUpload.processingWaitSeconds()));
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Imgurの処理待ち時間（秒）")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(this).setTitle("Imgurの処理待ち時間（秒）")
                 .setMessage("送信後の動画変換などを待つ上限です。0〜1800秒、初期値120秒。"
                         + "0は待たずに投稿一覧で確認します。通信自体のタイムアウトとは別です。"
                         + "待機中は再アップロードしません。時間切れでもImgur側の処理は継続する場合があります。")

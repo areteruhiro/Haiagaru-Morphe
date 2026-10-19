@@ -21,6 +21,7 @@ public final class NativeRestore191 {
     private static final String TAG = "HaiagaruNativeRestore";
     private static final String ERROR = "haiagaru_native_restore_error";
     private static final WeakHashMap<Object, Boolean> preparing = new WeakHashMap<>();
+    private static final WeakHashMap<Object, Boolean> redirected = new WeakHashMap<>();
     private static WeakReference<Object> owner = new WeakReference<>(null);
     private static WeakReference<Thread> restoreWorker = new WeakReference<>(null);
     private static Context context;
@@ -40,6 +41,7 @@ public final class NativeRestore191 {
 
     public static synchronized boolean beginPreview(Object fragment) {
         try {
+            if (Boolean.TRUE.equals(redirected.get(fragment))) return false;
             Thread restoring = restoreWorker.get();
             if (Boolean.TRUE.equals(preparing.get(fragment)) || (restoring != null && restoring.isAlive())) {
                 binding(fragment, "b", boolean.class, true);
@@ -61,6 +63,39 @@ public final class NativeRestore191 {
     }
 
     public static synchronized void finishPreview(Object fragment) { preparing.put(fragment, false); }
+
+    /** Haiagaru ZIPs deliberately have no native SQLite DB, e.g. Cookie-only saves. */
+    public static boolean routeHaiagaruBackup(Object fragment) {
+        try {
+            File directory = (File) field(fragment, "h");
+            File metadata = new File(directory, "snapshot.json");
+            if (!metadata.isFile()) return false;
+            if (metadata.length() > HaiagaruSyncSnapshot.MAX_METADATA_BYTES)
+                throw new IOException("バックアップ情報が大きすぎます");
+            // Validate the signature before routing; the local importer validates the
+            // entire archive again before showing any restore action.
+            try (java.io.InputStream input = new java.io.FileInputStream(metadata);
+                 java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream()) {
+                HaiagaruBackupArchive.copy(input, output);
+                HaiagaruSyncSnapshot.validate(output.toByteArray());
+            }
+            String source = (String) field(fragment, "f");
+            synchronized (NativeRestore191.class) { redirected.put(fragment, true); preparing.put(fragment, false); }
+            new Handler(Looper.getMainLooper()).post(() -> {
+                try {
+                    Activity activity = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
+                    if (activity == null || activity.isFinishing()) return;
+                    binding(fragment, "b", boolean.class, false);
+                    binding(fragment, "c", boolean.class, false);
+                    binding(fragment, "b", String.class, "Haiagaru形式のバックアップです。専用の復元画面で項目を確認してください。");
+                    activity.startActivity(new android.content.Intent(activity, HaiagaruLocalBackupActivity.class)
+                            .putExtra(HaiagaruLocalBackupActivity.EXTRA_MODE, HaiagaruLocalBackupActivity.MODE_OPEN)
+                            .setData(android.net.Uri.parse(source)));
+                } catch (Exception error) { Log.e(TAG, "Cannot open Haiagaru backup screen", error); }
+            });
+            return true;
+        } catch (Exception error) { throw new IllegalStateException("Haiagaruバックアップを確認できません", error); }
+    }
 
     public static boolean beginRestore(Object thread) {
         Object fragment = null;
@@ -202,7 +237,7 @@ public final class NativeRestore191 {
         String error = context.getSharedPreferences("boot_prefs", 0).getString(ERROR, null);
         if (error == null) return;
         errorShown = true;
-        new AlertDialog.Builder(activity).setTitle("ChMate標準バックアップの復元エラー")
+        new HaiagaruDialog.Builder(activity).setTitle("ChMate標準バックアップの復元エラー")
                 .setMessage(error).setPositiveButton(android.R.string.ok, null).show();
     }
 

@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -117,12 +117,12 @@ public final class ClipboardHistory {
                 ListView list = new ListView(activity); list.setAdapter(new ArrayAdapter<>(activity, android.R.layout.simple_list_item_1, labels));
                 root.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
                 TextView empty = new TextView(activity); empty.setText(labels.isEmpty() ? "コピー履歴はありません" : "項目をタップ: 詳細・再コピー・分類・削除"); root.addView(empty);
-                AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("コピー履歴")
+                HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("コピー履歴")
                         .setView(root).setPositiveButton("閉じる", null).setNeutralButton("分類を管理", null).setNegativeButton("全消去", null).create();
                 dialog.setOnShowListener(v -> {
                     dialog.getWindow().setLayout(-1, (int)(activity.getResources().getDisplayMetrics().heightPixels * .85));
                     dialog.getButton(-3).setOnClickListener(w -> categories(activity, null, () -> { dialog.dismiss(); show(activity); }));
-                    dialog.getButton(-2).setOnClickListener(w -> new AlertDialog.Builder(activity).setMessage("コピー履歴を全消去しますか？元に戻せません。分類名は残ります。")
+                    dialog.getButton(-2).setOnClickListener(w -> new HaiagaruDialog.Builder(activity).setMessage("コピー履歴を全消去しますか？元に戻せません。分類名は残ります。")
                             .setNegativeButton("キャンセル", null).setPositiveButton("全消去", (d, which) -> work(activity, () -> {
                                 store(activity).getWritableDatabase().delete("clips", null, null); ui(activity, () -> { dialog.dismiss(); show(activity); });
                             })).show());
@@ -139,7 +139,7 @@ public final class ClipboardHistory {
         work(a, () -> {
             ArrayList<String> names = names(a);
             ArrayList<String> labels = new ArrayList<>(); if (all) labels.add("すべて"); labels.add("未分類"); labels.addAll(names);
-            ui(a, () -> new AlertDialog.Builder(a).setTitle("分類を選択").setItems(labels.toArray(new String[0]),
+            ui(a, () -> new HaiagaruDialog.Builder(a).setTitle("分類を選択").setItems(labels.toArray(new String[0]),
                     (d, p) -> selected.select(all && p == 0 ? null : p == (all ? 1 : 0) ? "" : names.get(p - (all ? 2 : 1))))
                     .setNegativeButton("キャンセル", null).show());
         });
@@ -155,16 +155,16 @@ public final class ClipboardHistory {
             try (Cursor c = store(a).getReadableDatabase().rawQuery("SELECT body FROM clips WHERE id=?", new String[]{Long.toString(id)})) {
                 if (!c.moveToFirst()) return; text = c.getString(0);
             }
-            ui(a, () -> new AlertDialog.Builder(a).setTitle("コピー履歴の操作")
+            ui(a, () -> new HaiagaruDialog.Builder(a).setTitle("コピー履歴の操作")
                     .setItems(new String[]{"全文を見る", "再コピー", "分類を変更", "削除"}, (d, p) -> {
                         if (p == 0) { TextView body = new TextView(a); body.setText(text); body.setTextIsSelectable(true);
-                            ScrollView scroll = new ScrollView(a); scroll.addView(body); new AlertDialog.Builder(a).setTitle("コピーした本文").setView(scroll).setPositiveButton("閉じる", null).show(); }
+                            ScrollView scroll = new ScrollView(a); scroll.addView(body); new HaiagaruDialog.Builder(a).setTitle("コピーした本文").setView(scroll).setPositiveButton("閉じる", null).show(); }
                         if (p == 1) { ((ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("コピー履歴", text)); Toast.makeText(a, "コピーしました", Toast.LENGTH_SHORT).show(); }
                         if (p == 2) chooseCategory(a, false, category -> work(a, () -> {
                             android.content.ContentValues values = new android.content.ContentValues(); values.put("category", category);
                             store(a).getWritableDatabase().update("clips", values, "id=?", new String[]{Long.toString(id)}); ui(a, refresh);
                         }));
-                        if (p == 3) new AlertDialog.Builder(a).setMessage("この履歴を削除しますか？").setNegativeButton("キャンセル", null).setPositiveButton("削除", (x, y) -> work(a, () -> {
+                        if (p == 3) new HaiagaruDialog.Builder(a).setMessage("この履歴を削除しますか？").setNegativeButton("キャンセル", null).setPositiveButton("削除", (x, y) -> work(a, () -> {
                             store(a).getWritableDatabase().delete("clips", "id=?", new String[]{Long.toString(id)}); ui(a, refresh);
                         })).show();
                     }).setNegativeButton("閉じる", null).show());
@@ -173,11 +173,11 @@ public final class ClipboardHistory {
     private static void categories(Activity a, String unused, Runnable refresh) {
         work(a, () -> {
             ArrayList<String> names = names(a); ArrayList<String> choices = new ArrayList<>(); choices.add("新しい分類を作成"); choices.addAll(names);
-            ui(a, () -> new AlertDialog.Builder(a).setTitle("分類の管理").setItems(choices.toArray(new String[0]), (d, p) -> {
+            ui(a, () -> new HaiagaruDialog.Builder(a).setTitle("分類の管理").setItems(choices.toArray(new String[0]), (d, p) -> {
                 if (p == 0) editCategory(a, null, refresh);
-                else { String name = names.get(p-1); new AlertDialog.Builder(a).setTitle(name).setItems(new String[]{"名前を変更", "削除（履歴は未分類へ）"}, (x, y) -> {
+                else { String name = names.get(p-1); new HaiagaruDialog.Builder(a).setTitle(name).setItems(new String[]{"名前を変更", "削除（履歴は未分類へ）"}, (x, y) -> {
                     if (y == 0) editCategory(a, name, refresh);
-                    else new AlertDialog.Builder(a).setMessage("分類を削除し、含まれる履歴を未分類に戻しますか？").setNegativeButton("キャンセル", null)
+                    else new HaiagaruDialog.Builder(a).setMessage("分類を削除し、含まれる履歴を未分類に戻しますか？").setNegativeButton("キャンセル", null)
                         .setPositiveButton("削除", (q, r) -> changeCategory(a, name, null, refresh)).show();
                 }).show(); }
             }).setNegativeButton("閉じる", null).show());
@@ -185,7 +185,7 @@ public final class ClipboardHistory {
     }
     private static void editCategory(Activity a, String old, Runnable refresh) {
         EditText input = new EditText(a); input.setSingleLine(true); if (old != null) input.setText(old);
-        AlertDialog dialog = new AlertDialog.Builder(a).setTitle(old == null ? "分類を作成" : "分類名を変更").setView(input)
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(a).setTitle(old == null ? "分類を作成" : "分類名を変更").setView(input)
                 .setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
         dialog.setOnShowListener(v -> dialog.getButton(-1).setOnClickListener(w -> {
             String name = input.getText().toString().trim();

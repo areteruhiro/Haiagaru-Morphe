@@ -1,7 +1,7 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -57,7 +57,7 @@ public final class MediaUploadManagement {
     public static void show(Activity activity, Object owner) {
         List<JSONObject> rows = entries(activity);
         if (rows.isEmpty()) {
-            new AlertDialog.Builder(activity).setTitle("imgbox／imgpileのサーバー削除・管理")
+            new HaiagaruDialog.Builder(activity).setTitle("imgbox／imgpileのサーバー削除・管理")
                     .setMessage("管理情報を保存したアップロードがありません。\nこの機能の追加後に送信に成功した画像・動画が対象です。過去分の削除キーは復元できません。")
                     .setNeutralButton("imgpile Web送信・履歴", (d, w) -> MediaUploadWebActivity.open(activity))
                     .setPositiveButton("OK", null).show();
@@ -70,7 +70,7 @@ public final class MediaUploadManagement {
             labels[i] = row.optString("provider") + " / " + date.format(new Date(row.optLong("time"))) + "\n" + row.optString("link");
         }
         boolean[] selected = new boolean[rows.size()];
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle("サーバーから一括削除（imgbox／imgpile）")
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("サーバーから一括削除（imgbox／imgpile）")
                 .setMultiChoiceItems(labels, selected, (d, i, checked) -> selected[i] = checked)
                 .setNeutralButton("全選択／解除", null).setPositiveButton("削除の確認", null)
                 .setNegativeButton("閉じる", null).create();
@@ -84,7 +84,7 @@ public final class MediaUploadManagement {
             List<JSONObject> chosen = new ArrayList<>();
             for (int i = 0; i < selected.length; i++) if (selected[i]) chosen.add(rows.get(i));
             if (chosen.isEmpty()) { Toast.makeText(activity, "対象を選択してください", Toast.LENGTH_SHORT).show(); return; }
-            new AlertDialog.Builder(activity).setTitle(chosen.size() + "件をサーバーから削除しますか？")
+            new HaiagaruDialog.Builder(activity).setTitle(chosen.size() + "件をサーバーから削除しますか？")
                     .setMessage("画像・動画へのリンクが利用できなくなります。元には戻せない操作として扱ってください。成功した項目のみ削除済みにし、失敗・未処理分は残します。\nimgpileの削除には送信者のWebセッションが必要です。長押しで管理ページも開けます。")
                     .setNegativeButton("キャンセル", null).setPositiveButton("削除", (d, w) -> {
                         dialog.dismiss(); start(activity, owner, chosen);
@@ -96,7 +96,7 @@ public final class MediaUploadManagement {
         AtomicBoolean cancel = new AtomicBoolean();
         WeakReference<Object> nativeOwner = new WeakReference<>(owner);
         Context context = activity.getApplicationContext();
-        ProgressDialog progress = new ProgressDialog(activity);
+        HaiagaruDialog progress = HaiagaruDialog.progress(activity, "処理を準備しています…");
         progress.setTitle("サーバーから削除中"); progress.setMessage("0 / " + chosen.size());
         progress.setCanceledOnTouchOutside(false); progress.setOnCancelListener(d -> cancel.set(true));
         progress.setButton(-2, "中止", (d, w) -> cancel.set(true)); progress.show();
@@ -129,7 +129,7 @@ public final class MediaUploadManagement {
                 MAIN.post(() -> {
                     if (activity.isDestroyed()) return;
                     if (progress.isShowing()) progress.dismiss();
-                    if (!activity.isFinishing()) new AlertDialog.Builder(activity).setTitle("一括削除の結果")
+                    if (!activity.isFinishing()) new HaiagaruDialog.Builder(activity).setTitle("一括削除の結果")
                             .setMessage("削除済み: " + success + "件\n失敗: " + errors + "件\n未処理: "
                                     + (chosen.size() - success - errors) + "件\n" + detail).setPositiveButton("OK", null).show();
                 });
@@ -139,7 +139,7 @@ public final class MediaUploadManagement {
     private static void confirm(Activity activity, JSONObject row) {
         String provider = row.optString("provider"), link = row.optString("link"), management = row.optString("management");
         if (!MediaUploadManagementPolicy.valid(provider, link, management)) return;
-        new AlertDialog.Builder(activity).setTitle(provider + "の削除・管理ページを開きますか？")
+        new HaiagaruDialog.Builder(activity).setTitle(provider + "の削除・管理ページを開きますか？")
                 .setMessage(link + "\n\n開くだけでは削除しません。ブラウザで対象を確認して削除してください。imgpileはアップロードしたアカウントへのログインが必要です。\n"
                         + "サイトで削除してもChMateの履歴を自動で削除済みにしません。imgboxの管理URLは削除権限を含むため共有しないでください。")
                 .setNegativeButton("キャンセル", null).setPositiveButton("管理ページを開く", (d, w) -> {
