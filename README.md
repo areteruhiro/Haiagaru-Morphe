@@ -188,25 +188,22 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 [MorpheへHaiagaruを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)
 
-通常版URLは正式版 `1.7.1`、プレ版用URLは `1.8.9` を取得します。
-配布物はAndroid拡張を内包したMPPです。
+通常版は`master/patches-bundle.json`、プレリリースは`dev/patches-bundle.json`から取得します。
+配布物はAndroid拡張を内包したMPPです。リリースと生成メタデータはMorphe公式テンプレート準拠のSemantic Release CIで更新します。
 
-現在の正式版（1.7.1）を取得するパッチソースです。
+正式版を取得するパッチソースです。
 
 ```text
 https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle.json
 ```
 
-プレ版 `1.8.9` を取得するパッチソースです。
+プレリリースを有効にしたリポジトリソースは、`dev`ブランチのメタデータを取得します。
 
 ```text
-https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/patches-bundle-pre.json
+https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/dev/patches-bundle.json
 ```
 
-通常版とプレリリース版は別々に更新します。同じバージョン内で修正版を配布する場合は、
-URV Manager / Morphe Managerが更新を検出できるようにJSON上の配布リビジョンを更新します。
-更新が表示されない場合は、パッチソース画面から手動で更新を実行してください。
-Morpheで「プレリリース」を有効にしたリポジトリソースは、`dev/patches-bundle.json`を参照する場合もあります。この取得先も1.8.9に揃えています。GitHubの配信キャッシュにより反映に数分かかる場合があります。
+正式版は`master`、プレリリースは`dev`のSemantic Releaseが更新します。生成されるJSONやCHANGELOGを手作業で編集・公開しないでください。更新が表示されない場合はパッチソース画面から再読み込みしてください。GitHubの配信キャッシュにより反映に数分かかる場合があります。
 変更履歴で「このリリースは空です」と出る場合は、Morphe Managerも最新版へ更新してください。
 
 ## 更新履歴

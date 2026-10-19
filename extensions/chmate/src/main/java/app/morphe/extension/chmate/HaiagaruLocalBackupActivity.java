@@ -143,7 +143,12 @@ public final class HaiagaruLocalBackupActivity extends Activity {
             HaiagaruBackupArchive.Backup backup = HaiagaruBackupArchive.read(this, temporary);
             runOnUiThread(() -> {
                 if (isFinishing() || isDestroyed()) backup.close();
-                else { openedBackup = backup; confirmRestore(backup); }
+                else {
+                    openedBackup = backup;
+                    // Restore the selection saved in this backup, not this device's current save options.
+                    categories = backup.snapshot.optInt("categories", 0) & HaiagaruSyncSnapshot.ALL;
+                    confirmRestore(backup);
+                }
             });
         });
     }
@@ -151,6 +156,7 @@ public final class HaiagaruLocalBackupActivity extends Activity {
     private void confirmRestore(HaiagaruBackupArchive.Backup backup) {
         JSONObject snapshot = backup.snapshot;
         int available = snapshot.optInt("categories", 0) & HaiagaruSyncSnapshot.ALL;
+        if(available==0){showError("復元できる項目がありません");return;}
         int[] bits = HaiagaruMegaSync.CATEGORY_BITS;
         String[] names = HaiagaruMegaSync.CATEGORY_NAMES.clone();
         boolean[] selected = new boolean[bits.length];
@@ -170,10 +176,15 @@ public final class HaiagaruLocalBackupActivity extends Activity {
                 .setMultiChoiceItems(names, selected, (dialog, index, checked) ->
                         selected[index] = checked && (available & bits[index]) != 0)
                 .setNegativeButton("キャンセル", (dialog, which) -> finish())
-                .setNeutralButton("内容・注意事項", (d, w) -> new AlertDialog.Builder(this)
+                .setNeutralButton("内容・注意事項", (d, w) -> {
+                    int selectedFlags=0;
+                    for(int i=0;i<bits.length;i++)if(selected[i])selectedFlags|=bits[i];
+                    categories=selectedFlags;
+                    new AlertDialog.Builder(this)
                         .setMessage("復元前に現在のデータをアプリ内へ退避します。\n" + summary + "\n" + HaiagaruBackupSecrets.WARNING)
                         .setPositiveButton("項目選択に戻る", (info, chosen) -> confirmRestore(backup))
-                        .setOnCancelListener(info -> finish()).show())
+                        .setOnCancelListener(info -> finish()).show();
+                })
                 .setPositiveButton("復元", (dialog, which) -> {
                     int flags = 0;
                     for (int index = 0; index < bits.length; index++) {

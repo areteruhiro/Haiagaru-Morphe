@@ -27,7 +27,7 @@ public final class ToolbarIconsActivity extends Activity {
     private void render() {
         rows.removeAllViews();
         TextView help = new TextView(this);
-        help.setText("追加アイコンの表示を切り替え、端末の画像に変更できます。ここで明示したオン／オフは標準ツールバーの表示チェックより優先し、配置順は標準設定に従います。変更後は再起動の確認が出ます。検索機能自体がオフの場合、検索ボタンは表示しません。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
+        help.setText("追加アイコンの表示を切り替え、端末の画像に変更できます。ここでオンにした項目は、ChMate標準のHOME・スレ一覧・スレッド各ツールバーでチェックした場合に表示します。ここでオフにすると全ツールバーで非表示になります。各ツールバーのチェック状態・配置順は保持します。変更後は再起動の確認が出ます。検索機能自体がオフの場合、検索ボタンは表示しません。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
         for (int i=0;i<ToolbarIcons.NAMES.length;i++) {
             final int n=i;
             CheckBox visible = new CheckBox(this); visible.setText(ToolbarIcons.NAMES[i]);

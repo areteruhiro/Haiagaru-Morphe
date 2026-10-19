@@ -61,7 +61,7 @@ final class LocalAutoBackup {
                 +"ZIPは暗号化されません。Cookie・認証情報などを含める場合は保存先の管理に注意してください。"
                 +"アプリ専用フォルダ外の、端末内フォルダを選んでください。大量のログを含めると時間と空き容量が必要です。");body.addView(note);
         Switch enabled=new Switch(a);enabled.setText("ローカル自動バックアップを有効にする");enabled.setChecked(p.getBoolean("enabled",false));body.addView(enabled);
-        TextView destination=new TextView(a);destination.setText("保存先："+p.getString("tree","未選択"));body.addView(destination);
+        TextView destination=new TextView(a);destination.setText("保存先："+folderLabel(p.getString("tree","")));body.addView(destination);
         Button folder=new Button(a);folder.setText("保存先フォルダを選ぶ");folder.setOnClickListener(v->{
             a.startActivity(new Intent(a,HaiagaruLocalBackupActivity.class).putExtra(HaiagaruLocalBackupActivity.EXTRA_MODE,HaiagaruLocalBackupActivity.MODE_FOLDER));
         });body.addView(folder);
@@ -83,15 +83,44 @@ final class LocalAutoBackup {
         status.setText("前回成功："+(last==0?"未実行":BackupTime.display(last))+"\n"+p.getString("status",""));body.addView(status);
         Button now=new Button(a);now.setText("今すぐバックアップ");now.setOnClickListener(v->run(a.getApplicationContext()));body.addView(now);
         ScrollView scroll=new ScrollView(a);scroll.addView(body);
-        new AlertDialog.Builder(a).setTitle("ローカル自動バックアップ").setView(scroll).setNegativeButton("戻る",null).show();
+        AlertDialog dialog=new AlertDialog.Builder(a).setTitle("ローカル自動バックアップ").setView(scroll).setNegativeButton("戻る",null).create();
+        Runnable refresh=()->{
+            if(a.isFinishing()||a.isDestroyed())return;
+            destination.setText("保存先："+folderLabel(p.getString("tree","")));
+            long latest=p.getLong("last",0);
+            status.setText("前回成功："+(latest==0?"未実行":BackupTime.display(latest))+"\n"+p.getString("status",""));
+        };
+        SharedPreferences.OnSharedPreferenceChangeListener listener=(changed,key)->{
+            if(key==null||key.equals("tree")||key.equals("last")||key.equals("status"))a.runOnUiThread(refresh);
+        };
+        dialog.setOnShowListener(d->{p.registerOnSharedPreferenceChangeListener(listener);refresh.run();});
+        dialog.setOnDismissListener(d->p.unregisterOnSharedPreferenceChangeListener(listener));
+        dialog.show();
     }
     private static EditText number(LinearLayout body,Activity a,String label,int value){
         TextView text=new TextView(a);text.setText(label);body.addView(text);
         EditText input=new EditText(a);input.setInputType(2);input.setText(Integer.toString(value));body.addView(input);return input;
     }
-    static synchronized void setFolder(Context c,Uri tree){
+    static String folderLabel(String value){
+        if(value==null||value.isEmpty())return "未選択";
+        try{
+            Uri tree=Uri.parse(value);
+            // getTreeDocumentId already decodes UTF-8 once; do not URL-decode it a second time.
+            String id=DocumentsContract.getTreeDocumentId(tree);
+            if("com.android.externalstorage.documents".equals(tree.getAuthority())){
+                if(id.startsWith("primary:"))return "内部ストレージ/"+id.substring("primary:".length());
+                return id.replaceFirst(":","/");
+            }
+            return id;
+        }catch(Exception ignored){return Uri.decode(value);}
+    }
+    static synchronized void setFolder(Context c,Uri tree)throws IOException{
+        if(tree==null)throw new IOException("保存先フォルダが選択されていません");
+        SharedPreferences p=prefs(c);String selected=tree.toString();
+        if(selected.equals(p.getString("tree","")))return;
         // Keep the old folder's tracked files untouched; never prune across a folder change.
-        prefs(c).edit().putString("tree",tree.toString()).remove("files").remove("last").apply();
+        if(!p.edit().putString("tree",selected).remove("files").remove("last").remove("status").commit())
+            throw new IOException("保存先の設定を保存できませんでした");
     }
     private static void run(Context c){
         if(!RUNNING.compareAndSet(false,true))return;

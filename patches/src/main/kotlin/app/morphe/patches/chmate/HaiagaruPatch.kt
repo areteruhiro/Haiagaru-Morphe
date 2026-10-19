@@ -62,12 +62,32 @@ private fun BytecodePatchContext.patchToolbarIcons(version: String) {
             }.map { ((it as ReferenceInstruction).reference as FieldReference).name }
         }.distinct()
     check(visibilityFields.size == 1) { "Toolbar visible flag changed: $version $visibilityFields" }
-    mutableClassDefBy("Lapp/morphe/extension/chmate/ToolbarIcons;").methods.single { it.name == "visibilityField" }
-        .replaceInstruction(0, "const-string v0, \"${visibilityFields.single()}\"")
-    constructors.forEach { constructor ->
-        constructor.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
-            .toList().asReversed().forEach { (index, _) -> constructor.addInstruction(index,
-                "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/ToolbarIcons;->applyVisibility(Ljava/lang/Object;)V") }
+    // The native flag is persisted per toolbar and is also used by the customization UI.
+    // Overriding it in constructors resets modern copy(false) and legacy JSON restoration.
+    // Gate only the actual renderer; saved flags and checkbox state must remain native.
+    val (rendererType, rendererMethod) = when (version) {
+        "0.8.10.191 dev" -> "Lo/r8lambdaAcLFFW49T1Yql_ZgYak67s2Jmds;" to "setButtons"
+        "0.8.10.226 dev" -> "Lo/setAdInteractionListener;" to "setToolbarState"
+        "0.8.10.242 dev" -> "Lo/zzcB;" to "setToolbarState"
+        else -> error("Unsupported toolbar renderer: $version")
+    }
+    val renderer = mutableClassDefBy(rendererType).methods.single {
+        it.name == rendererMethod && it.implementation != null
+    }
+    val selectedReads = renderer.implementation!!.instructions.withIndex().filter {
+        it.value.opcode == Opcode.IGET_BOOLEAN &&
+            ((it.value as ReferenceInstruction).reference as FieldReference).let { field ->
+                field.definingClass == type && field.name == visibilityFields.single() && field.type == "Z"
+            }
+    }
+    check(selectedReads.size == 1) { "Toolbar renderer visibility read changed: $version" }
+    selectedReads.forEach { (index, instruction) ->
+        val read = instruction as TwoRegisterInstruction
+        check(read.registerA != read.registerB && read.registerA < 16 && read.registerB < 16)
+        renderer.addInstructions(index + 1, """
+            invoke-static {v${read.registerB}, v${read.registerA}}, Lapp/morphe/extension/chmate/ToolbarIcons;->visibleForToolbar(Ljava/lang/Object;Z)Z
+            move-result v${read.registerA}
+        """.trimIndent())
     }
     val method = owner.methods.single {
         it.parameterTypes == listOf("Landroid/content/Context;", "I") &&

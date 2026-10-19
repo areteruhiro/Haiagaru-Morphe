@@ -33,22 +33,19 @@ public final class ToolbarIcons {
         base.setTint(tint);
         return replace(context, new PreviewItem(i), tint, base);
     }
-    public static String visibilityField() { return ""; } // Version-pinned native field supplied by the patch.
-    public static void applyVisibility(Object item) {
+    /** Called only by the toolbar renderer, never by constructors, editors or serialization. */
+    public static boolean visibleForToolbar(Object item, boolean selected) {
+        if (!selected) return false;
         Context context = Haiagaru.applicationContextForExtension();
-        if (context == null) return;
+        if (context == null || item == null) return selected;
         try {
             for (Field field : item.getClass().getDeclaredFields()) {
                 if (field.getType() != int.class || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
                 field.setAccessible(true); int action = field.getInt(item);
-                int index=index(action);
-                if (index < 0) continue;
-                android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);
-                if(!prefs.contains("visible."+index)&&visible(context,action))return;
-                Field flag = item.getClass().getDeclaredField(visibilityField());
-                flag.setAccessible(true); flag.setBoolean(item, visible(context,action)); return;
+                if (index(action) >= 0) return visible(context, action);
             }
         } catch (ReflectiveOperationException | RuntimeException ignored) { }
+        return selected;
     }
     public static Drawable replaceNative(Object item, Drawable original) {
         // Native methods reuse Context's parameter register for the returned Drawable.
