@@ -77,9 +77,13 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
         fun body(key: String) = bodies.getOrPut(key) { Haiagaru.settingsCategory(this, key).also(::prepareSettingsBindings) }
         var matches by remember { mutableStateOf<List<Pair<SettingsGroup, BoundSetting>>>(emptyList()) }
         var searching by remember { mutableStateOf(false) }
+        var indexedQuery by remember { mutableStateOf("") }
         val list = rememberLazyListState()
         val scope = rememberCoroutineScope()
         val invalidation = revision
+        // Snapshot native toggle values on every preference refresh, even while the
+        // asynchronous search index is being rebuilt. Keep the same controls/listeners.
+        val visibleMatches = matches.map { (group, option) -> group to option.refreshed() }
         val update: () -> Unit = { revision++ }
         val back = { if (selected >= 0) selected = -1 else if (query.isNotEmpty()) query = "" else finish() }
         BackHandler { back() }
@@ -90,18 +94,19 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
         LaunchedEffect(selected) { list.scrollToItem(0) }
         LaunchedEffect(query, invalidation) {
             if (query.isBlank()) { matches = emptyList(); searching = false; return@LaunchedEffect }
-            searching = true; delay(200)
+            if (query != indexedQuery) { searching = true; delay(200) }
             val found = mutableListOf<Pair<SettingsGroup, BoundSetting>>()
             for (group in groups) {
                 group.sources.forEach { source -> settingsRows(body(source)).forEach {
                     val control = it.control
-                    val actionable = control is android.widget.Button || control is android.widget.EditText ||
+                    val actionable = control is android.widget.CompoundButton ||
+                        control is android.widget.Button || control is android.widget.EditText ||
                         control is android.widget.Spinner || control.hasOnClickListeners()
                     if (actionable && SettingsSections.matches(it.keywords + " " + group.ja + " " + group.en, query)) found.add(group to it)
                 } }
                 withFrameNanos { }
             }
-            matches = found; searching = false
+            matches = found; indexedQuery = query; searching = false
         }
         Scaffold(topBar = {
             if (selected < 0 && query.isBlank()) LargeTopAppBar(title = { Text("Haiagaru") },
@@ -139,7 +144,14 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         item { Text(if (searching) (if (english) "Searching…" else "検索中…") else if (matches.isEmpty())
                             (if (english) "No settings found. Try a shorter word." else "見つかりませんでした。短い言葉で探してみてください。")
                             else if (english) "${matches.size} settings" else "${matches.size}件の設定") }
-                        items(matches) { (group, option) -> HaiagaruUi.Group(group.title(english)) { BoundSettingRow(option, update) } }
+                        if (matches.isNotEmpty()) item {
+                            Text(if (english) "Change settings here. Changes are saved automatically."
+                                else "検索結果のスイッチでオン／オフできます。変更は自動で保存されます。",
+                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        items(visibleMatches, key = { (group, option) -> "${group.id}:${System.identityHashCode(option.control)}" }) {
+                            (group, option) -> HaiagaruUi.Group(group.title(english)) { BoundSettingRow(option, update) }
+                        }
                     }
                 } else {
                     val group = groups[selected]

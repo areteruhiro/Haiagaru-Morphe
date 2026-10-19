@@ -25,7 +25,15 @@ import androidx.core.graphics.drawable.toBitmap
 
 /** Adapts the existing preference bindings to Compose controls, without mounting legacy Views.
  * Original listeners remain the single writer, preserving validation and restart behavior. */
-internal data class BoundSetting(val control: View, val label: String) {
+internal data class BoundSetting(
+    val control: View,
+    val label: String,
+    val enabled: Boolean = control.isEnabled,
+    val checked: Boolean? = (control as? CompoundButton)?.isChecked,
+) {
+    // Native Views are not Compose state. Include their current values in row equality so
+    // Compose cannot skip a row whose saved value or dependent enabled state has changed.
+    fun refreshed() = BoundSetting(control, label)
     val keywords: String get() = label + " " + when (control) {
         is EditText -> control.hint?.toString().orEmpty() // Never index entered text or credentials.
         is TextView -> control.text.toString()
@@ -74,16 +82,16 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
     when (view) {
         is CompoundButton -> {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                .toggleable(view.isChecked, enabled = view.isEnabled, role = Role.Switch) {
+                .toggleable(item.checked == true, enabled = item.enabled, role = Role.Switch) {
                     view.isChecked = it; changed()
                 }.padding(horizontal = 12.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(item.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
-                    color = if (view.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-                Switch(checked = view.isChecked, onCheckedChange = null, enabled = view.isEnabled)
+                    color = if (item.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                Switch(checked = item.checked == true, onCheckedChange = null, enabled = item.enabled)
             }
         }
-        is EditText -> BoundTextField(view, item.label, changed = changed)
+        is EditText -> BoundTextField(view, item.label, enabled = item.enabled, changed = changed)
         is ImageView -> view.drawable?.let { drawable ->
             val bitmap = remember(drawable) { drawable.toBitmap(width = 96, height = 96).asImageBitmap() }
             Image(bitmap, view.contentDescription?.toString(), modifier = Modifier.size(56.dp).padding(8.dp),
