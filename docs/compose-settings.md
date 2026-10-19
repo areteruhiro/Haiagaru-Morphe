@@ -1,6 +1,6 @@
 # Compose版の設定・投稿検索画面
 
-開発中の画面変更です。公開済み1.9.3の画面とは異なります。
+プレリリース[1.10.0-dev.1](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.10.0-dev.1)に含まれる画面変更です。正式版1.9.3の画面とは異なります。
 
 ## 設定を探す
 
