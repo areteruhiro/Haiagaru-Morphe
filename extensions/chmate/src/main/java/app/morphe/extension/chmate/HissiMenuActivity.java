@@ -72,6 +72,7 @@ public final class HissiMenuActivity extends Activity {
     private float historySwipeStartX;
     private float historySwipeStartY;
     private String initialWacchoiQuery;
+    private TextView wacchoiConditionView;
     private String lastArchiveErrorKey;
     private Button kyodemoAnalysisButton;
     private String analysisRecoveryAttempt;
@@ -133,7 +134,8 @@ public final class HissiMenuActivity extends Activity {
                 finish();
                 return;
             }
-            if ((checkerMode == 1 || (checkerMode == 3
+            if (!getIntent().getBooleanExtra("haiagaru.wacchoi.kyodemo", false)
+                    && (checkerMode == 1 || (checkerMode == 3
                     && !getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                             .getBoolean(choiceKey(), true))) && openHissiWacchoiSearch()) {
                 finish();
@@ -216,6 +218,7 @@ public final class HissiMenuActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(eddiArchiveMode
                 ? "‹   エッヂ過去ログ  ·  ChMateビュー"
+                : wacchoiSearchLaunch ? "‹   ワッチョイ全文検索  ·  Kyodemo"
                 : currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
                         : "‹   必死チェッカー  ·  ChMateビュー");
@@ -229,9 +232,12 @@ public final class HissiMenuActivity extends Activity {
         TextView hint = new TextView(this);
         hint.setText(eddiArchiveMode
                 ? "エッヂの過去ログを検索できます。スレをタップするとChMateで開きます。"
+                : wacchoiSearchLaunch ? "検索条件：" + initialWacchoiQuery + "  ·  " + sourceBoard
+                        + "\nKyodemoの検索結果を表示します。Hissiでは板・日付を指定して全文を照合できます。"
                 : "IDごとの投稿を見やすく整理。リンクはChMateでそのまま開けます。");
         hint.setTextColor(darkViewer ? Color.rgb(190, 190, 198) : Color.rgb(90, 90, 100));
         hint.setTextSize(12);
+        if (wacchoiSearchLaunch) wacchoiConditionView = hint;
         hint.setPadding(24, 0, 24, 8);
         layout.addView(hint, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -465,7 +471,19 @@ public final class HissiMenuActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 48 * getResources().getDisplayMetrics().densityDpi / 160
         ));
-        if (!eddiArchiveMode && checkerMode == 3) {
+        if (wacchoiSearchLaunch && sourceHost != null && isHissiHost(sourceHost)) {
+            LinearLayout providers = new LinearLayout(this);
+            providers.setPadding(16, 8, 16, 8);
+            Button selected = toolbarButton("✓ Kyodemo");
+            selected.setContentDescription("現在の検索先：Kyodemo");
+            selected.setEnabled(false);
+            providers.addView(selected, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            Button hissi = toolbarButton("Hissiに切替");
+            hissi.setContentDescription("ワッチョイ全文を引き継いでHissiで検索");
+            hissi.setOnClickListener(view -> { if (openHissiWacchoiSearch()) finish(); });
+            providers.addView(hissi, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            layout.addView(providers);
+        } else if (!eddiArchiveMode && checkerMode == 3) {
             TextView alternate = new TextView(this);
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
@@ -730,6 +748,11 @@ public final class HissiMenuActivity extends Activity {
                 .setNegativeButton("キャンセル", null)
                 .setPositiveButton("検索", (dialog, which) -> {
                     String query = input.getText().toString().trim();
+                    if (getIntent().getBooleanExtra("haiagaru.wacchoi.search", false)
+                            && !WacchoiSearch.SLIP.matcher(query).find()) {
+                        Toast.makeText(this, "ワッチョイ全文を入力してください", Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     if (query.matches("-[^\\s()（）<>]{4}")) {
                         Toast.makeText(this, "Kyodemoは下4桁だけの検索には対応していません。IDまたは完全なﾜｯﾁｮｲを入力してください", Toast.LENGTH_LONG).show();
                         return;
@@ -741,6 +764,7 @@ public final class HissiMenuActivity extends Activity {
                         return;
                     }
                     currentUsesKyodemo = true;
+                    updateWacchoiQuery(query);
                     webView.loadUrl(url);
                 }).show();
     }
@@ -1089,6 +1113,7 @@ public final class HissiMenuActivity extends Activity {
                                         sourceHost, sourceBoard, wacchoi);
                                 if (searchUrl != null) {
                                     currentUsesKyodemo = true;
+                                    updateWacchoiQuery(wacchoi);
                                     viewerWebView.loadUrl(searchUrl);
                                 } else {
                                     Toast.makeText(this, "ﾜｯﾁｮｲと板を確認してください",
@@ -1642,6 +1667,13 @@ public final class HissiMenuActivity extends Activity {
         return board.toString();
     }
 
+    private void updateWacchoiQuery(String query) {
+        initialWacchoiQuery = query;
+        getIntent().putExtra("haiagaru.wacchoi.query", query);
+        if (wacchoiConditionView != null) wacchoiConditionView.setText("検索条件：" + query
+                + "  ·  " + sourceBoard + "\nKyodemoの検索結果を表示します。Hissiでは板・日付を指定して全文を照合できます。");
+    }
+
     private boolean openHissiWacchoiSearch() {
         if (sourceHost == null || !isHissiHost(sourceHost) || sourceBoard == null
                 || !sourceBoard.matches("[A-Za-z0-9_-]+")) return false;
@@ -1651,6 +1683,9 @@ public final class HissiMenuActivity extends Activity {
         startActivity(new Intent(this, HissiWacchoiSearchActivity.class)
                 .putExtra("haiagaru.wacchoi.hissi", true)
                 .putExtra("haiagaru.wacchoi.query", slip.group())
+                .putExtra("haiagaru.wacchoi.original", initialWacchoiQuery)
+                .putExtra("haiagaru.wacchoi.host", sourceHost)
+                .putExtra("haiagaru.wacchoi.form", (Intent) getIntent().getParcelableExtra("haiagaru.wacchoi.form"))
                 .putExtra("haiagaru.wacchoi.board", sourceBoard));
         getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                 .edit().putBoolean(choiceKey(), false).apply();

@@ -51,6 +51,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
     val edge = prefs.getBoolean("showEdgeSearch", true)
     val zzz = prefs.getBoolean("showZzzSearch", true)
     val source = a.searchSource
+    val fullWacchoi = a.isFullWacchoiSearch()
     val running = a.stopButton.isEnabled
     val editing = enabled && !running
     val results = (0 until a.resultsLayout.childCount).map { a.resultsLayout.getChildAt(it) }
@@ -83,7 +84,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
         if (!running && ((source == 1 && !edge) || (source == 2 && !zzz))) a.selectSource(0)
     }
     Scaffold(topBar = {
-        TopAppBar(title = { Text("投稿を探す", maxLines = 1, overflow = TextOverflow.Ellipsis) }, navigationIcon = {
+        TopAppBar(title = { Text(if (fullWacchoi) "ワッチョイ全文検索" else "投稿を探す", maxLines = 1, overflow = TextOverflow.Ellipsis) }, navigationIcon = {
             IconButton(onClick = { a.finish() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る") }
         }, actions = {
             TextButton(onClick = { a.historyFromCompose() }) { Text("履歴") }
@@ -103,7 +104,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
                         modifier = Modifier.fillMaxWidth()) { Text("前回の続きから検索") }
                     Button(onClick = { keyboard?.hide(); focus.clearFocus(); a.searchFromCompose() }, enabled = enabled && a.startButton.isEnabled,
                         modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                        Text(when (source) { 1 -> "エッヂを検索"; 2 -> "ZZZSearchで検索"; else -> "選んだ板を検索" })
+                        Text(when { fullWacchoi -> "Hissiで全文を検索"; source == 1 -> "エッヂを検索"; source == 2 -> "ZZZSearchで検索"; else -> "選んだ板を検索" })
                     }
                 }
             }
@@ -126,6 +127,16 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
                 }
             }
             item {
+                if (fullWacchoi) {
+                    HaiagaruUi.Group("検索先") {
+                        ChoiceChips(listOf("Kyodemo", "Hissi"), 1, editing) {
+                            if (it == 0) a.openFullWacchoiKyodemo()
+                        }
+                        Text("Hissiの日別投稿者一覧から、上側・下側を合わせた全文を照合します。板と日付を確認して検索してください。Kyodemoへ切り替えても入力条件は保持します。",
+                            Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
                 Text("どこを探しますか", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 val sources = listOf(0 to "Hissi") + (if (edge || (source == 1 && running)) listOf(1 to "エッヂ") else emptyList()) +
                     (if (zzz || (source == 2 && running)) listOf(2 to "ZZZSearch") else emptyList())
@@ -138,6 +149,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
                     else -> "Hissiの日別の投稿者一覧を調べます。まず板と対象日を選んでください。"
                 }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp))
+                }
             }
             if (source == 0) item {
                 HaiagaruUi.Group("検索する板・日付") {
@@ -165,14 +177,14 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
                         ChoiceChips(listOf("投稿ID", "ワッチョイ上4桁", "ワッチョイ下4桁"), a.edgeMode.selectedItemPosition, editing) {
                             a.edgeMode.setSelection(it); changed()
                         }
-                    } else {
+                    } else if (!fullWacchoi) {
                         val upper = a.halfGroup.checkedRadioButtonId == a.halfGroup.getChildAt(0).id
                         ChoiceChips(listOf("上側（ハイフン前）", "下側（ハイフン後）"), if (upper) 0 else 1, editing) {
                             a.halfGroup.check(a.halfGroup.getChildAt(it).id); changed()
                         }
                     }
                     BoundTextField(a.fourInput,
-                        if (source == 1 && a.edgeMode.selectedItemPosition == 0) "投稿ID（空欄可・ID:は省略可）" else "ワッチョイの文字（部分一致・空欄可）",
+                        if (fullWacchoi) "ワッチョイ全文（例：abcd-Ef12）" else if (source == 1 && a.edgeMode.selectedItemPosition == 0) "投稿ID（空欄可・ID:は省略可）" else "ワッチョイの文字（部分一致・空欄可）",
                         enabled = editing, changed = changed)
                     if (source != 0) {
                         BoundTextField(a.titleKeywordInput, "スレ名に含まれる言葉（空欄可）", editing, changed)

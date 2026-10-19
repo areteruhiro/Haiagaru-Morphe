@@ -185,6 +185,11 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                 renderBoardChoices();
             }
             restoredDraft = true;
+            Intent previous = getIntent().getParcelableExtra("haiagaru.wacchoi.form");
+            if (previous != null) {
+                restoreSearchFields(previous); searchSource = 0;
+                if (query != null && WacchoiSearch.SLIP.matcher(query).matches()) fourInput.setText(query);
+            }
         }
         Intent fields = state == null ? null : state.getParcelable("haiagaru.searchForm");
         if (fields != null) {
@@ -255,6 +260,42 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     int searchSource;
     private boolean boardsRequested;
     void setComposeChanged(Runnable changed) { composeChanged = changed; }
+    boolean isFullWacchoiSearch() {
+        return searchSource == 0 && getIntent().getBooleanExtra("haiagaru.wacchoi.hissi", false);
+    }
+    void openFullWacchoiKyodemo() {
+        if (stopButton.isEnabled()) return;
+        String query = fourInput.getText().toString().trim();
+        if (!WacchoiSearch.SLIP.matcher(query).matches()) {
+            fourInput.setError("ワッチョイ全文を入力してください（例：abcd-Ef12）");
+            searchUiChanged(); return;
+        }
+        if (selectedBoards.size() != 1) {
+            boardStatus.setError("Kyodemoへの切替は板を1つ選択してください");
+            searchUiChanged(); return;
+        }
+        String board = selectedBoards.iterator().next();
+        String kyodemoQuery = query;
+        String original = getIntent().getStringExtra("haiagaru.wacchoi.original");
+        Matcher originalSlip = WacchoiSearch.SLIP.matcher(original == null ? "" : original);
+        if (originalSlip.find() && query.equals(originalSlip.group())) kyodemoQuery = original;
+        String host = getIntent().getStringExtra("haiagaru.wacchoi.host");
+        if (host == null) host = "5ch.io";
+        if (KyodemoRouting.wacchoiSearchUrl(host, board, kyodemoQuery) == null) {
+            boardStatus.setError("この板のKyodemo検索先が見つかりません");
+            searchUiChanged(); return;
+        }
+        startActivity(new Intent(this, HissiMenuActivity.class)
+                .putExtra("haiagaru.wacchoi.search", true)
+                .putExtra("haiagaru.wacchoi.kyodemo", true)
+                .putExtra("haiagaru.wacchoi.query", kyodemoQuery)
+                .putExtra("haiagaru.wacchoi.host", host)
+                .putExtra("haiagaru.wacchoi.board", board)
+                .putExtra("haiagaru.wacchoi.form", captureSearchFields()));
+        getSharedPreferences("haiagaru_checker_choice", MODE_PRIVATE).edit()
+                .putBoolean(host.toLowerCase(Locale.ROOT) + "/" + board, true).apply();
+        finish();
+    }
     void searchUiChanged() { if (composeChanged != null) composeChanged.run(); }
     void selectSource(int source) {
         searchSource = source;
@@ -277,6 +318,10 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     void searchFromCompose() {
         fourInput.setError(null); fromInput.setError(null); toInput.setError(null);
         pageLimitInput.setError(null); requestLimitInput.setError(null); boardStatus.setError(null);
+        if (isFullWacchoiSearch() && !WacchoiSearch.SLIP.matcher(fourInput.getText().toString().trim()).matches()) {
+            fourInput.setError("ワッチョイ全文を入力してください（例：abcd-Ef12）");
+            searchUiChanged(); return;
+        }
         if (searchSource == 1) startEdgeSearch();
         else if (searchSource == 2) launchZzzSearch(fourInput.getText().toString(),
                 titleKeywordInput.getText().toString(),bodyKeywordInput.getText().toString(),
