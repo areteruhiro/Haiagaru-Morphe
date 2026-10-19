@@ -1,3 +1,13 @@
+# Haiagaru 1.11.0
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.0/docs/release-1.11.0.md)
+
+
+### ✨ New Features
+
+* release Haiagaru 1.11.0 with advanced NG chain actions ([c069ead](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c069eadbdd8b0c842f9b0b40e1f2b12b82ebde0e))
+* support author and reply chains in advanced NG rules ([405533e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/405533ee009e358d35520243a6e63df6c5a41153))
+
 # Haiagaru 1.10.0
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0/docs/release-1.10.0.md)
