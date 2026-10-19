@@ -566,6 +566,8 @@ public final class ResponseArchive {
                 int legacy = labels.size(); if (entry == null) labels.add("従来の保存レスを見る");
                 int manageLegacy = labels.size(); if (entry == null) labels.add("従来の保存レスを管理・削除");
                 int managePage = labels.size(); if (entry == null) labels.add("保存用スレのレスを管理・削除");
+                int feature = labels.size(); if (entry == null) labels.add("レス保存機能：" +
+                        (FeatureSwitches.enabled("responseArchiveEnabled", true) ? "オン（タップでオフ）" : "オフ（タップでオン）"));
                 int next = labels.size(); if (end < stored.size()) labels.add("次の100件");
                 MAIN.post(() -> {
                     if (a.isFinishing() || a.isDestroyed()) return;
@@ -581,6 +583,11 @@ public final class ResponseArchive {
                                 else if (entry == null && which == managePage) {
                                     if (page.isEmpty()) toast(a, "管理する保存用スレがありません");
                                     else chooseManageCollection(a, page, 0);
+                                }
+                                else if (entry == null && which == feature) {
+                                    a.getSharedPreferences(WacchoiSearchOptions.PREFS, 0).edit().putBoolean("responseArchiveEnabled",
+                                            !FeatureSwitches.enabled("responseArchiveEnabled", true)).apply();
+                                    chooseCollection(a, null, offset);
                                 }
                                 else if (which == next) chooseCollection(a, entry, end);
                             }).setNegativeButton("閉じる", null).show();

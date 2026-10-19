@@ -17,9 +17,9 @@ public final class ToolbarIcons {
     private ToolbarIcons() {}
     static int index(int action) { int i = action - 0x7e000001; return i >= 0 && i < NAMES.length ? i : -1; }
     public static boolean visible(Context context, int action) {
-        int i = index(action);
-        if((i==4||i==5)&&!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return false;
-        return i < 0 || context.getSharedPreferences(PREFS, 0).getBoolean("visible." + i, i<4);
+        // ChMate's per-toolbar selection is the only visibility control.
+        // Keep search reachable when searching is disabled, so it can be enabled there.
+        return true;
     }
     static File file(Context context, int i) { return new File(context.getFilesDir(), "haiagaru-toolbar-icons/" + i + ".png"); }
     static synchronized void invalidate(int i) { CACHE[i] = null; }
@@ -35,16 +35,6 @@ public final class ToolbarIcons {
     }
     /** Called only by the toolbar renderer, never by constructors, editors or serialization. */
     public static boolean visibleForToolbar(Object item, boolean selected) {
-        if (!selected) return false;
-        Context context = Haiagaru.applicationContextForExtension();
-        if (context == null || item == null) return selected;
-        try {
-            for (Field field : item.getClass().getDeclaredFields()) {
-                if (field.getType() != int.class || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
-                field.setAccessible(true); int action = field.getInt(item);
-                if (index(action) >= 0) return visible(context, action);
-            }
-        } catch (ReflectiveOperationException | RuntimeException ignored) { }
         return selected;
     }
     public static Drawable replaceNative(Object item, Drawable original) {
@@ -90,7 +80,7 @@ public final class ToolbarIcons {
     }
     static void addSettingsButton(android.widget.LinearLayout layout, android.app.Activity activity) {
         android.widget.Button button = new android.widget.Button(activity);
-        button.setText("ツールバー表示・追加アイコン");
+        button.setText("ツールバーのアイコン画像");
         button.setOnClickListener(v -> activity.startActivity(new android.content.Intent(activity, ToolbarIconsActivity.class)));
         layout.addView(button);
     }

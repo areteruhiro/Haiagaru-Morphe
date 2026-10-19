@@ -23,6 +23,10 @@ dependencies {
 }
 
 tasks.named<ProcessResources>("processResources") {
+    dependsOn(":extensions:chmate:composeResources")
+    from(project(":extensions:chmate").layout.buildDirectory.file("compose-resources/haiagaru-ui-res.apk")) {
+        into("chmate/compose")
+    }
     from(zipTree(rootProject.file("vpn/image-stack/prebuilt/image-stack.aar"))) {
         include("jni/**/*.so")
         into("chmate/image-vpn")

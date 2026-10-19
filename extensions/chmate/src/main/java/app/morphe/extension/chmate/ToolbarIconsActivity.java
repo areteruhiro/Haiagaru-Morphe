@@ -11,32 +11,30 @@ import java.io.*;
 import java.util.concurrent.Executors;
 
 /** System document picker only; imports a bounded private copy, without broad storage access. */
-public final class ToolbarIconsActivity extends Activity {
+public final class ToolbarIconsActivity extends HaiagaruComposeActivity {
     private int selected = -1;
     private boolean busy;
     private LinearLayout rows;
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         if (state != null) selected = state.getInt("selected", -1);
-        setTitle("ツールバー表示・追加アイコン");
+        setTitle("ツールバーのアイコン画像");
         ScrollView scroll = new ScrollView(this); rows = new LinearLayout(this); rows.setOrientation(1);
         int pad = (int)(16 * getResources().getDisplayMetrics().density); rows.setPadding(pad,pad,pad,pad);
         scroll.setFitsSystemWindows(true);
-        scroll.addView(rows); setContentView(scroll); render();
+        render();
     }
     private void render() {
         rows.removeAllViews();
         TextView help = new TextView(this);
-        help.setText("追加アイコンの表示を切り替え、端末の画像に変更できます。ここでオンにした項目は、ChMate標準のHOME・スレ一覧・スレッド各ツールバーでチェックした場合に表示します。ここでオフにすると全ツールバーで非表示になります。各ツールバーのチェック状態・配置順は保持します。変更後は再起動の確認が出ます。検索機能自体がオフの場合、検索ボタンは表示しません。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
+        help.setText("アイコンの画像だけを変更します。表示・非表示と配置順は、ChMateのHOME・板・スレの各ツールバー設定で変更してください。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
         for (int i=0;i<ToolbarIcons.NAMES.length;i++) {
             final int n=i;
-            CheckBox visible = new CheckBox(this); visible.setText(ToolbarIcons.NAMES[i]);
-            visible.setChecked(ToolbarIcons.visible(this,0x7e000001+i));
-            visible.setOnCheckedChangeListener((v,on)->{getSharedPreferences(ToolbarIcons.PREFS,0).edit().putBoolean("visible."+n,on).apply();SettingsRestart.confirm(this);});
-            rows.addView(visible);
+            TextView label = new TextView(this); label.setText(ToolbarIcons.NAMES[i]); rows.addView(label);
             ImageView preview = new ImageView(this);
-            preview.setImageDrawable(ToolbarIcons.preview(this, i, visible.getCurrentTextColor()));
+            preview.setImageDrawable(ToolbarIcons.preview(this, i, label.getCurrentTextColor()));
             preview.setContentDescription(ToolbarIcons.NAMES[i]+"のアイコン");
+            preview.setTag(ToolbarIcons.file(this,i).isFile());
             int iconSize=Math.round(40*getResources().getDisplayMetrics().density);
             rows.addView(preview,new LinearLayout.LayoutParams(iconSize,iconSize));
             Button image = new Button(this); image.setText(ToolbarIcons.file(this,i).isFile()?"画像を変更（カスタム画像使用中）":"画像を選択");
@@ -53,6 +51,7 @@ public final class ToolbarIconsActivity extends Activity {
                 }).show());rows.addView(reset);
         }
         Button close=new Button(this);close.setText("閉じる");close.setOnClickListener(v->finish());rows.addView(close);
+        HaiagaruUi.showForm(this,"ツールバーのアイコン画像",rows);
     }
     @Override protected void onSaveInstanceState(Bundle state){state.putInt("selected",selected);super.onSaveInstanceState(state);}
     @Override protected void onActivityResult(int request,int result,Intent data) {

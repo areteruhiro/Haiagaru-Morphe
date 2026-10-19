@@ -48,7 +48,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** On-demand, rate-limited search of Hissi's daily public poster indexes. */
-public final class HissiWacchoiSearchActivity extends Activity {
+public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     public static final String EXTRA_HALF = "app.morphe.extension.chmate.WACCHOI_HALF";
     public static final String HALF_UPPER = "upper";
     // The public daily index is served on HTTP; its HTTPS endpoint can time out.
@@ -95,23 +95,23 @@ public final class HissiWacchoiSearchActivity extends Activity {
     private final Set<String> displayedResults = new LinkedHashSet<>();
     private final Set<String> selectedBoards = new LinkedHashSet<>();
     private final List<BoardEntry> availableBoards = new ArrayList<>();
-    private EditText boardFilter, fromInput, toInput, fourInput, pageLimitInput;
-    private EditText titleKeywordInput, bodyKeywordInput, requestLimitInput;
+    EditText boardFilter, fromInput, toInput, fourInput, pageLimitInput;
+    EditText titleKeywordInput, bodyKeywordInput, requestLimitInput;
     private String edgeTitleWords = "", edgeBodyWords = "";
-    private CheckBox edgePast;
-    private android.widget.Spinner edgeMode;
+    CheckBox edgePast;
+    android.widget.Spinner edgeMode;
     private int edgeMatchMode;
     private boolean edgeArchive;
     private String edgeNextBoard, edgeResumeUrl, edgeResumeTitle = "";
     private WacchoiSearch.RequestBudget requestBudget = new WacchoiSearch.RequestBudget(0);
     private final Set<String> edgeVisitedBoards = new LinkedHashSet<>();
-    private LinearLayout boardChoices, boardSection;
-    private Button boardToggle;
-    private TextView boardStatus;
-    private RadioGroup halfGroup;
-    private Button startButton, edgeStartButton, stopButton, resumeButton;
-    private TextView statusView;
-    private LinearLayout resultsLayout;
+    LinearLayout boardChoices, boardSection;
+    Button boardToggle;
+    TextView boardStatus;
+    RadioGroup halfGroup;
+    Button startButton, edgeStartButton, stopButton, resumeButton;
+    TextView statusView;
+    LinearLayout resultsLayout;
     private android.app.Dialog zzzDialog;
     private android.webkit.WebView zzzWebView;
     private final android.os.Handler backgroundUi=new android.os.Handler(android.os.Looper.getMainLooper());
@@ -133,9 +133,13 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 else if(r.kind==1)publishThread(new HissiThreadResults.Result(r.a,r.b,r.c));
                 else publishEdgeResult(r.a,r.b,r.c,r.d);
             }
-            statusView.setText("バックグラウンド検索: "+current.status);
+            String caption = "バックグラウンド検索: " + current.status;
+            boolean resumable = !current.running && current.canResume();
+            boolean changed = stopButton.isEnabled() != current.running || resumeButton.isEnabled() != resumable;
+            if (!caption.contentEquals(statusView.getText())) statusView.setText(caption);
             startButton.setEnabled(!current.running);edgeStartButton.setEnabled(!current.running);
-            stopButton.setEnabled(current.running);resumeButton.setEnabled(!current.running&&current.canResume());
+            stopButton.setEnabled(current.running);resumeButton.setEnabled(resumable);
+            if (changed) searchUiChanged();
         }
         backgroundUi.postDelayed(this,1000);
     }};
@@ -161,7 +165,6 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true)){Toast.makeText(this,"4桁検索は設定でオフになっています",Toast.LENGTH_SHORT).show();finish();return;}
         buildUi();
         String half = getIntent().getStringExtra(EXTRA_HALF);
         if (HALF_UPPER.equals(half)) { halfGroup.check(halfGroup.getChildAt(0).getId()); edgeMode.setSelection(1); }
@@ -203,7 +206,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
                 .putExtra("upper",halfGroup.getCheckedRadioButtonId()==halfGroup.getChildAt(0).getId())
                 .putExtra("edgeArchive",edgePast.isChecked()).putExtra("edgeMatchMode",edgeMode.getSelectedItemPosition())
                 .putExtra("ui.limitText",pageLimitInput.getText().toString())
-                .putExtra("ui.requestLimitText",requestLimitInput.getText().toString());
+                .putExtra("ui.requestLimitText",requestLimitInput.getText().toString()).putExtra("ui.source",searchSource);
     }
 
     private String conditionText(Intent args,String key,String fallback) {
@@ -212,6 +215,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     private void restoreSearchFields(Intent args) {
         if(args==null)return;
+        searchSource = Math.max(0,Math.min(2,args.getIntExtra("ui.source",args.getBooleanExtra("edge",false)?1:0)));
         fourInput.setText(conditionText(args,"four",""));
         titleKeywordInput.setText(conditionText(args,"titleWords",""));
         bodyKeywordInput.setText(conditionText(args,"bodyWords",""));
@@ -231,9 +235,50 @@ public final class HissiWacchoiSearchActivity extends Activity {
             else for(String board:boards.split(","))if(!board.isEmpty())selectedBoards.add(board);
             renderBoardChoices();
         }
+        if (restoreAllBoards && searchSource == 0) loadBoardsOnDemand();
+        searchUiChanged();
     }
 
+    private Runnable composeChanged;
+    int searchSource;
+    private boolean boardsRequested;
+    void setComposeChanged(Runnable changed) { composeChanged = changed; }
+    void searchUiChanged() { if (composeChanged != null) composeChanged.run(); }
+    void selectSource(int source) {
+        searchSource = source;
+        getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putInt("search.lastSource",source).apply();
+        if (restoreAllBoards && source == 0) loadBoardsOnDemand();
+        searchUiChanged();
+    }
+    void setSearchEnabled(boolean enabled) {
+        getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putBoolean("wacchoiSearchEnabled",enabled).apply();
+        if (enabled && restoreAllBoards && searchSource == 0) loadBoardsOnDemand();
+        if (!enabled && stopButton.isEnabled()) stopSearch();
+        SettingsEffects.changed(this,"wacchoiSearchEnabled",enabled);
+        searchUiChanged();
+    }
+    void loadBoardsOnDemand() {
+        if (!boardsRequested && FeatureSwitches.enabled("wacchoiSearchEnabled",true)) {
+            boardsRequested = true; loadBoards();
+        }
+    }
+    void searchFromCompose() {
+        fourInput.setError(null); fromInput.setError(null); toInput.setError(null);
+        pageLimitInput.setError(null); requestLimitInput.setError(null); boardStatus.setError(null);
+        if (searchSource == 1) startEdgeSearch();
+        else if (searchSource == 2) launchZzzSearch(fourInput.getText().toString(),
+                titleKeywordInput.getText().toString(),bodyKeywordInput.getText().toString(),
+                halfGroup.getCheckedRadioButtonId()==halfGroup.getChildAt(0).getId());
+        else startSearch();
+        searchUiChanged();
+    }
+    void stopFromCompose() { stopSearch(); searchUiChanged(); }
+    void resumeFromCompose() { if (FeatureSwitches.enabled("wacchoiSearchEnabled",true)) resumeSearch(); searchUiChanged(); }
+    void historyFromCompose() { WacchoiHistory.show(this,this::openHistory); }
+    void chooseDateFromCompose(EditText target) { chooseDate(target); }
+
     private void buildUi() {
+        searchSource = Math.max(0,Math.min(2,getSharedPreferences(WacchoiSearchOptions.PREFS,0).getInt("search.lastSource",0)));
         int pad = dp(16);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -286,7 +331,10 @@ public final class HissiWacchoiSearchActivity extends Activity {
             WacchoiSearch.selectAllBoards(availableBoardCodes(), selectedBoards);
             renderBoardChoices();
         });
-        boardStatus = label("板一覧を取得しています…");
+        boardStatus = new TextView(this) {
+            @Override protected void onTextChanged(CharSequence text,int start,int before,int count) { searchUiChanged(); }
+        };
+        boardStatus.setText("板を選ぶと一覧を取得します");
         boardSection.addView(boardStatus, row());
         boardChoices = new LinearLayout(this);
         boardChoices.setOrientation(LinearLayout.VERTICAL);
@@ -398,9 +446,11 @@ public final class HissiWacchoiSearchActivity extends Activity {
         if (!showEdge) edgeStartButton.setVisibility(View.GONE);
 
         pageLimitInput = field("Hissiの一覧ページ数／エッヂのスレ件数", "100");
+        pageLimitInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         root.addView(label("走査上限（最大10000。エッヂはスレ件数）"));
         root.addView(pageLimitInput, row());
         requestLimitInput = field("通信回数上限（0＝無制限）", "0");
+        requestLimitInput.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         root.addView(label("通信回数上限（開始／再開1回ごと。0＝無制限）"));
         root.addView(requestLimitInput, row());
 
@@ -417,18 +467,23 @@ public final class HissiWacchoiSearchActivity extends Activity {
         resumeButton.setOnClickListener(v -> resumeSearch());
         root.addView(resumeButton, row());
 
-        statusView = new TextView(this); statusView.setTextSize(13);
+        statusView = new TextView(this) {
+            @Override protected void onTextChanged(CharSequence text,int start,int before,int count) { searchUiChanged(); }
+        }; statusView.setTextSize(13);
         root.addView(statusView, row());
         resultsLayout = new LinearLayout(this); resultsLayout.setOrientation(LinearLayout.VERTICAL);
         root.addView(resultsLayout, row());
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.addView(root);
-        setContentView(scroll);
+        SearchComposeUi.show(this);
+        resultsLayout.setOnHierarchyChangeListener(new ViewGroup.OnHierarchyChangeListener() {
+            public void onChildViewAdded(View parent, View child) { searchUiChanged(); }
+            public void onChildViewRemoved(View parent, View child) { searchUiChanged(); }
+        });
 
         startButton.setOnClickListener(v -> startSearch());
         stopButton.setOnClickListener(v -> stopSearch());
-        loadBoards();
     }
 
     private void launchZzzSearch(String token, String titleWords, String bodyWords, boolean upper) {
@@ -488,6 +543,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
             } catch (Exception error) {
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
+                    boardsRequested = false;
                     boardStatus.setText("板一覧を取得できません: " + error.getMessage()
                             + "。通信後に検索画面を開き直してください。");
                 });
@@ -497,6 +553,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     private void renderBoardChoices() {
         if (boardChoices == null) return;
+        if (!selectedBoards.isEmpty()) boardStatus.setError(null);
         boardChoices.removeAllViews();
         String filter = boardFilter.getText().toString().trim().toLowerCase(Locale.ROOT);
         int shown = 0, matches = 0;
@@ -524,6 +581,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
                     + (matches > MAX_VISIBLE_BOARDS ? "。板名をさらに絞ると続きが表示されます" : ""));
         }
         updateBoardToggle();
+        searchUiChanged();
     }
 
     private List<String> availableBoardCodes() {
@@ -534,7 +592,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     private void updateBoardToggle() {
         if (boardToggle == null || boardSection == null) return;
-        boardToggle.setText("掲示板（" + selectedBoards.size() + "件選択）  "
+        boardToggle.setText((restoreAllBoards ? "掲示板（全対応板・一覧を取得中）  " : "掲示板（" + selectedBoards.size() + "件選択）  ")
                 + (boardSection.getVisibility() == View.VISIBLE ? "▲" : "▼"));
     }
 
@@ -550,6 +608,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
             Calendar selected = Calendar.getInstance();
             selected.set(year, month, day);
             target.setText(new SimpleDateFormat("yyyyMMdd", Locale.US).format(selected.getTime()));
+            target.setError(null); searchUiChanged();
         }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
     }
 
@@ -557,7 +616,6 @@ public final class HissiWacchoiSearchActivity extends Activity {
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return;
         fourInput.setError(null);
         final String four = fourInput.getText().toString().trim();
-        if (four.isEmpty() && getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean("showZzzSearch",true) && launchKeywordSearchIfAvailable()) return;
         if (!WacchoiSearch.validFilter(four)) {
             fourInput.setError("英数字・+・/・-のみ入力してください");
             return;
@@ -1010,6 +1068,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
         runOnUiThread(() -> {
             if (isDestroyed() || !displayedResults.add(values[0])) return;
             TextView row = new TextView(this);
+            row.setTag(0);
             row.setText(caption + "\n" + values[2] + "\n" + values[1] + "\n投稿者ページを開く");
             row.setTextSize(14); row.setPadding(dp(10), dp(9), dp(10), dp(9));
             row.setOnClickListener(v -> open(values[0]));
@@ -1046,6 +1105,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
         runOnUiThread(() -> {
             if (isDestroyed() || !displayedResults.add(url)) return;
             TextView row = new TextView(this);
+            row.setTag(2);
             row.setText(caption + "\n" + slip + "\n" + identity + "\n" + url);
             row.setTextSize(14); row.setPadding(dp(10), dp(9), dp(10), dp(9));
             row.setOnClickListener(v -> open(url));
@@ -1102,6 +1162,7 @@ public final class HissiWacchoiSearchActivity extends Activity {
 
     /** Keep the service's JavaScript-rendered search results inside the app. */
     private void openZzzSearch(String url) {
+        composeChanged = null;
         if (zzzDialog != null) zzzDialog.dismiss();
         android.app.Dialog dialog = new android.app.Dialog(this,
                 android.R.style.Theme_Material_Light_NoActionBar);

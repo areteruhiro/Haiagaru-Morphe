@@ -1,6 +1,16 @@
 import com.android.build.api.dsl.ApplicationExtension
 
+plugins {
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.21"
+}
+
 dependencies {
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.ui:ui:1.8.3")
+    implementation("androidx.compose.foundation:foundation:1.8.3")
+    // Expressive is publicly available in the alpha API (hidden in 1.4 stable).
+    implementation("androidx.compose.material3:material3:1.4.0-alpha18")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation(files(rootProject.file("vpn/image-stack/prebuilt/image-stack.aar")))
     implementation(libs.hiddenapi)
     implementation("org.mozilla:rhino:1.8.0")
@@ -30,9 +40,39 @@ configure<ApplicationExtension> {
     }
 
     buildFeatures.buildConfig = true
+    buildFeatures.compose = true
+    // Keep UI resource IDs separate from ChMate's 0x7f resource table.
+    androidResources.additionalParameters.addAll(listOf("--package-id", "0x7d", "--allow-reserved-package-id"))
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+// The extension contributes bytecode; Compose also needs its strings and view tags.
+// Ship a resource-only APK with a separate package ID, never host resource IDs.
+val composeResourceArchive = tasks.register<Zip>("composeResourceArchive") {
+    dependsOn("assembleRelease")
+    from({ zipTree(layout.buildDirectory.file("outputs/apk/release/chmate-release-unsigned.apk")) }) {
+        include("AndroidManifest.xml", "resources.arsc", "res/**")
+    }
+    entryCompression = ZipEntryCompression.STORED
+    archiveFileName.set("haiagaru-ui-res-unaligned.apk")
+    destinationDirectory.set(layout.buildDirectory.dir("compose-resources"))
+}
+
+val composeSdk = extensions.getByType<com.android.build.api.variant.ApplicationAndroidComponentsExtension>().sdkComponents.sdkDirectory
+val composeBuildTools = extensions.getByType<ApplicationExtension>().buildToolsVersion
+tasks.register<Exec>("composeResources") {
+    dependsOn(composeResourceArchive)
+    val source = composeResourceArchive.flatMap { it.archiveFile }
+    val target = layout.buildDirectory.file("compose-resources/haiagaru-ui-res.apk")
+    inputs.file(source)
+    outputs.file(target)
+    doFirst {
+        val suffix = if (System.getProperty("os.name").startsWith("Windows")) ".exe" else ""
+        val zipalign = composeSdk.get().file("build-tools/$composeBuildTools/zipalign$suffix").asFile
+        commandLine(zipalign, "-f", "4", source.get().asFile, target.get().asFile)
     }
 }

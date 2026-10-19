@@ -82,16 +82,6 @@ public final class ResponseMenuSettings {
     }
     static boolean visible(int id) {
         if((id==0x7e484a01||id==0x7e484a03)&&!FeatureSwitches.enabled("responseArchiveEnabled",true))return false;
-        if((id==75||id==0x7e000077||id==0x7e000078)&&!FeatureSwitches.enabled("wacchoiSearchEnabled",true))return false;
-        Context context=Haiagaru.applicationContextForExtension();
-        if(context!=null){int override=context.getSharedPreferences("haiagaru_response_actions",0).getInt("visibility."+id,0);if(override!=0)return override==1;}
-        // An explicit display switch is a visibility choice, not just another
-        // veto layered over the (initially hidden) native catalog.
-        if(context!=null&&(id==0x7e000077||id==0x7e000078)){
-            android.content.SharedPreferences prefs=context.getSharedPreferences(WacchoiSearchOptions.PREFS,0);
-            String key=WacchoiSearchOptions.menuKey(id);
-            if(prefs.contains(key))return prefs.getBoolean(key,false);
-        }
         JSONObject settings = savedSettings();
         if (settings == null) return defaultVisible(id);
         try {

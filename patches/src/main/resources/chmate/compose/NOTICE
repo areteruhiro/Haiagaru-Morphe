@@ -1,0 +1,7 @@
+AndroidX Activity, Jetpack Compose and Material 3
+Copyright The Android Open Source Project
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+Source: https://cs.android.com/androidx/platform/frameworks/support
+
+Haiagaru uses Material 3 Expressive's public alpha API with Compose 1.8.x
+to retain compatibility with Android API 21 and later.
