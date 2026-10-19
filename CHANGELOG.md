@@ -1,3 +1,20 @@
+# Haiagaru 1.9.3
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-1.9.3.md)
+
+
+### 🐛 Bug Fixes
+
+* remove timezone suffix from patches-bundle-1.9.0.json metadata ([adfdb78](https://github.com/areteruhiro/Haiagaru-Morphe/commit/adfdb7876174d47551e66bead5b82ec449fec153))
+* remove timezone suffix from patches-bundle-1.9.0.json metadata ([9b1cdf0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/9b1cdf0edf81440c414ecaded91399ddc26cf7d7))
+* remove timezone suffix from patches-bundle-pre.json metadata ([da518e5](https://github.com/areteruhiro/Haiagaru-Morphe/commit/da518e5d41c448b179077dea7148d657fb918621))
+* remove timezone suffix from patches-bundle-pre.json metadata ([ed38a1a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ed38a1a0c8f66d075e58103a15d08bf903310c38))
+* remove timezone suffix from patches-bundle.json metadata ([da33fa0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/da33fa0b4ae299c729412b642355fb98e2c90ae8))
+* remove timezone suffix from patches-bundle.json metadata ([8f577cf](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8f577cf66155c7ace4bb6b796782ad45add485f7))
+* validate release metadata timestamps without DateTime coercion ([dff1f51](https://github.com/areteruhiro/Haiagaru-Morphe/commit/dff1f5159a5a22316bc7a912ba40289cff2941de))
+* コピペ省略2の変更後に再起動と設定保存を案内 ([a755e52](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a755e52d5e13f7d7fa9d505849b153580afe8735))
+* ツールバーの表示チェックとローカルバックアップ設定の反映を修正 ([e50c707](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e50c707e677bd3e14927c365fe73b6014fcb8f3c))
+
 # Changelog
 
 > Haiagaru for Morphe
@@ -1357,4 +1374,3 @@
 
 * **ChMate:** 初回公開。公開ページには更新内容の本文がないため、個別の機能差分は補記していません。
 * **ChMate:** [公開ページ](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.0)
-
