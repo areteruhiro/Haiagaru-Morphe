@@ -13,6 +13,7 @@ import org.mozilla.javascript.ScriptableObject;
 /** Sandboxed, interpreted evaluator for one local NG rule. */
 final class ProgrammableNgScript {
     static final int MAX_SOURCE_LENGTH = 32768;
+    static final int MATCH = 1, SAME_POSTER = 2, CHAIN_REPLIES = 4;
 
     static final class Input {
         final String text;
@@ -59,8 +60,8 @@ final class ProgrammableNgScript {
 
     private final String source;
     private volatile String error;
-    private final Map<Input, Boolean> cache = new LinkedHashMap<Input, Boolean>(128, 0.75f, true) {
-        @Override protected boolean removeEldestEntry(Map.Entry<Input, Boolean> eldest) {
+    private final Map<Input, Integer> cache = new LinkedHashMap<Input, Integer>(128, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<Input, Integer> eldest) {
             return size() > 4096;
         }
     };
@@ -71,8 +72,8 @@ final class ProgrammableNgScript {
 
     String error() { return error; }
 
-    synchronized boolean[] evaluate(List<Input> inputs) {
-        boolean[] result = new boolean[inputs.size()];
+    synchronized int[] evaluate(List<Input> inputs) {
+        int[] result = new int[inputs.size()];
         if (source.trim().isEmpty() || error != null) return result;
         if (inputs.size() > 6000) {
             error = "一度に判定できる上限を超えました";
@@ -80,7 +81,7 @@ final class ProgrammableNgScript {
         }
         ArrayList<Integer> missing = new ArrayList<>();
         for (int index = 0; index < inputs.size(); index++) {
-            Boolean cached = cache.get(inputs.get(index));
+            Integer cached = cache.get(inputs.get(index));
             if (cached == null) missing.add(index); else result[index] = cached;
         }
         if (missing.isEmpty()) return result;
@@ -111,8 +112,7 @@ final class ProgrammableNgScript {
                     ScriptableObject.putProperty(options, "createdAt", createdAt == null ? null
                             : context.newObject(scope, "Date", new Object[]{createdAt}));
                     Object value = predicate.call(context, scope, scope, new Object[]{input.text, options});
-                    if (!(value instanceof Boolean)) throw new IllegalArgumentException("戻り値はtrueかfalseにしてください");
-                    result[index] = (Boolean) value;
+                    result[index] = decision(value, "body".equals(input.values.get("target")));
                 }
                 return null;
             });
@@ -120,16 +120,36 @@ final class ProgrammableNgScript {
         } catch (LimitReached | StackOverflowError error) {
             this.error = "実行時間・命令数・再帰の上限を超えました。保存し直すと再試行します";
             cache.clear();
-            return new boolean[inputs.size()];
+            return new int[inputs.size()];
         } catch (LinkageError error) {
             this.error = "JavaScriptエンジンを初期化できません: " + error.getClass().getSimpleName();
             cache.clear();
-            return new boolean[inputs.size()];
+            return new int[inputs.size()];
         } catch (RuntimeException error) {
             this.error = error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage();
             cache.clear();
-            return new boolean[inputs.size()];
+            return new int[inputs.size()];
         }
         return result;
+    }
+
+    private static int decision(Object value, boolean body) {
+        if (value instanceof Boolean) return (Boolean) value ? MATCH : 0;
+        if (!(value instanceof Scriptable))
+            throw new IllegalArgumentException("戻り値はtrue/false、または{match, samePoster, chainReplies}にしてください");
+        Scriptable object = (Scriptable) value;
+        boolean match = option(object, "match", true);
+        boolean poster = option(object, "samePoster", false);
+        boolean chain = option(object, "chainReplies", false);
+        if (!body && (poster || chain))
+            throw new IllegalArgumentException("samePosterとchainRepliesはレス本文専用です");
+        return match ? MATCH | (poster ? SAME_POSTER : 0) | (chain ? CHAIN_REPLIES : 0) : 0;
+    }
+
+    private static boolean option(Scriptable object, String key, boolean required) {
+        Object value = ScriptableObject.getProperty(object, key);
+        if (value == Scriptable.NOT_FOUND && !required) return false;
+        if (!(value instanceof Boolean)) throw new IllegalArgumentException(key + "はtrue/falseで指定してください");
+        return (Boolean) value;
     }
 }

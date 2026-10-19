@@ -123,6 +123,10 @@
           {
             "path": "optional-assets/haiagaru-image-ng.zip",
             "label": "任意導入: 191画像判定の修正ライブラリ（展開不要）"
+          },
+          {
+            "path": "presets/advanced-ng/word-author-replies.js",
+            "label": "高度なNGサンプル: 投稿者の別レスと返信の連鎖"
           }
         ],
         "successComment": false
