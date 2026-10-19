@@ -30,11 +30,12 @@ internal data class BoundSetting(
     val label: String,
     val enabled: Boolean = control.isEnabled,
     val checked: Boolean? = (control as? CompoundButton)?.isChecked,
+    val description: String = "",
 ) {
     // Native Views are not Compose state. Include their current values in row equality so
     // Compose cannot skip a row whose saved value or dependent enabled state has changed.
-    fun refreshed() = BoundSetting(control, label)
-    val keywords: String get() = label + " " + when (control) {
+    fun refreshed() = BoundSetting(control, label, description = description)
+    val keywords: String get() = label + " " + description + " " + when (control) {
         is EditText -> control.hint?.toString().orEmpty() // Never index entered text or credentials.
         is TextView -> control.text.toString()
         else -> ""
@@ -63,7 +64,15 @@ internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
             if (view is TextView && view !is Button && view !is EditText &&
                 !view.hasOnClickListeners() && (next is EditText || next is Spinner)) {
                 index++
-                if (next.visibility == View.VISIBLE) result.add(BoundSetting(next, view.text.toString()))
+                if (next.visibility == View.VISIBLE) {
+                    val text = view.text.toString()
+                    // Floating labels cannot display paragraphs, route syntax or examples.
+                    // Keep the complete help text in the row, separate from its short label.
+                    val detailed = text.contains('\n') || text.length > 100
+                    result.add(BoundSetting(next,
+                        if (detailed) text.lineSequence().first().take(80) else text,
+                        description = if (detailed) text else ""))
+                }
             } else if (view is ViewGroup && view !is Spinner) collect(view)
             else if (view is TextView || view is Spinner || view is ImageView) {
                 val label = if (view is EditText) view.hint?.toString().orEmpty()
@@ -79,6 +88,12 @@ internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
 @Composable
 internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
     val view = item.control
+    if (item.description.isNotBlank()) {
+        androidx.compose.foundation.text.selection.SelectionContainer {
+            Text(item.description, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
+        }
+    }
     when (view) {
         is CompoundButton -> {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
@@ -149,6 +164,7 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
     }, label = { Text(title.ifBlank { "入力" }) },
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         enabled = enabled, singleLine = view.maxLines == 1,
+        minLines = if (view.maxLines == 1) 1 else view.minLines.coerceIn(1, 12),
         keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text),
         visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         isError = view.error != null,

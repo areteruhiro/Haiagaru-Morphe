@@ -13,7 +13,7 @@ public final class ResponseMenuSettings {
     private ResponseMenuSettings() {}
     static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077, 0x7e000078};
     static final String[] NAMES={"投稿者を強調","レスを保存","過去レスを見る","ﾜｯﾁｮｲで検索","ﾜｯﾁｮｲ下4桁をNG登録","ﾜｯﾁｮｲ下4桁で検索","ﾜｯﾁｮｲ上4桁で検索"};
-    static boolean defaultVisible(int id){for(int action:IDS)if(action==id)return id==76;return true;}
+    static boolean defaultVisible(int id){for(int action:IDS)if(action==id)return id==75||id==76;return true;}
     private static int icon(int id) {
         if(id==75)return wacchoiSearchIcon();
         if(id==0x7e484a01)return ResponseArchive.archiveIcon(true);
@@ -81,6 +81,11 @@ public final class ResponseMenuSettings {
         } catch(Exception error) { android.util.Log.w("Haiagaru","Response toolbar catalog",error); }
     }
     static boolean visible(int id) {
+        Context context = Haiagaru.applicationContextForExtension();
+        if (id == 75 && context != null) {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("haiagaru_response_actions", 0);
+            if (prefs.contains("wacchoiLongPressSearch")) return prefs.getBoolean("wacchoiLongPressSearch", true);
+        }
         if((id==0x7e484a01||id==0x7e484a03)&&!FeatureSwitches.enabled("responseArchiveEnabled",true))return false;
         JSONObject settings = savedSettings();
         if (settings == null) return defaultVisible(id);
@@ -95,6 +100,18 @@ public final class ResponseMenuSettings {
             android.util.Log.w("Haiagaru", "Response toolbar visibility", error);
         }
         return defaultVisible(id);
+    }
+    static void addWacchoiSearchSetting(android.widget.LinearLayout layout, android.app.Activity activity) {
+        android.widget.Switch toggle = new android.widget.Switch(activity);
+        toggle.setText("ワッチョイ長押しに「ワッチョイ検索」を表示");
+        toggle.setChecked(visible(75));
+        toggle.setOnCheckedChangeListener((button, checked) -> activity
+                .getSharedPreferences("haiagaru_response_actions", 0).edit()
+                .putBoolean("wacchoiLongPressSearch", checked).apply());
+        layout.addView(toggle);
+        android.widget.TextView help = new android.widget.TextView(activity);
+        help.setText("変更後、ワッチョイの長押しメニューを開き直してください。この設定を変更すると「ﾜｯﾁｮｲで検索」の表示に優先します。上4桁・下4桁検索や他の項目はChMateのツールバー設定に従います。");
+        layout.addView(help);
     }
     static void addSettings(android.widget.LinearLayout layout,android.app.Activity activity){
         android.widget.Button button=new android.widget.Button(activity);button.setText("レス長押し・ツールバー項目を個別設定");layout.addView(button);

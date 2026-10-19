@@ -3823,6 +3823,7 @@ public final class Haiagaru {
     private static LinearLayout settingsCHECKER(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        ResponseMenuSettings.addWacchoiSearchSetting(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
