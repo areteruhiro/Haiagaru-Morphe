@@ -113,3 +113,5 @@ UI用0x7dリソース専用APKを整列して同梱し、API30以上のResources
 注意: 現行バンドルの互換対象は191／226／242のみ。241生成時に全パッチが非対応でスキップされたことをインストール前に見落とし、標準パッケージjp.co.airfront.android.a2chMateを241へ更新してしまった（lastUpdateTime=2026-10-19 20:45:11 JST）。データ消去は実施していない。ユーザーへ説明済み。元Haiagaruの別パッケージは変更していない。241は検証成功に数えない。以後226／242はaapt2の実パッケージ名を確認してから導入した。
 
 2026-10-19 長押しワッチョイ検索・DAT設定説明: 「探す・過去ログ」に検索メニュー表示スイッチを追加。明示変更時はID75の表示を優先し、既存のnative非表示設定からも戻せる。上／下4桁と他項目の標準チェックは維持。長いTextView説明を入力欄ラベルへ押し込めず、短いラベル＋選択可能な全文説明へ分離し、経路入力を最低6行表示。設定検索でも説明を対象にする。:patches:assemble :patches:buildAndroid 成功（build/settings-wacchoi-help-fix.log）。ビルドには進行中の読み位置保持変更も含まれ、今回の変更後のAPK適用・端末確認・公開は未実施。
+
+2026-10-19 最新設定修正版の実機導入: ユーザー指示でXIG05（730eae72）の191別アプリHaiagaru 設定修正版（jp.co.airfront.android.a2chMate.haiagaru.composefix191）へ、settings-wacchoi-help191.apkをinstall -rで更新。生成APKの実パッケージと前回検証APKの署名SHA256一致を確認して導入、Success。元Haiagaruの別パッケージは変更・消去していない。最新ローカルMPP patches-1.10.0-dev.2.mppにはワッチョイ長押し検索表示スイッチ・DAT説明全文表示と進行中の読み位置保持変更を含む。設定Activityを起動してforeground（PID2063）を確認し、同PIDのcrash bufferは空。長押し操作と各設定変更の通し確認は未実施。
