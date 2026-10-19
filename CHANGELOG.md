@@ -1,3 +1,18 @@
+# Haiagaru 1.10.0-dev.1
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.1/docs/release-1.10.0-dev.1.md)
+
+
+### 🐛 Bug Fixes
+
+* 5chのワッチョイ検索からHissiへの切替を修正 ([809245b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/809245ba5707cde33daedd4fb784fc446dbfe47f))
+* BEログインメニューへの画像投稿項目の混入を防止 ([93f203f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/93f203f2ee7031c1a357f78f96d78cea1e4cf59d))
+* 設定検索結果からのオンオフと状態反映を改善 ([7515f9b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7515f9bc3547ef5ca05404dedf162e0d743f1a99))
+
+### ✨ New Features
+
+* ComposeとMaterial 3 Expressiveで設定と投稿検索を再構成 ([176b76a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/176b76a0a1b2c52e80c0618dfb035702a20ce447))
+
 # Haiagaru 1.9.3
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-1.9.3.md)
