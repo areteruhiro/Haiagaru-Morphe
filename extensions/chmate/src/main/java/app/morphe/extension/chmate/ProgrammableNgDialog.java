@@ -102,6 +102,7 @@ final class ProgrammableNgDialog {
                 "レス本文にキーワードを含む",
                 "正規表現で判定する",
                 "エッヂの記者IDで判定する",
+                "キーワードに一致した投稿者・返信を連鎖NG",
                 "JavaScriptを最初から書く"
         };
         new HaiagaruDialog.Builder(activity)
@@ -138,9 +139,10 @@ final class ProgrammableNgDialog {
         boards.setEnabled(!original.allBoards);
         allBoards.setOnCheckedChangeListener((button, checked) -> boards.setEnabled(!checked));
         TextView scriptHelp = new TextView(activity);
-        scriptHelp.setText("判定式（該当するとき true）\n"
+        scriptHelp.setText("判定式（該当するとき true、または判定オブジェクト）\n"
                 + "text: スレタイまたは本文\n"
-                + "options: boardUrl, threadId, resCount, speed, posterId, responseNumber, responseId");
+                + "options: boardUrl, threadId, resCount, speed, posterId, responseNumber, responseId\n"
+                + "レス本文は {match: 条件, samePoster: true, chainReplies: true} で投稿者・返信もNGにできます。");
         content.addView(scriptHelp, matchWrap());
         EditText script = field(activity, content,
                 "function (text, options) { ... }", original.script, true);

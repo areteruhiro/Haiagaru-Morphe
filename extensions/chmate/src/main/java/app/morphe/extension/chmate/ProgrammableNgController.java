@@ -33,7 +33,9 @@ public final class ProgrammableNgController {
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final ThreadLocal<Object> PENDING_SUBJECT_LIST = new ThreadLocal<>();
     private static final ThreadLocal<Object> PENDING_RESPONSE_LIST = new ThreadLocal<>();
-    private static final Map<Object, Boolean> MODERN_RESPONSE_MATCHES =
+    private static final Map<Object, Set<Integer>> MODERN_RESPONSE_MATCHES =
+            Collections.synchronizedMap(new WeakHashMap<>());
+    private static final Map<Object, String> RESPONSE_BOARDS =
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<String, ProgrammableNgScript.Input> THREAD_METADATA =
             Collections.synchronizedMap(new LinkedHashMap<String, ProgrammableNgScript.Input>(128, 0.75f, true) {
@@ -126,6 +128,14 @@ public final class ProgrammableNgController {
                 return new ProgrammableNgRuleSet.Rule(id, "エッヂの記者ID", "title",
                         true, true, "", "function (text, options) {\n"
                         + "  return options.posterId === \"記者ID\";\n}");
+            case 4:
+                return new ProgrammableNgRuleSet.Rule(id, "キーワード・投稿者・返信の連鎖", "body",
+                        true, true, "", "function (text, options) {\n"
+                        + "  return {\n"
+                        + "    match: text.includes(\"NGワード\"),\n"
+                        + "    samePoster: true,\n"
+                        + "    chainReplies: true\n"
+                        + "  };\n}");
             default:
                 return newRule();
         }
@@ -219,7 +229,7 @@ public final class ProgrammableNgController {
     /** Index body-rule matches once per 191 adapter rebuild. */
     public static void prepareLegacyResponses(Object adapter) {
         HiddenIdNg.prepare(adapter);
-        LEGACY_RESPONSE_MATCHES.remove(adapter);
+        LEGACY_RESPONSE_MATCHES.put(adapter, Collections.emptySet());
         if (context == null) return;
         try {
             Object state = field(adapter, "M");
@@ -227,11 +237,12 @@ public final class ProgrammableNgController {
             if (board == null) return;
             lastBoardUrl = board;
             Object responseList = field(adapter, "K");
-            if (!(responseList instanceof List)) return;
+            List<?> responses = originalResponses(responseList);
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>();
             ArrayList<Integer> numbers = new ArrayList<>();
-            String title = stringField(responseList, "title");
-            for (Object response : (List<?>) responseList) {
+            String title = null;
+            try { title = stringField(responseList, "title"); } catch (NoSuchFieldException ignored) { }
+            for (Object response : responses) {
                 int number = ((Number) field(response, "o")).intValue();
                 Map<String, Object> values = baseValues("body", board);
                 values.put("responseNumber", number);
@@ -245,10 +256,13 @@ public final class ProgrammableNgController {
             }
             lastBodies = inputs;
             if (!enabled) return;
-            boolean[] matches = rules.evaluate(inputs);
+            ProgrammableNgRuleSet active = rules;
+            boolean[] matches = active.evaluate(inputs);
             HashSet<Integer> matched = new HashSet<>();
             for (int index = 0; index < matches.length; index++) if (matches[index]) matched.add(numbers.get(index));
-            LEGACY_RESPONSE_MATCHES.put(adapter, matched);
+            synchronized (LEGACY_RESPONSE_MATCHES) {
+                if (enabled && active == rules) LEGACY_RESPONSE_MATCHES.put(adapter, matched);
+            }
         } catch (Exception error) {
             report("191レス一覧", error);
         }
@@ -259,6 +273,7 @@ public final class ProgrammableNgController {
         original = HiddenIdNg.merge(adapter, response, original);
         if (!enabled) return original;
         try {
+            if (!LEGACY_RESPONSE_MATCHES.containsKey(adapter)) prepareLegacyResponses(adapter);
             Set<Integer> matches = LEGACY_RESPONSE_MATCHES.get(adapter);
             if (matches != null && matches.contains(((Number) field(response, "o")).intValue())) {
                 return original | 0x10;
@@ -276,15 +291,38 @@ public final class ProgrammableNgController {
         PENDING_RESPONSE_LIST.set(responses);
     }
 
+    /** Use the full DAT source even when the current UI list is filtered. */
+    private static List<?> originalResponses(Object source) throws ReflectiveOperationException {
+        if (!(source instanceof List)) return Collections.emptyList();
+        try {
+            Object base = field(source, "mBase");
+            if (base instanceof List) return (List<?>) base;
+        } catch (NoSuchFieldException ignored) { }
+        return (List<?>) source;
+    }
+
+    /** 242's DAT result supplies the exact board; never borrow another open tab's board. */
+    public static void bindModernResponses(Object result) {
+        try {
+            List<?> responses = originalResponses(field(result, "a"));
+            if (responses.isEmpty()) return;
+            RESPONSE_BOARDS.remove(responses.get(0));
+            String board = boardUrl(field(result, "d"));
+            if (board != null) RESPONSE_BOARDS.put(responses.get(0), board);
+        } catch (ReflectiveOperationException | RuntimeException error) { report("レスの板情報", error); }
+    }
+
     /** Adds standard NGWord flags to the map consumed by 241/243 row composition. */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void applyPendingModernResponseFlags(Object flags) {
+    public static Map applyPendingModernResponseFlags(Object flags) {
         Object pending = PENDING_RESPONSE_LIST.get();
         PENDING_RESPONSE_LIST.remove();
-        if (!(pending instanceof List) || !(flags instanceof Map) || context == null) return;
+        Map originalMap = flags instanceof Map ? (Map) flags : null;
+        if (!(pending instanceof List) || originalMap == null || context == null) return originalMap;
         try {
-            String board = lastBoardUrl == null ? UNKNOWN_BOARD : lastBoardUrl;
-            List<?> responses = (List<?>) pending;
+            List<?> responses = originalResponses(pending);
+            String board = responses.isEmpty() ? null : RESPONSE_BOARDS.get(responses.get(0));
+            if (board == null) board = UNKNOWN_BOARD;
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(responses.size());
             ArrayList<Integer> numbers = new ArrayList<>(responses.size());
             for (Object response : responses) {
@@ -293,38 +331,60 @@ public final class ProgrammableNgController {
                 numbers.add(data.number);
             }
             lastBodies = inputs;
-            if (!enabled || inputs.isEmpty()) return;
-            boolean[] matches = rules.evaluate(inputs);
-            Map map = (Map) flags;
+            if (!enabled || inputs.isEmpty()) return originalMap;
+            ProgrammableNgRuleSet active = rules;
+            boolean[] matches = active.evaluate(inputs);
+            Map map = null;
             for (int index = 0; index < matches.length; index++) {
                 if (!matches[index]) continue;
+                if (map == null) map = new LinkedHashMap(originalMap);
                 Integer number = numbers.get(index);
                 Object previous = map.get(number);
                 int original = previous instanceof Number ? ((Number) previous).intValue() : 0;
                 map.put(number, original | 0x10);
             }
+            return !enabled || active != rules || map == null ? originalMap : map;
         } catch (Exception error) {
             report("レス一覧", error);
+            return originalMap;
         }
+    }
+
+    /** 226 needs the whole source list to expand authors/replies and to refresh cached decisions. */
+    public static void prepareModernResponses(Object owner) {
+        HiddenIdNg.prepare(owner);
+        MODERN_RESPONSE_MATCHES.put(owner, Collections.emptySet());
+        if (context == null) return;
+        try {
+            String board = boardUrl(field(field(owner, "E"), "j"));
+            if (board == null) return;
+            List<?> responses = originalResponses(field(owner, "J"));
+            ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(responses.size());
+            ArrayList<Integer> numbers = new ArrayList<>(responses.size());
+            for (Object response : responses) {
+                ResponseData data = responseData(response);
+                inputs.add(data.input(board, "")); numbers.add(data.number);
+            }
+            lastBodies = inputs;
+            if (!enabled) return;
+            ProgrammableNgRuleSet active = rules;
+            boolean[] matches = active.evaluate(inputs);
+            Set<Integer> matched = new HashSet<>();
+            for (int i = 0; i < matches.length; i++) if (matches[i]) matched.add(numbers.get(i));
+            synchronized (MODERN_RESPONSE_MATCHES) {
+                if (enabled && active == rules) MODERN_RESPONSE_MATCHES.put(owner, matched);
+            }
+        } catch (Exception error) { report("226レス一覧", error); }
     }
 
     /** Adds the same NGWord bit at the per-response boundary used by 226 dev. */
     public static int mergeModernResponseFlags(Object owner, Object response, int original) {
         original = HiddenIdNg.merge(owner, response, original);
-        if (context == null || response == null) return original;
+        if (!enabled || context == null || response == null) return original;
         try {
-            Boolean cached = MODERN_RESPONSE_MATCHES.get(response);
-            if (cached == null) {
-                String board = findBoardUrl(owner, 3, new java.util.IdentityHashMap<>());
-                if (board == null) board = lastBoardUrl;
-                if (board == null) board = UNKNOWN_BOARD;
-                ResponseData data = responseData(response);
-                ProgrammableNgScript.Input input = data.input(board, "");
-                lastBodies = Collections.singletonList(input);
-                cached = enabled && rules.evaluate(Collections.singletonList(input))[0];
-                MODERN_RESPONSE_MATCHES.put(response, cached);
-            }
-            return cached ? original | 0x10 : original;
+            if (!MODERN_RESPONSE_MATCHES.containsKey(owner)) prepareModernResponses(owner);
+            Set<Integer> matches = MODERN_RESPONSE_MATCHES.get(owner);
+            return matches != null && matches.contains(responseData(response).number) ? original | 0x10 : original;
         } catch (Exception error) {
             report("226レスフラグ", error);
             return original;
@@ -444,6 +504,7 @@ public final class ProgrammableNgController {
 
     private static Map<String, Object> baseValues(String target, String board) {
         Map<String, Object> values = new LinkedHashMap<>();
+        values.put("apiVersion", 2);
         values.put("target", target);
         values.put("boardUrl", board);
         values.put("threadId", null);
@@ -548,10 +609,12 @@ public final class ProgrammableNgController {
     static String preview(ProgrammableNgRuleSet.Rule rule) {
         List<ProgrammableNgScript.Input> inputs = "body".equals(rule.target) ? lastBodies : lastTitles;
         if (inputs.isEmpty()) return "判定対象がまだありません。先にスレ一覧またはスレを開いてください。";
-        boolean[] matches = new ProgrammableNgRuleSet(Collections.singletonList(rule)).evaluate(inputs);
+        ProgrammableNgRuleSet preview = new ProgrammableNgRuleSet(Collections.singletonList(rule));
+        boolean[] matches = preview.evaluate(inputs);
         int count = 0;
         for (boolean match : matches) if (match) count++;
         String error = rule.evaluator.error();
+        if (!preview.batchError.isEmpty()) return preview.batchError;
         return error == null
                 ? inputs.size() + "件中 " + count + "件がNGになります。"
                 : "JavaScriptエラー: " + error;

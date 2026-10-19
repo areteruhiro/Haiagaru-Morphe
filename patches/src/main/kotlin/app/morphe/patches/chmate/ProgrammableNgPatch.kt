@@ -82,7 +82,7 @@ internal fun BytecodePatchContext.patchProgrammableNg226() {
         ref?.definingClass == adapter.type && ref.name == "J"
     }) { "226 ID-less NG source list changed" }
     rebuild.addInstructionsWithLabels(0, """
-        invoke-static/range {p0 .. p0}, $HIDDEN_ID_NG->prepare(Ljava/lang/Object;)V
+        invoke-static/range {p0 .. p0}, $PROGRAMMABLE_NG->prepareModernResponses(Ljava/lang/Object;)V
     """)
     val responseFilter = mutableClassDefBy("Lo/listener;").methods.single {
         it.name == "d" && it.returnType == "I" &&
@@ -143,16 +143,19 @@ internal fun BytecodePatchContext.patchProgrammableNgModern(
         check(exits.size == 1)
         constructor.addInstructionsWithLabels(exits.single().index, """
             invoke-static/range {p0 .. p0}, $HIDDEN_ID_NG->bind242(Ljava/lang/Object;)V
+            invoke-static/range {p0 .. p0}, $PROGRAMMABLE_NG->bindModernResponses(Ljava/lang/Object;)V
         """)
     }
     full.addInstructionsWithLabels(0, """
         invoke-static/range {p4 .. p4}, $PROGRAMMABLE_NG->pendingModernResponses(Ljava/lang/Object;)V
-        invoke-static/range {p9 .. p9}, $PROGRAMMABLE_NG->applyPendingModernResponseFlags(Ljava/lang/Object;)V
+        invoke-static/range {p9 .. p9}, $PROGRAMMABLE_NG->applyPendingModernResponseFlags(Ljava/lang/Object;)Ljava/util/Map;
+        move-result-object p9
         $hiddenIdFull
     """)
     compact.addInstructionsWithLabels(0, """
         invoke-static/range {p0 .. p0}, $PROGRAMMABLE_NG->pendingModernResponses(Ljava/lang/Object;)V
-        invoke-static/range {p2 .. p2}, $PROGRAMMABLE_NG->applyPendingModernResponseFlags(Ljava/lang/Object;)V
+        invoke-static/range {p2 .. p2}, $PROGRAMMABLE_NG->applyPendingModernResponseFlags(Ljava/lang/Object;)Ljava/util/Map;
+        move-result-object p2
         $hiddenIdCompact
     """)
 }

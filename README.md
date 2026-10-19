@@ -10,7 +10,7 @@ ChMate `0.8.10.191 dev` / `0.8.10.226 dev` / `0.8.10.242 dev` 対応のMorpheパ
 ChMateに追加設定・閲覧・メディア・バックアップ機能を組み込むパッチです。
 従来の機能紹介は [Haiagaru](https://github.com/areteruhiro/Haiagaru) も参照してください。
 
-最新正式版: [1.10.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ [変更内容・更新手順・確認範囲](docs/release-1.10.0.md)
+最新正式版: [1.11.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest) ／ [変更内容・更新手順・確認範囲](docs/release-1.11.0.md)
 
 更新前にバックアップしてください。**[正式版1.7.1からの変更](docs/release-1.9.0-from-1.7.1.md)** ／ **[プレ版1.8.15からの差分・操作案内](docs/release-1.9.0.md)**。versionCode最大化が初期有効です。
 
@@ -25,6 +25,8 @@ Cookieエラー、ワッチョイ検索、画像一覧、高度なNGなどを案
 導入時の問題は[インストールできない場合](#インストールできない場合)、不具合の報告・相談は[サポート](#サポート)をご覧ください。
 
 ## 最新版の案内
+
+**1.11.0:** [高度なNGの投稿者・返信連鎖API](docs/release-1.11.0.md)を追加。キーワードに一致した投稿者の別レスと、その返信・孫返信まで判定できます。[アプリ内ひな形・配布サンプル・設定手順](docs/ngword-poster-chain-example.md)。従来のBooleanルールは維持し、無効化や再読込後に古い判定が残る問題も修正しました。
 
 **1.10.0:** [スレ表示時のクラッシュ修正と更新案内](docs/release-1.10.0.md)。191／226／242のタブ復帰時の再読込抑制を修正。設定・ダイアログのCompose化、リンクカード、任意資材の分離、[NGWordから投稿者の別レスと返信へ連鎖する設定例](docs/ngword-poster-chain-example.md)を含みます。
 

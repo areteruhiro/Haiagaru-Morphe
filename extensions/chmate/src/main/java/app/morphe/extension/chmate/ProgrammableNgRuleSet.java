@@ -99,10 +99,20 @@ final class ProgrammableNgRuleSet {
                 batchError = "ルール全体の実行時間を超えたため、この判定ではNGにしません";
                 return new boolean[inputs.size()];
             }
-            boolean[] matches = rule.evaluator.evaluate(selected);
+            boolean[] matches;
+            try {
+                matches = ProgrammableNgChain.expand(selected, rule.evaluator.evaluate(selected), deadline);
+            } catch (IllegalArgumentException error) {
+                batchError = error.getMessage() + "。この判定ではNGにしません";
+                return new boolean[inputs.size()];
+            }
             for (int index = 0; index < matches.length; index++) {
                 result[positions.get(index)] |= matches[index];
             }
+        }
+        if (System.nanoTime() > deadline) {
+            batchError = "ルール全体の実行時間を超えたため、この判定ではNGにしません";
+            return new boolean[inputs.size()];
         }
         return result;
     }
