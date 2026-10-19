@@ -3807,6 +3807,7 @@ public final class Haiagaru {
         layout.addView(httpsDescription, rowParams(activity));
         Switch tabletResumeReloadSetting = null;
         if ("0.8.10.191 dev".equals(chMateVersion)
+                || "0.8.10.226 dev".equals(chMateVersion)
                 || "0.8.10.242 dev".equals(chMateVersion)) {
             tabletResumeReloadSetting = addSwitch(layout, activity,
                     text("タブレットでスレ切替時の自動再読込を抑える",
