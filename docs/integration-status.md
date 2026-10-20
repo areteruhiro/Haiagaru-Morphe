@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-10-20 14:22 JST 正式版1.11.1公開完了: 修正ad7d50cをmasterへ通常マージ17e9a21し、既存Semantic Release CI 39374142232・Build Haiagaru CI 39374142315が成功。CI生成公開コミット9898539、draft=false・prerelease=false。master/main/devは同コミットへバックマージ済み。配布物5点をbuild/release-1.11.1-verifyへ再取得し、全件GitHub digestと一致。MPP SHA256 ca5ef23f7785a838d1148baac2da6a65e5f9cfef1b365651569b5bcb2421e888。JSON2本はversion=1.11.1、created_at=2026-10-20T05:19:11（Zなし）、公開MPP参照。Releaseからリンクするdocs/release-1.11.1.mdをHTTP200で取得し、修正文言とお詫びの反映を確認。スレへの投稿はユーザー指定で実施なし。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.11.1 。公開CI版MPPそのものによる端末再パッチ・実機導入は未実施（公開前の同ソースローカルMPPによる検証記録と区別）。
+
 2026-10-20 エッヂ検索スクロール修正: 226の検索画面へ実パーサーを通した50件を表示し、縦スワイプでも先頭に留まる旧挙動を再現。結果へ残り高さを配分する専用Composeレイアウトと、結果カードのクリック引継ぎを追加。修正後50行目到達、詳細開閉、結果→658レス→戻る際の位置保持を確認。横画面で結果欄が潰れる問題も修正。最終226の縦スワイプ、横画面の有限viewport描画、元レス描画保持検査成功。検索サイトは接続タイムアウトのため通信成功とは扱わない。実機未接続、共通画面191/242の重複操作確認はユーザー指示で省略。通常Lint込みbuild/eddi-scroll-final-build.log成功（5分54秒）。最終MPP build/eddi-scroll-final.mpp SHA256 57AF2E943F434FCE3FE4505E5FF60FBEE0C5B30E7D11C52036F4A87EB46E5E3B。Part2の768レスを確認し追加報告をdocs/part2-bug-triage-20261020.mdへ整理。AGENTS.mdへ公開前回帰確認ルールを追加。お詫びはRelease説明のみでスレへの投稿なし。公開結果は別途記録。
 
 2026-10-20 他バージョン追加確認: 191/226と同じ最終MPP（C48D7EA3D9960820BAB00C5BD449CB13701E18D6563A78D823352C2089AEFCA5）を242 devへ適用・署名・emulator-5554へ同署名更新成功。指定Haiagaru Part2の本文表示、3レスの画像取得・標準ビューア表示、同じフィルターダイアログ内でチェックオン／オフを実画面確認。初回画像取得時はサーバー未検出表示となったが再取得で画像表示成功。元の復帰処理保持検査成功、最終crash buffer 0 bytes。241/243は配布対象外で、NGフックの単独適用・レジスタ・DEX生成検査は既存記録で成功、今回の実画面通し確認には含まない。APKハッシュと鍵はandroid-installations.md。
