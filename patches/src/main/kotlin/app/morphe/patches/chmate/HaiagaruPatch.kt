@@ -6157,17 +6157,22 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyThreadListA
                 "Landroid/view/ViewGroup;",
             )
     }
-    // QuickFilterToolbar may already have inserted a call before the return.
-    // Never infer a Kotlin assertion from the number of tail instructions.
+    // ExtraQuickFilters also returns a View near the return. Only the native
+    // renderer still has the integer position in p1; its result reuses p1.
     val instructions = method.implementation?.instructions?.toList()
         ?: error("ChMate response adapter has no implementation")
+    val renderer = when (adapterClass) {
+        "Lo/m9ExternalSyntheticLambda1;" -> "Lo/m9a;" to "SL_"
+        "Lo/listener;" -> "Lo/pushResetLaterokhttp;" to "e"
+        else -> error("Unsupported legacy response adapter: $adapterClass")
+    }
     val bindIndex = instructions.indices.single { index ->
         val reference = (instructions[index] as? ReferenceInstruction)?.reference
             as? MethodReference ?: return@single false
-        val resultTail = instructions.drop(index + 1).take(4).map { it.opcode }
-        reference.returnType == "Landroid/view/View;"
-            && resultTail.firstOrNull() == Opcode.MOVE_RESULT_OBJECT
-            && resultTail.contains(Opcode.RETURN_OBJECT)
+        reference.definingClass == renderer.first && reference.name == renderer.second
+            && reference.parameterTypes == listOf("Landroid/view/View;", "Landroid/view/ViewGroup;", "I", "Ljava/lang/Object;")
+            && reference.returnType == "Landroid/view/View;"
+            && instructions.getOrNull(index + 1)?.opcode == Opcode.MOVE_RESULT_OBJECT
     }
 
     val resultRegister = (instructions[bindIndex + 1] as OneRegisterInstruction).registerA

@@ -32,6 +32,7 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
     private var heading by mutableStateOf(spec.title)
     private var chosen by mutableIntStateOf(spec.singleChoice)
     private var revision by mutableIntStateOf(0)
+    private val checkedItems = spec.checked?.toList()?.toMutableStateList()
     private val actions = linkedMapOf<Int, Button>()
     private val nativeList = object : ListView(context) {
         override fun post(action: Runnable): Boolean = android.os.Handler(android.os.Looper.getMainLooper()).post(action)
@@ -43,7 +44,7 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
         }
     }.apply {
         adapter = spec.adapter ?: ArrayAdapter(context, android.R.layout.simple_list_item_1,
-            spec.items?.toList().orEmpty())
+            spec.items?.toMutableList() ?: mutableListOf<CharSequence>())
     }
 
 
@@ -75,7 +76,10 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
         }
         refresh()
     }
-    fun refresh() { revision++ }
+    fun refresh() {
+        spec.checked?.forEachIndexed { index, value -> checkedItems?.set(index, value) }
+        revision++
+    }
 
     override fun show() {
         super.show()
@@ -119,7 +123,7 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
                         androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxWidth().heightIn(max = 440.dp)) {
                         items(adapter.count) { index ->
                             val label = adapter.getItem(index)?.toString().orEmpty()
-                            val checked = spec.checked
+                            val checked = checkedItems
                             if (checked != null && index >= checked.size) {
                                 ModelContent(adapter.getView(index, null, nativeList), version) { refresh() }
                                 return@items

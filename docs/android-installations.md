@@ -1,5 +1,32 @@
 # Android導入・署名台帳
 
+## エッヂ検索スクロール最終修正版226（2026-10-20 14:07 JST）
+
+- API36 x86_64 / emulator-5554。表示名 Haiagaru 復帰修正 226、ChMate 0.8.10.226 dev、パッケージ `jp.co.airfront.android.a2chMate.haiagaru.resumefix226`。`adb install -r`成功、既存データの削除なし。
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/eddi-scroll-final226.apk`。SHA256 `92B693AA4D6B557D74194B6B928BBADE2943C2DD9205E70784EDF314965E4DA5`。
+- MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/eddi-scroll-final.mpp`。SHA256 `57AF2E943F434FCE3FE4505E5FF60FBEE0C5B30E7D11C52036F4A87EB46E5E3B`。
+- 共通署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、BKS、alias `Morphe`。同署名更新成功。証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 最終版226で検索画面の縦スワイプと横画面結果欄を確認。前段版で50行目・詳細条件・スレを開いて戻る位置保持、658の画像表示を確認。実機への導入なし。
+
+## 同じ最終MPPによる242追加検証（2026-10-20 JST）
+
+- 端末 `emulator-5554`、パッケージ `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`、表示名 Haiagaru 復帰修正 242、ChMate 0.8.10.242 dev。
+- APK絶対パス `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/crash-filter-immediate242.apk`、SHA-256 `4F6CEF523ED609A9FBF058E08DC029FF3D92D4242E0F1E19240BBAD49BDC43E6`。
+- 入力MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/crash-filter-immediate-final.mpp`、SHA-256 `C48D7EA3D9960820BAB00C5BD449CB13701E18D6563A78D823352C2089AEFCA5`。
+- 鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、BKS、エイリアス Morphe、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。既存同署名へ上書き成功。
+- 実操作で指定Haiagaru Part2スレ本文、3レスの画像サムネイル取得・画像ビューア表示、フィルターダイアログ内のチェックオン／オフを確認。復帰処理の元命令保持検査成功、最終crash buffer 0 bytes。フィルター解除済み。公開・実機導入なし。
+
+## 1.11.0クラッシュ・フィルター即時反映の最終検証版（2026-10-20 JST）
+
+- 対象: `emulator-5554` API36 x86_64。191/226とも既存検証パッケージへ `adb install -r` 成功。
+- 固定MPP絶対パス: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/crash-filter-immediate-final.mpp`。
+- MPP SHA-256: `C48D7EA3D9960820BAB00C5BD449CB13701E18D6563A78D823352C2089AEFCA5`。
+- 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、BKS、エイリアス `Morphe`。既存同署名への更新成功。証明書SHA-256は既存検証版と同じ `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 191: `jp.co.airfront.android.a2chMate.haiagaru.full191` / Haiagaru 191 フル版。APK絶対パス `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/crash-filter-immediate191.apk`、SHA-256 `3A397E0FCA39233EA5FEA7C912BEFE9F1F5950595A6D2404DB3FB88D38923504`。
+- 226: `jp.co.airfront.android.a2chMate.haiagaru.resumefix226` / Haiagaru 復帰修正 226。APK絶対パス `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/crash-filter-immediate226.apk`、SHA-256 `609F966F27FE324F52758219CB476BCDF84AB19B7FD7021DCA1EA1A0A194296C`。
+- 同じ修正系列で191の指定公開スレ本文表示、226の画像サムネイルから標準画像ビューア起動を確認。最終226でフィルターを閉じずにチェックのオフ→オンを確認。最終2 APKの元レス描画保持検査に合格し、最終検証後のcrash bufferは0 bytes。
+- 検証時の画像フィルターは最後に解除。実機導入・公開は未実施。内部バージョン表記は1.11.0のまま。
+
 他チャットは導入前にこの台帳と実APKを照合する。秘密鍵・パスワードは記載しない。開発版は別パッケージへの導入を標準とする。
 
 ## 既存191版の照合（2026-10-20）
@@ -70,3 +97,20 @@
 | 242 dev | jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / Haiagaru 復帰修正 242 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/advanced-ng-v2-242.apk | 7F39443BCF6BFAB41A17D4D710AEC52E1EF8277F32B607AB7D0801AEA3F41D13 |
 
 高度なNG実コントローラーは191=22、226=22、242=15項目に合格。ZZZSearch／設定9項目に合格。実機更新と指定公開スレの通し確認は未実施。
+
+## 1.11.0クラッシュ修正版の生成・エミュレータ導入（2026-10-20）
+
+- 対象: API36 x86_64 / `emulator-5554`。既存検証パッケージへ `adb install -r` 成功。既存データは消去していない。共有エミュレータの191/226は並行検証でも更新されるため、次回は台帳だけでなく実APKのハッシュを再照合する。
+- 共通鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`（BKS、エイリアス `Morphe`）。242をapksignerで照合した証明書SHA-256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。3版とも同じCLI署名設定。
+- 以下のAPK絶対パスの先頭は `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/`。
+
+| ChMate / 表示名 | パッケージ | APK / SHA-256 | 入力MPP |
+| --- | --- | --- | --- |
+| 191 dev / Haiagaru 191 フル版 | `jp.co.airfront.android.a2chMate.haiagaru.full191` | `build/crash-hotfix-191.apk` / `07D43E4EE4C00692DA81DFE6DA3FFF890B7CD3CC50C0410F1528F83058B9E30C` | `build/crash-hotfix-verified.mpp` |
+| 226 dev / Haiagaru 復帰修正 226 | `jp.co.airfront.android.a2chMate.haiagaru.resumefix226` | `build/crash-hotfix-226.apk` / `81B462A2B525D1CC8054C16A252BE5610C564B902531786F1601C7BED4B48708` | `build/crash-hotfix-final.mpp` |
+| 242 dev / Haiagaru 復帰修正 242 | `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` | `build/crash-hotfix-242.apk` / `B0E92AA706563DF4E892F50CD293D5C5B87F67833F184FE17AABD23B157B09F4` | `build/crash-hotfix-verified.mpp` |
+
+- `build/crash-hotfix-verified.mpp` SHA-256: `F33D900A064EDB6F3E180678596637EECB42B4DE28A626468164F2AFCD10E871`。
+- 最終統合MPP `build/crash-hotfix-final.mpp` SHA-256: `0373C18C620AEF08AC2EF1C51C45C2DA966F8BAD023E6F1589BB3D1016B9D36D`。前者との差は226用のネイティブ描画メソッド判定を追加したパッチ生成側の変更。191/242の生成経路の動作は同一。
+- 242は修正前APKで提供ログと同じ `o.zzaW.c` / `0x101` VerifyErrorを再現し、修正版は実メソッドの検証・実行に成功。詳細は `hotfix-1.11.0-242-restore.md`。実機導入とユーザーのバックアップZIPによる復元通し確認、公開は未実施。
+- 追加確認: 上記と同じ226/242 APKを `emulator-5556`（API36、`Haiagaru_Test_API36_16GiB` のread-only起動）にも導入成功。242の公開スレ本文表示と実フィルターダイアログのチェック即時反映を確認し、新規crash bufferは0 bytes。このAVDは一時検証用で、終了時に導入状態を保存しない。常設の検証先は引き続きemulator-5554。

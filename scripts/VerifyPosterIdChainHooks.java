@@ -54,16 +54,28 @@ public class VerifyPosterIdChainHooks {
                 int found=0;
                 for (int i=0;i<instructions.size();i++) if (call(instructions.get(i),"merge")) {
                     found++;
-                    RegisterRangeInstruction call=(RegisterRangeInstruction)instructions.get(i);
                     int p0=target.getImplementation().getRegisterCount()-target.getParameterTypes().size()-1;
-                    check(call.getStartRegister()==p0 && call.getRegisterCount()==3,"owner/row/state argument range");
-                    TwoRegisterInstruction move=(TwoRegisterInstruction)instructions.get(i-1);
                     OneRegisterInstruction result=(OneRegisterInstruction)instructions.get(i+1);
-                    Instruction store=instructions.get(i+2);
+                    boolean modern=profile[8].isEmpty();
+                    Instruction store=instructions.get(i+(modern?3:2));
                     int value=store instanceof FiveRegisterInstruction f ? f.getRegisterE()
                             : ((RegisterRangeInstruction)store).getStartRegister()+2;
-                    check(move.getRegisterA()==p0+2 && move.getRegisterB()==value
-                            && result.getRegisterA()==value,"native chain-state register preserved");
+                    if(modern) {
+                        FiveRegisterInstruction call=(FiveRegisterInstruction)instructions.get(i);
+                        check(call.getRegisterCount()==3 && call.getRegisterC()==p0
+                                && call.getRegisterD()==p0+1 && call.getRegisterE()==value,
+                                "owner/response/state passed without clobbering cache");
+                        Instruction load=instructions.get(i+2);
+                        check(load.getOpcode()==Opcode.IGET && load instanceof TwoRegisterInstruction r
+                                && r.getRegisterA()==p0+1 && r.getRegisterB()==p0+1,
+                                "merge precedes destructive response-number load");
+                    } else {
+                        RegisterRangeInstruction call=(RegisterRangeInstruction)instructions.get(i);
+                        check(call.getStartRegister()==p0 && call.getRegisterCount()==3,"owner/row/state argument range");
+                        TwoRegisterInstruction move=(TwoRegisterInstruction)instructions.get(i-1);
+                        check(move.getRegisterA()==p0+2 && move.getRegisterB()==value,"legacy scratch argument");
+                    }
+                    check(result.getRegisterA()==value,"native chain-state register preserved");
                 }
                 check(found==1,"one merge hook");
                 if (!profile[8].isEmpty()) {

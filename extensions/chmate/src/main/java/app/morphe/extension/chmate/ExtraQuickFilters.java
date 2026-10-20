@@ -40,6 +40,8 @@ public final class ExtraQuickFilters {
         WeakReference<HaiagaruDialog> dialog=new WeakReference<>(null);
         String[] dialogLabels;
         int extra;
+        int pendingFilterMask;
+        boolean[] pendingFilters = new boolean[4];
         int[] counts = new int[7];
         Set<Integer> aa = new HashSet<>(), mine = new HashSet<>(), replies = new HashSet<>();
         Exception failure;
@@ -74,7 +76,12 @@ public final class ExtraQuickFilters {
             int i=0; while(matches.find()&&i<4)result[i++]=Boolean.parseBoolean(matches.group(1));
             if(i!=4)throw new IllegalStateException("Filter states changed");
         }
-        int mask=state(a).extra;
+        State selection=state(a);
+        for(int i=0;i<4;i++)if((selection.pendingFilterMask&(1<<i))!=0) {
+            if(result[i]==selection.pendingFilters[i])selection.pendingFilterMask&=~(1<<i);
+            else result[i]=selection.pendingFilters[i];
+        }
+        int mask=selection.extra;
         for(int i=4;i<7;i++)result[i]=(mask&(1<<(i-4)))!=0;
         return result;
     }
@@ -255,10 +262,34 @@ public final class ExtraQuickFilters {
             HaiagaruDialog d=new HaiagaruDialog.Builder(activity).setTitle("レスのフィルター")
                     .setMessage("件数は読み込み済みの全レスです。AA・自分・返信は、既存のフィルターに重ねて絞り込みます。")
                     .setMultiChoiceItems(names,checked,(dialog,which,on)->{
-                        try {toggle(a,which);boolean[] next=selected(a);for(int i=0;i<7;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[i]);}
+                        try {toggle(a,which);
+                            if(which<4 && !(which==0 && PopularReplies.enabledFor(activity))) {
+                                State selection=state(a);selection.pendingFilters[which]=on;
+                                selection.pendingFilterMask|=1<<which;
+                            }
+                            boolean[] next=selected(a);for(int i=0;i<7;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[i]);}
                         catch(Exception e){Log.e("Haiagaru","Extra filter toggle",e);((HaiagaruDialog)dialog).getListView().setItemChecked(which,!on);Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();}
                     }).setNegativeButton("閉じる",null).show();
             state(a).dialog=new WeakReference<>(d);state(a).dialogLabels=names;
+            // Native filter actions finish asynchronously. Reading their StateFlow
+            // directly after invoke() can still return the previous check state.
+            // Watch only while this dialog is visible, and redraw only changes.
+            android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+            boolean[] observed=checked.clone();
+            Runnable sync=new Runnable() {
+                @Override public void run() {
+                    if(!d.isShowing())return;
+                    try {
+                        boolean[] next=selected(a);
+                        for(int i=0;i<next.length;i++)if(observed[i]!=next[i]) {
+                            observed[i]=next[i];d.getListView().setItemChecked(i,next[i]);
+                        }
+                    }catch(Exception e){Log.w("Haiagaru","Filter selection update",e);}
+                    handler.postDelayed(this,100);
+                }
+            };
+            d.setOnDismissListener(dialog->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
+            handler.postDelayed(sync,100);
             d.getListView().setOnItemLongClickListener((parent,v,pos,id)->{if(pos!=2)return false;boolean opened=imageList(a);if(opened)d.dismiss();return opened;});
             return true;
         }catch(Exception e){Log.w("Haiagaru","Extended filter dialog",e);return false;}

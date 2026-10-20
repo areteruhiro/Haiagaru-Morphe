@@ -20,10 +20,12 @@ internal val gifViewerRoutingPatch = bytecodePatch {
             (it.opcode == Opcode.INVOKE_SUPER || it.opcode == Opcode.INVOKE_SUPER_RANGE) && ref?.name == "onCreate"
         }
         check(superIndex >= 0 && method.implementation!!.registerCount > 2) { "Native image viewer entry changed" }
+        // The supported native methods do not read the incoming Bundle after super.onCreate.
+        // Reuse that dead argument and preserve every native local, including 226's v0 receiver.
         method.addInstructionsWithLabels(superIndex + 1, """
             invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/GifViewerActivity;->redirectNative(Landroid/app/Activity;)Z
-            move-result v0
-            if-eqz v0, :native_images
+            move-result p1
+            if-eqz p1, :native_images
             return-void
         """.trimIndent(), ExternalLabel("native_images", instructions[superIndex + 1]))
     }

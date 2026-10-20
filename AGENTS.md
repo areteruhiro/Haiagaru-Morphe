@@ -15,3 +15,5 @@
 - リリースは [Morphe patches template](https://github.com/MorpheApp/morphe-patches-template) のSemantic Release CI（`.github/workflows/release.yml`）を使用する。独自のリリーススクリプトを作成・実行せず、手動でRelease／タグ／配布物を作成・アップロードしない。
 - リリース設定が必要な場合は、テンプレート由来の既存`release.yml`と`.releaserc`だけを必要最小限で調整する。`patches-bundle*.json`、`CHANGELOG.md`、`gradle.properties`などCI生成ファイルを手動編集・コミットしない。既存リリースの不具合も、原則として修正版をSemantic Releaseで新規公開する。
 - リリースコミットはConventional Commits形式を使う。開発は`dev`で行い、正式版はテンプレートの手順に沿って`dev`から既定ブランチ`master`へマージする。履歴を壊すforce-pushやsquash mergeをしない。
+- 公開前の必須条件は「クラッシュなどの重大な回帰を防ぐ」。ビルド成功だけで公開しない。変更したフックのレジスター・元命令保持を検査し、対応版の起動・スレ本文表示・画像表示・変更画面の基本操作と新規クラッシュログを確認する。共通処理の重複検証をユーザー指示で省略した場合は、その版・理由・未確認範囲を記録する。
+- 重大なクラッシュ、操作不能、データ破損、未解決の検証エラーがある状態ではReleaseを公開しない。検証できなかった事項を成功扱いせず、公開説明へ確認範囲と残課題を記載する。クラッシュが絶対に発生しないと保証する表現は使わない。

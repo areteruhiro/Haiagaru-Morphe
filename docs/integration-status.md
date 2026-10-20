@@ -1,9 +1,23 @@
 # 主開発先と統合状況
 
+2026-10-20 エッヂ検索スクロール修正: 226の検索画面へ実パーサーを通した50件を表示し、縦スワイプでも先頭に留まる旧挙動を再現。結果へ残り高さを配分する専用Composeレイアウトと、結果カードのクリック引継ぎを追加。修正後50行目到達、詳細開閉、結果→658レス→戻る際の位置保持を確認。横画面で結果欄が潰れる問題も修正。最終226の縦スワイプ、横画面の有限viewport描画、元レス描画保持検査成功。検索サイトは接続タイムアウトのため通信成功とは扱わない。実機未接続、共通画面191/242の重複操作確認はユーザー指示で省略。通常Lint込みbuild/eddi-scroll-final-build.log成功（5分54秒）。最終MPP build/eddi-scroll-final.mpp SHA256 57AF2E943F434FCE3FE4505E5FF60FBEE0C5B30E7D11C52036F4A87EB46E5E3B。Part2の768レスを確認し追加報告をdocs/part2-bug-triage-20261020.mdへ整理。AGENTS.mdへ公開前回帰確認ルールを追加。お詫びはRelease説明のみでスレへの投稿なし。公開結果は別途記録。
+
+2026-10-20 他バージョン追加確認: 191/226と同じ最終MPP（C48D7EA3D9960820BAB00C5BD449CB13701E18D6563A78D823352C2089AEFCA5）を242 devへ適用・署名・emulator-5554へ同署名更新成功。指定Haiagaru Part2の本文表示、3レスの画像取得・標準ビューア表示、同じフィルターダイアログ内でチェックオン／オフを実画面確認。初回画像取得時はサーバー未検出表示となったが再取得で画像表示成功。元の復帰処理保持検査成功、最終crash buffer 0 bytes。241/243は配布対象外で、NGフックの単独適用・レジスタ・DEX生成検査は既存記録で成功、今回の実画面通し確認には含まない。APKハッシュと鍵はandroid-installations.md。
+
+2026-10-20 1.11.0緊急修正（ローカル検証完了）: emulator-5554の191でスレを開く際のgetView VerifyError、226で画像を開く際のImagesViewer2Activity.onCreate VerifyErrorを実操作で再現。広告フックの元レス描画メソッド誤認と、GIF振り分けによる生存レジスタ破壊を修正し、同じ公開スレの本文／画像表示を確認。フィルターチェック遅延は固定長ArrayAdapterのclear例外、Composeの非監視BooleanArray、非同期選択値の古い読取を修正。最終226でダイアログを閉じずに画像チェックのオフ→オンを実画面確認。通常Lint込みのbuildAndroid成功（build/filter-immediate-hotfix-build.log）。最終MPP build/crash-filter-immediate-final.mpp SHA256 C48D7EA3D9960820BAB00C5BD449CB13701E18D6563A78D823352C2089AEFCA5。191/226を既存検証パッケージへ同署名更新。両最終APKの元レス描画保持検査合格、最終crash buffer 0 bytes。投稿者ID連鎖NGに関する並行変更は保持。実機導入・Release公開・バージョン更新は未実施。詳細: docs/crash-1.11.0-hotfix.md、導入ハッシュ: docs/android-installations.md。
+
 更新日: 2026-10-18（日本時間）
 
 主開発先は `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current`。
 今後は他チャットもここで作業・ビルドする。親フォルダ、`StudioProjects/Haiagaru-release-1.8.9`、`StudioProjects/Haiagaru-Morphe` は参照用の旧作業先。
+
+## 1.11.0クラッシュ追補（2026-10-20、ローカル修正）
+
+241から242 devへバックアップ復元後に落ちるというOPPO/API36ログの `o.zzaW.c(KeJ11,boolean)` / `0x101` / `v13 Integer → Object` VerifyErrorを、修正前242の実メソッド呼出しでも再現。投稿者ID連鎖フックが、ネイティブで投稿引数をレス番号・祖先探索引数をキャッシュへ再利用した後に引数を上書きしていた。241/242/243はレス番号ロード直前に直接3引数で呼ぶよう変更し、元のキャッシュ参照を保持。5版の元APKへの本番フック適用・引数／ロード順検査・DEX生成に成功。修正版242をemulator-5554へ同署名で上書きし、ART上の割当と実メソッド実行に成功。ユーザーZIP・OPPO実機による復元通し確認は未実施。詳細は [242復元後のクラッシュ](hotfix-1.11.0-242-restore.md)。
+
+191のレス描画広告フック、226のGIFリダイレクト、フィルターダイアログのComposeチェック状態修正も統合した最終Androidビルドは `build/crash-hotfix-final-build.log`（4分20秒、既知のLint3工程をローカルコマンドで除外）で成功。固定MPP `build/crash-hotfix-final.mpp` SHA256 `0373C18C620AEF08AC2EF1C51C45C2DA966F8BAD023E6F1589BB3D1016B9D36D`。191/226/242のAPK生成とemulator-5554への上書き成功、191のART割当・レス描画、226の実画像表示、242の旧VerifyError消失を確認。226実プロセスでComposeチェックの初期状態・オン／オフ・外部モデル反映の5項目に成功（`build/crash-hotfix-dialog226-runtime.log`）。公開・バージョン更新は未実施。共用エミュレータの実画面操作が別検証と競合するため、続きの画面確認は既存16GiB AVDをread-onlyで起動したemulator-5556を使用する。
+
+追加画面確認: API36 / emulator-5556で初回案内→板一覧→Android板→Haiagaru Part2（701レス）まで実操作し、242の本文を正常表示。実際のフィルターダイアログでも画像チェックが閉じ直さずに変わり、背面のレス一覧が即座に絞り込まれることを確認。チェックを戻して終了し、新規crash bufferは0 bytes。画像はbuild/crash-hotfix-242-thread5556.png、crash-hotfix-filter242-before.png／after.png／off.png。検証用AVDは既存16GiB AVDのread-only実行で、保存済みAVDデータへ変更を残さない。
 
 ## 今回の統合
 

@@ -48,6 +48,10 @@ object HaiagaruUi {
         activity.setContent { Theme { ModelScreen(activity, title, model) } }
     }
     @JvmStatic
+    fun showArchiveSearch(activity: HaiagaruComposeActivity, model: android.widget.LinearLayout) {
+        activity.setContent { Theme { ArchiveSearchScreen(activity, model) } }
+    }
+    @JvmStatic
     fun showForm(activity: HaiagaruComposeActivity, title: String, model: ViewGroup) {
         activity.setContent { Theme { FormScreen(activity, title, model) } }
     }
