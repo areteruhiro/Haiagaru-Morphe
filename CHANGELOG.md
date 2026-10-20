@@ -1,3 +1,13 @@
+# Haiagaru 1.11.1
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.1/docs/release-1.11.1.md)
+
+
+### 🐛 Bug Fixes
+
+* prevent thread and image crashes and restore archive search scrolling ([ad7d50c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ad7d50c51621805d31050e768f478b5ab23586ee))
+* release Haiagaru 1.11.1 crash and archive search hotfix ([17e9a21](https://github.com/areteruhiro/Haiagaru-Morphe/commit/17e9a21edc77185d6bb723ebbab65c33eb4e74c0))
+
 # Haiagaru 1.11.0
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.0/docs/release-1.11.0.md)

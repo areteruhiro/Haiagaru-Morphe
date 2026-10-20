@@ -10,15 +10,15 @@ private object ImageVpnResources
 @Suppress("unused")
 val imageVpnResourcesPatch = resourcePatch(
     name = "画像取得専用VPN（実験用・検証中）",
-    description = "必要な方だけ選択してください。GitHubからimage-stack.aarを保存: $OPTIONAL_ASSET_VPN_URL → 下のオプションで選択 → パッチ適用後にHaiagaru設定でVPNを有効化。AARは展開不要です。全経路の検証は未完了です。導入・ソース: $OPTIONAL_ASSET_GUIDE",
+    description = "必要な方だけ選択してください。Releaseのhaiagaru-image-vpn.zipを保存: $OPTIONAL_ASSET_VPN_ZIP_URL → 下のオプションで選択 → パッチ適用後にHaiagaru設定でVPNを有効化。Image NG用ZIPとは別です。展開不要。全経路の検証は未完了です。導入・ソース: $OPTIONAL_ASSET_GUIDE",
     default = false,
 ) {
     compatibleWith(chMateCompatibility)
     dependsOn(imageVpnTransportPatch)
     val libraryFile = filePathOption(
-        key = "imageVpnLibraryFile", default = "", title = "ダウンロードしたVPNライブラリを選択",
-        description = "GitHubからimage-stack.aarを保存して選択: $OPTIONAL_ASSET_VPN_URL AARは展開不要。$OPTIONAL_ASSET_GUIDE",
-        allowedExtensions = listOf("aar"),
+        key = "imageVpnLibraryFile", default = "", title = "VPN用haiagaru-image-vpn.zip／image-stack.aarを選択",
+        description = "VPN専用ファイル: $OPTIONAL_ASSET_VPN_ZIP_URL Image NG用haiagaru-image-ng.zipは選択しないでください。従来AARも利用可能: $OPTIONAL_ASSET_VPN_URL 展開不要。$OPTIONAL_ASSET_GUIDE",
+        allowedExtensions = listOf("zip", "aar"),
     )
     execute {
         val hashes = mapOf(

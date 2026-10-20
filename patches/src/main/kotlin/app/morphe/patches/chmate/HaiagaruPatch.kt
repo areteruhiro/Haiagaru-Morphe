@@ -4637,7 +4637,7 @@ val haiagaruPatch = resourcePatch(
     )
     val imageNgLibraryFile = filePathOption(
         key = "imageNgLibraryFile", default = "", title = "191画像判定の修正ファイルを選択（任意）",
-        description = "GitHubからhaiagaru-image-ng.zipを保存して選択: $OPTIONAL_ASSET_IMAGE_NG_URL ZIPは展開不要。226／242には不要です。手順・ソース: $OPTIONAL_ASSET_GUIDE",
+        description = "Image NG専用: GitHubからhaiagaru-image-ng.zipを保存して選択: $OPTIONAL_ASSET_IMAGE_NG_URL ZIPは展開不要。VPN用ファイルとは別です。226／242には不要です。手順・ソース: $OPTIONAL_ASSET_GUIDE",
         allowedExtensions = listOf("zip", "apk"),
     )
 
