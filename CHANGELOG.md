@@ -1,3 +1,13 @@
+# Haiagaru 1.11.2
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.2/docs/release-1.11.2.md)
+
+
+### 🐛 Bug Fixes
+
+* distribute a separate VPN library ZIP and clarify optional file selection ([8eabe51](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8eabe51bbc052d7486144210cdc19ab9a37bf053))
+* release Haiagaru 1.11.2 optional asset selection hotfix ([ea548fb](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ea548fb7997b96ace1cd58247787d25170972cea))
+
 # Haiagaru 1.11.1
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.1/docs/release-1.11.1.md)
