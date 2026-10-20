@@ -252,7 +252,7 @@ final class EddiArchiveSearchUi {
         });
         root.addView(original);
         applyAppearance();
-        HaiagaruUi.showModel((HaiagaruComposeActivity) activity, "エッヂ過去ログ検索", root);
+        HaiagaruUi.showArchiveSearch((HaiagaruComposeActivity) activity, root);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
 
         if (!restoreSavedSearch(source, state)) {

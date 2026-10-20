@@ -2,9 +2,11 @@ package app.morphe.patches.chmate
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.patch.BytecodePatchContext
+import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private const val POSTER_CHAIN = "Lapp/morphe/extension/chmate/PosterIdChainNg;"
@@ -45,12 +47,29 @@ internal fun BytecodePatchContext.patchPosterIdChainNg() {
     }
     check(writes.size == 1) { "Poster ID chain cache write changed: ${packageMetadata.versionName}" }
     val (index, state) = writes.single()
-    // p2 is the ancestor-walk Boolean; the walk has finished and this parameter is dead here.
-    method.addInstructionsWithLabels(index, """
-        move/16 p2, v$state
-        invoke-static/range {p0 .. p2}, $POSTER_CHAIN->merge(Ljava/lang/Object;Ljava/lang/Object;I)I
-        move-result v$state
-    """)
+    if (profile[5].isEmpty()) {
+        // Modern engines reuse p1 for the response number and p2 for the cache
+        // before the write. Merge while p1 still contains the response object,
+        // without overwriting either native argument register.
+        val p0 = method.implementation!!.registerCount - method.parameterTypes.size - 1
+        val number = method.implementation!!.instructions[index - 1]
+        check(number.opcode == Opcode.IGET && number is TwoRegisterInstruction &&
+            number.registerA == p0 + 1 && number.registerB == p0 + 1 &&
+            p0 + 1 <= 15 && state <= 15) {
+            "Modern poster ID chain response-number anchor changed: ${packageMetadata.versionName}"
+        }
+        method.addInstructionsWithLabels(index - 1, """
+            invoke-static {p0, p1, v$state}, $POSTER_CHAIN->merge(Ljava/lang/Object;Ljava/lang/Object;I)I
+            move-result v$state
+        """)
+    } else {
+        // Legacy engines retain the response parameter and no longer use p2.
+        method.addInstructionsWithLabels(index, """
+            move/16 p2, v$state
+            invoke-static/range {p0 .. p2}, $POSTER_CHAIN->merge(Ljava/lang/Object;Ljava/lang/Object;I)I
+            move-result v$state
+        """)
+    }
     if (profile[5].isNotEmpty()) {
         val rebuild = owner.methods.single {
             it.name == profile[5] && it.returnType == "V" && it.parameterTypes == listOf("Z")

@@ -47,6 +47,13 @@ public class VerifyLegacyAdAdapter {
             if (!reference(patched.get(i)).contains("->hideLegacyThreadListAd(")) continue;
             hooks++;
             var call = (FiveRegisterInstruction) patched.get(i);
+            // The native getView result reuses p1 (the integer position). An
+            // extension also returns View, but hooking that call is too late.
+            if (args[2].contains("m9ExternalSyntheticLambda1")
+                    && (i < 2 || !reference(patched.get(i - 2)).contains("Lo/m9a;->SL_(")
+                        || patched.get(i - 1).getOpcode() != Opcode.MOVE_RESULT_OBJECT
+                        || ((OneRegisterInstruction) patched.get(i - 1)).getRegisterA() != call.getRegisterC()))
+                throw new AssertionError("Ad hook must consume the native renderer result before p1 becomes a View");
             var next = patched.get(i + 1);
             if (next.getOpcode() != Opcode.MOVE_OBJECT_FROM16
                     || ((TwoRegisterInstruction) next).getRegisterB() != call.getRegisterC())
