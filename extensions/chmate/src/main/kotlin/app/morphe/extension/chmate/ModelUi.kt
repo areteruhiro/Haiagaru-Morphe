@@ -11,14 +11,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+
+/** Only archive-search controls opt in; settings and result rows retain their spacing. */
+internal val LocalArchiveControlLayout = staticCompositionLocalOf { 100 }
 
 /** Observe legacy controllers without attaching their form widgets or replacing listeners. */
 @Composable internal fun rememberModelRevision(vararg roots: View?): Int {
@@ -72,7 +78,9 @@ internal fun weightedSurface(root: View?): Int? = if (root is LinearLayout)
 @Composable internal fun BrowserModel(root: LinearLayout, revision: Int, modifier: Modifier, changed: () -> Unit) {
     val index = weightedSurface(root) ?: return
     BoxWithConstraints(modifier) {
-        val controlsHeight = maxHeight * .30f
+        val percent = if (root.context is HissiMenuActivity)
+            root.context.getSharedPreferences(WacchoiSearchOptions.PREFS, 0).getInt("checkerHeaderPercent", 30).coerceIn(10, 60) else 30
+        val controlsHeight = maxHeight * (percent / 100f)
         Column(Modifier.fillMaxSize()) {
             if (index > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                 .verticalScroll(rememberScrollState())) {
@@ -105,6 +113,26 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 @Composable internal fun ModelContent(view: View, revision: Int = 0, modifier: Modifier = Modifier,
     insideScroll: Boolean = false, changed: () -> Unit = {}) {
     if (view.visibility != View.VISIBLE) return
+    if (view is ViewGroup && view.getTag(EddiArchiveSearchUi.RESULT_CARD_TAG) == true) {
+        val ruleColor = MaterialTheme.colorScheme.outline.copy(alpha = .70f)
+        val first = view.getTag(EddiArchiveSearchUi.RESULT_FIRST_TAG) == true
+        val padding = EddiArchiveSearchUi.clampResultPadding(view.getTag(EddiArchiveSearchUi.RESULT_PADDING_TAG) as? Int ?: 16)
+        Box(modifier.fillMaxWidth().heightIn(min = 48.dp).combinedClickable(
+            enabled = view.isEnabled, onClick = { view.performClick(); changed() }) .drawBehind {
+            val stroke = 1.dp.toPx()
+            if (first) drawLine(ruleColor, Offset(0f, stroke / 2), Offset(size.width, stroke / 2), stroke)
+            drawLine(ruleColor, Offset(0f, size.height - stroke / 2), Offset(size.width, size.height - stroke / 2), stroke)
+        }.padding(horizontal = 12.dp, vertical = padding.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (index in 0 until view.childCount) {
+                    val text = view.getChildAt(index) as? TextView ?: continue
+                    Text(text.text.toString(), fontSize = if (index == 0) 16.sp else 12.sp,
+                        color = if (index == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        return
+    }
     when (view) {
         is NativeSurfaceSlot -> AndroidView(factory = { view.surface },
             modifier = if (view.layoutParams?.width == 1 && view.layoutParams?.height == 1) Modifier.size(1.dp)
@@ -128,6 +156,7 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                     val label = adapter.getItem(index)?.toString().orEmpty()
                     val selectable = adapter.isEnabled(index) && view.isEnabled
                     Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                         modifier = Modifier.fillMaxWidth().combinedClickable(enabled = selectable,
                             onClick = {
                                 if (view.choiceMode != ListView.CHOICE_MODE_NONE)
@@ -161,12 +190,16 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
         }
         is LinearLayout -> if (view.orientation == LinearLayout.HORIZONTAL &&
             (0 until view.childCount).all { (view.getChildAt(it) is Button && view.getChildAt(it) !is CompoundButton) || view.getChildAt(it).javaClass == View::class.java }) {
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val scale = LocalArchiveControlLayout.current
+            val compact = scale < 100
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((8f * scale / 100f).dp)) {
                 for (index in 0 until view.childCount) {
                     val button = view.getChildAt(index) as? Button ?: continue
                     if (button.visibility == View.VISIBLE) {
                         val release = button.getTag(0x48690b01) as? Runnable
-                        if (release == null) TextButton(onClick = { button.performClick(); changed() }, enabled = button.isEnabled) { Text(button.text.toString()) }
+                        if (release == null) TextButton(onClick = { button.performClick(); changed() }, enabled = button.isEnabled,
+                            contentPadding = if (compact) PaddingValues(horizontal = (8f + (scale - 50) * .16f).dp, vertical = ((scale - 50) * .16f).dp) else ButtonDefaults.TextButtonContentPadding,
+                            modifier = Modifier.heightIn(min = 48.dp)) { Text(button.text.toString()) }
                         else Text(button.text.toString(), style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(12.dp).pointerInput(button) {
                                 detectTapGestures(onTap = { if (button.isEnabled) { button.performClick(); changed() } },
@@ -210,7 +243,11 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     val click = if (!view.hasOnClickListeners()) Modifier else Modifier.combinedClickable(
         enabled = view.isEnabled, onClick = { view.performClick(); changed() },
         onLongClick = { view.performLongClick(); changed() })
-    Column(Modifier.fillMaxWidth().then(click), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val resultList = view.childCount > 0 && (0 until view.childCount).all {
+        view.getChildAt(it).getTag(EddiArchiveSearchUi.RESULT_CARD_TAG) == true
+    }
+    val gap = if (resultList) 0f else 8f * LocalArchiveControlLayout.current / 100f
+    Column(Modifier.fillMaxWidth().then(click), verticalArrangement = Arrangement.spacedBy(gap.dp)) {
             // Pair explanatory labels with editable fields while retaining composite controls and lists.
             var index = 0
             while (index < view.childCount) {
@@ -228,7 +265,8 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 
 /** Bounded result viewport: do not nest it in ModelScreen's scrolling form. */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun ArchiveSearchScreen(activity: HaiagaruComposeActivity, root: LinearLayout) {
+@Composable internal fun ArchiveSearchScreen(activity: android.app.Activity, root: LinearLayout,
+    back: () -> Unit = { @Suppress("DEPRECATION") activity.onBackPressed() }) {
     var localRevision by remember(root) { mutableIntStateOf(0) }
     val revision = rememberModelRevision(root) + localRevision
     val changed = { localRevision++; Unit }
@@ -236,19 +274,19 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     val density = LocalDensity.current
     val controlScale = EddiArchiveSearchUi.clampTextScale(root.getTag(EddiArchiveSearchUi.CONTROL_SCALE_TAG) as? Int ?: 100)
     val resultScale = EddiArchiveSearchUi.clampTextScale(root.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG) as? Int ?: 100)
+    val layoutScale = EddiArchiveSearchUi.clampControlLayout(root.getTag(EddiArchiveSearchUi.CONTROL_LAYOUT_TAG) as? Int ?: 100)
     val controlsDensity = Density(density.density, density.fontScale * controlScale / 100f)
     val resultsDensity = Density(density.density, density.fontScale * resultScale / 100f)
     Scaffold(topBar = { CompositionLocalProvider(LocalDensity provides controlsDensity) { TopAppBar(title = { Text("エッヂ過去ログ検索") }, navigationIcon = {
-        TextButton(onClick = { activity.onBackPressed() }) { Text("戻る") }
+        TextButton(onClick = back) { Text("戻る") }
     }, actions = { TextButton(onClick = { appearance.performClick(); changed() }) { Text(appearance.text.toString()) } }) } }) { insets ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(insets).imePadding().padding(horizontal = 16.dp)) {
             val formHeight = maxHeight * .40f
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CompositionLocalProvider(LocalDensity provides controlsDensity) {
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy((8f * layoutScale / 100f).dp)) {
+                CompositionLocalProvider(LocalDensity provides controlsDensity, LocalArchiveControlLayout provides layoutScale) {
                 Column(Modifier.fillMaxWidth().heightIn(max = formHeight).verticalScroll(rememberScrollState())) {
                     val form = root.getChildAt(1) as LinearLayout
                     if (form.visibility == View.VISIBLE) for (index in 0 until form.childCount) {
-                        // The instructions above the keyword are not its input label.
                         ModelContent(form.getChildAt(index), revision, changed = changed)
                     }
                 }
@@ -273,13 +311,14 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 
 /** Compose shell for controller-built tools, including asynchronous status and list changes. */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable internal fun ModelScreen(activity: HaiagaruComposeActivity, title: String, root: View) {
+@Composable internal fun ModelScreen(activity: android.app.Activity, title: String, root: View,
+    back: () -> Unit = { @Suppress("DEPRECATION") activity.onBackPressed() }) {
     var localRevision by remember(root) { mutableIntStateOf(0) }
     val revision = rememberModelRevision(root) + localRevision
     if (root is ViewGroup) prepareNativeSurfaces(root)
     @Suppress("UNUSED_VARIABLE") val observed = revision
     Scaffold(topBar = { TopAppBar(title = { Text(title) }, navigationIcon = {
-        TextButton(onClick = { activity.onBackPressed() }) { Text("戻る") }
+        TextButton(onClick = back) { Text("戻る") }
     }) }) { insets ->
         val surfaceIndex = if (root is LinearLayout) (0 until root.childCount).firstOrNull {
             val child = root.getChildAt(it)

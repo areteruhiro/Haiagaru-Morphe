@@ -51,6 +51,19 @@ public final class DroppedThreadsAndroidTest {
         try{
             check((Boolean)call(context,"HiddenDroppedThreads","dropped",new Class<?>[]{Object.class},dropped),"native DROP bit");
             check(!(Boolean)call(context,"HiddenDroppedThreads","dropped",new Class<?>[]{Object.class},unknown),"native zero bit remains unknown");
+            Class<?> headingType=Class.forName(v191?"o.onAdDisplayed$write":v226?"o.Yy2$ComponentActivity":"o.getAvailabilityStatus$RemoteActionCompatParcelizer",true,context.getClassLoader());
+            Object emptyHeading=headingType.getConstructor(String.class).newInstance("1分前");
+            Object liveHeading=headingType.getConstructor(String.class).newInstance("2分前");
+            Object trailingHeading=headingType.getConstructor(String.class).newInstance("3分前");
+            List<Object> grouped=Arrays.asList(emptyHeading,dropped,liveHeading,unknown,trailingHeading,dropped);
+            List<?> history=(List<?>)call(context,"HiddenDroppedThreads","filter",new Class<?>[]{List.class,int.class,boolean.class},grouped,103,true);
+            check(history.equals(Arrays.asList(liveHeading,unknown)),"HOME history removes dropped rows and empty time groups");
+            check(call(context,"HiddenDroppedThreads","filter",new Class<?>[]{List.class,int.class,boolean.class},grouped,103,false)==grouped,"history OFF retains all time groups");
+            check(grouped.size()==6,"grouped source history unchanged");
+            if(v226){
+                Object nonHeading=Class.forName("o.Yy2$write",true,context.getClassLoader()).getConstructor(String.class).newInstance("保持する項目");
+                check(!(Boolean)call(context,"HiddenDroppedThreads","timeHeading",new Class<?>[]{Object.class},nonHeading),"226 non-divider row is not a time heading");
+            }
             for(int mode:new int[]{101,102,-101,103}){
                 List<?> filtered=(List<?>)call(context,"HiddenDroppedThreads","filter",new Class<?>[]{List.class,int.class,boolean.class},source,mode,true);
                 check(filtered.size()==1&&filtered.get(0)==unknown,"native target mode "+mode);

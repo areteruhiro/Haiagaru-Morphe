@@ -22,10 +22,10 @@ val imageVpnResourcesPatch = resourcePatch(
     )
     execute {
         val hashes = mapOf(
-            "arm64-v8a" to "b58e5a0c803178e014641e835aea76e0674eac14e48d88e6b5a91fd9577ee450",
-            "armeabi-v7a" to "43b2535cd19124f89300bcd120bbf6634d5bce4677306807b7b72712d59e6624",
-            "x86" to "41cdbaac181c549d7785fc56c5d8db0ebce23470a68268c222cc8f1518440adb",
-            "x86_64" to "8d1452d71b0140d93bda2e27532df1bea788be044f909a17024d6a0db2b2380f",
+            "arm64-v8a" to "6602ba77268630df803bde296a8aea57cf81e0e31222dd4c08ccebd06729c06d",
+            "armeabi-v7a" to "65216b5bd1655ebec5d1b2069a4ce0ed32855f7b554016d8e1f6335072c0bff3",
+            "x86" to "f39262e98244c8b69c553fd4c2e184bfd276d2afba6d87740de21772543b0e1a",
+            "x86_64" to "bd94516b9791a79154aeedca5b89132dd562c5c509d056f0d9ac0566c9f8910e",
         )
         check(libraryFile.value.orEmpty().isNotBlank()) { "VPNライブラリを選択するか、この任意パッチのチェックを外してください。$OPTIONAL_ASSET_GUIDE" }
         val libraries = optionalLibraries(libraryFile.value.orEmpty(), hashes, "libgojni.so")

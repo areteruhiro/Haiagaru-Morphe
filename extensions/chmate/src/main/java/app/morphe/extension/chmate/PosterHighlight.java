@@ -80,7 +80,16 @@ public final class PosterHighlight {
         } catch(Exception error){throw new IllegalStateException("強調ルールを保存できませんでした",error);}
     }
     private static void refresh(){EmojiFontFallback.refreshVisibleRows();}
-    private static String plain(Object value){return value==null?"":Html.fromHtml(String.valueOf(value)).toString();}
+    private static final android.util.LruCache<String,String> PLAIN_CACHE=new android.util.LruCache<>(512);
+    private static String plain(Object value){
+        if(value==null)return "";
+        String html=String.valueOf(value);
+        if(html.indexOf('<')<0&&html.indexOf('&')<0)return html;
+        String cached=PLAIN_CACHE.get(html);if(cached!=null)return cached;
+        String result=Html.fromHtml(html).toString();
+        if(html.length()<=4096)PLAIN_CACHE.put(html,result);
+        return result;
+    }
     static PosterHighlightRules.Poster poster(Object response) throws Exception {
         String id,name,date;
         switch(response.getClass().getName()) {

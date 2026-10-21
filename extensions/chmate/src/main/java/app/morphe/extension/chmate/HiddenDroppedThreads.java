@@ -55,6 +55,14 @@ public final class HiddenDroppedThreads {
                     ||"Drafts".equals(text)||"Sent".equals(text)||"Posted threads".equals(text);
         }catch(Exception ignored){return false;}
     }
+    static boolean timeHeading(Object row){
+        if(row==null)return false;String name=row.getClass().getName();
+        return name.equals("o.onAdDisplayed$write")
+                ||name.equals("o.Yy2$ComponentActivity")||name.equals("o.getAvailabilityStatus$RemoteActionCompatParcelizer");
+    }
+    static void removeEmptyTimeHeadings(List<?> rows){
+        for(int i=rows.size()-1;i>=0;i--)if(timeHeading(rows.get(i))&&(i+1==rows.size()||timeHeading(rows.get(i+1))))rows.remove(i);
+    }
     static boolean dropped(Object row)throws Exception{
         if(row==null)return false;
         String name=row.getClass().getName();String field;
@@ -87,6 +95,7 @@ public final class HiddenDroppedThreads {
                 for(int i=out.size()-1;i>=0;i--)if(postHeading(out.get(i))
                         &&(i+1==out.size()||postHeading(out.get(i+1))))out.remove(i);
             }
+            if(Math.abs(mode)==103&&out.size()!=source.size())removeEmptyTimeHeadings(out);
             return out.size()==source.size()?source:out;
         }
         catch(Exception error){android.util.Log.w("Haiagaru","DAT-drop display filter left unchanged",error);return source;}

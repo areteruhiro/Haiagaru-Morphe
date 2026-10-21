@@ -52,7 +52,28 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                 .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION))
     }
 
-    override fun onResume() { super.onResume(); revision++ }
+    override fun onResume() {
+        super.onResume()
+        val light = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK !=
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            val mask = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(if (light) mask else 0, mask)
+        } else {
+            @Suppress("DEPRECATION")
+            var flags = window.decorView.systemUiVisibility
+            if (android.os.Build.VERSION.SDK_INT >= 23) flags = if (light)
+                flags or android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                else flags and android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+            if (android.os.Build.VERSION.SDK_INT >= 26) flags = if (light)
+                flags or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                else flags and android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = flags
+        }
+        revision++
+    }
     override fun onDestroy() {
         gestures?.close()
         preferences.forEach { it.unregisterOnSharedPreferenceChangeListener(listener) }
@@ -148,7 +169,9 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                                 ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium) },
                                     supportingContent = { Text(if (english) group.enSummary else group.summary) },
                                     leadingContent = { Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
-                                        Text(group.mark, Modifier.padding(14.dp), style = MaterialTheme.typography.titleMedium) } },
+                                        Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+                                            Text(group.mark, style = MaterialTheme.typography.titleMedium)
+                                        } } },
                                     trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
                                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                                     modifier = Modifier.clickable { selected = groups.indexOf(group) })
@@ -173,8 +196,11 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                     }
                 } else {
                     val group = groups[selected]
-                    item { Text(if (english) group.enSummary else group.summary, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp)) }
+                    item { HaiagaruUi.Group {
+                        Text(group.title(english), style = MaterialTheme.typography.titleMedium)
+                        HorizontalDivider()
+                        Text(if (english) group.enSummary else group.summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } }
                     group.sources.forEach { source ->
                         val rows = settingsRows(body(source))
                         if (group.sources.size > 1) item("heading:$source") {

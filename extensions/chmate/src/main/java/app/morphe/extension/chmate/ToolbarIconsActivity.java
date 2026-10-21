@@ -28,6 +28,7 @@ public final class ToolbarIconsActivity extends HaiagaruComposeActivity {
         rows.removeAllViews();
         TextView help = new TextView(this);
         help.setText("アイコンの画像だけを変更します。表示・非表示と配置順は、ChMateのHOME・板・スレの各ツールバー設定で変更してください。画像の色はそのまま使います。\n画像は端末内にコピーするため、元画像を移動しても利用できます。"); rows.addView(help);
+        Button filters=new Button(this);filters.setText("フィルターの設定（下部パネル・追加項目）");filters.setOnClickListener(v->QuickFilterOptions.showToolbarSettings(this));rows.addView(filters);
         for (int i=0;i<ToolbarIcons.NAMES.length;i++) {
             final int n=i;
             TextView label = new TextView(this); label.setText(ToolbarIcons.NAMES[i]); rows.addView(label);

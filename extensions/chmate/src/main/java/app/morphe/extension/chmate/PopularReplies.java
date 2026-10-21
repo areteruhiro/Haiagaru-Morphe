@@ -25,6 +25,7 @@ public final class PopularReplies {
         return c!=null && prefs(c).getBoolean("popularReplyPopup",false);
     }
     public static boolean interceptModel(Object model,Object kind) {
+        if(ExtraQuickFilters.resetting())return false;
         if (!enabled() || !(kind instanceof Enum) || !"POPULAR".equals(((Enum<?>)kind).name())) return false;
         return openModel(model);
     }
@@ -55,6 +56,7 @@ public final class PopularReplies {
         return false;
     }
     public static boolean interceptLegacy(Object fragment) {
+        if(ExtraQuickFilters.resetting())return false;
         if(!enabled())return false;
         if(Boolean.TRUE.equals(RESETTING.get()))return true;
         try {

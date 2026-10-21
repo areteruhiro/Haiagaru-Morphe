@@ -10,9 +10,24 @@ import org.json.JSONArray;
 
 /** Stable IDs shared by the native customization catalog and response actions. */
 public final class ResponseMenuSettings {
+    private static final int TOOLS=0x7e484a09;
+    private static final ThreadLocal<Boolean> BUILD_TOOLS=new ThreadLocal<>();
+    private static final java.util.Map<android.view.MenuItem,Runnable> TOOL_ACTIONS=new java.util.WeakHashMap<>();
+    static void addTools(Menu menu,java.util.function.Consumer<Menu> fill){
+        Context context=Haiagaru.applicationContextForExtension();
+        if(Boolean.TRUE.equals(BUILD_TOOLS.get())||context==null||menu.findItem(TOOLS)!=null||!FeatureSwitches.enabled("responseExtraTools",false))return;
+        android.app.Activity activity=Haiagaru.toolbarActivity(null);if(activity==null)return;
+        Menu tools=new android.widget.PopupMenu(activity,new android.view.View(activity)).getMenu();
+        BUILD_TOOLS.set(true);try{fill.accept(tools);}finally{BUILD_TOOLS.remove();}
+        if(tools.size()==0)return;
+        Runnable open=()->{String[] titles=new String[tools.size()];for(int i=0;i<titles.length;i++)titles[i]=tools.getItem(i).getTitle().toString();
+            new HaiagaruDialog.Builder(activity).setTitle("追加ツール").setItems(titles,(dialog,index)->tools.performIdentifierAction(tools.getItem(index).getItemId(),0)).setNegativeButton("閉じる",null).show();};
+        android.view.MenuItem item=menu.add(Menu.NONE,TOOLS,menu.size(),"追加ツール");TOOL_ACTIONS.put(item,open);item.setOnMenuItemClickListener(v->{open.run();return true;});
+    }
+    static boolean handleTools(Object item){if(!(item instanceof android.view.MenuItem)||((android.view.MenuItem)item).getItemId()!=TOOLS)return false;Runnable action=TOOL_ACTIONS.get(item);if(action!=null)action.run();return true;}
     private ResponseMenuSettings() {}
-    static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077, 0x7e000078};
-    static final String[] NAMES={"投稿者を強調","レスを保存","過去レスを見る","ﾜｯﾁｮｲで検索","ﾜｯﾁｮｲ下4桁をNG登録","ﾜｯﾁｮｲ下4桁で検索","ﾜｯﾁｮｲ上4桁で検索"};
+    static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077, 0x7e000078, 0x7e000079};
+    static final String[] NAMES={"投稿者を強調","レスを保存","保存済みレスを見る","ﾜｯﾁｮｲで検索","ﾜｯﾁｮｲ下4桁をNG登録","ﾜｯﾁｮｲ下4桁で検索","ﾜｯﾁｮｲ上4桁で検索","ﾜｯﾁｮｲ上4桁をNG登録"};
     static boolean defaultVisible(int id){for(int action:IDS)if(action==id)return !FeatureSwitches.enabled(MinimalSetup.ACTIVE,false)&&(id==75||id==76);return true;}
     private static int icon(int id) {
         if(id==75)return wacchoiSearchIcon();
@@ -82,11 +97,13 @@ public final class ResponseMenuSettings {
     }
     static boolean visible(int id) {
         Context context = Haiagaru.applicationContextForExtension();
+        if((id==0x7e484a01||id==0x7e484a03)&&!FeatureSwitches.enabled("responseArchiveEnabled",true))return false;
+        if(Boolean.TRUE.equals(BUILD_TOOLS.get()))return true;
+        if(context!=null){int mode=context.getSharedPreferences("haiagaru_response_actions",0).getInt("visibility."+id,0);if(mode==1)return true;if(mode==2)return false;}
         if (id == 75 && context != null) {
             android.content.SharedPreferences prefs = context.getSharedPreferences("haiagaru_response_actions", 0);
             if (prefs.contains("wacchoiLongPressSearch")) return prefs.getBoolean("wacchoiLongPressSearch", true);
         }
-        if((id==0x7e484a01||id==0x7e484a03)&&!FeatureSwitches.enabled("responseArchiveEnabled",true))return false;
         JSONObject settings = savedSettings();
         if (settings == null) return defaultVisible(id);
         try {
@@ -114,9 +131,11 @@ public final class ResponseMenuSettings {
         layout.addView(help);
     }
     static void addSettings(android.widget.LinearLayout layout,android.app.Activity activity){
+        android.widget.Switch extra=new android.widget.Switch(activity);extra.setText("レス長押しに「追加ツール」を表示");extra.setChecked(FeatureSwitches.enabled("responseExtraTools",false));
+        extra.setOnCheckedChangeListener((button,on)->activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putBoolean("responseExtraTools",on).apply());layout.addView(extra);
         android.widget.Button button=new android.widget.Button(activity);button.setText("レス長押し・ツールバー項目を個別設定");layout.addView(button);
         button.setOnClickListener(v->{android.widget.LinearLayout panel=new android.widget.LinearLayout(activity);panel.setOrientation(1);
-            android.widget.TextView help=new android.widget.TextView(activity);help.setText("項目ごとに「標準のツールバー設定に従う／常に表示／常に非表示」を指定します。未設定の追加6項目は初期オフ。既存の配置順は変更しません。画面を開き直すと反映します。");panel.addView(help);
+            android.widget.TextView help=new android.widget.TextView(activity);help.setText("項目ごとに「標準のツールバー設定に従う／常に表示／常に非表示」を指定します。既存の配置順は変更しません。画面を開き直すと反映します。\n「追加ツール」をオンにすると、ツールバーの表示設定とは別に、選んだレスで利用できるHaiagaruの操作をまとめて開けます。");panel.addView(help);
             android.content.SharedPreferences prefs=activity.getSharedPreferences("haiagaru_response_actions",0);
             for(int i=0;i<IDS.length;i++){final int id=IDS[i];final String name=NAMES[i];android.widget.Button row=new android.widget.Button(activity);Runnable update=()->{int mode=prefs.getInt("visibility."+id,0);row.setText(name+"："+(mode==1?"常に表示":mode==2?"常に非表示":"標準設定"));};update.run();panel.addView(row);
                 row.setOnClickListener(w->new HaiagaruDialog.Builder(activity).setTitle(name).setSingleChoiceItems(new String[]{"標準のツールバー設定に従う","常に表示","常に非表示"},prefs.getInt("visibility."+id,0),(d,n)->{prefs.edit().putInt("visibility."+id,n).apply();update.run();d.dismiss();}).setNegativeButton("キャンセル",null).show());
@@ -177,6 +196,7 @@ public final class ResponseMenuSettings {
     public static void prepare(Object object) {
         if(!(object instanceof Menu))return;
         Menu menu=(Menu)object;
+        menu.removeItem(TOOLS);
         // Native catalog entries are placeholders; bind fresh per-response callbacks below.
         for(int id:IDS)menu.removeItem(id);
     }

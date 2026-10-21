@@ -43,13 +43,19 @@ import org.json.JSONObject;
 final class EddiArchiveSearchUi {
     static final int CONTROL_SCALE_TAG = 0x48690c01;
     static final int RESULT_SCALE_TAG = 0x48690c02;
+    static final int RESULT_CARD_TAG = 0x48690c03;
+    static final int RESULT_FIRST_TAG = 0x48690c04;
+    static final int RESULT_PADDING_TAG = 0x48690c05;
+    static final int CONTROL_LAYOUT_TAG = 0x48690c06;
     interface ThreadOpener {
         boolean open(String url);
     }
 
     private static final String HOST = "eddiarchive3rd.boy.jp";
     private static final String PREFS = "haiagaru_eddi_search";
-    private static final String STATE_KEY = "haiagaru.eddi.search.state";
+    static final String STATE_KEY = "haiagaru.eddi.search.state";
+    java.util.function.Consumer<String> onStateSaved;
+    private final Runnable closeAction;
     // Also stored in the Activity bundle: leave room for the view hierarchy
     // below Android's Binder transaction limit.
     private static final int MAX_SAVED_LENGTH = 120_000;
@@ -93,19 +99,29 @@ final class EddiArchiveSearchUi {
     private final java.util.Map<TextView, Float> resultTextSizes = new java.util.IdentityHashMap<>();
     private int controlScale;
     private int resultScale;
+    private int resultPadding;
+    private int controlLayoutScale;
     private boolean hideSearchForm;
     private int restoreScrollY = -1;
 
     static EddiArchiveSearchUi show(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
-        return new EddiArchiveSearchUi(activity, source, opener, state);
+        return new EddiArchiveSearchUi(activity, source, opener, state, false, activity::finish);
     }
 
-    private EddiArchiveSearchUi(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
+    static EddiArchiveSearchUi embed(Activity activity,Uri source,ThreadOpener opener,Bundle state,Runnable close) {
+        return new EddiArchiveSearchUi(activity,source,opener,state,true,close);
+    }
+    LinearLayout rootView(){return root;}
+
+    private EddiArchiveSearchUi(Activity activity, Uri source, ThreadOpener opener, Bundle state, boolean embedded, Runnable close) {
         this.activity = activity;
+        this.closeAction = close;
         this.opener = opener;
         android.content.SharedPreferences prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         controlScale = clampTextScale(prefs.getInt("controlTextScale", 100));
         resultScale = clampTextScale(prefs.getInt("resultTextScale", 100));
+        resultPadding = clampResultPadding(prefs.getInt("resultVerticalPadding", 16));
+        controlLayoutScale = clampControlLayout(prefs.getInt("controlLayoutScale", 100));
         hideSearchForm = prefs.getBoolean("hideSearchForm", false);
         int theme = Haiagaru.hissiViewerTheme();
         boolean dark = theme == 1 || theme == 2 || (theme != 3
@@ -119,7 +135,7 @@ final class EddiArchiveSearchUi {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(background);
         root.setPadding(dp(16), dp(12), dp(16), dp(8));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        if (!embedded && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // This native search screen returns before HissiMenuActivity installs
             // its WebView insets handler. Keep the heading below the status bar.
             activity.getWindow().setDecorFitsSystemWindows(false);
@@ -130,7 +146,7 @@ final class EddiArchiveSearchUi {
             });
         }
         TextView heading = text("‹ エッヂ過去ログ検索", 21, foreground);
-        heading.setOnClickListener(view -> activity.finish());
+        heading.setOnClickListener(view -> closeAction.run());
         LinearLayout header = row();
         header.addView(heading, weighted());
         Button appearance = button("表示");
@@ -140,7 +156,6 @@ final class EddiArchiveSearchUi {
         searchForm = new LinearLayout(activity);
         searchForm.setOrientation(LinearLayout.VERTICAL);
         root.addView(searchForm);
-        searchForm.addView(text("結果をタップしてスレを開き、「戻る」で検索結果に戻れます", 12, muted));
 
         keyword = input("スレタイを入力", false);
         keyword.setSingleLine(true);
@@ -254,8 +269,8 @@ final class EddiArchiveSearchUi {
         });
         root.addView(original);
         applyAppearance();
-        HaiagaruUi.showArchiveSearch((HaiagaruComposeActivity) activity, root);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
+        if (!embedded) HaiagaruUi.showArchiveSearch((HaiagaruComposeActivity) activity, root);
+        if (!embedded && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) root.requestApplyInsets();
 
         if (!restoreSavedSearch(source, state)) {
             restoreQuery(source);
@@ -289,6 +304,7 @@ final class EddiArchiveSearchUi {
             }
             if (encoded.length() > MAX_SAVED_LENGTH) return;
             if (state != null) state.putString(STATE_KEY, encoded);
+            if (onStateSaved != null) onStateSaved.accept(encoded);
             activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                     .edit().putString("last", encoded).apply();
         } catch (Exception error) {
@@ -297,6 +313,7 @@ final class EddiArchiveSearchUi {
     }
 
     void dispose() {
+        onStateSaved = null;
         ++generation;
     }
 
@@ -348,7 +365,7 @@ final class EddiArchiveSearchUi {
         if (forward) {
             if (next.isEnabled()) next.performClick();
         } else if (page <= 1) {
-            activity.finish();
+            closeAction.run();
         } else if (previous.isEnabled()) {
             previous.performClick();
         }
@@ -487,12 +504,15 @@ final class EddiArchiveSearchUi {
         if (result.threads.isEmpty()) {
             results.addView(resultText("該当するスレはありません。検索条件を変えてください。", 15, muted));
         }
+        int resultIndex=0;
         for (ThreadResult thread : result.threads) {
             LinearLayout card = new LinearLayout(activity);
             card.setOrientation(LinearLayout.VERTICAL);
-            card.setPadding(dp(12), dp(12), dp(12), dp(12));
-            card.setBackgroundColor(background == Color.WHITE
-                    ? Color.rgb(242, 246, 248) : Color.rgb(36, 38, 43));
+            styleResultSpacing(card);
+            boolean first=resultIndex++==0;
+            card.setTag(RESULT_FIRST_TAG,first);
+            int lineColor=background==Color.WHITE?Color.rgb(181,187,195):Color.rgb(105,113,124);
+            card.setBackground(new ResultRules(first,lineColor,dp(1)));
             TextView title = resultText(thread.title, 16, foreground);
             card.addView(title);
             card.addView(resultText(thread.date, 12, muted));
@@ -511,7 +531,8 @@ final class EddiArchiveSearchUi {
             });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.bottomMargin = dp(7);
+            params.bottomMargin = 0;
+            card.setTag(RESULT_CARD_TAG,Boolean.TRUE);
             results.addView(card, params);
         }
         previous.setEnabled(page > 1);
@@ -522,6 +543,19 @@ final class EddiArchiveSearchUi {
             restoreScrollY = -1;
             HaiagaruUi.scrollTo(scroll, position);
         }
+    }
+
+    /** Shared row boundaries: top only for the first result, bottom for every result. */
+    private static final class ResultRules extends android.graphics.drawable.Drawable {
+        final boolean first;final android.graphics.Paint paint=new android.graphics.Paint();final int thickness;
+        ResultRules(boolean first,int color,int thickness){this.first=first;this.thickness=thickness;paint.setColor(color);}
+        @Override public void draw(android.graphics.Canvas canvas){android.graphics.Rect b=getBounds();
+            if(first)canvas.drawRect(b.left,b.top,b.right,b.top+thickness,paint);
+            canvas.drawRect(b.left,b.bottom-thickness,b.right,b.bottom,paint);
+        }
+        @Override public void setAlpha(int alpha){paint.setAlpha(alpha);invalidateSelf();}
+        @Override public void setColorFilter(android.graphics.ColorFilter filter){paint.setColorFilter(filter);invalidateSelf();}
+        @Override public int getOpacity(){return android.graphics.PixelFormat.TRANSLUCENT;}
     }
 
     private static String clean(String html) {
@@ -598,6 +632,7 @@ final class EddiArchiveSearchUi {
     private void applyAppearance() {
         root.setTag(CONTROL_SCALE_TAG, controlScale);
         root.setTag(RESULT_SCALE_TAG, resultScale);
+        root.setTag(CONTROL_LAYOUT_TAG, controlLayoutScale);
         int position = HaiagaruUi.scrollPosition(scroll);
         for (java.util.Map.Entry<TextView, Float> entry : controlTextSizes.entrySet()) {
             TextView view = entry.getKey();
@@ -605,15 +640,17 @@ final class EddiArchiveSearchUi {
             // Remove the theme's fixed button/input minimum when compacting,
             // but keep usable touch targets and let larger fonts grow naturally.
             if (view instanceof Button || view instanceof EditText) {
-                int minimum = dp(controlScale < 100 ? 40 : 48);
+                int minimum = dp(48);
                 view.setMinimumHeight(minimum);
                 view.setMinHeight(minimum);
-                view.setPadding(dp(8), dp(controlScale < 100 ? 2 : 6), dp(8),
-                        dp(controlScale < 100 ? 2 : 6));
+                int vertical = Math.round(6 * controlLayoutScale / 100f);
+                view.setPadding(dp(8), dp(vertical), dp(8), dp(vertical));
             }
         }
         for (java.util.Map.Entry<TextView, Float> entry : resultTextSizes.entrySet())
             entry.getKey().setTextSize(scaledTextSize(entry.getValue(), resultScale));
+        for (int index = 0; index < results.getChildCount(); index++)
+            styleResultSpacing(results.getChildAt(index));
         searchForm.setVisibility(hideSearchForm ? View.GONE : View.VISIBLE);
         advancedScroll.getLayoutParams().height = dp(Math.round(240 * controlScale / 100f));
         advancedScroll.requestLayout();
@@ -626,19 +663,47 @@ final class EddiArchiveSearchUi {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(20), dp(8), dp(20), 0);
         SeekBar controls = sizeSlider(content, "検索欄・操作ボタン", controlScale);
-        SeekBar titles = sizeSlider(content, "検索結果", resultScale);
+        TextView densityLabel = new TextView(activity);
+        densityLabel.setText("検索欄・操作ボタンの間隔: " + controlLayoutScale + "%");
+        content.addView(densityLabel);
+        SeekBar density = new SeekBar(activity);
+        density.setMax(50);
+        density.setProgress(controlLayoutScale - 50);
+        density.setContentDescription("検索欄・操作ボタンの間隔");
+        density.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                densityLabel.setText("検索欄・操作ボタンの間隔: " + (progress + 50) + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        content.addView(density);
+        SeekBar titles = sizeSlider(content, "検索結果の文字サイズ", resultScale);
+        TextView spacingLabel = new TextView(activity);
+        spacingLabel.setText("結果ごとの上下余白: " + resultPadding + "dp");
+        content.addView(spacingLabel);
+        SeekBar spacing = new SeekBar(activity);
+        spacing.setMax(32);
+        spacing.setProgress(resultPadding);
+        spacing.setContentDescription("結果ごとの上下余白");
+        spacing.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                spacingLabel.setText("結果ごとの上下余白: " + progress + "dp");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        content.addView(spacing);
         CheckBox hide = new CheckBox(activity);
         hide.setText("検索欄を隠して結果を広く表示");
         hide.setChecked(hideSearchForm);
         content.addView(hide);
-        TextView help = new TextView(activity);
-        help.setText("検索欄を隠しても「表示」から再表示できます。文字サイズは次回も保持します。");
-        content.addView(help);
         new HaiagaruDialog.Builder(activity).setTitle("過去ログ検索の表示設定")
                 .setView(content).setNegativeButton("キャンセル", null)
-                .setNeutralButton("標準に戻す", (dialog, which) -> saveAppearance(100, 100, false))
+                .setNeutralButton("標準に戻す", (dialog, which) -> saveAppearance(100, 100, 16, 100, false))
                 .setPositiveButton("適用", (dialog, which) -> saveAppearance(
-                        controls.getProgress() + 70, titles.getProgress() + 70, hide.isChecked()))
+                        controls.getProgress() + 70, titles.getProgress() + 70,
+                        spacing.getProgress(), density.getProgress() + 50, hide.isChecked()))
                 .show();
     }
 
@@ -661,12 +726,30 @@ final class EddiArchiveSearchUi {
         return slider;
     }
 
-    private void saveAppearance(int controls, int titles, boolean hide) {
+    static int clampResultPadding(int value) {
+        return Math.max(0, Math.min(32, value));
+    }
+
+    static int clampControlLayout(int value) {
+        return Math.max(50, Math.min(100, value));
+    }
+
+    private void styleResultSpacing(View card) {
+        card.setTag(RESULT_PADDING_TAG, resultPadding);
+        card.setPadding(dp(12), dp(resultPadding), dp(12), dp(resultPadding));
+        card.setMinimumHeight(dp(48));
+    }
+
+    private void saveAppearance(int controls, int titles, int padding, int layoutScale, boolean hide) {
         controlScale = clampTextScale(controls);
         resultScale = clampTextScale(titles);
+        resultPadding = clampResultPadding(padding);
+        controlLayoutScale = clampControlLayout(layoutScale);
         hideSearchForm = hide;
         activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                 .putInt("controlTextScale", controlScale).putInt("resultTextScale", resultScale)
+                .putInt("resultVerticalPadding", resultPadding)
+                .putInt("controlLayoutScale", controlLayoutScale)
                 .putBoolean("hideSearchForm", hideSearchForm).apply();
         applyAppearance();
     }

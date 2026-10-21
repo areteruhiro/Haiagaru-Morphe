@@ -29,9 +29,8 @@ import androidx.compose.ui.unit.dp
 
 /** Compose-only presentation; the existing controller owns search, budgets, history and resume. */
 object SearchComposeUi {
-    @JvmStatic fun show(activity: HissiWacchoiSearchActivity) {
-        activity.setContent { HaiagaruUi.Theme { SearchScreen(activity) } }
-    }
+    @JvmStatic fun embed(activity: android.app.Activity, controller: HissiWacchoiSearchController): View =
+        SettingsTabUi.composeView(activity) { SearchScreen(controller) }
 }
 
 private val searchToggleDefaults = mapOf(
@@ -47,7 +46,7 @@ private fun searchToggleValues(prefs: SharedPreferences) =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchScreen(a: HissiWacchoiSearchActivity) {
+private fun SearchScreen(a: HissiWacchoiSearchController) {
     var revision by remember { mutableIntStateOf(0) }
     val prefs = remember { a.getSharedPreferences(WacchoiSearchOptions.PREFS, 0) }
     var toggleValues by remember(prefs) { mutableStateOf(searchToggleValues(prefs)) }
@@ -88,7 +87,12 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
     var boardPicker by rememberSaveable { mutableStateOf(false) }
     var advanced by rememberSaveable { mutableStateOf(false) }
     var dateField by rememberSaveable { mutableStateOf("") }
-    val list = rememberLazyListState()
+    val list = rememberLazyListState(a.tabScrollIndex, a.tabScrollOffset)
+    LaunchedEffect(a, list) {
+        snapshotFlow { list.firstVisibleItemIndex to list.firstVisibleItemScrollOffset }.collect { (index, offset) ->
+            a.tabScrollIndex = index; a.tabScrollOffset = offset
+        }
+    }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
     LaunchedEffect(errors) {
@@ -324,7 +328,7 @@ private fun SearchResultCard(result: View) {
 }
 
 @Composable
-private fun SearchOptionsSheet(a: HissiWacchoiSearchActivity, prefs: SharedPreferences,
+private fun SearchOptionsSheet(a: HissiWacchoiSearchController, prefs: SharedPreferences,
                                toggleValues: Map<String, Boolean>, changed: () -> Unit) {
     var confirm by remember { mutableIntStateOf(0) }
     var retention by rememberSaveable { mutableStateOf(false) }
@@ -357,7 +361,7 @@ private fun SearchOptionsSheet(a: HissiWacchoiSearchActivity, prefs: SharedPrefe
 }
 
 @Composable
-private fun SearchRetention(a: HissiWacchoiSearchActivity, prefs: SharedPreferences, back: () -> Unit) {
+private fun SearchRetention(a: HissiWacchoiSearchController, prefs: SharedPreferences, back: () -> Unit) {
     var values by rememberSaveable { mutableStateOf(WacchoiStorageLimits.KEYS.indices.map { WacchoiStorageLimits.value(a, it).toString() }) }
     var invalid by remember { mutableIntStateOf(-1) }
     LazyColumn(Modifier.fillMaxWidth().imePadding(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

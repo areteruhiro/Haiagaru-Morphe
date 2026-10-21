@@ -24,15 +24,21 @@ public final class SettingsProfiles {
         for(SettingsSections.Category c:SettingsSections.Category.values())Haiagaru.settingsCategory(activity,c.name());
         for(String key:EXTRA_BOOLEAN)booleanKey(key);
         numberKey("videoPreviewMinimumSeconds",0,86459);
+        numberKey("checkerHeaderPercent",10,60);
+        for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
         choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3)));
         RULES.put("settingsLanguage",v->"ja".equals(v)||"en".equals(v)||"system".equals(v));
+        RULES.put("imageVpnDomains",v->{if(!(v instanceof String))return false;
+            try{ImageVpnRequestPolicy.parseDomains((String)v);return true;}catch(IllegalArgumentException invalid){return false;}});
+        defaultValue("imageVpnDomains",ImageVpnRequestPolicy.DEFAULT_DOMAINS);
     }
     private static final String[] EXTRA_BOOLEAN={
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled",
         "siteCardsEnabled","siteCardImages","patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
         "popularReplyPopup","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","wacchoiSearchEnabled","wacchoiBackgroundSearch",
-        "wacchoiLongPressSearch","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
-        "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent"
+        "wacchoiLongPressSearch","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
+        "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
+        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi"
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
     static JSONObject exportData(Context c)throws JSONException{
@@ -56,7 +62,9 @@ public final class SettingsProfiles {
             if(v.getValue() instanceof Boolean)e.putBoolean(v.getKey(),(Boolean)v.getValue());
             else if(v.getValue() instanceof Integer)e.putInt(v.getKey(),(Integer)v.getValue());
             else if(v.getValue() instanceof String)e.putString(v.getKey(),(String)v.getValue());
-        }return e.commit();
+        }boolean saved=e.commit();
+        if(saved&&values.containsKey("imageVpnDomains")){ImageVpnController.reloadDomains();SiteCards.clear(()->{});}
+        return saved;
     }
     public static void share(Activity a){
         try{catalog(a);byte[] bytes=exportData(a).toString(2).getBytes("UTF-8");

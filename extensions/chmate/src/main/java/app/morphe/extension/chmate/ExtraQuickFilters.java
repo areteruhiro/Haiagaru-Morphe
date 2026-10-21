@@ -16,16 +16,26 @@ import java.util.regex.*;
 public final class ExtraQuickFilters {
     private static final String[] LABELS = {"人気レス", "リンク", "画像", "動画", "AA", "自分", "返信"};
     private static final String[] KINDS = {"POPULAR", "LINK", "IMAGE", "MOVIE"};
+    private static final ThreadLocal<Boolean> RESETTING=new ThreadLocal<>();
+    static boolean resetting(){return Boolean.TRUE.equals(RESETTING.get());}
     private static final Map<Object, State> STATES = Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<View, WeakReference<Bar>> BARS = new WeakHashMap<>();
     private static final Map<Object, WeakReference<Object>> FRAGMENTS = new WeakHashMap<>();
     private static final ArrayList<WeakReference<Object>> OWNERS = new ArrayList<>();
     private static final ArrayList<Threshold> THRESHOLDS = new ArrayList<>();
     private static final Map<Activity,WeakReference<View>> BOTTOM_CONTROLS=new WeakHashMap<>();
+    /** Called by the native toolbar dispatcher. Its anchor View is reused: never attach listeners to it. */
+    public static boolean longClick(Object fragment,View button){
+        if(button==null||button.getId()!=QuickFilterToolbar.ID)return false;
+        boolean done=reset(fragment);
+        Toast.makeText(button.getContext(),done?"フィルターを解除しました":"フィルターを解除できませんでした",Toast.LENGTH_SHORT).show();
+        return true;
+    }
     static void updateOptions(Activity activity){
-        if(!QuickFilterOptions.extras()){
+        {
             List<Object> reset=new ArrayList<>();
-            synchronized(STATES){for(Map.Entry<Object,State> entry:STATES.entrySet())if(entry.getValue().extra!=0){entry.getValue().extra=0;reset.add(entry.getKey());}}
+            int allowed=0;for(int i=4;i<7;i++)if(QuickFilterOptions.visible(i))allowed|=1<<(i-4);
+            synchronized(STATES){for(Map.Entry<Object,State> entry:STATES.entrySet())if((entry.getValue().extra&~allowed)!=0){entry.getValue().extra&=allowed;reset.add(entry.getKey());}}
             for(Object adapter:reset)try{rebuild(adapter);}catch(Exception error){Log.w("Haiagaru","Disable extra filters",error);}
         }
         for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){Bar bar=ref.get();if(bar!=null)bar.post(bar::update);}
@@ -95,7 +105,16 @@ public final class ExtraQuickFilters {
         for(int i=0;i<buttons.length;i++){final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(13);styleButton(button);
             button.setMinimumHeight(pad*8);GridLayout.LayoutParams params=new GridLayout.LayoutParams(GridLayout.spec(i/4),GridLayout.spec(i%4,1f));params.width=0;params.height=-2;params.setMargins(pad/2,pad/2,pad/2,pad/2);grid.addView(button,params);
             button.setOnClickListener(v->{try{boolean requested=button.isChecked();toggle(a,index);if(index<4&&!(index==0&&PopularReplies.enabledFor(activity))){State state=state(a);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}redraw.run();}catch(Exception e){Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();redraw.run();}});
-            if(i==2)button.setOnLongClickListener(v->{boolean opened=imageList(a);if(opened)popup.dismiss();return opened;});
+            if(i==2)button.setOnLongClickListener(v->{
+                // The popup's Views are detached by dismiss(); never use their post queue.
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+                    popup.dismiss();
+                    if(!activity.isFinishing()&&!activity.isDestroyed()&&!imageList(a))
+                        Toast.makeText(activity,"画像一覧を開けませんでした",Toast.LENGTH_SHORT).show();
+                });
+                return true;
+            });
+            button.setVisibility(QuickFilterOptions.visible(i)?View.VISIBLE:View.GONE);
         }
         redraw.run();android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;redraw.run();handler.postDelayed(this,150);}};
@@ -123,6 +142,7 @@ public final class ExtraQuickFilters {
         Object rawSnapshot, appliedSnapshot;
         WeakReference<HaiagaruDialog> dialog=new WeakReference<>(null);
         String[] dialogLabels;
+        int[] dialogIndices;
         int extra;
         int pendingFilterMask;
         boolean[] pendingFilters = new boolean[4];
@@ -169,7 +189,8 @@ public final class ExtraQuickFilters {
         for(int i=4;i<7;i++)result[i]=(mask&(1<<(i-4)))!=0;
         return result;
     }
-    private static void toggle(Object a,int which) throws Exception {
+    private static void toggle(Object a,int which) throws Exception {toggle(a,which,false);}
+    private static void toggle(Object a,int which,boolean reset) throws Exception {
         Object fragment=FRAGMENTS.containsKey(a)?FRAGMENTS.get(a).get():null;
         if(fragment==null)for(WeakReference<Object> ref:new ArrayList<>(OWNERS)) {
             Object owner=ref.get();if(owner==null)continue;
@@ -180,7 +201,7 @@ public final class ExtraQuickFilters {
             State s=state(a);s.extra^=1<<(which-4);
             try { rebuild(a);if(s.failure!=null)throw s.failure; } catch(Exception e) { s.extra^=1<<(which-4);refresh(a);throw e; }
         } else if(legacy(a)) {
-            if(which==0 && fragment!=null && PopularReplies.enabledFor(context(a))) { PopularReplies.show(fragment);refresh(a);return; }
+            if(!reset&&which==0 && fragment!=null && PopularReplies.enabledFor(context(a))) { PopularReplies.show(fragment);refresh(a);return; }
             Object value=field(model(a),new String[]{"c","a","e","b"}[which]);
             Field f=value.getClass().getDeclaredField("mValue");f.setAccessible(true);f.setBoolean(value,!f.getBoolean(value));
             call(value,"c",new Class<?>[0]);
@@ -236,7 +257,12 @@ public final class ExtraQuickFilters {
         return get.invoke(null,m);
     }
     private static void collect(Object a,List<?> source) throws Exception {
-        State s=state(a);int[] counts=new int[7];Set<Integer> aa=new HashSet<>(),mine=new HashSet<>(),replies=new HashSet<>();
+        State s=state(a);
+        // A reset changes selection only, not the full response list or its counts.
+        // No extra predicate is active now; retain the counts until the next normal
+        // update/dialog opening instead of reparsing every post during native callbacks.
+        if(resetting()&&s.extra==0)return;
+        int[] counts=new int[7];Set<Integer> aa=new HashSet<>(),mine=new HashSet<>(),replies=new HashSet<>();
         if(source.isEmpty()){s.counts=counts;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;return;}
         Object idx=index(a);
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
@@ -337,26 +363,47 @@ public final class ExtraQuickFilters {
         int[] counts=state(a).counts;String[] result=new String[7];
         for(int i=0;i<7;i++)result[i]=QuickFilterOptions.counts()?counts[i]+"\n"+LABELS[i]:LABELS[i];return result;
     }
+    public static boolean reset(Object fragment){
+        RESETTING.set(true);
+        try{Object a=adapter(fragment);State selection=state(a);selection.extra=0;
+            if(legacy(a)){
+                Object changed=null,m=model(a);
+                for(String key:new String[]{"c","a","e","b"}){
+                    Object value=field(m,key);Field bit=value.getClass().getDeclaredField("mValue");bit.setAccessible(true);
+                    if(bit.getBoolean(value)){bit.setBoolean(value,false);changed=value;}
+                }
+                selection.pendingFilterMask=0;
+                // All flags are final before notifying the native adapter: avoid rebuilding
+                // a long thread once for each flag plus once for the extra filters.
+                if(changed!=null)call(changed,"c",new Class<?>[0]);else rebuild(a);
+            }else{
+                boolean[] on=selected(a);for(int i=0;i<4;i++)if(on[i]){toggle(a,i,true);selection.pendingFilters[i]=false;selection.pendingFilterMask|=1<<i;}
+                rebuild(a);
+            }
+            refresh(a);return true;
+        }catch(Exception error){Log.w("Haiagaru","Reset filters",error);return false;}finally{RESETTING.remove();}
+    }
+    private static int[] visibleIndices(){int n=0;for(int i=0;i<7;i++)if(QuickFilterOptions.visible(i))n++;int[] result=new int[n];for(int i=0,j=0;i<7;i++)if(QuickFilterOptions.visible(i))result[j++]=i;return result;}
     public static boolean open(Object fragment) {
         try {
             Object a=adapter(fragment);Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);
             if(activity==null||activity.isFinishing())return false;
             if(QuickFilterOptions.bottom())return showBottomPanel(activity,a);
             collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
-            boolean[] checked=Arrays.copyOf(selected(a),QuickFilterOptions.extras()?7:4);
-            String[] names=Arrays.copyOf(labels(a),checked.length);
+            int[] indices=visibleIndices();boolean[] all=selected(a);String[] fullNames=labels(a);
+            boolean[] checked=new boolean[indices.length];String[] names=new String[indices.length];
+            for(int i=0;i<indices.length;i++){checked[i]=all[indices[i]];names[i]=fullNames[indices[i]];}
             HaiagaruDialog d=new HaiagaruDialog.Builder(activity).setTitle("レスのフィルター")
-                    .setMessage("件数は読み込み済みの全レスです。AA・自分・返信は、既存のフィルターに重ねて絞り込みます。")
                     .setMultiChoiceItems(names,checked,(dialog,which,on)->{
-                        try {toggle(a,which);
-                            if(which<4 && !(which==0 && PopularReplies.enabledFor(activity))) {
-                                State selection=state(a);selection.pendingFilters[which]=on;
-                                selection.pendingFilterMask|=1<<which;
+                        int index=indices[which];try {toggle(a,index);
+                            if(index<4 && !(index==0 && PopularReplies.enabledFor(activity))) {
+                                State selection=state(a);selection.pendingFilters[index]=on;
+                                selection.pendingFilterMask|=1<<index;
                             }
-                            boolean[] next=selected(a);for(int i=0;i<names.length;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[i]);}
+                            boolean[] next=selected(a);for(int i=0;i<names.length;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[indices[i]]);}
                         catch(Exception e){Log.e("Haiagaru","Extra filter toggle",e);((HaiagaruDialog)dialog).getListView().setItemChecked(which,!on);Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();}
-                    }).setNegativeButton("閉じる",null).show();
-            state(a).dialog=new WeakReference<>(d);state(a).dialogLabels=names;
+                    }).setNeutralButton("設定",(dialog,which)->QuickFilterOptions.showToolbarSettings(activity)).setNegativeButton("閉じる",null).show();
+            state(a).dialog=new WeakReference<>(d);state(a).dialogLabels=names;state(a).dialogIndices=indices;
             // Native filter actions finish asynchronously. Reading their StateFlow
             // directly after invoke() can still return the previous check state.
             // Watch only while this dialog is visible, and redraw only changes.
@@ -367,8 +414,8 @@ public final class ExtraQuickFilters {
                     if(!d.isShowing())return;
                     try {
                         boolean[] next=selected(a);
-                        for(int i=0;i<observed.length;i++)if(observed[i]!=next[i]) {
-                            observed[i]=next[i];d.getListView().setItemChecked(i,next[i]);
+                        for(int i=0;i<observed.length;i++)if(observed[i]!=next[indices[i]]) {
+                            observed[i]=next[indices[i]];d.getListView().setItemChecked(i,next[indices[i]]);
                         }
                     }catch(Exception e){Log.w("Haiagaru","Filter selection update",e);}
                     handler.postDelayed(this,100);
@@ -376,7 +423,11 @@ public final class ExtraQuickFilters {
             };
             d.setOnDismissListener(dialog->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
             handler.postDelayed(sync,100);
-            d.getListView().setOnItemLongClickListener((parent,v,pos,id)->{if(pos!=2)return false;boolean opened=imageList(a);if(opened)d.dismiss();return opened;});
+            d.getListView().setOnItemLongClickListener((parent,v,pos,id)->{
+                if(indices[pos]!=2)return false;
+                d.dismissForNavigation(()->{if(!imageList(a))Toast.makeText(activity,"画像一覧を開けませんでした",Toast.LENGTH_SHORT).show();});
+                return true;
+            });
             return true;
         }catch(Exception e){Log.w("Haiagaru","Extended filter dialog",e);return false;}
     }
@@ -407,10 +458,10 @@ public final class ExtraQuickFilters {
         State s=state(a);HaiagaruDialog d=s.dialog.get();
         if(d!=null&&d.isShowing())new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
             if(!d.isShowing())return;
-            try {String[] names=Arrays.copyOf(labels(a),s.dialogLabels.length);System.arraycopy(names,0,s.dialogLabels,0,names.length);
+            try {String[] full=labels(a);String[] names=new String[s.dialogIndices.length];for(int i=0;i<names.length;i++)names[i]=full[s.dialogIndices[i]];System.arraycopy(names,0,s.dialogLabels,0,names.length);
                 ArrayAdapter<String> adapter=(ArrayAdapter<String>)d.getListView().getAdapter();
                 adapter.setNotifyOnChange(false);adapter.clear();adapter.addAll(names);adapter.notifyDataSetChanged();
-                boolean[] checked=selected(a);for(int i=0;i<names.length;i++)d.getListView().setItemChecked(i,checked[i]);
+                boolean[] checked=selected(a);for(int i=0;i<names.length;i++)d.getListView().setItemChecked(i,checked[s.dialogIndices[i]]);
                 d.refresh();
             }catch(Exception e){Log.w("Haiagaru","Filter counts update",e);}
         });
@@ -446,7 +497,7 @@ public final class ExtraQuickFilters {
         void bind(Object a){adapter=new WeakReference<>(a);update();}
         void update(){Object a=adapter.get();if(a==null)return;try{boolean[] on=selected(a);String[] names=labels(a);
             for(int i=0;i<7;i++){buttons[i].setTextOn(names[i]);buttons[i].setTextOff(names[i]);buttons[i].setChecked(on[i]);buttons[i].setText(names[i]);}
-            for(int i=4;i<7;i++)buttons[i].setVisibility(QuickFilterOptions.extras()?VISIBLE:GONE);
+            for(int i=4;i<7;i++)buttons[i].setVisibility(QuickFilterOptions.visible(i)?VISIBLE:GONE);
             boolean stock=!QuickFilterOptions.counts()&&!QuickFilterOptions.extras();
             boolean hidden=Haiagaru.compactQuickFilters()||QuickFilterOptions.bottom();
             original.setVisibility(stock&&!hidden?VISIBLE:GONE);

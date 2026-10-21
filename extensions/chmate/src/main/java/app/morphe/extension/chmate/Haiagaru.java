@@ -668,6 +668,7 @@ public final class Haiagaru {
             Activity activity = toolbarActivity(fragment);
             Context context = activity != null ? activity : applicationContext;
             if (context == null) return false;
+            if (NativeToolTabs.open(activity, "eddi")) return true;
             Intent intent = new Intent(context, HissiMenuActivity.class);
             intent.setAction(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://eddiarchive3rd.boy.jp/"));
@@ -3389,7 +3390,8 @@ public final class Haiagaru {
     }
 
     private static void showSettingsDialog(Activity activity) {
-        activity.startActivity(new Intent(activity, HaiagaruSettingsActivity.class));
+        if (NativeToolTabs.open(activity, "settings")) return;
+        activity.startActivity(NativeToolTabs.settingsIntent(activity));
     }
 
     /** Existing preference writers, rendered by the Compose settings catalog. */
@@ -3467,6 +3469,36 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch nativeTabs = addSwitch(layout, activity,
+                text("タブレットで追加画面を本体のスレタブで開く", "Open extra screens in native tablet tabs"),
+                preferences.getBoolean(NativeToolTabs.KEY, false));
+        live.toggle(nativeTabs, NativeToolTabs.KEY);
+        Switch nativeSettingsTab = addSwitch(layout, activity,
+                text("タブ表示する画面：Haiagaru設定", "Tab screen: Haiagaru settings"),
+                preferences.getBoolean(NativeToolTabs.SETTINGS_KEY, true));
+        live.toggle(nativeSettingsTab, NativeToolTabs.SETTINGS_KEY);
+        Switch nativeEddiTab = addSwitch(layout, activity,
+                text("タブ表示する画面：エッヂ過去ログ検索", "Tab screen: Edge archive search"),
+                preferences.getBoolean(NativeToolTabs.EDDI_KEY, true));
+        live.toggle(nativeEddiTab, NativeToolTabs.EDDI_KEY);
+        Switch nativeSearchTab = addSwitch(layout, activity,text("タブ表示する画面：投稿を探す", "Tab screen: Find posts"),preferences.getBoolean(NativeToolTabs.SEARCH_KEY,true));
+        live.toggle(nativeSearchTab,NativeToolTabs.SEARCH_KEY);
+        Switch nativeCheckerTab = addSwitch(layout, activity,text("タブ表示する画面：投稿検索・結果", "Tab screen: Checker results"),preferences.getBoolean(NativeToolTabs.CHECKER_KEY,true));
+        live.toggle(nativeCheckerTab,NativeToolTabs.CHECKER_KEY);
+        Switch nativeFullTab = addSwitch(layout, activity,text("タブ表示する画面：ワッチョイ全文検索", "Tab screen: Full Wacchoi search"),preferences.getBoolean(NativeToolTabs.FULL_KEY,true));
+        live.toggle(nativeFullTab,NativeToolTabs.FULL_KEY);
+        TextView nativeTabsHelp = new TextView(activity);
+        nativeTabsHelp.setText(text("上の機能をオンにして、タブ表示する画面を個別に選べます。選ばない画面は従来の別画面で開きます。変更は次に開く画面から反映され、開いているタブは自動では閉じません。",
+                "Enable native tabs, then choose screens individually. Unselected screens open separately. Changes apply to newly opened screens; existing tabs remain open."));
+        layout.addView(nativeTabsHelp);
+        Button addToolTab = new Button(activity);
+        addToolTab.setText(text("画面を新しいタブに追加", "Add a screen in a new tab"));
+        addToolTab.setOnClickListener(view -> NativeToolTabs.showChooser(activity));
+        layout.addView(addToolTab);
+        TextView addToolTabHelp = new TextView(activity);
+        addToolTabHelp.setText(text("タブレット表示で使えます。タブ表示する画面から選び、本体のスレタブと同じ列に新しいタブを追加します。",
+                "In tablet mode, choose an enabled screen to add a new tab alongside thread tabs."));
+        layout.addView(addToolTabHelp);
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,
                 "Haiagaruの表示言語 / Haiagaru language",
@@ -3520,6 +3552,11 @@ public final class Haiagaru {
         importThemes.setText(text("自作テーマをファイル／フォルダから取り込む", "Import custom themes from files / folder"));
         importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
         layout.addView(importThemes);
+        Button listThemes = new Button(activity);
+        listThemes.setText(text("取り込み済みテーマ一覧・削除", "Imported themes / delete"));
+        listThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)
+                .putExtra("haiagaru.themes.list", true)));
+        layout.addView(listThemes);
         Switch topAlignShortThreads = null;
         if (supportsModernThreadList(activity)) {
             topAlignShortThreads = addSwitch(
@@ -3551,6 +3588,7 @@ public final class Haiagaru {
         ToolbarIcons.addSettingsButton(layout, activity);
         PopularReplies.addSettings(layout,activity);
         QuickFilterOptions.addSettings(layout,activity);
+        QuickFilterOptions.addToolbarEntry(layout,activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,
@@ -3616,6 +3654,9 @@ public final class Haiagaru {
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
         live.toggle(hideDroppedThreadsSwitch,HiddenDroppedThreads.KEY);
+        Switch excludeHiddenNgUnread=addSwitch(layout,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
+        live.toggle(excludeHiddenNgUnread,HiddenNgUnread.KEY);
+        TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("既読位置は変えず、取得してNG判定できた非表示レスだけを件数から除きます。未取得・未判定のレスは除きません。変更後はスレを開き直してください。");layout.addView(unreadNgHelp);
         Switch hideDroppedDrafts=addSwitch(layout,activity,
                 text("DAT落ちスレの下書きを非表示", "Hide drafts for dropped threads"),
                 preferences.getBoolean(HiddenDroppedThreads.DRAFTS,false));
@@ -3924,6 +3965,9 @@ public final class Haiagaru {
                 viewerTextZoomIndex(preferences.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100))
         );
         addHissiViewerToolbarButtonControl(activity, layout, preferences);
+        EditText checkerHeader=addTextField(layout,activity,"チェッカー上部パネルの最大高さ（画面の10〜60%）",Integer.toString(preferences.getInt("checkerHeaderPercent",30)));
+        checkerHeader.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        live.number(checkerHeader,"checkerHeaderPercent",10,60);
         Switch hissiViewerFullscreen = addSwitch(
                 layout,
                 activity,
@@ -3978,6 +4022,32 @@ public final class Haiagaru {
             layout.addView(warning, rowParams(activity));
         }
         final Switch imageVpnEnabledSetting = imageVpnSetting;
+        Button vpnDomains = new Button(activity);
+        vpnDomains.setText("VPN取得の対象ドメイン");
+        vpnDomains.setOnClickListener(v -> {
+            EditText input=new EditText(activity);
+            input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            input.setMinLines(4);input.setMaxLines(10);
+            input.setText(preferences.getString("imageVpnDomains",ImageVpnRequestPolicy.DEFAULT_DOMAINS));
+            input.setHint("example.com（1行1ドメイン）");
+            LinearLayout form=new LinearLayout(activity);form.setOrientation(LinearLayout.VERTICAL);
+            TextView help=new TextView(activity);
+            help.setText("ドメイン完全一致。サブドメインは個別登録してください。登録先のリンクカードはVPNがオフ・未導入・失敗時には取得しません。画像VPNは別途導入・有効化が必要です。外部ブラウザは保護対象外です。");
+            form.addView(help);form.addView(input);
+            Button save=new Button(activity);save.setText("保存");form.addView(save);
+            HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("VPN取得の対象ドメイン")
+                    .setView(form).setNegativeButton("閉じる",null).create();
+            save.setOnClickListener(button->{
+                try{
+                    String normalized=ImageVpnRequestPolicy.normalizeDomains(input.getText().toString());
+                    preferences.edit().putString("imageVpnDomains",normalized).apply();
+                    ImageVpnController.reloadDomains();
+                    SiteCards.clear(()->{});dialog.dismiss();
+                }catch(IllegalArgumentException invalid){input.setError(invalid.getMessage());}
+            });
+            dialog.show();
+        });
+        layout.addView(vpnDomains,rowParams(activity));
         PatrolImages.addSettingsButton(layout, activity);
         Switch imageRotationButton = null;
         try {
@@ -4284,9 +4354,11 @@ public final class Haiagaru {
                 archiveThreadStandalone(activity));
         TextView archiveTabletDescription = new TextView(activity);
         archiveTabletDescription.setText(text(
-                "オン：単独画面で開き、戻ると検索結果に戻ります。オフ：ChMateのタブレット設定に従います。"
+                "検索画面の「表示」で、検索結果の文字サイズ（70〜150%）・上下余白（0〜32dp）・検索欄の表示を変更できます。設定は次回も保持します。結果をタップしてスレを開き、戻ると検索結果に戻ります。"
+                        + "オン：単独画面で開き、戻ると検索結果に戻ります。オフ：ChMateのタブレット設定に従います。"
                         + "タブレットモードでは検索画面が閉じる場合があります。",
-                "On: open a separate screen and return to search with Back. Off: follow ChMate's tablet setting. "
+                "Use Display in archive search to adjust result text (70–150%), vertical padding (0–32dp) and search form visibility. These choices are saved. Tap a result to open it and Back to return. "
+                        + "On: open a separate screen and return to search with Back. Off: follow ChMate's tablet setting. "
                         + "Tablet navigation may close the search screen."));
         archiveTabletDescription.setTextSize(13);
         layout.addView(archiveTabletDescription, rowParams(activity));

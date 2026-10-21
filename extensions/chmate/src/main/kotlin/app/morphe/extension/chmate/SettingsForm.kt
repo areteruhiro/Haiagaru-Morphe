@@ -84,19 +84,22 @@ internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
         }
     }
     collect(root)
-    return result
+    val grouped = mutableListOf<BoundSetting>()
+    for (row in result) {
+        val help = row.control is TextView && row.control !is Button && row.control !is EditText &&
+            !row.control.hasOnClickListeners() && !row.control.isLongClickable && row.control.text !is android.text.Spanned
+        if (help && grouped.isNotEmpty()) {
+            val previous = grouped.removeAt(grouped.lastIndex)
+            grouped.add(previous.copy(description = listOf(previous.description, row.label).filter { it.isNotBlank() }.joinToString("\n\n")))
+        } else grouped.add(row)
+    }
+    return grouped
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
     val view = item.control
-    if (item.description.isNotBlank()) {
-        androidx.compose.foundation.text.selection.SelectionContainer {
-            Text(item.description, style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(12.dp))
-        }
-    }
     when (view) {
         is android.widget.RadioButton -> {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).selectable(selected = item.checked == true, enabled = item.enabled, role = Role.RadioButton) {
@@ -175,6 +178,14 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
             }
         }
     }
+    if (item.description.isNotBlank()) {
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+        androidx.compose.foundation.text.selection.SelectionContainer {
+            Text(item.description, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp))
+        }
+    }
 }
 
 @Composable
@@ -186,6 +197,37 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
     val numeric = view.inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_NUMBER
     val decimal = numeric && view.inputType and InputType.TYPE_NUMBER_FLAG_DECIMAL != 0
     val secret = view.inputType and InputType.TYPE_MASK_VARIATION == InputType.TYPE_TEXT_VARIATION_PASSWORD
+    val archiveLayout = LocalArchiveControlLayout.current
+    if (archiveLayout < 100) {
+        androidx.compose.foundation.text.BasicTextField(value = value, onValueChange = {
+            value = it
+            if (it.text != view.text.toString()) view.setText(it.text)
+            changed()
+        }, enabled = enabled, singleLine = view.maxLines == 1,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            keyboardOptions = KeyboardOptions(keyboardType = when {
+                decimal -> KeyboardType.Decimal
+                numeric -> KeyboardType.Number
+                else -> KeyboardType.Text
+            }), visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+            decorationBox = { input ->
+                Surface(shape = MaterialTheme.shapes.small,
+                    border = androidx.compose.foundation.BorderStroke(1.dp,
+                        if (view.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Column(Modifier.fillMaxWidth().heightIn(min = (48f + (archiveLayout - 50) * .16f).dp)
+                        .padding(horizontal = 12.dp, vertical = (4f + (archiveLayout - 50) * .16f).dp),
+                        verticalArrangement = Arrangement.Center) {
+                        Text(title.ifBlank { "入力" }, style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        input()
+                    }
+                }
+            })
+        view.error?.let { Text(it.toString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+        return
+    }
     OutlinedTextField(value = value, onValueChange = {
         value = it
         if (it.text != view.text.toString()) view.setText(it.text)

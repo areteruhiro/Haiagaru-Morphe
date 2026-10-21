@@ -20,6 +20,11 @@ public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
     private static final int SUFFIX_SEARCH_ITEM_ID = 0x7e000077;
     private static final int PREFIX_SEARCH_ITEM_ID = 0x7e000078;
+    private static final java.util.Map<MenuItem,Runnable> PREFIX_NG_ACTIONS=new java.util.WeakHashMap<>();
+    public static boolean handlePrefixNg(Object object){
+        if(!(object instanceof MenuItem)||((MenuItem)object).getItemId()!=0x7e000079)return false;
+        Runnable action=PREFIX_NG_ACTIONS.get(object);if(action!=null)action.run();return true;
+    }
     private static Intent upperSearch(Context context,String query){
         java.util.regex.Matcher m=WacchoiSearch.SLIP.matcher(query);
         if(!m.find())return null;
@@ -344,6 +349,15 @@ public final class WacchoiLongPressMenu {
                         moveLastSheetItem(builder, ResponseMenuSettings.order(SUFFIX_SEARCH_ITEM_ID, Integer.MAX_VALUE));
                     }
                 }
+                if(WacchoiSuffixNg.prefix(query)!=null&&ResponseMenuSettings.visible(0x7e000079)){
+                    Object upperNg=java.lang.reflect.Proxy.newProxyInstance(callbackType.getClassLoader(),new Class<?>[]{callbackType},(proxy,invoked,args)->{
+                        if(invoked.getDeclaringClass()==Object.class){if("hashCode".equals(invoked.getName()))return System.identityHashCode(proxy);if("equals".equals(invoked.getName()))return proxy==args[0];return "HaiagaruPrefixNg";}
+                        if("invoke".equals(invoked.getName())&&invoked.getParameterTypes().length==0)WacchoiSuffixNg.confirmPrefix(launchContext,query,found.nativeBoard);
+                        return null;
+                    });
+                    appendSheetItem(method,builder,hasIcon,"ﾜｯﾁｮｲ上4桁をNG登録",android.R.drawable.ic_menu_delete,upperNg);
+                    moveLastSheetItem(builder,ResponseMenuSettings.order(0x7e000079,Integer.MAX_VALUE));
+                }
                 if (WacchoiSuffixNg.suffix(query) != null && ResponseMenuSettings.visible(76)) {
                     Object ngCallback = java.lang.reflect.Proxy.newProxyInstance(
                             callbackType.getClassLoader(), new Class<?>[]{callbackType}, (proxy, invoked, args) -> {
@@ -471,6 +485,11 @@ public final class WacchoiLongPressMenu {
         if (!(activity instanceof Context)) return;
 
         final Context ngContext = (Context) activity;
+        if(ResponseMenuSettings.visible(0x7e000079)&&WacchoiSuffixNg.prefix(context.query)!=null&&menu.findItem(0x7e000079)==null){
+            MenuItem upperNg=menu.add(Menu.NONE,0x7e000079,ResponseMenuSettings.order(0x7e000079,menu.size()),"ﾜｯﾁｮｲ上4桁をNG登録");
+            PREFIX_NG_ACTIONS.put(upperNg,()->WacchoiSuffixNg.confirmPrefix(ngContext,context.query,context.nativeBoard));
+            upperNg.setOnMenuItemClickListener(item->handlePrefixNg(item));
+        }
         if (ResponseMenuSettings.visible(76) && WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
             MenuItem suffixItem = menu.add(Menu.NONE, 76, ResponseMenuSettings.order(76, menu.size()), "ﾜｯﾁｮｲ下4桁をNG登録")
                     .setOnMenuItemClickListener(item -> {
@@ -513,7 +532,14 @@ public final class WacchoiLongPressMenu {
         // the loaded response list. Prefer it so recycled rows cannot leak a
         // neighboring post's Wacchoi into this action.
         Object selectedResponse = null;
-        if (parent != null && parent.getClass().getName().endsWith("ResListFragment")) {
+        Object modernResponse=fieldValue(fieldValue(parent,"o"),"c");
+        if(modernResponse!=null&&modernResponse.getClass().getName().equals("o.KeJ11")){
+            selectedResponse=modernResponse;
+            found.query=queryInText(stringField(selectedResponse,"n"));
+            if(found.query==null)found.query=queryInText(stringField(selectedResponse,"p"));
+            Object modernBoard=fieldValue(fieldValue(parent,"r"),"b");if(modernBoard!=null)readBoard(modernBoard,found);
+        }
+        if (selectedResponse==null && parent != null && parent.getClass().getName().endsWith("ResListFragment")) {
             // 226 keeps the long-pressed response in i.b and its board in E.
             Object legacySelection = fieldValue(parent, "i");
             selectedResponse = fieldValue(legacySelection, "b");
@@ -579,6 +605,14 @@ public final class WacchoiLongPressMenu {
             visit(activity, 0, seen, found, false);
         }
         return found.query == null ? null : found;
+    }
+
+    static void appendToolsForResponse(Object owner,Menu menu,Object response,Object board){
+        SearchContext found=new SearchContext();readBoard(board,found);
+        boolean old=response.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError"),middle=response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion");
+        found.query=queryInText(stringField(response,middle?"m":"n"));
+        if(found.query==null)found.query=queryInText(stringField(response,old?"q":middle?"t":"p"));
+        append(menu,owner,owner,found);
     }
 
     private static Object fieldValue(Object target, String name) {

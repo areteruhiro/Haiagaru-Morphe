@@ -24,6 +24,7 @@ import java.util.Properties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.WeakHashMap;
+import java.util.ArrayDeque;
 
 /** Uses the bundled emoji font only for emoji clusters missing from the device font. */
 final class EmojiFontFallback {
@@ -36,6 +37,38 @@ final class EmojiFontFallback {
     private static boolean lifecycleRegistered;
     private static final WeakHashMap<View, ViewTreeObserver.OnGlobalLayoutListener>
             threadObservers = new WeakHashMap<>();
+    private static final WeakHashMap<View, LayoutRefresh> pendingRefreshes = new WeakHashMap<>();
+
+    /** Popups/layout passes must not synchronously walk every visible response on the input frame. */
+    private static final class LayoutRefresh implements Runnable {
+        final WeakReference<View> root;
+        final ArrayDeque<WeakReference<View>> remaining = new ArrayDeque<>();
+        LayoutRefresh(View view) { root=new WeakReference<>(view); remaining.add(root); }
+        @Override public void run() {
+            View owner=root.get();
+            if(owner==null)return;
+            if(!owner.isAttachedToWindow()||pendingRefreshes.get(owner)!=this){
+                remaining.clear();if(pendingRefreshes.get(owner)==this)pendingRefreshes.remove(owner);return;
+            }
+            long start=android.os.SystemClock.uptimeMillis();int visited=0;
+            while(!remaining.isEmpty()&&visited<32&&android.os.SystemClock.uptimeMillis()-start<4){
+                View next=remaining.removeFirst().get();visited++;
+                if(next==null||!next.isAttachedToWindow())continue;
+                if(next instanceof TextView)applyToRow(next);
+                else if(next instanceof ViewGroup){
+                    ViewGroup group=(ViewGroup)next;
+                    for(int i=0;i<group.getChildCount();i++)remaining.addLast(new WeakReference<>(group.getChildAt(i)));
+                }
+            }
+            if(remaining.isEmpty())pendingRefreshes.remove(owner);
+            else owner.postOnAnimation(this);
+        }
+    }
+    private static void scheduleRefresh(View root) {
+        if(!root.isAttachedToWindow()||pendingRefreshes.containsKey(root))return;
+        LayoutRefresh refresh=new LayoutRefresh(root);pendingRefreshes.put(root,refresh);
+        root.postOnAnimation(refresh);
+    }
 
     private EmojiFontFallback() {
     }
@@ -67,11 +100,11 @@ final class EmojiFontFallback {
                 WeakReference<View> reference = new WeakReference<>(root);
                 ViewTreeObserver.OnGlobalLayoutListener observer = () -> {
                     View current = reference.get();
-                    if (current != null) applyToRow(current);
+                    if (current != null) scheduleRefresh(current);
                 };
                 root.getViewTreeObserver().addOnGlobalLayoutListener(observer);
                 threadObservers.put(root, observer);
-                root.post(() -> applyToRow(root));
+                scheduleRefresh(root);
             }
 
             @Override
@@ -89,6 +122,7 @@ final class EmojiFontFallback {
             @Override
             public void onActivityDestroyed(Activity activity) {
                 View root = activity.getWindow().getDecorView();
+                pendingRefreshes.remove(root);
                 ViewTreeObserver.OnGlobalLayoutListener observer = threadObservers.remove(root);
                 if (observer != null && root.getViewTreeObserver().isAlive()) {
                     root.getViewTreeObserver().removeOnGlobalLayoutListener(observer);
@@ -106,7 +140,7 @@ final class EmojiFontFallback {
 
     static void refreshVisibleRows() {
         for (View root : new ArrayList<>(threadObservers.keySet()))
-            if (root != null) root.post(() -> applyToRow(root));
+            if (root != null) scheduleRefresh(root);
     }
 
     static void applyToRow(View view) {
@@ -127,8 +161,9 @@ final class EmojiFontFallback {
     static CharSequence processText(CharSequence source) {
         if (source == null || applicationContext == null || "off".equals(renderMode)) return source;
         source = restoreExternalEmojiPlaceholders(source);
+        if (!containsEmojiCandidate(source)) return source;
         Typeface fallback = getTypeface(applicationContext);
-        if (fallback == null || !containsEmojiCandidate(source)) return source;
+        if (fallback == null) return source;
         return applyToText(source, new Paint(), fallback);
     }
 
