@@ -1,4 +1,4 @@
-# 設定内のタブ追加・検索画面の本体タブ対応（開発中）
+# 設定内のタブ追加・検索画面の本体タブ対応
 
 ## 依頼と実装
 
@@ -36,3 +36,9 @@
 - 並行する通信コードと旧AARの不整合は既存BuildImageVpnStack.ps1で解消。Go試験、4ABI/16KiB整列、追加ライブラリ選択検査とVPNホスト試験成功。任意VPNは初期OFF、実VPN接続は未確認。
 
 プロセス終了を含む検索結果復元の通し確認、大量データ・長時間利用、実サイトCAPTCHA、短スレ更新位置の厳密比較は未完了。今回の公開はプレリリースのみとし、公式版は変更しない。公開状態はintegration-statusの後続記録を参照。
+
+最終同一候補でDialog11項目を再実行し成功（build/tool-tabs-safe-dialog-final.txt）。追加のオフライン試験でキャッシュへの非同期AtomicFile保存と本文・条件の保持を確認し、検証用の1ファイルは削除した（build/tool-tabs-cache-roundtrip242.txt）。Fridaの配列／Consumer生成に失敗した初期fixtureはアプリの結果復元失敗とは区別する。この試験もプロセス終了後の復元通し確認の代わりにはしない。
+
+## 公開結果
+
+既存Semantic Release CI39692529791成功、[1.12.0-dev.2](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.2)としてプレ公開。公開MPP SHA256 `6d78c33c819071d85be7a79f326172c1083d4aa025266578c52ba08013d8135b`。6配布物のdigest一致、devメタデータ2本、Zなし時刻、正式版1.11.2維持を確認。公開MPPの端末再適用とMorpheカード更新表示は未確認。

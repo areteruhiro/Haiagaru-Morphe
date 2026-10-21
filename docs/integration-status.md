@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-10-22 08:23 JST プレリリース1.12.0-dev.2公開完了: 検証スナップショットd85251fをdevへ通常pushし、既存Release CI39692529791が成功。CI生成コミット6860ff8、draft=false/prerelease=true。6配布物をbuild/release-1.12.0-dev.2-verifyへ再取得しGitHub digest全件一致。Android MPP SHA2566d78c33c819071d85be7a79f326172c1083d4aa025266578c52ba08013d8135b、classes.dex確認。devのJSON2本はversion1.12.0-dev.2、created_at=2026-10-21T23:19:52（Zなし）、公開MPP参照。masterの公式メタデータは1.11.2維持、公開タグの日本語説明HTTP200。Morphe端末の更新カード表示とCI版MPPの端末再適用は未確認。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.2 。作業中のcodex/shared-ng-prototypeブランチ／index／server/は変更せず、ローカルの同じ未コミットAndroid差分は既にd85251fへ収録済み。今後の統合時は重複公開せずorigin/devと照合する。
+
 2026-10-22 タブ・Dialog最終候補の検証完了／プレ公開準備: build/tool-tabs-safe-candidate-build.log成功（既知ローカルLint3工程除外）。MPP0746F173D4395FD5ECCCF964BB9CFFD12BF733FDDE1931F499CD79E62985EF50から191/226/242を生成し署名照合更新。native hook全3版、設定242=16・検索タブ242=16・追加入口242=8・旧版タブ各12項目成功。画像長押しから一覧／実画像表示と復帰、242 GIFの実再生進行・ループ、タブ設定のカード実画面確認。新規アプリクラッシュなし、起動後ANRなし。プロセス終了後の結果復元、大量データ、実CAPTCHA、短スレ位置比較は継続確認。既存CIでプレリリースのみ公開予定、公式1.11.2は維持。並行作業のcodex/shared-ng-prototypeブランチとserver/は保持し、Android関連のスナップショットだけdevへ公開する。詳細docs/tool-tabs-settings-20261022.md。
 
 2026-10-22 タブ追加入口・検索タブ（開発中）: 独立した新規タブ上のボタンを撤去し基本設定へ統合。投稿を探す／投稿検索・結果／ﾜｯﾁｮｲ全文検索の個別タブ選択とController分離を追加中。下部フィルターの取り外し後View.postとDialogの同期終了も修正。初期242候補はDialog11項目成功だがタブ内設定でisolated LifecycleOwner不在を検出し、独自Owner接続を追加。後続全体ビルドは並行する通信側の新APIと旧AARの不整合で失敗し、既存手順によるAAR再生成中。初期失敗候補は配布せず、エミュレータを確認済み長押し修正版へ署名照合更新で戻した。実機変更なし。詳細docs/tool-tabs-settings-20261022.md。未公開。
