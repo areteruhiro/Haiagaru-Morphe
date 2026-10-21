@@ -1,3 +1,12 @@
+# Haiagaru 1.12.0-dev.2
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.2/docs/release-next-prerelease.md)
+
+
+### ✨ New Features
+
+* integrate search tabs and harden dialog navigation ([d85251f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d85251f4a4cb1f4383999db17d6f356a3940144f))
+
 # Haiagaru 1.12.0-dev.1
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.1/docs/release-next-prerelease.md)
