@@ -1,3 +1,12 @@
+# Haiagaru 1.12.0-dev.1
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.1/docs/release-next-prerelease.md)
+
+
+### ✨ New Features
+
+* improve search resume, settings sharing and accessible controls ([fd9def0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/fd9def0b930cc226b4a1bfe27cd085c459c1effa))
+
 # Haiagaru 1.11.2
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.2/docs/release-1.11.2.md)
