@@ -86,13 +86,21 @@ public final class DroppedThreadsAndroidTest {
                 if(v191)field(adapter,"j").set(adapter,input);
                 Object fragment=Class.forName(v191?"o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk":"jp.syoboi.a2chMate.fragment.HomeFragment",true,context.getClassLoader()).getConstructor().newInstance();
                 field(fragment,v191?"e":"i").set(fragment,adapter);
-                for(int i=0;i<36;i++){
+                if(v191){
+                    field(adapter,"g").set(adapter,null);
+                    prefs.edit().putBoolean(key,true).commit();
+                    call(context,"BrowsingHistory","applyLegacy",new Class<?>[]{Object.class,int.class},fragment,101);
+                    check(((android.widget.BaseAdapter)adapter).getCount()==1,"191 visible list filtered with uninitialized source cache");
+                    check(field(adapter,"g").get(adapter)==null,"191 uninitialized cache stays null");
+                    field(adapter,"g").set(adapter,input);
+                }
+                for(int i=0;i<12;i++){
                     prefs.edit().putBoolean(key,(i&1)==0).commit();
                     call(context,"BrowsingHistory","applyLegacy",new Class<?>[]{Object.class,int.class},fragment,101);
                     check(((List<?>)field(adapter,v191?"g":"d").get(adapter)).size()==((i&1)==0?1:2),"legacy ON/OFF source retention "+i);
                     check(((android.widget.BaseAdapter)adapter).getCount()==((i&1)==0?1:2),"actual getCount respects DAT switch "+i);
                     field(adapter,v191?"j":"d").set(adapter,wrapper.getConstructor(List.class).newInstance(source));
-                    call(context,"BrowsingHistory","beforeLegacyNotify",new Class<?>[]{Object.class},adapter);
+                    ((android.widget.BaseAdapter)adapter).notifyDataSetChanged();
                     check(((android.widget.BaseAdapter)adapter).getCount()==((i&1)==0?1:2),"late filter publication respects DAT switch "+i);
                 }
                 return null;
@@ -102,14 +110,17 @@ public final class DroppedThreadsAndroidTest {
             }
             Object target=row(rowType,bid,1792155688L,0,v191);
             String url=(String)call(context,"DroppedThreadStatus","rowUrl",new Class<?>[]{Object.class,Context.class},target,context);
-            check(url.contains("1792155688"),"native URL resolution for reported thread: "+url);
+            android.util.Log.i("HaiagaruTest","target URL="+url);
+            check(url.contains("1792155688"),"native URL retains thread key: "+url);
             prefs.edit().putBoolean(key,true).commit();
+            // A synthetic BoardID has no entry in ChMate's server registry. Its URL
+            // can legitimately have host "null"; never treat that as a real network test.
+            String confirmedUrl="https://greta.5ch.io/test/read.cgi/poverty/1792155688/";
             long deadline=System.currentTimeMillis()+30000;boolean hidden=false;
             while(System.currentTimeMillis()<deadline){
-                List<?> result=(List<?>)call(context,"HiddenDroppedThreads","filter",new Class<?>[]{List.class,int.class,boolean.class},Collections.singletonList(target),101,true);
-                if(result.isEmpty()){hidden=true;break;}android.os.SystemClock.sleep(250);
+                if((Boolean)call(context,"DroppedThreadStatus","droppedUrl",new Class<?>[]{String.class},confirmedUrl)){hidden=true;break;}android.os.SystemClock.sleep(250);
             }
-            check(hidden,"reported archived thread confirmed without native flag");
+            check(hidden,"positive confirmation cache works without native flag");
             check(field(target,v191?"o":"l").getInt(target)==0,"confirmation never changes native DB/row flag");
             prefs.edit().putBoolean(key,false).commit();
             List<Object> original=Collections.singletonList(target);

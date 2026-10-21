@@ -106,6 +106,9 @@ public final class WacchoiSuffixNg {
             CheckBox hidden = new CheckBox(activity); hidden.setText("非表示（あぼーん扱いにしない）"); content.addView(hidden);
             NgBoardScopePicker scope = new NgBoardScopePicker(activity, currentBoard, currentBoard);
             content.addView(scope);
+            // Board scope is essential to registration, not optional help below the fold.
+            content.removeView(scope);
+            content.addView(scope, 0);
             TextView baseLabel = new TextView(activity); baseLabel.setText("追加先（同じ板・有効／連鎖／非表示設定の正規表現NG）"); content.addView(baseLabel);
             Spinner base = new Spinner(activity); content.addView(base);
             List<NativeNgStore.Entry> choices = new ArrayList<>();

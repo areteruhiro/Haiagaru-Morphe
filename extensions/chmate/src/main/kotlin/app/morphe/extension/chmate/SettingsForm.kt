@@ -9,6 +9,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -98,7 +99,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
     }
     when (view) {
         is android.widget.RadioButton -> {
-            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = item.enabled) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).selectable(selected = item.checked == true, enabled = item.enabled, role = Role.RadioButton) {
                 view.performClick()
                 changed()
             }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -137,7 +138,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
                 title = { Text(item.label) }, text = {
                     androidx.compose.foundation.lazy.LazyColumn {
                         items(view.count) { index ->
-                            Row(Modifier.fillMaxWidth().clickable {
+                            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(selected = view.selectedItemPosition == index, role = Role.RadioButton) {
                                 view.setSelection(index)
                                 // Offscreen Spinners have no layout pass to deliver selection callbacks.
                                 view.onItemSelectedListener?.onItemSelected(view, null, index, view.getItemIdAtPosition(index))
@@ -156,8 +157,11 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
             modifier = Modifier.fillMaxWidth().combinedClickable(enabled = view.isEnabled,
                 onClick = { view.performClick(); changed() }, onLongClick = { view.performLongClick(); changed() }))
         is TextView -> {
-            if (view.hasOnClickListeners()) TextButton(onClick = { view.performClick(); changed() },
-                modifier = Modifier.fillMaxWidth()) { Text(view.text.toString()) }
+            if (view.hasOnClickListeners() || view.isLongClickable) Text(view.text.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .combinedClickable(enabled = view.isEnabled, onClick = { view.performClick(); changed() },
+                        onLongClick = { view.performLongClick(); changed() }).padding(12.dp))
             else if (view.text.isNotBlank()) androidx.compose.foundation.text.selection.SelectionContainer {
                 val content = androidx.compose.ui.text.buildAnnotatedString {
                     append(view.text.toString())

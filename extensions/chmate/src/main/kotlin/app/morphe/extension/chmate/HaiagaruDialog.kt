@@ -111,7 +111,11 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
                 }
                 if (heading.isNotBlank()) Text(heading, style = MaterialTheme.typography.headlineSmall)
                 spec.customTitle?.let { ModelContent(it, version) { refresh() } }
-                Column(Modifier.fillMaxWidth().heightIn(max = (context.resources.configuration.screenHeightDp * .60f).dp)
+                val browser = spec.view?.takeIf { weightedSurface(it) != null } as? android.widget.LinearLayout
+                if (browser != null) {
+                    BrowserModel(browser, version, Modifier.fillMaxWidth()
+                        .height((context.resources.configuration.screenHeightDp * .55f).dp)) { refresh() }
+                } else Column(Modifier.fillMaxWidth().heightIn(max = (context.resources.configuration.screenHeightDp * .60f).dp)
                     .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (spec.progress) Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -153,7 +157,7 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
                         }
                         }
                     }
-                    spec.view?.let { ModelContent(it, version) { refresh() } }
+                    spec.view?.let { ModelContent(it, version, insideScroll = true) { refresh() } }
 
                 }
                 FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

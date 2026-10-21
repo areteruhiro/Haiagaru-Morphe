@@ -527,7 +527,7 @@ public final class Haiagaru {
                         false, toolbarModel.getClass().getClassLoader());
                 Object item = itemClass.getConstructor(int.class, int.class, int.class,
                         int.class, boolean.class).newInstance(
-                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, false);
+                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
                 buttons.add(item);
                 return toolbarModel;
             }
@@ -549,7 +549,7 @@ public final class Haiagaru {
                     "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
             Object item = specClass.getConstructor(int.class, int.class, int.class,
                     int.class, boolean.class).newInstance(
-                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, false);
+                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
             // Modern ToolbarDefault keeps a mutable button list. Extending that
             // list preserves its position and configuration objects; rebuilding
             // the model can silently lose the new choice on some versions.
@@ -638,7 +638,7 @@ public final class Haiagaru {
         if (itemId == 0x7e000005 || itemId == 0x7e000006) {
             Activity activity = toolbarActivity(fragment);
             if (activity != null && !activity.isFinishing())
-                HissiWacchoiSearchActivity.openFromToolbar(activity, itemId == 0x7e000006);
+                HissiWacchoiSearchActivity.openFromToolbar(activity, fragment, itemId == 0x7e000006);
             return true;
         }
         if (itemId == DIRECT_COPY_TOOLBAR_ID) {
@@ -3497,11 +3497,11 @@ public final class Haiagaru {
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         Switch automaticFold = addSwitch(layout, activity,
-                text("画面幅でスマホ／タブレット表示を自動切替", "Switch phone/tablet layout by window width"),
+                text("折りたたみ状態でスマホ／タブレット表示を自動切替", "Switch phone/tablet layout by folding state"),
                 preferences.getBoolean("automaticFoldMode", false));
         TextView foldHelp = new TextView(activity);
-        foldHelp.setText(text("折り畳み端末向け。600dp以上でタブレット、600dp未満でスマホ表示に切り替えます。分割画面の幅にも追従します。投稿・設定・メディア表示中は切替を保留し、閲覧画面に戻って反映します。オフにすると本体の手動設定を使います。",
-                "Use tablet layout at 600dp or wider, phone layout below 600dp. Editing, settings and media screens defer switching until browsing resumes. Off keeps the native manual setting."));
+        foldHelp.setText(text("Jetpack WindowManagerの折り目情報で判定します。内側画面の折り目を確認後、折り目がなくなるとスマホ表示へ戻します。DPIや600dp幅で推測しません。非対応端末・閉じた状態の初回起動は手動設定を維持します。分割画面で折り目が範囲外の場合も切替えません。投稿・設定・メディア表示中は切替を保留します。",
+                "Uses Jetpack WindowManager folding features, not DPI or a 600dp threshold. After verifying the inner display, absence of a fold returns to phone layout. Unsupported devices, a first launch while closed, and split windows without a hinge keep the manual/current layout. Editing, settings and media defer switching."));
         layout.addView(foldHelp);
         automaticFold.setOnCheckedChangeListener((button, checked) -> {
             preferences.edit().putBoolean("automaticFoldMode", checked).apply(); FoldLayout.settingsChanged();
@@ -3550,6 +3550,7 @@ public final class Haiagaru {
 
         ToolbarIcons.addSettingsButton(layout, activity);
         PopularReplies.addSettings(layout,activity);
+        QuickFilterOptions.addSettings(layout,activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,

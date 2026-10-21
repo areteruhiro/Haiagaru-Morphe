@@ -329,6 +329,7 @@ public final class WacchoiLongPressMenu {
                     }
                     String suffix = WacchoiSuffixNg.suffix(query);
                     Intent upper=upperSearch(launchContext,query);
+                    if(upper!=null)upper.putExtra("haiagaru.wacchoi.host",found.host).putExtra("haiagaru.wacchoi.board",found.board);
                     if(upper!=null && ResponseMenuSettings.visible(PREFIX_SEARCH_ITEM_ID)){
                         appendSheetItem(method,builder,hasIcon,"ﾜｯﾁｮｲ上4桁で検索",android.R.drawable.ic_menu_search,
                                 searchCallback(callbackType,launchContext,upper));
@@ -493,6 +494,7 @@ public final class WacchoiLongPressMenu {
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         String suffix = WacchoiSuffixNg.suffix(context.query);
         Intent upper=upperSearch((Context)activity,context.query);
+        if(upper!=null)upper.putExtra("haiagaru.wacchoi.host",context.host).putExtra("haiagaru.wacchoi.board",context.board);
         if(upper!=null && ResponseMenuSettings.visible(PREFIX_SEARCH_ITEM_ID) && menu.findItem(PREFIX_SEARCH_ITEM_ID)==null){
             menu.add(Menu.NONE,PREFIX_SEARCH_ITEM_ID,ResponseMenuSettings.order(PREFIX_SEARCH_ITEM_ID,menu.size()),"ﾜｯﾁｮｲ上4桁で検索")
                     .setIntent(upper).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);

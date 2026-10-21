@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
@@ -38,6 +40,8 @@ private fun modelFingerprint(view: View?): Long {
     if (view == null) return 0L
     var value = System.identityHashCode(view).toLong()
     value = value * 31 + System.identityHashCode(view.getTag(0x48690b03))
+    value = value * 31 + (view.getTag(EddiArchiveSearchUi.CONTROL_SCALE_TAG)?.hashCode() ?: 0)
+    value = value * 31 + (view.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG)?.hashCode() ?: 0)
     value = value * 31 + view.visibility + if (view.isEnabled) 1 else 0
     when (view) {
         is TextView -> value = value * 31 + view.text.hashCode() + (view.error?.hashCode() ?: 0)
@@ -57,6 +61,32 @@ private fun modelFingerprint(view: View?): Long {
 /** Only WebView and platform playback/canvas content use View interop. */
 internal class NativeSurfaceSlot(val surface: View) : View(surface.context)
 
+internal fun weightedSurface(root: View?): Int? = if (root is LinearLayout)
+    (0 until root.childCount).firstOrNull {
+        val child = root.getChildAt(it)
+        child is NativeSurfaceSlot && child.visibility == View.VISIBLE &&
+            (child.layoutParams as? LinearLayout.LayoutParams)?.weight?.let { weight -> weight > 0 } == true
+    } else null
+
+/** Bounded browser plus independently scrolling controls, also used by web dialogs. */
+@Composable internal fun BrowserModel(root: LinearLayout, revision: Int, modifier: Modifier, changed: () -> Unit) {
+    val index = weightedSurface(root) ?: return
+    BoxWithConstraints(modifier) {
+        val controlsHeight = maxHeight * .30f
+        Column(Modifier.fillMaxSize()) {
+            if (index > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
+                .verticalScroll(rememberScrollState())) {
+                for (i in 0 until index) ModelContent(root.getChildAt(i), revision, changed = changed)
+            }
+            ModelContent(root.getChildAt(index), revision, Modifier.weight(1f), changed = changed)
+            if (index + 1 < root.childCount) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
+                .verticalScroll(rememberScrollState())) {
+                for (i in index + 1 until root.childCount) ModelContent(root.getChildAt(i), revision, changed = changed)
+            }
+        }
+    }
+}
+
 internal fun prepareNativeSurfaces(root: ViewGroup) {
     for (index in 0 until root.childCount) {
         val child = root.getChildAt(index)
@@ -72,12 +102,15 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
-@Composable internal fun ModelContent(view: View, revision: Int = 0, modifier: Modifier = Modifier, changed: () -> Unit = {}) {
+@Composable internal fun ModelContent(view: View, revision: Int = 0, modifier: Modifier = Modifier,
+    insideScroll: Boolean = false, changed: () -> Unit = {}) {
     if (view.visibility != View.VISIBLE) return
     when (view) {
         is NativeSurfaceSlot -> AndroidView(factory = { view.surface },
             modifier = if (view.layoutParams?.width == 1 && view.layoutParams?.height == 1) Modifier.size(1.dp)
-                else Modifier.fillMaxWidth().height(420.dp))
+                else if ((view.layoutParams as? LinearLayout.LayoutParams)?.weight?.let { it > 0 } == true)
+                    modifier.fillMaxSize()
+                else modifier.fillMaxWidth().height(420.dp))
         is ListView -> {
             val adapter = view.adapter ?: return
             DisposableEffect(adapter) {
@@ -143,8 +176,12 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                     }
                 }
             }
-        } else ModelChildren(view, revision, changed)
+        } else ModelChildren(view, revision, insideScroll, changed)
         is ScrollView -> {
+            if (insideScroll) {
+                ModelChildren(view, revision, true, changed)
+                return
+            }
             val scroll = rememberScrollState()
             var horizontal by remember(view) { mutableFloatStateOf(0f) }
             @Suppress("UNCHECKED_CAST")
@@ -160,15 +197,15 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
             LaunchedEffect(view, request) { if (request != null) scroll.scrollTo(request.position) }
             LaunchedEffect(view) { snapshotFlow { scroll.value }.collect { view.setTag(0x48690b04, it) } }
             Column(modifier.fillMaxWidth().heightIn(max = 600.dp).then(gestures).verticalScroll(scroll)) {
-                ModelChildren(view, revision, changed)
+                ModelChildren(view, revision, true, changed)
             }
         }
-        is ViewGroup -> ModelChildren(view, revision, changed)
+        is ViewGroup -> ModelChildren(view, revision, insideScroll, changed)
     }
 }
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-@Composable private fun ModelChildren(view: ViewGroup, revision: Int, changed: () -> Unit) {
+@Composable private fun ModelChildren(view: ViewGroup, revision: Int, insideScroll: Boolean = false, changed: () -> Unit) {
     // Result cards use a listener on their LinearLayout, not on the title TextView.
     val click = if (!view.hasOnClickListeners()) Modifier else Modifier.combinedClickable(
         enabled = view.isEnabled, onClick = { view.performClick(); changed() },
@@ -180,10 +217,11 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                 val child = view.getChildAt(index++)
                 val next = view.getChildAt(index)
                 if (child is TextView && child !is Button && child !is EditText && !child.hasOnClickListeners() &&
-                    next is EditText && child.visibility == View.VISIBLE) {
+                    (next is EditText || next is Spinner) && child.visibility == View.VISIBLE) {
                     index++
-                    BoundTextField(next, child.text.toString(), changed = changed)
-                } else ModelContent(child, revision, changed = changed)
+                    if (next.visibility == View.VISIBLE)
+                        BoundSettingRow(BoundSetting(next, child.text.toString()), changed)
+                } else ModelContent(child, revision, insideScroll = insideScroll, changed = changed)
             }
     }
 }
@@ -195,12 +233,18 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     val revision = rememberModelRevision(root) + localRevision
     val changed = { localRevision++; Unit }
     val appearance = (root.getChildAt(0) as LinearLayout).getChildAt(1) as Button
-    Scaffold(topBar = { TopAppBar(title = { Text("エッヂ過去ログ検索") }, navigationIcon = {
+    val density = LocalDensity.current
+    val controlScale = EddiArchiveSearchUi.clampTextScale(root.getTag(EddiArchiveSearchUi.CONTROL_SCALE_TAG) as? Int ?: 100)
+    val resultScale = EddiArchiveSearchUi.clampTextScale(root.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG) as? Int ?: 100)
+    val controlsDensity = Density(density.density, density.fontScale * controlScale / 100f)
+    val resultsDensity = Density(density.density, density.fontScale * resultScale / 100f)
+    Scaffold(topBar = { CompositionLocalProvider(LocalDensity provides controlsDensity) { TopAppBar(title = { Text("エッヂ過去ログ検索") }, navigationIcon = {
         TextButton(onClick = { activity.onBackPressed() }) { Text("戻る") }
-    }, actions = { TextButton(onClick = { appearance.performClick(); changed() }) { Text(appearance.text.toString()) } }) }) { insets ->
+    }, actions = { TextButton(onClick = { appearance.performClick(); changed() }) { Text(appearance.text.toString()) } }) } }) { insets ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(insets).imePadding().padding(horizontal = 16.dp)) {
             val formHeight = maxHeight * .40f
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                CompositionLocalProvider(LocalDensity provides controlsDensity) {
                 Column(Modifier.fillMaxWidth().heightIn(max = formHeight).verticalScroll(rememberScrollState())) {
                     val form = root.getChildAt(1) as LinearLayout
                     if (form.visibility == View.VISIBLE) for (index in 0 until form.childCount) {
@@ -211,11 +255,16 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                 Text((root.getChildAt(2) as TextView).text.toString(),
                     style = MaterialTheme.typography.bodySmall, maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                ModelContent(root.getChildAt(3), revision, Modifier.weight(1f), changed)
+                }
+                CompositionLocalProvider(LocalDensity provides resultsDensity) {
+                ModelContent(root.getChildAt(3), revision, Modifier.weight(1f), changed = changed)
+                }
+                CompositionLocalProvider(LocalDensity provides controlsDensity) {
                 ModelContent(root.getChildAt(4), revision, changed = changed)
                 val original = root.getChildAt(5) as Button
                 TextButton(onClick = { original.performClick(); changed() }) {
                     Text(original.text.toString(), maxLines = 1)
+                }
                 }
             }
         }
@@ -232,9 +281,31 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     Scaffold(topBar = { TopAppBar(title = { Text(title) }, navigationIcon = {
         TextButton(onClick = { activity.onBackPressed() }) { Text("戻る") }
     }) }) { insets ->
+        val surfaceIndex = if (root is LinearLayout) (0 until root.childCount).firstOrNull {
+            val child = root.getChildAt(it)
+            child is NativeSurfaceSlot && (child.layoutParams as? LinearLayout.LayoutParams)?.weight?.let { weight -> weight > 0 } == true
+        } else null
+        if (root is LinearLayout && surfaceIndex != null) {
+            // A WebView owns its vertical scrolling. Never measure it inside verticalScroll.
+            BoxWithConstraints(Modifier.fillMaxSize().padding(insets).imePadding()) {
+                val controlsHeight = maxHeight * .35f
+                Column(Modifier.fillMaxSize()) {
+                    if (surfaceIndex > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
+                        .verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+                        for (index in 0 until surfaceIndex) ModelContent(root.getChildAt(index), revision) { localRevision++ }
+                    }
+                    ModelContent(root.getChildAt(surfaceIndex), revision, Modifier.weight(1f)) { localRevision++ }
+                    if (surfaceIndex + 1 < root.childCount) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
+                        .verticalScroll(rememberScrollState())) {
+                        for (index in surfaceIndex + 1 until root.childCount) ModelContent(root.getChildAt(index), revision) { localRevision++ }
+                    }
+                }
+            }
+        } else {
         Column(Modifier.fillMaxSize().padding(insets).imePadding().verticalScroll(rememberScrollState())
             .padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             HaiagaruUi.Group { ModelContent(root, revision) { localRevision++ } }
+        }
         }
     }
 }

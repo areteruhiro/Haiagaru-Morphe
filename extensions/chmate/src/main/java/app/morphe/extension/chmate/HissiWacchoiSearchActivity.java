@@ -95,7 +95,8 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     private final Set<String> displayedResults = new LinkedHashSet<>();
     private final Set<String> selectedBoards = new LinkedHashSet<>();
     private final List<BoardEntry> availableBoards = new ArrayList<>();
-    EditText boardFilter, fromInput, toInput, fourInput, pageLimitInput;
+    EditText boardFilter, fromInput, toInput, fourInput, pageLimitInput, startOffsetInput;
+    private int manualStartAt;
     EditText titleKeywordInput, bodyKeywordInput, requestLimitInput;
     private String edgeTitleWords = "", edgeBodyWords = "";
     CheckBox edgePast;
@@ -116,12 +117,14 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     private android.webkit.WebView zzzWebView;
     private final android.os.Handler backgroundUi=new android.os.Handler(android.os.Looper.getMainLooper());
     private WacchoiBackgroundJob observedBackground;
+    private String backgroundJobId;
+    private WacchoiBackgroundJob selectedBackground(){return WacchoiSearchService.get(backgroundJobId);}
     private int backgroundRecordCount;
     private WacchoiHistory.Session localHistory;
     private boolean showingHistory;
     private boolean restoredDraft, restoredBoards, restoreAllBoards;
     private final Runnable refreshBackground=new Runnable(){public void run(){
-        WacchoiBackgroundJob current=WacchoiSearchService.current;
+        WacchoiBackgroundJob current=selectedBackground();
         if(current!=null && !showingHistory){
             if(observedBackground!=current){
                 if(restoredDraft)restoredDraft=false;else restoreSearchFields(current.searchArguments());
@@ -147,13 +150,13 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     @Override protected void onPause(){backgroundUi.removeCallbacks(refreshBackground);super.onPause();}
     private boolean backgroundEnabled(){return getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).getBoolean("wacchoiBackgroundSearch",false);}
     private boolean startBackground(Intent args){
-        if(WacchoiSearchService.current!=null && WacchoiSearchService.current.running){
-            Toast.makeText(this,"実行中の検索を停止してから開始してください",Toast.LENGTH_SHORT).show();return true;
-        }
         if(!backgroundEnabled())return false;
+        int active=0;for(WacchoiBackgroundJob job:WacchoiSearchService.jobs().values())if(job.running)active++;
+        if(active>=3){Toast.makeText(this,"同時走査は3件までです。走査一覧から停止できます",Toast.LENGTH_SHORT).show();return true;}
         Bundle form = captureSearchFields().getExtras();
         if(args.getExtras()!=null)form.putAll(args.getExtras());
         args.replaceExtras(form);
+        backgroundJobId=java.util.UUID.randomUUID().toString();args.putExtra(WacchoiSearchService.JOB_ID,backgroundJobId);
         localHistory=null;
         showingHistory=false;
         WacchoiSearchService.launch(this,args);
@@ -165,6 +168,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        backgroundJobId=getIntent().getStringExtra(WacchoiSearchService.JOB_ID);
         buildUi();
         String half = getIntent().getStringExtra(EXTRA_HALF);
         if (HALF_UPPER.equals(half)) { halfGroup.check(halfGroup.getChildAt(0).getId()); edgeMode.setSelection(1); }
@@ -194,14 +198,28 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         Intent fields = state == null ? null : state.getParcelable("haiagaru.searchForm");
         if (fields != null) {
             restoreSearchFields(fields); restoredDraft=true;
+            backgroundJobId=fields.getStringExtra(WacchoiSearchService.JOB_ID);
         } else if (getIntent().getBooleanExtra(WacchoiSearchState.RESTORE,false)) {
             restoreSearchFields(getIntent());
+        }
+        if (fields == null && !getIntent().getBooleanExtra(WacchoiSearchState.RESTORE,false)) {
+            String host = getIntent().getStringExtra("haiagaru.wacchoi.host");
+            String board = getIntent().getStringExtra("haiagaru.wacchoi.board");
+            if (host != null && (host.equals("5ch.io") || host.endsWith(".5ch.io")
+                    || host.equals("5ch.net") || host.endsWith(".5ch.net") || host.endsWith(".2ch.net"))) searchSource = 0;
+            else if (host != null && (host.equals("bbs.eddibb.cc") || host.equals("bbs.eddibb.com"))) searchSource = 1;
+            if (board != null && board.matches("[A-Za-z0-9_-]+")) {
+                selectedBoards.clear(); selectedBoards.add(board); restoredBoards = true; restoreAllBoards = false;
+                renderBoardChoices();
+            }
+            if (host != null) restoredDraft = true;
         }
     }
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent); setIntent(intent);
         if(intent.getBooleanExtra(WacchoiSearchState.RESTORE,false)) {
+            backgroundJobId=intent.getStringExtra(WacchoiSearchService.JOB_ID);
             showingHistory=false; localHistory=null; observedBackground=null; restoredDraft=false;
             restoreSearchFields(intent);
             backgroundUi.removeCallbacks(refreshBackground); backgroundUi.post(refreshBackground);
@@ -215,7 +233,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
 
     private Intent captureSearchFields() {
         String boards = restoreAllBoards ? "*" : android.text.TextUtils.join(",",selectedBoards);
-        return new Intent().putExtra("four",fourInput.getText().toString())
+        return new Intent().putExtra(WacchoiSearchService.JOB_ID,backgroundJobId).putExtra("four",fourInput.getText().toString())
                 .putExtra("titleWords",titleKeywordInput.getText().toString())
                 .putExtra("bodyWords",bodyKeywordInput.getText().toString())
                 .putExtra("from",fromInput.getText().toString()).putExtra("to",toInput.getText().toString())
@@ -223,6 +241,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                 .putExtra("upper",halfGroup.getCheckedRadioButtonId()==halfGroup.getChildAt(0).getId())
                 .putExtra("edgeArchive",edgePast.isChecked()).putExtra("edgeMatchMode",edgeMode.getSelectedItemPosition())
                 .putExtra("ui.limitText",pageLimitInput.getText().toString())
+                .putExtra("startAt",startOffsetInput.getText().toString())
                 .putExtra("ui.requestLimitText",requestLimitInput.getText().toString()).putExtra("ui.source",searchSource);
     }
 
@@ -239,6 +258,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         fromInput.setText(conditionText(args,"from",fromInput.getText().toString()));
         toInput.setText(conditionText(args,"to",toInput.getText().toString()));
         pageLimitInput.setText(conditionText(args,"ui.limitText",String.valueOf(args.getIntExtra("limit",100))));
+        startOffsetInput.setText(conditionText(args,"startAt","0"));
         requestLimitInput.setText(conditionText(args,"ui.requestLimitText",String.valueOf(args.getIntExtra("requestLimit",0))));
         halfGroup.check(halfGroup.getChildAt(args.getBooleanExtra("upper",false)?0:1).getId());
         edgePast.setChecked(args.getBooleanExtra("edgeArchive",true));
@@ -306,7 +326,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     void setSearchEnabled(boolean enabled) {
         getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putBoolean("wacchoiSearchEnabled",enabled).apply();
         if (enabled && restoreAllBoards && searchSource == 0) loadBoardsOnDemand();
-        if (!enabled && stopButton.isEnabled()) stopSearch();
+        if (!enabled) { for(WacchoiBackgroundJob scan:WacchoiSearchService.jobs().values())if(scan.running)scan.cancel();if(stopButton.isEnabled())stopSearch(); }
         SettingsEffects.changed(this,"wacchoiSearchEnabled",enabled);
         searchUiChanged();
     }
@@ -316,6 +336,10 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         }
     }
     void searchFromCompose() {
+        try { manualStartAt=Integer.parseInt(startOffsetInput.getText().toString().trim()); }
+        catch(RuntimeException e){manualStartAt=-1;}
+        if(manualStartAt<0||manualStartAt>=MAX_LIST_PAGES){startOffsetInput.setError("0〜9999を指定してください");searchUiChanged();return;}
+        startOffsetInput.setError(null);
         fourInput.setError(null); fromInput.setError(null); toInput.setError(null);
         pageLimitInput.setError(null); requestLimitInput.setError(null); boardStatus.setError(null);
         if (isFullWacchoiSearch() && !WacchoiSearch.SLIP.matcher(fourInput.getText().toString().trim()).matches()) {
@@ -332,9 +356,35 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     void stopFromCompose() { stopSearch(); searchUiChanged(); }
     void resumeFromCompose() { if (FeatureSwitches.enabled("wacchoiSearchEnabled",true)) resumeSearch(); searchUiChanged(); }
     void historyFromCompose() { WacchoiHistory.show(this,this::openHistory); }
+    void prepareAnotherScan() {
+        if(selectedBackground()==null && job!=null&&!job.isDone()){
+            Toast.makeText(this,"画面内の走査は停止後に切り替えてください。並行走査はバックグラウンド検索を使います",Toast.LENGTH_LONG).show();return;
+        }
+        getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putBoolean("wacchoiBackgroundSearch",true).apply();
+        backgroundJobId=null;observedBackground=null;showingHistory=false;localHistory=null;restoredDraft=true;
+        displayedResults.clear();resultsLayout.removeAllViews();
+        startButton.setEnabled(true);edgeStartButton.setEnabled(true);stopButton.setEnabled(false);resumeButton.setEnabled(false);
+        statusView.setText("別の走査の条件を入力してください。既存の走査は継続します（同時3件まで・通信間隔は全走査で共有）。");searchUiChanged();
+    }
+    void showScanJobs() {
+        java.util.Map<String,WacchoiBackgroundJob> jobs=WacchoiSearchService.jobs();
+        if(jobs.isEmpty()){Toast.makeText(this,"バックグラウンドの走査はありません",Toast.LENGTH_SHORT).show();return;}
+        java.util.List<String> ids=new ArrayList<>(jobs.keySet());String[] labels=new String[ids.size()];
+        for(int i=0;i<ids.size();i++){
+            WacchoiBackgroundJob item=jobs.get(ids.get(i));Intent args=item.searchArguments();
+            labels[i]=(item.running?"走査中":item.canResume()?"再開可能":"終了")+" · "+conditionText(args,"boards",args.getBooleanExtra("edge",false)?"エッヂ":"")+" · "+conditionText(args,"four","")+"\n"+item.status;
+        }
+        new HaiagaruDialog.Builder(this).setTitle("走査中・停止した走査")
+                .setItems(labels,(dialog,index)->{
+                    backgroundJobId=ids.get(index);WacchoiBackgroundJob item=jobs.get(backgroundJobId);
+                    showingHistory=false;localHistory=null;observedBackground=null;restoredDraft=true;
+                    restoreSearchFields(item.searchArguments());backgroundUi.removeCallbacks(refreshBackground);backgroundUi.post(refreshBackground);
+                }).setNegativeButton("閉じる",null).show();
+    }
     void chooseDateFromCompose(EditText target) { chooseDate(target); }
 
     private void buildUi() {
+        startOffsetInput=field("開始位置（0は先頭）","0");
         searchSource = Math.max(0,Math.min(2,getSharedPreferences(WacchoiSearchOptions.PREFS,0).getInt("search.lastSource",0)));
         int pad = dp(16);
         LinearLayout root = new LinearLayout(this);
@@ -707,7 +757,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         if (!configureRequestBudget()) return;
         if(startBackground(new Intent().putExtra("boards",board).putExtra("from",from).putExtra("to",to)
                 .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit).putExtra("requestLimit",requestBudget.limit)))return;
-        WacchoiSearchService.current=null;observedBackground=null;
+        backgroundJobId=null;observedBackground=null;
         showingHistory=false;
         localHistory=WacchoiHistory.begin(this,new Intent().putExtra("boards",board).putExtra("from",from).putExtra("to",to)
                 .putExtra("four",four).putExtra("upper",firstHalf).putExtra("limit",pageLimit).putExtra("requestLimit",requestBudget.limit));
@@ -749,7 +799,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                     if (resume != null && date.equals(resume.date)
                             && boards.indexOf(board) < boards.indexOf(resume.board)) continue;
                     int page = resume != null && date.equals(resume.date) && board.equals(resume.board)
-                            ? resume.page : 0;
+                            ? resume.page : date.equals(from)&&board.equals(boards.get(0)) ? manualStartAt : 0;
                     resumeCursor = new SearchCursor(boards, boardChoice, date, to, board, page,
                             four, firstHalf, pageLimit, null, 0);
                     if (cancelled || scanned >= pageLimit) { exhausted = false; break outer; }
@@ -827,7 +877,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         if(startBackground(new Intent().putExtra("edge",true).putExtra("four",four)
                 .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
                 .putExtra("titleWords",edgeTitleWords).putExtra("bodyWords",edgeBodyWords).putExtra("edgeArchive",edgeArchive).putExtra("edgeMatchMode",edgeMatchMode)))return;
-        WacchoiSearchService.current=null;observedBackground=null;
+        backgroundJobId=null;observedBackground=null;
         showingHistory=false;
         localHistory=WacchoiHistory.begin(this,new Intent().putExtra("edge",true).putExtra("four",four)
                 .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
@@ -889,7 +939,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
             if (ids.isEmpty()) {
                 throw new IllegalStateException("Kyodemoのスレ一覧からスレIDを読み取れませんでした");
             }
-            int index = resume == null ? 0 : resume.edgeIndex;
+            int index = resume == null ? manualStartAt : resume.edgeIndex;
             for (; index < ids.size() || edgeNextBoard != null; index++) {
                 if (cancelled || (threadLimit > 0 && scanned >= threadLimit)) break;
                 if (index >= ids.size()) {
@@ -992,9 +1042,9 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     }
 
     private String fetchEdge(String address) throws Exception {
+        if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))throw new InterruptedException("検索は設定でオフになっています");
         requestBudget.check();
-        long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
-        if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
+        SearchRequestPacing.await(address);
         if (cancelled || Thread.currentThread().isInterrupted())
             throw new InterruptedException("停止しました");
         HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
@@ -1049,12 +1099,10 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     private String fetch(String address) throws Exception {
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))throw new InterruptedException("検索は設定でオフになっています");
         File cache = cacheFile(address);
-        if (WacchoiStorageLimits.fresh(this,cache)) {
-            try (InputStream in = new FileInputStream(cache)) { return readText(in); }
-        }
+        byte[] cached=WacchoiPageCache.read(this,cache);
+        if(cached!=null)return new String(cached,Charset.forName("Shift_JIS"));
         requestBudget.check();
-        long wait = MIN_INTERVAL_MS - (SystemClock.elapsedRealtime() - lastRequestAt);
-        if (lastRequestAt != 0 && wait > 0) Thread.sleep(wait);
+        SearchRequestPacing.await(address);
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedException("停止しました");
         HttpURLConnection connection = (HttpURLConnection) new URL(address).openConnection();
         activeConnection = connection;
@@ -1071,9 +1119,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
             byte[] bytes;
             try (InputStream in = connection.getInputStream()) { bytes = readBytes(in); }
             String text = new String(bytes, Charset.forName("Shift_JIS"));
-            cache.setLastModified(System.currentTimeMillis());
-            try (FileOutputStream out = new FileOutputStream(cache)) { out.write(bytes); }
-            trimCache(cache.getParentFile());
+            WacchoiPageCache.write(this,cache,bytes);
             return text;
         } finally { connection.disconnect(); activeConnection = null; }
     }
@@ -1110,7 +1156,8 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     }
 
     private void stopSearch() {
-        if(WacchoiSearchService.current!=null && WacchoiSearchService.current.running){WacchoiSearchService.current.cancel();return;}
+        WacchoiBackgroundJob selected=selectedBackground();
+        if(selected!=null && selected.running){selected.cancel();return;}
         cancelled = true;
         HttpURLConnection connection = activeConnection;
         if (connection != null) new Thread(connection::disconnect, "wacchoi-search-stop").start();
@@ -1118,7 +1165,10 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         statusView.setText("停止中です…");
     }
 
-    private void publishStatus(String value) { if(localHistory!=null&&!showingHistory)localHistory.status(value);runOnUiThread(() -> statusView.setText(value)); }
+    private void publishStatus(String value) {
+        if(localHistory!=null&&!showingHistory){localHistory.progress(resumeCursor,edgeNextBoard,edgeResumeUrl,edgeResumeTitle,edgeVisitedBoards);localHistory.status(value);}
+        runOnUiThread(() -> statusView.setText(value));
+    }
     private void publishResult(String item, String caption) {
         if(localHistory!=null&&!showingHistory)localHistory.add(0,item,caption,"","");
         String[] values = item.split("\\n", 3);
@@ -1175,8 +1225,8 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     }
     private void openHistory(org.json.JSONObject saved){
         new HaiagaruDialog.Builder(this).setTitle("検索履歴")
-            .setItems(new String[]{"保存した結果を表示（通信なし）","同じ条件で再検索","保存した結果の中を検索（通信なし）"},(dialog,which)->{
-                if((WacchoiSearchService.current!=null&&WacchoiSearchService.current.running)||(job!=null&&!job.isDone())){
+            .setItems(new String[]{"保存した結果を表示（通信なし）","同じ条件で再検索","保存した結果の中を検索（通信なし）",saved.has("checkpoint")?"前回の続きから走査":"続きから走査（停止位置なし）"},(dialog,which)->{
+                if((selectedBackground()!=null&&selectedBackground().running)||(job!=null&&!job.isDone())){
                     Toast.makeText(this,"実行中の検索を停止してから履歴を開いてください",Toast.LENGTH_SHORT).show();return;
                 }
                 titleKeywordInput.setText(saved.optString("titleWords")); bodyKeywordInput.setText(saved.optString("bodyWords"));
@@ -1189,6 +1239,7 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                 if("*".equals(boards))selectedBoards.addAll(availableBoardCodes());
                 else for(String board:boards.split(","))if(!board.isEmpty())selectedBoards.add(board);
                 renderBoardChoices();
+                if(which==3){resumeHistory(saved);return;}
                 if(which==1){if(saved.optBoolean("edge"))startEdgeSearch();else startSearch();return;}
                 if(which==2){
                     EditText query=new EditText(this);query.setSingleLine(true);query.setHint("ID・スレ名・本文・URL（空白区切りAND）");
@@ -1198,8 +1249,28 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
                 showSavedHistory(saved,"");
             }).setNegativeButton("閉じる",null).show();
     }
+    private void resumeHistory(org.json.JSONObject saved){
+        if(!saved.has("checkpoint")){Toast.makeText(this,"この履歴には停止位置がありません。同じ条件で再検索してください",Toast.LENGTH_LONG).show();return;}
+        new HaiagaruDialog.Builder(this).setTitle("履歴から走査を再開")
+            .setMessage("保存済みの結果を引き継ぎ、停止したページからバックグラウンドで走査します。途中のページは再確認します。サイトの更新や履歴の保存上限によって、以前と結果が異なることがあります。")
+            .setNegativeButton("キャンセル",null).setPositiveButton("再開",(d,w)->{
+                if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true)){Toast.makeText(this,"投稿検索を有効にしてください",Toast.LENGTH_LONG).show();return;}
+                int active=0;for(WacchoiBackgroundJob bg:WacchoiSearchService.jobs().values())if(bg.running)active++;
+                if(active>=3){Toast.makeText(this,"同時走査は3件までです",Toast.LENGTH_LONG).show();return;}
+                Intent args=captureSearchFields().putExtra("resumeHistory",saved.optString("id"))
+                    .putExtra("edge",saved.optBoolean("edge")).putExtra("four",saved.optString("four"))
+                    .putExtra("upper",saved.optBoolean("upper")).putExtra("boards",saved.optString("boards"))
+                    .putExtra("from",saved.optString("from")).putExtra("to",saved.optString("to"))
+                    .putExtra("limit",saved.optInt("limit",100)).putExtra("requestLimit",saved.optInt("requestLimit",0))
+                    .putExtra("titleWords",saved.optString("titleWords")).putExtra("bodyWords",saved.optString("bodyWords"))
+                    .putExtra("edgeArchive",saved.optBoolean("edgeArchive",true)).putExtra("edgeMatchMode",saved.optInt("edgeMatchMode",0));
+                backgroundJobId=java.util.UUID.randomUUID().toString();args.putExtra(WacchoiSearchService.JOB_ID,backgroundJobId);
+                localHistory=null;showingHistory=false;WacchoiSearchService.launch(this,args);
+                backgroundUi.removeCallbacks(refreshBackground);backgroundUi.postDelayed(refreshBackground,300);
+            }).show();
+    }
     private void showSavedHistory(org.json.JSONObject saved,String query){
-                if((WacchoiSearchService.current!=null&&WacchoiSearchService.current.running)||(job!=null&&!job.isDone())){
+                if((selectedBackground()!=null&&selectedBackground().running)||(job!=null&&!job.isDone())){
                     Toast.makeText(this,"実行中の検索を停止してから履歴を開いてください",Toast.LENGTH_SHORT).show();return;
                 }
                 showingHistory=true;localHistory=null;displayedResults.clear();resultsLayout.removeAllViews();resumeCursor=null;
@@ -1282,14 +1353,32 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
     }
 
     public static void openFromToolbar(Activity activity, boolean upper) {
+        openFromToolbar(activity, null, upper);
+    }
+    public static void openFromToolbar(Activity activity, Object fragment, boolean upper) {
         Intent intent = new Intent(activity, HissiWacchoiSearchActivity.class);
         intent.putExtra(EXTRA_HALF, upper ? HALF_UPPER : "lower");
+        if (fragment != null) try {
+            String version = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+            Object board;
+            if ("0.8.10.191 dev".equals(version)) board = ResponseArchiveEntry.field(fragment,"W");
+            else {
+                Object model = QuickFilterToolbar.findResponseViewModel(fragment);
+                Object flow = ResponseArchiveEntry.field(model,"0.8.10.226 dev".equals(version)?"d":"r");
+                board = flow.getClass().getMethod("0.8.10.226 dev".equals(version)?"c":"d").invoke(flow);
+            }
+            String accessor = "0.8.10.191 dev".equals(version)?"d":"0.8.10.226 dev".equals(version)?"e":"c";
+            Uri uri = Uri.parse((String)board.getClass().getMethod(accessor,int.class).invoke(board,1));
+            List<String> path = uri.getPathSegments();
+            if (path.size() >= 3 && "test".equals(path.get(0)) && "read.cgi".equals(path.get(1)))
+                intent.putExtra("haiagaru.wacchoi.host",uri.getHost()).putExtra("haiagaru.wacchoi.board",path.get(2));
+        } catch (Exception error) { android.util.Log.w("Haiagaru","Search toolbar board context",error); }
         activity.startActivity(intent);
     }
 
     private void resumeSearch() {
-        if(WacchoiSearchService.current!=null && WacchoiSearchService.current.canResume()){
-            WacchoiSearchService.launch(this,new Intent().setAction("resume"));return;
+        if(selectedBackground()!=null && selectedBackground().canResume()){
+            WacchoiSearchService.launch(this,new Intent().setAction("resume").putExtra(WacchoiSearchService.JOB_ID,backgroundJobId));return;
         }
         SearchCursor cursor = resumeCursor;
         if (cursor == null) return;
@@ -1305,19 +1394,6 @@ public final class HissiWacchoiSearchActivity extends HaiagaruComposeActivity {
         });
     }
 
-    private static final class SearchCursor {
-        final List<String> boards, edgeIds;
-        final String boardChoice, date, to, board, four;
-        final int page, limit, edgeIndex;
-        final boolean firstHalf;
-
-        SearchCursor(List<String> boards, String boardChoice, String date, String to, String board,
-                int page, String four, boolean firstHalf, int limit, List<String> edgeIds, int edgeIndex) {
-            this.boards = boards; this.boardChoice = boardChoice; this.date = date; this.to = to;
-            this.board = board; this.page = page; this.four = four; this.firstHalf = firstHalf;
-            this.limit = limit; this.edgeIds = edgeIds; this.edgeIndex = edgeIndex;
-        }
-    }
 
     private static final class BoardEntry {
         final String code;

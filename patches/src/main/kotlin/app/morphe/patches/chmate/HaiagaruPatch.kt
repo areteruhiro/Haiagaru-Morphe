@@ -1592,6 +1592,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPostHistoryRetentionCount(packageMetadata.versionName)
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
         patchGroupedBrowsingHistory(packageMetadata.versionName)
+        patchNativeDrawDates(packageMetadata.versionName)
         patchFavoriteThreads(packageMetadata.versionName)
         patchHomeRefreshKeywords(packageMetadata.versionName)
         patchClipboardHistory(packageMetadata.versionName)
@@ -5194,6 +5195,34 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
             })
+            application.appendChild(document.createElement("provider").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.SettingsShareProvider")
+                setAndroidAttribute("authorities", document.documentElement.getAttribute("package") + ".haiagaru.settings")
+                setAndroidAttribute("exported", "false")
+                setAndroidAttribute("grantUriPermissions", "true")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.SettingsImportActivity")
+                setAndroidAttribute("exported", "true")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
+                appendChild(document.createElement("intent-filter").apply {
+                    appendChild(document.createElement("action").apply { setAndroidAttribute("name", "android.intent.action.VIEW") })
+                    for(category in listOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"))
+                        appendChild(document.createElement("category").apply { setAndroidAttribute("name", category) })
+                    appendChild(document.createElement("data").apply { setAndroidAttribute("mimeType", "application/vnd.haiagaru.settings") })
+                })
+                appendChild(document.createElement("intent-filter").apply {
+                    appendChild(document.createElement("action").apply { setAndroidAttribute("name", "android.intent.action.VIEW") })
+                    appendChild(document.createElement("category").apply { setAndroidAttribute("name", "android.intent.category.DEFAULT") })
+                    for(scheme in listOf("content", "file"))
+                        appendChild(document.createElement("data").apply { setAndroidAttribute("scheme", scheme) })
+                    appendChild(document.createElement("data").apply {
+                        setAndroidAttribute("host", "*")
+                        setAndroidAttribute("mimeType", "*/*")
+                        setAndroidAttribute("pathPattern", ".*\\.haiagaru")
+                    })
+                })
+            })
             for(permission in listOf("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC", "android.permission.POST_NOTIFICATIONS")){
                 val exists=(0 until document.getElementsByTagName("uses-permission").length).any {
                     (document.getElementsByTagName("uses-permission").item(it) as Element).getAttributeNS(ANDROID_XML_NAMESPACE,"name")==permission
@@ -5239,11 +5268,7 @@ val haiagaruPatch = resourcePatch(
                     pathAttribute = "android:pathPrefix",
                 )
                 application.appendChild(hissiActivity)
-                application.setAttributeNS(
-                    ANDROID_XML_NAMESPACE,
-                    "android:usesCleartextTraffic",
-                    "true",
-                )
+                application.setAndroidAttribute("usesCleartextTraffic", "true")
             } else {
                 application.appendChild(hissiActivity)
             }

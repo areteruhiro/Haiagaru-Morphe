@@ -13,7 +13,7 @@ public final class ResponseMenuSettings {
     private ResponseMenuSettings() {}
     static final int[] IDS = {0x7e484b01, 0x7e484a01, 0x7e484a03, 75, 76, 0x7e000077, 0x7e000078};
     static final String[] NAMES={"投稿者を強調","レスを保存","過去レスを見る","ﾜｯﾁｮｲで検索","ﾜｯﾁｮｲ下4桁をNG登録","ﾜｯﾁｮｲ下4桁で検索","ﾜｯﾁｮｲ上4桁で検索"};
-    static boolean defaultVisible(int id){for(int action:IDS)if(action==id)return id==75||id==76;return true;}
+    static boolean defaultVisible(int id){for(int action:IDS)if(action==id)return !FeatureSwitches.enabled(MinimalSetup.ACTIVE,false)&&(id==75||id==76);return true;}
     private static int icon(int id) {
         if(id==75)return wacchoiSearchIcon();
         if(id==0x7e484a01)return ResponseArchive.archiveIcon(true);

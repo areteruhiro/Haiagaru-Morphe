@@ -130,7 +130,9 @@ public final class HissiMenuActivity extends HaiagaruComposeActivity {
         if (wacchoiSearchLaunch) {
             if (initialWacchoiQuery != null && initialWacchoiQuery.matches("-[^\\s()（）<>]{4}")) {
                 startActivity(new android.content.Intent(this, HissiWacchoiSearchActivity.class)
-                        .putExtra("haiagaru.wacchoi.query", initialWacchoiQuery));
+                        .putExtra("haiagaru.wacchoi.query", initialWacchoiQuery)
+                        .putExtra("haiagaru.wacchoi.host", sourceHost)
+                        .putExtra("haiagaru.wacchoi.board", sourceBoard));
                 finish();
                 return;
             }

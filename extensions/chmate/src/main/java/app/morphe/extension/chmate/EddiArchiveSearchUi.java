@@ -41,6 +41,8 @@ import org.json.JSONObject;
 
 /** Native search for the Edge archive index. Thread bodies remain on the original BBS. */
 final class EddiArchiveSearchUi {
+    static final int CONTROL_SCALE_TAG = 0x48690c01;
+    static final int RESULT_SCALE_TAG = 0x48690c02;
     interface ThreadOpener {
         boolean open(String url);
     }
@@ -594,6 +596,8 @@ final class EddiArchiveSearchUi {
     }
 
     private void applyAppearance() {
+        root.setTag(CONTROL_SCALE_TAG, controlScale);
+        root.setTag(RESULT_SCALE_TAG, resultScale);
         int position = HaiagaruUi.scrollPosition(scroll);
         for (java.util.Map.Entry<TextView, Float> entry : controlTextSizes.entrySet()) {
             TextView view = entry.getKey();

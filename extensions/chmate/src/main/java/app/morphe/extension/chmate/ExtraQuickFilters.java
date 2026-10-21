@@ -21,6 +21,88 @@ public final class ExtraQuickFilters {
     private static final Map<Object, WeakReference<Object>> FRAGMENTS = new WeakHashMap<>();
     private static final ArrayList<WeakReference<Object>> OWNERS = new ArrayList<>();
     private static final ArrayList<Threshold> THRESHOLDS = new ArrayList<>();
+    private static final Map<Activity,WeakReference<View>> BOTTOM_CONTROLS=new WeakHashMap<>();
+    static void updateOptions(Activity activity){
+        if(!QuickFilterOptions.extras()){
+            List<Object> reset=new ArrayList<>();
+            synchronized(STATES){for(Map.Entry<Object,State> entry:STATES.entrySet())if(entry.getValue().extra!=0){entry.getValue().extra=0;reset.add(entry.getKey());}}
+            for(Object adapter:reset)try{rebuild(adapter);}catch(Exception error){Log.w("Haiagaru","Disable extra filters",error);}
+        }
+        for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){Bar bar=ref.get();if(bar!=null)bar.post(bar::update);}
+        Set<Activity> hosts=new HashSet<>(BOTTOM_CONTROLS.keySet());hosts.add(activity);
+        for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner!=null)try{
+            Activity host=(Activity)call(owner,"getActivity",new Class<?>[0]);if(host!=null)hosts.add(host);
+        }catch(Exception ignored){}}
+        for(Activity host:hosts)if(!host.isFinishing())updateBottomControl(host);
+    }
+    private static void updateBottomControl(Activity activity){
+        WeakReference<View> old=BOTTOM_CONTROLS.get(activity);View control=old==null?null:old.get();
+        if(!QuickFilterOptions.bottom()){
+            if(control!=null&&control.getParent() instanceof ViewGroup)((ViewGroup)control.getParent()).removeView(control);
+            BOTTOM_CONTROLS.remove(activity);return;
+        }
+        if(control!=null&&control.getParent()!=null)return;
+        View decor=activity.getWindow().getDecorView();if(!(decor instanceof FrameLayout))return;
+        Button button=new Button(activity);button.setText("フィルター ▴");button.setAllCaps(false);button.setTextSize(13);
+        FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(-2,-2,android.view.Gravity.BOTTOM|android.view.Gravity.END);
+        params.rightMargin=(int)(12*activity.getResources().getDisplayMetrics().density);
+        params.bottomMargin=(int)(80*activity.getResources().getDisplayMetrics().density);
+        button.setOnClickListener(v->{
+            for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner==null)continue;
+                try {if(call(owner,"getActivity",new Class<?>[0])==activity){View root=(View)call(owner,"getView",new Class<?>[0]);if(root!=null&&root.isShown()&&open(owner))return;}}catch(Exception ignored){}
+            }
+        });
+        ((ViewGroup)decor).addView(button,params);BOTTOM_CONTROLS.put(activity,new WeakReference<>(button));
+        android.view.ViewTreeObserver.OnGlobalLayoutListener watcher=()->{
+            boolean visible=false;
+            for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner==null)continue;try{if(call(owner,"getActivity",new Class<?>[0])==activity){View root=(View)call(owner,"getView",new Class<?>[0]);if(root!=null&&root.isShown()){visible=true;break;}}}catch(Exception ignored){}}
+            int target=visible&&QuickFilterOptions.bottom()?View.VISIBLE:View.GONE;if(button.getVisibility()!=target)button.setVisibility(target);
+        };
+        decor.getViewTreeObserver().addOnGlobalLayoutListener(watcher);
+        button.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
+            public void onViewAttachedToWindow(View view){}
+            public void onViewDetachedFromWindow(View view){if(decor.getViewTreeObserver().isAlive())decor.getViewTreeObserver().removeOnGlobalLayoutListener(watcher);}
+        });
+    }
+    private static void styleButton(ToggleButton button){
+        float density=button.getResources().getDisplayMetrics().density;
+        int accent=themeColor(button.getContext(),android.R.attr.colorAccent,button.getCurrentTextColor());
+        int text=button.getCurrentTextColor();
+        android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();
+        for(boolean checked:new boolean[]{true,false}){
+            android.graphics.drawable.GradientDrawable shape=new android.graphics.drawable.GradientDrawable();shape.setCornerRadius(8*density);
+            shape.setColor(checked?(accent&0x00ffffff)|0x18000000:android.graphics.Color.TRANSPARENT);
+            shape.setStroke(Math.max(1,(int)density),checked?accent:(text&0x00ffffff)|0x30000000);
+            states.addState(checked?new int[]{android.R.attr.state_checked}:new int[0],shape);
+        }
+        button.setBackground(states);button.setMinWidth((int)(80*density));
+    }
+    private static int themeColor(Context context,int attr,int fallback){
+        android.content.res.TypedArray colors=context.obtainStyledAttributes(new int[]{attr});
+        try{return colors.getColor(0,fallback);}finally{colors.recycle();}
+    }
+    private static int bottomInset(Activity activity){
+        android.graphics.Rect visible=new android.graphics.Rect();View decor=activity.getWindow().getDecorView();decor.getWindowVisibleDisplayFrame(visible);
+        return Math.max(0,decor.getHeight()-visible.bottom);
+    }
+    private static boolean showBottomPanel(Activity activity,Object a)throws Exception{
+        collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+        GridLayout grid=new GridLayout(activity);grid.setColumnCount(4);int pad=(int)(8*grid.getResources().getDisplayMetrics().density);grid.setPadding(pad,pad,pad,pad);
+        PopupWindow popup=new PopupWindow(grid,-1,-2,true);popup.setOutsideTouchable(true);
+        popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));popup.setElevation(pad*2);
+        ToggleButton[] buttons=new ToggleButton[QuickFilterOptions.extras()?7:4];
+        Runnable redraw=()->{try{boolean[] on=selected(a);String[] names=labels(a);for(int i=0;i<buttons.length;i++){buttons[i].setTextOn(names[i]);buttons[i].setTextOff(names[i]);buttons[i].setChecked(on[i]);buttons[i].setText(names[i]);}}catch(Exception e){Log.w("Haiagaru","Bottom filter state",e);}};
+        for(int i=0;i<buttons.length;i++){final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(13);styleButton(button);
+            button.setMinimumHeight(pad*8);GridLayout.LayoutParams params=new GridLayout.LayoutParams(GridLayout.spec(i/4),GridLayout.spec(i%4,1f));params.width=0;params.height=-2;params.setMargins(pad/2,pad/2,pad/2,pad/2);grid.addView(button,params);
+            button.setOnClickListener(v->{try{boolean requested=button.isChecked();toggle(a,index);if(index<4&&!(index==0&&PopularReplies.enabledFor(activity))){State state=state(a);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}redraw.run();}catch(Exception e){Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();redraw.run();}});
+            if(i==2)button.setOnLongClickListener(v->{boolean opened=imageList(a);if(opened)popup.dismiss();return opened;});
+        }
+        redraw.run();android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+        Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;redraw.run();handler.postDelayed(this,150);}};
+        popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
+        popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
+        popup.showAtLocation(activity.getWindow().getDecorView(),android.view.Gravity.BOTTOM,0,bottomInset(activity)+pad);handler.postDelayed(sync,150);return true;
+    }
     private static final class Threshold {
         final WeakReference<Object> list;final int value;
         Threshold(Object list,int value){this.list=new WeakReference<>(list);this.value=value;}
@@ -34,6 +116,8 @@ public final class ExtraQuickFilters {
     public static void register(Object fragment) {
         OWNERS.removeIf(ref -> ref.get()==null||ref.get()==fragment);
         OWNERS.add(new WeakReference<>(fragment));
+        try { Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);if(activity!=null)updateOptions(activity); }
+        catch(Exception ignored){}
     }
     private static final class State {
         Object rawSnapshot, appliedSnapshot;
@@ -237,6 +321,7 @@ public final class ExtraQuickFilters {
             refresh(a);return kept;
     }
     public static ArrayList<?> filterRows(Object a,List<?> rows) {
+        if(!QuickFilterOptions.counts()&&!QuickFilterOptions.extras())return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);
         try {
             Object source=field(a,legacy(a)?"K":middle(a)?"J":"o");
             List<?> full=PopularReplies.fullList(source);collect(a,full);
@@ -250,15 +335,16 @@ public final class ExtraQuickFilters {
     }
     private static String[] labels(Object a) {
         int[] counts=state(a).counts;String[] result=new String[7];
-        for(int i=0;i<7;i++)result[i]=LABELS[i]+" "+counts[i];return result;
+        for(int i=0;i<7;i++)result[i]=QuickFilterOptions.counts()?counts[i]+"\n"+LABELS[i]:LABELS[i];return result;
     }
     public static boolean open(Object fragment) {
         try {
             Object a=adapter(fragment);Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);
             if(activity==null||activity.isFinishing())return false;
+            if(QuickFilterOptions.bottom())return showBottomPanel(activity,a);
             collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
-            boolean[] checked=selected(a);
-            String[] names=labels(a);
+            boolean[] checked=Arrays.copyOf(selected(a),QuickFilterOptions.extras()?7:4);
+            String[] names=Arrays.copyOf(labels(a),checked.length);
             HaiagaruDialog d=new HaiagaruDialog.Builder(activity).setTitle("レスのフィルター")
                     .setMessage("件数は読み込み済みの全レスです。AA・自分・返信は、既存のフィルターに重ねて絞り込みます。")
                     .setMultiChoiceItems(names,checked,(dialog,which,on)->{
@@ -267,7 +353,7 @@ public final class ExtraQuickFilters {
                                 State selection=state(a);selection.pendingFilters[which]=on;
                                 selection.pendingFilterMask|=1<<which;
                             }
-                            boolean[] next=selected(a);for(int i=0;i<7;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[i]);}
+                            boolean[] next=selected(a);for(int i=0;i<names.length;i++)((HaiagaruDialog)dialog).getListView().setItemChecked(i,next[i]);}
                         catch(Exception e){Log.e("Haiagaru","Extra filter toggle",e);((HaiagaruDialog)dialog).getListView().setItemChecked(which,!on);Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();}
                     }).setNegativeButton("閉じる",null).show();
             state(a).dialog=new WeakReference<>(d);state(a).dialogLabels=names;
@@ -281,7 +367,7 @@ public final class ExtraQuickFilters {
                     if(!d.isShowing())return;
                     try {
                         boolean[] next=selected(a);
-                        for(int i=0;i<next.length;i++)if(observed[i]!=next[i]) {
+                        for(int i=0;i<observed.length;i++)if(observed[i]!=next[i]) {
                             observed[i]=next[i];d.getListView().setItemChecked(i,next[i]);
                         }
                     }catch(Exception e){Log.w("Haiagaru","Filter selection update",e);}
@@ -321,10 +407,10 @@ public final class ExtraQuickFilters {
         State s=state(a);HaiagaruDialog d=s.dialog.get();
         if(d!=null&&d.isShowing())new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
             if(!d.isShowing())return;
-            try {String[] names=labels(a);System.arraycopy(names,0,s.dialogLabels,0,7);
+            try {String[] names=Arrays.copyOf(labels(a),s.dialogLabels.length);System.arraycopy(names,0,s.dialogLabels,0,names.length);
                 ArrayAdapter<String> adapter=(ArrayAdapter<String>)d.getListView().getAdapter();
                 adapter.setNotifyOnChange(false);adapter.clear();adapter.addAll(names);adapter.notifyDataSetChanged();
-                boolean[] checked=selected(a);for(int i=0;i<7;i++)d.getListView().setItemChecked(i,checked[i]);
+                boolean[] checked=selected(a);for(int i=0;i<names.length;i++)d.getListView().setItemChecked(i,checked[i]);
                 d.refresh();
             }catch(Exception e){Log.w("Haiagaru","Filter counts update",e);}
         });
@@ -336,19 +422,36 @@ public final class ExtraQuickFilters {
             super(original.getContext());this.original=original;setOrientation(VERTICAL);
             setLayoutParams(new android.widget.AbsListView.LayoutParams(-1,-2));
             original.setVisibility(GONE);addView(original,new LinearLayout.LayoutParams(-1,0));
-            scroll=new HorizontalScrollView(getContext());scroll.setHorizontalScrollBarEnabled(false);
+            scroll=new HorizontalScrollView(getContext()){
+                float downX,downY;
+                @Override public boolean dispatchTouchEvent(android.view.MotionEvent event){
+                    int action=event.getActionMasked();
+                    if(action==android.view.MotionEvent.ACTION_DOWN){downX=event.getX();downY=event.getY();getParent().requestDisallowInterceptTouchEvent(true);}
+                    else if(action==android.view.MotionEvent.ACTION_MOVE)getParent().requestDisallowInterceptTouchEvent(Math.abs(event.getX()-downX)>=Math.abs(event.getY()-downY));
+                    // Dispatch here (not OnTouchListener): filter buttons consume DOWN themselves.
+                    boolean handled=super.dispatchTouchEvent(event);
+                    if(action==android.view.MotionEvent.ACTION_UP||action==android.view.MotionEvent.ACTION_CANCEL)getParent().requestDisallowInterceptTouchEvent(false);
+                    return handled;
+                }
+            };scroll.setHorizontalScrollBarEnabled(false);
             LinearLayout choices=new LinearLayout(getContext());
-            for(int i=0;i<7;i++){final int index=i;ToggleButton b=new ToggleButton(getContext());buttons[i]=b;b.setAllCaps(false);
+            for(int i=0;i<7;i++){final int index=i;ToggleButton b=new ToggleButton(getContext());buttons[i]=b;b.setAllCaps(false);styleButton(b);
                 b.setMinHeight((int)(48*getResources().getDisplayMetrics().density));
-                b.setOnClickListener(v->{Object a=adapter.get();if(a!=null)try{toggle(a,index);}catch(Exception e){Log.e("Haiagaru","Filter row toggle",e);update();}});
+                b.setOnClickListener(v->{Object a=adapter.get();if(a!=null)try{boolean requested=b.isChecked();toggle(a,index);if(index<4&&!(index==0&&PopularReplies.enabledFor(getContext()))){State state=state(a);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}update();}catch(Exception e){Log.e("Haiagaru","Filter row toggle",e);update();}});
                 if(i==2)b.setOnLongClickListener(v->{Object a=adapter.get();return a!=null&&imageList(a);});
-                choices.addView(b,new LinearLayout.LayoutParams(-2,-2));}
+                b.setTextSize(14);b.setPadding((int)(14*getResources().getDisplayMetrics().density),0,(int)(14*getResources().getDisplayMetrics().density),0);
+                LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,-2);params.setMargins(2,0,2,0);choices.addView(b,params);}
             scroll.addView(choices);addView(scroll,new LinearLayout.LayoutParams(-1,-2));
         }
         void bind(Object a){adapter=new WeakReference<>(a);update();}
         void update(){Object a=adapter.get();if(a==null)return;try{boolean[] on=selected(a);String[] names=labels(a);
             for(int i=0;i<7;i++){buttons[i].setTextOn(names[i]);buttons[i].setTextOff(names[i]);buttons[i].setChecked(on[i]);buttons[i].setText(names[i]);}
-            scroll.setVisibility(Haiagaru.compactQuickFilters()?GONE:VISIBLE);
+            for(int i=4;i<7;i++)buttons[i].setVisibility(QuickFilterOptions.extras()?VISIBLE:GONE);
+            boolean stock=!QuickFilterOptions.counts()&&!QuickFilterOptions.extras();
+            boolean hidden=Haiagaru.compactQuickFilters()||QuickFilterOptions.bottom();
+            original.setVisibility(stock&&!hidden?VISIBLE:GONE);
+            original.setLayoutParams(new LinearLayout.LayoutParams(-1,stock&&!hidden?-2:0));
+            scroll.setVisibility(hidden||stock?GONE:VISIBLE);
         }catch(Exception e){Log.w("Haiagaru","Filter row state",e);}}
     }
     private ExtraQuickFilters(){}

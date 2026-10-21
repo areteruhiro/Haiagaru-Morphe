@@ -41,6 +41,15 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
         setContent { HaiagaruUi.Theme { SettingsScreen() } }
         gestures = HaiagaruSettingsGestures(this, window.decorView,
             { onBackPressedDispatcher.onBackPressed() }, { top() }, { bottom() }).also { it.setCloseAction { finish() } }
+        if (savedInstanceState == null) window.decorView.post { MinimalSetup.offer(this) }
+    }
+
+    @Deprecated("Activity result compatibility")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == SettingsProfiles.OPEN && resultCode == RESULT_OK && data?.data != null)
+            startActivity(android.content.Intent(this, SettingsImportActivity::class.java).setData(data.data)
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION))
     }
 
     override fun onResume() { super.onResume(); revision++ }
@@ -122,6 +131,15 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         leadingIcon = { Icon(Icons.Filled.Search, null) }, singleLine = true,
                         modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)) }
                     if (query.isBlank()) {
+                        item {
+                            HaiagaruUi.Group {
+                                TextButton(onClick = { SettingsProfiles.share(this@HaiagaruSettingsActivity) }) { Text("設定を共有（.haiagaru）") }
+                                TextButton(onClick = { SettingsProfiles.open(this@HaiagaruSettingsActivity) }) { Text("設定ファイルを読み込む") }
+                                TextButton(onClick = { MinimalSetup.show(this@HaiagaruSettingsActivity) }) { Text("最低限構成を選び直す") }
+                                Text("共有するのは表示・動作設定です。認証情報、履歴、NG登録、標準ツールバー設定は含めません。",
+                                    style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                         item { Text(if (english) "Saved automatically. Choose what you want to change." else "変更は自動で保存されます。変えたいことから選べます。",
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp)) }

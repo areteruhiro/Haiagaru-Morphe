@@ -81,6 +81,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
         if (source != 2) {
             a.pageLimitInput.error?.let { add(it.toString()) }
             a.requestLimitInput.error?.let { add(it.toString()) }
+            a.startOffsetInput.error?.let { add(it.toString()) }
         }
     }.distinct()
     var options by rememberSaveable { mutableStateOf(false) }
@@ -103,6 +104,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
         TopAppBar(title = { Text(if (fullWacchoi) "ワッチョイ全文検索" else "投稿を探す", maxLines = 1, overflow = TextOverflow.Ellipsis) }, navigationIcon = {
             IconButton(onClick = { a.finish() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "戻る") }
         }, actions = {
+            TextButton(onClick = { a.showScanJobs() }) { Text("走査一覧") }
             TextButton(onClick = { a.historyFromCompose() }) { Text("履歴") }
             IconButton(onClick = { options = true }) { Icon(Icons.Filled.Settings, "検索の設定") }
         })
@@ -128,6 +130,8 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
     }) { insets ->
         LazyColumn(state = list, modifier = Modifier.fillMaxSize().padding(insets),
             contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            item { OutlinedButton(onClick = { a.prepareAnotherScan(); changed() }, enabled = enabled,
+                modifier = Modifier.fillMaxWidth()) { Text("別の走査を準備（バックグラウンド・同時3件まで）") } }
             item {
                 HaiagaruUi.Group {
                     SearchToggle("投稿検索を利用する", if (enabled) "条件と履歴はこの画面で管理できます" else "オフです。条件と保存済みの履歴は残ります",
@@ -221,6 +225,7 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
                     if (advanced) {
                         BoundTextField(a.pageLimitInput, if (source == 1) "調べるスレ数（1〜10000）" else "板・日付ごとの一覧ページ数（1〜10000）", editing, changed)
                         BoundTextField(a.requestLimitInput, "通信回数の上限（0は無制限）", editing, changed)
+                        BoundTextField(a.startOffsetInput, if (source == 1) "開始スレ位置（0は先頭）" else "開始ページ（0は先頭・最初の板と日付に適用）", editing, changed)
                         Text("通信は最低10秒間隔です。上限に達したら停止し、続きから再開できます。通信回数は開始・再開ごとに数えます。",
                             Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -237,8 +242,13 @@ private fun SearchScreen(a: HissiWacchoiSearchActivity) {
             }
         }
     }
-    if (options) ModalBottomSheet(onDismissRequest = { options = false }) {
-        SearchOptionsSheet(a, prefs, toggleValues, changed)
+    if (options) androidx.compose.ui.window.Dialog(onDismissRequest = { options = false },
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(Modifier.fillMaxSize(), topBar = {
+            TopAppBar(title = { Text("投稿検索の設定") }, navigationIcon = {
+                IconButton(onClick = { options = false }) { Icon(Icons.AutoMirrored.Filled.ArrowBack,"戻る") }
+            })
+        }) { insets -> Box(Modifier.fillMaxSize().padding(insets)) { SearchOptionsSheet(a, prefs, toggleValues, changed) } }
     }
     if (boardPicker) ModalBottomSheet(onDismissRequest = { boardPicker = false }) {
         LazyColumn(Modifier.fillMaxWidth().imePadding(), contentPadding = PaddingValues(16.dp),
