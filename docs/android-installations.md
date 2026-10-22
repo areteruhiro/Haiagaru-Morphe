@@ -1,5 +1,11 @@
 # Android導入・署名台帳
 
+## 2026-10-22 プレリリース配布物1.12.0-dev.7
+
+- GitHub Release: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.7 （`draft=false`、`prerelease=true`）。既存Semantic Release CI run `39789862059` success。
+- CI配布MPP `patches-1.12.0-dev.7.mpp` SHA-256 `B5621615BDFA427864B23FDD0D63C3EE674E9F3EBA9E6188BD8B3D72D833CE52`。配布資産を取得してGitHub digestと照合。
+- 更新feed `patches-bundle-pre.json`はversion `1.12.0-dev.7`、`created_at`は`2026-10-22T13:48:11`（末尾`Z`なし）。
+
 ## 2026-10-22 フィルター共存・未読NG集計軽量化 最終候補
 
 - 対象serial: `emulator-5554`。191／226／242それぞれ未加工APKにMPPを適用し、各既存の検証用パッケージへ`adb install -r`で更新。標準パッケージの置換・アンインストール・データ消去なし。
