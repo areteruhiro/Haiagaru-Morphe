@@ -1,3 +1,14 @@
+# Haiagaru 1.12.0-dev.5
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.5/docs/release-next-prerelease.md)
+
+高度なNGの使用例は案内ページに掲載しています。追加ダウンロード資材としては添付しません。
+
+
+### 🐛 Bug Fixes
+
+* link VPN v2 to published prerelease asset ([d08ce69](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d08ce69d0d9838d8cb626786201b7dd4f7668df2))
+
 # Haiagaru 1.12.0-dev.4
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.4/docs/release-next-prerelease.md)
