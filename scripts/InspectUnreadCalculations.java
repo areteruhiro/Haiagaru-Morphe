@@ -16,6 +16,7 @@ public class InspectUnreadCalculations {
      if(i instanceof TwoRegisterInstruction r)line+=" B="+r.getRegisterB();
      if(i instanceof ThreeRegisterInstruction r)line+=" C="+r.getRegisterC();
      if(i instanceof NarrowLiteralInstruction r)line+=" lit="+r.getNarrowLiteral();
+     if(i instanceof FiveRegisterInstruction r)line+=" args="+r.getRegisterC()+","+r.getRegisterD()+","+r.getRegisterE()+","+r.getRegisterF()+","+r.getRegisterG();
      lines.add(line);
     }if(found){System.out.println("METHOD "+m);lines.forEach(System.out::println);}
    }

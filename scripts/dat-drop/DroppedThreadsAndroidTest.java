@@ -14,9 +14,12 @@ public final class DroppedThreadsAndroidTest {
     }
     static Field field(Object o,String name)throws Exception{Field f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f;}
     static Object board(Context c)throws Exception{
+        return board(c,"https://greta.5ch.io/test/read.cgi/poverty/1792155688/");
+    }
+    static Object board(Context c,String address)throws Exception{
         Class<?> type=Class.forName("jp.syoboi.a2chMate.client.BBSUrlInfo",true,c.getClassLoader());Object model=null;
         for(Method m:type.getDeclaredMethods())if(Modifier.isStatic(m.getModifiers())&&m.getReturnType()==type&&Arrays.equals(m.getParameterTypes(),new Class<?>[]{String.class})){
-            m.setAccessible(true);model=m.invoke(null,"https://greta.5ch.io/test/read.cgi/poverty/1792155688/");if(model!=null)break;
+            m.setAccessible(true);model=m.invoke(null,address);if(model!=null)break;
         }
         if(model==null)throw new AssertionError("Native URL parser missing");
         for(Method m:type.getDeclaredMethods())if(m.getReturnType().getName().endsWith("BoardID")){

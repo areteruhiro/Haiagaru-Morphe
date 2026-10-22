@@ -37,7 +37,21 @@ public final class PopularNativeRows {
     private static void save(List<?> rows,boolean flat,int threshold) {
         try {
             Snapshot s=new Snapshot(rows,flat,threshold);if(s.first==null)return;
-            synchronized(snapshots){snapshots.removeIf(v->v.first==s.first);if(snapshots.size()>=16)snapshots.remove(0);snapshots.add(s);}
+            synchronized(snapshots){
+                for(Snapshot previous:snapshots)if(previous.first==s.first&&previous.rows.size()>s.rows.size()){
+                    // An active native filter can return only its selected rows.
+                    // Keep the complete row set for Haiagaru's inline predicate.
+                    s=new Snapshot(previous.rows,flat,threshold);break;
+                }
+                Snapshot next=s;
+                snapshots.removeIf(v->v.first==next.first);
+                if(snapshots.size()>=16)snapshots.remove(0);
+                snapshots.add(next);
+            }
+            // The adapter can be asked for its counts before the native renderer
+            // has produced the rows. Revisit that pending count/filter once the
+            // complete native layout is available.
+            ExtraQuickFilters.nativeRowsReady();
         }catch(Exception error){android.util.Log.w("Haiagaru","Native popular rows unavailable",error);}
     }
     public static void captureLegacy(Object adapter,List<?> rows) {

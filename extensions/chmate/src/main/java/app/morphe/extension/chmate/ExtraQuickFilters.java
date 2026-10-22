@@ -132,6 +132,23 @@ public final class ExtraQuickFilters {
             catch(Exception error){Log.w("Haiagaru","Refresh popularity settings",error);}
         }
     }
+    static void nativeRowsReady(){
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+            for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){
+                Object f=ref.get();if(f==null)continue;
+                try{
+                    View root=(View)call(f,"getView",new Class<?>[0]);if(root==null||!root.isShown())continue;
+                    Object a=adapter(f);State s=state(a);
+                    boolean retry=s.failure!=null&&"Direct popularity layout unavailable".equals(s.failure.getMessage());
+                    if(s.counts[0]>=0&&!retry)continue;
+                    List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
+                    if(PopularNativeRows.find(source)==null)continue;
+                    collect(a,source);
+                    if(retry)rebuild(a);else refresh(a);
+                }catch(Exception error){Log.w("Haiagaru","Finish native popular count",error);}
+            }
+        });
+    }
     private static Object field(Object o, String n) throws Exception { return ResponseArchiveEntry.field(o,n); }
     private static Object call(Object o, String n, Class<?>[] types, Object... args) throws Exception {
         Method m=o.getClass().getMethod(n,types); m.setAccessible(true); return m.invoke(o,args);
@@ -249,7 +266,8 @@ public final class ExtraQuickFilters {
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
         for(Object r:source)if(response(r)) {
             int no=number(r);
-            if(( ((Number)call(idx,indexMethod,new Class<?>[]{int.class},no)).intValue()&8)!=0)mine.add(no);
+            // ChMate marks an own post with bit 0; bit 3 is not the own-post flag.
+            if(( ((Number)call(idx,indexMethod,new Class<?>[]{int.class},no)).intValue()&1)!=0)mine.add(no);
             if(Boolean.TRUE.equals(call(r,legacy(a)?"e":middle(a)?"i":"g",new Class<?>[0])))aa.add(no);
         }
         for(Object r:source)if(response(r)) {

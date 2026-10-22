@@ -1,5 +1,52 @@
 # Android導入・署名台帳
 
+## 2026-10-22 dev.5同期後の人気レス再確認（未公開候補）
+
+- 対象serial `emulator-5554`。既存の242検証パッケージ `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`、表示名「Haiagaru 復帰修正 242」、ChMate `0.8.10.242 dev`。端末のinstalled `base.apk`をpullし、候補APKとSHA-256一致を確認（再インストール・データ消去なし）。`lastUpdateTime` は端末記録 `2026-10-22 09:57:42 UTC`。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.5.mpp` SHA-256 `70FA88D38054CC7CEEC8BCBDFEEBEAD2795DF22F35D66B2CAF7A337C25E26FA9`。
+- 候補／installed APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/popular-refresh-dev5-242.apk` SHA-256 `56A6E1617ACF050AB14D5C9D3FE0383AAD7992A1DB01858AB3F3D96EDECF32E8`。候補署名証明書 SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- スレ「【緊急】PSP死亡　国が警告 ★8」の実データで、直接返信判定OFF=295、ON=25。ポップアップ表示ON/OFFで件数は変わらず、4組合せすべて`failure=null`かつ非負。「—」は再現しなかった。設定は試験後に復元。
+- 「自分」フィルターのPart3実レス試験は、取得済みデータを持つ別の既存242検証パッケージ `jp.co.airfront.android.a2chMate.haiagaru.popularfix242` で実施した。自分件数1、レス353のみを抽出し、解除後は369行へ復帰。dev.5候補の`resumefix242`にはPart3の取得済みデータがなかったため、その候補上でのPart3自分フィルター再確認ではない。
+- どちらもエミュレータのみ。版名更新・公開・実機変更なし。
+
+## 2026-10-22 人気レス／DAT更新確認（未公開）
+
+- 対象 `emulator-5554`。既存の別パッケージを同じ署名で`adb install -r`更新（アンインストール・データ消去なし）。
+- 共通MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.1.mpp`、SHA-256 `62214E1C0C7AD2731433FF7C2B11D6AD0F9F562BE4C6264E07C9051537A3640E`。
+- 191: 表示名「Haiagaru 人気レス検証 191」、ChMate `0.8.10.191 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.popularfix191`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/popular-refresh/haiagaru191.apk`、SHA-256 `0547B283BD3266255AF1F40B864E8B115BBE734C97C5C7379E787545A95AF0E4`。元APKへの適用・署名成功、install-r成功、HomeActivity起動。
+- 226: 表示名「Haiagaru 人気レス検証 226」、ChMate `0.8.10.226 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.popularfix226`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/popular-refresh/haiagaru226.apk`、SHA-256 `BE25ABECD3A157DD6F6D954CFE199113F7AB650E8A9F14A803935F2D24012F51`。元APKへの適用・署名成功、install-r成功、初回画面起動。スレ表示／更新操作は未確認。
+- 242: 表示名「Haiagaru 人気レス検証 242」、ChMate `0.8.10.242 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.popularfix242`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/popular-refresh/haiagaru242.apk`、SHA-256 `4B03BEB9E8056D7FB77763E24DC6541272F0182DB3558B1629047E30AD13779E`。元APKへの適用・署名成功、install-r成功、Part3の取得済みスレを表示。人気レス4モード、非負カウント、自分1件をFridaで確認。更新操作は正常な「更新なし」だったが、新着ありの再現ではない。
+- 3 APKの署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`（BKS）、alias `Morphe`。パスワードは記録しない。
+
+## 2026-10-22 hissi.org文字コード修正（未公開）
+
+- 対象serial `emulator-5554`。既存191パッケージの証明書を照合し `install -r` 成功。実機・他版への導入なし。
+- 191／ChMate0.8.10.191 dev「Haiagaru191 設定検証」／`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`。端末導入時刻 2026-10-22 14:43:33 JST。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/hissi-encoding-normalized.mpp` SHA256 `30C33D19A8CAB190EEE11A70EFA54EEC4B596476EC2104063825B6571857E596`。
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/hissi-encoding-normalized191.apk` SHA256 `17A8017A711C5BA77F28365DD9A19FFBECA201609AAD92806E813ED364D23B5B`。
+- 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。秘密値は保存しない。
+- hissi.orgの実レスポンスとWebView日本語DOM、DAT落ち履歴の実adapter／Edge合成回帰を検証。詳細 `docs/history-dat-hissi-encoding-20261022.md`。
+
+## 2026-10-22 人気レス方式分離（未公開）
+
+- 対象は全て `emulator-5554`、既存署名を照合してinstall -r成功。データ消去・アンインストール・実機変更なし。
+- 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。秘密値は保存しない。
+- 以下のファイルは全て `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/` 配下（表のファイル名をこの絶対パスへ結合）。
+- 191: ChMate0.8.10.191 dev「Haiagaru191 設定検証」、`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`。226: ChMate0.8.10.226 dev「Haiagaru 復帰修正 226」、`jp.co.airfront.android.a2chMate.haiagaru.resumefix226`。242: ChMate0.8.10.242 dev「Haiagaru 復帰修正 242」、`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。
+
+| 使用MPPとSHA256 | APKとSHA256 | 導入日時・結果 |
+| --- | --- | --- |
+| popularity-modes.mpp `2E3C86CE2890F2F438AF993E0C0A70288DC1E96797228435EA45BE470687552C` | popularity-modes191.apk `252688CF83F5D8878BE307B660279BB05BD45D08A30E673B42335E983F1D414E` | 10/22 初期候補、更新成功、後続へ置換 |
+| 同上 | popularity-modes226.apk `D6ECEF88CB036A412F41E1A4AAA25548905C70E27CE12FFEA89C88A9054E91ED` | 10/22 初期候補、更新成功、後続へ置換 |
+| 同上 | popularity-modes242.apk `8165E276CA7AEA197F55259EC90416578F76A9162F3CEE4306CC643B845CB0BD` | 10/22 初期候補、更新成功、後続へ置換 |
+| popularity-modes-final.mpp `0E7516E46ECE46C067C4A1CF7141E6CEB5E13F531964E0643425637552A5BE4A` | popularity-modes-final191.apk `00B9B99F7C748D6FA3812905D384B76412AD5B8D107774A98986562E94CBA12E` | 10/22 14:00:27 JST、更新成功、合成16項目成功 |
+| 同上 | popularity-modes-final226.apk `D673786A4FB7C94987085895E47DAEE263C98B53AC575A38065E7E7A6013E022` | 10/22 14:01:57 JST、更新成功、合成16項目成功 |
+| 同上 | popularity-modes-final242.apk `B6B54BAC169049F3B7411378AC116155D7B91CCE1D72E8E49D53A0EB0C4269B5` | 10/22 13:47:28 JST、更新成功、後続へ置換 |
+| popularity-modes-verified.mpp `38DF040DBE7FCE744DD6EC8601C8192AAAED06B64761A1AD33AD553143BE1138` | popularity-modes-verified242.apk `30D276C5E76639309F99CC015DDD6B610235A976ECB738E01CD3613FB1D5E253` | 10/22 14:05:40 JST、更新成功、後続へ置換 |
+| popularity-display-mode.mpp `B6FAE9F87F56AF8479368C24FFDB6C0FCDA7E608253DF542DC158D7AE2348722` | popularity-display-mode242.apk `013B3927C2464C100EE62DAFB1B3A7885AEFDD22BE0B050DDFC57199AAEC56DE` | 10/22 14:16:39 JST（端末lastUpdateTime 05:16:39 UTC）、更新成功、合成17項目／native hook／実スレ比較成功 |
+
+- 旧候補は242の表示方式取り違えのため配布不可。最後の242固有修正に対する191/226の再導入は行っていない。詳細 `docs/popular-reply-modes.md`。
+
 ## 2026-10-22 履歴DAT・GIF操作・任意フローティングフィルター（未公開）
 
 - 対象serialはすべて `emulator-5554`。InstallVerifiedApk.ps1で既存パッケージと証明書を照合して `install -r` 成功。アンインストール・データ消去・実機更新なし。

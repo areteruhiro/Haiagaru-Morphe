@@ -43,6 +43,15 @@ public final class PopularModesAndroidTest {
    }
    Set<?> selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);
    check(selected.size()==103,"native tree returns all 103 matching responses, not one root");check(!selected.contains(104)&&!selected.contains(105),"small conversation excluded");
+   // A later native callback may contain only filtered rows. It must not
+   // replace the complete row templates used by inline direct-reply mode.
+   if(old||middle)call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows.subList(0,4));
+   else{
+    call(nativeRows,"config",new Class<?>[]{Object.class},config);
+    call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Tree"));
+    call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows.subList(0,4),scope);
+   }
+   check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).size()==103,"filtered callback preserves complete native rows");
    if(old||middle){field(adapter.getClass(),old?"G":"M").setInt(adapter,0);call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows);}
    else{
     field(scope.getClass(),"a").setBoolean(scope,true);call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Tree"));call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);

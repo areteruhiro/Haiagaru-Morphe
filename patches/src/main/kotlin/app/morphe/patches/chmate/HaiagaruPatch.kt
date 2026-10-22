@@ -1966,6 +1966,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHissiExternalIntentBoundaries()
         patchHttpsTransport()
         patchNativeUpdatePolicy(packageMetadata.versionName)
+        patchThreadRefreshValidators(packageMetadata.versionName)
         patchPatrolImages(packageMetadata.versionName)
         patchPatrolInterval(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)

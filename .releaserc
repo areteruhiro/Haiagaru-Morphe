@@ -77,6 +77,7 @@
       "@MorpheApp/changelog",
       {
         "releaseJson": {
+          "enabled": false,
           "path": "patches-bundle.json",
           "downloadUrlTemplate": "https://github.com/${owner}/${repo}/releases/download/${version}/patches-${version}.mpp",
           "signatureUrlTemplate": ""
@@ -88,6 +89,7 @@
       {
         "changelogFile": "build/preview-changelog.md",
         "releaseJson": {
+          "enabled": false,
           "signatureUrlTemplate": "",
           "path": "patches-bundle-pre.json",
           "downloadUrlTemplate": "https://github.com/${owner}/${repo}/releases/download/${version}/patches-${version}.mpp"
@@ -133,7 +135,8 @@
             "label": "任意導入: 画像取得VPNライブラリ v2（Image NGとは別・展開不要）"
           }
         ],
-        "successComment": false
+        "successComment": false,
+        "draftRelease": true
       }
     ],
     [
