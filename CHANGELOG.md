@@ -1,3 +1,12 @@
+# Haiagaru 1.12.0-dev.3
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.3/docs/release-next-prerelease.md)
+
+
+### 🐛 Bug Fixes
+
+* improve history filtering, GIF controls and archive search ([7d8720a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7d8720a6b65a26e8a8f421e22aa968ddb0c2f801))
+
 # Haiagaru 1.12.0-dev.2
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.2/docs/release-next-prerelease.md)
