@@ -37,10 +37,10 @@ public final class SettingsProfiles {
     private static final String[] EXTRA_BOOLEAN={
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled",
         "siteCardsEnabled","siteCardImages","patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
-        "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","wacchoiSearchEnabled","wacchoiBackgroundSearch",
+        "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
-        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi","floatingQuickFilterButton"
+        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi","floatingQuickFilterButton","hissiViewerCompactHeader"
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
     static JSONObject exportData(Context c)throws JSONException{

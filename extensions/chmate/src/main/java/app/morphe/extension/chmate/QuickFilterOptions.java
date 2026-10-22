@@ -17,7 +17,7 @@ final class QuickFilterOptions {
         add(root,activity,"quickFilterReplies","返信フィルターを追加",true);
         add(root,activity,"bottomQuickFilterPanel","下部フィルターパネルを使う（外側タップで閉じる）",false);
         add(root,activity,"floatingQuickFilterButton","フィルターのフローティングボタンを表示",false);
-        TextView help=new TextView(activity);help.setText("下部フィルターパネルがオンのときに表示します。長押ししてドラッグすると位置を変更できます。非表示でもツールバーから開けます。");root.addView(help);
+        TextView help=new TextView(activity);help.setText("上部フィルターと下部パネルは個別に表示できます。下部パネルは上部フィルターを隠しません。長押ししてドラッグすると位置を変更できます。必死チェッカーの表示領域は「同じIDの投稿を調べる」設定で上部タイトルを省略して広げられます。");root.addView(help);
     }
     static void showToolbarSettings(Activity activity){
         LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);addSettings(panel,activity);

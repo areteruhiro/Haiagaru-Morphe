@@ -380,7 +380,18 @@ public final class ExtraQuickFilters {
     }
     public static void legacyRows(Object a) {
         try {String key=legacy(a)?"z":"g";Field f=a.getClass().getDeclaredField(key);f.setAccessible(true);
-            Object rows=f.get(a);if(rows instanceof List)f.set(a,filterRows(a,(List<?>)rows));
+            Object rows=f.get(a);if(rows instanceof List) {
+                // 191/226 can rebuild their visible rows before the earlier native-layout
+                // observer has produced a usable snapshot. Capture the adapter's finished
+                // row layout here as a second opportunity, before Haiagaru counts filters.
+                // save() keeps a larger full-layout snapshot when native filtering supplied
+                // only a subset, so this cannot regress an already complete capture.
+                try {
+                    List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":"J"));
+                    if(PopularNativeRows.find(source)==null)PopularNativeRows.captureLegacy(a,(List<?>)rows);
+                }catch(Exception captureError){Log.w("Haiagaru","Fallback popular layout capture",captureError);}
+                f.set(a,filterRows(a,(List<?>)rows));
+            }
         }catch(Exception e){Log.e("Haiagaru","Extra legacy filters",e);}
     }
     private static String[] labels(Object a) {
@@ -523,7 +534,9 @@ public final class ExtraQuickFilters {
             for(int i=0;i<7;i++){buttons[i].setTextOn(names[i]);buttons[i].setTextOff(names[i]);buttons[i].setChecked(on[i]);buttons[i].setText(names[i]);}
             for(int i=4;i<7;i++)buttons[i].setVisibility(QuickFilterOptions.visible(i)?VISIBLE:GONE);
             boolean stock=!QuickFilterOptions.counts()&&!QuickFilterOptions.extras();
-            boolean hidden=Haiagaru.compactQuickFilters()||QuickFilterOptions.bottom();
+            // Top and bottom filters are independent: the bottom panel adds an
+            // alternate control surface and must not implicitly collapse the top row.
+            boolean hidden=Haiagaru.compactQuickFilters();
             original.setVisibility(stock&&!hidden?VISIBLE:GONE);
             original.setLayoutParams(new LinearLayout.LayoutParams(-1,stock&&!hidden?-2:0));
             scroll.setVisibility(hidden||stock?GONE:VISIBLE);

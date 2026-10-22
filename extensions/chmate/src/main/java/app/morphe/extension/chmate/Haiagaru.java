@@ -3974,6 +3974,12 @@ public final class Haiagaru {
                 text("必死チェッカーを全画面で表示", "Fullscreen checker viewer"),
                 preferences.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false)
         );
+        Switch hissiViewerCompactHeader = addSwitch(
+                layout,
+                activity,
+                text("必死チェッカーの上部タイトルを省略して表示領域を広げる", "Hide the checker title to expand the viewing area"),
+                preferences.getBoolean("hissiViewerCompactHeader", false)
+        );
         Spinner hissiViewerSwipeHistory = addSpinner(
                 layout,
                 activity,
@@ -3993,6 +3999,7 @@ public final class Haiagaru {
         live.choice(hissiViewerTheme,HISSI_VIEWER_THEME_KEY);
         live.choice(hissiViewerTextZoom,HISSI_VIEWER_TEXT_ZOOM_KEY,i->new int[]{100,115,130}[i]);
         live.toggle(hissiViewerFullscreen,HISSI_VIEWER_FULLSCREEN_KEY);
+        live.toggle(hissiViewerCompactHeader,"hissiViewerCompactHeader");
         live.choice(hissiViewerSwipeHistory,HISSI_VIEWER_SWIPE_HISTORY_KEY);
         live.toggle(kyodemoEnhancedViewer,KYODEMO_ENHANCED_VIEWER_KEY);
         return layout;
@@ -5527,6 +5534,11 @@ public final class Haiagaru {
     public static boolean hissiViewerFullscreen() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false);
+    }
+
+    public static boolean hissiViewerCompactHeader() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("hissiViewerCompactHeader", false);
     }
 
     public static int hissiViewerSwipeHistory() {

@@ -19,7 +19,8 @@ public final class HiddenNgUnreadNativeRowTest {
   if(key==null)throw new AssertionError("Native row URL not available");
   Class<?> hook=Class.forName("app.morphe.extension.chmate.HiddenNgUnread");Field f=hook.getDeclaredField("HIDDEN");f.setAccessible(true);
   Map map=(Map)f.get(null);Object previous;boolean existed;
-  synchronized(map){existed=map.containsKey(key);previous=map.get(key);map.put(key,new HashSet<>(Arrays.asList(1,21,22,23)));}
+  Method invalidate=hook.getDeclaredMethod("invalidate",String.class);invalidate.setAccessible(true);
+  synchronized(map){existed=map.containsKey(key);previous=map.get(key);map.put(key,new HashSet<>(Arrays.asList(1,21,22,23)));invalidate.invoke(null,key);}
   SharedPreferences p=context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);String option="excludeHiddenNgUnread";boolean had=p.contains(option),before=p.getBoolean(option,false);
   int checks=0;
   try{
@@ -32,7 +33,7 @@ public final class HiddenNgUnreadNativeRowTest {
    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("OFF native value");checks++;
    if(total.getInt(row)!=23||read.getInt(row)!=20)throw new AssertionError("Native fields changed");checks++;
   }finally{
-   synchronized(map){if(existed)map.put(key,previous);else map.remove(key);}
+   synchronized(map){if(existed)map.put(key,previous);else map.remove(key);invalidate.invoke(null,key);}
    SharedPreferences.Editor e=p.edit();if(had)e.putBoolean(option,before);else e.remove(option);e.commit();
   }
   return "PASS "+checks+" native-row unread ON/OFF checks; native read/total unchanged";

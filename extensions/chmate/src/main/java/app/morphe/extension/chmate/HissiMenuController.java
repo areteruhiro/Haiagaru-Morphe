@@ -233,6 +233,7 @@ public final class HissiMenuController extends ToolScreenController {
         title.setGravity(Gravity.CENTER_VERTICAL);
         title.setPadding(24, 12, 24, 12);
         title.setOnClickListener(view -> finish());
+        if (Haiagaru.hissiViewerCompactHeader()) title.setVisibility(View.GONE);
         layout.addView(title, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 56 * getResources().getDisplayMetrics().densityDpi / 160));
         TextView hint = new TextView(this);

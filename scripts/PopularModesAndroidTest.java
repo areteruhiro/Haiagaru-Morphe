@@ -62,9 +62,27 @@ public final class PopularModesAndroidTest {
    p.edit().putBoolean(keys[1],false).putInt(keys[3],5).putInt(keys[2],3).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==5,"standard threshold independent");
    p.edit().putBoolean(keys[1],true).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==3,"direct threshold independent");
    check(rows.size()==105&&source.size()==105,"source rows retained");
+   if(old||middle){
+    // Reproduce the legacy 191/226 race: the displayed adapter rows exist,
+    // but the earlier native-layout observer has not captured a Snapshot.
+    // legacyRows() must recover the full tree before the popular count is read.
+    synchronized(snapshots){snapshots.clear();}
+    Field fullField=field(adapter.getClass(),old?"K":"J");Constructor<?> fullCtor=fullField.getType().getDeclaredConstructor();fullCtor.setAccessible(true);
+    Object full=fullCtor.newInstance();if(!(full instanceof List))throw new AssertionError("Legacy full-response container is not a List");
+    ((List)full).addAll(source);fullField.set(adapter,full);
+    field(adapter.getClass(),old?"z":"g").set(adapter,new ArrayList<>(rows));
+    field(adapter.getClass(),old?"G":"M").setInt(adapter,1);field(adapter.getClass(),old?"I":"D").setInt(adapter,3);
+    p.edit().putBoolean("quickFilterCounts",false).putBoolean("quickFilterExtras",false).commit();
+    Class<?> extra=Class.forName("app.morphe.extension.chmate.ExtraQuickFilters",true,loader);
+    call(extra,"legacyRows",new Class<?>[]{Object.class},adapter);
+    Object recovered=call(nativeRows,"find",new Class<?>[]{List.class},full);
+    check(recovered!=null,"legacyRows recaptures a missing native Snapshot for "+version);
+    check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},full,3)).size()==103,
+            "legacy fallback keeps the full Tree count instead of an unavailable dash for "+version);
+   }
    return "PASS "+version+" "+checks+" popularity mode/native row checks";
   }finally{
-   SharedPreferences.Editor e=p.edit();for(String k:keys){Object v=saved.get(k);if(v instanceof Boolean)e.putBoolean(k,(Boolean)v);else if(v instanceof Integer)e.putInt(k,(Integer)v);else e.remove(k);}e.commit();
+   SharedPreferences.Editor e=p.edit();for(String k:new String[]{"popularReplyPopup","popularReplyDirect","popularReplyThreshold","popularReplyStandardThreshold","quickFilterCounts","quickFilterExtras"}){Object v=saved.get(k);if(v instanceof Boolean)e.putBoolean(k,(Boolean)v);else if(v instanceof Integer)e.putInt(k,(Integer)v);else e.remove(k);}e.commit();
    synchronized(snapshots){snapshots.clear();snapshots.addAll(previous);}
   }
  }
