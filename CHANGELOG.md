@@ -1,3 +1,14 @@
+# Haiagaru 1.12.0-dev.6
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.6/docs/release-next-prerelease.md)
+
+高度なNGの使用例は案内ページに掲載しています。追加ダウンロード資材としては添付しません。
+
+
+### 🐛 Bug Fixes
+
+* restore popular filters and validate thread refresh ([cadf2f1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/cadf2f11f9540a68dfd6455bde6f59fbec538cc4))
+
 # Haiagaru 1.12.0-dev.5
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.5/docs/release-next-prerelease.md)
