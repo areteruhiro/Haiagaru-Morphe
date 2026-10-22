@@ -1,3 +1,14 @@
+# Haiagaru 1.12.0-dev.7
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.7/docs/release-next-prerelease.md)
+
+高度なNGの使用例は案内ページに掲載しています。追加ダウンロード資材としては添付しません。
+
+
+### 🐛 Bug Fixes
+
+* reduce hidden NG unread count overhead ([533ebb2](https://github.com/areteruhiro/Haiagaru-Morphe/commit/533ebb209b5c92eba41ae045cc6a10eba14d9f75))
+
 # Haiagaru 1.12.0-dev.6
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.6/docs/release-next-prerelease.md)
