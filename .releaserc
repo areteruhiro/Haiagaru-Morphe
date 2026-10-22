@@ -69,7 +69,7 @@
           ]
         },
         "writerOpts": {
-          "headerPartial": "# Haiagaru {{version}}\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/{{version}}/docs/release-next-prerelease.md)\n\n"
+        "headerPartial": "# Haiagaru {{version}}\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/{{version}}/docs/release-next-prerelease.md)\n\n高度なNGの使用例は案内ページに掲載しています。追加ダウンロード資材としては添付しません。\n\n"
         }
       }
     ],
@@ -129,8 +129,8 @@
             "label": "任意導入: 画像取得VPNライブラリ（Image NGとは別・展開不要）"
           },
           {
-            "path": "presets/advanced-ng/word-author-replies.js",
-            "label": "高度なNGサンプル: 投稿者の別レスと返信の連鎖"
+            "path": "build/optional-assets/haiagaru-image-vpn-v2.zip",
+            "label": "任意導入: 画像取得VPNライブラリ v2（Image NGとは別・展開不要）"
           }
         ],
         "successComment": false

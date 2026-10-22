@@ -93,10 +93,14 @@ public final class ExtraQuickFilters {
         Threshold(Object list,int value){this.list=new WeakReference<>(list);this.value=value;}
     }
     public static void observeConfig(Object list,Object unused,int ignored,Object config) {
+        PopularNativeRows.config(config);
         try {
             Object base=PopularReplies.fullList(list);int value=((Number)field(config,"b")).intValue();
             synchronized(THRESHOLDS){THRESHOLDS.removeIf(t->t.list.get()==null||t.list.get()==base);THRESHOLDS.add(new Threshold(base,value));}
         }catch(Exception e){Log.w("Haiagaru","Native filter configuration",e);}
+    }
+    public static void observeConfigWithMode(Object mode,Object list,Object unused,int ignored,Object config) {
+        observeConfig(list,unused,ignored,config);PopularNativeRows.mode(mode);
     }
     public static void register(Object fragment) {
         OWNERS.removeIf(ref -> ref.get()==null||ref.get()==fragment);
@@ -117,6 +121,17 @@ public final class ExtraQuickFilters {
         Exception failure;
     }
     private static State state(Object adapter) { synchronized(STATES) { return STATES.computeIfAbsent(adapter, k -> new State()); } }
+    static void refreshPopularity(){
+        for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){
+            Object f=ref.get();if(f==null)continue;
+            try{View root=(View)call(f,"getView",new Class<?>[0]);if(root!=null&&root.isShown()){
+                Object a=adapter(f);rebuild(a);
+                collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+                refresh(a);
+            }}
+            catch(Exception error){Log.w("Haiagaru","Refresh popularity settings",error);}
+        }
+    }
     private static Object field(Object o, String n) throws Exception { return ResponseArchiveEntry.field(o,n); }
     private static Object call(Object o, String n, Class<?>[] types, Object... args) throws Exception {
         Method m=o.getClass().getMethod(n,types); m.setAccessible(true); return m.invoke(o,args);
@@ -201,12 +216,12 @@ public final class ExtraQuickFilters {
         if(!legacy(a)&&!middle(a))return (Context)field(a,"e");
         return ((android.view.LayoutInflater)field(a,legacy(a)?"q":"s")).getContext();
     }
-    private static int number(Object r) throws Exception { return ((Number)field(r,r.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue(); }
+    static int number(Object r) throws Exception { return ((Number)field(r,r.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue(); }
     private static int[] anchors(Object r) throws Exception { return (int[])field(r,legacyResponse(r)?"d":middleResponse(r)?"a":"b"); }
     private static boolean legacyResponse(Object r){return r.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError");}
     private static boolean middleResponse(Object r){return r.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion");}
     private static boolean response(Object r){return r!=null&&(legacyResponse(r)||middleResponse(r)||r.getClass().getName().equals("o.KeJ11"));}
-    private static Object rowResponse(Object row) throws Exception {
+    static Object rowResponse(Object row) throws Exception {
         if(row==null)return null;
         if(response(row))return row;
         String key=row.getClass().getName().equals("o.r8lambdakfayx3RllpZib32UTPpeXfQjw")?"j":
@@ -243,15 +258,14 @@ public final class ExtraQuickFilters {
         }
         Context c=context(a);int threshold=popularThreshold(a,c,source);
         Map<Integer,Integer> direct=Collections.emptyMap();
-        if(PopularReplies.enabledFor(c)) {
+        if(PopularReplies.directFor(c)) {
             Map<Integer,String> posts=new LinkedHashMap<>();
             for(Object r:source)if(response(r))posts.put(number(r),android.text.Html.fromHtml((String)field(r,legacy(a)?"c":middle(a)?"d":"h")).toString());
             direct=PopularReplyRules.count(posts);
         }
         // Counts are per response, even when a response contains several links or anchors.
         for(Object r:source)if(response(r)) {
-            int references=PopularReplies.enabledFor(c)?direct.getOrDefault(number(r),0):((Number)field(r,legacy(a)?"r":middle(a)?"p":"s")).intValue();
-            if(references>=threshold)counts[0]++;
+            if(PopularReplies.directFor(c)&&direct.getOrDefault(number(r),0)>=threshold)counts[0]++;
             String[] urls;
             if(legacy(a)||middle(a))urls=(String[])call(r,"d",new Class<?>[0]);
             else urls=(String[])r.getClass().getClassLoader().loadClass("o.KeJ11$RemoteActionCompatParcelizer")
@@ -271,20 +285,26 @@ public final class ExtraQuickFilters {
             for(int i=0;i<3;i++)if(kinds[i])counts[i+1]++;
         }
         counts[4]=aa.size();counts[5]=mine.size();counts[6]=replies.size();
+        if(!PopularReplies.directFor(c)) {
+            PopularNativeRows.Snapshot nativeRows=PopularNativeRows.find(source);
+            counts[0]=nativeRows==null?-1:nativeRows.selected(threshold).size();
+        }
         s.aa=aa;s.mine=mine;s.replies=replies;s.counts=counts;s.failure=null;
     }
     private static boolean isImage226(ClassLoader loader,String url) throws Exception {
         return (Boolean)loader.loadClass("o.getColorFilter").getMethod("d",CharSequence.class).invoke(null,url);
     }
     private static int popularThreshold(Object a,Context c,List<?> source) throws Exception {
-        if(PopularReplies.enabledFor(c))return Math.max(1,Math.min(9999,c.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).getInt("popularReplyThreshold",3)));
+        if(PopularReplies.directFor(c))return PopularReplies.thresholdValue(c,3);
+        PopularNativeRows.Snapshot snapshot=PopularNativeRows.find(source);
+        if(snapshot!=null)return PopularReplies.thresholdValue(c,snapshot.threshold);
         if(legacy(a)||middle(a)) {
             Class<?> prefs=a.getClass().getClassLoader().loadClass("jp.syoboi.a2chMate.Prefs");
             Field f=prefs.getDeclaredField(legacy(a)?"M":"n");f.setAccessible(true);Object option=f.get(null);
             Method get=prefs.getDeclaredMethod(legacy(a)?"c":"d",f.getType());get.setAccessible(true);
-            return ((Number)get.invoke(null,option)).intValue();
+            return PopularReplies.thresholdValue(c,((Number)get.invoke(null,option)).intValue());
         }
-        synchronized(THRESHOLDS){for(Threshold t:THRESHOLDS)if(t.list.get()==source)return t.value;}
+        synchronized(THRESHOLDS){for(Threshold t:THRESHOLDS)if(t.list.get()==source)return PopularReplies.thresholdValue(c,t.value);}
         throw new IllegalStateException("Native popularity threshold unavailable");
     }
     public static Object modernSnapshot(Object a,Object snapshot) {
@@ -301,6 +321,26 @@ public final class ExtraQuickFilters {
         }catch(Exception e){state(a).failure=e;Log.e("Haiagaru","Modern extra filters",e);return snapshot;}
     }
     private static List<?> filterCollected(Object a,List<?> rows) throws Exception {
+            if(!PopularReplies.enabledFor(context(a))&&selected(a)[0]) {
+                List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
+                PopularNativeRows.Snapshot raw=PopularNativeRows.find(source);
+                if(raw==null)throw new IllegalStateException("Direct popularity layout unavailable");
+                int threshold=popularThreshold(a,context(a),source);
+                Set<Integer> matches;
+                if(PopularReplies.directFor(context(a))){
+                    Map<Integer,String> posts=new LinkedHashMap<>();
+                    for(Object r:source)if(response(r))posts.put(number(r),android.text.Html.fromHtml((String)field(r,legacy(a)?"c":middle(a)?"d":"h")).toString());
+                    Map<Integer,Integer> counts=PopularReplyRules.count(posts);matches=new HashSet<>();
+                    for(Map.Entry<Integer,Integer> entry:counts.entrySet())if(entry.getValue()>=threshold)matches.add(entry.getKey());
+                }else matches=raw.selected(threshold);
+                Set<Integer> seen=new HashSet<>();ArrayList<Object> directRows=new ArrayList<>();
+                Set<Integer> allowed=new HashSet<>();boolean[] selection=selected(a);
+                // Other native filters remain an intersection with the native output.
+                if(selection[1]||selection[2]||selection[3])for(Object row:rows){Object r=rowResponse(row);if(r!=null)allowed.add(number(r));}
+                for(Object row:raw.rows){Object r=rowResponse(row);if(r!=null&&matches.contains(number(r))
+                        &&(!(selection[1]||selection[2]||selection[3])||allowed.contains(number(r)))&&seen.add(number(r)))directRows.add(row);}
+                rows=directRows;
+            }
             State s=state(a);if(s.extra==0){refresh(a);return rows;}
             ArrayList<Object> kept=new ArrayList<>();Set<Integer> seen=new HashSet<>();
             for(Object row:rows) {
@@ -327,7 +367,7 @@ public final class ExtraQuickFilters {
     }
     private static String[] labels(Object a) {
         int[] counts=state(a).counts;String[] result=new String[7];
-        for(int i=0;i<7;i++)result[i]=QuickFilterOptions.counts()?counts[i]+"\n"+LABELS[i]:LABELS[i];return result;
+        for(int i=0;i<7;i++)result[i]=QuickFilterOptions.counts()?(counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;
     }
     public static boolean reset(Object fragment){
         RESETTING.set(true);

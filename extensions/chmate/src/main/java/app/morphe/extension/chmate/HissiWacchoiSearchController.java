@@ -1135,7 +1135,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         if(!FeatureSwitches.enabled("wacchoiSearchEnabled",true))throw new InterruptedException("検索は設定でオフになっています");
         File cache = cacheFile(address);
         byte[] cached=WacchoiPageCache.read(this,cache);
-        if(cached!=null)return new String(cached,Charset.forName("Shift_JIS"));
+        if(cached!=null)return HissiHtmlEncoding.decode(cached);
         requestBudget.check();
         SearchRequestPacing.await(address);
         if (cancelled || Thread.currentThread().isInterrupted()) throw new InterruptedException("停止しました");
@@ -1153,7 +1153,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             if (code < 200 || code >= 300) throw new IllegalStateException("Hissi応答 " + code);
             byte[] bytes;
             try (InputStream in = connection.getInputStream()) { bytes = readBytes(in); }
-            String text = new String(bytes, Charset.forName("Shift_JIS"));
+            String text = HissiHtmlEncoding.decode(bytes);
             WacchoiPageCache.write(this,cache,bytes);
             return text;
         } finally { connection.disconnect(); activeConnection = null; }

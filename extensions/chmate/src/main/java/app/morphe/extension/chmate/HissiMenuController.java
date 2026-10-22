@@ -324,6 +324,8 @@ public final class HissiMenuController extends ToolScreenController {
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 WebResourceResponse font = request == null ? null : monaFont(request.getUrl());
                 if (font != null) return font;
+                WebResourceResponse hissi = HissiWebResponse.intercept(request);
+                if (hissi != null) return hissi;
                 if (request != null && request.getUrl() != null
                         && isAdvertisingResource(request.getUrl().toString())) {
                     return emptyResource();
@@ -336,6 +338,8 @@ public final class HissiMenuController extends ToolScreenController {
                 try {
                     WebResourceResponse font = monaFont(Uri.parse(url));
                     if (font != null) return font;
+                    WebResourceResponse hissi = HissiWebResponse.intercept(url, java.util.Collections.emptyMap());
+                    if (hissi != null) return hissi;
                     if (isAdvertisingResource(url)) return emptyResource();
                 } catch (Throwable ignored) { }
                 return super.shouldInterceptRequest(view, url);

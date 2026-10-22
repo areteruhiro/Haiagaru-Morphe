@@ -25,6 +25,8 @@ public final class SettingsProfiles {
         for(String key:EXTRA_BOOLEAN)booleanKey(key);
         numberKey("videoPreviewMinimumSeconds",0,86459);
         numberKey("checkerHeaderPercent",10,60);
+        numberKey("popularReplyThreshold",1,9999);
+        numberKey("popularReplyStandardThreshold",1,9999);
         for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
         choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3)));
         RULES.put("settingsLanguage",v->"ja".equals(v)||"en".equals(v)||"system".equals(v));
@@ -35,7 +37,7 @@ public final class SettingsProfiles {
     private static final String[] EXTRA_BOOLEAN={
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled",
         "siteCardsEnabled","siteCardImages","patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
-        "popularReplyPopup","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","wacchoiSearchEnabled","wacchoiBackgroundSearch",
+        "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
         "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi","floatingQuickFilterButton"
