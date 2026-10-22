@@ -38,7 +38,7 @@ public final class SettingsProfiles {
         "popularReplyPopup","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
-        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi"
+        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi","floatingQuickFilterButton"
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
     static JSONObject exportData(Context c)throws JSONException{

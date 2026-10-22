@@ -42,6 +42,22 @@ public final class HiddenDroppedThreads {
         synchronized(nativeStatus){known=key==null?null:nativeStatus.get(key);}
         return Boolean.TRUE.equals(known)||DroppedThreadStatus.droppedUrl(url);
     }
+    private static void rememberDrop(Object row,Context context) {
+        try {
+            if(!dropped(row))return;
+            String key=threadKey(DroppedThreadStatus.rowUrl(row,context));if(key==null)return;
+            synchronized(nativeStatus){
+                if(nativeStatus.size()>=4096)nativeStatus.remove(nativeStatus.keySet().iterator().next());
+                nativeStatus.put(key,true);
+            }
+        } catch(Exception ignored) { /* URL lookup must not disable native flag filtering. */ }
+    }
+    private static boolean knownThreadDrop(Object row) {
+        try {
+            String key=threadKey(DroppedThreadStatus.rowUrl(row,Haiagaru.applicationContextForExtension()));
+            synchronized(nativeStatus){return Boolean.TRUE.equals(nativeStatus.get(key));}
+        } catch(Exception ignored) {return false;}
+    }
     private static boolean postHeading(Object row){
         if(row==null)return false;
         String name=row.getClass().getName();
@@ -79,16 +95,20 @@ public final class HiddenDroppedThreads {
         if(source==null||!target(mode)||!active)return source;
         try{
             Context context=Haiagaru.applicationContextForExtension();
-            for(Object row:source){if(row==null||postData(row)!=null)continue;
-                String key=threadKey(DroppedThreadStatus.rowUrl(row,context));if(key==null)continue;
-                synchronized(nativeStatus){if(nativeStatus.size()>=4096)nativeStatus.remove(nativeStatus.keySet().iterator().next());nativeStatus.put(key,dropped(row));}
-            }
+            // HOME history can hold an older copy with a zero flag. Zero means unknown,
+            // not proof of a live thread; never erase positive native evidence with it.
+            for(Object row:source)if(row!=null)rememberDrop(row,context);
             ArrayList<Object> out=new ArrayList<>();
             for(Object row:source){
-                Object post=Math.abs(mode)==104?postData(row):null;
-                boolean hide;
-                if(post!=null)hide=option(sent(post)?SENT:DRAFTS)&&knownPostDrop(post);
-                else hide=(Math.abs(mode)!=104||option(SENT))&&(dropped(row)||DroppedThreadStatus.dropped(row));
+                boolean hide=false;
+                try {
+                    Object post=Math.abs(mode)==104?postData(row):null;
+                    if(post!=null)hide=option(sent(post)?SENT:DRAFTS)&&knownPostDrop(post);
+                    else hide=(Math.abs(mode)!=104||option(SENT))&&(dropped(row)||knownThreadDrop(row)||DroppedThreadStatus.dropped(row));
+                } catch(Exception error) {
+                    // Keep only this unknown row, not every dropped row in the history.
+                    android.util.Log.w("Haiagaru","DAT-drop row left unchanged",error);
+                }
                 if(!hide)out.add(row);
             }
             if(Math.abs(mode)==104&&out.size()!=source.size()){

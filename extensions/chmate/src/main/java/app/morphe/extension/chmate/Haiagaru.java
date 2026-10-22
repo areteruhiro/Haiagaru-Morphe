@@ -4033,7 +4033,9 @@ public final class Haiagaru {
             LinearLayout form=new LinearLayout(activity);form.setOrientation(LinearLayout.VERTICAL);
             TextView help=new TextView(activity);
             help.setText("ドメイン完全一致。サブドメインは個別登録してください。登録先のリンクカードはVPNがオフ・未導入・失敗時には取得しません。画像VPNは別途導入・有効化が必要です。外部ブラウザは保護対象外です。");
-            form.addView(help);form.addView(input);
+            // A preceding TextView is treated as the EditText's floating label by
+            // the Compose form adapter. Keep this paragraph as separate body text.
+            form.addView(input);form.addView(help);
             Button save=new Button(activity);save.setText("保存");form.addView(save);
             HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("VPN取得の対象ドメイン")
                     .setView(form).setNegativeButton("閉じる",null).create();

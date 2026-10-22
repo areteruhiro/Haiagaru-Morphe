@@ -23,7 +23,6 @@ public final class ExtraQuickFilters {
     private static final Map<Object, WeakReference<Object>> FRAGMENTS = new WeakHashMap<>();
     private static final ArrayList<WeakReference<Object>> OWNERS = new ArrayList<>();
     private static final ArrayList<Threshold> THRESHOLDS = new ArrayList<>();
-    private static final Map<Activity,WeakReference<View>> BOTTOM_CONTROLS=new WeakHashMap<>();
     /** Called by the native toolbar dispatcher. Its anchor View is reused: never attach listeners to it. */
     public static boolean longClick(Object fragment,View button){
         if(button==null||button.getId()!=QuickFilterToolbar.ID)return false;
@@ -39,40 +38,7 @@ public final class ExtraQuickFilters {
             for(Object adapter:reset)try{rebuild(adapter);}catch(Exception error){Log.w("Haiagaru","Disable extra filters",error);}
         }
         for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){Bar bar=ref.get();if(bar!=null)bar.post(bar::update);}
-        Set<Activity> hosts=new HashSet<>(BOTTOM_CONTROLS.keySet());hosts.add(activity);
-        for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner!=null)try{
-            Activity host=(Activity)call(owner,"getActivity",new Class<?>[0]);if(host!=null)hosts.add(host);
-        }catch(Exception ignored){}}
-        for(Activity host:hosts)if(!host.isFinishing())updateBottomControl(host);
-    }
-    private static void updateBottomControl(Activity activity){
-        WeakReference<View> old=BOTTOM_CONTROLS.get(activity);View control=old==null?null:old.get();
-        if(!QuickFilterOptions.bottom()){
-            if(control!=null&&control.getParent() instanceof ViewGroup)((ViewGroup)control.getParent()).removeView(control);
-            BOTTOM_CONTROLS.remove(activity);return;
-        }
-        if(control!=null&&control.getParent()!=null)return;
-        View decor=activity.getWindow().getDecorView();if(!(decor instanceof FrameLayout))return;
-        Button button=new Button(activity);button.setText("フィルター ▴");button.setAllCaps(false);button.setTextSize(13);
-        FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(-2,-2,android.view.Gravity.BOTTOM|android.view.Gravity.END);
-        params.rightMargin=(int)(12*activity.getResources().getDisplayMetrics().density);
-        params.bottomMargin=(int)(80*activity.getResources().getDisplayMetrics().density);
-        button.setOnClickListener(v->{
-            for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner==null)continue;
-                try {if(call(owner,"getActivity",new Class<?>[0])==activity){View root=(View)call(owner,"getView",new Class<?>[0]);if(root!=null&&root.isShown()&&open(owner))return;}}catch(Exception ignored){}
-            }
-        });
-        ((ViewGroup)decor).addView(button,params);BOTTOM_CONTROLS.put(activity,new WeakReference<>(button));
-        android.view.ViewTreeObserver.OnGlobalLayoutListener watcher=()->{
-            boolean visible=false;
-            for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){Object owner=ref.get();if(owner==null)continue;try{if(call(owner,"getActivity",new Class<?>[0])==activity){View root=(View)call(owner,"getView",new Class<?>[0]);if(root!=null&&root.isShown()){visible=true;break;}}}catch(Exception ignored){}}
-            int target=visible&&QuickFilterOptions.bottom()?View.VISIBLE:View.GONE;if(button.getVisibility()!=target)button.setVisibility(target);
-        };
-        decor.getViewTreeObserver().addOnGlobalLayoutListener(watcher);
-        button.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
-            public void onViewAttachedToWindow(View view){}
-            public void onViewDetachedFromWindow(View view){if(decor.getViewTreeObserver().isAlive())decor.getViewTreeObserver().removeOnGlobalLayoutListener(watcher);}
-        });
+        for(WeakReference<Object> ref:new ArrayList<>(OWNERS))if(ref.get()!=null)FloatingFilterButton.update(ref.get());
     }
     private static void styleButton(ToggleButton button){
         float density=button.getResources().getDisplayMetrics().density;

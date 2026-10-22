@@ -126,6 +126,10 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         HaiagaruUi.showPlayer(this, root); root.requestApplyInsets();
         controls = new HaiagaruMediaController(this) {
             private Runnable unregisterControllerBack;
+            @Override public void setMediaPlayer(MediaController.MediaPlayerControl ignored) {
+                // VideoView reattaches itself on preparation. Always retain the active-player bridge.
+                super.setMediaPlayer(activePlayerControl());
+            }
             @Override public void show(int timeout) {
                 // VideoView and MediaController also request timed shows after touch/seek/play.
                 // Ignore every timeout so none of these paths schedule automatic dismissal.
@@ -182,6 +186,22 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             return false;
         });
         load();
+    }
+
+    private MediaController.MediaPlayerControl activePlayerControl() {
+        return new MediaController.MediaPlayerControl() {
+            public void start() { if(gifFallback!=null)gifFallback.play();else video.start(); }
+            public void pause() { if(gifFallback!=null)gifFallback.pause();else video.pause(); }
+            public int getDuration() { return gifFallback!=null?(int)Math.max(0,gifFallback.getDuration()):video.getDuration(); }
+            public int getCurrentPosition() { return gifFallback!=null?(int)gifFallback.getCurrentPosition():video.getCurrentPosition(); }
+            public void seekTo(int value) { if(gifFallback!=null)gifFallback.seekTo(value);else video.seekTo(value); }
+            public boolean isPlaying() { return gifFallback!=null?gifFallback.isPlaying():video.isPlaying(); }
+            public int getBufferPercentage() { return gifFallback!=null?gifFallback.getBufferedPercentage():video.getBufferPercentage(); }
+            public boolean canPause() { return gifFallback!=null||video.canPause(); }
+            public boolean canSeekBackward() { return gifFallback!=null||video.canSeekBackward(); }
+            public boolean canSeekForward() { return gifFallback!=null||video.canSeekForward(); }
+            public int getAudioSessionId() { return gifFallback!=null?gifFallback.getAudioSessionId():video.getAudioSessionId(); }
+        };
     }
 
     private Button overlayButton(String label) {
@@ -317,9 +337,6 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         return super.dispatchTouchEvent(event);
     }
     void toggleControls() {
-        if(gifFallbackView!=null){
-            toolbar.setVisibility(toolbar.getVisibility()==View.VISIBLE?View.INVISIBLE:View.VISIBLE);return;
-        }
         if (controls == null) return;
         if (controls.isShowing()) controls.hide(); else controls.show(0);
     }

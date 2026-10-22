@@ -2,6 +2,7 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.widget.LinearLayout;
 import android.widget.Switch;
+import android.widget.TextView;
 /** Display-only options, independent of native filter states. */
 final class QuickFilterOptions {
     static boolean counts(){return FeatureSwitches.enabled("quickFilterCounts",true);}
@@ -15,6 +16,8 @@ final class QuickFilterOptions {
         add(root,activity,"quickFilterMine","自分フィルターを追加",true);
         add(root,activity,"quickFilterReplies","返信フィルターを追加",true);
         add(root,activity,"bottomQuickFilterPanel","下部フィルターパネルを使う（外側タップで閉じる）",false);
+        add(root,activity,"floatingQuickFilterButton","フィルターのフローティングボタンを表示",false);
+        TextView help=new TextView(activity);help.setText("下部フィルターパネルがオンのときに表示します。長押ししてドラッグすると位置を変更できます。非表示でもツールバーから開けます。");root.addView(help);
     }
     static void showToolbarSettings(Activity activity){
         LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);addSettings(panel,activity);
