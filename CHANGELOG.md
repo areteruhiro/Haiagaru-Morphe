@@ -1,3 +1,14 @@
+# Haiagaru 1.12.0-dev.4
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.4/docs/release-next-prerelease.md)
+
+高度なNGの使用例は案内ページに掲載しています。追加ダウンロード資材としては添付しません。
+
+
+### ✨ New Features
+
+* improve Hissi and popular replies ([9d199da](https://github.com/areteruhiro/Haiagaru-Morphe/commit/9d199da0c599f62b7b7b8d3f0816b956cfce584f))
+
 # Haiagaru 1.12.0-dev.3
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.3/docs/release-next-prerelease.md)
