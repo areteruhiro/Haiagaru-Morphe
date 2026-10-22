@@ -25,7 +25,7 @@
 これはImage NGではなく、**画像取得専用VPNの追加ファイル**のエラーです。`haiagaru-image-ng.zip` にはVPNは入っていません。
 
 - VPNを使わない場合: 「画像取得専用VPN（実験用・検証中）」のチェックを外してください。Image NG用ZIPはHaiagaruの191画像判定オプションで選択したままで構いません。
-- VPNも使う場合: [VPN用haiagaru-image-vpn-v2.zip](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest/download/haiagaru-image-vpn-v2.zip)を保存し、**VPN側のファイル選択**で指定してください。以前のパッチ向けに従来名のZIPも配布します。ZIP対応前のパッチでは、下の従来AARを使います。
+- VPNも使う場合: [VPN用haiagaru-image-vpn-v2.zip](https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.12.0-dev.4/haiagaru-image-vpn-v2.zip)を保存し、**VPN側のファイル選択**で指定してください。以前のパッチ向けに従来名のZIPも配布します。ZIP対応前のパッチでは、下の従来AARを使います。
 
 ZIPはどちらも展開せず選びます。ファイル名を変更して代用しても、内容が違うため適用できません。
 
