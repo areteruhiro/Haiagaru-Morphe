@@ -223,7 +223,8 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
                     Column(Modifier.fillMaxWidth().heightIn(min = (48f + (archiveLayout - 50) * .16f).dp)
                         .padding(horizontal = 12.dp, vertical = (4f + (archiveLayout - 50) * .16f).dp),
                         verticalArrangement = Arrangement.Center) {
-                        Text(title.ifBlank { "入力" }, style = MaterialTheme.typography.labelSmall,
+                        Text(title.ifBlank { "入力" }, style = MaterialTheme.typography.labelSmall, maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         input()
                     }
@@ -236,7 +237,8 @@ internal fun BoundTextField(view: EditText, title: String, enabled: Boolean = vi
         value = it
         if (it.text != view.text.toString()) view.setText(it.text)
         changed()
-    }, label = { Text(title.ifBlank { "入力" }) },
+    }, label = { Text(title.ifBlank { "入力" }, maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         enabled = enabled, singleLine = view.maxLines == 1,
         minLines = if (view.maxLines == 1) 1 else view.minLines.coerceIn(1, 12),

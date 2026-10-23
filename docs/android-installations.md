@@ -1,5 +1,13 @@
 # Android導入・署名台帳
 
+## 2026-10-23 日付入力・設定表示を含む最終候補191/242
+
+emulator-5554で署名照合install-r成功。最終はprerelease-final-ui191.apk / prerelease-final-ui242.apk。表示名、package、APK/MPP絶対ルートとSHA-256、署名鍵は[archive-date-input-20261023.md](archive-date-input-20261023.md)参照。実機への導入は行っていない。
+
+## 2026-10-23 左ペインのチェッカースワイプ対策（未公開）
+
+emulator-5554の既存191/242検証版を署名照合してinstall-r成功。APK/MPP絶対パス、SHA-256、鍵、packageと検証範囲は[checker-swipe-tablet-20261023.md](checker-swipe-tablet-20261023.md)に記録。実機への導入は行っていない。
+
 ## 2026-10-23 タブ追加先・GIF・NG軽量化・チェッカー高さ（未公開）
 
 emulator-5554へ既存署名を照合して更新。各版のpackage、APK/MPP絶対パスの共通ルートとSHA-256、署名鍵、導入結果は[pane-gif-checker-ng-20261023.md](pane-gif-checker-ng-20261023.md)の導入記録を参照。最新は191=gif-ng-pane191.apk、226=pane-choice226.apk、242=checker-dialog-final242.apk。実機への導入・Release更新は行っていない。

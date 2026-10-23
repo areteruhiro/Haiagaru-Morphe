@@ -16,6 +16,7 @@ abstract class ToolScreenController extends ContextThemeWrapper {
     private final Runnable back;
     private final Consumer<View> render;
     private boolean closed;
+    private boolean finishPending;
     ToolScreenController(Activity host,Intent intent,boolean embedded,Runnable back,Consumer<View> render){
         super(SettingsTabUi.context(host),android.R.style.Theme_Material_Light_NoActionBar);
         this.host=host;this.intent=new Intent(intent);this.embedded=embedded;this.back=back;this.render=render;
@@ -25,7 +26,15 @@ abstract class ToolScreenController extends ContextThemeWrapper {
     final Window getWindow(){return host.getWindow();}
     final boolean isFinishing(){return closed||host.isFinishing();}
     final boolean isDestroyed(){return closed||host.isDestroyed();}
-    final void finish(){back.run();}
+    final void finish(){
+        if(closed||finishPending)return;
+        finishPending=true;
+        // A WebView/Compose callback may still be dispatching its touch event.
+        // Do not detach its view tree or destroy the browser on that call stack.
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+            if(!isDestroyed()&&!host.isFinishing())back.run();
+        });
+    }
     final void runOnUiThread(Runnable action){host.runOnUiThread(()->{if(!isDestroyed())action.run();});}
     final void requestPermissions(String[] permissions,int code){host.requestPermissions(permissions,code);}
     final void showModel(String title,View model){

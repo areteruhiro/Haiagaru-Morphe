@@ -3799,7 +3799,6 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
-
         Switch removeMonaKey = addSwitch(
                 layout,
                 activity,
@@ -3903,7 +3902,6 @@ public final class Haiagaru {
                 () -> addBoardDuplicateCleanupControl(activity, layout)
         );
 
-        
         live.toggle(removeMonaKey,"removeMonaKey");live.string(cookieClass,"cookieClass");
         live.string(monaKeyFile,"prefMonaKeyFile");live.string(monaKeyName,"prefMonaKeyName");
         live.string(adClass,"adClass");live.toggle(chtoio,"chtoio");

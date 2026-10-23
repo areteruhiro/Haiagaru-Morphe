@@ -287,15 +287,15 @@ public final class NativeToolTabs {
             content.save(new Bundle());return content;
         }
         if("settings".equals(tool(args)))return new SettingsContent(activity,args,restored,fragment);
-        return new SearchContent(activity,args,restored,tool(args));
+        return new SearchContent(activity,args,restored,tool(args),fragment);
     }
     private static final class SearchContent extends Content {
-        private final Activity activity;private final Bundle args;private final String tool;
+        private final Activity activity;private final Bundle args;private final String tool;private final Object fragment;
         private ToolScreenController controller;
         private boolean closed;
         private int renderVersion;
-        SearchContent(Activity activity,Bundle args,Bundle restored,String tool){
-            super(new FrameLayout(activity));this.activity=activity;this.args=args;this.tool=tool;
+        SearchContent(Activity activity,Bundle args,Bundle restored,String tool,Object fragment){
+            super(new FrameLayout(activity));this.activity=activity;this.args=args;this.tool=tool;this.fragment=fragment;
             Intent launch=new Intent();Bundle state=restored;
             try{
                 org.json.JSONObject saved=new org.json.JSONObject(args.getString(Intent.EXTRA_TEXT,"{}"));
@@ -323,9 +323,13 @@ public final class NativeToolTabs {
         private void create(Intent launch,Bundle state){
             if("checker".equals(tool)||"hissi".equals(tool))launch.putExtra("haiagaru.native.hissiViewer",true);
             if(controller!=null){controller.pause();controller.close();}
-            controller=("checker".equals(tool)||"hissi".equals(tool))?new HissiMenuController(activity,launch,true,()->back(activity),this::render):
-                new HissiWacchoiSearchController(activity,launch,true,()->back(activity),this::render);
+            controller=("checker".equals(tool)||"hissi".equals(tool))?new HissiMenuController(activity,launch,true,this::closeTab,this::render):
+                new HissiWacchoiSearchController(activity,launch,true,this::closeTab,this::render);
             controller.create(state);
+        }
+        private void closeTab(){
+            if(closed)return;
+            if(!closeCurrentTab(activity,fragment))Toast.makeText(activity,"この画面のタブを閉じられませんでした",Toast.LENGTH_SHORT).show();
         }
         private void showAddressForm(){
             LinearLayout form=new LinearLayout(activity);form.setOrientation(1);
@@ -337,8 +341,8 @@ public final class NativeToolTabs {
                 create(new Intent(Intent.ACTION_VIEW,uri),null);controller.resume();});
             if("hissi".equals(tool)){
                 TextView heading=new TextView(activity);heading.setText("必死チェッカー · ChMateビュー");heading.setTextSize(18);form.addView(heading,0);
-                render(ToolScreenUi.model(activity,"",form,()->back(activity),false));
-            }else render(ToolScreenUi.model(activity,"",form,()->back(activity),false));
+                render(ToolScreenUi.model(activity,"",form,this::closeTab,false));
+            }else render(ToolScreenUi.model(activity,"",form,this::closeTab,false));
         }
         @Override void resume(){if(controller!=null)controller.resume();}
         @Override void pause(){if(controller!=null)controller.pause();}

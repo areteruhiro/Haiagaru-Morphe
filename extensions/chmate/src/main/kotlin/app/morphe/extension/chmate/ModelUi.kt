@@ -88,12 +88,12 @@ internal fun weightedSurface(root: View?): Int? = if (root is LinearLayout)
         Column(Modifier.fillMaxSize()) {
             if (index > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                 .verticalScroll(rememberScrollState())) {
-                for (i in 0 until index) ModelContent(root.getChildAt(i), revision, changed = changed)
+                for (i in 0 until index) ModelContent(root.getChildAt(i), revision, insideScroll = true, changed = changed)
             }
             ModelContent(root.getChildAt(index), revision, Modifier.weight(1f), changed = changed)
             if (index + 1 < root.childCount) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                 .verticalScroll(rememberScrollState())) {
-                for (i in index + 1 until root.childCount) ModelContent(root.getChildAt(i), revision, changed = changed)
+                for (i in index + 1 until root.childCount) ModelContent(root.getChildAt(i), revision, insideScroll = true, changed = changed)
             }
         }
     }
@@ -308,7 +308,10 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                 Column(Modifier.fillMaxWidth().heightIn(max = formHeight).verticalScroll(rememberScrollState())) {
                     val form = root.getChildAt(1) as LinearLayout
                     if (form.visibility == View.VISIBLE) for (index in 0 until form.childCount) {
-                        ModelContent(form.getChildAt(index), revision, changed = changed)
+                        // This form already owns vertical scrolling. Flatten the
+                        // model's advanced-options ScrollView so focus relocation
+                        // cannot make two nested scrollers fight on every keystroke.
+                        ModelContent(form.getChildAt(index), revision, insideScroll = true, changed = changed)
                     }
                 }
                 Text((root.getChildAt(2) as TextView).text.toString(),
@@ -364,12 +367,12 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                 Column(Modifier.fillMaxSize()) {
                     if (surfaceIndex > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                         .verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
-                        for (index in 0 until surfaceIndex) ModelContent(root.getChildAt(index), revision) { localRevision++ }
+                        for (index in 0 until surfaceIndex) ModelContent(root.getChildAt(index), revision, insideScroll = true) { localRevision++ }
                     }
                     ModelContent(root.getChildAt(surfaceIndex), revision, Modifier.weight(1f)) { localRevision++ }
                     if (surfaceIndex + 1 < root.childCount) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                         .verticalScroll(rememberScrollState())) {
-                        for (index in surfaceIndex + 1 until root.childCount) ModelContent(root.getChildAt(index), revision) { localRevision++ }
+                        for (index in surfaceIndex + 1 until root.childCount) ModelContent(root.getChildAt(index), revision, insideScroll = true) { localRevision++ }
                     }
                 }
             }

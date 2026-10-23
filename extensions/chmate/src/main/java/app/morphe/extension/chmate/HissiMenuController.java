@@ -269,12 +269,18 @@ public final class HissiMenuController extends ToolScreenController {
                 float minimum = 96 * getResources().getDisplayMetrics().density;
                 if (Math.abs(dx) >= minimum && Math.abs(dy) < Math.abs(dx) * 0.45f) {
                     boolean goForward = (dx > 0) == (Haiagaru.hissiViewerSwipeHistory() == 1);
-                    if (goForward && webView.canGoForward()) {
-                        webView.goForward();
-                    } else if (!goForward) {
-                        if (webView.canGoBack()) webView.goBack();
+                    // We consume UP; explicitly finish WebView's gesture before
+                    // changing history or removing its owning tab. Chromium must
+                    // not be destroyed while dispatchTouchEvent is on the stack.
+                    MotionEvent cancel=MotionEvent.obtain(event);
+                    cancel.setAction(MotionEvent.ACTION_CANCEL);
+                    try{webView.onTouchEvent(cancel);}finally{cancel.recycle();}
+                    webView.post(()->{
+                        if(isDestroyed()||isFinishing()||viewerWebView!=webView)return;
+                        if(goForward){if(webView.canGoForward())webView.goForward();}
+                        else if(webView.canGoBack())webView.goBack();
                         else finish();
-                    }
+                    });
                     return true;
                 }
             }
