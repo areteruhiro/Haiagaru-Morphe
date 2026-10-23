@@ -47,6 +47,7 @@ private fun modelFingerprint(view: View?): Long {
     if (view == null) return 0L
     var value = System.identityHashCode(view).toLong()
     value = value * 31 + System.identityHashCode(view.getTag(0x48690b03))
+    value = value * 31 + (view.getTag(HissiMenuController.TOOLBAR_HEIGHT_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.CONTROL_SCALE_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.REFRESH_ENABLED_TAG)?.hashCode() ?: 0)
@@ -81,7 +82,7 @@ internal fun weightedSurface(root: View?): Int? = if (root is LinearLayout)
 @Composable internal fun BrowserModel(root: LinearLayout, revision: Int, modifier: Modifier, changed: () -> Unit) {
     val index = weightedSurface(root) ?: return
     BoxWithConstraints(modifier) {
-        val percent = if (root.context is HissiMenuActivity)
+        val percent = if (root.getTag(HissiMenuController.CHECKER_LAYOUT_TAG) == true || root.context is HissiMenuActivity)
             root.context.getSharedPreferences(WacchoiSearchOptions.PREFS, 0).getInt("checkerHeaderPercent", 30).coerceIn(10, 60) else 30
         val controlsHeight = maxHeight * (percent / 100f)
         Column(Modifier.fillMaxSize()) {
@@ -208,14 +209,17 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
             (0 until view.childCount).all { (view.getChildAt(it) is Button && view.getChildAt(it) !is CompoundButton) || view.getChildAt(it).javaClass == View::class.java }) {
             val scale = LocalArchiveControlLayout.current
             val compact = scale < 100
+            val toolbarHeight = (view.getTag(HissiMenuController.TOOLBAR_HEIGHT_TAG) as? Int)?.coerceIn(32, 56)
+            val effectiveHeight = toolbarHeight?.let { maxOf(it.toFloat(), 20f * LocalDensity.current.fontScale + 8f).dp }
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides (if (toolbarHeight != null) 0.dp else LocalMinimumInteractiveComponentSize.current)) {
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy((8f * scale / 100f).dp)) {
                 for (index in 0 until view.childCount) {
                     val button = view.getChildAt(index) as? Button ?: continue
                     if (button.visibility == View.VISIBLE) {
                         val release = button.getTag(0x48690b01) as? Runnable
                         if (release == null) TextButton(onClick = { button.performClick(); changed() }, enabled = button.isEnabled,
-                            contentPadding = if (compact) PaddingValues(horizontal = (8f + (scale - 50) * .16f).dp, vertical = ((scale - 50) * .16f).dp) else ButtonDefaults.TextButtonContentPadding,
-                            modifier = Modifier.heightIn(min = 48.dp)) { Text(button.text.toString()) }
+                            contentPadding = if (toolbarHeight != null) PaddingValues(horizontal = 8.dp) else if (compact) PaddingValues(horizontal = (8f + (scale - 50) * .16f).dp, vertical = ((scale - 50) * .16f).dp) else ButtonDefaults.TextButtonContentPadding,
+                            modifier = if (effectiveHeight != null) Modifier.height(effectiveHeight) else Modifier.heightIn(min = 48.dp)) { Text(button.text.toString()) }
                         else Text(button.text.toString(), style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.padding(12.dp).pointerInput(button) {
                                 detectTapGestures(onTap = { if (button.isEnabled) { button.performClick(); changed() } },
@@ -224,6 +228,7 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                             })
                     }
                 }
+            }
             }
         } else ModelChildren(view, revision, insideScroll, changed)
         is ScrollView -> {
@@ -352,7 +357,10 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
         if (root is LinearLayout && surfaceIndex != null) {
             // A WebView owns its vertical scrolling. Never measure it inside verticalScroll.
             BoxWithConstraints(Modifier.fillMaxSize().padding(insets).imePadding()) {
-                val controlsHeight = maxHeight * .35f
+                val checker = root.getTag(HissiMenuController.CHECKER_LAYOUT_TAG) == true
+                val percent = if (checker) root.context.getSharedPreferences(WacchoiSearchOptions.PREFS, 0)
+                    .getInt("checkerHeaderPercent", 30).coerceIn(10, 60) else 35
+                val controlsHeight = maxHeight * (percent / 100f)
                 Column(Modifier.fillMaxSize()) {
                     if (surfaceIndex > 0) Column(Modifier.fillMaxWidth().heightIn(max = controlsHeight)
                         .verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {

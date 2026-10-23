@@ -96,9 +96,16 @@ class HaiagaruDialog private constructor(private val spec: Builder) :
     }
 
     private fun dismissNow() {
+        if (dismissed) return
         dismissed = true
         traceWindow("dismiss-enter")
-        super.dismiss()
+        try {
+            super.dismiss()
+        } catch (detached: IllegalArgumentException) {
+            // Activity/window cleanup can remove this decor before our queued
+            // dismissal runs. Do not turn an already detached dialog into a crash.
+            if (window?.decorView?.isAttachedToWindow == true) throw detached
+        }
         composeContent?.disposeComposition()
         removeDismissedWindow()
         traceWindow("dismiss-exit")

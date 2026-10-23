@@ -38,6 +38,13 @@ public final class HiddenNgUnreadNativeRowTest {
    Field thread=DroppedThreadsAndroidTest.field(row,old?"h":middle?"g":"b");long originalThread=thread.getLong(row);
    try{thread.setLong(row,1999999999L);
     if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("Reused row kept previous thread key");checks++;
+    Field keysField=hook.getDeclaredField("ROW_KEYS");keysField.setAccessible(true);Map keys=(Map)keysField.get(null);
+    Object cached=keys.get(System.identityHashCode(row));started=System.nanoTime();
+    for(int i=0;i<1000;i++){thread.setLong(row,1999999000L+i);
+     if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("Unrelated row changed");}
+    long unrelatedMs=(System.nanoTime()-started)/1000000;
+    if(keys.get(System.identityHashCode(row))!=cached)throw new AssertionError("Unrelated rows regenerated URL keys");checks++;
+    System.out.println("UNREAD_UNRELATED_1000_MS="+unrelatedMs);
    }finally{thread.setLong(row,originalThread);}
    p.edit().putBoolean(option,false).commit();
    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("OFF native value");checks++;

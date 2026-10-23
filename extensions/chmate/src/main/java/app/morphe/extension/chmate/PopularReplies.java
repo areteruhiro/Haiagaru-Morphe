@@ -15,6 +15,8 @@ public final class PopularReplies {
     private static final ArrayList<WeakReference<Object>> FRAGMENTS = new ArrayList<>();
     private static final ThreadLocal<Boolean> RESETTING = new ThreadLocal<>();
     private static final java.util.concurrent.ExecutorService WORKER=java.util.concurrent.Executors.newSingleThreadExecutor();
+    private static final Object NO_BASE=new Object();
+    private static final java.util.concurrent.ConcurrentMap<Class<?>,Object> BASE_FIELDS=new java.util.concurrent.ConcurrentHashMap<>();
     public static void register(Object fragment) {
         FRAGMENTS.removeIf(ref -> ref.get()==null || ref.get()==fragment);
         FRAGMENTS.add(new WeakReference<>(fragment));
@@ -94,8 +96,15 @@ public final class PopularReplies {
     }
     static List<?> fullList(Object value) throws Exception {
         if(!(value instanceof List))throw new IllegalStateException("読み込み済みレスがありません");
-        Object base;
-        try { base=ResponseArchiveEntry.field(value,"mBase"); } catch(NoSuchFieldException ignored){base=null;}
+        Object cached=BASE_FIELDS.get(value.getClass());
+        if(cached==null){
+            cached=NO_BASE;
+            for(Class<?> type=value.getClass();type!=null;type=type.getSuperclass())try{
+                Field f=type.getDeclaredField("mBase");f.setAccessible(true);cached=f;break;
+            }catch(NoSuchFieldException ignored){}
+            BASE_FIELDS.put(value.getClass(),cached);
+        }
+        Object base=cached instanceof Field?((Field)cached).get(value):null;
         return base instanceof List ? (List<?>)base : (List<?>)value;
     }
     static void show(Object fragment) {

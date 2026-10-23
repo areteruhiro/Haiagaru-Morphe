@@ -27,8 +27,24 @@ public final class HiddenNgUnread {
         RowKey(Object row,String signature,String key){this.row=new java.lang.ref.WeakReference<>(row);this.signature=signature;this.key=key;}
     }
     private static final Map<String,Set<Integer>> HIDDEN=new LinkedHashMap<String,Set<Integer>>(32,.75f,true){
+        @Override public Set<Integer> put(String key,Set<Integer> value){candidateIds=null;return super.put(key,value);}
+        @Override public Set<Integer> remove(Object key){candidateIds=null;return super.remove(key);}
+        @Override public void clear(){candidateIds=null;super.clear();}
         @Override protected boolean removeEldestEntry(Map.Entry<String,Set<Integer>> e){return size()>128;}
     };
+    // Negative prefilter only: different boards can share a numeric thread ID,
+    // so positive matches still use the exact board/URL key below.
+    private static Set<Long> candidateIds;
+    private static Set<Long> candidateThreads(){
+        if(candidateIds!=null)return candidateIds;
+        Set<Long> ids=new HashSet<>();
+        for(Map.Entry<String,Set<Integer>> entry:HIDDEN.entrySet())if(!entry.getValue().isEmpty()){
+            String key=entry.getKey();
+            try{ids.add(Long.parseLong(key.substring(key.lastIndexOf('/')+1)));}
+            catch(RuntimeException unknown){return null;} // Unknown keys must never hide an adjustment.
+        }
+        return candidateIds=ids;
+    }
     // Opening/closing a thread can ask for its unread total repeatedly. Cache the
     // hidden response numbers as a sorted array and answer each read-position query
     // with binary search instead of scanning every hidden response on the UI path.
@@ -89,7 +105,7 @@ public final class HiddenNgUnread {
                 if(n>0&&rows.size()<100000){boolean changed=(flags&0x1000)!=0?rows.add(n):rows.remove(n);if(changed)invalidate(k);}}
         }catch(Exception ignored){}return flags;
     }
-    private static void invalidate(String key){SORTED.remove(key);}
+    private static void invalidate(String key){SORTED.remove(key);candidateIds=null;}
     private static int[] sorted(String key,Set<Integer> hidden){
         int[] values=SORTED.get(key);if(values!=null)return values;
         values=new int[hidden.size()];int i=0;for(Integer n:hidden)values[i++]=n;
@@ -140,7 +156,18 @@ public final class HiddenNgUnread {
         int nativeTotal;
         try{nativeTotal=((Number)field(row,total)).intValue();}catch(Exception e){throw new IllegalStateException(e);}
         if(!enabled()||nativeTotal<=read)return nativeTotal;
-        synchronized(HIDDEN){if(HIDDEN.isEmpty())return nativeTotal;}
+        synchronized(HIDDEN){
+            if(HIDDEN.isEmpty())return nativeTotal;
+            // HOME can contain thousands of unrelated threads. Avoid creating
+            // their native thread model and URL just to discover no hidden NG.
+            Set<Long> candidates=candidateThreads();
+            if(candidates!=null){
+                if(candidates.isEmpty())return nativeTotal;
+                String threadField=name.equals("o.onAdDisplayed$setIcon")?"h":name.equals("o.Yy2$open")?"g":name.equals("o.getAvailabilityStatus$r8lambdawJ5MHcSJed_CjC7r4OWD0UxyJsQ")?"b":null;
+                if(threadField!=null)try{if(!candidates.contains(((Number)field(row,threadField)).longValue()))return nativeTotal;}
+                catch(Exception unknown){/* Fall back to the exact URL lookup. */}
+            }
+        }
         try{Context c=Haiagaru.applicationContextForExtension();
             String k=rowKey(row,name,c);synchronized(HIDDEN){Set<Integer> hidden=HIDDEN.get(k);if(hidden==null||hidden.isEmpty())return nativeTotal;
                 int count=unreadHidden(k,read,nativeTotal,hidden);return Math.max(Math.min(read,nativeTotal),nativeTotal-count);}

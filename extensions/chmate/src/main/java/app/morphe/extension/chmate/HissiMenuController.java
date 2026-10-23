@@ -47,6 +47,8 @@ import java.util.List;
 
 /** Displays the Hissi menu destination inside ChMate's task. */
 public final class HissiMenuController extends ToolScreenController {
+    public static final int CHECKER_LAYOUT_TAG=0x48690b07;
+    public static final int TOOLBAR_HEIGHT_TAG=0x48690b08;
     HissiMenuController(Activity host,Intent intent,boolean embedded,Runnable back,java.util.function.Consumer<View> render){
         super(host,intent,embedded,back,render);
     }
@@ -203,6 +205,7 @@ public final class HissiMenuController extends ToolScreenController {
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setTag(CHECKER_LAYOUT_TAG, Boolean.TRUE);
         rootLayout = layout;
         boolean fullscreen = Haiagaru.hissiViewerFullscreen();
         if (!embedded && fullscreen) {
@@ -554,6 +557,7 @@ public final class HissiMenuController extends ToolScreenController {
 
     private LinearLayout createViewerToolbar(final WebView webView) {
         LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setTag(TOOLBAR_HEIGHT_TAG, Haiagaru.hissiViewerToolbarHeightDp());
         toolbar.setOrientation(LinearLayout.HORIZONTAL);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
         int compactPadding = Math.max(0, Math.round((Haiagaru.hissiViewerToolbarHeightDp() - 32) / 8f));
@@ -745,6 +749,7 @@ public final class HissiMenuController extends ToolScreenController {
     }
 
     private void updateViewerToolbarHeight(LinearLayout toolbar, int heightDp) {
+        toolbar.setTag(TOOLBAR_HEIGHT_TAG, heightDp);
         int px = Math.round(heightDp * getResources().getDisplayMetrics().density);
         ViewGroup.LayoutParams params = toolbar.getLayoutParams();
         if (params != null) { params.height = px; toolbar.setLayoutParams(params); }

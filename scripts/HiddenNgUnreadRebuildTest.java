@@ -13,6 +13,8 @@ public final class HiddenNgUnreadRebuildTest {
  }
  public static final class State { public Board j=new Board(); }
  public static final class Owner { public List<Response> J=new ArrayList<>();public State E=new State(); }
+ public static class Wrapped extends ArrayList<Response>{ public List<Response> mBase; }
+ public static final class InheritedWrapped extends Wrapped{}
  static Object invoke(String name,Class<?>[] types,Object...args)throws Exception{
   Method m=HiddenNgUnread.class.getDeclaredMethod(name,types);m.setAccessible(true);return m.invoke(null,args);
  }
@@ -51,8 +53,19 @@ public final class HiddenNgUnreadRebuildTest {
    for(int pass=0;pass<50;pass++){begin.invoke(null,owner);for(Response r:owner.J)observe.invoke(null,owner,r,r.o%10==0?0x1000:0);}
    long legacyMs=(System.nanoTime()-started)/1000000;
    if(((Set)all.get(actual)).size()!=100)throw new AssertionError("Legacy rebuild count");checks++;
+   // Remove the synthetic, nonnumeric key before checking the numeric prefilter.
+   all.remove(key);
+   Set<Long> candidates=(Set<Long>)invoke("candidateThreads",new Class[0]);
+   if(candidates==null||!candidates.contains(1999999988L))throw new AssertionError("Active thread not indexed");checks++;
+   InheritedWrapped wrapped=new InheritedWrapped();wrapped.mBase=owner.J;
+   if(PopularReplies.fullList(wrapped)!=owner.J)throw new AssertionError("Inherited base list");checks++;
+   wrapped.mBase=Collections.emptyList();
+   if(!PopularReplies.fullList(wrapped).isEmpty())throw new AssertionError("Base field cached its old value");checks++;
+   if(PopularReplies.fullList(owner.J)!=owner.J)throw new AssertionError("Plain list fallback");checks++;
    begin.invoke(null,owner);for(Response r:owner.J)observe.invoke(null,owner,r,0);
    if(!((Set)all.get(actual)).isEmpty())throw new AssertionError("Legacy NG removal");checks++;
+   candidates=(Set<Long>)invoke("candidateThreads",new Class[0]);
+   if(candidates!=null&&candidates.contains(1999999988L))throw new AssertionError("Removed NG retained candidate");checks++;
    // Only begin() runs while this marker is present; no HOME-row lookup is invoked.
    Object marker=new Object();
    synchronized(rowKeys){Object previous=rowKeys.put(Integer.MIN_VALUE,marker);try{

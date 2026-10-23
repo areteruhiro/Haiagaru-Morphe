@@ -3471,7 +3471,7 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         Switch nativeTabs = addSwitch(layout, activity,
-                text("タブレットで追加画面を本体のスレタブで開く", "Open extra screens in native tablet tabs"),
+                text("タブレットの追加画面をホーム側のタブで開く", "Open extra tablet screens in HOME tabs"),
                 preferences.getBoolean(NativeToolTabs.KEY, false));
         live.toggle(nativeTabs, NativeToolTabs.KEY);
         Switch nativeSettingsTab = addSwitch(layout, activity,
@@ -3496,16 +3496,16 @@ public final class Haiagaru {
         toolTabHeight.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         live.number(toolTabHeight, NativeToolTabs.HEADER_HEIGHT_KEY, 32, 64);
         TextView nativeTabsHelp = new TextView(activity);
-        nativeTabsHelp.setText(text("専用ビューアは上の設定がオフでも、本体のスレと同じタブ列で開きます。各「タブ表示する画面」をオフにすると、その画面は別画面で開きます。Haiagaru設定のタブ表示には上の設定もオンにしてください。変更は次に開く画面から反映され、開いているタブは自動では閉じません。",
-                "Dedicated viewers open alongside thread tabs even when the switch above is off. Turn off an individual screen to open it separately. Tabbed Haiagaru settings still require the switch above. Changes affect newly opened screens; existing tabs remain open."));
+        nativeTabsHelp.setText(text("オンはホーム側、オフはスレ側のタブ列に追加します。各「タブ表示する画面」をオフにした画面は別画面で開きます。「画面を新しいタブに追加」の手動追加も同じ追加先を使います。変更は次に開く画面から反映され、既存のタブは自動では移動しません。",
+                "On adds screens to HOME tabs; off adds them to thread tabs. Individual screen switches control automatic tab opening. Manual additions use the same pane selection. Existing tabs are not moved."));
         layout.addView(nativeTabsHelp);
         Button addToolTab = new Button(activity);
         addToolTab.setText(text("画面を新しいタブに追加", "Add a screen in a new tab"));
         addToolTab.setOnClickListener(view -> NativeToolTabs.showChooser(activity));
         layout.addView(addToolTab);
         TextView addToolTabHelp = new TextView(activity);
-        addToolTabHelp.setText(text("タブレット表示で使えます。自動でタブ表示する設定がオフでも、画面を選んで本体のスレタブと同じ列へ手動で追加できます。",
-                "In tablet mode, manually add any screen alongside thread tabs, even when automatic tab opening is off."));
+        addToolTabHelp.setText(text("タブレット表示で使えます。各画面の自動タブ表示がオフでも手動追加できます。追加先は上の設定で、ホーム側／スレ側を切り替えます。",
+                "In tablet mode, manually add any screen even when its automatic tab setting is off. The switch above selects HOME or thread tabs."));
         layout.addView(addToolTabHelp);
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,

@@ -117,10 +117,7 @@ public final class NativeToolTabs {
     }
     public static boolean open(Activity activity,String tool,Intent launch){
         if(activity==null||!supported())return false;
-        // Dedicated viewers belong alongside native thread tabs even when the
-        // legacy master switch is off. Keep the settings screen opt-in and
-        // retain each viewer's individual separate-screen preference.
-        if("settings".equals(tool)&&!enabled(activity))return false;
+        // The shared switch selects HOME vs thread pane, not whether tabs exist.
         if(!selected(activity,tool))return false;
         return createTab(activity,tool,launch);
     }
@@ -128,20 +125,43 @@ public final class NativeToolTabs {
     static boolean openManual(Activity activity,String tool){return createTab(activity,tool,null);}
     private static boolean createTab(Activity activity,String tool,Intent launch){
         if(!supported()||!tablet(activity)||!java.util.Arrays.asList("settings","eddi","search","checker","hissi","wacchoi").contains(tool))return false;
-        Bundle args=new Bundle();args.putString("_data",PREFIX+tool);
+        boolean home=enabled(activity);
+        Bundle args=new Bundle();args.putString("_data",PREFIX+tool+(home?"?pane=home":"?pane=thread"));
         args.putString(Intent.EXTRA_TITLE,"settings".equals(tool)?"Haiagaru設定":"eddi".equals(tool)?"エッヂ過去ログ検索":"search".equals(tool)?"投稿を探す":"checker".equals(tool)?"投稿検索・結果":"hissi".equals(tool)?"必死チェッカーもどき":"ワッチョイ全文検索");
         if(launch!=null)try{args.putString(Intent.EXTRA_TEXT,new org.json.JSONObject().put("launch",launch.toUri(Intent.URI_INTENT_SCHEME)).toString());}catch(org.json.JSONException error){throw new IllegalArgumentException(error);}
         try{
-            Method opener=null;
-            for(Method method:activity.getClass().getDeclaredMethods()){
-                Class<?>[] p=method.getParameterTypes();
-                // 191 accepts ChMate's own Fragment base, not the AndroidX root used by 242.
-                if(method.getReturnType()==void.class&&p.length==3&&p[0]!=Object.class&&p[0].isAssignableFrom(NativeToolFragment.class)&&p[1]==Bundle.class&&p[2]==boolean.class){
-                    if(opener!=null)throw new IllegalStateException("Ambiguous native tab opener");
-                    opener=method;
-                }
+            String version=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+            String pageName,paneName,positionName,methodName;
+            Object pane;
+            if("0.8.10.191 dev".equals(version)){
+                pageName="o.MediationServiceImpldExternalSyntheticLambda0";
+                paneName="jp.syoboi.a2chMate.activity.TabletHomeActivity$read";
+                positionName="jp.syoboi.a2chMate.activity.TabletHomeActivity$write";methodName="c";
+                Field field=activity.getClass().getDeclaredField(home?"k":"I");field.setAccessible(true);pane=field.get(activity);
+            }else{
+                String panes;
+                if("0.8.10.226 dev".equals(version)){
+                    pageName="o.Kjv";paneName="o.QWA";positionName="o.fWG";methodName="c";panes="r";
+                }else if("0.8.10.242 dev".equals(version)){
+                    pageName="o.zzeq";paneName="o.getRemoteCreator";positionName="o.zzfc";methodName="b";panes="w";
+                }else return false;
+                Field field=activity.getClass().getDeclaredField(panes);field.setAccessible(true);
+                Object array=field.get(activity);
+                if(array==null||Array.getLength(array)!=2)throw new IllegalStateException("Native tablet panes unavailable");
+                pane=Array.get(array,home?0:1);
             }
-            if(opener!=null){opener.setAccessible(true);opener.invoke(activity,null,args,true);return true;}
+            ClassLoader loader=activity.getClassLoader();
+            Class<?> pageClass=Class.forName(pageName,false,loader),paneClass=Class.forName(paneName,false,loader),positionClass=Class.forName(positionName,false,loader);
+            Object page=pageClass.getConstructor(int.class,Bundle.class).newInstance(4,args);
+            // 191's original Web opener uses write.a; newer versions use b.
+            Field positionField=positionClass.getDeclaredField("0.8.10.191 dev".equals(version)?"a":"b");
+            positionField.setAccessible(true);
+            Class<?> fragmentClass=Class.forName("0.8.10.191 dev".equals(version)?"o.r8lambdahIGIGCNpKpFqE0lgDli724UCuDM":"androidx.fragment.app.Fragment",false,loader);
+            Method opener=activity.getClass().getDeclaredMethod(methodName,pageClass,boolean.class,paneClass,positionClass,boolean.class,fragmentClass);
+            opener.setAccessible(true);
+            // Native implementation also selects an existing matching tab. Its
+            // false return means 'not newly created', not a navigation failure.
+            opener.invoke(activity,page,true,pane,positionField.get(null),true,null);return true;
         }catch(Exception error){android.util.Log.e("Haiagaru","Could not open native tool tab",error);}
         return false;
     }
@@ -223,7 +243,7 @@ public final class NativeToolTabs {
         return null;
     }
     static boolean marker(Bundle args){return tool(args)!=null;}
-    private static String tool(Bundle args){String value=args==null?null:args.getString("_data");for(String name:new String[]{"settings","eddi","search","checker","hissi","wacchoi"})if((PREFIX+name).equals(value))return name;return null;}
+    private static String tool(Bundle args){String value=args==null?null:args.getString("_data");for(String name:new String[]{"settings","eddi","search","checker","hissi","wacchoi"})if((PREFIX+name).equals(value)||(PREFIX+name+"?pane=home").equals(value)||(PREFIX+name+"?pane=thread").equals(value))return name;return null;}
     // Several tabs share the Activity state transaction: never retain a full 120KB result per tab.
     static String compactState(String value){
         if(value==null||value.length()<=8192)return value;
@@ -255,7 +275,7 @@ public final class NativeToolTabs {
     static Content content(Object fragment,Activity activity,Bundle restored){
         Bundle args=arguments(fragment);
         if(!marker(args))throw new IllegalStateException("Not a Haiagaru tool tab");
-        if((PREFIX+"eddi").equals(args.getString("_data"))){
+        if("eddi".equals(tool(args))){
             Bundle state=restored==null?new Bundle():new Bundle(restored);
             if(!state.containsKey(EddiArchiveSearchUi.STATE_KEY)&&args.containsKey(Intent.EXTRA_TEXT))state.putString(EddiArchiveSearchUi.STATE_KEY,args.getString(Intent.EXTRA_TEXT));
             EddiArchiveSearchUi ui=EddiArchiveSearchUi.embed(activity,Uri.parse("https://eddiarchive3rd.boy.jp/"),url->openThread(activity,url),state,()->back(activity));
@@ -370,7 +390,7 @@ public final class NativeToolTabs {
                 for(int i=0;i<ids.length;i++){final String id=ids[i];Button button=new Button(activity);button.setText(labels[i]);button.setOnClickListener(v->show(id));body.addView(button,new LinearLayout.LayoutParams(-1,-2));}
                 Button share=new Button(activity);share.setText("設定を共有（.haiagaru）");share.setOnClickListener(v->SettingsProfiles.share(activity));body.addView(share);
                 Button load=new Button(activity);load.setText("設定ファイルを読み込む");load.setOnClickListener(v->{try{fragment.getClass().getMethod("openSettingsFile").invoke(fragment);}catch(Exception error){android.util.Log.e("Haiagaru","Settings picker unavailable",error);Toast.makeText(activity,"ファイル選択画面を開けませんでした",Toast.LENGTH_LONG).show();}});body.addView(load);
-                TextView help=new TextView(activity);help.setText("タブ表示をオフにすると、次に開く追加画面は従来の別画面になります。開いているタブは自動では閉じません。");body.addView(help);
+                TextView help=new TextView(activity);help.setText("追加先はオンでホーム側、オフでスレ側のタブ列です。開いているタブは自動では移動しません。");body.addView(help);
             }else{
                 for(int i=0;i<ids.length;i++)if(ids[i].equals(selected))title.setText(labels[i]);
                 // Keep Compose's vertical list bounded by the pane, never inside ScrollView.
