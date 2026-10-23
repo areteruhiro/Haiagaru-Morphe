@@ -1,5 +1,12 @@
 # Android導入・署名台帳
 
+## 2026-10-23 プレリリース配布物1.12.0-dev.8
+
+- URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.8 。CI run39885815088成功、draft=false/prerelease=true。公開日時2026-10-23 10:50 JST。
+- 公開MPP `patches-1.12.0-dev.8.mpp` SHA256 `9CB9610C1F8E442C31F2CF539CBDFF527D74F51887E4EAAEDCABB47E62E1069E`。`build/release-dev8-verify`へ配布物6点をダウンロードして全件digest一致、MPP内classes.dex確認。
+- devのJSON2本は1.12.0-dev.8、created_at `2026-10-23T01:47:18`（タイムゾーンなし）。emulator-5554のMorpheソースでプレリリースONのまま更新し、fresh logcatでmain/devのメタデータ取得、ソース画面と詳細の1.12.0-dev.8表示を確認。登録先は変更していない。正式版1.11.2は維持。
+- 端末の検証アプリは下記のローカル候補MPP適用版。今回CI公開MPPからのAPK再生成・端末更新は未実施。
+
 ## 2026-10-23 全差分候補・フィルター件数初期オフ
 
 - Serial `emulator-5554`。191は既存composefix191との署名不一致を検出して更新を中止し、未導入のsettingsfix191へ別アプリとして追加。226／242は既存署名一致を検証して更新。その後、件数初期オフ・×背景フォールバックを含む以下の最終APKへ全3パッケージを`install -r`更新。既存アプリの削除・データ消去なし。
