@@ -123,19 +123,21 @@ public final class ResponseMenuSettings {
         return defaultVisible(id);
     }
     private static String longPressKey(int id){
-        return id==75?"wacchoiLongPressSearch":id==0x7e000077?"wacchoiLongPressSuffixSearch":
+        return id==75?"wacchoiLongPressSearch":id==76?"wacchoiLongPressSuffixNg":id==0x7e000077?"wacchoiLongPressSuffixSearch":
                 id==0x7e000078?"wacchoiLongPressPrefixSearch":id==0x7e000079?"wacchoiLongPressPrefixNg":null;
     }
     private static String visibilityKey(int id){return longPressKey(id)==null?"visibility."+id:"responseVisibility."+id;}
     private static int visibilityMode(android.content.SharedPreferences prefs,int id){
         String key=longPressKey(id);
-        return prefs.getInt(visibilityKey(id),key!=null&&prefs.contains(key)?0:prefs.getInt("visibility."+id,0));
+        // 76 never had a coupled name-menu toggle: its old visibility remains
+        // a legitimate body-menu preference even after adding the new toggle.
+        return prefs.getInt(visibilityKey(id),id!=76&&key!=null&&prefs.contains(key)?0:prefs.getInt("visibility."+id,0));
     }
     static boolean nameMenuVisible(int id){
         Context context=Haiagaru.applicationContextForExtension();String key=longPressKey(id);
         if(context!=null&&key!=null){android.content.SharedPreferences prefs=context.getSharedPreferences("haiagaru_response_actions",0);
             if(prefs.contains(key))return prefs.getBoolean(key,true);}
-        return visible(id);
+        return id==76?defaultVisible(id):visible(id);
     }
     static void storeVisibility(android.content.SharedPreferences prefs,int id,int mode){
         prefs.edit().putInt(visibilityKey(id),mode).apply();
@@ -147,6 +149,8 @@ public final class ResponseMenuSettings {
                 "wacchoiLongPressSuffixSearch", 0x7e000077);
         addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「上4桁で検索」を表示",
                 "wacchoiLongPressPrefixSearch", 0x7e000078);
+        addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「下4桁をNG登録」を表示",
+                "wacchoiLongPressSuffixNg", 76);
         addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「上4桁をNG登録」を表示",
                 "wacchoiLongPressPrefixNg", 0x7e000079);
         android.widget.TextView help = new android.widget.TextView(activity);

@@ -7,7 +7,9 @@ Java.perform(function(){
  const V=Java.use('android.view.View'),Group=Java.use('android.view.ViewGroup'),Toggle=Java.use('android.widget.ToggleButton');
  const prefs=app.getSharedPreferences('io.github.areteruhiro.chmate.haiagaru.ui-config',0);
  const keys=['persistentBottomQuickFilters','bottomQuickFilterPanel','compactQuickFilters','quickFilterExtras','quickFilterCounts','quickFilterAA','quickFilterMine','quickFilterReplies'],old=prefs.getAll();
- let fragment,activity,root,list,baseline,panel,checks=0,failed=false,aa,aaChanged=false,popup,adapter,originalExtra;
+ let fragment,activity,root,list,baseline,baselineMargin,baselineHeight,panel,checks=0,failed=false,aa,aaChanged=false,popup,adapter,originalExtra;
+ const Margins=Java.use('android.view.ViewGroup$MarginLayoutParams');
+ function margin(){return Java.cast(list.getLayoutParams(),Margins).bottomMargin.value;}
  const Popup=Java.use('android.widget.PopupWindow');
  function check(ok,label){if(!ok)throw Error(label);checks++;console.log('PASS '+label);}
  function getPanel(){const found=activity.getWindow().getDecorView().findViewWithTag('haiagaru.persistentBottomFilters');return found?Java.cast(found,V):null;}
@@ -19,24 +21,24 @@ Java.perform(function(){
  function begin(){main(()=>{
   check(!!fragment,'visible response fragment');activity=fragment.getActivity();root=fragment.getView();list=F.findList(root);check(!!list,'native response list');adapter=Java.retain(E.adapter(fragment));const selected=E.selected(adapter);originalExtra=[selected[4],selected[5],selected[6]];
   update({persistentBottomQuickFilters:null,bottomQuickFilterPanel:false});
-  main(()=>{baseline=list.getPaddingBottom();check(getPanel()===null,'default OFF has no pinned panel');
+  main(()=>{baseline=list.getPaddingBottom();baselineMargin=margin();baselineHeight=list.getHeight();check(getPanel()===null,'default OFF has no pinned panel');
    update({persistentBottomQuickFilters:true,bottomQuickFilterPanel:false,quickFilterExtras:true,quickFilterCounts:false,quickFilterAA:true,quickFilterMine:true,quickFilterReplies:true});
    main(()=>{panel=Java.retain(getPanel());check(!!panel&&panel.isShown(),'ON displays without opening transient bottom panel');
     const area=Java.use('android.graphics.Rect').$new(),rect=Java.use('android.graphics.Rect').$new();check(list.getGlobalVisibleRect(area)&&panel.getGlobalVisibleRect(rect),'panel and list have visible bounds');
     check(rect.left.value>=area.left.value&&rect.right.value<=area.right.value,'panel stays in its own thread pane');
-    check(rect.bottom.value<=area.bottom.value&&rect.top.value>=area.top.value,'panel lies above native bottom toolbar');
-    check(list.getPaddingBottom()===baseline+panel.getHeight(),'last response has reserved panel space');
+    check(rect.top.value===area.bottom.value&&rect.bottom.value===area.bottom.value+panel.getHeight(),'panel is below real response viewport and above native bottom toolbar');
+    check(list.getPaddingBottom()===baseline&&margin()===baselineMargin+panel.getHeight()&&list.getHeight()===baselineHeight-panel.getHeight(),'native viewport height reserves panel space without changing padding');
     const buttons=controls(panel);check(buttons.filter(b=>b.getVisibility()===0).length===7,'all seven enabled filters visible');
     check(!buttons.some(b=>String(b.getText()).includes('(')),'counts remain OFF');
     aa=buttons.find(b=>String(b.getText())==='AA');check(!!aa,'AA button found');const before=aa.isChecked();aa.performClick();aaChanged=true;
     main(()=>{check(aa.isChecked()!==before,'filter toggles immediately');aa.performClick();aaChanged=false;
      main(()=>{check(aa.isChecked()===before,'filter selection restored');
       check(getPanel()!==null,'filter action does not close pinned panel');
-      check(list.getPaddingBottom()===baseline+panel.getHeight(),'no cumulative padding after refresh');
+      check(margin()===baselineMargin+panel.getHeight(),'no cumulative viewport reservation after refresh');
       update({compactQuickFilters:true});main(()=>{check(getPanel()!==null&&getPanel().isShown(),'top filter hidden does not hide bottom');
        update({compactQuickFilters:false,bottomQuickFilterPanel:true});main(()=>{check(getPanel()!==null,'top filter coexistence and transient option independent');
         update({quickFilterAA:false,quickFilterMine:false,quickFilterReplies:false});main(()=>{check(controls(getPanel()).filter(b=>b.getVisibility()===0).length===4,'individual extra-filter visibility honored');
-         update({persistentBottomQuickFilters:false});main(()=>{check(getPanel()===null,'OFF removes pinned panel immediately');check(list.getPaddingBottom()===baseline,'OFF restores native list padding');
+         update({persistentBottomQuickFilters:false});main(()=>{check(getPanel()===null,'OFF removes pinned panel immediately');check(list.getPaddingBottom()===baseline&&margin()===baselineMargin&&list.getHeight()===baselineHeight,'OFF restores native viewport and padding');
           check(E.open(fragment),'transient bottom filter still opens');findPopup(()=>{check(!!popup&&popup.isShowing(),'transient popup remains supported');popup.dismiss();
            main(()=>{check(!popup.isShowing(),'transient popup dismisses');restore();console.log('PERSISTENT_BOTTOM_FILTER_COMPLETE '+checks+' checks; preferences and filter restored; no data writes');});
           });

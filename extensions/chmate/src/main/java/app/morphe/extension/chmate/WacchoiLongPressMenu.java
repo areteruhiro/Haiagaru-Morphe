@@ -477,7 +477,7 @@ public final class WacchoiLongPressMenu {
         if (!(menuObject instanceof Menu) || fragmentObject == null || responseObject == null) return;
         Menu menu = (Menu) menuObject;
         removeToolbarOnlyChoices(menu);
-        for(int id:new int[]{ITEM_ID,SUFFIX_SEARCH_ITEM_ID,PREFIX_SEARCH_ITEM_ID,0x7e000079})
+        for(int id:new int[]{ITEM_ID,76,SUFFIX_SEARCH_ITEM_ID,PREFIX_SEARCH_ITEM_ID,0x7e000079})
             if(!menuVisible(id,nameMenu))menu.removeItem(id);
         SearchContext found = new SearchContext();
         // 191 stores the displayed name in n and the date/SLIP text in q.
