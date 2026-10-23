@@ -150,6 +150,7 @@
           }
         ],
         "clearWorkspace": true
+        ,"backmergeStrategy": "merge"
       }
     ]
   ]
