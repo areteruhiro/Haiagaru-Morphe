@@ -121,7 +121,8 @@ public final class ExtraQuickFilters {
     private static final class PinnedPanel implements View.OnAttachStateChangeListener,android.view.ViewTreeObserver.OnGlobalLayoutListener{
         final Activity activity;final View root;final FrameLayout host;final WeakReference<Object> fragment;
         final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
-        final Runnable render=this::layout;BottomControls panel;View list;int originalPadding,appliedPadding=-1;boolean closed,queued;
+        final Runnable render=this::layout;BottomControls panel;View list;int originalPadding,appliedPadding=-1;
+        int originalMargin,appliedMargin=-1;boolean closed,queued;
         final Map<View,int[]> popupPaddings=new WeakHashMap<>();
         PinnedPanel(Activity activity,Object fragment,View root){
             this.activity=activity;this.fragment=new WeakReference<>(fragment);this.root=root;host=activity.findViewById(android.R.id.content);
@@ -133,11 +134,18 @@ public final class ExtraQuickFilters {
                 android.graphics.Rect bounds=new android.graphics.Rect(),visible=new android.graphics.Rect();
                 View current=FilterPosition.findList(root);
                 boolean shown=current!=null&&root.isShown()&&current.getGlobalVisibleRect(bounds);
+                // Reserve real viewport space, not just padding: native unread-position
+                // calculations use getHeight(), including in 242's RecyclerView path.
+                // Recover the unreserved pane edge before placing the overlay; otherwise
+                // each layout would shrink the pane by another panel height.
+                if(current==list&&appliedMargin>=0)bounds.bottom+=Math.max(0,appliedMargin-originalMargin);
                 root.getWindowVisibleDisplayFrame(visible);shown=shown&&bounds.intersect(visible);
                 if(!shown){if(panel!=null)panel.setVisibility(View.GONE);return;}
                 Object owner=fragment.get();if(owner==null){close();return;}Object a=adapter(owner);
                 if(panel==null||panel.adapter!=a||list!=current){
                     detachPanel();list=current;originalPadding=list.getPaddingBottom();
+                    if(list.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)
+                        originalMargin=((ViewGroup.MarginLayoutParams)list.getLayoutParams()).bottomMargin;
                     collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
                     panel=new BottomControls(activity,a,()->{});panel.setTag("haiagaru.persistentBottomFilters");
                     panel.setElevation(8*root.getResources().getDisplayMetrics().density);host.addView(panel,new FrameLayout.LayoutParams(bounds.width(),-2));
@@ -147,9 +155,16 @@ public final class ExtraQuickFilters {
                 int height=panel.getMeasuredHeight(),width=bounds.width();FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)panel.getLayoutParams();
                 if(params.width!=width||params.height!=height){params.width=width;params.height=height;panel.setLayoutParams(params);}
                 int[] origin=new int[2];host.getLocationOnScreen(origin);panel.setX(bounds.left-origin[0]);panel.setY(bounds.bottom-origin[1]-height);
-                if(appliedPadding>=0&&list.getPaddingBottom()!=appliedPadding)originalPadding=list.getPaddingBottom();
-                appliedPadding=originalPadding+height;
-                if(list.getPaddingBottom()!=appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),appliedPadding);
+                if(list.getLayoutParams() instanceof ViewGroup.MarginLayoutParams){
+                    ViewGroup.MarginLayoutParams spacing=(ViewGroup.MarginLayoutParams)list.getLayoutParams();
+                    if(appliedMargin>=0&&spacing.bottomMargin!=appliedMargin)originalMargin=spacing.bottomMargin;
+                    appliedMargin=originalMargin+height;
+                    if(spacing.bottomMargin!=appliedMargin){spacing.bottomMargin=appliedMargin;list.setLayoutParams(spacing);}
+                }else{
+                    if(appliedPadding>=0&&list.getPaddingBottom()!=appliedPadding)originalPadding=list.getPaddingBottom();
+                    appliedPadding=originalPadding+height;
+                    if(list.getPaddingBottom()!=appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),appliedPadding);
+                }
                 android.graphics.Rect filterBounds=new android.graphics.Rect();
                 if(panel.getGlobalVisibleRect(filterBounds))updatePopupPadding(root,filterBounds);
             }catch(Exception error){Log.w("Haiagaru","Persistent filter layout",error);detachPanel();}
@@ -177,7 +192,19 @@ public final class ExtraQuickFilters {
             if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)updatePopupPadding(group.getChildAt(i),filterBounds);}
         }
         void restorePopupPadding(View view,int[] padding){if(view.getPaddingBottom()==padding[1])view.setPadding(view.getPaddingLeft(),view.getPaddingTop(),view.getPaddingRight(),padding[0]);}
-        void detachPanel(){for(Map.Entry<View,int[]> item:new ArrayList<>(popupPaddings.entrySet()))restorePopupPadding(item.getKey(),item.getValue());popupPaddings.clear();if(panel!=null){host.removeView(panel);panel=null;}if(list!=null){if(list.getPaddingBottom()==appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),originalPadding);list=null;}appliedPadding=-1;}
+        void detachPanel(){
+            for(Map.Entry<View,int[]> item:new ArrayList<>(popupPaddings.entrySet()))restorePopupPadding(item.getKey(),item.getValue());
+            popupPaddings.clear();if(panel!=null){host.removeView(panel);panel=null;}
+            if(list!=null){
+                if(appliedMargin>=0&&list.getLayoutParams() instanceof ViewGroup.MarginLayoutParams){
+                    ViewGroup.MarginLayoutParams spacing=(ViewGroup.MarginLayoutParams)list.getLayoutParams();
+                    if(spacing.bottomMargin==appliedMargin){spacing.bottomMargin=originalMargin;list.setLayoutParams(spacing);}
+                }
+                if(list.getPaddingBottom()==appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),originalPadding);
+                list=null;
+            }
+            appliedPadding=-1;appliedMargin=-1;
+        }
         public void onGlobalLayout(){schedule();}
         public void onViewAttachedToWindow(View view){root.getViewTreeObserver().removeOnGlobalLayoutListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);schedule();}
         public void onViewDetachedFromWindow(View view){handler.removeCallbacks(render);queued=false;if(root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnGlobalLayoutListener(this);detachPanel();}

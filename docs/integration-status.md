@@ -1,5 +1,11 @@
 # 主開発先と統合状況
 
+2026-10-23 正式版1.12.0公開・更新確認完了: 44eb352のGIF/固定フィルターpopup修正と既存dev改善をmasterへ通常merge（1bb85c4）。既存Semantic Release CI39969080861でbuild/6資材upload/Release公開/CI生成ab1bb96/devへの反映まで完了。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0 、draft=false/prerelease=false/latest。公開6資材をbuild/release-1.12.0-verifyへ取得しGitHub digest全件一致、Android MPP SHA256=e255784273e09f541798bad9c514c51c13e7c295edb1a17d9c60ceb16e1c6a49、classes.dex確認。日本語説明・任意ライブラリ案内・確認範囲・謝辞はRelease本文へ直接収録し、専用説明MDは追加していない。
+
+同CIの公開後backmergeがmainの既存merge履歴に対するrebase/non-fast-forwardで失敗、Attestは未実行。配布物のbuild/公開失敗とは区別する。mainへmasterを通常mergeし更新情報を反映（8cef24d）、既存.releasercのbackmergeStrategyをmergeへ変更（eefbb1c）しdev/master/mainへforceなしで同期。workflow_dispatchによる既存Release CI39970344986はRelease/no-new-releaseとVerify project compilesがsuccess、全体success。追加版や手動Release/タグ/asset/生成JSONは作っていない。これを元Releaseのprovenance発行済みとは扱わない。
+
+最終master/main/devのpatches-bundle.json/patches-bundle-pre.json全6URLは1.12.0、created_at=2026-10-23T14:23:59（Z/offsetなし）、同じ公開MPP参照。main2本のCDN旧値は待機後に解消。emulator-5554のMorpheプレON/登録先を維持しfresh logcatでmain/dev実取得、Haiagaru versionHash1.12.0、ソースカードと詳細1.12.0を確認。別ソースMorphe Patches1.48.0はManager内patcher1.15.1に対する2.0.0要件エラーが出ており、Haiagaruとは区別して変更せず。登録先置換・データ消去なし。端末検証は直前の同ソース候補、公開CI版MPPからのAPK再適用と実機導入は未実施。canonicalはdevへ戻した。
+
 2026-10-23 正式公開前監査: origin/devの履歴が整理されており、手元HEADとのtree差分0を確認してローカル旧devをcodex/dev-before-remote-rewrite-20261023へ退避、新devをorigin/devから作成し未コミット修正を保持。fetch設定がdevのみだったためmaster/mainの追跡refも現行リモートへ更新。最新正式版998436e（1.11.3）との差分と既存検証記録を照合し、追加ライブラリ案内/確認範囲/謝辞を含む説明を.releasercへ直接作成。新たな公開説明MDは作らない。最終候補226をFridaなしでcold起動し実Part3本文・scroll・サムネイル→167KB/820x1800画像の表示を確認（build/official-image226-final.png）。旧Frida crash/旧Vungle startup ANR以降の新規記録なし。共通Javaの191/242重複操作は省略、全条件の完全解消は断言しない。既存Semantic Releaseでdevからmasterへの正式公開準備。
 
 2026-10-23 GIF自動取得・常時下部フィルターのpopup末尾（未公開）: GIF専用4モードと共有を追加、bounded workerで静止フレーム生成、通常画像/動画と分離。固定フィルターの本文余白だけではnative popup末尾が隠れることを226で再現（重なり126px/padding0）、補助レス一覧にも重なり余白を追加。最終通常Lint build成功、226署名照合データ保持更新、GIF policy27/Android19/実GIF decode・JPEG配信/実native popup9項目成功。popup末尾の実画面も確認。191/242共通重複操作は省略。実機と公開Releaseは変更なし。詳細gif-autofetch-pinned-popup-20261023.md。
