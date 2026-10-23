@@ -273,7 +273,7 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                     (next is EditText || next is Spinner) && child.visibility == View.VISIBLE) {
                     index++
                     if (next.visibility == View.VISIBLE)
-                        BoundSettingRow(BoundSetting(next, child.text.toString()), changed)
+                        BoundSettingRow(labeledSetting(next, child.text.toString()), changed)
                 } else ModelContent(child, revision, insideScroll = insideScroll, changed = changed)
             }
     }

@@ -44,6 +44,13 @@ internal data class BoundSetting(
     }
 }
 
+/** Paragraphs belong below the field, never inside its floating label. */
+internal fun labeledSetting(control: View, text: String): BoundSetting {
+    val detailed = text.contains('\n') || text.length > 100
+    return BoundSetting(control, if (detailed) text.lineSequence().first().take(80) else text,
+        description = if (detailed) text else "")
+}
+
 internal fun prepareSettingsBindings(root: ViewGroup) {
     for (index in 0 until root.childCount) {
         val view = root.getChildAt(index)
@@ -70,10 +77,7 @@ internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
                     val text = view.text.toString()
                     // Floating labels cannot display paragraphs, route syntax or examples.
                     // Keep the complete help text in the row, separate from its short label.
-                    val detailed = text.contains('\n') || text.length > 100
-                    result.add(BoundSetting(next,
-                        if (detailed) text.lineSequence().first().take(80) else text,
-                        description = if (detailed) text else ""))
+                    result.add(labeledSetting(next, text))
                 }
             } else if (view is ViewGroup && view !is Spinner) collect(view)
             else if (view is TextView || view is Spinner || view is ImageView) {
@@ -107,7 +111,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
                 changed()
             }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(selected = item.checked == true, onClick = null, enabled = item.enabled)
-                Text(item.label, Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
+                Text(item.label, Modifier.weight(1f).padding(start = 12.dp), style = MaterialTheme.typography.bodyLarge)
             }
         }
         is CompoundButton -> {
@@ -148,7 +152,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
                                 choosing = false; changed()
                             }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 RadioButton(selected = view.selectedItemPosition == index, onClick = null)
-                                Text(view.getItemAtPosition(index).toString(), Modifier.padding(start = 12.dp))
+                                Text(view.getItemAtPosition(index).toString(), Modifier.weight(1f).padding(start = 12.dp))
                             }
                         }
                     }

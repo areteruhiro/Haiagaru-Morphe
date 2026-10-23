@@ -11,12 +11,40 @@ import java.lang.reflect.*;
 /** Optional tools in the native type-4 tab model; phone navigation is unchanged. */
 public final class NativeToolTabs {
     public static final String KEY="nativeToolTabs";
+    public static final String HEADER_HEIGHT_KEY="nativeToolTabHeaderHeightDp";
+    static int headerHeightDp(android.content.Context context){
+        return Math.max(32,Math.min(64,context.getSharedPreferences(WacchoiSearchOptions.PREFS,0)
+                .getInt(HEADER_HEIGHT_KEY,48)));
+    }
     public static final String SETTINGS_KEY="nativeToolTabSettings", EDDI_KEY="nativeToolTabEddi";
     public static final String SEARCH_KEY="nativeToolTabSearch", CHECKER_KEY="nativeToolTabChecker", HISSI_KEY="nativeToolTabHissi", FULL_KEY="nativeToolTabWacchoi";
     private static final String PREFIX="haiagaru-tool://";
     private static final String FROM_TABLET="haiagaru.settings.fromTablet";
     private static java.lang.ref.WeakReference<Activity> settingsHost=new java.lang.ref.WeakReference<>(null);
     private static java.lang.ref.WeakReference<Activity> searchHost=new java.lang.ref.WeakReference<>(null);
+    private static final java.util.List<java.lang.ref.WeakReference<Activity>> tabletHosts=new java.util.ArrayList<>();
+    private static final java.util.concurrent.ConcurrentMap<Integer,PendingManual> manualTabs=new java.util.concurrent.ConcurrentHashMap<>();
+    private static final class PendingManual {
+        final java.lang.ref.WeakReference<Activity> host;final String tool;
+        PendingManual(Activity host,String tool){this.host=new java.lang.ref.WeakReference<>(host);this.tool=tool;}
+    }
+    private static boolean tablet(Activity activity){
+        return activity!=null&&!activity.isFinishing()&&!activity.isDestroyed()
+                &&activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity");
+    }
+    static void created(Activity activity){
+        if(!tablet(activity))return;
+        synchronized(tabletHosts){tabletHosts.removeIf(ref->!tablet(ref.get())||ref.get()==activity);
+            if(tabletHosts.size()>=16)tabletHosts.remove(0);tabletHosts.add(new java.lang.ref.WeakReference<>(activity));}
+    }
+    static Activity manualHost(Activity screen){
+        if(tablet(screen))return screen;
+        if(screen==null||screen.isFinishing()||screen.isDestroyed())return null;
+        synchronized(tabletHosts){for(int i=tabletHosts.size()-1;i>=0;i--){Activity host=tabletHosts.get(i).get();
+            if(tablet(host)&&host.getTaskId()==screen.getTaskId())return host;}}
+        Activity host=settingsHost.get();if(tablet(host)&&host.getTaskId()==screen.getTaskId())return host;
+        host=searchHost.get();return tablet(host)&&host.getTaskId()==screen.getTaskId()?host:null;
+    }
     private NativeToolTabs(){}
     /** Kept unoptimized and changed only after all native wiring is verified by the patch. */
     public static boolean supported(){return false;}
@@ -28,8 +56,13 @@ public final class NativeToolTabs {
         return key!=null&&activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(key,true);
     }
     static void resumed(Activity activity){
-        if(activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity"))
-            searchHost=new java.lang.ref.WeakReference<>(activity);
+        if(!tablet(activity))return;
+        created(activity);searchHost=new java.lang.ref.WeakReference<>(activity);
+        PendingManual pending=manualTabs.get(activity.getTaskId());
+        if(pending!=null&&pending.host.get()==activity)new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+            if(manualTabs.remove(activity.getTaskId(),pending)&&!openManual(activity,pending.tool))
+                Toast.makeText(activity,"タブを追加できませんでした",Toast.LENGTH_LONG).show();
+        });
     }
     static Activity activity(android.content.Context context){
         for(int depth=0;context!=null&&depth<16;depth++){
@@ -83,8 +116,18 @@ public final class NativeToolTabs {
         return open(activity,tool,null);
     }
     public static boolean open(Activity activity,String tool,Intent launch){
-        if(activity==null||!enabled(activity)||!activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity"))return false;
+        if(activity==null||!supported())return false;
+        // Dedicated viewers belong alongside native thread tabs even when the
+        // legacy master switch is off. Keep the settings screen opt-in and
+        // retain each viewer's individual separate-screen preference.
+        if("settings".equals(tool)&&!enabled(activity))return false;
         if(!selected(activity,tool))return false;
+        return createTab(activity,tool,launch);
+    }
+    /** Explicit manual action does not change or depend on automatic routing preferences. */
+    static boolean openManual(Activity activity,String tool){return createTab(activity,tool,null);}
+    private static boolean createTab(Activity activity,String tool,Intent launch){
+        if(!supported()||!tablet(activity)||!java.util.Arrays.asList("settings","eddi","search","checker","hissi","wacchoi").contains(tool))return false;
         Bundle args=new Bundle();args.putString("_data",PREFIX+tool);
         args.putString(Intent.EXTRA_TITLE,"settings".equals(tool)?"Haiagaru設定":"eddi".equals(tool)?"エッヂ過去ログ検索":"search".equals(tool)?"投稿を探す":"checker".equals(tool)?"投稿検索・結果":"hissi".equals(tool)?"必死チェッカーもどき":"ワッチョイ全文検索");
         if(launch!=null)try{args.putString(Intent.EXTRA_TEXT,new org.json.JSONObject().put("launch",launch.toUri(Intent.URI_INTENT_SCHEME)).toString());}catch(org.json.JSONException error){throw new IllegalArgumentException(error);}
@@ -143,30 +186,36 @@ public final class NativeToolTabs {
     }
     /** Remember only the tablet that opened this settings Activity, never an unrelated window. */
     public static Intent settingsIntent(Activity activity){
-        boolean tablet=activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity");
-        if(tablet)settingsHost=new java.lang.ref.WeakReference<>(activity);
-        return new Intent(activity,HaiagaruSettingsActivity.class).putExtra(FROM_TABLET,tablet);
+        Activity host=manualHost(activity);
+        if(host!=null)settingsHost=new java.lang.ref.WeakReference<>(host);
+        return new Intent(activity,HaiagaruSettingsActivity.class).putExtra(FROM_TABLET,host!=null);
     }
     public static void showChooser(Activity activity){
-        Activity host=activity;
-        if(activity instanceof HaiagaruSettingsActivity&&activity.getIntent().getBooleanExtra(FROM_TABLET,false))host=settingsHost.get();
-        if(host==null||host.isFinishing()||host.isDestroyed()||!host.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity")){
+        Activity host=manualHost(activity);
+        if(host==null){
             Toast.makeText(activity,"タブレット表示の本体画面からHaiagaru設定を開いてください",Toast.LENGTH_LONG).show();return;
         }
-        if(!enabled(host)){Toast.makeText(activity,"先に「タブレットで追加画面を本体のスレタブで開く」をオンにしてください",Toast.LENGTH_LONG).show();return;}
         final Activity target=host;
         java.util.ArrayList<String> tools=new java.util.ArrayList<>(),labels=new java.util.ArrayList<>();
-        if(selected(host,"settings")){tools.add("settings");labels.add("Haiagaru設定");}
-        if(selected(host,"eddi")){tools.add("eddi");labels.add("エッヂ過去ログ検索");}
-        if(selected(host,"search")){tools.add("search");labels.add("投稿を探す");}
-        if(selected(host,"checker")){tools.add("checker");labels.add("投稿検索・結果（必死チェッカー／Kyodemo）");}
-        if(selected(host,"hissi")){tools.add("hissi");labels.add("必死チェッカーもどき専用ビュワー");}
-        if(selected(host,"wacchoi")){tools.add("wacchoi");labels.add("ワッチョイ全文検索");}
-        if(tools.isEmpty()){Toast.makeText(activity,"基本設定でタブ表示する画面を選んでください",Toast.LENGTH_LONG).show();return;}
+        tools.add("settings");labels.add("Haiagaru設定");
+        tools.add("eddi");labels.add("エッヂ過去ログ検索");
+        tools.add("search");labels.add("投稿を探す");
+        tools.add("checker");labels.add("投稿検索・結果（必死チェッカー／Kyodemo）");
+        tools.add("hissi");labels.add("必死チェッカーもどき専用ビュワー");
+        tools.add("wacchoi");labels.add("ワッチョイ全文検索");
         new HaiagaruDialog.Builder(activity).setTitle("タブに追加する画面")
             .setItems(labels.toArray(new String[0]),(dialog,index)->{
-                if(open(target,tools.get(index))){if(activity!=target)activity.finish();}
-                else Toast.makeText(activity,"タブを開けませんでした。タブ表示設定を確認してください",Toast.LENGTH_LONG).show();
+                String tool=tools.get(index);
+                if(activity==target){if(!openManual(target,tool))Toast.makeText(activity,"タブを追加できませんでした",Toast.LENGTH_LONG).show();}
+                else{
+                    PendingManual pending=new PendingManual(target,tool);manualTabs.put(target.getTaskId(),pending);
+                    try{
+                        // Resume the owning tablet before mutating its Fragment state.
+                        activity.startActivity(new Intent(activity,target.getClass()).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+                        if(activity instanceof HaiagaruSettingsActivity)activity.finish();
+                    }catch(RuntimeException error){manualTabs.remove(target.getTaskId(),pending);android.util.Log.w("Haiagaru","Manual tab resume failed",error);
+                        Toast.makeText(activity,"本体のタブレット画面に戻れませんでした",Toast.LENGTH_LONG).show();}
+                }
             }).setNegativeButton("キャンセル",null).show();
     }
     private static Bundle pageArgs(Object page)throws ReflectiveOperationException{

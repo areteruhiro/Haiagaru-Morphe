@@ -447,7 +447,7 @@ public final class Haiagaru {
             synchronized (Haiagaru.class) {
                 if (!activityTrackingInstalled) {
                     application.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
-                        @Override public void onActivityCreated(Activity activity, Bundle state) { }
+                        @Override public void onActivityCreated(Activity activity, Bundle state) { NativeToolTabs.created(activity); }
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
@@ -3490,17 +3490,22 @@ public final class Haiagaru {
         live.toggle(nativeHissiTab,NativeToolTabs.HISSI_KEY);
         Switch nativeFullTab = addSwitch(layout, activity,text("タブ表示する画面：ワッチョイ全文検索", "Tab screen: Full Wacchoi search"),preferences.getBoolean(NativeToolTabs.FULL_KEY,true));
         live.toggle(nativeFullTab,NativeToolTabs.FULL_KEY);
+        EditText toolTabHeight = addTextField(layout, activity,
+                text("専用画面タブの見出し・×バーの高さ（dp・32〜64）", "Tool tab title and close bar height (dp, 32–64)"),
+                Integer.toString(NativeToolTabs.headerHeightDp(activity)));
+        toolTabHeight.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        live.number(toolTabHeight, NativeToolTabs.HEADER_HEIGHT_KEY, 32, 64);
         TextView nativeTabsHelp = new TextView(activity);
-        nativeTabsHelp.setText(text("上の機能をオンにして、タブ表示する画面を個別に選べます。選ばない画面は従来の別画面で開きます。変更は次に開く画面から反映され、開いているタブは自動では閉じません。",
-                "Enable native tabs, then choose screens individually. Unselected screens open separately. Changes apply to newly opened screens; existing tabs remain open."));
+        nativeTabsHelp.setText(text("専用ビューアは上の設定がオフでも、本体のスレと同じタブ列で開きます。各「タブ表示する画面」をオフにすると、その画面は別画面で開きます。Haiagaru設定のタブ表示には上の設定もオンにしてください。変更は次に開く画面から反映され、開いているタブは自動では閉じません。",
+                "Dedicated viewers open alongside thread tabs even when the switch above is off. Turn off an individual screen to open it separately. Tabbed Haiagaru settings still require the switch above. Changes affect newly opened screens; existing tabs remain open."));
         layout.addView(nativeTabsHelp);
         Button addToolTab = new Button(activity);
         addToolTab.setText(text("画面を新しいタブに追加", "Add a screen in a new tab"));
         addToolTab.setOnClickListener(view -> NativeToolTabs.showChooser(activity));
         layout.addView(addToolTab);
         TextView addToolTabHelp = new TextView(activity);
-        addToolTabHelp.setText(text("タブレット表示で使えます。タブ表示する画面から選び、本体のスレタブと同じ列に新しいタブを追加します。",
-                "In tablet mode, choose an enabled screen to add a new tab alongside thread tabs."));
+        addToolTabHelp.setText(text("タブレット表示で使えます。自動でタブ表示する設定がオフでも、画面を選んで本体のスレタブと同じ列へ手動で追加できます。",
+                "In tablet mode, manually add any screen alongside thread tabs, even when automatic tab opening is off."));
         layout.addView(addToolTabHelp);
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
         Spinner settingsLanguage = addSpinner(layout, activity,
@@ -5076,7 +5081,8 @@ public final class Haiagaru {
                 text("ID/ﾜｯﾁｮｲ検索", "ID/Wacchoi search"),
                 text("分析", "Analysis"),
                 text("文字サイズ", "Text size"),
-                text("配色", "Theme")
+                text("配色", "Theme"),
+                text("調整", "Adjust")
         };
         Button button = new Button(activity);
         button.setAllCaps(false);
@@ -5087,8 +5093,11 @@ public final class Haiagaru {
             int savedMask = preferences.getInt(
                     HISSI_VIEWER_TOOLBAR_BUTTONS_KEY, ALL_HISSI_TOOLBAR_BUTTONS);
             boolean[] selected = new boolean[labels.length];
+            // Keep Adjust separate: old nine-bit masks must retain its previously always-visible default.
             for (int index = 0; index < selected.length; index++) {
-                selected[index] = (savedMask & (1 << index)) != 0;
+                selected[index] = index == HISSI_TOOLBAR_BUTTON_COUNT
+                        ? preferences.getBoolean("hissiViewerShowAdjust", true)
+                        : (savedMask & (1 << index)) != 0;
             }
             new HaiagaruDialog.Builder(activity)
                     .setTitle(text("上部に表示するボタン", "Checker toolbar buttons"))
@@ -5096,7 +5105,7 @@ public final class Haiagaru {
                             (dialog, which, checked) -> selected[which] = checked)
                     .setNeutralButton(text("すべて表示", "Show all"), (dialog, which) -> {
                         preferences.edit().putInt(HISSI_VIEWER_TOOLBAR_BUTTONS_KEY,
-                                ALL_HISSI_TOOLBAR_BUTTONS).apply();
+                                ALL_HISSI_TOOLBAR_BUTTONS).putBoolean("hissiViewerShowAdjust", true).apply();
                         Toast.makeText(activity,
                                 text("すべてのボタンを表示します", "All toolbar buttons are shown"),
                                 Toast.LENGTH_SHORT).show();
@@ -5104,10 +5113,11 @@ public final class Haiagaru {
                     .setNegativeButton(text("キャンセル", "Cancel"), null)
                     .setPositiveButton(text("保存", "Save"), (dialog, which) -> {
                         int mask = 0;
-                        for (int index = 0; index < selected.length; index++) {
+                        for (int index = 0; index < HISSI_TOOLBAR_BUTTON_COUNT; index++) {
                             if (selected[index]) mask |= 1 << index;
                         }
-                        preferences.edit().putInt(HISSI_VIEWER_TOOLBAR_BUTTONS_KEY, mask).apply();
+                        preferences.edit().putInt(HISSI_VIEWER_TOOLBAR_BUTTONS_KEY, mask)
+                                .putBoolean("hissiViewerShowAdjust", selected[HISSI_TOOLBAR_BUTTON_COUNT]).apply();
                         Toast.makeText(activity,
                                 text("上部ボタンの表示を保存しました", "Toolbar button visibility saved"),
                                 Toast.LENGTH_SHORT).show();
@@ -5538,6 +5548,11 @@ public final class Haiagaru {
     public static boolean hissiViewerFullscreen() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean(HISSI_VIEWER_FULLSCREEN_KEY, false);
+    }
+
+    public static boolean hissiViewerShowAdjust() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null || prefs.getBoolean("hissiViewerShowAdjust", true);
     }
 
     public static boolean hissiViewerCompactHeader() {

@@ -34,8 +34,11 @@ Java.perform(function(){
  run(()=>{host=Java.retain(H.toolbarActivity(null));check(host&&String(host.getClass().getName())==='jp.syoboi.a2chMate.activity.TabletHomeActivity','foreground native tablet');
   const e=p.edit();keys.forEach(k=>{if(k==='hissiCheckerMode')e.putInt(k,1);else e.putBoolean(k,true);});e.commit();
   const wrapped=Java.use('android.view.ContextThemeWrapper').$new(host,16973931);
-  p.edit().putBoolean('nativeToolTabs',false).commit();check(!T.openSearch(wrapped,launch('abcd-',true)),'OFF retains standalone path');p.edit().putBoolean('nativeToolTabs',true).commit();
-  check(T.openSearch(wrapped,launch('abcd-',true)),'wrapped modern menu context opens upper search tab');
+  p.edit().putBoolean('nativeToolTabs',false).putBoolean('nativeToolTabSearch',false).commit();
+  check(!T.openSearch(wrapped,launch('abcd-',true)),'individual screen OFF retains standalone path');
+  p.edit().putBoolean('nativeToolTabSearch',true).commit();
+  check(!T.open(host,'settings'),'master OFF retains separate settings');
+  check(T.openSearch(wrapped,launch('abcd-',true)),'master OFF wrapped menu opens upper search in thread tab column');
  });
  setTimeout(()=>inspect('search','abcd-'),6000);
  setTimeout(()=>run(()=>{host.startActivity(launch('-EFGH',false));console.log('LOWER_ACTIVITY_LAUNCHED');}),9000);

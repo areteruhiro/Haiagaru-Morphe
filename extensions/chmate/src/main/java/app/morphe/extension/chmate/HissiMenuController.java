@@ -79,6 +79,7 @@ public final class HissiMenuController extends ToolScreenController {
     private TextView wacchoiConditionView;
     private String lastArchiveErrorKey;
     private Button kyodemoAnalysisButton;
+    private Button viewerAdjustButton;
     private String analysisRecoveryAttempt;
     private String pendingAnalysisResult;
     private String analysisAutoOpenedUrl;
@@ -673,6 +674,8 @@ public final class HissiMenuController extends ToolScreenController {
         toolbar.addView(theme, buttonParams());
 
         Button displaySettings = toolbarButton("調整");
+        viewerAdjustButton = displaySettings;
+        displaySettings.setVisibility(Haiagaru.hissiViewerShowAdjust() ? View.VISIBLE : View.GONE);
         displaySettings.setContentDescription("必死チェッカーの表示設定");
         displaySettings.setOnClickListener(view -> showViewerDisplaySettings(webView, toolbar));
         toolbar.addView(displaySettings, buttonParams());
@@ -1564,7 +1567,10 @@ public final class HissiMenuController extends ToolScreenController {
         if (archiveSearchUi != null) archiveSearchUi.saveState(null);
         if(viewerWebView!=null)viewerWebView.onPause();
     }
-    @Override void resume(){if(viewerWebView!=null)viewerWebView.onResume();}
+    @Override void resume(){
+        if(viewerWebView!=null)viewerWebView.onResume();
+        if(viewerAdjustButton!=null)viewerAdjustButton.setVisibility(Haiagaru.hissiViewerShowAdjust()?View.VISIBLE:View.GONE);
+    }
 
     @Override void save(Bundle state) {
         if (archiveSearchUi != null) archiveSearchUi.saveState(state);

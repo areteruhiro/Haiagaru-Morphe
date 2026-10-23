@@ -27,9 +27,9 @@ public final class PopularNativeRows {
         Set<Integer> selected(int threshold)throws Exception {
             Set<Integer> result=new LinkedHashSet<>();int start=-1;
             for(int i=0;i<rows.size();i++) {
-                Object row=rows.get(i),r=ExtraQuickFilters.rowResponse(row);
-                if(flat){if(r!=null&&references(r)>=threshold)result.add(ExtraQuickFilters.number(r));continue;}
-                if(r==null||depth(row)==0){if(start>=0&&i-start>=threshold)add(result,start,i);start=r==null?-1:i;}
+                Object r=responses[i];
+                if(flat){if(r!=null&&layout[i*2+1]>=threshold)result.add(ExtraQuickFilters.number(r));continue;}
+                if(r==null||layout[i*2]==0){if(start>=0&&i-start>=threshold)add(result,start,i);start=r==null?-1:i;}
             }
             if(!flat&&start>=0&&rows.size()-start>=threshold)add(result,start,rows.size());
             return result;
@@ -49,10 +49,12 @@ public final class PopularNativeRows {
         try {
             Snapshot s=new Snapshot(rows,flat,threshold);if(s.first==null)return;
             synchronized(snapshots){
-                for(Snapshot previous:snapshots)if(previous.first==s.first&&previous.flat==flat&&previous.rows.size()>s.rows.size()){
-                    // An active native filter can return only its selected rows.
-                    // Keep the complete row set for Haiagaru's inline predicate.
-                    s=new Snapshot(previous.rows,flat,threshold);break;
+                // A popup starting at response 1 can use another display mode.
+                // It must not replace the main thread's complete layout or mode.
+                for(Snapshot previous:snapshots)if(previous.rows.size()>s.rows.size()){
+                    // Repeated popups must not fill the bounded cache and evict
+                    // the complete main-thread capture after only 16 replies.
+                    for(Object response:previous.responses)if(response==s.first)return;
                 }
                 Snapshot next=s;
                 // Native rebuilds recreate row wrappers. Do not schedule another rebuild
@@ -85,7 +87,10 @@ public final class PopularNativeRows {
         finally{modernThreshold.remove();modernFlat.remove();}
     }
     static Snapshot find(List<?> source) {
-        synchronized(snapshots){for(int i=snapshots.size()-1;i>=0;i--){Snapshot s=snapshots.get(i);for(Object r:source)if(r==s.first)return s;}}
+        Object first=null;for(Object row:source)if(row!=null){first=row;break;}
+        // Sharing any response is not ownership: a popup for response 2 also
+        // belongs to this thread, but is not its full popularity layout.
+        synchronized(snapshots){for(int i=snapshots.size()-1;i>=0;i--){Snapshot s=snapshots.get(i);if(first==s.first)return s;}}
         return null;
     }
     static Set<Integer> select(List<?> source,int threshold)throws Exception {

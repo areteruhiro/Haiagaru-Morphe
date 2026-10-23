@@ -27,6 +27,10 @@ public final class SettingsProfiles {
         numberKey("checkerHeaderPercent",10,60);
         numberKey("hissiViewerResponseSpacingDp",0,20);
         numberKey("hissiViewerToolbarHeightDp",32,56);
+        numberKey(NativeToolTabs.HEADER_HEIGHT_KEY,32,64);
+        booleanKey("hissiViewerShowAdjust");
+        defaultValue(NativeToolTabs.HEADER_HEIGHT_KEY,48);
+        defaultValue("hissiViewerShowAdjust",true);
         numberKey("hissiViewerTextZoom",100,130);
         numberKey("popularReplyThreshold",1,9999);
         numberKey("popularReplyStandardThreshold",1,9999);

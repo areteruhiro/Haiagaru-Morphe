@@ -19,30 +19,28 @@ import android.widget.TextView;
 public final class NativeToolFragment extends android.app.Fragment {
     private Activity host;
     private NativeToolTabs.Content content;
+    private LinearLayout frame, header;
+    private TextView title, close;
+    private android.content.SharedPreferences preferences;
+    private final android.content.SharedPreferences.OnSharedPreferenceChangeListener headerListener=(prefs,key)->{
+        if(NativeToolTabs.HEADER_HEIGHT_KEY.equals(key)&&host!=null)host.runOnUiThread(this::updateHeader);
+    };
     @Override public void onAttach(Context context) { super.onAttach(context); host=(Activity)context; }
     @Override public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle state) {
         content=NativeToolTabs.content(this,host,state);
-        LinearLayout frame=new LinearLayout(host);frame.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout header=new LinearLayout(host);header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title=new TextView(host);title.setSingleLine(true);
+        frame=new LinearLayout(host);frame.setOrientation(LinearLayout.VERTICAL);
+        header=new LinearLayout(host);header.setGravity(Gravity.CENTER_VERTICAL);
+        title=new TextView(host);title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         title.setText(getArguments().getString(android.content.Intent.EXTRA_TITLE,""));
         title.setPadding(Math.round(12*host.getResources().getDisplayMetrics().density),0,0,0);
         header.addView(title,new LinearLayout.LayoutParams(0,-1,1));
-        TextView close=new OutlinedClose(host);
+        close=new OutlinedClose(host);
         close.setText("×");
         close.setTextSize(24);
         close.setTextColor(Color.rgb(55,55,60));
         close.setGravity(Gravity.CENTER);
         close.setContentDescription("このタブを閉じる");
-        try{
-            int[] palette=NativeThemeColors.colors(host);
-            if(palette!=null&&palette.length==7){
-                close.setTextColor(palette[1]);
-                title.setTextColor(palette[1]);
-                frame.setBackgroundColor(palette[0]);
-            }
-        }catch(RuntimeException ignored){ /* Retain the fallback if the native theme is unavailable. */ }
         close.setBackground(null);
         close.setOnClickListener(view -> {
             Activity current=host;
@@ -50,10 +48,22 @@ public final class NativeToolFragment extends android.app.Fragment {
                 android.widget.Toast.makeText(current,"この画面のタブを閉じられませんでした",android.widget.Toast.LENGTH_SHORT).show();
         });
         int size=Math.round(48*host.getResources().getDisplayMetrics().density);
-        header.addView(close,new LinearLayout.LayoutParams(size,size));
+        header.addView(close,new LinearLayout.LayoutParams(size,-1));
         frame.addView(header,new LinearLayout.LayoutParams(-1,size));
         frame.addView(content.view,new LinearLayout.LayoutParams(-1,0,1));
+        preferences=host.getSharedPreferences(WacchoiSearchOptions.PREFS,0);
+        preferences.registerOnSharedPreferenceChangeListener(headerListener);
+        updateHeader();
         return frame;
+    }
+    private void updateHeader(){
+        if(host==null||frame==null||header==null)return;
+        int[] colors=HaiagaruUi.toolTabHeaderColors(host);
+        frame.setBackgroundColor(colors[0]);header.setBackgroundColor(colors[0]);
+        title.setTextColor(colors[1]);close.setTextColor(colors[1]);
+        ViewGroup.LayoutParams params=header.getLayoutParams();
+        params.height=Math.round(NativeToolTabs.headerHeightDp(host)*host.getResources().getDisplayMetrics().density);
+        header.setLayoutParams(params);
     }
     /** Transparent hit target with a black/white double outline, independent of the theme. */
     private static final class OutlinedClose extends TextView {
@@ -77,12 +87,14 @@ public final class NativeToolFragment extends android.app.Fragment {
         if(content!=null)content.save(new Bundle());
         super.onPause();
     }
-    @Override public void onResume(){super.onResume();if(content!=null)content.resume();}
+    @Override public void onResume(){super.onResume();updateHeader();if(content!=null)content.resume();}
     @Override public void onSaveInstanceState(Bundle state) {
         if(content!=null)content.save(state);
         super.onSaveInstanceState(state);
     }
     @Override public void onDestroyView() {
+        if(preferences!=null){preferences.unregisterOnSharedPreferenceChangeListener(headerListener);preferences=null;}
+        frame=null;header=null;title=null;close=null;
         if(content!=null){content.save(new Bundle());content.close();content=null;}
         super.onDestroyView();
     }

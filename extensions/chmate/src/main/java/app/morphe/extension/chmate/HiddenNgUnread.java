@@ -7,6 +7,15 @@ import java.lang.reflect.*;
 /** Display-only unread adjustment. Never changes the native read position or database. */
 public final class HiddenNgUnread {
     public static final String KEY="excludeHiddenNgUnread";
+    private static volatile android.content.SharedPreferences preferences;
+    // Called once per response on legacy renderers: do not resolve ContextImpl's
+    // preferences file/cache on every row. Read the boolean itself live for toggles/imports.
+    private static boolean enabled(){
+        android.content.SharedPreferences prefs=preferences;
+        if(prefs==null){Context context=Haiagaru.applicationContextForExtension();if(context==null)return false;
+            preferences=prefs=context.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
+        return prefs.getBoolean(KEY,false);
+    }
     private static final Map<Object,String> OWNERS=Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<Object,String> MODERN=Collections.synchronizedMap(new WeakHashMap<>());
     private static final java.util.concurrent.ConcurrentMap<Class<?>,Map<String,Field>> FIELDS=new java.util.concurrent.ConcurrentHashMap<>();
@@ -62,17 +71,18 @@ public final class HiddenNgUnread {
         }catch(Exception ignored){return null;}
     }
     static void begin(Object owner){
-        if(!FeatureSwitches.enabled(KEY,false))return;
+        if(!enabled())return;
         try{boolean old=owner.getClass().getName().equals("o.m9ExternalSyntheticLambda1");
             Object list=field(owner,old?"K":"J"),board=field(field(owner,old?"M":"E"),old?"f":"j");
             List<?> rows=PopularReplies.fullList(list);if(rows.isEmpty())return;
             String k=key(responseUrl(rows.get(0),board));if(k==null)return;
             OWNERS.put(owner,k);synchronized(HIDDEN){HIDDEN.put(k,new HashSet<>());invalidate(k);}
-            synchronized(ROW_KEYS){ROW_KEYS.clear();}
+            // Row keys validate board/thread/Intent themselves. Rebuilding one
+            // thread must not invalidate every HOME row when returning to the list.
         }catch(Exception ignored){OWNERS.remove(owner);}
     }
     static int observe(Object owner,Object response,int flags){
-        if(!FeatureSwitches.enabled(KEY,false))return flags;
+        if(!enabled())return flags;
         try{String k=OWNERS.get(owner);if(k==null){begin(owner);k=OWNERS.get(owner);}if(k==null)return flags;
             synchronized(HIDDEN){Set<Integer> rows=HIDDEN.get(k);if(rows==null||((flags&0x1000)==0&&rows.isEmpty()))return flags;
                 int n=((Number)field(response,response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue();
@@ -95,9 +105,9 @@ public final class HiddenNgUnread {
         int count=0;for(int n:hidden)if(n>read&&n<=total)count++;
         return Math.max(Math.min(read,total),total-count);
     }
-    static void bind242(Object result){try{List<?> rows=PopularReplies.fullList(field(result,"a"));if(rows.isEmpty())return;String k=key(responseUrl(rows.get(0),field(result,"d")));if(k!=null){MODERN.put(rows.get(0),k);synchronized(ROW_KEYS){ROW_KEYS.clear();}}}catch(Exception ignored){}}
+    static void bind242(Object result){try{List<?> rows=PopularReplies.fullList(field(result,"a"));if(rows.isEmpty())return;String k=key(responseUrl(rows.get(0),field(result,"d")));if(k!=null)MODERN.put(rows.get(0),k);}catch(Exception ignored){}}
     static Map modern(Object source,Map flags){
-        if(!FeatureSwitches.enabled(KEY,false)||flags==null)return flags;
+        if(!enabled()||flags==null)return flags;
         try{List<?> rows=PopularReplies.fullList(source);if(rows.isEmpty())return flags;String k=MODERN.get(rows.get(0));if(k==null)return flags;
             Set<Integer> candidates=new HashSet<>();for(Object item:flags.entrySet()){
                 Map.Entry entry=(Map.Entry)item;Object n=entry.getKey(),f=entry.getValue();
@@ -106,7 +116,15 @@ public final class HiddenNgUnread {
             Set<Integer> hidden=new HashSet<>();
             // Most renders have no hidden posts. Do not reflect over every response
             // in that common case, but still clear any previous hidden membership.
-            if(!candidates.isEmpty())for(Object row:rows){int n=((Number)field(row,"o")).intValue();if(candidates.contains(n))hidden.add(n);}
+            if(!candidates.isEmpty()){
+                // Full DAT lists normally have response n at index n-1. Verify
+                // each actual row instead of reflecting over all visible posts.
+                // Missing/sparse/reordered lists fall back to an exact scan.
+                if(rows instanceof RandomAccess)for(Iterator<Integer> it=candidates.iterator();it.hasNext();){int n=it.next();
+                    if(n<=rows.size()&&((Number)field(rows.get(n-1),"o")).intValue()==n){hidden.add(n);it.remove();}}
+                if(!candidates.isEmpty())for(Object row:rows){int n=((Number)field(row,"o")).intValue();
+                    if(candidates.remove(n)){hidden.add(n);if(candidates.isEmpty())break;}}
+            }
             synchronized(HIDDEN){if(!hidden.equals(HIDDEN.get(k))){HIDDEN.put(k,hidden);invalidate(k);}}
         }catch(Exception ignored){}return flags;
     }
@@ -121,7 +139,7 @@ public final class HiddenNgUnread {
         if(total==null)throw new IllegalArgumentException("Unsupported unread row");
         int nativeTotal;
         try{nativeTotal=((Number)field(row,total)).intValue();}catch(Exception e){throw new IllegalStateException(e);}
-        if(!FeatureSwitches.enabled(KEY,false)||nativeTotal<=read)return nativeTotal;
+        if(!enabled()||nativeTotal<=read)return nativeTotal;
         synchronized(HIDDEN){if(HIDDEN.isEmpty())return nativeTotal;}
         try{Context c=Haiagaru.applicationContextForExtension();
             String k=rowKey(row,name,c);synchronized(HIDDEN){Set<Integer> hidden=HIDDEN.get(k);if(hidden==null||hidden.isEmpty())return nativeTotal;

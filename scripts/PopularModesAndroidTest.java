@@ -74,6 +74,16 @@ public final class PopularModesAndroidTest {
     call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows.subList(0,4),scope);
    }
    check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).size()==103,"filtered callback preserves complete native rows");
+   // Popups for replies other than 1 share response instances with the main
+   // thread, but must never become its popularity-layout owner.
+   List<Object> popupRows=new ArrayList<>();popupRows.add(rows.get(2));
+   call(nativeRows,"save",new Class<?>[]{List.class,boolean.class,int.class},popupRows,true,3);
+   check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).size()==103,"response-2 popup does not zero main thread count");
+   check(call(nativeRows,"find",new Class<?>[]{List.class},Collections.singletonList(source.get(1)))==null,"response-2 popup cannot claim the main-thread capture");
+   for(int n=2;n<=30;n++)call(nativeRows,"save",new Class<?>[]{List.class,boolean.class,int.class},Collections.singletonList(rows.get(n)),true,3);
+   check(call(nativeRows,"find",new Class<?>[]{List.class},source)==firstCapture,"repeated reply popups cannot evict the full-thread capture");
+   call(nativeRows,"save",new Class<?>[]{List.class,boolean.class,int.class},rows.subList(0,2),true,3);
+   check(call(nativeRows,"find",new Class<?>[]{List.class},source)==firstCapture,"response-1 popup cannot change main tree mode");
    if(old||middle){field(adapter.getClass(),old?"G":"M").setInt(adapter,0);call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows);}
    else{
     field(scope.getClass(),"a").setBoolean(scope,true);call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Tree"));call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);
@@ -83,6 +93,8 @@ public final class PopularModesAndroidTest {
    selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);check(selected.size()==1&&selected.contains(1),"native flat mode counts qualifying roots only");
    Object flatCapture=call(nativeRows,"find",new Class<?>[]{List.class},source);
    field(response,old?"r":middle?"p":"s").setInt(source.get(0),0);
+   check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).size()==1,
+           "mutable response flags cannot change a captured layout before a real rebuild");
    if(old||middle)call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows);
    else{call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Normal"));call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);}
    check(call(nativeRows,"find",new Class<?>[]{List.class},source)!=flatCapture,"changed reference counts invalidate the same response objects");

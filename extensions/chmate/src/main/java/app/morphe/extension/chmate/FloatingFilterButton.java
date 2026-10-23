@@ -10,6 +10,13 @@ import java.util.*;
 /** In-app overlay only. No SYSTEM_ALERT_WINDOW permission or background window. */
 final class FloatingFilterButton {
     private static final Map<View,WeakReference<Binding>> bindings=new WeakHashMap<>();
+    static void iconsChanged(){
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+            for(WeakReference<Binding> ref:new ArrayList<>(bindings.values())){
+                Binding binding=ref.get();if(binding!=null&&!binding.closed)binding.updateIcon();
+            }
+        });
+    }
     static void update(Object owner) {
         try {
             Activity activity=(Activity)owner.getClass().getMethod("getActivity").invoke(owner);
@@ -33,12 +40,21 @@ final class FloatingFilterButton {
             host=activity.findViewById(android.R.id.content);
             prefs=activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0);
             button=new Button(activity);button.setText("フィルター");button.setContentDescription("フィルター。長押ししてドラッグで位置変更");
+            updateIcon();
             hold=()->{dragging=true;button.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);};
             button.setTag("haiagaru.floatingFilter");
             host.addView(button,new FrameLayout.LayoutParams(-2,-2));
             button.setOnClickListener(v->{Object target=this.owner.get();if(target!=null)ExtraQuickFilters.open(target);});
             button.setOnTouchListener((view,event)->touch(event));
             root.addOnAttachStateChangeListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);
+        }
+        void updateIcon(){
+            android.graphics.drawable.Drawable icon=ToolbarIcons.preview(button.getContext(),
+                    ToolbarIcons.index(ToolbarIcons.FLOATING_FILTER),button.getCurrentTextColor());
+            int size=Math.round(24*button.getResources().getDisplayMetrics().density);
+            icon.setBounds(0,0,size,size);
+            button.setCompoundDrawablesRelative(icon,null,null,null);
+            button.setCompoundDrawablePadding(Math.round(8*button.getResources().getDisplayMetrics().density));
         }
         boolean touch(MotionEvent e) {
             switch(e.getActionMasked()) {

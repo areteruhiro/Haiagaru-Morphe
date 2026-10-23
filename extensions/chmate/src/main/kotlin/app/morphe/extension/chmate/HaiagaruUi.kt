@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 /** Shared expressive shapes, motion, color and accessible spacing for extension screens. */
 object HaiagaruUi {
+    /** Same opaque backdrop as Compose; transparent native window colors must not reveal black. */
+    @JvmStatic fun toolTabHeaderColors(context: android.content.Context): IntArray {
+        val native = try { NativeThemeColors.colors(context)?.takeIf { it.size == 7 } }
+            catch (_: RuntimeException) { null }
+        val dark = context.resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val scheme = native?.let(::chMateColorScheme) ?: if (dark) darkColorScheme() else lightColorScheme()
+        return intArrayOf(scheme.background.toArgb(), scheme.onBackground.toArgb())
+    }
     private val LocalNativeColors = staticCompositionLocalOf<IntArray?> { null }
     @JvmStatic
     fun controls(activity: HaiagaruComposeActivity, model: android.view.View): android.view.View =

@@ -3042,7 +3042,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyWacchoiLong
         "invoke-static/range {v$nameMenuRegister .. v$nameMenuRegister}, " +
             "Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->reorderLegacyNameMenu(Ljava/lang/Object;)V")
     nameMenu.addInstructionsWithLabels(nameAnchor.index, """
-        invoke-static {p0, v$nameMenuRegister, p1}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendLegacyForResponse(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
+        invoke-static {p0, v$nameMenuRegister, p1}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendLegacyForName(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)V
     """.trimIndent())
     val callback = mutableClassDefBy(owner).methods.single { method ->
         method.name == "Wx_"

@@ -101,12 +101,11 @@ public final class ResponseMenuSettings {
         String key=longPressKey(id);
         if(context!=null){
             android.content.SharedPreferences prefs=context.getSharedPreferences("haiagaru_response_actions",0);
-            // Explicit OFF must also win over a stale "always show" value and Extra Tools.
-            if(key!=null&&prefs.contains(key)&&!prefs.getBoolean(key,true))return false;
-            int mode=prefs.getInt("visibility."+id,0);
+            // Older Wacchoi toggles wrote both the name-menu key and visibility.
+            // Those coupled overrides must not force an item into the body menu.
+            int mode=visibilityMode(prefs,id);
             if(mode==2)return false;
             if(mode==1)return true;
-            if(key!=null&&(id!=75||prefs.contains(key)))return prefs.getBoolean(key,true);
         }
         if(Boolean.TRUE.equals(BUILD_TOOLS.get()))return true;
         JSONObject settings = savedSettings();
@@ -127,11 +126,19 @@ public final class ResponseMenuSettings {
         return id==75?"wacchoiLongPressSearch":id==0x7e000077?"wacchoiLongPressSuffixSearch":
                 id==0x7e000078?"wacchoiLongPressPrefixSearch":id==0x7e000079?"wacchoiLongPressPrefixNg":null;
     }
-    static void storeVisibility(android.content.SharedPreferences prefs,int id,int mode){
-        android.content.SharedPreferences.Editor edit=prefs.edit().putInt("visibility."+id,mode);
+    private static String visibilityKey(int id){return longPressKey(id)==null?"visibility."+id:"responseVisibility."+id;}
+    private static int visibilityMode(android.content.SharedPreferences prefs,int id){
         String key=longPressKey(id);
-        if(key!=null){if(mode==0)edit.remove(key);else edit.putBoolean(key,mode==1);}
-        edit.apply();
+        return prefs.getInt(visibilityKey(id),key!=null&&prefs.contains(key)?0:prefs.getInt("visibility."+id,0));
+    }
+    static boolean nameMenuVisible(int id){
+        Context context=Haiagaru.applicationContextForExtension();String key=longPressKey(id);
+        if(context!=null&&key!=null){android.content.SharedPreferences prefs=context.getSharedPreferences("haiagaru_response_actions",0);
+            if(prefs.contains(key))return prefs.getBoolean(key,true);}
+        return visible(id);
+    }
+    static void storeVisibility(android.content.SharedPreferences prefs,int id,int mode){
+        prefs.edit().putInt(visibilityKey(id),mode).apply();
     }
     static void addWacchoiSearchSetting(android.widget.LinearLayout layout, android.app.Activity activity) {
         addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「ワッチョイ検索」を表示",
@@ -143,17 +150,17 @@ public final class ResponseMenuSettings {
         addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「上4桁をNG登録」を表示",
                 "wacchoiLongPressPrefixNg", 0x7e000079);
         android.widget.TextView help = new android.widget.TextView(activity);
-        help.setText("変更後、ワッチョイの長押しメニューを開き直してください。各項目を個別に表示・非表示できます。");
+        help.setText("ワッチョイ部分の長押しだけに適用します。レス本文の長押し・ツールバーの表示設定とは独立しています。変更後にメニューを開き直してください。");
         layout.addView(help);
     }
     private static void addWacchoiLongPressToggle(android.widget.LinearLayout layout,
             android.app.Activity activity, String label, String key, int itemId) {
         android.widget.Switch toggle = new android.widget.Switch(activity);
         toggle.setText(label);
-        toggle.setChecked(visible(itemId));
+        toggle.setChecked(nameMenuVisible(itemId));
         toggle.setOnCheckedChangeListener((button, checked) -> activity
                 .getSharedPreferences("haiagaru_response_actions", 0).edit()
-                .putBoolean(key, checked).putInt("visibility."+itemId,checked?1:2).apply());
+                .putBoolean(key, checked).apply());
         layout.addView(toggle);
     }
     static void addSettings(android.widget.LinearLayout layout,android.app.Activity activity){
@@ -163,8 +170,8 @@ public final class ResponseMenuSettings {
         button.setOnClickListener(v->{android.widget.LinearLayout panel=new android.widget.LinearLayout(activity);panel.setOrientation(1);
             android.widget.TextView help=new android.widget.TextView(activity);help.setText("項目ごとに「標準のツールバー設定に従う／常に表示／常に非表示」を指定します。既存の配置順は変更しません。画面を開き直すと反映します。\n「追加ツール」をオンにすると、ツールバーの表示設定とは別に、選んだレスで利用できるHaiagaruの操作をまとめて開けます。");panel.addView(help);
             android.content.SharedPreferences prefs=activity.getSharedPreferences("haiagaru_response_actions",0);
-            for(int i=0;i<IDS.length;i++){final int id=IDS[i];final String name=NAMES[i];android.widget.Button row=new android.widget.Button(activity);Runnable update=()->{int mode=prefs.getInt("visibility."+id,0);row.setText(name+"："+(mode==1?"常に表示":mode==2?"常に非表示":"標準設定"));};update.run();panel.addView(row);
-                row.setOnClickListener(w->new HaiagaruDialog.Builder(activity).setTitle(name).setSingleChoiceItems(new String[]{"標準のツールバー設定に従う","常に表示","常に非表示"},prefs.getInt("visibility."+id,0),(d,n)->{storeVisibility(prefs,id,n);update.run();d.dismiss();}).setNegativeButton("キャンセル",null).show());
+            for(int i=0;i<IDS.length;i++){final int id=IDS[i];final String name=NAMES[i];android.widget.Button row=new android.widget.Button(activity);Runnable update=()->{int mode=visibilityMode(prefs,id);row.setText(name+"："+(mode==1?"常に表示":mode==2?"常に非表示":"標準設定"));};update.run();panel.addView(row);
+                row.setOnClickListener(w->new HaiagaruDialog.Builder(activity).setTitle(name).setSingleChoiceItems(new String[]{"標準のツールバー設定に従う","常に表示","常に非表示"},visibilityMode(prefs,id),(d,n)->{storeVisibility(prefs,id,n);update.run();d.dismiss();}).setNegativeButton("キャンセル",null).show());
             }
             android.widget.ScrollView scroll=new android.widget.ScrollView(activity);scroll.addView(panel);new HaiagaruDialog.Builder(activity).setTitle("レスメニューの項目別設定").setView(scroll).setPositiveButton("閉じる",null).show();
         });
