@@ -451,6 +451,7 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            NativeToolTabs.resumed(activity);
                             ExternalBoardAuth.resumed(activity);
                             NativeRestore191.onActivityResumed(activity);
                             ResponseArchive.onActivityResumed(activity);
@@ -3839,8 +3840,8 @@ public final class Haiagaru {
         );
         TextView httpsDescription = new TextView(activity);
         httpsDescription.setText(text(
-                "HTTPS非対応の接続先は読み込めなくなります。その場合はOFFにしてください。",
-                "Servers without HTTPS will fail to load. Turn this off if needed."
+                "hissi.org のHTTP通信は切り替え対象から除外します。他のHTTPS非対応の接続先が読み込めない場合はOFFにしてください。",
+                "HTTP requests to hissi.org are excluded. Turn this off if another server does not support HTTPS."
         ));
         httpsDescription.setTextSize(13);
         layout.addView(httpsDescription, rowParams(activity));

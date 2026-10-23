@@ -9,6 +9,14 @@ public final class HiddenNgUnread {
     public static final String KEY="excludeHiddenNgUnread";
     private static final Map<Object,String> OWNERS=Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<Object,String> MODERN=Collections.synchronizedMap(new WeakHashMap<>());
+    private static final java.util.concurrent.ConcurrentMap<Class<?>,Map<String,Field>> FIELDS=new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<Integer,RowKey> ROW_KEYS=new LinkedHashMap<Integer,RowKey>(128,.75f,true){
+        @Override protected boolean removeEldestEntry(Map.Entry<Integer,RowKey> e){return size()>1024;}
+    };
+    private static final class RowKey {
+        final java.lang.ref.WeakReference<Object> row;final String signature,key;
+        RowKey(Object row,String signature,String key){this.row=new java.lang.ref.WeakReference<>(row);this.signature=signature;this.key=key;}
+    }
     private static final Map<String,Set<Integer>> HIDDEN=new LinkedHashMap<String,Set<Integer>>(32,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,Set<Integer>> e){return size()>128;}
     };
@@ -18,7 +26,29 @@ public final class HiddenNgUnread {
     private static final Map<String,int[]> SORTED=new LinkedHashMap<String,int[]>(32,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,int[]> e){return size()>128;}
     };
-    private static Object field(Object o,String n)throws Exception{return ResponseArchiveEntry.field(o,n);}
+    private static Object field(Object o,String n)throws Exception{
+        Map<String,Field> fields=FIELDS.computeIfAbsent(o.getClass(),c->new java.util.concurrent.ConcurrentHashMap<>());
+        Field f=fields.get(n);if(f==null){
+            for(Class<?> type=o.getClass();type!=null;type=type.getSuperclass())try{f=type.getDeclaredField(n);f.setAccessible(true);break;}catch(NoSuchFieldException ignored){}
+            if(f==null)throw new NoSuchFieldException(n);fields.put(n,f);
+        }
+        return f.get(o);
+    }
+    /** Guard reused native rows by their board, thread and explicit Intent URL. */
+    private static String rowKey(Object row,String name,Context c)throws Exception{
+        if(name.equals("o.zzauw")){Object info=field(row,"i");return key((String)info.getClass().getMethod(ArchiveOrigins.nativeUrlMethod()).invoke(info));}
+        boolean old=name.equals("o.onAdDisplayed$setIcon"),middle=name.equals("o.Yy2$open");
+        Object board=field(row,old?"g":middle?"b":"e");
+        long thread=((Number)field(row,old?"h":middle?"g":"b")).longValue();
+        android.content.Intent intent=(android.content.Intent)field(row,old?"d":middle?"a":"k");
+        String signature=String.valueOf(board)+"\n"+thread+"\n"+(intent==null?"":intent.getDataString());
+        int identity=System.identityHashCode(row);
+        synchronized(ROW_KEYS){RowKey cached=ROW_KEYS.get(identity);if(cached!=null&&cached.row.get()==row&&cached.signature.equals(signature))return cached.key;}
+        String result=key(DroppedThreadStatus.rowUrl(row,c));
+        // A failed native lookup can become resolvable after board metadata arrives.
+        if(result!=null)synchronized(ROW_KEYS){ROW_KEYS.put(identity,new RowKey(row,signature,result));}
+        return result;
+    }
     private static String responseUrl(Object response,Object board)throws Exception{
         boolean old=response.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError"),middle=response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion");
         Method method=board.getClass().getDeclaredMethod(old?"d":middle?"e":"c",int.class);method.setAccessible(true);
@@ -38,13 +68,15 @@ public final class HiddenNgUnread {
             List<?> rows=PopularReplies.fullList(list);if(rows.isEmpty())return;
             String k=key(responseUrl(rows.get(0),board));if(k==null)return;
             OWNERS.put(owner,k);synchronized(HIDDEN){HIDDEN.put(k,new HashSet<>());invalidate(k);}
+            synchronized(ROW_KEYS){ROW_KEYS.clear();}
         }catch(Exception ignored){OWNERS.remove(owner);}
     }
     static int observe(Object owner,Object response,int flags){
         if(!FeatureSwitches.enabled(KEY,false))return flags;
         try{String k=OWNERS.get(owner);if(k==null){begin(owner);k=OWNERS.get(owner);}if(k==null)return flags;
-            int n=((Number)field(response,response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue();
-            synchronized(HIDDEN){Set<Integer> rows=HIDDEN.get(k);if(rows!=null&&n>0&&rows.size()<100000){boolean changed=(flags&0x1000)!=0?rows.add(n):rows.remove(n);if(changed)invalidate(k);}}
+            synchronized(HIDDEN){Set<Integer> rows=HIDDEN.get(k);if(rows==null||((flags&0x1000)==0&&rows.isEmpty()))return flags;
+                int n=((Number)field(response,response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue();
+                if(n>0&&rows.size()<100000){boolean changed=(flags&0x1000)!=0?rows.add(n):rows.remove(n);if(changed)invalidate(k);}}
         }catch(Exception ignored){}return flags;
     }
     private static void invalidate(String key){SORTED.remove(key);}
@@ -63,12 +95,19 @@ public final class HiddenNgUnread {
         int count=0;for(int n:hidden)if(n>read&&n<=total)count++;
         return Math.max(Math.min(read,total),total-count);
     }
-    static void bind242(Object result){try{List<?> rows=PopularReplies.fullList(field(result,"a"));if(rows.isEmpty())return;String k=key(responseUrl(rows.get(0),field(result,"d")));if(k!=null)MODERN.put(rows.get(0),k);}catch(Exception ignored){}}
+    static void bind242(Object result){try{List<?> rows=PopularReplies.fullList(field(result,"a"));if(rows.isEmpty())return;String k=key(responseUrl(rows.get(0),field(result,"d")));if(k!=null){MODERN.put(rows.get(0),k);synchronized(ROW_KEYS){ROW_KEYS.clear();}}}catch(Exception ignored){}}
     static Map modern(Object source,Map flags){
         if(!FeatureSwitches.enabled(KEY,false)||flags==null)return flags;
         try{List<?> rows=PopularReplies.fullList(source);if(rows.isEmpty())return flags;String k=MODERN.get(rows.get(0));if(k==null)return flags;
-            Set<Integer> hidden=new HashSet<>();for(Object row:rows){int n=((Number)field(row,"o")).intValue();Object f=flags.get(n);if(f instanceof Number&&(((Number)f).intValue()&0x1000)!=0&&n>0&&hidden.size()<100000)hidden.add(n);}
-            synchronized(HIDDEN){HIDDEN.put(k,hidden);invalidate(k);}
+            Set<Integer> candidates=new HashSet<>();for(Object item:flags.entrySet()){
+                Map.Entry entry=(Map.Entry)item;Object n=entry.getKey(),f=entry.getValue();
+                if(n instanceof Integer&&f instanceof Number&&(((Number)f).intValue()&0x1000)!=0&&(Integer)n>0&&candidates.size()<100000)candidates.add((Integer)n);
+            }
+            Set<Integer> hidden=new HashSet<>();
+            // Most renders have no hidden posts. Do not reflect over every response
+            // in that common case, but still clear any previous hidden membership.
+            if(!candidates.isEmpty())for(Object row:rows){int n=((Number)field(row,"o")).intValue();if(candidates.contains(n))hidden.add(n);}
+            synchronized(HIDDEN){if(!hidden.equals(HIDDEN.get(k))){HIDDEN.put(k,hidden);invalidate(k);}}
         }catch(Exception ignored){}return flags;
     }
     public static int totalFromStoredRead(Object row){
@@ -82,15 +121,14 @@ public final class HiddenNgUnread {
         if(total==null)throw new IllegalArgumentException("Unsupported unread row");
         int nativeTotal;
         try{nativeTotal=((Number)field(row,total)).intValue();}catch(Exception e){throw new IllegalStateException(e);}
-        if(!FeatureSwitches.enabled(KEY,false))return nativeTotal;
-        try{Context c=Haiagaru.applicationContextForExtension();String url;
-            if(name.equals("o.zzauw")){Object info=field(row,"i");url=(String)info.getClass().getMethod(ArchiveOrigins.nativeUrlMethod()).invoke(info);}
-            else url=DroppedThreadStatus.rowUrl(row,c);
-            String k=key(url);synchronized(HIDDEN){Set<Integer> hidden=HIDDEN.get(k);if(hidden==null)return nativeTotal;
+        if(!FeatureSwitches.enabled(KEY,false)||nativeTotal<=read)return nativeTotal;
+        synchronized(HIDDEN){if(HIDDEN.isEmpty())return nativeTotal;}
+        try{Context c=Haiagaru.applicationContextForExtension();
+            String k=rowKey(row,name,c);synchronized(HIDDEN){Set<Integer> hidden=HIDDEN.get(k);if(hidden==null||hidden.isEmpty())return nativeTotal;
                 int count=unreadHidden(k,read,nativeTotal,hidden);return Math.max(Math.min(read,nativeTotal),nativeTotal-count);}
         }catch(Exception ignored){return nativeTotal;}
     }
     private static void invalidateAll(){SORTED.clear();}
-    static void clear(){OWNERS.clear();MODERN.clear();synchronized(HIDDEN){HIDDEN.clear();invalidateAll();}}
+    static void clear(){OWNERS.clear();MODERN.clear();synchronized(HIDDEN){HIDDEN.clear();invalidateAll();}synchronized(ROW_KEYS){ROW_KEYS.clear();}}
     private HiddenNgUnread(){}
 }

@@ -16,6 +16,7 @@ public final class NativeToolTabs {
     private static final String PREFIX="haiagaru-tool://";
     private static final String FROM_TABLET="haiagaru.settings.fromTablet";
     private static java.lang.ref.WeakReference<Activity> settingsHost=new java.lang.ref.WeakReference<>(null);
+    private static java.lang.ref.WeakReference<Activity> searchHost=new java.lang.ref.WeakReference<>(null);
     private NativeToolTabs(){}
     /** Kept unoptimized and changed only after all native wiring is verified by the patch. */
     public static boolean supported(){return false;}
@@ -25,6 +26,58 @@ public final class NativeToolTabs {
     static boolean selected(Activity activity,String tool){
         String key="settings".equals(tool)?SETTINGS_KEY:"eddi".equals(tool)?EDDI_KEY:"search".equals(tool)?SEARCH_KEY:"checker".equals(tool)?CHECKER_KEY:"hissi".equals(tool)?HISSI_KEY:"wacchoi".equals(tool)?FULL_KEY:null;
         return key!=null&&activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(key,true);
+    }
+    static void resumed(Activity activity){
+        if(activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity"))
+            searchHost=new java.lang.ref.WeakReference<>(activity);
+    }
+    static Activity activity(android.content.Context context){
+        for(int depth=0;context!=null&&depth<16;depth++){
+            if(context instanceof Activity)return (Activity)context;
+            if(!(context instanceof android.content.ContextWrapper))break;
+            android.content.Context base=((android.content.ContextWrapper)context).getBaseContext();
+            if(base==context)break;context=base;
+        }
+        return null;
+    }
+    /** Share routing between native ID menus, legacy MenuItems and modern name sheets. */
+    static boolean openSearch(android.content.Context context,Intent original){
+        Activity host=activity(context);
+        if(host==null)return false;
+        return openSearch(host,original,false);
+    }
+    private static boolean openSearch(Activity host,Intent original,boolean resolved){
+        if(original==null||original.getComponent()==null)return false;
+        Intent launch=new Intent(original);String name=launch.getComponent().getClassName();String tool;
+        if(name.equals(HissiWacchoiSearchActivity.class.getName()))
+            tool=launch.getBooleanExtra("haiagaru.wacchoi.hissi",false)?"wacchoi":"search";
+        else if(name.equals(HissiMenuActivity.class.getName())){
+            if(launch.getBooleanExtra("haiagaru.wacchoi.search",false)){
+                String query=launch.getStringExtra("haiagaru.wacchoi.query");
+                if(query!=null&&query.matches("-[^\\s()（）<>]{4}")){
+                    launch.setClass(host,HissiWacchoiSearchActivity.class);tool="search";
+                }else{
+                    // Let the existing provider selection resolve a full-token request first.
+                    if(!resolved)return false;
+                    tool="checker";
+                }
+            }else{
+                String uriHost=launch.getData()==null?null:launch.getData().getHost();
+                // Archive state has its own serialization and routing; do not consume it here.
+                if("eddiarchive3rd.boy.jp".equalsIgnoreCase(uriHost))return false;
+                tool=("kyodemo.net".equalsIgnoreCase(uriHost)||"www.kyodemo.net".equalsIgnoreCase(uriHost))?"checker":"hissi";
+            }
+        }else return false;
+        return open(host,tool,launch);
+    }
+    /** Native ACTION_VIEW intents can bypass our menu callbacks. Only route within their task. */
+    static boolean redirectSearch(Activity screen,Bundle state,boolean resolved){
+        if(state!=null||screen.isFinishing())return false;
+        Activity host=searchHost.get();
+        if(host==null||host==screen||host.isFinishing()||host.isDestroyed()||host.getTaskId()!=screen.getTaskId())return false;
+        Intent launch=new Intent(screen.getIntent()).setClass(screen,screen.getClass());
+        if(!openSearch(host,launch,resolved))return false;
+        screen.finish();return true;
     }
     public static boolean open(Activity activity,String tool){
         return open(activity,tool,null);
@@ -158,7 +211,7 @@ public final class NativeToolTabs {
             if(!state.containsKey(EddiArchiveSearchUi.STATE_KEY)&&args.containsKey(Intent.EXTRA_TEXT))state.putString(EddiArchiveSearchUi.STATE_KEY,args.getString(Intent.EXTRA_TEXT));
             EddiArchiveSearchUi ui=EddiArchiveSearchUi.embed(activity,Uri.parse("https://eddiarchive3rd.boy.jp/"),url->openThread(activity,url),state,()->back(activity));
             ui.onStateSaved=value->args.putString(Intent.EXTRA_TEXT,compactState(value));
-            Content content=new Content(ui.rootView()){
+            Content content=new Content(ToolScreenUi.archive(activity,ui.rootView(),()->back(activity))){
                 @Override void save(Bundle out){Bundle temporary=new Bundle();ui.saveState(temporary);String value=compactState(temporary.getString(EddiArchiveSearchUi.STATE_KEY));if(value!=null)out.putString(EddiArchiveSearchUi.STATE_KEY,value);}
                 @Override void close(){ui.saveState(null);ui.dispose();}
             };
@@ -186,7 +239,7 @@ public final class NativeToolTabs {
             }catch(Exception error){android.util.Log.w("Haiagaru","Tool tab state could not be restored",error);}
             if("wacchoi".equals(tool))launch.putExtra("haiagaru.wacchoi.hissi",true);
             if("hissi".equals(tool))launch.putExtra("haiagaru.native.hissiViewer",true);
-            if(("checker".equals(tool)||"hissi".equals(tool))&&launch.getData()==null){showAddressForm();return;}
+            if(("checker".equals(tool)||"hissi".equals(tool))&&launch.getData()==null&&!launch.getBooleanExtra("haiagaru.wacchoi.search",false)){showAddressForm();return;}
             create(launch,state);
         }
         private void render(View content){

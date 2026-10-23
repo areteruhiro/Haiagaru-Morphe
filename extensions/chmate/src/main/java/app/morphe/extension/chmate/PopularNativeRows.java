@@ -9,9 +9,20 @@ public final class PopularNativeRows {
     private static final ThreadLocal<Boolean> modernFlat=new ThreadLocal<>();
     static final class Snapshot {
         final Object first;final List<?> rows;final boolean flat;final int threshold;
+        final Object[] responses;final int[] layout;
         Snapshot(List<?> rows,boolean flat,int threshold)throws Exception {
             this.rows=new ArrayList<>(rows);this.flat=flat;this.threshold=threshold;
+            responses=new Object[rows.size()];layout=new int[rows.size()*2];
+            for(int i=0;i<rows.size();i++){
+                Object r=ExtraQuickFilters.rowResponse(rows.get(i));responses[i]=r;
+                if(r!=null){layout[i*2]=depth(rows.get(i));layout[i*2+1]=references(r);}
+            }
             Object found=null;for(Object row:rows){Object r=ExtraQuickFilters.rowResponse(row);if(r!=null){found=r;break;}}first=found;
+        }
+        boolean sameLayout(Snapshot other){
+            if(flat!=other.flat||threshold!=other.threshold||responses.length!=other.responses.length)return false;
+            for(int i=0;i<responses.length;i++)if(responses[i]!=other.responses[i])return false;
+            return Arrays.equals(layout,other.layout);
         }
         Set<Integer> selected(int threshold)throws Exception {
             Set<Integer> result=new LinkedHashSet<>();int start=-1;
@@ -38,12 +49,15 @@ public final class PopularNativeRows {
         try {
             Snapshot s=new Snapshot(rows,flat,threshold);if(s.first==null)return;
             synchronized(snapshots){
-                for(Snapshot previous:snapshots)if(previous.first==s.first&&previous.rows.size()>s.rows.size()){
+                for(Snapshot previous:snapshots)if(previous.first==s.first&&previous.flat==flat&&previous.rows.size()>s.rows.size()){
                     // An active native filter can return only its selected rows.
                     // Keep the complete row set for Haiagaru's inline predicate.
                     s=new Snapshot(previous.rows,flat,threshold);break;
                 }
                 Snapshot next=s;
+                // Native rebuilds recreate row wrappers. Do not schedule another rebuild
+                // for an identical layout; compare captured values, not mutable responses.
+                for(Snapshot previous:snapshots)if(previous.first==next.first&&previous.sameLayout(next))return;
                 snapshots.removeIf(v->v.first==next.first);
                 if(snapshots.size()>=16)snapshots.remove(0);
                 snapshots.add(next);

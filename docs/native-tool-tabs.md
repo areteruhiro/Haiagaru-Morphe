@@ -70,3 +70,10 @@ Androidビルド`build/native-tool-tabs-final-build.log`成功（4分40秒）。
 191もデータ保持更新済みだが、同じ試験でON時の本体タブ接続失敗を検出。242の入口はAndroidX Fragmentを受け取る一方、191の入口は本体独自Fragment基底を受け取るため、完全なクラス名一致では入口が見つからなかった。修正では実際のパッチ後Fragmentの継承関係で入口を照合し、候補が複数ある場合は従来画面へ戻す。再ビルド・再検証の結果は追記する。初回失敗を成功扱いしない。
 
 191修正版は`build/native-tool-tabs-legacy-fix-build.log`でビルド成功（7分30秒）。MPP SHA256 `03CE527DF2AFE1C2FD0E58F71F9D3BB66FB3C0F09E95225BA895D4E4E85AD6CC`。署名照合・データ保持更新後、実設定ON/OFFと両画面のFragment表示11項目成功（`build/native-tool-tabs191-runtime-fixed.txt`）。191/226/242で本体タブ統合と設定切替の基本確認がそろった。ただし版ごとの候補MPPは異なり、新しいタブ入口・個別選択はこの時点の試験には含まれない。プロセス終了後復元・実サイト検索は別途未確認。
+# 2026-10-23 未公開の追加改善
+
+- 閉じるボタンは背景・影を除き、白黒の二重縁取りで描画。48dpの独立ヘッダーに置き、ビューア本文や操作部へ重ならないレイアウトにした。
+- ContextThemeWrapperをほどいて長押しの呼び出し元Activityを取得する共通searchルートを追加。上／下4桁は投稿検索タブ、全文は既存の検索先選択を解決して全文検索または投稿検索・結果タブへ渡す。
+- Native ACTION_VIEWで直接起動されるIDメニューも、同じtaskの生存中TabletHomeActivityだけを候補にしてタブ設定に従う。別task・スマートフォン・設定OFF・Activity復元時は従来のActivityを保つ。エッヂ過去ログの独自stateルートはこの処理に取り込まない。
+- 単体Activityの初回起動を橋渡しとして使用する場合、元IntentのURI・host・board・query・上下区分を維持。既存のprovider解決とcontrollerの終了を先に確認し、Hissi全文の中間画面をタブへ重複生成しない。
+- scripts/frida-longpress-tab-entry-smoke.jsは実Activityの入口とラップContext・OFF・各検索語/板引継ぎ・閉じる背景なし/非重複を検査する。試験結果はintegration-statusへ記録する。

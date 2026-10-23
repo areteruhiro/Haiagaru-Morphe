@@ -44,6 +44,23 @@ public final class PopularModesAndroidTest {
    Set<?> selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);
    check(selected.size()==103,"native tree returns all 103 matching responses, not one root");check(!selected.contains(104)&&!selected.contains(105),"small conversation excluded");
    Class<?> extra=Class.forName("app.morphe.extension.chmate.ExtraQuickFilters",true,loader);
+   Object firstCapture=call(nativeRows,"find",new Class<?>[]{List.class},source);
+   if(old||middle)call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows);
+   else{
+    call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Tree"));
+    call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);
+   }
+   check(call(nativeRows,"find",new Class<?>[]{List.class},source)==firstCapture,"identical layout does not start a refresh/rebuild loop");
+   // Standard extraction belongs to ChMate, not to an older Haiagaru capture.
+   // Deliberately make that capture unavailable: native rows must still survive.
+   synchronized(snapshots){snapshots.clear();}
+   p.edit().putBoolean(keys[0],false).putBoolean(keys[1],false).commit();
+   Object standardAdapter=adapter;
+   if(old||middle)field(standardAdapter.getClass(),old?"q":"s").set(standardAdapter,android.view.LayoutInflater.from(app));
+   else{standardAdapter=alloc(Class.forName("o.zzacr",true,loader));field(standardAdapter.getClass(),"e").set(standardAdapter,app);}
+   check(call(extra,"filterCollected",new Class<?>[]{Object.class,List.class},standardAdapter,rows)==rows,
+           "standard mode keeps current native output even before a layout capture is ready");
+   synchronized(snapshots){snapshots.add(firstCapture);}
    List<?> extracted=(List<?>)call(extra,"popularRows",new Class<?>[]{List.class,Set.class,Set.class,boolean.class},
            rows,selected,Collections.emptySet(),false);
    check(extracted.get(0)==filterHeader,"top filter row remains visible after popular selection");
@@ -64,6 +81,13 @@ public final class PopularModesAndroidTest {
     call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Normal"));call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);
    }
    selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);check(selected.size()==1&&selected.contains(1),"native flat mode counts qualifying roots only");
+   Object flatCapture=call(nativeRows,"find",new Class<?>[]{List.class},source);
+   field(response,old?"r":middle?"p":"s").setInt(source.get(0),0);
+   if(old||middle)call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows);
+   else{call(nativeRows,"config",new Class<?>[]{Object.class},config);call(nativeRows,"mode",new Class<?>[]{Object.class},Class.forName("o.zzacn",true,loader).getMethod("valueOf",String.class).invoke(null,"Normal"));call(nativeRows,"captureModern",new Class<?>[]{List.class,Object.class},rows,scope);}
+   check(call(nativeRows,"find",new Class<?>[]{List.class},source)!=flatCapture,"changed reference counts invalidate the same response objects");
+   check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).isEmpty(),"updated capture can represent a genuine zero count");
+   field(response,old?"r":middle?"p":"s").setInt(source.get(0),3);
    p.edit().putBoolean(keys[1],false).putInt(keys[3],5).putInt(keys[2],3).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==5,"standard threshold independent");
    p.edit().putBoolean(keys[1],true).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==3,"direct threshold independent");
    check(rows.size()==106&&source.size()==105,"source rows retained alongside structural filter row");
@@ -77,7 +101,7 @@ public final class PopularModesAndroidTest {
     ((List)full).addAll(source);fullField.set(adapter,full);
     field(adapter.getClass(),old?"z":"g").set(adapter,new ArrayList<>(rows));
     field(adapter.getClass(),old?"G":"M").setInt(adapter,1);field(adapter.getClass(),old?"I":"D").setInt(adapter,3);
-    p.edit().putBoolean("quickFilterCounts",false).putBoolean("quickFilterExtras",false).commit();
+    p.edit().putBoolean("quickFilterCounts",false).putBoolean("quickFilterExtras",false).putBoolean("popularReplyDirect",false).commit();
     call(extra,"legacyRows",new Class<?>[]{Object.class},adapter);
     Object recovered=call(nativeRows,"find",new Class<?>[]{List.class},full);
     check(recovered!=null,"legacyRows recaptures a missing native Snapshot for "+version);

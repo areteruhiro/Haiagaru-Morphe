@@ -119,6 +119,7 @@ public final class ExtraQuickFilters {
         int[] counts = new int[7];
         Set<Integer> aa = new HashSet<>(), mine = new HashSet<>(), replies = new HashSet<>();
         Exception failure;
+        PopularNativeRows.Snapshot popularSnapshot;
     }
     private static State state(Object adapter) { synchronized(STATES) { return STATES.computeIfAbsent(adapter, k -> new State()); } }
     static void refreshPopularity(){
@@ -140,11 +141,12 @@ public final class ExtraQuickFilters {
                     View root=(View)call(f,"getView",new Class<?>[0]);if(root==null||!root.isShown())continue;
                     Object a=adapter(f);State s=state(a);
                     boolean retry=s.failure!=null&&"Direct popularity layout unavailable".equals(s.failure.getMessage());
-                    if(s.counts[0]>=0&&!retry)continue;
                     List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
-                    if(PopularNativeRows.find(source)==null)continue;
+                    PopularNativeRows.Snapshot snapshot=PopularNativeRows.find(source);
+                    if(snapshot==null||(s.counts[0]>=0&&!retry&&s.popularSnapshot==snapshot))continue;
                     collect(a,source);
-                    if(retry)rebuild(a);else refresh(a);
+                    if(retry||(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&selected(a)[0]))rebuild(a);
+                    else refresh(a);
                 }catch(Exception error){Log.w("Haiagaru","Finish native popular count",error);}
             }
         });
@@ -261,7 +263,7 @@ public final class ExtraQuickFilters {
         // update/dialog opening instead of reparsing every post during native callbacks.
         if(resetting()&&s.extra==0)return;
         int[] counts=new int[7];Set<Integer> aa=new HashSet<>(),mine=new HashSet<>(),replies=new HashSet<>();
-        if(source.isEmpty()){s.counts=counts;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;return;}
+        if(source.isEmpty()){s.counts=counts;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return;}
         Object idx=index(a);
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
         for(Object r:source)if(response(r)) {
@@ -308,6 +310,7 @@ public final class ExtraQuickFilters {
             counts[0]=nativeRows==null?-1:nativeRows.selected(threshold).size();
         }
         s.aa=aa;s.mine=mine;s.replies=replies;s.counts=counts;s.failure=null;
+        s.popularSnapshot=PopularNativeRows.find(source);
     }
     private static boolean isImage226(ClassLoader loader,String url) throws Exception {
         return (Boolean)loader.loadClass("o.getColorFilter").getMethod("d",CharSequence.class).invoke(null,url);
@@ -339,7 +342,9 @@ public final class ExtraQuickFilters {
         }catch(Exception e){state(a).failure=e;Log.e("Haiagaru","Modern extra filters",e);return snapshot;}
     }
     private static List<?> filterCollected(Object a,List<?> rows) throws Exception {
-            if(!PopularReplies.enabledFor(context(a))&&selected(a)[0]) {
+            // Standard mode must retain the native renderer's current result. Replacing
+            // it with cached templates can resurrect an earlier empty/partial layout.
+            if(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&selected(a)[0]) {
                 List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
                 PopularNativeRows.Snapshot raw=PopularNativeRows.find(source);
                 if(raw==null)throw new IllegalStateException("Direct popularity layout unavailable");
@@ -384,7 +389,10 @@ public final class ExtraQuickFilters {
         return result;
     }
     public static ArrayList<?> filterRows(Object a,List<?> rows) {
-        if(!QuickFilterOptions.counts()&&!QuickFilterOptions.extras())return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);
+        if(!QuickFilterOptions.counts()&&!QuickFilterOptions.extras())try{
+            if(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!selected(a)[0])
+                return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);
+        }catch(Exception e){Log.w("Haiagaru","Popular filter selection unavailable",e);}
         try {
             Object source=field(a,legacy(a)?"K":middle(a)?"J":"o");
             List<?> full=PopularReplies.fullList(source);collect(a,full);

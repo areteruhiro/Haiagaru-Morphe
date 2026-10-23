@@ -47,6 +47,9 @@ final class EddiArchiveSearchUi {
     static final int RESULT_FIRST_TAG = 0x48690c04;
     static final int RESULT_PADDING_TAG = 0x48690c05;
     static final int CONTROL_LAYOUT_TAG = 0x48690c06;
+    static final int REFRESH_ACTION_TAG = 0x48690c07;
+    static final int REFRESH_ENABLED_TAG = 0x48690c08;
+    static final int SEARCH_BUSY_TAG = 0x48690c09;
     interface ThreadOpener {
         boolean open(String url);
     }
@@ -105,6 +108,7 @@ final class EddiArchiveSearchUi {
     private int controlLayoutScale;
     private boolean hideSearchForm;
     private int restoreScrollY = -1;
+    private boolean disposed;
 
     static EddiArchiveSearchUi show(Activity activity, Uri source, ThreadOpener opener, Bundle state) {
         return new EddiArchiveSearchUi(activity, source, opener, state, false, activity::finish);
@@ -134,6 +138,7 @@ final class EddiArchiveSearchUi {
         muted = dark ? Color.rgb(185, 188, 198) : Color.rgb(95, 99, 108);
 
         root = new LinearLayout(activity);
+        root.setTag(REFRESH_ACTION_TAG,(Runnable)this::refreshResults);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(background);
         root.setPadding(dp(16), dp(12), dp(16), dp(8));
@@ -289,6 +294,8 @@ final class EddiArchiveSearchUi {
                 if (activeProvider == position) return;
                 activeProvider = position;
                 ++generation; // Do not let the previous provider's in-flight response replace this screen.
+                root.setTag(SEARCH_BUSY_TAG,Boolean.FALSE);
+                root.setTag(REFRESH_ENABLED_TAG,Boolean.FALSE);
                 page = 1;
                 displayedPage = null;
                 displayedQuery = null;
@@ -350,6 +357,9 @@ final class EddiArchiveSearchUi {
 
     void dispose() {
         onStateSaved = null;
+        disposed = true;
+        root.setTag(REFRESH_ACTION_TAG,null);
+        root.setTag(SEARCH_BUSY_TAG,Boolean.FALSE);
         ++generation;
     }
 
@@ -442,10 +452,20 @@ final class EddiArchiveSearchUi {
 
     private void search(int requestedPage) {
         if (requestedPage < 1) return;
-        int requestId = ++generation;
         final Uri uri;
         try { uri = queryUri(requestedPage); }
         catch (IllegalArgumentException invalid) { status.setText(invalid.getMessage()); return; }
+        search(requestedPage,uri);
+    }
+    /** Re-fetch the displayed page/conditions, not unsubmitted edits in the form. */
+    private void refreshResults(){
+        if(disposed||Boolean.TRUE.equals(root.getTag(SEARCH_BUSY_TAG))||displayedPage==null||displayedQuery==null)return;
+        search(page,Uri.parse(displayedQuery));
+    }
+    private void search(int requestedPage,Uri uri) {
+        if(disposed||requestedPage<1)return;
+        int requestId = ++generation;
+        root.setTag(SEARCH_BUSY_TAG,Boolean.TRUE);
         status.setText("検索中…");
         previous.setEnabled(false);
         next.setEnabled(false);
@@ -454,6 +474,7 @@ final class EddiArchiveSearchUi {
                 SearchPage result = fetch(uri);
                 activity.runOnUiThread(() -> {
                     if (requestId == generation && !activity.isFinishing()) {
+                        root.setTag(SEARCH_BUSY_TAG,Boolean.FALSE);
                         displayedQuery = uri.toString();
                         display(requestedPage, result);
                         saveState(null);
@@ -465,6 +486,7 @@ final class EddiArchiveSearchUi {
                         ? "SEARCH_HTTP_" + message.substring(5) : "SEARCH_FAILED";
                 activity.runOnUiThread(() -> {
                     if (requestId != generation || activity.isFinishing()) return;
+                    root.setTag(SEARCH_BUSY_TAG,Boolean.FALSE);
                     Haiagaru.reportEddiArchiveError(activity, code,
                             "Search request failed: " + uri.getHost(), error);
                     status.setText((code.matches("SEARCH_HTTP_5[0-9]{2}")
@@ -556,6 +578,7 @@ final class EddiArchiveSearchUi {
     }
 
     private void display(int requestedPage, SearchPage result) {
+        root.setTag(REFRESH_ENABLED_TAG,Boolean.TRUE);
         page = requestedPage;
         displayedPage = result;
         totalResults = result.total;

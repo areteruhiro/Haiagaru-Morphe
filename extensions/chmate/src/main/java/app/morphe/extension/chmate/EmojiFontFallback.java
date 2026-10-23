@@ -31,6 +31,7 @@ final class EmojiFontFallback {
     private static final String FONT_ASSET = "haiagaru/NotoColorEmoji.ttf";
     private static volatile Typeface emojiTypeface;
     private static volatile boolean fontLoadFailed;
+    private static final java.util.concurrent.atomic.AtomicBoolean fontLoadStarted=new java.util.concurrent.atomic.AtomicBoolean();
     private static volatile Context applicationContext;
     /** missing = only clusters absent from the device, all = every emoji cluster. */
     private static volatile String renderMode = "missing";
@@ -408,16 +409,19 @@ final class EmojiFontFallback {
 
     private static Typeface getTypeface(Context context) {
         if (emojiTypeface != null || fontLoadFailed) return emojiTypeface;
-        synchronized (EmojiFontFallback.class) {
-            if (emojiTypeface != null || fontLoadFailed) return emojiTypeface;
-            try {
-                emojiTypeface = Typeface.createFromAsset(context.getAssets(), FONT_ASSET);
-            } catch (Throwable error) {
-                fontLoadFailed = true;
-                Log.w("Haiagaru", "Unable to load bundled emoji font", error);
-            }
-            return emojiTypeface;
+        if(fontLoadStarted.compareAndSet(false,true)){
+            Context resolved=applicationContext!=null?applicationContext:context.getApplicationContext();
+            final Context fontContext=resolved!=null?resolved:context;
+            // Font mapping/parsing can take seconds on a cold start. Never hold the
+            // UI thread (or a monitor it needs) while reading the bundled asset.
+            Thread loader=new Thread(()->{
+                try{emojiTypeface=Typeface.createFromAsset(fontContext.getAssets(),FONT_ASSET);}
+                catch(Throwable error){fontLoadFailed=true;Log.w("Haiagaru","Unable to load bundled emoji font",error);}
+                if(emojiTypeface!=null)new android.os.Handler(android.os.Looper.getMainLooper()).post(EmojiFontFallback::refreshVisibleRows);
+            },"Haiagaru-emoji-font");
+            loader.setPriority(Thread.MIN_PRIORITY);loader.start();
         }
+        return emojiTypeface;
     }
 
     private static void loadConfiguration(Context context) {

@@ -22,13 +22,23 @@ public final class HiddenNgUnreadNativeRowTest {
   Method invalidate=hook.getDeclaredMethod("invalidate",String.class);invalidate.setAccessible(true);
   synchronized(map){existed=map.containsKey(key);previous=map.get(key);map.put(key,new HashSet<>(Arrays.asList(1,21,22,23)));invalidate.invoke(null,key);}
   SharedPreferences p=context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);String option="excludeHiddenNgUnread";boolean had=p.contains(option),before=p.getBoolean(option,false);
-  int checks=0;
+  int checks=0;long repeatMillis=-1;
   try{
    p.edit().putBoolean(option,true).commit();
    int adjusted=(Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20);
    if(adjusted!=20)throw new AssertionError("NG-only unread remains: "+adjusted);checks++;
    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","totalFromStoredRead",new Class<?>[]{Object.class},row)!=20)throw new AssertionError("Stored-read boundary");checks++;
    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,22)!=22)throw new AssertionError("Read override");checks++;
+   long started=System.nanoTime();
+   for(int i=0;i<1000;i++)if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=20)throw new AssertionError("Repeated count");
+   repeatMillis=(System.nanoTime()-started)/1000000;
+   checks++;
+   // Native HOME rows can be reused. A cached thread key must not leak into
+   // a different thread, even if read/total and the board stay unchanged.
+   Field thread=DroppedThreadsAndroidTest.field(row,old?"h":middle?"g":"b");long originalThread=thread.getLong(row);
+   try{thread.setLong(row,1999999999L);
+    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("Reused row kept previous thread key");checks++;
+   }finally{thread.setLong(row,originalThread);}
    p.edit().putBoolean(option,false).commit();
    if((Integer)DroppedThreadsAndroidTest.call(context,"HiddenNgUnread","total",new Class<?>[]{Object.class,int.class},row,20)!=23)throw new AssertionError("OFF native value");checks++;
    if(total.getInt(row)!=23||read.getInt(row)!=20)throw new AssertionError("Native fields changed");checks++;
@@ -36,6 +46,6 @@ public final class HiddenNgUnreadNativeRowTest {
    synchronized(map){if(existed)map.put(key,previous);else map.remove(key);invalidate.invoke(null,key);}
    SharedPreferences.Editor e=p.edit();if(had)e.putBoolean(option,before);else e.remove(option);e.commit();
   }
-  return "PASS "+checks+" native-row unread ON/OFF checks; native read/total unchanged";
+  return "PASS "+checks+" native-row unread ON/OFF checks; native read/total unchanged; repeated1000Ms="+repeatMillis;
  }
 }

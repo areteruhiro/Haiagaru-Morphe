@@ -9,8 +9,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Gravity;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
-import android.widget.FrameLayout;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /** Compilation placeholder: the patch replaces this superclass and super calls with ChMate's own base. */
@@ -21,41 +22,53 @@ public final class NativeToolFragment extends android.app.Fragment {
     @Override public void onAttach(Context context) { super.onAttach(context); host=(Activity)context; }
     @Override public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle state) {
         content=NativeToolTabs.content(this,host,state);
-        FrameLayout frame=new FrameLayout(host);
-        frame.addView(content.view,new FrameLayout.LayoutParams(-1,-1));
-        TextView close=new TextView(host);
+        LinearLayout frame=new LinearLayout(host);frame.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout header=new LinearLayout(host);header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title=new TextView(host);title.setSingleLine(true);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        title.setText(getArguments().getString(android.content.Intent.EXTRA_TITLE,""));
+        title.setPadding(Math.round(12*host.getResources().getDisplayMetrics().density),0,0,0);
+        header.addView(title,new LinearLayout.LayoutParams(0,-1,1));
+        TextView close=new OutlinedClose(host);
         close.setText("×");
         close.setTextSize(24);
         close.setTextColor(Color.rgb(55,55,60));
         close.setGravity(Gravity.CENTER);
         close.setContentDescription("このタブを閉じる");
-        GradientDrawable background=new GradientDrawable();
-        background.setShape(GradientDrawable.OVAL);
-        background.setColor(Color.argb(235,245,245,248));
         try{
             int[] palette=NativeThemeColors.colors(host);
             if(palette!=null&&palette.length==7){
                 close.setTextColor(palette[1]);
-                // A zero dialog color means "use the window", not a black surface.
-                int surface=Color.alpha(palette[3])>0?palette[3]:palette[0];
-                if(Color.alpha(surface)==0)surface=palette[6];
-                if(Color.alpha(surface)==0)surface=Color.red(palette[1])+Color.green(palette[1])+Color.blue(palette[1])>382?Color.BLACK:Color.WHITE;
-                background.setColor((surface&0x00ffffff)|0xeb000000);
+                title.setTextColor(palette[1]);
+                frame.setBackgroundColor(palette[0]);
             }
         }catch(RuntimeException ignored){ /* Retain the fallback if the native theme is unavailable. */ }
-        close.setBackground(background);
-        close.setElevation(4*host.getResources().getDisplayMetrics().density);
+        close.setBackground(null);
         close.setOnClickListener(view -> {
             Activity current=host;
             if(current!=null&&!NativeToolTabs.closeCurrentTab(current,NativeToolFragment.this))
                 android.widget.Toast.makeText(current,"この画面のタブを閉じられませんでした",android.widget.Toast.LENGTH_SHORT).show();
         });
-        int size=Math.round(44*host.getResources().getDisplayMetrics().density);
-        int margin=Math.round(6*host.getResources().getDisplayMetrics().density);
-        FrameLayout.LayoutParams closeParams=new FrameLayout.LayoutParams(size,size,Gravity.TOP|Gravity.END);
-        closeParams.setMargins(0,margin,margin,0);
-        frame.addView(close,closeParams);
+        int size=Math.round(48*host.getResources().getDisplayMetrics().density);
+        header.addView(close,new LinearLayout.LayoutParams(size,size));
+        frame.addView(header,new LinearLayout.LayoutParams(-1,size));
+        frame.addView(content.view,new LinearLayout.LayoutParams(-1,0,1));
         return frame;
+    }
+    /** Transparent hit target with a black/white double outline, independent of the theme. */
+    private static final class OutlinedClose extends TextView {
+        OutlinedClose(Context context){super(context);setFocusable(true);}
+        @Override protected void onDraw(Canvas canvas){
+            Paint paint=new Paint(getPaint());paint.setAntiAlias(true);
+            String glyph="×";float density=getResources().getDisplayMetrics().density;
+            float x=(getWidth()-paint.measureText(glyph))/2;
+            Paint.FontMetrics metrics=paint.getFontMetrics();
+            float y=(getHeight()-metrics.ascent-metrics.descent)/2;
+            paint.setStyle(Paint.Style.STROKE);paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setStrokeWidth(5*density);paint.setColor(Color.BLACK);canvas.drawText(glyph,x,y,paint);
+            paint.setStrokeWidth(3*density);paint.setColor(Color.WHITE);canvas.drawText(glyph,x,y,paint);
+            paint.setStyle(Paint.Style.FILL);paint.setColor(getCurrentTextColor());canvas.drawText(glyph,x,y,paint);
+        }
     }
     // Native list-fragment initialization assumes a native ListView. This tool owns its view tree.
     @Override public void onViewCreated(View view,Bundle state) { }

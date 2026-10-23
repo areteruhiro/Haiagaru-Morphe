@@ -139,14 +139,14 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
             matches = found; indexedQuery = query; searching = false
         }
         Scaffold(topBar = {
-            if (selected < 0 && query.isBlank()) LargeTopAppBar(title = { Text("Haiagaru") },
+            if (selected < 0 && query.isBlank()) TopAppBar(title = { Text("Haiagaru") },
                 navigationIcon = { IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, if (english) "Back" else "戻る") } })
             else TopAppBar(title = { Text(if (selected < 0) (if (english) "Find a setting" else "設定を検索") else groups[selected].title(english),
                 maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = { IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, if (english) "Back" else "戻る") } })
         }) { insets ->
             LazyColumn(state = list, modifier = Modifier.fillMaxSize().padding(insets).imePadding(),
-                contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (selected < 0) {
                     item { OutlinedTextField(query, { query = it }, label = { Text(if (english) "Find a setting" else "設定を検索") },
                         leadingIcon = { Icon(Icons.Filled.Search, null) }, singleLine = true,

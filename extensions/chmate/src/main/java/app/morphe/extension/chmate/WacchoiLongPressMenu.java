@@ -392,8 +392,7 @@ public final class WacchoiLongPressMenu {
                         return "HaiagaruWacchoiSearch";
                     }
                     if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0) {
-                        if (!(context instanceof Activity)
-                                || !NativeToolTabs.open((Activity) context, "hissi", intent)) {
+                        if (!NativeToolTabs.openSearch(context,intent)) {
                             context.startActivity(intent);
                         }
                     }
@@ -511,24 +510,23 @@ public final class WacchoiLongPressMenu {
         intent.putExtra("haiagaru.wacchoi.query", context.query);
         intent.putExtra("haiagaru.wacchoi.host", context.host);
         intent.putExtra("haiagaru.wacchoi.board", context.board);
-        final Activity tabletActivity = activity instanceof Activity ? (Activity) activity : null;
         menu.add(Menu.NONE, ITEM_ID, ResponseMenuSettings.order(ITEM_ID, menu.size()), "ﾜｯﾁｮｲで検索")
                 .setIcon(ResponseMenuSettings.wacchoiSearchIcon())
                 .setVisible(ResponseMenuSettings.visible(ITEM_ID))
                 .setIntent(intent)
-                .setOnMenuItemClickListener(item -> tabletActivity != null
-                        && NativeToolTabs.open(tabletActivity, "hissi", intent))
+                .setOnMenuItemClickListener(item -> NativeToolTabs.openSearch(ngContext,intent))
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         String suffix = WacchoiSuffixNg.suffix(context.query);
         Intent upper=upperSearch((Context)activity,context.query);
         if(upper!=null)upper.putExtra("haiagaru.wacchoi.host",context.host).putExtra("haiagaru.wacchoi.board",context.board);
         if(upper!=null && ResponseMenuSettings.visible(PREFIX_SEARCH_ITEM_ID) && menu.findItem(PREFIX_SEARCH_ITEM_ID)==null){
             menu.add(Menu.NONE,PREFIX_SEARCH_ITEM_ID,ResponseMenuSettings.order(PREFIX_SEARCH_ITEM_ID,menu.size()),"ﾜｯﾁｮｲ上4桁で検索")
-                    .setIntent(upper).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+                    .setIntent(upper).setOnMenuItemClickListener(item->NativeToolTabs.openSearch(ngContext,upper)).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         }
         if (ResponseMenuSettings.visible(SUFFIX_SEARCH_ITEM_ID) && suffix != null && menu.findItem(SUFFIX_SEARCH_ITEM_ID) == null) {
+            Intent lower=new Intent(intent).putExtra("haiagaru.wacchoi.query", "-" + suffix);
             menu.add(Menu.NONE, SUFFIX_SEARCH_ITEM_ID, ResponseMenuSettings.order(SUFFIX_SEARCH_ITEM_ID, menu.size()), "ﾜｯﾁｮｲ下4桁で検索")
-                    .setIntent(new Intent(intent).putExtra("haiagaru.wacchoi.query", "-" + suffix))
+                    .setIntent(lower).setOnMenuItemClickListener(item->NativeToolTabs.openSearch(ngContext,lower))
                     .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         }
     }

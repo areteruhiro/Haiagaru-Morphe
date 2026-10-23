@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,8 @@ private fun modelFingerprint(view: View?): Long {
     value = value * 31 + System.identityHashCode(view.getTag(0x48690b03))
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.CONTROL_SCALE_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG)?.hashCode() ?: 0)
+    value = value * 31 + (view.getTag(EddiArchiveSearchUi.REFRESH_ENABLED_TAG)?.hashCode() ?: 0)
+    value = value * 31 + (view.getTag(EddiArchiveSearchUi.SEARCH_BUSY_TAG)?.hashCode() ?: 0)
     value = value * 31 + view.visibility + if (view.isEnabled) 1 else 0
     when (view) {
         is TextView -> value = value * 31 + view.text.hashCode() + (view.error?.hashCode() ?: 0)
@@ -308,7 +311,16 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 CompositionLocalProvider(LocalDensity provides resultsDensity) {
-                ModelContent(root.getChildAt(3), revision, Modifier.weight(1f), changed = changed)
+                    val refresh = root.getTag(EddiArchiveSearchUi.REFRESH_ACTION_TAG) as? Runnable
+                    val refreshEnabled = refresh != null && root.getTag(EddiArchiveSearchUi.REFRESH_ENABLED_TAG) == true
+                    if (refreshEnabled) {
+                        PullToRefreshBox(
+                            isRefreshing = root.getTag(EddiArchiveSearchUi.SEARCH_BUSY_TAG) == true,
+                            onRefresh = { refresh?.run(); changed() }, modifier = Modifier.weight(1f).fillMaxWidth()
+                        ) {
+                            ModelContent(root.getChildAt(3), revision, Modifier.fillMaxSize(), changed = changed)
+                        }
+                    } else ModelContent(root.getChildAt(3), revision, Modifier.weight(1f), changed = changed)
                 }
                 CompositionLocalProvider(LocalDensity provides controlsDensity) {
                 ModelContent(root.getChildAt(4), revision, changed = changed)
