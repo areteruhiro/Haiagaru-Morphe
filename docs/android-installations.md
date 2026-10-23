@@ -1,5 +1,16 @@
 # Android導入・署名台帳
 
+## 2026-10-23 安価が多い本文の装飾候補・NoCopySpan保護
+
+- Serial `emulator-5554`。191／242を証明書一致確認後に`install -r`更新しSuccess。データ消去なし。226は直前の未読NG軽量化候補を維持し、今回の共通Java変更の重複端末試験は省略。
+- 最終MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.9.mpp`、SHA256 `5BD55CCCC56D65362882337C20570ECF5B8390FE27306BB3B17A1F7360356AF0`。未公開候補であり、停止CIのdev.9配布物ではない。
+- APKディレクトリ `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/`。
+- 191: `dense-anchor-safe191.apk`、SHA256 `B098FAB3E3E607B6046901F65FBB1C743B6625AFD5F1C3BBDA7180A8D1F65DDF`、package `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`、表示名`Haiagaru 検証 191`、ChMate `0.8.10.191 dev`。
+- 242: `dense-anchor-safe242.apk`、SHA256 `273547F1AE85BD295DA76DB463EBA5598091AE7F78CCFEE51B0948A7006A980A`、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`、表示名`Haiagaru 検証 242`、ChMate `0.8.10.242 dev`。
+- 中間候補MPP59600D47...からも同パッケージへ導入した（NoCopySpan保護前）。`dense-anchor191.apk` SHA256 `F8ADB42AFDC333CD91C792A4DCA6169B2D1D67C759BCB5351E41A5367AF999BF`、`dense-anchor242.apk` SHA256 `8AEEFEAFA302758BC8724C1E23EB36D73388A8FA2A359CEA5E649D3033D64877`。最終版へ更新済み。
+- 全署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 191／242各16の本文・span保持試験、強調ルール63項目、nativeフックの検査、242実安価ポップアップ表示を確認。詳細dense-anchor-render-20261023.md。
+
 ## 2026-10-23 未読NG軽量化・設定上部余白の最終候補
 
 - Serial `emulator-5554`。署名照合後に191／226／242すべてを`install -r`更新しSuccess。既存データを保持。
