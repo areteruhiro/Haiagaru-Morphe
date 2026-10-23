@@ -5,12 +5,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 /** Display-only options, independent of native filter states. */
 final class QuickFilterOptions {
-    static boolean counts(){return FeatureSwitches.enabled("quickFilterCounts",true);}
+    static boolean counts(){return FeatureSwitches.enabled("quickFilterCounts",false);}
     static boolean extras(){return FeatureSwitches.enabled("quickFilterExtras",true);}
     static boolean bottom(){return FeatureSwitches.enabled("bottomQuickFilterPanel",false);}
     static boolean visible(int index){return index>=0&&index<7&&(index<4 || extras()&&FeatureSwitches.enabled(new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies"}[index-4],true));}
     static void addSettings(LinearLayout root,Activity activity){
-        add(root,activity,"quickFilterCounts","フィルターに件数を表示",true);
+        add(root,activity,"quickFilterCounts","フィルターに件数を表示",false);
         add(root,activity,"quickFilterExtras","フィルターにAA・自分・返信を追加",true);
         add(root,activity,"quickFilterAA","AAフィルターを追加",true);
         add(root,activity,"quickFilterMine","自分フィルターを追加",true);

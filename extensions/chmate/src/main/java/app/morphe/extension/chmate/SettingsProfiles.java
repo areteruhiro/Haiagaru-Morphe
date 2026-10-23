@@ -25,6 +25,9 @@ public final class SettingsProfiles {
         for(String key:EXTRA_BOOLEAN)booleanKey(key);
         numberKey("videoPreviewMinimumSeconds",0,86459);
         numberKey("checkerHeaderPercent",10,60);
+        numberKey("hissiViewerResponseSpacingDp",0,20);
+        numberKey("hissiViewerToolbarHeightDp",32,56);
+        numberKey("hissiViewerTextZoom",100,130);
         numberKey("popularReplyThreshold",1,9999);
         numberKey("popularReplyStandardThreshold",1,9999);
         for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
@@ -38,9 +41,9 @@ public final class SettingsProfiles {
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled",
         "siteCardsEnabled","siteCardImages","patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
         "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
-        "wacchoiLongPressSearch","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
+        "wacchoiLongPressSearch","wacchoiLongPressSuffixSearch","wacchoiLongPressPrefixSearch","wacchoiLongPressPrefixNg","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
-        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabWacchoi","floatingQuickFilterButton","hissiViewerCompactHeader"
+        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabHissi","nativeToolTabWacchoi","floatingQuickFilterButton","hissiViewerCompactHeader"
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
     static JSONObject exportData(Context c)throws JSONException{

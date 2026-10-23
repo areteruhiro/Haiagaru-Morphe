@@ -33,6 +33,7 @@ import android.widget.LinearLayout;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.SeekBar;
 import android.widget.Toast;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -67,7 +68,6 @@ public final class HissiMenuController extends ToolScreenController {
     private String kyodemoTarget;
     private boolean currentUsesKyodemo;
     private LinearLayout rootLayout;
-    private TextView threadStartCountView;
     private LinearLayout hissiTabs;
     private Button[] hissiTabButtons;
     private long lastPostDialogAt;
@@ -222,20 +222,22 @@ public final class HissiMenuController extends ToolScreenController {
         applyViewerTheme(layout, null, Haiagaru.hissiViewerTheme());
         boolean darkViewer = isDarkTheme(Haiagaru.hissiViewerTheme());
         TextView title = new TextView(this);
+        boolean compactCheckerBackHeader = !eddiArchiveMode && !wacchoiSearchLaunch && !currentUsesKyodemo;
         title.setText(eddiArchiveMode
                 ? "‹   エッヂ過去ログ  ·  ChMateビュー"
                 : wacchoiSearchLaunch ? "‹   ワッチョイ全文検索  ·  Kyodemo"
                 : currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
-                        : "‹   必死チェッカー  ·  ChMateビュー");
+                        : "‹   必死チェッカー · ChMateビュー");
         title.setTextColor(darkViewer ? Color.WHITE : Color.rgb(30, 30, 30));
-        title.setTextSize(18);
+        title.setTextSize(compactCheckerBackHeader ? 16 : 18);
         title.setGravity(Gravity.CENTER_VERTICAL);
-        title.setPadding(24, 12, 24, 12);
+        title.setPadding(compactCheckerBackHeader ? 12 : 24, 0, 24, 0);
         title.setOnClickListener(view -> finish());
         if (Haiagaru.hissiViewerCompactHeader()) title.setVisibility(View.GONE);
         layout.addView(title, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 56 * getResources().getDisplayMetrics().densityDpi / 160));
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                Math.round((compactCheckerBackHeader ? 36 : 56) * getResources().getDisplayMetrics().density)));
         TextView hint = new TextView(this);
         hint.setText(wacchoiSearchLaunch
                 ? "検索条件：" + initialWacchoiQuery + "  ·  " + sourceBoard : "");
@@ -245,14 +247,6 @@ public final class HissiMenuController extends ToolScreenController {
         hint.setPadding(24, 0, 24, 8);
         if (!wacchoiSearchLaunch) hint.setVisibility(View.GONE);
         layout.addView(hint, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        TextView countView = new TextView(this);
-        threadStartCountView = countView;
-        countView.setTextSize(12);
-        countView.setTextColor(darkViewer ? Color.rgb(190, 190, 198) : Color.rgb(90, 90, 100));
-        countView.setPadding(24, 0, 24, 8);
-        countView.setVisibility(View.GONE);
-        layout.addView(countView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         WebView webView = new WebView(this);
         viewerWebView = webView;
@@ -385,7 +379,6 @@ public final class HissiMenuController extends ToolScreenController {
                             ? View.VISIBLE : View.GONE);
                     kyodemoAnalysisButton.setText("分析");
                 }
-                updateThreadStartCount(view);
                 configureHissiTabs(view);
                 if (url.equals(pendingAnalysisResult)
                         || ("wt".equals(Uri.parse(url).getFragment())
@@ -410,7 +403,6 @@ public final class HissiMenuController extends ToolScreenController {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap icon) {
                 lastArchiveErrorKey = null;
-                threadStartCountView.setVisibility(View.GONE);
                 if (hissiTabs != null) hissiTabs.setVisibility(View.GONE);
             }
         });
@@ -476,7 +468,7 @@ public final class HissiMenuController extends ToolScreenController {
         LinearLayout toolbar = createViewerToolbar(webView);
         layout.addView(toolbar, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                48 * getResources().getDisplayMetrics().densityDpi / 160
+                Math.round(Haiagaru.hissiViewerToolbarHeightDp() * getResources().getDisplayMetrics().density)
         ));
         if (wacchoiSearchLaunch && sourceHost != null && isHissiHost(sourceHost)) {
             LinearLayout providers = new LinearLayout(this);
@@ -507,13 +499,12 @@ public final class HissiMenuController extends ToolScreenController {
                     return;
                 }
                 currentUsesKyodemo = nextUsesKyodemo;
-                threadStartCountView.setVisibility(View.GONE);
                 getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                         .edit().putBoolean(choiceKey(), currentUsesKyodemo).apply();
                 alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
                 title.setText(currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
-                        : "‹   必死チェッカー  ·  ChMateビュー");
+                        : "‹   必死チェッカー · ChMateビュー");
                 webView.loadUrl(nextTarget);
             });
             layout.addView(alternate, new LinearLayout.LayoutParams(
@@ -564,7 +555,8 @@ public final class HissiMenuController extends ToolScreenController {
         LinearLayout toolbar = new LinearLayout(this);
         toolbar.setOrientation(LinearLayout.HORIZONTAL);
         toolbar.setGravity(Gravity.CENTER_VERTICAL);
-        toolbar.setPadding(8, 2, 8, 2);
+        int compactPadding = Math.max(0, Math.round((Haiagaru.hissiViewerToolbarHeightDp() - 32) / 8f));
+        toolbar.setPadding(8, compactPadding, 8, compactPadding);
         toolbar.setBackgroundColor(Haiagaru.hissiViewerTheme() == 2 ? Color.BLACK : Color.TRANSPARENT);
 
         Button refresh = toolbarButton("更新");
@@ -679,7 +671,87 @@ public final class HissiMenuController extends ToolScreenController {
             Toast.makeText(this, themeNames[next], Toast.LENGTH_SHORT).show();
         });
         toolbar.addView(theme, buttonParams());
+
+        Button displaySettings = toolbarButton("調整");
+        displaySettings.setContentDescription("必死チェッカーの表示設定");
+        displaySettings.setOnClickListener(view -> showViewerDisplaySettings(webView, toolbar));
+        toolbar.addView(displaySettings, buttonParams());
         return toolbar;
+    }
+
+    private void showViewerDisplaySettings(WebView webView, LinearLayout toolbar) {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int pad = Math.round(16 * getResources().getDisplayMetrics().density);
+        content.setPadding(pad, pad / 2, pad, 0);
+
+        int currentZoom = webView.getSettings().getTextZoom();
+        SeekBar zoom = addViewerSlider(content, "文字サイズ: " + currentZoom + "%", 30,
+                Math.max(0, Math.min(30, currentZoom - 100)), progress -> "文字サイズ: " + (100 + progress) + "%");
+        int currentSpacing = Haiagaru.hissiViewerResponseSpacingDp();
+        SeekBar spacing = addViewerSlider(content, "レス上下余白: " + currentSpacing + "dp", 20,
+                currentSpacing, progress -> "レス上下余白: " + progress + "dp");
+        int currentHeight = Haiagaru.hissiViewerToolbarHeightDp();
+        SeekBar height = addViewerSlider(content, "上部操作バー: " + currentHeight + "dp", 24,
+                currentHeight - 32, progress -> "上部操作バー: " + (32 + progress) + "dp");
+
+        new HaiagaruDialog.Builder(this).setTitle("必死チェッカーの表示調整")
+                .setView(content)
+                .setNeutralButton("標準に戻す", (dialog, which) -> {
+                    webView.getSettings().setTextZoom(100);
+                    Haiagaru.setHissiViewerTextZoom(100);
+                    Haiagaru.setHissiViewerResponseSpacingDp(7);
+                    Haiagaru.setHissiViewerToolbarHeightDp(40);
+                    updateViewerToolbarHeight(toolbar, 40);
+                    applyViewerTheme(rootLayout, webView, Haiagaru.hissiViewerTheme());
+                })
+                .setNegativeButton("キャンセル", null)
+                .setPositiveButton("適用", (dialog, which) -> {
+                    int textZoom = 100 + zoom.getProgress();
+                    int responseSpacing = spacing.getProgress();
+                    int toolbarHeight = 32 + height.getProgress();
+                    webView.getSettings().setTextZoom(textZoom);
+                    Haiagaru.setHissiViewerTextZoom(textZoom);
+                    Haiagaru.setHissiViewerResponseSpacingDp(responseSpacing);
+                    Haiagaru.setHissiViewerToolbarHeightDp(toolbarHeight);
+                    updateViewerToolbarHeight(toolbar, toolbarHeight);
+                    applyViewerTheme(rootLayout, webView, Haiagaru.hissiViewerTheme());
+                }).show();
+    }
+
+    private interface ViewerSliderLabel { String text(int progress); }
+
+    private SeekBar addViewerSlider(LinearLayout content, String initial, int max, int progress,
+            ViewerSliderLabel labelText) {
+        TextView label = new TextView(this);
+        label.setText(initial);
+        content.addView(label);
+        SeekBar slider = new SeekBar(this);
+        slider.setMax(max);
+        slider.setProgress(progress);
+        slider.setContentDescription(initial.substring(0, initial.indexOf(':')));
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                label.setText(labelText.text(value));
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        content.addView(slider);
+        return slider;
+    }
+
+    private void updateViewerToolbarHeight(LinearLayout toolbar, int heightDp) {
+        int px = Math.round(heightDp * getResources().getDisplayMetrics().density);
+        ViewGroup.LayoutParams params = toolbar.getLayoutParams();
+        if (params != null) { params.height = px; toolbar.setLayoutParams(params); }
+        int pad = Math.max(0, Math.round((heightDp - 32) / 8f));
+        toolbar.setPadding(8, pad, 8, pad);
+        for (int i = 0; i < toolbar.getChildCount(); i++) {
+            View child = toolbar.getChildAt(i);
+            if (child instanceof Button) ((Button) child).setMinHeight(px);
+        }
+        toolbar.requestLayout();
     }
 
     private LinearLayout createHissiTabs(WebView webView) {
@@ -957,6 +1029,7 @@ public final class HissiMenuController extends ToolScreenController {
         button.setMinHeight(0);
         button.setMinWidth(0);
         button.setPadding(5, 0, 5, 0);
+        button.setMinHeight(Math.round(Haiagaru.hissiViewerToolbarHeightDp() * getResources().getDisplayMetrics().density));
         button.setTextColor(isDarkTheme(Haiagaru.hissiViewerTheme())
                 ? Color.rgb(235, 235, 240) : Color.rgb(35, 35, 40));
         button.setStateListAnimator(null);
@@ -1008,7 +1081,7 @@ public final class HissiMenuController extends ToolScreenController {
         }
     }
 
-    /** Receives a response's copy fields from the WebView long-press handler. */
+    /** Receives viewer events from the WebView. */
     private final class ViewerBridge {
         @JavascriptInterface
         public void copyPost(String data) {
@@ -1017,50 +1090,14 @@ public final class HissiMenuController extends ToolScreenController {
 
         @JavascriptInterface
         public void reportThreadStartCount(int count, int postCount) {
-            runOnUiThread(() -> {
-                if (threadStartCountView == null) return;
-                if (postCount <= 0) {
-                    threadStartCountView.setVisibility(View.GONE);
-                    return;
-                }
-                threadStartCountView.setText("スレ立て (" + Math.max(0, count)
-                        + ") · 表示中の日付の検索結果から集計");
-                threadStartCountView.setVisibility(View.VISIBLE);
-            });
+            // Kept as a no-op for pages with an already injected script; the
+            // thread-start summary is intentionally no longer part of the UI.
         }
     }
 
     /** Counts distinct threads whose first response belongs to the displayed ID. */
     private void updateThreadStartCount(WebView webView) {
-        String script = "(function(){var h=location.hostname,p=location.pathname;"
-                + "var isHissi=/(^|\\.)hissi\\.org$/.test(h)&&p.indexOf('/read.php/')===0;"
-                + "var isKyodemo=h==='www.kyodemo.net'&&p.indexOf('/sdemo/b/')===0"
-                + "&&new URLSearchParams(location.search).get('bs')==='hi';if(!isHissi&&!isKyodemo)return;"
-                + "if(isKyodemo){var posts=document.querySelectorAll('#blist .post'),starts={};"
-                + "posts.forEach(function(n){var a=n.querySelector('.r-head strong a[href]');"
-                + "if(a&&(a.textContent||'').trim()==='1')starts[a.pathname]=true;});"
-                + "if(window.HaiagaruBridge)window.HaiagaruBridge.reportThreadStartCount(Object.keys(starts).length,posts.length);return;}"
-                + "function count(){var seen={},posts=0;"
-                + "document.querySelectorAll('#rlist .post,.post,dl').forEach(function(n){"
-                + "if(n.tagName==='DL'&&n.closest('.post'))return;"
-                + "var head=n.querySelector('.r-head,dt');if(!head)return;"
-                + "var numberNode=n.querySelector('.r-head strong');"
-                + "var text=numberNode?(numberNode.textContent||''):(head.innerText||head.textContent||'');"
-                + "var match=numberNode?text.match(/^\\s*#?(\\d+)/):text.match(/(?:^|\\n)\\s*(\\d+)\\s*[:：]/);"
-                + "if(!match)return;posts++;if(match[1]!=='1')return;"
-                + "var link=head.querySelector('a[href*=\"read.cgi\"],a[href*=\"/sdemo/r/\"]');"
-                + "if(!link)link=n.querySelector('a[href*=\"read.cgi\"],a[href*=\"/sdemo/r/\"]');"
-                + "if(!link)return;var path=link.pathname||'';"
-                + "var key=path.match(/\\/(?:test|bbs)\\/read\\.cgi\\/[^/]+\\/(\\d{9,})(?:\\/|$)/)"
-                + "||path.match(/\\/sdemo\\/r\\/[^/]+\\/(\\d{9,})(?:\\/|$)/);"
-                + "if(key)seen[key[1]]=true;});"
-                + "if(window.HaiagaruBridge)window.HaiagaruBridge.reportThreadStartCount(Object.keys(seen).length,posts);"
-                + "}var timer;function schedule(){clearTimeout(timer);timer=setTimeout(count,150);}"
-                + "if(window.haiagaruThreadCountObserver)window.haiagaruThreadCountObserver.disconnect();"
-                + "window.haiagaruThreadCountObserver=new MutationObserver(schedule);"
-                + "window.haiagaruThreadCountObserver.observe(document.body,{childList:true,subtree:true});"
-                + "schedule();})()";
-        webView.evaluateJavascript(script, null);
+        // Thread-start counting was removed from the checker viewer.
     }
 
     private void showPostCopyDialog(String data) {
@@ -1268,6 +1305,7 @@ public final class HissiMenuController extends ToolScreenController {
             String bg = theme == 2 ? "#000000" : dark ? "#1e1e20" : "#ffffff";
             String fg = dark ? "#ebebf0" : "#1e1e1e";
             String link = dark ? "#8ab4f8" : "#1558a6";
+            int responseSpacing = Haiagaru.hissiViewerResponseSpacingDp();
             String script = "javascript:(function(){var hissi=location.hostname==='hissi.org'||location.hostname==='www.hissi.org';"
                     + "var kyodemo=location.hostname==='www.kyodemo.net'||location.hostname==='kyodemo.net';"
                     + "var eddi=location.hostname==='eddiarchive3rd.boy.jp'||location.hostname.endsWith('.eddiarchive3rd.boy.jp');"
@@ -1345,14 +1383,14 @@ public final class HissiMenuController extends ToolScreenController {
                     + "body[data-haiagaru-hissi] dl,body[data-haiagaru-hissi] dt,"
                     + "body[data-haiagaru-hissi] dd{overflow-wrap:anywhere;word-break:normal;white-space:normal;}"
                     + "body[data-haiagaru-hissi] dd{margin-left:12px;}"
-                    + "body[data-haiagaru-hissi] dl{margin:0;padding:7px 5px 9px;"
+                    + "body[data-haiagaru-hissi] dl{margin:0;padding:" + responseSpacing + "px 5px " + (responseSpacing + 2) + "px;"
                     + "border-bottom:1px solid " + (dark ? "#38383d" : "#d8d8dc") + ";}"
                     + "body[data-haiagaru-hissi] dl dt{font-size:11px;line-height:1.4;"
                     + "color:" + (dark ? "#b4b4ba" : "#66666c") + " !important;}"
                     + "body[data-haiagaru-hissi] dl dt>a:first-child{display:block;"
                     + "font-size:14px;line-height:1.35;margin-bottom:3px;color:"
                     + (dark ? "#adff2f" : "#39731a") + " !important;}"
-                    + "body[data-haiagaru-hissi] dl dd{margin:7px 5px 0;"
+                    + "body[data-haiagaru-hissi] dl dd{margin:" + responseSpacing + "px 5px 0;"
                     + "font-size:14px;line-height:1.5;overflow-wrap:anywhere;}"
                     + "body[data-haiagaru-hissi] dl dd.haiagaru-hissi-aa{"
                     + "font-family:HaiagaruMona,monospace;font-size:14px;"

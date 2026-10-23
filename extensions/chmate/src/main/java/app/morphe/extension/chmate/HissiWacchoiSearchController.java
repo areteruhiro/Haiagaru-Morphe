@@ -340,16 +340,19 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             boardStatus.setError("この板のKyodemo検索先が見つかりません");
             searchUiChanged(); return;
         }
-        startActivity(new Intent(this, HissiMenuActivity.class)
+        Intent checker = new Intent(this, HissiMenuActivity.class)
                 .putExtra("haiagaru.wacchoi.search", true)
                 .putExtra("haiagaru.wacchoi.kyodemo", true)
                 .putExtra("haiagaru.wacchoi.query", kyodemoQuery)
                 .putExtra("haiagaru.wacchoi.host", host)
                 .putExtra("haiagaru.wacchoi.board", board)
-                .putExtra("haiagaru.wacchoi.form", captureSearchFields()));
+                .putExtra("haiagaru.wacchoi.form", captureSearchFields());
+        if (!NativeToolTabs.open(this.host, "hissi", checker)) {
+            startActivity(checker);
+            finish();
+        }
         getSharedPreferences("haiagaru_checker_choice", MODE_PRIVATE).edit()
                 .putBoolean(host.toLowerCase(Locale.ROOT) + "/" + board, true).apply();
-        finish();
     }
     void searchUiChanged() { if (composeChanged != null) composeChanged.run(); }
     void selectSource(int source) {

@@ -71,7 +71,8 @@ open class HaiagaruMediaController(context: Context) : MediaController(context) 
                 Slider(value = position.toFloat().coerceIn(0f, duration.coerceAtLeast(1).toFloat()),
                     onValueChange = { seeking = true; position = it.toInt() },
                     onValueChangeFinished = { try { player?.seekTo(position) } catch (_: RuntimeException) {}; seeking = false },
-                    valueRange = 0f..duration.coerceAtLeast(1).toFloat(), enabled = duration > 0)
+                    valueRange = 0f..duration.coerceAtLeast(1).toFloat(), enabled = duration > 0,
+                    colors = HaiagaruUi.sliderColors())
                 Text("${time(position)} / ${time(duration)}", style = MaterialTheme.typography.labelMedium)
             }
         }

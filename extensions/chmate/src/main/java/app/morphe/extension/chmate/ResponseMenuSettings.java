@@ -104,6 +104,13 @@ public final class ResponseMenuSettings {
             android.content.SharedPreferences prefs = context.getSharedPreferences("haiagaru_response_actions", 0);
             if (prefs.contains("wacchoiLongPressSearch")) return prefs.getBoolean("wacchoiLongPressSearch", true);
         }
+        if (context != null) {
+            String key = id == 0x7e000077 ? "wacchoiLongPressSuffixSearch"
+                    : id == 0x7e000078 ? "wacchoiLongPressPrefixSearch"
+                    : id == 0x7e000079 ? "wacchoiLongPressPrefixNg" : null;
+            if (key != null) return context.getSharedPreferences("haiagaru_response_actions", 0)
+                    .getBoolean(key, true);
+        }
         JSONObject settings = savedSettings();
         if (settings == null) return defaultVisible(id);
         try {
@@ -119,16 +126,27 @@ public final class ResponseMenuSettings {
         return defaultVisible(id);
     }
     static void addWacchoiSearchSetting(android.widget.LinearLayout layout, android.app.Activity activity) {
+        addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「ワッチョイ検索」を表示",
+                "wacchoiLongPressSearch", 75);
+        addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「下4桁で検索」を表示",
+                "wacchoiLongPressSuffixSearch", 0x7e000077);
+        addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「上4桁で検索」を表示",
+                "wacchoiLongPressPrefixSearch", 0x7e000078);
+        addWacchoiLongPressToggle(layout, activity, "ワッチョイ長押しに「上4桁をNG登録」を表示",
+                "wacchoiLongPressPrefixNg", 0x7e000079);
+        android.widget.TextView help = new android.widget.TextView(activity);
+        help.setText("変更後、ワッチョイの長押しメニューを開き直してください。各項目を個別に表示・非表示できます。");
+        layout.addView(help);
+    }
+    private static void addWacchoiLongPressToggle(android.widget.LinearLayout layout,
+            android.app.Activity activity, String label, String key, int itemId) {
         android.widget.Switch toggle = new android.widget.Switch(activity);
-        toggle.setText("ワッチョイ長押しに「ワッチョイ検索」を表示");
-        toggle.setChecked(visible(75));
+        toggle.setText(label);
+        toggle.setChecked(visible(itemId));
         toggle.setOnCheckedChangeListener((button, checked) -> activity
                 .getSharedPreferences("haiagaru_response_actions", 0).edit()
-                .putBoolean("wacchoiLongPressSearch", checked).apply());
+                .putBoolean(key, checked).apply());
         layout.addView(toggle);
-        android.widget.TextView help = new android.widget.TextView(activity);
-        help.setText("変更後、ワッチョイの長押しメニューを開き直してください。この設定を変更すると「ﾜｯﾁｮｲで検索」の表示に優先します。上4桁・下4桁検索や他の項目はChMateのツールバー設定に従います。");
-        layout.addView(help);
     }
     static void addSettings(android.widget.LinearLayout layout,android.app.Activity activity){
         android.widget.Switch extra=new android.widget.Switch(activity);extra.setText("レス長押しに「追加ツール」を表示");extra.setChecked(FeatureSwitches.enabled("responseExtraTools",false));

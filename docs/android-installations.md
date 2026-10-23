@@ -1,5 +1,38 @@
 # Android導入・署名台帳
 
+## 2026-10-23 全差分候補・フィルター件数初期オフ
+
+- Serial `emulator-5554`。191は既存composefix191との署名不一致を検出して更新を中止し、未導入のsettingsfix191へ別アプリとして追加。226／242は既存署名一致を検証して更新。その後、件数初期オフ・×背景フォールバックを含む以下の最終APKへ全3パッケージを`install -r`更新。既存アプリの削除・データ消去なし。
+- 共通MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.7.mpp`、SHA256 `1734F184CE885639C09DB8B41010C3AF8DA011488FDCDB4A375095BA023E3C6F`。公開dev.7と異なる未公開のローカル候補。
+- 191: `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`、表示名`Haiagaru 検証 191`、versionName `0.8.10.191 dev`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/final-default-191.apk`、SHA256 `343A925E2912B4F51152FD743342D004FF80046BC7A57B61661785C0CB18306D`。
+- 226: `jp.co.airfront.android.a2chMate.haiagaru.resumefix226`、表示名`Haiagaru 検証 226`、versionName `0.8.10.226 dev`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/final-default-226.apk`、SHA256 `F22227F95A76B66F7365468750A2C4099CDA382FEBA3BF689E9797186AA05F29`。
+- 242: `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`、表示名`Haiagaru 検証 242`、versionName `0.8.10.242 dev`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/final-default-242.apk`、SHA256 `CC945A51F36BFB293E81F7C6F76D7F65535EE97CC5DEC2050301FD78A368C8C4`。
+- 全APK versionCode `2100000000`、署名鍵`C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 最終APKの7色native bridge検査は全3版成功。人気レス合成native行検査は191／226各21項目、242は20項目成功。242の実Part3で標準149件と追加集計149件が一致、直接返信・ポップアップOFFで2レスを表示。基準ログと最終crash bufferに新規クラッシュなし、lastanrは起動後記録なし。途中のスクリーンショットにSystem UIの待機ダイアログがあり、アプリANRと同一とは扱わない。長時間再発、画像・各変更画面の通し操作は未完了。未公開。
+
+## 2026-10-23 必死チェッカー見出し候補191を実機更新
+
+- 対象serial: `730eae72`（XIG05）。既存の`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`（「Haiagaru191 設定検証」）を更新。アンインストール・データ消去なし。
+- APK: `build/hissi-header191-final.apk`、SHA-256 `111112A34A7DED35138B4A24287FC20C0CDBA22F9193A1B17A57374B9904332E`。端末から取得した`base.apk`とSHA-256一致。
+- MPP: `patches/build/libs/patches-1.12.0-dev.7.mpp`、SHA-256 `B76A6D95A5699AA0DA843828B8DDCD3F3D709A764042A52D588F750C03E1DD1C`。元APKは`C:/Users/narum/Downloads/chamate/chmate191/chmate-0-8-10-191-dev.apk`。
+- 署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。導入後versionName `0.8.10.191 dev`、lastUpdateTime `2026-10-23 01:00:19`。アプリ内での操作確認は未実施。
+
+## 2026-10-22 実機XIG05へツールバー画像／必死チェッカー調整版191を追加
+
+- 対象シリアル: `730eae72`（XIG05）。対象ChMateは`0.8.10.191 dev`。
+- 既存の実機パッケージはそのまま残し、検証用の別パッケージ`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`（表示名「Haiagaru191 設定検証」）を新規追加した。インストール前に当該パッケージが未導入であることを確認。アンインストール・データ消去・既存アプリ更新なし。
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-hissi191-device.apk`、SHA-256 `B0D660CE6533EB15467248443125B6E9F80592D84A0524C6613DE38AD397F620`。実機からpullした`base.apk`も同じSHA-256。
+- 使用MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.7.mpp`、SHA-256 `553B5A5A651C0681313B452466CF65771800F43DE060085A86331D56788D67DC`。元APK: `C:/Users/narum/Downloads/chamate/chmate191/chmate-0-8-10-191-dev.apk`。
+- 署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`（BKS）、alias `Morphe`。署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- `adb -s 730eae72 install -r`成功、versionName確認、HomeActivity起動を確認。確認時の直近AndroidRuntimeログにクラッシュ記録なし。画面内での設定・画像変更操作は未確認。
+
+### 同端末パッケージをビューア調整追加版へ更新
+
+- 2026-10-22、serial `730eae72`で上記と同じ`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`を署名証明書照合後に`adb install -r`で更新。既存設定・データを保持。
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-hissi191-viewer-settings.apk`、SHA-256 `305EC623AFB2636F70CD8E1E40C1EB5F227B9FDE98F12AB51E57BA1BABA799E3`。実機からpullしたAPKも同じSHA-256。
+- MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.12.0-dev.7.mpp`、SHA-256 `B874558A2BFD0F15F43CD3B30464D1717FC51AE17069F4CFB8BE6EB9244C20C1`。証明書は上記と同じ`0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 更新成功、versionName `0.8.10.191 dev`、lastUpdateTime `2026-10-22 23:42:18`。起動後は既存のHissiMenuActivityが前面。確認時点の直近AndroidRuntimeエラー出力はなし。ビューアの「調整」操作自体は実画面で未確認。
+
 ## 2026-10-22 プレリリース配布物1.12.0-dev.7
 
 - GitHub Release: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.7 （`draft=false`、`prerelease=true`）。既存Semantic Release CI run `39789862059` success。

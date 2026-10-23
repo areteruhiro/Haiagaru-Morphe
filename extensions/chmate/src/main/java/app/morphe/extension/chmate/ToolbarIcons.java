@@ -11,11 +11,15 @@ import java.lang.reflect.Field;
 /** Haiagaru toolbar actions; stock icons and stored toolbar order stay untouched. */
 public final class ToolbarIcons {
     static final String PREFS = "haiagaru_toolbar_icons";
-    static final String[] NAMES = {"エッヂ過去ログ", "フィルタ", "すべて既読", "長押しコピー", "ﾜｯﾁｮｲ下4桁で検索", "ﾜｯﾁｮｲ上4桁で検索"};
-    static final String[] RESOURCES = {"haiagaru_edge_archive", "haiagaru_quick_filter", "haiagaru_mark_all_read", "haiagaru_direct_copy", "haiagaru_wacchoi_lower", "haiagaru_wacchoi_upper"};
+    static final String[] NAMES = {"エッヂ過去ログ", "フィルタ", "すべて既読", "長押しコピー", "ﾜｯﾁｮｲ下4桁で検索", "ﾜｯﾁｮｲ上4桁で検索", "★スレのみ巡回"};
+    static final String[] RESOURCES = {"haiagaru_edge_archive", "haiagaru_quick_filter", "haiagaru_mark_all_read", "haiagaru_direct_copy", "haiagaru_wacchoi_lower", "haiagaru_wacchoi_upper", "haiagaru_favorite_threads"};
+    private static final int[] ACTION_IDS = {0x7e000001, 0x7e000002, 0x7e000003, 0x7e000004, 0x7e000005, 0x7e000006, FavoriteThreads.TAB};
     private static final Bitmap[] CACHE = new Bitmap[NAMES.length];
     private ToolbarIcons() {}
-    static int index(int action) { int i = action - 0x7e000001; return i >= 0 && i < NAMES.length ? i : -1; }
+    static int index(int action) {
+        for (int i = 0; i < ACTION_IDS.length; i++) if (ACTION_IDS[i] == action) return i;
+        return -1;
+    }
     public static boolean visible(Context context, int action) {
         // ChMate's per-toolbar selection is the only visibility control.
         // Keep search reachable when searching is disabled, so it can be enabled there.
@@ -25,7 +29,7 @@ public final class ToolbarIcons {
     static synchronized void invalidate(int i) { CACHE[i] = null; }
     private static final class PreviewItem {
         final int action;
-        PreviewItem(int i) { action = 0x7e000001 + i; }
+        PreviewItem(int i) { action = ACTION_IDS[i]; }
     }
     static Drawable preview(Context context, int i, int tint) {
         int id = context.getResources().getIdentifier(RESOURCES[i], "drawable", context.getPackageName());

@@ -12,7 +12,7 @@ import java.lang.reflect.*;
 public final class NativeToolTabs {
     public static final String KEY="nativeToolTabs";
     public static final String SETTINGS_KEY="nativeToolTabSettings", EDDI_KEY="nativeToolTabEddi";
-    public static final String SEARCH_KEY="nativeToolTabSearch", CHECKER_KEY="nativeToolTabChecker", FULL_KEY="nativeToolTabWacchoi";
+    public static final String SEARCH_KEY="nativeToolTabSearch", CHECKER_KEY="nativeToolTabChecker", HISSI_KEY="nativeToolTabHissi", FULL_KEY="nativeToolTabWacchoi";
     private static final String PREFIX="haiagaru-tool://";
     private static final String FROM_TABLET="haiagaru.settings.fromTablet";
     private static java.lang.ref.WeakReference<Activity> settingsHost=new java.lang.ref.WeakReference<>(null);
@@ -23,7 +23,7 @@ public final class NativeToolTabs {
     public static Object stockFragment(){throw new IllegalStateException("Native tab bridge not installed");}
     static boolean enabled(Activity activity){return supported()&&activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(KEY,false);}
     static boolean selected(Activity activity,String tool){
-        String key="settings".equals(tool)?SETTINGS_KEY:"eddi".equals(tool)?EDDI_KEY:"search".equals(tool)?SEARCH_KEY:"checker".equals(tool)?CHECKER_KEY:"wacchoi".equals(tool)?FULL_KEY:null;
+        String key="settings".equals(tool)?SETTINGS_KEY:"eddi".equals(tool)?EDDI_KEY:"search".equals(tool)?SEARCH_KEY:"checker".equals(tool)?CHECKER_KEY:"hissi".equals(tool)?HISSI_KEY:"wacchoi".equals(tool)?FULL_KEY:null;
         return key!=null&&activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(key,true);
     }
     public static boolean open(Activity activity,String tool){
@@ -33,7 +33,7 @@ public final class NativeToolTabs {
         if(activity==null||!enabled(activity)||!activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity"))return false;
         if(!selected(activity,tool))return false;
         Bundle args=new Bundle();args.putString("_data",PREFIX+tool);
-        args.putString(Intent.EXTRA_TITLE,"settings".equals(tool)?"Haiagaru設定":"eddi".equals(tool)?"エッヂ過去ログ検索":"search".equals(tool)?"投稿を探す":"checker".equals(tool)?"投稿検索・結果":"ワッチョイ全文検索");
+        args.putString(Intent.EXTRA_TITLE,"settings".equals(tool)?"Haiagaru設定":"eddi".equals(tool)?"エッヂ過去ログ検索":"search".equals(tool)?"投稿を探す":"checker".equals(tool)?"投稿検索・結果":"hissi".equals(tool)?"必死チェッカーもどき":"ワッチョイ全文検索");
         if(launch!=null)try{args.putString(Intent.EXTRA_TEXT,new org.json.JSONObject().put("launch",launch.toUri(Intent.URI_INTENT_SCHEME)).toString());}catch(org.json.JSONException error){throw new IllegalArgumentException(error);}
         try{
             Method opener=null;
@@ -48,6 +48,45 @@ public final class NativeToolTabs {
             if(opener!=null){opener.setAccessible(true);opener.invoke(activity,null,args,true);return true;}
         }catch(Exception error){android.util.Log.e("Haiagaru","Could not open native tool tab",error);}
         return false;
+    }
+    /** Native close APIs resolve the owning pane from this exact Fragment. */
+    static boolean closeCurrentTab(Activity activity,Object fragment){
+        if(activity==null||activity.isFinishing()||activity.isDestroyed()
+                ||!activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.TabletHomeActivity")
+                ||!(fragment instanceof NativeToolFragment))return false;
+        try{
+            if(!marker(arguments(fragment)))return false;
+            Class<?> nativeFragment=Class.forName("androidx.fragment.app.Fragment",false,activity.getClassLoader());
+            String version=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+            if("0.8.10.191 dev".equals(version)){
+                // false preserves ChMate's locked-tab confirmation and native selection update.
+                activity.getClass().getMethod("e",nativeFragment,boolean.class).invoke(activity,fragment,false);
+                return true;
+            }
+            if("0.8.10.226 dev".equals(version)){
+                Object model=tabletModel(activity,"e","o.mc");
+                return Boolean.TRUE.equals(model.getClass().getMethod("a",nativeFragment,boolean.class)
+                        .invoke(model,fragment,false));
+            }
+            if("0.8.10.242 dev".equals(version)){
+                Object model=tabletModel(activity,"getValue","jp.syoboi.a2chMate.feature.tabletmode.TabletHomeViewModel");
+                Object page=model.getClass().getMethod("b",nativeFragment).invoke(model,fragment);
+                if(page==null||!marker(pageArgs(page)))return false;
+                return Boolean.TRUE.equals(model.getClass().getMethod("d",page.getClass(),boolean.class)
+                        .invoke(model,page,false));
+            }
+        }catch(Exception error){android.util.Log.w("Haiagaru","Could not close native tool tab",error);}
+        return false;
+    }
+    private static Object tabletModel(Activity activity,String getter,String expectedType)throws ReflectiveOperationException{
+        Field field=activity.getClass().getDeclaredField("g");field.setAccessible(true);
+        Object lazy=field.get(activity);
+        if(lazy==null)throw new IllegalStateException("Native tablet model is unavailable");
+        Method value=lazy.getClass().getMethod(getter);value.setAccessible(true);
+        Object model=value.invoke(lazy);
+        if(model==null||!model.getClass().getName().equals(expectedType))
+            throw new IllegalStateException("Native tablet model changed");
+        return model;
     }
     /** Remember only the tablet that opened this settings Activity, never an unrelated window. */
     public static Intent settingsIntent(Activity activity){
@@ -68,6 +107,7 @@ public final class NativeToolTabs {
         if(selected(host,"eddi")){tools.add("eddi");labels.add("エッヂ過去ログ検索");}
         if(selected(host,"search")){tools.add("search");labels.add("投稿を探す");}
         if(selected(host,"checker")){tools.add("checker");labels.add("投稿検索・結果（必死チェッカー／Kyodemo）");}
+        if(selected(host,"hissi")){tools.add("hissi");labels.add("必死チェッカーもどき専用ビュワー");}
         if(selected(host,"wacchoi")){tools.add("wacchoi");labels.add("ワッチョイ全文検索");}
         if(tools.isEmpty()){Toast.makeText(activity,"基本設定でタブ表示する画面を選んでください",Toast.LENGTH_LONG).show();return;}
         new HaiagaruDialog.Builder(activity).setTitle("タブに追加する画面")
@@ -81,7 +121,7 @@ public final class NativeToolTabs {
         return null;
     }
     static boolean marker(Bundle args){return tool(args)!=null;}
-    private static String tool(Bundle args){String value=args==null?null:args.getString("_data");for(String name:new String[]{"settings","eddi","search","checker","wacchoi"})if((PREFIX+name).equals(value))return name;return null;}
+    private static String tool(Bundle args){String value=args==null?null:args.getString("_data");for(String name:new String[]{"settings","eddi","search","checker","hissi","wacchoi"})if((PREFIX+name).equals(value))return name;return null;}
     // Several tabs share the Activity state transaction: never retain a full 120KB result per tab.
     static String compactState(String value){
         if(value==null||value.length()<=8192)return value;
@@ -145,7 +185,8 @@ public final class NativeToolTabs {
                 if(saved.has("url")){state.putString("haiagaru.checker.url",saved.getString("url"));state.putInt("haiagaru.checker.scroll",saved.optInt("scroll"));}
             }catch(Exception error){android.util.Log.w("Haiagaru","Tool tab state could not be restored",error);}
             if("wacchoi".equals(tool))launch.putExtra("haiagaru.wacchoi.hissi",true);
-            if("checker".equals(tool)&&launch.getData()==null){showAddressForm();return;}
+            if("hissi".equals(tool))launch.putExtra("haiagaru.native.hissiViewer",true);
+            if(("checker".equals(tool)||"hissi".equals(tool))&&launch.getData()==null){showAddressForm();return;}
             create(launch,state);
         }
         private void render(View content){
@@ -158,8 +199,9 @@ public final class NativeToolTabs {
             });
         }
         private void create(Intent launch,Bundle state){
+            if("checker".equals(tool)||"hissi".equals(tool))launch.putExtra("haiagaru.native.hissiViewer",true);
             if(controller!=null){controller.pause();controller.close();}
-            controller="checker".equals(tool)?new HissiMenuController(activity,launch,true,()->back(activity),this::render):
+            controller=("checker".equals(tool)||"hissi".equals(tool))?new HissiMenuController(activity,launch,true,()->back(activity),this::render):
                 new HissiWacchoiSearchController(activity,launch,true,()->back(activity),this::render);
             controller.create(state);
         }
@@ -168,9 +210,13 @@ public final class NativeToolTabs {
             EditText address=new EditText(activity);address.setHint("必死チェッカー／Kyodemoの投稿者ページURL");address.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);form.addView(address);
             Button open=new Button(activity);open.setText("投稿者ページを開く");form.addView(open);
             open.setOnClickListener(v->{Uri uri=Uri.parse(address.getText().toString().trim());String host=uri.getHost();
-                if(!("http".equals(uri.getScheme())||"https".equals(uri.getScheme()))||!("hissi.org".equalsIgnoreCase(host)||"www.kyodemo.net".equalsIgnoreCase(host)||"kyodemo.net".equalsIgnoreCase(host))){address.setError("必死チェッカーまたはKyodemoのURLを入力してください");return;}
+                boolean allowedHost="hissi".equals(tool)?"hissi.org".equalsIgnoreCase(host):("hissi.org".equalsIgnoreCase(host)||"www.kyodemo.net".equalsIgnoreCase(host)||"kyodemo.net".equalsIgnoreCase(host));
+                if(!("http".equals(uri.getScheme())||"https".equals(uri.getScheme()))||!allowedHost){address.setError("hissi".equals(tool)?"hissi.org のURLを入力してください":"必死チェッカーまたはKyodemoのURLを入力してください");return;}
                 create(new Intent(Intent.ACTION_VIEW,uri),null);controller.resume();});
-            render(ToolScreenUi.model(activity,"投稿検索・結果",form,()->back(activity)));
+            if("hissi".equals(tool)){
+                TextView heading=new TextView(activity);heading.setText("必死チェッカー · ChMateビュー");heading.setTextSize(18);form.addView(heading,0);
+                render(ToolScreenUi.model(activity,"",form,()->back(activity),false));
+            }else render(ToolScreenUi.model(activity,"",form,()->back(activity),false));
         }
         @Override void resume(){if(controller!=null)controller.resume();}
         @Override void pause(){if(controller!=null)controller.pause();}

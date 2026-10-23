@@ -1,5 +1,6 @@
 package app.morphe.extension.chmate;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -390,8 +391,12 @@ public final class WacchoiLongPressMenu {
                         if ("equals".equals(invoked.getName())) return proxy == args[0];
                         return "HaiagaruWacchoiSearch";
                     }
-                    if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0)
-                        context.startActivity(intent);
+                    if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0) {
+                        if (!(context instanceof Activity)
+                                || !NativeToolTabs.open((Activity) context, "hissi", intent)) {
+                            context.startActivity(intent);
+                        }
+                    }
                     return null;
                 });
     }
@@ -506,10 +511,13 @@ public final class WacchoiLongPressMenu {
         intent.putExtra("haiagaru.wacchoi.query", context.query);
         intent.putExtra("haiagaru.wacchoi.host", context.host);
         intent.putExtra("haiagaru.wacchoi.board", context.board);
+        final Activity tabletActivity = activity instanceof Activity ? (Activity) activity : null;
         menu.add(Menu.NONE, ITEM_ID, ResponseMenuSettings.order(ITEM_ID, menu.size()), "ﾜｯﾁｮｲで検索")
                 .setIcon(ResponseMenuSettings.wacchoiSearchIcon())
                 .setVisible(ResponseMenuSettings.visible(ITEM_ID))
                 .setIntent(intent)
+                .setOnMenuItemClickListener(item -> tabletActivity != null
+                        && NativeToolTabs.open(tabletActivity, "hissi", intent))
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         String suffix = WacchoiSuffixNg.suffix(context.query);
         Intent upper=upperSearch((Context)activity,context.query);

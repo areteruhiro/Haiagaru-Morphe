@@ -179,6 +179,19 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                 onValueChange = { value -> view.progress = value.toInt(); changed() },
                 valueRange = 0f..view.max.coerceAtLeast(1).toFloat(), enabled = view.isEnabled)
         }
+        is CompoundButton -> {
+            var checked by remember(view) { mutableStateOf(view.isChecked) }
+            Row(modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = checked, onCheckedChange = { value ->
+                    checked = value
+                    view.isChecked = value
+                    changed()
+                }, enabled = view.isEnabled)
+                Text(view.text?.toString().orEmpty(), Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (view.isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f))
+            }
+        }
         is ProgressBar -> {
             if (view.isIndeterminate) LinearProgressIndicator(Modifier.fillMaxWidth())
             else LinearProgressIndicator(progress = { view.progress.toFloat() / view.max.coerceAtLeast(1) }, modifier = Modifier.fillMaxWidth())
@@ -312,12 +325,12 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 /** Compose shell for controller-built tools, including asynchronous status and list changes. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun ModelScreen(activity: android.app.Activity, title: String, root: View,
-    back: () -> Unit = { @Suppress("DEPRECATION") activity.onBackPressed() }) {
+    back: () -> Unit = { @Suppress("DEPRECATION") activity.onBackPressed() }, showTopBar: Boolean = true) {
     var localRevision by remember(root) { mutableIntStateOf(0) }
     val revision = rememberModelRevision(root) + localRevision
     if (root is ViewGroup) prepareNativeSurfaces(root)
     @Suppress("UNUSED_VARIABLE") val observed = revision
-    Scaffold(topBar = { TopAppBar(title = { Text(title) }, navigationIcon = {
+    Scaffold(topBar = { if (showTopBar) TopAppBar(title = { Text(title) }, navigationIcon = {
         TextButton(onClick = back) { Text("戻る") }
     }) }) { insets ->
         val surfaceIndex = if (root is LinearLayout) (0 until root.childCount).firstOrNull {

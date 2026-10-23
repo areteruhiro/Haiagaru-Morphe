@@ -28,7 +28,14 @@ abstract class ToolScreenController extends ContextThemeWrapper {
     final void finish(){back.run();}
     final void runOnUiThread(Runnable action){host.runOnUiThread(()->{if(!isDestroyed())action.run();});}
     final void requestPermissions(String[] permissions,int code){host.requestPermissions(permissions,code);}
-    final void showModel(String title,View model){render.accept(ToolScreenUi.model(host,title,model,this::finish));}
+    final void showModel(String title,View model){
+        boolean hissiViewer=intent.getBooleanExtra("haiagaru.native.hissiViewer",false);
+        android.net.Uri data=intent.getData();
+        String hostName=data==null?null:data.getHost();
+        hissiViewer|=hostName!=null&&("hissi.org".equalsIgnoreCase(hostName)
+                ||hostName.toLowerCase(java.util.Locale.ROOT).endsWith(".hissi.org"));
+        render.accept(ToolScreenUi.model(host,hissiViewer?"":title,model,this::finish,!hissiViewer));
+    }
     final void showSearch(HissiWacchoiSearchController controller){render.accept(SearchComposeUi.embed(host,controller));}
     final void showArchive(android.widget.LinearLayout model){render.accept(ToolScreenUi.archive(host,model,this::finish));}
     abstract void create(Bundle state);

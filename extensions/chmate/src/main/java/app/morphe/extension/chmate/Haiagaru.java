@@ -3485,6 +3485,8 @@ public final class Haiagaru {
         live.toggle(nativeSearchTab,NativeToolTabs.SEARCH_KEY);
         Switch nativeCheckerTab = addSwitch(layout, activity,text("タブ表示する画面：投稿検索・結果", "Tab screen: Checker results"),preferences.getBoolean(NativeToolTabs.CHECKER_KEY,true));
         live.toggle(nativeCheckerTab,NativeToolTabs.CHECKER_KEY);
+        Switch nativeHissiTab = addSwitch(layout, activity,text("タブ表示する画面：必死チェッカーもどき専用ビュワー", "Tab screen: Hissi-style dedicated viewer"),preferences.getBoolean(NativeToolTabs.HISSI_KEY,true));
+        live.toggle(nativeHissiTab,NativeToolTabs.HISSI_KEY);
         Switch nativeFullTab = addSwitch(layout, activity,text("タブ表示する画面：ワッチョイ全文検索", "Tab screen: Full Wacchoi search"),preferences.getBoolean(NativeToolTabs.FULL_KEY,true));
         live.toggle(nativeFullTab,NativeToolTabs.FULL_KEY);
         TextView nativeTabsHelp = new TextView(activity);
@@ -3549,14 +3551,9 @@ public final class Haiagaru {
                 text("長押しコピー中も >>番号の長押し操作を優先", "Keep native >>anchor long presses while copying"),
                 preferences.getBoolean("directCopyAnchors", true));
         Button importThemes = new Button(activity);
-        importThemes.setText(text("自作テーマをファイル／フォルダから取り込む", "Import custom themes from files / folder"));
+        importThemes.setText(text("自作テーマをファイル／フォルダから取り込み・削除", "Import / delete custom themes from files / folder"));
         importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
         layout.addView(importThemes);
-        Button listThemes = new Button(activity);
-        listThemes.setText(text("取り込み済みテーマ一覧・削除", "Imported themes / delete"));
-        listThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)
-                .putExtra("haiagaru.themes.list", true)));
-        layout.addView(listThemes);
         Switch topAlignShortThreads = null;
         if (supportsModernThreadList(activity)) {
             topAlignShortThreads = addSwitch(
@@ -3961,13 +3958,19 @@ public final class Haiagaru {
                 layout,
                 activity,
                 text("必死チェッカーの文字サイズ", "Checker viewer text size"),
-                new String[]{"100%", "115%", "130%"},
+                new String[]{"100%", "105%", "110%", "115%", "120%", "125%", "130%"},
                 viewerTextZoomIndex(preferences.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100))
         );
         addHissiViewerToolbarButtonControl(activity, layout, preferences);
         EditText checkerHeader=addTextField(layout,activity,"チェッカー上部パネルの最大高さ（画面の10〜60%）",Integer.toString(preferences.getInt("checkerHeaderPercent",30)));
         checkerHeader.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         live.number(checkerHeader,"checkerHeaderPercent",10,60);
+        EditText checkerSpacing=addTextField(layout,activity,"必死チェッカーのレス上下余白（dp・0〜20）",Integer.toString(preferences.getInt("hissiViewerResponseSpacingDp",7)));
+        checkerSpacing.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        live.number(checkerSpacing,"hissiViewerResponseSpacingDp",0,20);
+        EditText checkerToolbarHeight=addTextField(layout,activity,"必死チェッカー上部ツールバーの高さ（dp・32〜56）",Integer.toString(preferences.getInt("hissiViewerToolbarHeightDp",40)));
+        checkerToolbarHeight.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        live.number(checkerToolbarHeight,"hissiViewerToolbarHeightDp",32,56);
         Switch hissiViewerFullscreen = addSwitch(
                 layout,
                 activity,
@@ -3997,7 +4000,7 @@ public final class Haiagaru {
         live.choice(hissiCheckerMode,HISSI_CHECKER_MODE_KEY);
         live.toggle(dedicatedViewerEnabled,DEDICATED_VIEWER_ENABLED_KEY);
         live.choice(hissiViewerTheme,HISSI_VIEWER_THEME_KEY);
-        live.choice(hissiViewerTextZoom,HISSI_VIEWER_TEXT_ZOOM_KEY,i->new int[]{100,115,130}[i]);
+        live.choice(hissiViewerTextZoom,HISSI_VIEWER_TEXT_ZOOM_KEY,i->100+i*5);
         live.toggle(hissiViewerFullscreen,HISSI_VIEWER_FULLSCREEN_KEY);
         live.toggle(hissiViewerCompactHeader,"hissiViewerCompactHeader");
         live.choice(hissiViewerSwipeHistory,HISSI_VIEWER_SWIPE_HISTORY_KEY);
@@ -5513,12 +5516,12 @@ public final class Haiagaru {
         SharedPreferences prefs = preferencesOrNull();
         if (prefs == null) return 100;
         int value = prefs.getInt(HISSI_VIEWER_TEXT_ZOOM_KEY, 100);
-        return value == 115 || value == 130 ? value : 100;
+        return Math.max(100, Math.min(130, value));
     }
 
     public static void setHissiViewerTextZoom(int value) {
         SharedPreferences prefs = preferencesOrNull();
-        int zoom = value == 115 || value == 130 ? value : 100;
+        int zoom = Math.max(100, Math.min(130, value));
         if (prefs != null) prefs.edit().putInt(HISSI_VIEWER_TEXT_ZOOM_KEY, zoom).apply();
     }
 
@@ -5541,6 +5544,30 @@ public final class Haiagaru {
         return prefs != null && prefs.getBoolean("hissiViewerCompactHeader", false);
     }
 
+    public static int hissiViewerResponseSpacingDp() {
+        SharedPreferences prefs = preferencesOrNull();
+        int value = prefs == null ? 7 : prefs.getInt("hissiViewerResponseSpacingDp", 7);
+        return Math.max(0, Math.min(20, value));
+    }
+
+    public static void setHissiViewerResponseSpacingDp(int value) {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs != null) prefs.edit().putInt("hissiViewerResponseSpacingDp",
+                Math.max(0, Math.min(20, value))).apply();
+    }
+
+    public static int hissiViewerToolbarHeightDp() {
+        SharedPreferences prefs = preferencesOrNull();
+        int value = prefs == null ? 40 : prefs.getInt("hissiViewerToolbarHeightDp", 40);
+        return Math.max(32, Math.min(56, value));
+    }
+
+    public static void setHissiViewerToolbarHeightDp(int value) {
+        SharedPreferences prefs = preferencesOrNull();
+        if (prefs != null) prefs.edit().putInt("hissiViewerToolbarHeightDp",
+                Math.max(32, Math.min(56, value))).apply();
+    }
+
     public static int hissiViewerSwipeHistory() {
         SharedPreferences prefs = preferencesOrNull();
         if (prefs == null) return 0;
@@ -5554,7 +5581,7 @@ public final class Haiagaru {
     }
 
     private static int viewerTextZoomIndex(int zoom) {
-        return zoom == 115 ? 1 : zoom == 130 ? 2 : 0;
+        return Math.max(0, Math.min(6, Math.round((zoom - 100) / 5f)));
     }
 
     private static final class ConfigSnapshot {

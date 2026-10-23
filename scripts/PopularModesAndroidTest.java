@@ -27,7 +27,7 @@ public final class PopularModesAndroidTest {
    }
    Class<?> response=Class.forName(old?"o.processAdDisplayErrorPostbackForUserError":middle?"o.BouncyCastleSocketAdapterCompanion":"o.KeJ11",true,loader);
    Class<?> row=Class.forName(old?"o.r8lambdakfayx3RllpZib32UTPpeXfQjw":middle?"o.setSocketokhttp":"o.zzadi$_init_lambda2",true,loader);
-   List<Object> source=new ArrayList<>(),rows=new ArrayList<>();
+   List<Object> source=new ArrayList<>(),rows=new ArrayList<>();Object filterHeader=new Object();rows.add(filterHeader);
    for(int no=1;no<=105;no++){
     Object r=alloc(response);field(response,middle?"l":"o").setInt(r,no);field(response,old?"r":middle?"p":"s").setInt(r,no==1?3:0);source.add(r);
     Object item=alloc(row);field(row,old||middle?"j":"o").set(item,r);int depth=no==1||no==104?0:1;
@@ -43,6 +43,11 @@ public final class PopularModesAndroidTest {
    }
    Set<?> selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);
    check(selected.size()==103,"native tree returns all 103 matching responses, not one root");check(!selected.contains(104)&&!selected.contains(105),"small conversation excluded");
+   Class<?> extra=Class.forName("app.morphe.extension.chmate.ExtraQuickFilters",true,loader);
+   List<?> extracted=(List<?>)call(extra,"popularRows",new Class<?>[]{List.class,Set.class,Set.class,boolean.class},
+           rows,selected,Collections.emptySet(),false);
+   check(extracted.get(0)==filterHeader,"top filter row remains visible after popular selection");
+   check(extracted.size()==104,"popular selection retains structural row and matching responses only");
    // A later native callback may contain only filtered rows. It must not
    // replace the complete row templates used by inline direct-reply mode.
    if(old||middle)call(nativeRows,"captureLegacy",new Class<?>[]{Object.class,List.class},adapter,rows.subList(0,4));
@@ -61,7 +66,7 @@ public final class PopularModesAndroidTest {
    selected=(Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3);check(selected.size()==1&&selected.contains(1),"native flat mode counts qualifying roots only");
    p.edit().putBoolean(keys[1],false).putInt(keys[3],5).putInt(keys[2],3).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==5,"standard threshold independent");
    p.edit().putBoolean(keys[1],true).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==3,"direct threshold independent");
-   check(rows.size()==105&&source.size()==105,"source rows retained");
+   check(rows.size()==106&&source.size()==105,"source rows retained alongside structural filter row");
    if(old||middle){
     // Reproduce the legacy 191/226 race: the displayed adapter rows exist,
     // but the earlier native-layout observer has not captured a Snapshot.
@@ -73,7 +78,6 @@ public final class PopularModesAndroidTest {
     field(adapter.getClass(),old?"z":"g").set(adapter,new ArrayList<>(rows));
     field(adapter.getClass(),old?"G":"M").setInt(adapter,1);field(adapter.getClass(),old?"I":"D").setInt(adapter,3);
     p.edit().putBoolean("quickFilterCounts",false).putBoolean("quickFilterExtras",false).commit();
-    Class<?> extra=Class.forName("app.morphe.extension.chmate.ExtraQuickFilters",true,loader);
     call(extra,"legacyRows",new Class<?>[]{Object.class},adapter);
     Object recovered=call(nativeRows,"find",new Class<?>[]{List.class},full);
     check(recovered!=null,"legacyRows recaptures a missing native Snapshot for "+version);

@@ -351,12 +351,12 @@ public final class ExtraQuickFilters {
                     Map<Integer,Integer> counts=PopularReplyRules.count(posts);matches=new HashSet<>();
                     for(Map.Entry<Integer,Integer> entry:counts.entrySet())if(entry.getValue()>=threshold)matches.add(entry.getKey());
                 }else matches=raw.selected(threshold);
-                Set<Integer> seen=new HashSet<>();ArrayList<Object> directRows=new ArrayList<>();
+                ArrayList<Object> directRows=new ArrayList<>();
                 Set<Integer> allowed=new HashSet<>();boolean[] selection=selected(a);
                 // Other native filters remain an intersection with the native output.
                 if(selection[1]||selection[2]||selection[3])for(Object row:rows){Object r=rowResponse(row);if(r!=null)allowed.add(number(r));}
-                for(Object row:raw.rows){Object r=rowResponse(row);if(r!=null&&matches.contains(number(r))
-                        &&(!(selection[1]||selection[2]||selection[3])||allowed.contains(number(r)))&&seen.add(number(r)))directRows.add(row);}
+                directRows.addAll(popularRows(raw.rows,matches,allowed,
+                        selection[1]||selection[2]||selection[3]));
                 rows=directRows;
             }
             State s=state(a);if(s.extra==0){refresh(a);return rows;}
@@ -369,6 +369,19 @@ public final class ExtraQuickFilters {
                     if(seen.add(no))kept.add(row);
             }
             refresh(a);return kept;
+    }
+    /** Preserve structural rows such as the top filter controls during popular extraction. */
+    static List<Object> popularRows(List<?> rows,Set<Integer> matches,Set<Integer> allowed,
+                                    boolean intersectAllowed) throws Exception {
+        ArrayList<Object> result=new ArrayList<>();Set<Integer> seen=new HashSet<>();
+        for(Object row:rows){
+            Object response=rowResponse(row);
+            if(response==null){result.add(row);continue;}
+            int number=number(response);
+            if(matches.contains(number)&&(!intersectAllowed||allowed.contains(number))&&seen.add(number))
+                result.add(row);
+        }
+        return result;
     }
     public static ArrayList<?> filterRows(Object a,List<?> rows) {
         if(!QuickFilterOptions.counts()&&!QuickFilterOptions.extras())return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);
@@ -522,11 +535,12 @@ public final class ExtraQuickFilters {
             };scroll.setHorizontalScrollBarEnabled(false);
             LinearLayout choices=new LinearLayout(getContext());
             for(int i=0;i<7;i++){final int index=i;ToggleButton b=new ToggleButton(getContext());buttons[i]=b;b.setAllCaps(false);styleButton(b);
-                b.setMinHeight((int)(48*getResources().getDisplayMetrics().density));
+                int buttonHeight=(int)(52*getResources().getDisplayMetrics().density);
+                b.setGravity(android.view.Gravity.CENTER);b.setMinHeight(buttonHeight);b.setHeight(buttonHeight);
                 b.setOnClickListener(v->{Object a=adapter.get();if(a!=null)try{boolean requested=b.isChecked();toggle(a,index);if(index<4&&!(index==0&&PopularReplies.enabledFor(getContext()))){State state=state(a);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}update();}catch(Exception e){Log.e("Haiagaru","Filter row toggle",e);update();}});
                 if(i==2)b.setOnLongClickListener(v->{Object a=adapter.get();return a!=null&&imageList(a);});
                 b.setTextSize(14);b.setPadding((int)(14*getResources().getDisplayMetrics().density),0,(int)(14*getResources().getDisplayMetrics().density),0);
-                LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,-2);params.setMargins(2,0,2,0);choices.addView(b,params);}
+                LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,buttonHeight);int verticalMargin=(int)(1*getResources().getDisplayMetrics().density);params.setMargins(2,verticalMargin,2,verticalMargin);choices.addView(b,params);}
             scroll.addView(choices);addView(scroll,new LinearLayout.LayoutParams(-1,-2));
         }
         void bind(Object a){adapter=new WeakReference<>(a);update();}
