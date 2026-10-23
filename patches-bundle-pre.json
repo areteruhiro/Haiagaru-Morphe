@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-20T06:04:56",
-  "description": "# Haiagaru 1.11.2\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.2/docs/release-1.11.2.md)\n\n\n### 🐛 Bug Fixes\n\n* distribute a separate VPN library ZIP and clarify optional file selection ([8eabe51](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8eabe51bbc052d7486144210cdc19ab9a37bf053))\n* release Haiagaru 1.11.2 optional asset selection hotfix ([ea548fb](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ea548fb7997b96ace1cd58247787d25170972cea))",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.11.2/patches-1.11.2.mpp",
+  "created_at": "2026-10-23T09:54:51",
+  "description": "# Haiagaru 1.11.3\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.3/docs/release-1.11.3.md)\n\n\n### 🐛 Bug Fixes\n\n* remove User-Agent spoofing ([24f165e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/24f165ea03b362eb4850f42e28fd90313381e27f))",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.11.3/patches-1.11.3.mpp",
   "signature_download_url": "",
-  "version": "1.11.2"
+  "version": "1.11.3"
 }
