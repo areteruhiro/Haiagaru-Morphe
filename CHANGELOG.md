@@ -1,3 +1,12 @@
+# Haiagaru 1.11.3
+
+[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.3/docs/release-1.11.3.md)
+
+
+### 🐛 Bug Fixes
+
+* remove User-Agent spoofing ([24f165e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/24f165ea03b362eb4850f42e28fd90313381e27f))
+
 # Haiagaru 1.11.2
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.2/docs/release-1.11.2.md)
