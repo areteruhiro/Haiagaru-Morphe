@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-10-23T20:29:13",
+  "created_at": "2026-10-23T20:32:26",
   "description": "# Haiagaru 1.11.3\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.3/docs/release-1.11.3.md)\n\n\n### 🐛 Bug Fixes\n\n* remove User-Agent spoofing ([24f165e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/24f165ea03b362eb4850f42e28fd90313381e27f))",
   "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.11.3/patches-1.11.3.mpp",
   "signature_download_url": "",
