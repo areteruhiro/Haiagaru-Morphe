@@ -31,3 +31,12 @@
 - 最終ログで新規crash時刻の増加なし（既存03:12 UTCのART記録は残存）。lastanrは起動後記録なし。長時間での無再発を保証するものではない。
 - 初回は初回構成案内dialogがActivityのwindow focusを奪いテストが停止。案内を適用せずdismissしてActivityの前面状態で判定し直した。次の試験は13秒時点のタブ描画確認が早く失敗したが、後の診断ではresumedな検索タブが存在。25秒後の描画確認へ修正し成功した。成功前のテスト停止を実装成功と扱っていない。
 - 226は共通Java修正でnativehook未変更のため重複導入/端末操作を省略。全自然発生条件や長時間での完全解消は未確認。公開はしていない。
+
+## 公開後の確認
+
+- 上記「公開はしていない」はローカル検証時点の記録。2026-10-23、既存Semantic Release CI 39912727895が成功し、1.12.0-dev.11をプレリリースとして公開（draft=false、prerelease=true）。実装c21d00c、CI生成コミット569e244。
+- https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.11
+- 公開6資材を再ダウンロードし、全件GitHub digestとSHA-256が一致。Android MPPのclasses.dexを確認。MPP SHA-256: E4B920568112BBA5DA883BAF497FFE2180B2070DE0AC3136E2A3552F2F041BFC。
+- devの公開JSON2本は1.12.0-dev.11、created_atは2026-10-23T06:40:09（Z・offsetなし）。mainの正式JSONは1.11.2のまま保持。
+- emulator-5554のMorpheで、プレリリースONの既存ソースを更新。新規logcatにmain/patches-bundle.jsonとdev/patches-bundle.jsonの取得を確認。カードと詳細の双方が1.12.0-dev.11となり、BundleEntityも同版を記録。ソースの再登録・チャンネル変更・ログ消去はしていない。
+- 公開物の検証はbuild/public-dev11、Morphe新規ログはbuild/morphe-dev11-live.log。APK操作確認は公開前の同一ソース候補によるもので、CI生成MPPからの再インストールではない。
