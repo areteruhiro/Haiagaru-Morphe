@@ -1,5 +1,9 @@
 # Android導入・署名台帳
 
+## 2026-10-24 サムネイル・常時下部フィルター・下4桁NG候補
+
+emulator-5554のHaiagaru 検証 242（resumefix242）へ同一署名照合install-r Success、設定・データ保持。APK/MPP絶対root・SHA256・鍵・途中候補を含む記録は[thumbnail-pinned-menu-20261024.md](thumbnail-pinned-menu-20261024.md)。実機と公開Releaseは変更なし。
+
 ## 2026-10-23 GIF取得選択・固定フィルターとポップアップ修正候補
 
 emulator-5554のHaiagaru 検証 226（resumefix226）を署名照合install-rでデータ保持更新。APK/MPP絶対ルート・SHA256・鍵・検証結果は[gif-autofetch-pinned-popup-20261023.md](gif-autofetch-pinned-popup-20261023.md)参照。公開dev.13と異なる未公開候補、実機は変更していない。
