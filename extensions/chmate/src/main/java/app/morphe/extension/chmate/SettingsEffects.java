@@ -16,9 +16,10 @@ final class SettingsEffects {
                 ||"copipeNg2".equals(key)||"arashiNg".equals(key)||"abbrevSingleId".equals(key);
     }
     static void changed(Context context,String key,boolean on){
+        if(HiddenNgUnread.KEY.equals(key)){HiddenNgUnread.clear();Haiagaru.refreshBoardListAfterReadSortChange();}
         if("forceHttps".equals(key))HttpsTransport.setEnabled(on);
         if(!on&&("wacchoiSearchEnabled".equals(key)||"wacchoiBackgroundSearch".equals(key))){
-            WacchoiBackgroundJob job=WacchoiSearchService.current;if(job!=null&&job.running)job.cancel();
+            for(WacchoiBackgroundJob job:WacchoiSearchService.jobs().values())if(job.running)job.cancel();
         }
         if("readThreadsFirst".equals(key)||HiddenDroppedThreads.KEY.equals(key)||HiddenDroppedThreads.DRAFTS.equals(key)
                 ||HiddenDroppedThreads.SENT.equals(key)||"groupBrowsingHistoryByBoard".equals(key)
