@@ -137,6 +137,7 @@ public final class ImageVpnController {
                 String candidate = images.group();
                 try {
                     String path = new URL(candidate).getPath().toLowerCase(java.util.Locale.ROOT);
+                    if (GifAutoFetchPolicy.supported(candidate) && !GifAutoFetchPolicy.gif(Haiagaru.gifAutoFetchMode())) continue;
                     if (ImageVpnRequestPolicy.isProtectedUrl(candidate) && path.matches(".*\\.(?:jpe?g|png|gif|webp|bmp)$")) urls.add(route(candidate));
                 } catch (IOException ignored) { }
             }

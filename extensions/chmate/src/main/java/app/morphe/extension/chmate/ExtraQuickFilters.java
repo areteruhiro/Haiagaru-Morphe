@@ -122,6 +122,7 @@ public final class ExtraQuickFilters {
         final Activity activity;final View root;final FrameLayout host;final WeakReference<Object> fragment;
         final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         final Runnable render=this::layout;BottomControls panel;View list;int originalPadding,appliedPadding=-1;boolean closed,queued;
+        final Map<View,int[]> popupPaddings=new WeakHashMap<>();
         PinnedPanel(Activity activity,Object fragment,View root){
             this.activity=activity;this.fragment=new WeakReference<>(fragment);this.root=root;host=activity.findViewById(android.R.id.content);
             root.addOnAttachStateChangeListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);
@@ -149,9 +150,34 @@ public final class ExtraQuickFilters {
                 if(appliedPadding>=0&&list.getPaddingBottom()!=appliedPadding)originalPadding=list.getPaddingBottom();
                 appliedPadding=originalPadding+height;
                 if(list.getPaddingBottom()!=appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),appliedPadding);
+                android.graphics.Rect filterBounds=new android.graphics.Rect();
+                if(panel.getGlobalVisibleRect(filterBounds))updatePopupPadding(root,filterBounds);
             }catch(Exception error){Log.w("Haiagaru","Persistent filter layout",error);detachPanel();}
         }
-        void detachPanel(){if(panel!=null){host.removeView(panel);panel=null;}if(list!=null){if(list.getPaddingBottom()==appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),originalPadding);list=null;}appliedPadding=-1;}
+        void updatePopupPadding(View view,android.graphics.Rect filterBounds){
+            if(view!=list&&(view instanceof ListView||list.getClass().isInstance(view))){
+                try{
+                    Object candidate=call(view,"getAdapter",new Class<?>[0]);
+                    if(candidate instanceof HeaderViewListAdapter)candidate=((HeaderViewListAdapter)candidate).getWrappedAdapter();
+                    if(candidate!=null&&candidate.getClass()==panel.adapter.getClass()){
+                        android.graphics.Rect bounds=new android.graphics.Rect();
+                        int extra=view.isShown()&&view.getGlobalVisibleRect(bounds)&&bounds.left<filterBounds.right&&bounds.right>filterBounds.left
+                                ?Math.max(0,Math.min(filterBounds.height(),bounds.bottom-filterBounds.top)):0;
+                        int[] padding=popupPaddings.get(view);
+                        if(extra>0){
+                            if(padding==null){padding=new int[]{view.getPaddingBottom(),-1};popupPaddings.put(view,padding);}
+                            if(padding[1]>=0&&view.getPaddingBottom()!=padding[1])padding[0]=view.getPaddingBottom();
+                            padding[1]=padding[0]+extra;
+                            if(view.getPaddingBottom()!=padding[1])view.setPadding(view.getPaddingLeft(),view.getPaddingTop(),view.getPaddingRight(),padding[1]);
+                        }else if(padding!=null){restorePopupPadding(view,padding);popupPaddings.remove(view);}
+                        return;
+                    }
+                }catch(Exception ignored){ /* Not a native response list. */ }
+            }
+            if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)updatePopupPadding(group.getChildAt(i),filterBounds);}
+        }
+        void restorePopupPadding(View view,int[] padding){if(view.getPaddingBottom()==padding[1])view.setPadding(view.getPaddingLeft(),view.getPaddingTop(),view.getPaddingRight(),padding[0]);}
+        void detachPanel(){for(Map.Entry<View,int[]> item:new ArrayList<>(popupPaddings.entrySet()))restorePopupPadding(item.getKey(),item.getValue());popupPaddings.clear();if(panel!=null){host.removeView(panel);panel=null;}if(list!=null){if(list.getPaddingBottom()==appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),originalPadding);list=null;}appliedPadding=-1;}
         public void onGlobalLayout(){schedule();}
         public void onViewAttachedToWindow(View view){root.getViewTreeObserver().removeOnGlobalLayoutListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);schedule();}
         public void onViewDetachedFromWindow(View view){handler.removeCallbacks(render);queued=false;if(root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnGlobalLayoutListener(this);detachPanel();}

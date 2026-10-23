@@ -1,5 +1,13 @@
 # Android導入・署名台帳
 
+## 2026-10-23 GIF取得選択・固定フィルターとポップアップ修正候補
+
+emulator-5554のHaiagaru 検証 226（resumefix226）を署名照合install-rでデータ保持更新。APK/MPP絶対ルート・SHA256・鍵・検証結果は[gif-autofetch-pinned-popup-20261023.md](gif-autofetch-pinned-popup-20261023.md)参照。公開dev.13と異なる未公開候補、実機は変更していない。
+
+## 2026-10-23 公開dev.13を226へ適用・リロード位置検証
+
+emulator-5554のresumefix226へ同一署名照合install-r Success。公開MPPを使用し設定・データ保持。APK/MPP絶対ルート・ハッシュ・鍵・native検査と最終6項目成功は[reload-card-position226-20261023.md](reload-card-position226-20261023.md)参照。実機は変更していない。
+
 ## 2026-10-23 下部フィルター常時表示・公開前統合候補
 
 emulator-5554の191／242を同一署名照合してデータ保持更新。各23項目成功、242は最新origin/dev取り込み後の統合版へ再更新済み。package・版・表示名・APK/MPP絶対ルート・SHA256・鍵・結果は[persistent-bottom-filters-20261023.md](persistent-bottom-filters-20261023.md)参照。191は統合前の同一フィルター処理で検証し、226共通重複操作を省略。実機は変更していない。

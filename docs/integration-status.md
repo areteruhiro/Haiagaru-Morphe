@@ -1,5 +1,11 @@
 # 主開発先と統合状況
 
+2026-10-23 正式公開前監査: origin/devの履歴が整理されており、手元HEADとのtree差分0を確認してローカル旧devをcodex/dev-before-remote-rewrite-20261023へ退避、新devをorigin/devから作成し未コミット修正を保持。fetch設定がdevのみだったためmaster/mainの追跡refも現行リモートへ更新。最新正式版998436e（1.11.3）との差分と既存検証記録を照合し、追加ライブラリ案内/確認範囲/謝辞を含む説明を.releasercへ直接作成。新たな公開説明MDは作らない。最終候補226をFridaなしでcold起動し実Part3本文・scroll・サムネイル→167KB/820x1800画像の表示を確認（build/official-image226-final.png）。旧Frida crash/旧Vungle startup ANR以降の新規記録なし。共通Javaの191/242重複操作は省略、全条件の完全解消は断言しない。既存Semantic Releaseでdevからmasterへの正式公開準備。
+
+2026-10-23 GIF自動取得・常時下部フィルターのpopup末尾（未公開）: GIF専用4モードと共有を追加、bounded workerで静止フレーム生成、通常画像/動画と分離。固定フィルターの本文余白だけではnative popup末尾が隠れることを226で再現（重なり126px/padding0）、補助レス一覧にも重なり余白を追加。最終通常Lint build成功、226署名照合データ保持更新、GIF policy27/Android19/実GIF decode・JPEG配信/実native popup9項目成功。popup末尾の実画面も確認。191/242共通重複操作は省略。実機と公開Releaseは変更なし。詳細gif-autofetch-pinned-popup-20261023.md。
+
+2026-10-23 226正式1.11.3リロード位置ずれ報告の確認: AdGuardレス458のカード行が一時測定で欠落する原因を特定。旧gate相当で109px/実表示432pxの差、native復元463/-100→459/-46を再現。既存dev.13のwarm bindで463/-100を保持。公開MPPを226へ署名照合データ保持更新し、最終6項目成功、新規crash/ANRなし。本番追加変更や追加Releaseはせず既存プレ修正の検証として記録。実機固有条件は未確認。詳細reload-card-position226-20261023.md。
+
 2026-10-23 プレリリース1.12.0-dev.13公開完了: 40b8d29をdevへ通常pushし既存Release CI39953713564成功、CI生成9acce8cをFF取得。Release draft=false/prerelease=true、https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.13 。公開6資材のGitHub digest全件一致、Android MPP SHA256=201eab2203b44551c1577609ded749e4648d106f0c0daa8da74d4b0e7f48e2ba、classes.dex確認。dev JSON2本はdev.13、created_at=2026-10-23T12:31:11（Zなし）、公開MPPを参照。mainと最新正式版1.11.3は維持。emulator-5554のMorpheプレONを保持しfresh logcatでmain/dev実取得URLを確認したが、2回更新後もカード1.11.3のままで端末表示反映は未確認。登録先変更・データ消去・生成JSON手修正はしない。公開MPPからの再パッチ導入は未実施、端末検証は直前同ソース候補。公開6資材はbuild/release-dev13-verifyへ保存。
 
 2026-10-23 常時下部フィルター公開前確認完了: persistentBottomQuickFilters（初期false）を追加。191/242各23項目、リモートcb7c7ab統合後の最終242でも23項目成功。本文長押しの下4桁NG画面と内部画像の実表示を再確認。スレ側専用タブ移動は実Activityへのtouchで6画面145項目成功し、旧fixtureの非表示/0サイズViewへの操作を是正。最終242のFridaなし再起動・UI dump成功、crash bufferと/data/anrに新規記録なし。旧候補のVungleProvider起動ANRは原因解決と断定せず履歴保持、最終候補では再発を確認していない。通常Lint build成功。226の共通操作はユーザー許可により重複省略。既存CIによるプレ公開準備。詳細persistent-bottom-filters-20261023.md。

@@ -4103,6 +4103,14 @@ public final class Haiagaru {
                 text("画像リンクの画像を自動で読み込む", "Automatically load images from image links"),
                 new String[]{text("画像を取得", "Retrieve images"), text("取得しない", "Do not retrieve")},
                 mediaImageFetchEnabled() ? 0 : 1);
+        Spinner gifAutoFetch = addSpinner(layout, activity,
+                text("GIFリンクから自動で読み込むもの", "What to load from GIF links"),
+                new String[]{text("画像＋GIF", "Thumbnail and GIF"), text("画像のみ（サムネイル）", "Thumbnail only"),
+                        text("GIFのみ", "GIF only"), text("取得しない", "Do not retrieve")}, gifAutoFetchMode());
+        TextView gifFetchHelp = new TextView(activity);
+        gifFetchHelp.setText(text(".gif のリンクが対象です。画像は静止サムネイル、GIFは本体です。サムネイル生成にもGIFの取得が必要です（最大8MB）。GIFのみは自動再生を意味しません。実体がMP4のアニメーションは動画の設定に従います。",
+                "Applies to .gif links. Images are still thumbnails; GIF means the original file, not autoplay. Creating a thumbnail also downloads the GIF (up to 8MB). MP4 animations use video settings."));
+        layout.addView(gifFetchHelp);
         EditText videoThumbnailMaxMb = addTextField(layout, activity,
                 text("動画サムネイルの取得上限（MB、1〜1024）", "Video thumbnail download limit (MB, 1–1024)"),
                 Integer.toString(videoThumbnailMaxMb()));
@@ -4134,6 +4142,10 @@ public final class Haiagaru {
         live.toggle(imageRotationButtonSetting,"imageViewerRotationButton");
         live.toggle(videoViewer,"videoViewerEnabled");
         live.choice(mediaAutoFetch,"urlVideoFetchMode");
+        live.choice(gifAutoFetch,()->{
+            preferences.edit().putInt(GifAutoFetchPolicy.KEY,gifAutoFetch.getSelectedItemPosition()).apply();
+            GifAutoFetch.changed();
+        });
         live.choice(imageAutoFetch,()->preferences.edit().putBoolean("urlImageFetchEnabled",imageAutoFetch.getSelectedItemPosition()==0).apply());
         live.number(videoThumbnailMaxMb,"videoThumbnailMaxMb",1,1024);
         live.number(videoThumbnailTimeoutSeconds,"videoThumbnailTimeoutSeconds",1,600);
@@ -5328,6 +5340,11 @@ public final class Haiagaru {
         int oldMode = prefs == null ? 2 : prefs.getInt("mediaAutoFetchMode", 2);
         int mode = prefs == null ? 1 : prefs.getInt("urlVideoFetchMode", oldMode == 3 ? 3 : oldMode == 0 ? 0 : 1);
         return mode >= 0 && mode <= 3 ? mode : 1;
+    }
+
+    public static int gifAutoFetchMode() {
+        SharedPreferences prefs = preferencesOrNull();
+        return GifAutoFetchPolicy.mode(prefs == null ? -1 : prefs.getInt(GifAutoFetchPolicy.KEY, -1), mediaImageFetchEnabled());
     }
 
     public static int autoReloadIntervalSeconds() {

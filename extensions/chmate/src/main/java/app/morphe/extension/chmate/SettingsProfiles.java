@@ -36,6 +36,8 @@ public final class SettingsProfiles {
         numberKey("popularReplyStandardThreshold",1,9999);
         for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
         choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3)));
+        choiceKey(GifAutoFetchPolicy.KEY,new HashSet<>(Arrays.asList(0,1,2,3)));
+        defaultValue(GifAutoFetchPolicy.KEY,Haiagaru.gifAutoFetchMode());
         RULES.put("settingsLanguage",v->"ja".equals(v)||"en".equals(v)||"system".equals(v));
         RULES.put("imageVpnDomains",v->{if(!(v instanceof String))return false;
             try{ImageVpnRequestPolicy.parseDomains((String)v);return true;}catch(IllegalArgumentException invalid){return false;}});
