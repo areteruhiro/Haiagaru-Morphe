@@ -1,5 +1,12 @@
 # Android導入・署名台帳
 
+## 2026-10-23 公開配布物1.12.0-dev.10
+
+- 公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.10 。CI39900790356 success、生成commit272945d、draft=false／prerelease=true、公開日時2026-10-23T04:35:28Z。
+- 公開MPP `build/release-dev10-verify/patches-1.12.0-dev.10.mpp`、SHA256 `72172D57A1EE7C1722E26002175049DFE237B14B199B0D51F8D64D4ED7EC097E`。6配布物のGitHub digest一致、Android classes.dex確認。
+- devのメタデータ2本はcreated_at `2026-10-23T04:32:50`（タイムゾーンなし）。初回rawの古いdev.9 CDNキャッシュは時間経過後にdev.10へ切り替わった。MorpheはプレONのまま既存ソースを更新し、main/devメタデータの実GETとdev.10カード／詳細表示を確認。安定版は1.11.2のまま。
+- この公開CI版MPPそのものによるAPK再生成・端末更新は未実施。エミュレータの191／242は下記NoCopySpan保護込みローカル候補、226は共通処理の重複検証省略で下記未読NG候補を保持。公開版とローカル候補のMPPハッシュを混同しない。
+
 ## 2026-10-23 安価が多い本文の装飾候補・NoCopySpan保護
 
 - Serial `emulator-5554`。191／242を証明書一致確認後に`install -r`更新しSuccess。データ消去なし。226は直前の未読NG軽量化候補を維持し、今回の共通Java変更の重複端末試験は省略。

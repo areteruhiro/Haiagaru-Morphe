@@ -21,3 +21,5 @@
 先行修正のcommit12d3d95から開始したRelease CI39898097732は、この追加報告を受けて停止。CIが生成した7ca9672とtag1.12.0-dev.9、devのメタデータは残ったがGitHub Release／配布資材は未公開。生成ファイルやタグを手編集・削除せず、7ca9672をfast-forwardで取り込み、今回の追加修正を既存Semantic Release CIで次版として公開する。完了時はdevメタデータの実ダウンロード先とMorphe表示を再検証し、不整合が解消したことを確認する。安定版は変更しない。
 
 最終Androidビルドは通常Lint込みで成功（`build/dense-anchor-nocopy-final-build.log`、2分45秒）。MPP SHA256 `5BD55CCCC56D65362882337C20570ECF5B8390FE27306BB3B17A1F7360356AF0`。APK台帳はandroid-installations.md。
+
+次のCI39900790356は成功し1.12.0-dev.10として公開完了。公開直後のraw配信にはdev.9のCDNキャッシュが残っていたが、待機後にdev.10へ更新され、Morpheの実更新でもdev.10を確認した。dev.9タグは削除・改名していない。正式版1.11.2は維持。配布物のハッシュ・導入との区別は導入台帳を参照。
