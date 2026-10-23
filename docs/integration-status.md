@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-10-23 プレリリース1.12.0-dev.13公開完了: 40b8d29をdevへ通常pushし既存Release CI39953713564成功、CI生成9acce8cをFF取得。Release draft=false/prerelease=true、https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.13 。公開6資材のGitHub digest全件一致、Android MPP SHA256=201eab2203b44551c1577609ded749e4648d106f0c0daa8da74d4b0e7f48e2ba、classes.dex確認。dev JSON2本はdev.13、created_at=2026-10-23T12:31:11（Zなし）、公開MPPを参照。mainと最新正式版1.11.3は維持。emulator-5554のMorpheプレONを保持しfresh logcatでmain/dev実取得URLを確認したが、2回更新後もカード1.11.3のままで端末表示反映は未確認。登録先変更・データ消去・生成JSON手修正はしない。公開MPPからの再パッチ導入は未実施、端末検証は直前同ソース候補。公開6資材はbuild/release-dev13-verifyへ保存。
+
 2026-10-23 常時下部フィルター公開前確認完了: persistentBottomQuickFilters（初期false）を追加。191/242各23項目、リモートcb7c7ab統合後の最終242でも23項目成功。本文長押しの下4桁NG画面と内部画像の実表示を再確認。スレ側専用タブ移動は実Activityへのtouchで6画面145項目成功し、旧fixtureの非表示/0サイズViewへの操作を是正。最終242のFridaなし再起動・UI dump成功、crash bufferと/data/anrに新規記録なし。旧候補のVungleProvider起動ANRは原因解決と断定せず履歴保持、最終候補では再発を確認していない。通常Lint build成功。226の共通操作はユーザー許可により重複省略。既存CIによるプレ公開準備。詳細persistent-bottom-filters-20261023.md。
 
 2026-10-23 dev.12公開後・242本文メニューの下4桁NG（未公開）: 本文Compose経路のResponseArchive.handleにID76が未接続だった。handleSuffixNgへ既存リスナー呼出しを分離し、旧popupと共通化。実native itemで修正前false/callback0→修正後true/callback1、実Part3の本文長押し→項目タップ→NGName追加／対象板／-m/EIをFridaなしで確認し保存せずキャンセル。通常Lint build、単体fallback／一回のみdispatch、242既存hook保持検査成功。同一署名照合してemulator-5554のresumefix242へデータ保持更新。起動初回にVungleProvider.onCreate中のstartup timeout記録あり、NG操作前のものだが公開判断では未解決として保持。詳細ng-suffix-body242-20261023.md。先行のスレ側専用画面の左右タブ移動も作業ツリー／候補に保持し、そちらは検証中。191／226・実機再導入、次版公開なし。
