@@ -261,7 +261,11 @@ public final class WacchoiLongPressMenu {
 
     /** Custom popups bypass MenuItem's listener and call their own dispatcher. */
     public static boolean dispatchSuffixNgItem(Object itemObject) {
-        if (ResponseArchive.handle(itemObject)) return true;
+        return ResponseArchive.handle(itemObject);
+    }
+
+    /** 242's Compose body menu dispatches through ResponseArchive, bypassing MenuItem listeners. */
+    public static boolean handleSuffixNg(Object itemObject) {
         if (!(itemObject instanceof MenuItem)) return false;
         MenuItem item = (MenuItem) itemObject;
         if (item.getItemId() != 76) return false;

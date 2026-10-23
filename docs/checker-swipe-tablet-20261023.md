@@ -3,7 +3,15 @@
 ## 報告と公開停止
 
 - 公開済み1.12.0-dev.11の191で、左ペインの必死チェッカーを右スワイプすると落ちるとの報告。「専用ビュワーの左右スワイプ：無効」以外で発生。画像①②を直接取得・目視確認。
-- 公開作業中のCI 39925498541をキャンセル。実装5ed5283と生成コミットf931cba、タグ1.12.0-dev.12までは作成済みだったがGitHub Release/配布資材は未公開。生成済みのタグ・JSONを手編集／削除しない。修正を既存Semantic Release CIで次版へ進める。
+- 公開作業中のCI 39925498541をキャンセル。実装5ed5283と生成コミットf931cbaまでは作成済みだったが、タグ1.12.0-dev.12・GitHub Release・配布資材は未作成だった。後続の既存Semantic Release CIで公開する。生成JSONは手編集しない。
+
+## 後続の公開確認
+
+- CI 39932756756が成功し、生成コミットd5cca1c・タグ1.12.0-dev.12を作成。Releaseはdraft=false／prerelease=true。6配布物すべてのSHA-256がGitHub digestと一致し、公開MPPにclasses.dexがある。
+- 公開MPP SHA-256: 6FC6D59324CEB372F74EC88E465E74CADF4E17AE48863537808E99284A55CA7C。
+- devのJSON2本は1.12.0-dev.12、created_atは2026-10-23T09:35:09（Z／offsetなし）。mainの正式版は1.11.2を維持。
+- emulator-5554でプレリリースONを確認。更新前からfresh logcatを採取してmain/devの実取得URLとPatchBundleEntityのdev.12を確認。更新後のソースカード・詳細もdev.12。登録先やデータは変更していない（build/morphe-dev12-refresh.log、端末morphe-dev12-after.xml）。
+- 続けて依頼されたスレ側の隣接タブへの左右ジェスチャーは、この公開後の追加作業でありdev.12には未収録。
 
 ## 変更
 

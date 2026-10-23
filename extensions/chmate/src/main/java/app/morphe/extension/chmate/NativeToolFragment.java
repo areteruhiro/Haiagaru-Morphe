@@ -28,7 +28,7 @@ public final class NativeToolFragment extends android.app.Fragment {
     @Override public void onAttach(Context context) { super.onAttach(context); host=(Activity)context; }
     @Override public View onCreateView(LayoutInflater inflater,ViewGroup container,Bundle state) {
         content=NativeToolTabs.content(this,host,state);
-        frame=new LinearLayout(host);frame.setOrientation(LinearLayout.VERTICAL);
+        frame=new NativeToolTabSwipeLayout(host,this);frame.setOrientation(LinearLayout.VERTICAL);
         header=new LinearLayout(host);header.setGravity(Gravity.CENTER_VERTICAL);
         title=new TextView(host);title.setSingleLine(true);
         title.setEllipsize(android.text.TextUtils.TruncateAt.END);

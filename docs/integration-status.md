@@ -1,5 +1,11 @@
 # 主開発先と統合状況
 
+2026-10-23 常時下部フィルター公開前確認完了: persistentBottomQuickFilters（初期false）を追加。191/242各23項目、リモートcb7c7ab統合後の最終242でも23項目成功。本文長押しの下4桁NG画面と内部画像の実表示を再確認。スレ側専用タブ移動は実Activityへのtouchで6画面145項目成功し、旧fixtureの非表示/0サイズViewへの操作を是正。最終242のFridaなし再起動・UI dump成功、crash bufferと/data/anrに新規記録なし。旧候補のVungleProvider起動ANRは原因解決と断定せず履歴保持、最終候補では再発を確認していない。通常Lint build成功。226の共通操作はユーザー許可により重複省略。既存CIによるプレ公開準備。詳細persistent-bottom-filters-20261023.md。
+
+2026-10-23 dev.12公開後・242本文メニューの下4桁NG（未公開）: 本文Compose経路のResponseArchive.handleにID76が未接続だった。handleSuffixNgへ既存リスナー呼出しを分離し、旧popupと共通化。実native itemで修正前false/callback0→修正後true/callback1、実Part3の本文長押し→項目タップ→NGName追加／対象板／-m/EIをFridaなしで確認し保存せずキャンセル。通常Lint build、単体fallback／一回のみdispatch、242既存hook保持検査成功。同一署名照合してemulator-5554のresumefix242へデータ保持更新。起動初回にVungleProvider.onCreate中のstartup timeout記録あり、NG操作前のものだが公開判断では未解決として保持。詳細ng-suffix-body242-20261023.md。先行のスレ側専用画面の左右タブ移動も作業ツリー／候補に保持し、そちらは検証中。191／226・実機再導入、次版公開なし。
+
+同日dev.12公開確認: 既存CI39932756756で生成commit d5cca1c、Release draft=false/prerelease=true。6資材のdigest一致と公開MPP classes.dex、dev raw JSON2本のdev.12／created_at=2026-10-23T09:35:09を確認。MorpheのプレONを維持してfresh logcat取得、main/devの実取得URLとカード／詳細のdev.12を確認。mainの正式版は1.11.2を維持。checker-swipe-tablet-20261023.mdに記録。先行キャンセルCIはタグを作成しておらず、その記述を訂正。
+
 2026-10-23 メニュー分離・高度なNG説明の公開前確認完了: name長押し設定がresponse visibilityも書いていた結合を廃止。本文側はresponseVisibilityへ独立、旧結合値はnative toolbar選択を強制上書きしない。191のname hookはappendLegacyForNameへ分離し、元register/選択レス保持検査成功。226/242 name sheetはnameMenuVisibleを使用。NGの長文説明をfloating labelから分離し、ModelChildrenもsettingsRowsと同じparagraph判定を共用、radio/spinner長文をweightで折返す。最終通常Lint build成功、MPPF4424814...を191/242へデータ保持更新。各32+16のmenu検査成功、242360dpNG画面を保存せず視認、191Part3本文/scroll/内部画像表示/戻り確認。新規crash/ANRなし、226共通重複操作は省略。先行未コミット改善も保持し、既存.releasercに今回の日本語説明を記載。まだpush/公開前。導入台帳参照。
 
 2026-10-23 フローティングフィルター画像（未公開）: ToolbarIcons既存0〜6を移動せずslot7に「フローティングのフィルター」を追加。通常filter画像とは独立、標準は既存filter vectorとlabelを使用。import/resetのinvalidateからmainへ反映し、再起動不要。通常toolbar画像の再起動確認は維持。FloatingFilterButtonは24dp compound iconとlabel/長押しdragを維持。通常Lint build成功、MPP E08AAF84...を242既存検証アプリへ署名照合データ保持更新。合成画像のimport/live/reset12項目と既存floating tap/drag/位置/ONOFF9項目成功、通常filterファイル不変、検証画像削除・設定復元。191/226は共通実装で重複端末操作省略。先行未コミット変更を保持し公開なし。導入台帳参照。

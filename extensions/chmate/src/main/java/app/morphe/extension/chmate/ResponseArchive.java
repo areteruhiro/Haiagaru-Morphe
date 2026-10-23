@@ -136,6 +136,7 @@ public final class ResponseArchive {
     public static boolean handle(Object object) {
         if(ResponseMenuSettings.handleTools(object))return true;
         if(WacchoiLongPressMenu.handlePrefixNg(object))return true;
+        if(WacchoiLongPressMenu.handleSuffixNg(object))return true;
         if (PosterHighlight.handle(object)) return true;
         if (!(object instanceof MenuItem)) return false;
         int id = ((MenuItem) object).getItemId();

@@ -165,6 +165,59 @@ public final class NativeToolTabs {
         }catch(Exception error){android.util.Log.e("Haiagaru","Could not open native tool tab",error);}
         return false;
     }
+    /** Resolve actual ownership, not today's HOME/thread preference (existing tabs can differ). */
+    private static ThreadSelection threadSelection(Activity activity,Object fragment)throws Exception{
+        if(!tablet(activity)||!(fragment instanceof NativeToolFragment)||!marker(arguments(fragment)))return null;
+        String version=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
+        Class<?> fragmentClass=Class.forName("androidx.fragment.app.Fragment",false,activity.getClassLoader());
+        if("0.8.10.191 dev".equals(version)){
+            Object pane=tabField(activity,"I"),adapter=tabField(pane,"d");
+            int index=(Integer)tabCall(adapter,"a",new Class<?>[]{fragmentClass},fragment);
+            if(index<0||index!=(Integer)tabField(tabField(pane,"e"),"a"))return null;
+            return new ThreadSelection(pane,"d",index,((java.util.List<?>)tabField(adapter,"a")).size(),true);
+        }
+        boolean v226="0.8.10.226 dev".equals(version);
+        if(!v226&&!"0.8.10.242 dev".equals(version))return null;
+        Object pane=Array.get(tabField(activity,v226?"r":"w"),1),model=tabField(pane,v226?"a":"e");
+        int index;
+        if(v226)index=(Integer)tabCall(model,"d",new Class<?>[]{fragmentClass},fragment);
+        else{
+            Object page=tabCall(model,"e",new Class<?>[]{fragmentClass},fragment);
+            if(page==null)return null;
+            index=(Integer)tabCall(model,"d",new Class<?>[]{page.getClass()},page);
+        }
+        if(index<0)return null;
+        Object state=tabCall(tabField(model,v226?"d":"e"),v226?"c":"d",new Class<?>[0]);
+        if(index!=(Integer)tabField(state,v226?"a":"b"))return null;
+        return new ThreadSelection(model,v226?"c":"e",index,((java.util.List<?>)tabField(state,v226?"b":"a")).size(),false);
+    }
+    private static Object tabField(Object owner,String name)throws ReflectiveOperationException{
+        for(Class<?> type=owner.getClass();type!=null;type=type.getSuperclass())try{
+            Field field=type.getDeclaredField(name);field.setAccessible(true);return field.get(owner);
+        }catch(NoSuchFieldException ignored){}
+        throw new NoSuchFieldException(owner.getClass().getName()+"."+name);
+    }
+    private static Object tabCall(Object owner,String name,Class<?>[] types,Object...args)throws ReflectiveOperationException{
+        Method method=owner.getClass().getMethod(name,types);method.setAccessible(true);return method.invoke(owner,args);
+    }
+    private static final class ThreadSelection{
+        final Object owner;final String select;final int index,count;final boolean relative;
+        ThreadSelection(Object owner,String select,int index,int count,boolean relative){this.owner=owner;this.select=select;this.index=index;this.count=count;this.relative=relative;}
+    }
+    static boolean isSelectedThreadTool(Activity activity,Object fragment){
+        try{return threadSelection(activity,fragment)!=null;}
+        catch(Exception error){android.util.Log.w("Haiagaru","Could not resolve tool swipe pane",error);return false;}
+    }
+    /** Called after touch dispatch; native selection updates both the tab strip and the pager. */
+    static boolean moveThreadTool(Activity activity,Object fragment,int offset){
+        if(offset!=-1&&offset!=1)return false;
+        try{
+            ThreadSelection selection=threadSelection(activity,fragment);
+            if(selection==null||selection.index+offset<0||selection.index+offset>=selection.count)return false;
+            tabCall(selection.owner,selection.select,new Class<?>[]{int.class},selection.relative?offset:selection.index+offset);
+            return true;
+        }catch(Exception error){android.util.Log.w("Haiagaru","Could not select adjacent thread tab",error);return false;}
+    }
     /** Native close APIs resolve the owning pane from this exact Fragment. */
     static boolean closeCurrentTab(Activity activity,Object fragment){
         if(activity==null||activity.isFinishing()||activity.isDestroyed()

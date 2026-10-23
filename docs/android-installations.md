@@ -1,5 +1,17 @@
 # Android導入・署名台帳
 
+## 2026-10-23 下部フィルター常時表示・公開前統合候補
+
+emulator-5554の191／242を同一署名照合してデータ保持更新。各23項目成功、242は最新origin/dev取り込み後の統合版へ再更新済み。package・版・表示名・APK/MPP絶対ルート・SHA256・鍵・結果は[persistent-bottom-filters-20261023.md](persistent-bottom-filters-20261023.md)参照。191は統合前の同一フィルター処理で検証し、226共通重複操作を省略。実機は変更していない。
+
+## 2026-10-23 242 本文メニューの下4桁NG登録修正候補（未公開）
+
+emulator-5554の242を同一署名照合install-rで更新、データ保持。package・表示名・APK/MPP絶対ルートとSHA-256・鍵・結果は[ng-suffix-body242-20261023.md](ng-suffix-body242-20261023.md)参照。先行タブ移動の変更も含む。191／226・実機への再導入と公開は未実施。
+
+## 2026-10-23 スレ側の隣接タブ移動候補191/242（未公開）
+
+emulator-5554の既存検証用191/242を同一署名照合install-rで更新。表示名・版・package・APK/MPP絶対ルートとSHA-256・鍵・結果は[thread-tool-tab-swipe-20261023.md](thread-tool-tab-swipe-20261023.md)参照。実機の変更、データ消去は行っていない。操作検証中。
+
 ## 2026-10-23 日付入力・設定表示を含む最終候補191/242
 
 emulator-5554で署名照合install-r成功。最終はprerelease-final-ui191.apk / prerelease-final-ui242.apk。表示名、package、APK/MPP絶対ルートとSHA-256、署名鍵は[archive-date-input-20261023.md](archive-date-input-20261023.md)参照。実機への導入は行っていない。

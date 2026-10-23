@@ -263,6 +263,7 @@ public final class HissiMenuController extends ToolScreenController {
                 historySwipeStartY = lastTouchY;
             } else if (event.getActionMasked() == MotionEvent.ACTION_UP
                     && Haiagaru.hissiViewerSwipeHistory() != 0
+                    && !NativeToolTabSwipeLayout.ownsHistoryGesture(view)
                     && event.getPointerCount() == 1) {
                 float dx = event.getX() - historySwipeStartX;
                 float dy = event.getY() - historySwipeStartY;

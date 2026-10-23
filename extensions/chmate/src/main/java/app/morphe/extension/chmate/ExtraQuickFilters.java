@@ -20,6 +20,7 @@ public final class ExtraQuickFilters {
     static boolean resetting(){return Boolean.TRUE.equals(RESETTING.get());}
     private static final Map<Object, State> STATES = Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<View, WeakReference<Bar>> BARS = new WeakHashMap<>();
+    private static final Map<View, WeakReference<PinnedPanel>> PINNED = new WeakHashMap<>();
     private static final Map<Object, WeakReference<Object>> FRAGMENTS = new WeakHashMap<>();
     private static final ArrayList<WeakReference<Object>> OWNERS = new ArrayList<>();
     private static final ArrayList<Threshold> THRESHOLDS = new ArrayList<>();
@@ -38,7 +39,7 @@ public final class ExtraQuickFilters {
             for(Object adapter:reset)try{rebuild(adapter);}catch(Exception error){Log.w("Haiagaru","Disable extra filters",error);}
         }
         for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){Bar bar=ref.get();if(bar!=null)bar.post(bar::update);}
-        for(WeakReference<Object> ref:new ArrayList<>(OWNERS))if(ref.get()!=null)FloatingFilterButton.update(ref.get());
+        for(WeakReference<Object> ref:new ArrayList<>(OWNERS))if(ref.get()!=null){FloatingFilterButton.update(ref.get());updatePinned(ref.get());}
     }
     private static void styleButton(ToggleButton button){
         float density=button.getResources().getDisplayMetrics().density;
@@ -61,32 +62,100 @@ public final class ExtraQuickFilters {
         android.graphics.Rect visible=new android.graphics.Rect();View decor=activity.getWindow().getDecorView();decor.getWindowVisibleDisplayFrame(visible);
         return Math.max(0,decor.getHeight()-visible.bottom);
     }
+    /** Same controls for the transient popup and the non-modal, persistent panel. */
+    private static final class BottomControls extends GridLayout {
+        final Object adapter;final ToggleButton[] buttons=new ToggleButton[7];
+        BottomControls(Activity activity,Object adapter,Runnable beforeImage){
+            super(activity);this.adapter=adapter;setColumnCount(4);
+            int pad=Math.round(8*getResources().getDisplayMetrics().density);setPadding(pad,pad,pad,pad);
+            setBackgroundColor(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY));
+            for(int i=0;i<buttons.length;i++){
+                final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(13);styleButton(button);
+                button.setMinimumHeight(pad*8);GridLayout.LayoutParams params=new GridLayout.LayoutParams(GridLayout.spec(i/4),GridLayout.spec(i%4,1f));params.width=0;params.height=-2;params.setMargins(pad/2,pad/2,pad/2,pad/2);addView(button,params);
+                button.setOnClickListener(v->{try{
+                    boolean requested=button.isChecked();toggle(adapter,index);
+                    if(index<4&&!(index==0&&PopularReplies.enabledFor(activity))){State state=state(adapter);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}
+                    redraw();
+                }catch(Exception error){Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();redraw();}});
+                if(i==2)button.setOnLongClickListener(v->{
+                    new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
+                        beforeImage.run();
+                        if(!activity.isFinishing()&&!activity.isDestroyed()&&!imageList(adapter))Toast.makeText(activity,"画像一覧を開けませんでした",Toast.LENGTH_SHORT).show();
+                    });return true;
+                });
+            }
+            redraw();
+        }
+        void redraw(){try{
+            boolean[] on=selected(adapter);String[] names=labels(adapter);
+            for(int i=0;i<buttons.length;i++){
+                ToggleButton button=buttons[i];
+                if(!names[i].contentEquals(button.getText())){button.setTextOn(names[i]);button.setTextOff(names[i]);button.setText(names[i]);}
+                if(button.isChecked()!=on[i])button.setChecked(on[i]);
+                int visibility=QuickFilterOptions.visible(i)?View.VISIBLE:View.GONE;if(button.getVisibility()!=visibility)button.setVisibility(visibility);
+            }
+        }catch(Exception error){Log.w("Haiagaru","Bottom filter state",error);}}
+    }
     private static boolean showBottomPanel(Activity activity,Object a)throws Exception{
         collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
-        GridLayout grid=new GridLayout(activity);grid.setColumnCount(4);int pad=(int)(8*grid.getResources().getDisplayMetrics().density);grid.setPadding(pad,pad,pad,pad);
-        PopupWindow popup=new PopupWindow(grid,-1,-2,true);popup.setOutsideTouchable(true);
+        int pad=Math.round(8*activity.getResources().getDisplayMetrics().density);
+        PopupWindow popup=new PopupWindow();BottomControls grid=new BottomControls(activity,a,popup::dismiss);
+        popup.setContentView(grid);popup.setWidth(-1);popup.setHeight(-2);popup.setFocusable(true);popup.setOutsideTouchable(true);
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));popup.setElevation(pad*2);
-        ToggleButton[] buttons=new ToggleButton[QuickFilterOptions.extras()?7:4];
-        Runnable redraw=()->{try{boolean[] on=selected(a);String[] names=labels(a);for(int i=0;i<buttons.length;i++){buttons[i].setTextOn(names[i]);buttons[i].setTextOff(names[i]);buttons[i].setChecked(on[i]);buttons[i].setText(names[i]);}}catch(Exception e){Log.w("Haiagaru","Bottom filter state",e);}};
-        for(int i=0;i<buttons.length;i++){final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(13);styleButton(button);
-            button.setMinimumHeight(pad*8);GridLayout.LayoutParams params=new GridLayout.LayoutParams(GridLayout.spec(i/4),GridLayout.spec(i%4,1f));params.width=0;params.height=-2;params.setMargins(pad/2,pad/2,pad/2,pad/2);grid.addView(button,params);
-            button.setOnClickListener(v->{try{boolean requested=button.isChecked();toggle(a,index);if(index<4&&!(index==0&&PopularReplies.enabledFor(activity))){State state=state(a);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}redraw.run();}catch(Exception e){Toast.makeText(activity,"フィルターを変更できませんでした",Toast.LENGTH_SHORT).show();redraw.run();}});
-            if(i==2)button.setOnLongClickListener(v->{
-                // The popup's Views are detached by dismiss(); never use their post queue.
-                new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
-                    popup.dismiss();
-                    if(!activity.isFinishing()&&!activity.isDestroyed()&&!imageList(a))
-                        Toast.makeText(activity,"画像一覧を開けませんでした",Toast.LENGTH_SHORT).show();
-                });
-                return true;
-            });
-            button.setVisibility(QuickFilterOptions.visible(i)?View.VISIBLE:View.GONE);
-        }
-        redraw.run();android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
-        Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;redraw.run();handler.postDelayed(this,150);}};
+        android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+        Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;grid.redraw();handler.postDelayed(this,150);}};
         popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
         popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
         popup.showAtLocation(activity.getWindow().getDecorView(),android.view.Gravity.BOTTOM,0,bottomInset(activity)+pad);handler.postDelayed(sync,150);return true;
+    }
+    private static void updatePinned(Object fragment){
+        try{
+            View root=(View)call(fragment,"getView",new Class<?>[0]);if(root==null)return;
+            PinnedPanel binding=PINNED.containsKey(root)?PINNED.get(root).get():null;
+            if(!QuickFilterOptions.pinned()){if(binding!=null)binding.close();return;}
+            Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);if(activity==null||activity.isFinishing()||activity.isDestroyed())return;
+            if(binding==null){binding=new PinnedPanel(activity,fragment,root);PINNED.put(root,new WeakReference<>(binding));}
+            binding.schedule();
+        }catch(Exception error){Log.w("Haiagaru","Persistent filter setup",error);}
+    }
+    private static final class PinnedPanel implements View.OnAttachStateChangeListener,android.view.ViewTreeObserver.OnGlobalLayoutListener{
+        final Activity activity;final View root;final FrameLayout host;final WeakReference<Object> fragment;
+        final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable render=this::layout;BottomControls panel;View list;int originalPadding,appliedPadding=-1;boolean closed,queued;
+        PinnedPanel(Activity activity,Object fragment,View root){
+            this.activity=activity;this.fragment=new WeakReference<>(fragment);this.root=root;host=activity.findViewById(android.R.id.content);
+            root.addOnAttachStateChangeListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);
+        }
+        void schedule(){if(closed||queued)return;queued=true;handler.post(render);}
+        void layout(){queued=false;if(closed||!root.isAttachedToWindow())return;
+            try{
+                android.graphics.Rect bounds=new android.graphics.Rect(),visible=new android.graphics.Rect();
+                View current=FilterPosition.findList(root);
+                boolean shown=current!=null&&root.isShown()&&current.getGlobalVisibleRect(bounds);
+                root.getWindowVisibleDisplayFrame(visible);shown=shown&&bounds.intersect(visible);
+                if(!shown){if(panel!=null)panel.setVisibility(View.GONE);return;}
+                Object owner=fragment.get();if(owner==null){close();return;}Object a=adapter(owner);
+                if(panel==null||panel.adapter!=a||list!=current){
+                    detachPanel();list=current;originalPadding=list.getPaddingBottom();
+                    collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+                    panel=new BottomControls(activity,a,()->{});panel.setTag("haiagaru.persistentBottomFilters");
+                    panel.setElevation(8*root.getResources().getDisplayMetrics().density);host.addView(panel,new FrameLayout.LayoutParams(bounds.width(),-2));
+                }
+                panel.redraw();panel.setVisibility(View.VISIBLE);
+                panel.measure(View.MeasureSpec.makeMeasureSpec(bounds.width(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+                int height=panel.getMeasuredHeight(),width=bounds.width();FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)panel.getLayoutParams();
+                if(params.width!=width||params.height!=height){params.width=width;params.height=height;panel.setLayoutParams(params);}
+                int[] origin=new int[2];host.getLocationOnScreen(origin);panel.setX(bounds.left-origin[0]);panel.setY(bounds.bottom-origin[1]-height);
+                if(appliedPadding>=0&&list.getPaddingBottom()!=appliedPadding)originalPadding=list.getPaddingBottom();
+                appliedPadding=originalPadding+height;
+                if(list.getPaddingBottom()!=appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),appliedPadding);
+            }catch(Exception error){Log.w("Haiagaru","Persistent filter layout",error);detachPanel();}
+        }
+        void detachPanel(){if(panel!=null){host.removeView(panel);panel=null;}if(list!=null){if(list.getPaddingBottom()==appliedPadding)list.setPadding(list.getPaddingLeft(),list.getPaddingTop(),list.getPaddingRight(),originalPadding);list=null;}appliedPadding=-1;}
+        public void onGlobalLayout(){schedule();}
+        public void onViewAttachedToWindow(View view){root.getViewTreeObserver().removeOnGlobalLayoutListener(this);root.getViewTreeObserver().addOnGlobalLayoutListener(this);schedule();}
+        public void onViewDetachedFromWindow(View view){handler.removeCallbacks(render);queued=false;if(root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnGlobalLayoutListener(this);detachPanel();}
+        void close(){if(closed)return;closed=true;handler.removeCallbacksAndMessages(null);root.removeOnAttachStateChangeListener(this);if(root.getViewTreeObserver().isAlive())root.getViewTreeObserver().removeOnGlobalLayoutListener(this);detachPanel();PINNED.remove(root);}
     }
     private static final class Threshold {
         final WeakReference<Object> list;final int value;
@@ -444,6 +513,7 @@ public final class ExtraQuickFilters {
         try {
             Object a=adapter(fragment);Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);
             if(activity==null||activity.isFinishing())return false;
+            if(QuickFilterOptions.pinned()){updatePinned(fragment);return true;}
             if(QuickFilterOptions.bottom())return showBottomPanel(activity,a);
             collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
             int[] indices=visibleIndices();boolean[] all=selected(a);String[] fullNames=labels(a);
@@ -510,6 +580,7 @@ public final class ExtraQuickFilters {
         }catch(Exception e){Log.w("Haiagaru","Extended filter row",e);}
     }
     private static void refresh(Object a) {
+        for(WeakReference<PinnedPanel> ref:new ArrayList<>(PINNED.values())){PinnedPanel panel=ref.get();if(panel!=null&&panel.panel!=null&&panel.panel.adapter==a){panel.schedule();panel.handler.postDelayed(panel.render,150);}}
         for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())) {Bar bar=ref.get();if(bar!=null&&bar.adapter.get()==a)bar.post(bar::update);}
         State s=state(a);HaiagaruDialog d=s.dialog.get();
         if(d!=null&&d.isShowing())new android.os.Handler(android.os.Looper.getMainLooper()).post(()->{
