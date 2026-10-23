@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-23T20:32:26",
-  "description": "# Haiagaru 1.11.3\n\n[修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.3/docs/release-1.11.3.md)\n\n\n### 🐛 Bug Fixes\n\n* remove User-Agent spoofing ([24f165e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/24f165ea03b362eb4850f42e28fd90313381e27f))",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.11.3/patches-1.11.3.mpp",
+  "created_at": "2026-10-23T12:31:11",
+  "description": "# Haiagaru 1.12.0-dev.13\n\n今回は、下部フィルターをいつも表示しておける設定を追加しました。242のNG登録が開かない不具合も修正しています。\n\n- 「下部フィルターを常に表示」を追加しました。初期設定はオフです。オンにするとスレ本文の下端に固定され、外側をタップしても閉じません。最後のレスが隠れないよう表示領域を確保し、上部フィルターとも併用できます。\n- 常時表示は設定のオン／オフをその場で反映します。AA・自分・返信の個別表示や件数表示の設定も引き継ぎ、設定共有の対象にも含めました。従来の、必要なときだけ下部パネルを開く使い方も残しています。\n- 242で、本文長押しから「ﾜｯﾁｮｲ下4桁をNG登録」を押してもNGName追加画面が開かない不具合を修正しました。対象板と登録内容を確認してから保存できます。\n- タブレットのスレ側に開いた専用ビューアでも、左右スワイプで隣のスレやビューアのタブへ移動できるようにしました。スレ側ではタブ移動を優先し、ホーム側と単独画面では従来の履歴移動設定を使います。端のタブから勝手に閉じたり、一周したりはしません。\n\n不具合のご報告、ありがとうございます。気になる動きが残っている場合は、使っているChMateとHaiagaruのバージョン、発生する操作を添えて教えていただけると助かります。\n\n追加ライブラリの指定方法は前版と同じです。191のImage NG修正には haiagaru-image-ng.zip、画像取得VPNには haiagaru-image-vpn-v2.zip をダウンロードし、展開せずにパッチの追加ファイルへ指定してください。使わない任意パッチのライブラリは不要です。\n\n\n### ✨ New Features\n\n* keep bottom filters visible and fix response menu navigation ([40b8d29](https://github.com/areteruhiro/Haiagaru-Morphe/commit/40b8d297b0dc42fffb154dbf08e2a71d741f2da7))",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.12.0-dev.13/patches-1.12.0-dev.13.mpp",
   "signature_download_url": "",
-  "version": "1.11.3"
+  "version": "1.12.0-dev.13"
 }
