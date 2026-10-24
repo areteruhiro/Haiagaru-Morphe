@@ -10,9 +10,14 @@ import java.util.WeakHashMap;
 
 /** Retain the current viewport across a display-only asynchronous preview resize. */
 final class XPostPreviewPosition {
+    static final String ENABLED="previewScrollPositionRetention";
     private static final WeakHashMap<View, Anchor> PENDING = new WeakHashMap<>();
     private static final WeakHashMap<View,Long> INTERACTIONS=new WeakHashMap<>();
+    private static boolean enabled(View view){
+        return view.getContext().getSharedPreferences(WacchoiSearchOptions.PREFS,0).getBoolean(ENABLED,true);
+    }
     static void onTouch(View body,android.view.MotionEvent event){
+        if(!enabled(body))return;
         if(event.getActionMasked()!=android.view.MotionEvent.ACTION_DOWN&&event.getActionMasked()!=android.view.MotionEvent.ACTION_MOVE)return;
         for(ViewParent parent=body.getParent();parent instanceof View;parent=parent.getParent()){
             View view=(View)parent;
@@ -30,7 +35,7 @@ final class XPostPreviewPosition {
 
     static void beforeChange(View body) {
         // Initial binding/refresh belongs to native restoration, not preview resizing.
-        if(body.getHeight()==0||!body.isShown()||body.isLayoutRequested())return;
+        if(!enabled(body)||body.getHeight()==0||!body.isShown()||body.isLayoutRequested())return;
         for (ViewParent parent = body.getParent(); parent instanceof View; parent = parent.getParent()) {
             View view = (View) parent;
             boolean recycler = false;
@@ -47,6 +52,12 @@ final class XPostPreviewPosition {
             } catch (Exception ignored) { /* Unsupported list: leave native scrolling untouched. */ }
             return;
         }
+    }
+
+    static void settingsChanged(){
+        for(Anchor anchor:new java.util.ArrayList<>(PENDING.values()))if(anchor!=null)anchor.close();
+        PENDING.clear();
+        INTERACTIONS.clear();
     }
 
     private static Object call(Object target, String name, Class<?>[] types, Object... args) throws Exception {

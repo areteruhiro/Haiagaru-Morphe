@@ -1044,6 +1044,7 @@ private fun BytecodePatchContext.patchConsumedPopupMenu191() {
 
 private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
     patchExtraQuickFilters(version)
+    patchCachedWacchoiSearch(version)
     patchQuickFilterPosition(version)
     if (version == "0.8.10.191 dev") {
         val toolbarModelType = "Lo/r8lambdaElkXfNt4VbdvffL9Z700R6oMDo;"
@@ -4508,9 +4509,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchIoThreadRefreshCa
     } ?: error("ChMate 241 If-None-Match header call was not found")
     val resume = instructions.getOrNull(headerCall + 1)
         ?: error("ChMate 241 If-None-Match header has no continuation")
+    val register = downloader.findFreeRegister(headerCall)
     downloader.addInstructionsWithLabels(
         headerCall,
-        "goto :haiagaru_241_skip_etag",
+        """
+            invoke-static {}, Lapp/morphe/extension/chmate/ThreadRefreshOptions;->skipConditionalHeaders()Z
+            move-result v$register
+            if-nez v$register, :haiagaru_241_skip_etag
+        """.trimIndent(),
         ExternalLabel("haiagaru_241_skip_etag", resume),
     )
 }

@@ -29,6 +29,10 @@ final class NativeToolTabSwipeLayout extends LinearLayout {
         }
         return false;
     }
+    @Override public void onWindowFocusChanged(boolean focus){
+        super.onWindowFocusChanged(focus);
+        if(focus)post(()->NativeToolTabs.restoreToolVisibility(this));
+    }
     @Override public boolean dispatchTouchEvent(MotionEvent event){
         int action=event.getActionMasked();
         if(action==MotionEvent.ACTION_DOWN){

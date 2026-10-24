@@ -30,7 +30,8 @@ final class SettingsSections {
         HISTORY("履歴・コピーした文章", "History and copied text", "閲覧・書き込み・検索の履歴と保存件数", "Browsing, posting, search and retention"),
         ARCHIVE("保存したレス・過去のスレ", "Saved posts and old threads", "アーカイブ、過去ログ、エッヂの検索", "Archives, old threads and Edge search"),
         BACKUP("バックアップ・機種変更", "Backup and changing phones", "設定やログを保存・復元する", "Save and restore settings and logs"),
-        ADVANCED("通信・詳しい設定", "Network and advanced", "外部板の認証や通信の調整。必要なときに", "Board authentication and network adjustments");
+        ADVANCED("通信・詳しい設定", "Network and advanced", "外部板の認証や通信の調整。必要なときに", "Board authentication and network adjustments"),
+        EXPERT("エキスパート設定", "Expert settings", "個別の動作を細かく切り替える", "Control additional behaviors individually");
         final String ja, en, jaSummary, enSummary;
         Category(String ja, String en, String jaSummary, String enSummary) {
             this.ja=ja; this.en=en; this.jaSummary=jaSummary; this.enSummary=enSummary;

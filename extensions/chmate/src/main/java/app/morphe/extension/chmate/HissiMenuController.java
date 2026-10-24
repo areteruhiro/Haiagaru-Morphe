@@ -49,6 +49,7 @@ import java.util.List;
 public final class HissiMenuController extends ToolScreenController {
     public static final int CHECKER_LAYOUT_TAG=0x48690b07;
     public static final int TOOLBAR_HEIGHT_TAG=0x48690b08;
+    public static final int RESULT_TABS_TAG=0x48690b09;
     HissiMenuController(Activity host,Intent intent,boolean embedded,Runnable back,java.util.function.Consumer<View> render){
         super(host,intent,embedded,back,render);
     }
@@ -134,6 +135,23 @@ public final class HissiMenuController extends ToolScreenController {
         // menu template, so the mode embedded in its URL can be stale.
         int checkerMode = Haiagaru.hissiCheckerMode();
         String target;
+        if (wacchoiSearchLaunch && initialWacchoiQuery != null
+                && WacchoiSearch.SLIP.matcher(initialWacchoiQuery).matches()
+                && !getIntent().getBooleanExtra("haiagaru.wacchoi.providerChosen",false)) {
+            final Intent source=new Intent(getIntent());
+            boolean five=sourceHost!=null&&isHissiHost(sourceHost);
+            if(five){
+                new HaiagaruDialog.Builder(this).setTitle("ワッチョイ全文検索")
+                    .setItems(new String[]{"Kyodemoで検索","Hissiテンプレートで検索"},(dialog,index)->{
+                        Intent next=new Intent(source).setClass(this,HissiMenuActivity.class).putExtra("haiagaru.wacchoi.providerChosen",true);
+                        if(index==0)next.putExtra("haiagaru.wacchoi.kyodemo",true);
+                        else next.putExtra("haiagaru.wacchoi.useTemplate",true);
+                        startActivity(next);finish();
+                    }).setOnCancelListener(dialog->finish()).show();
+                return;
+            }
+            getIntent().putExtra("haiagaru.wacchoi.providerChosen",true).putExtra("haiagaru.wacchoi.kyodemo",true);
+        }
         if (wacchoiSearchLaunch) {
             if (initialWacchoiQuery != null && initialWacchoiQuery.matches("-[^\\s()（）<>]{4}")) {
                 startActivity(new android.content.Intent(this, HissiWacchoiSearchActivity.class)
@@ -144,7 +162,7 @@ public final class HissiMenuController extends ToolScreenController {
                 return;
             }
             if (!getIntent().getBooleanExtra("haiagaru.wacchoi.kyodemo", false)
-                    && (checkerMode == 1 || (checkerMode == 3
+                    && (getIntent().getBooleanExtra("haiagaru.wacchoi.useTemplate",false)||checkerMode == 1 || (checkerMode == 3
                     && !getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                             .getBoolean(choiceKey(), true))) && openHissiWacchoiSearch()) {
                 finish();
@@ -483,6 +501,7 @@ public final class HissiMenuController extends ToolScreenController {
         ));
         if (wacchoiSearchLaunch && sourceHost != null && isHissiHost(sourceHost)) {
             LinearLayout providers = new LinearLayout(this);
+            providers.setTag(CheckerBarOptions.PROVIDERS_TAG, Boolean.TRUE);
             providers.setPadding(16, 8, 16, 8);
             Button selected = toolbarButton("✓ Kyodemo");
             selected.setContentDescription("現在の検索先：Kyodemo");
@@ -494,7 +513,7 @@ public final class HissiMenuController extends ToolScreenController {
             providers.addView(hissi, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             layout.addView(providers);
         } else if (!eddiArchiveMode && checkerMode == 3) {
-            TextView alternate = new TextView(this);
+            Button alternate = toolbarButton(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
             alternate.setGravity(Gravity.CENTER);
@@ -518,8 +537,10 @@ public final class HissiMenuController extends ToolScreenController {
                         : "‹   必死チェッカー · ChMateビュー");
                 webView.loadUrl(nextTarget);
             });
-            layout.addView(alternate, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, 52 * getResources().getDisplayMetrics().densityDpi / 160));
+            LinearLayout providers = new LinearLayout(this);
+            providers.setTag(CheckerBarOptions.PROVIDERS_TAG, Boolean.TRUE);
+            providers.addView(alternate, new LinearLayout.LayoutParams(-1,-2));
+            layout.addView(providers);
         }
         String restoredUrl=state==null?null:state.getString("haiagaru.checker.url");
         if(restoredUrl!=null){String hostName=Uri.parse(restoredUrl).getHost();if("hissi.org".equalsIgnoreCase(hostName)||"www.kyodemo.net".equalsIgnoreCase(hostName)||"kyodemo.net".equalsIgnoreCase(hostName))target=restoredUrl;}
@@ -529,7 +550,8 @@ public final class HissiMenuController extends ToolScreenController {
         if (!eddiArchiveMode) {
             hissiTabs = createHissiTabs(webView);
             hissiTabs.setVisibility(View.GONE);
-            layout.addView(hissiTabs, new LinearLayout.LayoutParams(
+            // Keep result navigation next to the controls, above the scrolling content.
+            layout.addView(hissiTabs, layout.indexOfChild(webView), new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     48 * getResources().getDisplayMetrics().densityDpi / 160));
         }
@@ -687,7 +709,7 @@ public final class HissiMenuController extends ToolScreenController {
         Button displaySettings = toolbarButton("調整");
         viewerAdjustButton = displaySettings;
         displaySettings.setVisibility(Haiagaru.hissiViewerShowAdjust() ? View.VISIBLE : View.GONE);
-        displaySettings.setContentDescription("必死チェッカーの表示設定");
+        displaySettings.setContentDescription("Hissi／Kyodemoの表示設定");
         displaySettings.setOnClickListener(view -> showViewerDisplaySettings(webView, toolbar));
         toolbar.addView(displaySettings, buttonParams());
         return toolbar;
@@ -706,28 +728,44 @@ public final class HissiMenuController extends ToolScreenController {
         SeekBar spacing = addViewerSlider(content, "レス上下余白: " + currentSpacing + "dp", 20,
                 currentSpacing, progress -> "レス上下余白: " + progress + "dp");
         int currentHeight = Haiagaru.hissiViewerToolbarHeightDp();
-        SeekBar height = addViewerSlider(content, "上部操作バー: " + currentHeight + "dp", 24,
-                currentHeight - 32, progress -> "上部操作バー: " + (32 + progress) + "dp");
+        SeekBar height = addViewerSlider(content, "上部操作バー: " + currentHeight + "dp", 60,
+                currentHeight - 20, progress -> "上部操作バー: " + (20 + progress) + "dp");
+        int currentTabsHeight = CheckerBarOptions.height(this, CheckerBarOptions.TABS, 40);
+        SeekBar tabsHeight = addViewerSlider(content, "レス・スレ・名前バー: " + currentTabsHeight + "dp", 60,
+                currentTabsHeight - 20, progress -> "レス・スレ・名前バー: " + (20 + progress) + "dp");
+        int currentProvidersHeight = CheckerBarOptions.height(this, CheckerBarOptions.PROVIDERS, 32);
+        SeekBar providersHeight = addViewerSlider(content, "検索先切替バー: " + currentProvidersHeight + "dp", 60,
+                currentProvidersHeight - 20, progress -> "検索先切替バー: " + (20 + progress) + "dp");
+        android.widget.Switch handles = new android.widget.Switch(this);
+        handles.setText("高さ調整のつまみを表示（オフで高さを固定）");
+        handles.setChecked(SettingsProfiles.prefs(this).getBoolean(CheckerBarOptions.HANDLES, true));
+        content.addView(handles);
 
-        new HaiagaruDialog.Builder(this).setTitle("必死チェッカーの表示調整")
+        new HaiagaruDialog.Builder(this).setTitle("Hissi／Kyodemoの表示調整")
                 .setView(content)
                 .setNeutralButton("標準に戻す", (dialog, which) -> {
                     webView.getSettings().setTextZoom(100);
                     Haiagaru.setHissiViewerTextZoom(100);
                     Haiagaru.setHissiViewerResponseSpacingDp(7);
-                    Haiagaru.setHissiViewerToolbarHeightDp(40);
-                    updateViewerToolbarHeight(toolbar, 40);
+                    Haiagaru.setHissiViewerToolbarHeightDp(32);
+                    CheckerBarOptions.save(this, CheckerBarOptions.TABS, 40);
+                    CheckerBarOptions.save(this, CheckerBarOptions.PROVIDERS, 32);
+                    SettingsProfiles.prefs(this).edit().putBoolean(CheckerBarOptions.HANDLES, true).apply();
+                    updateViewerToolbarHeight(toolbar, 32);
                     applyViewerTheme(rootLayout, webView, Haiagaru.hissiViewerTheme());
                 })
                 .setNegativeButton("キャンセル", null)
                 .setPositiveButton("適用", (dialog, which) -> {
                     int textZoom = 100 + zoom.getProgress();
                     int responseSpacing = spacing.getProgress();
-                    int toolbarHeight = 32 + height.getProgress();
+                    int toolbarHeight = 20 + height.getProgress();
                     webView.getSettings().setTextZoom(textZoom);
                     Haiagaru.setHissiViewerTextZoom(textZoom);
                     Haiagaru.setHissiViewerResponseSpacingDp(responseSpacing);
                     Haiagaru.setHissiViewerToolbarHeightDp(toolbarHeight);
+                    CheckerBarOptions.save(this, CheckerBarOptions.TABS, 20 + tabsHeight.getProgress());
+                    CheckerBarOptions.save(this, CheckerBarOptions.PROVIDERS, 20 + providersHeight.getProgress());
+                    SettingsProfiles.prefs(this).edit().putBoolean(CheckerBarOptions.HANDLES, handles.isChecked()).apply();
                     updateViewerToolbarHeight(toolbar, toolbarHeight);
                     applyViewerTheme(rootLayout, webView, Haiagaru.hissiViewerTheme());
                 }).show();
@@ -772,12 +810,14 @@ public final class HissiMenuController extends ToolScreenController {
     private LinearLayout createHissiTabs(WebView webView) {
         LinearLayout tabs = new LinearLayout(this);
         tabs.setOrientation(LinearLayout.HORIZONTAL);
-        tabs.setPadding(8, 2, 8, 2);
-        String[] labels = {"書き込んだレス", "書き込んだスレ", "使用した名前"};
+        tabs.setTag(RESULT_TABS_TAG, 0);
+        tabs.setPadding(0, 0, 0, 0);
+        String[] labels = {"レス", "スレ", "名前"};
         hissiTabButtons = new Button[labels.length];
         for (int index = 0; index < labels.length; index++) {
             final int tab = index;
             Button button = toolbarButton(labels[index]);
+            button.setContentDescription(new String[]{"書き込んだレス", "書き込んだスレ", "使用した名前"}[index]);
             button.setOnClickListener(view -> {
                 webView.evaluateJavascript("window.haiagaruSelectHissiTab&&"
                         + "window.haiagaruSelectHissiTab(" + tab + ")", null);
@@ -899,8 +939,9 @@ public final class HissiMenuController extends ToolScreenController {
 
     private void selectHissiTab(int selected) {
         if (hissiTabButtons == null) return;
+        if (hissiTabs != null) hissiTabs.setTag(RESULT_TABS_TAG, selected);
         for (int index = 0; index < hissiTabButtons.length; index++) {
-            hissiTabButtons[index].setEnabled(index != selected);
+            hissiTabButtons[index].setSelected(index == selected);
             hissiTabButtons[index].setAlpha(index == selected ? 1f : 0.7f);
         }
     }
@@ -1483,6 +1524,7 @@ public final class HissiMenuController extends ToolScreenController {
                     + "color:#ebebf0 !important;border-color:#41454c !important;}"
                     + "body[data-haiagaru-hissi] tr:nth-child(even) td{background:#1b1d21 !important;}"
                     + "body[data-haiagaru-hissi] font[color]{color:#ebebf0 !important;}" : "")
+                    + CheckerResultStyle.css(dark, responseSpacing)
                     + "#ad,.ad,.ads,.advertisement,.advertising,.banner,.sponsor,.sponsored,"
                     + ".google-auto-placed,.adsbygoogle,[data-ad],[data-ad-slot],[aria-label*=広告],"
                     + "iframe[src*=doubleclick],iframe[src*=googlesyndication],iframe[src*=adservice],"
@@ -1743,13 +1785,13 @@ public final class HissiMenuController extends ToolScreenController {
         java.util.regex.Matcher slip = WacchoiSearch.SLIP.matcher(
                 initialWacchoiQuery == null ? "" : initialWacchoiQuery);
         if (!slip.find()) return false;
-        startActivity(new Intent(this, HissiWacchoiSearchActivity.class)
+        startActivity(HissiScanTemplate.apply(this,new Intent(this, HissiWacchoiSearchActivity.class)
                 .putExtra("haiagaru.wacchoi.hissi", true)
                 .putExtra("haiagaru.wacchoi.query", slip.group())
                 .putExtra("haiagaru.wacchoi.original", initialWacchoiQuery)
                 .putExtra("haiagaru.wacchoi.host", sourceHost)
                 .putExtra("haiagaru.wacchoi.form", (Intent) getIntent().getParcelableExtra("haiagaru.wacchoi.form"))
-                .putExtra("haiagaru.wacchoi.board", sourceBoard));
+                .putExtra("haiagaru.wacchoi.board", sourceBoard)));
         getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
                 .edit().putBoolean(choiceKey(), false).apply();
         return true;
