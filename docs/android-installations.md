@@ -847,3 +847,23 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 ## 2026-10-25 XIG05 検索余白・戻る・動画操作候補
 serial730eae72 / XIG05 / ChMate0.8.10.242 dev / 表示名Haiagaru 検証 242 / package jp.co.airfront.android.a2chMate.haiagaru.resumefix242。
 最終APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/archive-top-back-final242.apk SHA256 F8FCAACA5CE89AB506B41D52623ABA1724B76012871EA231E2C7A8AB6ECCDB34。MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/archive-top-back-final.mpp SHA256 D76C4519B9702076486B8297D6DF2E9E5F55F04C78F75C2BFA75C437049FFAA3。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。署名一致install-r Success、既存データ保持。導入16:08JST、ログbuild/archive-top-back-final242-install.log。余白除去と1行見出しスクリーンショットbuild/xig05-search-final.png、戻る後の本文表示build/xig05-back-test.xml、PID28641新規crash bufferなし。広告9/初期値7/動画12チェックは同一該当コードの前候補66B0F5D3で実施、今回の変更は検索insets/Activity BACK境界。Samsung Android16報告の広告現象そのものは未再現。
+
+## 2026-10-26 軽量版net→io検証
+
+Mi Note 10 / Android11 / serial d5497008。ChMate0.8.10.191 dev、表示名 Haiagaru 広告のみ 191、package jp.co.airfront.android.a2chMate.haiagaru.adsonly191。2026-10-26 01:19頃JST、既存署名照合後install-r Success、データ保持。HomeActivity→o.m4 cold起動Status ok、PID12955。ローカルViewとURL変換10項目成功。実5ch通信/投稿は試験していない。
+
+APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/lightweight-io191.apk SHA256 11ED3950188F5A058EB2FB2B0F8B6581B0DE3D0CB7C3232780B10DBF3DD9D2EE。
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/lightweight-io.mpp SHA256 B29AA4EE1AB13F5D0F6DE34CDBF77C310DF83E714AB52F4AFAFDF55AD45E6D0D。
+鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore、alias Morphe、証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。ログ build/lightweight-io191-{patch,install,runtime}.log。軽量runtime31クラスのみ・外部hook参照299の解決と許可集合・ioメニュー既定値を完成APKで確認。226/241/242/243への今回候補適用・実機試験は未実施。公開なし。
+
+## 2026-10-26 投稿確認フォーム再読込修正版
+
+2026-10-26 01:23頃JST、Mi Note 10 / Android11 / serial d5497008 / ChMate0.8.10.191 dev / 表示名Haiagaru 検証 191 / package jp.co.airfront.android.a2chMate.haiagaru.settingsfix191。既存署名一致を確認後install-r Success、データ保持。HomeActivity→o.m4 cold起動Status ok、PID14125。ユーザー指定のkrsw/ridでの投稿検証を継続中、認証・投稿成功として扱わない。
+
+APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/board-form-reload-final191.apk SHA256 81DF2CF1A5EF296CDAF21182EFABF076474CBE54DA570FA789DDAD55BBF784A8。
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/board-form-reload-final.mpp SHA256 6B68F4B42B4E6DE07F77BA1BF212B9F49F12AFB098310FFD081F75BBDE4B617B。
+鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore、alias Morphe、証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。ログbuild/board-form-reload-final191-{patch,install,launch}.log。通常Lint付きbuild成功3m42s。完成APKで191共有順フックの元delegate/レジスター/分岐保持も成功。元の.haiagaruは置換していない。
+
+先行候補の補記: 2026-10-26 00:56 JST、XIG05/serial730eae72の同じ検証packageへbuild/board-challenge-final191.apk（SHA256 4AE4E97FEDAD3DA0191F34FDE2E57E92B9E4697EA321F3F66094690CDFC122F0）、MPP build/board-challenge-final.mpp（25BB15278776FADE28710B4D898E78D0D53E4D40E5BE0D5A1FEB08158E9138A8）を同じ鍵/alias/証明書で署名一致install-r成功。絶対パスのrootは本項と同じローカル主開発フォルダ。01:09実画面にサイトの「ブラウザ変ですよん」エラー、フォームなしを確認。旧候補にはCookie許可後のGET再読込不備があり、今回修正。認証成功ではない。XIG05から別端末へユーザーが接続変更し、旧端末の今回修正候補導入はしていない。
+
+投稿確認修正版の実機オフラインfixtureは全12チェック成功（build/board-form-reload-fixture.log）。Android11でActivity検出に失敗した試験コードをActivityClientRecord列挙へ変更後、元フォーム再表示/Worker手動実行/未許可POST停止/終了破棄まで成功。実投稿は含まない。指定krswの起動は自動審査blocked by policyで実行されず、実サイトの画面操作/認証/投稿は未完了。

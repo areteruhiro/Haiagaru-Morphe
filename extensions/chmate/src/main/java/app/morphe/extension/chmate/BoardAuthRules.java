@@ -62,7 +62,7 @@ public final class BoardAuthRules {
     /** A site explicitly requiring a regular browser is not a cookie-only auth flow. */
     public static boolean browserRequired(String message) {
         return message!=null&&message.length()<=65536
-                &&message.contains("計算による投稿確認")
+                &&(message.contains("計算による投稿確認")||message.toLowerCase(Locale.ROOT).contains("captcha"))
                 &&message.contains("専用ブラウザからは投稿")
                 &&message.contains("通常のブラウザ");
     }

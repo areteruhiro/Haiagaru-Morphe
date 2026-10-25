@@ -28,6 +28,7 @@ public final class VerifyBoardAuthRules {
         String browserError="計算による投稿確認 専用ブラウザからは投稿出来ません。通常のブラウザを使ってください。";
         check(BoardAuthRules.required(browserError),"proof-of-work error detected");
         check(BoardAuthRules.browserRequired(browserError),"explicit browser-only route");
+        check(BoardAuthRules.browserRequired(browserError.replace("計算による投稿確認","Captcha認証")),"browser-only CAPTCHA route");
         check(!BoardAuthRules.browserRequired("計算による投稿確認"),"no browser prohibition inferred");
         check(!BoardAuthRules.browserRequired(null),"null browser requirement");
         check(!BoardAuthRules.browserRequired(browserError+"x".repeat(65536)),"bounded browser scan");

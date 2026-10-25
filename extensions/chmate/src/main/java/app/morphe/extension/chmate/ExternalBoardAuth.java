@@ -35,6 +35,7 @@ public final class ExternalBoardAuth {
     private static final Map<Activity,WeakReference<android.view.View>> editors = new WeakHashMap<>();
     private static final Map<MenuItem,WeakReference<Activity>> menus = new WeakHashMap<>();
     private static final Map<Activity,String> prompted = new WeakHashMap<>();
+    private static final Map<Activity,String> challenges = new WeakHashMap<>();
     private static final int MENU = 0x48690061;
     private static volatile WeakReference<Object> nativeJar = new WeakReference<>(null);
     private ExternalBoardAuth() {}
@@ -111,7 +112,10 @@ public final class ExternalBoardAuth {
         Activity a=activity(owner);
         if(a==null) return false;
         String board=targets.get(a);
-        if(board==null) showBoards(a); else configure(a,board,"");
+        String challenge=challenges.get(a);
+        if(board!=null&&challenge!=null&&BoardChallengeSession.find(challenge,board)!=null)
+            openChallenge(a,board,challenge);
+        else if(board==null) showBoards(a); else configure(a,board,"");
         return true;
     }
     public static boolean handlePostingActivityMenu(MenuItem item) {
@@ -188,11 +192,30 @@ public final class ExternalBoardAuth {
             WeakReference<android.view.View> editor=editors.get(a);
             if(editor==null || editor.get()==null || !editor.get().isShown()) return;
             String board=targets.get(a);if(board==null) return;
-            if(text.equals(prompted.get(a))) return;
-            prompted.put(a,text);
+            String fingerprint=errorFingerprint(text);
+            if(fingerprint.equals(prompted.get(a))) return;
+            String token=BoardChallengeSession.remember(board,text);
+            // Later observers can see Html.fromHtml's text-only copy of the same
+            // error. Do not replace the original script/form page with that copy.
+            String retained=challenges.get(a);
+            if(token.isEmpty()&&(text.contains("計算による投稿確認")||text.toLowerCase(java.util.Locale.ROOT).contains("captcha"))&&retained!=null
+                    &&BoardChallengeSession.find(retained,board)!=null) return;
+            prompted.put(a,fingerprint);
+            String previous=challenges.remove(a);
+            if(previous!=null)BoardChallengeSession.forget(previous);
+            if(!token.isEmpty()){
+                challenges.put(a,token);
+                new Handler(Looper.getMainLooper()).postDelayed(()->BoardChallengeSession.forget(token),5*60*1000L);
+            }
             String suggested=BoardAuthRules.suggested(board,text);
             showError(a,board,suggested,text);
         },400);
+    }
+    private static String errorFingerprint(String text) {
+        try {
+            byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return android.util.Base64.encodeToString(hash,android.util.Base64.NO_WRAP);
+        } catch(java.security.NoSuchAlgorithmException impossible) { throw new IllegalStateException(impossible); }
     }
     private static void showError(Activity a,String board,String suggested,String raw) {
         // Render HTML as inert text, never as a WebView or clickable link.
@@ -202,11 +225,15 @@ public final class ExternalBoardAuth {
         }
         final String readable=error;
         final boolean browserRequired=BoardAuthRules.browserRequired(readable);
+        final String challenge=challenges.get(a);
+        final boolean hasChallenge=challenge!=null&&BoardChallengeSession.find(challenge,board)!=null;
         final String code=BoardAuthRules.code(readable);
         LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
         int pad=(int)(20*a.getResources().getDisplayMetrics().density);box.setPadding(pad,pad,pad,pad);
         TextView notice=new TextView(a);
-        notice.setText(browserRequired
+        notice.setText(hasChallenge
+                ?"サイトから受け取った投稿確認・CAPTCHAページをChMate内で開けます。計算の開始やCAPTCHAの回答・認証はサイトの画面で操作してください。ページには今回の投稿内容が含まれ、認証・送信操作により投稿される場合があります。ChMateからの自動再送信は行いません。"
+                :browserRequired
                 ?"この板は、通常ブラウザ上で計算による投稿確認を完了する必要があります。ChMateのエラー欄では実行できません。対応ブラウザではアプリ内のブラウザ画面（Custom Tabs）で開きます。非対応の場合は通常のブラウザ画面になります。サイトの手順に従ってください。下書きは自動送信せず、ChMateのCookie・SessionIDも変更しません。ブラウザの認証は別管理で、ChMateへ引き継がれるとは限りません。"
                 :"書き込みエラーの内容を確認してください。認証コードはコピーできます。認証後の投稿は自動再送信しません。");
         box.addView(notice);
@@ -216,8 +243,9 @@ public final class ExternalBoardAuth {
         HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("書き込みエラー・板の認証")
             .setView(scroll).setNegativeButton("後で",null)
             .setNeutralButton(code.isEmpty()?"エラー全文をコピー":"認証コードをコピー",null)
-            .setPositiveButton(browserRequired?"アプリ内ブラウザ":"認証ページ",(d,w)->{
-                if(browserRequired)openBrowser(a,board);else configure(a,board,suggested);
+            .setPositiveButton(hasChallenge?"ChMate内で投稿確認":browserRequired?"アプリ内ブラウザ":"認証ページ",(d,w)->{
+                if(hasChallenge)openChallenge(a,board,challenge);
+                else if(browserRequired)openBrowser(a,board);else configure(a,board,suggested);
             }).create();
         dialog.setOnShowListener(d->dialog.getButton(HaiagaruDialog.BUTTON_NEUTRAL).setOnClickListener(v->{
             ClipboardManager clipboard=(ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -231,6 +259,16 @@ public final class ExternalBoardAuth {
             Toast.makeText(a,code.isEmpty()?"エラー全文をコピーしました":"認証コードをコピーしました",Toast.LENGTH_SHORT).show();
         }));
         dialog.show();
+    }
+    private static void openChallenge(Activity activity,String board,String token) {
+        if(BoardChallengeSession.find(token,board)==null){
+            Toast.makeText(activity,"確認ページの期限が切れました。新しい投稿確認ページを取得してください。",Toast.LENGTH_LONG).show();return;
+        }
+        new HaiagaruDialog.Builder(activity).setTitle("ChMate内で投稿確認")
+            .setMessage("サイトから受け取った今回の投稿確認ページを表示します。ページ上の認証・送信操作は実際の投稿につながる場合があります。計算や送信は自動で開始しません。")
+            .setNegativeButton("キャンセル",null)
+            .setPositiveButton("確認ページを開く",(d,w)->activity.startActivity(new Intent(activity,ExternalBoardAuthActivity.class)
+                .putExtra("board",board).putExtra("challenge",token))).show();
     }
     private static void openBrowser(Activity activity,String board){
         String page=BoardAuthRules.browserPage(board);

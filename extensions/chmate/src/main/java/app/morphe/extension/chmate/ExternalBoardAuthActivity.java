@@ -20,15 +20,27 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
     private WebView web;
     private String board;
     private TextView location;
+    private String challengeToken;
+    private BoardChallengeSession.Page challenge;
+    private final java.util.concurrent.atomic.AtomicReference<BoardChallengeSession.Page> firstResponse = new java.util.concurrent.atomic.AtomicReference<>();
+    private final java.util.concurrent.atomic.AtomicBoolean sendAllowed = new java.util.concurrent.atomic.AtomicBoolean();
     private final Set<String> allowed = new HashSet<>();
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         final String auth;
         try {
             board=BoardAuthRules.validate(getIntent().getStringExtra("board"));
-            auth=BoardAuthRules.validateAuthPage(getIntent().getStringExtra("auth"));
+            challengeToken=getIntent().getStringExtra("challenge");
+            if(challengeToken!=null){
+                if(android.os.Build.VERSION.SDK_INT<21)throw new IllegalArgumentException("Web confirmation needs Android 5 or later");
+                challenge=BoardChallengeSession.find(challengeToken,board);
+                if(challenge==null)throw new IllegalArgumentException("Expired confirmation page");
+                auth=challenge.base;
+            }else auth=BoardAuthRules.validateAuthPage(getIntent().getStringExtra("auth"));
         } catch(Exception e) {
-            android.widget.Toast.makeText(this,"認証ページのURLを確認してください。CSSや投稿先のURLは開けません。",android.widget.Toast.LENGTH_LONG).show();
+            android.widget.Toast.makeText(this,getIntent().hasExtra("challenge")
+                    ?"確認ページの期限が切れました。新しい投稿確認ページを取得してください。"
+                    :"認証ページのURLを確認してください。CSSや投稿先のURLは開けません。",android.widget.Toast.LENGTH_LONG).show();
             finish();return;
         }
         allowed.add(BoardAuthRules.origin(auth));allowed.add(BoardAuthRules.origin(board));
@@ -42,15 +54,31 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
         });
         location=new TextView(this);root.addView(location);
         LinearLayout actions=new LinearLayout(this);root.addView(actions);
-        Button complete=new Button(this);complete.setText("認証を反映して戻る");actions.addView(complete);
+        Button complete=new Button(this);complete.setText(challenge==null?"認証を反映して戻る":"書き込みへ戻る");actions.addView(complete,new LinearLayout.LayoutParams(0,-2,1));
         complete.setOnClickListener(v->{
             CookieManager.getInstance().flush();
             ExternalBoardAuth.prefs(this).edit().putBoolean("enabled:"+BoardAuthRules.origin(board),true).apply();
-            android.widget.Toast.makeText(this,"認証Cookieの連携を有効にしました。投稿は自動再送信されません。",android.widget.Toast.LENGTH_LONG).show();
+            android.widget.Toast.makeText(this,challenge==null
+                    ?"認証Cookieの連携を有効にしました。投稿は自動再送信されません。"
+                    :"サイト側で投稿済みの場合は、ChMateから同じ本文を再送しないでください。",android.widget.Toast.LENGTH_LONG).show();
             finish();
         });
-        Button reload=new Button(this);reload.setText("再読込");actions.addView(reload);reload.setOnClickListener(v->web.reload());
+        Button reload=new Button(this);reload.setText(challenge==null?"再読込":"再表示");actions.addView(reload,new LinearLayout.LayoutParams(0,-2,1));
+        reload.setOnClickListener(v->reloadPage());
+        LinearLayout details=new LinearLayout(this);details.setOrientation(LinearLayout.VERTICAL);
+        details.setVisibility(android.view.View.GONE);
+        if(challenge!=null){
+            TextView note=new TextView(this);
+            note.setText((challenge.calculation?"サイトの「計算を開始」「認証する」を操作してください。":"サイトのCAPTCHAを画面上で解いて認証してください。")
+                    +"認証・送信ボタンで今回の投稿が送信される場合があります。ChMateから自動再送信は行いません。");details.addView(note);
+            android.widget.CheckBox allowSend=new android.widget.CheckBox(this);
+            allowSend.setText("サイトからの認証・投稿送信を許可する");
+            allowSend.setChecked(false);
+            allowSend.setOnCheckedChangeListener((button,checked)->sendAllowed.set(checked));
+            root.addView(allowSend);
+        }
         web=new WebView(this);WebSettings settings=web.getSettings();
+        if(challenge!=null)settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
@@ -67,14 +95,28 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
                 .setMessage("認証サービスなど、表示中のサイト以外からのCookieもこの認証画面で受け入れます。信頼する認証先で必要な場合だけ許可してください。")
                 .setNegativeButton("キャンセル",(d,w)->captchaCookies.setChecked(false))
                 .setOnCancelListener(d->captchaCookies.setChecked(false))
-                .setPositiveButton("許可して再読込",(d,w)->{CookieManager.getInstance().setAcceptThirdPartyCookies(web,true);web.reload();}).show();
+                .setPositiveButton("許可して再読込",(d,w)->{CookieManager.getInstance().setAcceptThirdPartyCookies(web,true);reloadPage();}).show();
         });
-        root.addView(captchaCookies);
-        web.setWebChromeClient(new WebChromeClient());
+        details.addView(captchaCookies);
+        Button options=new Button(this);options.setText("説明・Cookie設定を開く");root.addView(options);
+        options.setOnClickListener(v->{
+            boolean open=details.getVisibility()!=android.view.View.VISIBLE;
+            details.setVisibility(open?android.view.View.VISIBLE:android.view.View.GONE);
+            options.setText(open?"説明・Cookie設定を閉じる":"説明・Cookie設定を開く");
+        });
+        root.addView(details);
+        web.setWebChromeClient(new WebChromeClient(){
+            @Override public void onProgressChanged(WebView view,int progress){
+                if(challenge!=null)location.setText("投稿確認: "+BoardAuthRules.origin(auth)+(progress<100?" ("+progress+"%)":""));
+            }
+        });
         web.setWebViewClient(new WebViewClient(){
             private boolean navigate(WebView view,String url) {
                 String origin=BoardAuthRules.origin(url);
                 if(origin.isEmpty()) {location.setText("HTTPS以外の移動を停止しました。");return true;}
+                if(challenge!=null&&!origin.equals(BoardAuthRules.origin(challenge.base))){
+                    location.setText("投稿確認中は別サイトへの移動を停止します。");return true;
+                }
                 if(allowed.contains(origin)) return false;
                 new HaiagaruDialog.Builder(ExternalBoardAuthActivity.this).setTitle("別のサイトへ移動します")
                     .setMessage(origin+"\nこの認証先を信頼できる場合のみ続行してください。")
@@ -83,6 +125,34 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view,String url){return navigate(view,url);}
             @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){return request.isForMainFrame()&&navigate(view,request.getUrl().toString());}
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){
+                if(challengeToken!=null&&request.isForMainFrame()&&"GET".equalsIgnoreCase(request.getMethod())
+                        &&auth.equals(request.getUrl().toString())){
+                    BoardChallengeSession.Page page=firstResponse.getAndSet(null);
+                    if(page!=null){
+                        // Serve the original POST response locally on its original HTTPS
+                        // URL. No extra request or draft POST is made on page opening.
+                        if(BoardChallengeSession.find(challengeToken,board)==null)
+                            return new android.webkit.WebResourceResponse("text/plain","UTF-8",new java.io.ByteArrayInputStream(new byte[0]));
+                        return new android.webkit.WebResourceResponse("text/html",page.encoding,200,"OK",
+                            java.util.Collections.singletonMap("Cache-Control","no-store"),new java.io.ByteArrayInputStream(page.bytes()));
+                    }
+                }
+                // POST navigations do not call shouldOverrideUrlLoading. Prevent a
+                // confirmation form from sending its body to a different origin.
+                if(challengeToken!=null&&request.isForMainFrame()
+                        &&!BoardAuthRules.origin(auth).equals(BoardAuthRules.origin(request.getUrl().toString())))
+                    return new android.webkit.WebResourceResponse("text/plain","UTF-8",
+                        new java.io.ByteArrayInputStream("別サイトへの送信を停止しました。".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                if(challengeToken!=null&&"POST".equalsIgnoreCase(request.getMethod())
+                        &&(request.isForMainFrame()||auth.equals(request.getUrl().toString().split("\\?",2)[0]))
+                        &&!sendAllowed.get()){
+                    location.post(()->location.setText("送信は未許可です。許可する場合は上のチェックを入れ、確認画面を再表示してください。"));
+                    return new android.webkit.WebResourceResponse("text/plain","UTF-8",
+                        new java.io.ByteArrayInputStream("送信を停止しました。上の「サイトからの認証・投稿送信を許可する」を確認してください。".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+                }
+                return null;
+            }
             @Override public void onPageStarted(WebView view,String url,android.graphics.Bitmap icon){
                 if(!allowed.contains(BoardAuthRules.origin(url))) {view.stopLoading();navigate(view,url);return;}
                 location.setText("認証先: "+BoardAuthRules.origin(url));
@@ -95,11 +165,35 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
                 if(request.isForMainFrame()) location.setText("認証ページを開けませんでした: "+error.getDescription());
             }
         });
-        root.addView(web,new LinearLayout.LayoutParams(-1,0,1));HaiagaruUi.showModel(this, "外部板の認証", root);
-        if(state==null || web.restoreState(state)==null)
+        root.addView(web,new LinearLayout.LayoutParams(-1,0,1));HaiagaruUi.showModel(this,challenge==null?"外部板の認証":"サイトの投稿確認",root);
+        if(challenge!=null)ExternalBoardAuth.prepareWebSession(this,board,auth,this::renderChallenge);
+        else if(state==null || web.restoreState(state)==null)
             ExternalBoardAuth.prepareWebSession(this,board,auth,()->web.loadUrl(auth));
     }
-    @Override protected void onSaveInstanceState(Bundle state){if(web!=null)web.saveState(state);super.onSaveInstanceState(state);}
+    private void reloadPage(){
+        if(web==null)return;
+        // A GET reload of bbs.cgi has no form body. Restore the captured page
+        // after cookie changes too, without automatically replaying a POST.
+        if(challenge==null)web.reload();else renderChallenge();
+    }
+    private void renderChallenge(){
+        if(web==null)return;
+        BoardChallengeSession.Page page=BoardChallengeSession.find(challengeToken,board);
+        if(page==null){location.setText("確認ページの期限が切れました。新しい投稿確認ページを取得してください。");return;}
+        // The first GET is intercepted above, preserving HTTPS origin, document
+        // encoding and relative Worker/form URLs without another server request.
+        // Never synthesize a proof, change UA, or start calculation/submission.
+        firstResponse.set(page);
+        web.loadUrl(page.base);
+    }
+    @Override protected void onSaveInstanceState(Bundle state){if(web!=null&&challenge==null)web.saveState(state);super.onSaveInstanceState(state);}
     @Override public void onBackPressed(){finish();}
-    @Override protected void onDestroy(){if(web!=null){web.stopLoading();web.destroy();web=null;}super.onDestroy();}
+    @Override protected void onDestroy(){
+        if(isFinishing()&&challengeToken!=null)BoardChallengeSession.forget(challengeToken);
+        if(web!=null){web.stopLoading();web.destroy();web=null;}
+        challenge=null;
+        firstResponse.set(null);
+        sendAllowed.set(false);
+        super.onDestroy();
+    }
 }
