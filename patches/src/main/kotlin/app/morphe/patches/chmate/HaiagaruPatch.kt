@@ -8345,7 +8345,7 @@ private fun BytecodePatchContext.isAdsOnlyBuild(): Boolean {
 @Suppress("unused")
 val haiagaruAdsOnlyPatch = bytecodePatch(
     name = "Haiagaru 広告だけの超軽量構成（検証用）",
-    description = "Haiagaru本体を外して選択してください。広告・広告枠の除去と再署名導入に必要な起動対策だけを適用します。検索・追加設定・フィルター等は組み込みません。検証中です。",
+    description = "Haiagaru本体を外して選択してください。広告・広告枠除去、5ch.net→5ch.io変換、板一覧の初期URL、再署名導入の起動対策を適用します。検索・追加設定・フィルター等は組み込みません。検証中です。",
     default = false,
 ) {
     compatibleWith(chMateCompatibility)
@@ -8354,6 +8354,20 @@ val haiagaruAdsOnlyPatch = bytecodePatch(
         var hasFullRuntime = false
         classDefForEach { if (it.type == "Lapp/morphe/extension/chmate/NativeToolTabs;") hasFullRuntime = true }
         check(!hasFullRuntime) { "Haiagaruと広告だけの超軽量構成は同時に選択できません" }
+        // Use only URL compatibility hooks; do not import the full settings/lifecycle runtime.
+        when (packageMetadata.versionName) {
+            "0.8.10.191 dev" -> {
+                patchBbsMenuUrl("a", "Lo/a7a\$read;")
+                patchPreIoDomainCompatibility("b")
+            }
+            "0.8.10.226 dev" -> {
+                patchBbsMenuUrl("a", "Lo/isInlineAdaptiveAdView\$read;")
+                patchPreIoDomainCompatibility("c")
+            }
+            "0.8.10.241" -> patchBbsMenuUrl("c", "Lo/TaskRunnerCompanion\$ComponentActivity;")
+            "0.8.10.242 dev" -> patchBbsMenuUrl("c", "Lo/getPlayProviderFactory\$ComponentActivity;")
+            "0.8.10.243 dev" -> patchBbsMenuUrl("b", "Lo/StandardAndroidSocketAdapterCompanion\$RemoteActionCompatParcelizer;")
+        }
         val profile=profileFor(packageMetadata.versionName)
         mutableClassDefBy(profile.providerClass).methods.single { it.name=="onCreate" && it.parameters.isEmpty() }
             .addInstruction(0,"invoke-static {}, $EXTENSION->installSignatureSpoof()V")
