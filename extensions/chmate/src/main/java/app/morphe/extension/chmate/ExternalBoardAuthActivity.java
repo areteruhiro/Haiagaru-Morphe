@@ -26,8 +26,11 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
         final String auth;
         try {
             board=BoardAuthRules.validate(getIntent().getStringExtra("board"));
-            auth=BoardAuthRules.validate(getIntent().getStringExtra("auth"));
-        } catch(Exception e) { finish();return; }
+            auth=BoardAuthRules.validateAuthPage(getIntent().getStringExtra("auth"));
+        } catch(Exception e) {
+            android.widget.Toast.makeText(this,"認証ページのURLを確認してください。CSSや投稿先のURLは開けません。",android.widget.Toast.LENGTH_LONG).show();
+            finish();return;
+        }
         allowed.add(BoardAuthRules.origin(auth));allowed.add(BoardAuthRules.origin(board));
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);
         root.setOnApplyWindowInsetsListener((view,insets)->{

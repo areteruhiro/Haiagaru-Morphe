@@ -810,6 +810,14 @@ APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 
 2026-10-25 追加×の取り消し: ユーザー指示により今回だけのHissiMenuController/ModelUiの未コミット差分を取り消し、XIG05 serial730eae72のresumefix242をbuild/checker-handoff-xig05242.apk（SHA256 55CDB01C62D2A09354C95CC94A04831DBD455F0FE37B97C1C7CE5D10F4B64A77）へ署名一致install-r更新Success。元のMPP build/checker-handoff-xig05.mpp/鍵/aliasは同台帳の直前記録どおり。PID12699起動。今回の新しい×は公開しない。既存の閉じる操作は保持。
 
+## 2026-10-26 00:01〜00:02 JST 認証CSS誤認・共有順修正191
+
+ユーザーの「実機にインストールして」により導入。XIG05/Android15、serial `730eae72`、ChMate0.8.10.191 dev、表示名`Haiagaru 検証 191`、package `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`。InstallVerifiedApk.ps1で既存APKと署名一致確認後、install-r Success。既存検証版のデータ保持、元の`jp.co.airfront.android.a2chMate.haiagaru`は更新/アンインストール/データ消去していない。
+
+APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/auth-css-fixed191.apk` SHA256 `360d80992e93e6d1d0659e5940c55bcba6ad729184547b85ff49c6d8777d2ee6`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/auth-css-fixed.mpp` SHA256 `0b6302ec22612ff7213a12b7e25a4f5659fa7bba8b799e889f06c141dd992d42`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+HomeActivityのam start -WはStatus ok、実Activity TabletHomeActivity、PID7461。既存スレ本文表示を`build/auth-css-fixed191-installed.png`で確認。対象PIDのcrash buffer空、後続pidofも7461。ログ`build/auth-css-fixed191-{install,launch,crash}.log`。認証設定画面の実操作・認証完了・投稿/共有送信は未確認。69ルールテスト/通常Lint build/完成APK共有順wrapper保持検査は成功。検証版更新のみ、公開なし。
+
 ## 2026-10-25 共有（記憶）並び順候補（APK生成のみ）
 
 未導入・未公開。生成APKをapp_process隔離試験へ渡しただけで既存アプリを更新/起動していない。191完成APK29ケース成功、226は直前nativeメニュー＋変更済み補助クラス29ケース成功、完成APK試験前にd5497008が切断。242隔離試験はKilledで原因未特定。serial d5497008/Mi Note10上の試験はアプリprefs/ネットワーク/共有送信を使用しない。

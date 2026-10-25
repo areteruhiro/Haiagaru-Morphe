@@ -154,7 +154,14 @@ public final class ExternalBoardAuth {
         EditText boardInput=new EditText(a);boardInput.setSingleLine(true);boardInput.setHint("板のURL（https://…/板名/）");boardInput.setText(board);box.addView(boardInput);
         String origin=BoardAuthRules.origin(board);
         EditText auth=new EditText(a);auth.setSingleLine(true);auth.setHint("認証ページのURL（https://…）");
-        auth.setText(prefs(a).getString("url:"+origin,suggestion.isEmpty()?BoardAuthRules.preset(board):suggestion));box.addView(auth);
+        String stored=prefs(a).getString("url:"+origin,"");
+        auth.setText(BoardAuthRules.configuredPage(board,stored,suggestion));box.addView(auth);
+        if(!stored.isEmpty()&&auth.getText().length()==0){
+            TextView invalid=new TextView(a);
+            invalid.setText("保存されていたURLは認証ページではありません。認証画面のURLを指定するか、板を通常のブラウザで開いてください。");box.addView(invalid);
+        }
+        Button browser=new Button(a);browser.setText("板を通常のブラウザで開く");box.addView(browser);
+        browser.setOnClickListener(v->openBrowser(a,boardInput.getText().toString()));
         HaiagaruDialog dialog=new HaiagaruDialog.Builder(a).setTitle("外部板の認証")
             .setMessage("サイト上で認証コードなどを入力してください。完了後は書き込み画面へ戻ります。投稿の自動再送信はしません。\n認証URLは板に応じて変更できます。")
             .setView(box).setNegativeButton("キャンセル",null)
@@ -165,7 +172,7 @@ public final class ExternalBoardAuth {
         dialog.setOnShowListener(d->dialog.getButton(-1).setOnClickListener(v->{
             try {
                 String b=BoardAuthRules.validate(boardInput.getText().toString());
-                String u=BoardAuthRules.validate(auth.getText().toString());
+                String u=BoardAuthRules.validateAuthPage(auth.getText().toString());
                 prefs(a).edit().putString("url:"+BoardAuthRules.origin(b),u).apply();
                 a.startActivity(new Intent(a,ExternalBoardAuthActivity.class).putExtra("board",b).putExtra("auth",u));dialog.dismiss();
             }catch(IllegalArgumentException e){auth.setError(e.getMessage());}
