@@ -31,3 +31,7 @@ krsw等のサーバーが返した計算認証/CAPTCHAのHTMLを、一時メモ�
 実機オフラインfixture全12チェック成功（build/board-form-reload-fixture.log）: HTTPS origin、開いただけでは計算/送信しない、Worker利用/手動ボタン実行、Shift_JIS、計算完了でも投稿しない、DOM確認、実WebViewのfetch POST未許可時遮断、明示許可/異origin防止、設定維持、再表示で元フォーム復元、終了時メモリー破棄。実CAPTCHA/掲示板への送信はfixtureに含まない。以前のcleanup失敗は実画面とfixtureのActivity選択が混在する試験コードを修正後に解消。
 
 ユーザーは指定krsw/1771588017とrid/1729422449へ本文「てすや」の実投稿検証を指示。指定krswを検証アプリで開くADB am startコマンドは自動承認審査にblocked by policyで拒否、理由詳細なし。別経路で同操作を再試行せず、ユーザーへ実機でスレを開くよう依頼。実サイトの計算認証完了・CAPTCHA完了・投稿成功は現時点で未確認、ゴール未完了。CAPTCHAの人間確認はユーザーによる操作が必要。
+
+2026-10-26 公開準備追記: ユーザーが「プレリリースしていいよ」と指示。origin/devの既公開1.12.3-dev.2と226/242 Droid＋対応3行を通常merge（ce1670d）、通常Lint付き最終Android build成功4m33s（build/prerelease-net-io-build.log）。軽量226/242の完成APK検査・署名一致install-r・起動・各10fixture・新規crash空まで確認済み、191分と合わせ30項目。READMEの謝辞/寄付先を再照合し、PayPay公開URLはHTTP200を確認（送金機能そのものの検証ではない）。.releasercの既存headerPartialを今回の実装と未確認範囲へ更新。
+
+公開前の実スレ本文・画像通し再検査の起動コマンドは自動承認審査blocked by policyで拒否、詳細理由なし。別の経路で同操作を行わず、AGENTS.mdの共通重複検証省略規定に従い、その再検査を省略して公開するかユーザーへ確認。現時点ではdevへpushせず未公開。

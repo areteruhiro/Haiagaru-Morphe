@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-10-26 08:40頃 プレリリース準備: ユーザー公開許可、origin/devのdev.2を通常merge ce1670d。通常Lint最終build4m33s成功。軽量191/226/242の完成APK/署名照合更新/起動と各10項目、軽量runtime非混入、226/242新規crash空を確認。公開説明をnet→io/元認証フォーム再表示/NGWord-ID任意設定/記憶共有順へ更新、謝辞/寄付保持、PayPay公開URL HTTP200。実スレ本文・画像の通し再検査は自動審査blocked by policyで拒否されたため、AGENTSの重複省略規定に基づき省略指示を確認中。実認証/投稿も未確認、未push・未公開。
+
 2026-10-26 投稿確認フォーム/軽量版io互換（未公開）: krsw計算認証/CAPTCHAの元HTMLを一時保存して同一HTTPS origin/文字コードで表示する導線追加。送信初期OFF・ユーザー操作・native同一origin Cookie引継ぎ。サイトの「ブラウザ変ですよん/フォーム情報が正しく読めない」はCookie許可後web.reloadがbbs.cgiへフォームなしGETする経路を特定し、元確認フォームの再表示へ修正。操作欄最大55%・説明/Cookie開閉式も追加。通常Lint build3m42s/191適用署名/別検証packageへ署名一致更新・起動成功。Mi Note10 d5497008でオフライン12チェック成功、host39+70成功。実krsw/rid投稿指示あり、指定スレ起動が自動承認審査blocked by policyで拒否されユーザーの手動起動待ち。実認証/投稿成功未確認。軽量版にはnet→io常時ON/保存メニュー移行/初期ioメニュー追加、191完成APKの軽量31クラス/299参照/端末10項目成功。他版今回候補適用なし。詳細docs/board-challenge-lightweight-io-20261026.md・導入台帳。
 
 2026-10-26 外部板認証CSS誤認修正・XIG05検証版更新（未公開）: ユーザー指示でスクショ取得、実アプリjp.co.airfront.android.a2chMate.haiagaru/191の認証先に043044.xyz/test/datas/design.cssが保存されていることをURL pathだけ確認。認証候補/明示入力からリソースと投稿endpointを除外し、保存済み誤URLを再利用せず再設定を促す。設定に通常ブラウザで板を開く入口追加。69判定テスト、通常Lint付きAndroid build4m1s、191APK適用/再構築/署名成功。ユーザー実機導入指示によりXIG05/730eae72の別package.settingsfix191を署名一致install-r Success、データ保持、Home→TabletHome起動PID7461・スレ本文スクショ確認・対象crash空。MPP build/auth-css-fixed.mpp SHA256 0b6302ec22612ff7213a12b7e25a4f5659fa7bba8b799e889f06c141dd992d42、共有順修正/NGWord-ID返信非表示オプションも含む。元の.haiagaruは更新していない。正しい認証フォームURL/認証完了/投稿成功は未確認、認証や自動投稿の実行なし。docs/auth-css-url-20261025.md、台帳参照。
