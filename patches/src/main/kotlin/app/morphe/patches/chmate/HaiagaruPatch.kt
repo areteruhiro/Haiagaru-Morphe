@@ -2744,6 +2744,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
             move-result-object v0
             invoke-static {p0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->captureDialog(Ljava/lang/Object;)V
             invoke-static {v0}, Lapp/morphe/extension/chmate/WacchoiLongPressMenu;->appendForCurrentDialog(Ljava/lang/Object;)V
+            invoke-static {v0}, Lapp/morphe/extension/chmate/ResponseMenuSettings;->finishResponseMenu(Ljava/lang/Object;)V
             return-object v0
         """.trimIndent())
         klass.methods.remove(mutableBuilder)
@@ -3138,6 +3139,7 @@ private fun BytecodePatchContext.patchResponseArchive(version: String) {
             move-result-object v0
             move-object v1, p0
             invoke-static {v1, v0}, Lapp/morphe/extension/chmate/ResponseArchive;->appendDialog(Ljava/lang/Object;Ljava/lang/Object;)V
+            invoke-static {v0}, Lapp/morphe/extension/chmate/ResponseMenuSettings;->finishResponseMenu(Ljava/lang/Object;)V
             return-object v0
         """.trimIndent())
         dialog.methods.remove(menu)

@@ -810,6 +810,18 @@ APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 
 2026-10-25 追加×の取り消し: ユーザー指示により今回だけのHissiMenuController/ModelUiの未コミット差分を取り消し、XIG05 serial730eae72のresumefix242をbuild/checker-handoff-xig05242.apk（SHA256 55CDB01C62D2A09354C95CC94A04831DBD455F0FE37B97C1C7CE5D10F4B64A77）へ署名一致install-r更新Success。元のMPP build/checker-handoff-xig05.mpp/鍵/aliasは同台帳の直前記録どおり。PID12699起動。今回の新しい×は公開しない。既存の閉じる操作は保持。
 
+## 2026-10-25 共有（記憶）並び順候補（APK生成のみ）
+
+未導入・未公開。生成APKをapp_process隔離試験へ渡しただけで既存アプリを更新/起動していない。191完成APK29ケース成功、226は直前nativeメニュー＋変更済み補助クラス29ケース成功、完成APK試験前にd5497008が切断。242隔離試験はKilledで原因未特定。serial d5497008/Mi Note10上の試験はアプリprefs/ネットワーク/共有送信を使用しない。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/share-order-fixed.mpp` SHA256 `bbc9ad669d0d95c69ce27ed5b2a0a6b9337c1f552ec8508edbb301b1320cd6bd`。全APK鍵`C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias Morphe、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、署名検証成功。APK共通ディレクトリは`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/`。
+
+| ChMate / 表示名 / package | APK絶対パス | SHA256 |
+| --- | --- | --- |
+| 0.8.10.191 dev / Haiagaru 検証 191 / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/share-order-fixed191.apk | b22754b7ee6b074bceae6dcb0c2fbb4a3eeef714c1daa1c8908a8c29301bf0cb |
+| 0.8.10.226 dev / Haiagaru 検証 226 / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/share-order-fixed226.apk | 94b6989d0e5c6b2643607abc9ea8c1c1f64df44a0a34bf423eb7a624eeda07ee |
+| 0.8.10.242 dev / Haiagaru 検証 242 / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/share-order-fixed242.apk | 6dd14acd6465573a7259d8823a99d59e5bf757829c3eb24e5293a3dfd3346d11 |
+
 ## 2026-10-25 NGWord-ID返信非表示オプション候補（APK生成のみ）
 
 生成日時2026-10-25 23:21〜23:24 JST。端末シリアルなし、実機へ未導入・未起動。端末の既存アプリやデータは変更していません。すべて元APKからの適用/再構築/署名検証成功、公開なし。
