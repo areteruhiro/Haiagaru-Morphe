@@ -1,3 +1,49 @@
+# Haiagaru 1.12.3-dev.2
+
+1.12.2を基にしたプレリリースです。
+
+## 変更内容
+
+- ChMate 0.8.10.191 devのスレ内ツールバー編集に「必死チェッカーDroid＋で開く」を追加しました。初期状態は未選択です。ツールバー編集で追加・並べ替えできます。
+- ボタンを押すとインストール済みの必死チェッカーDroid＋のホーム画面を開きます。ツールバーには投稿者IDの選択情報がないため、IDやスレ本文は送信しません。
+- アプリが未導入の場合や起動できない場合はメッセージを表示します。ボタンの画像も既存のアイコン設定から変更できます。
+- この追加項目は191版が対象です。226／242の既存ツールバーは引き続き利用できます。
+
+## 確認範囲
+
+Android向けビルドは既存のCIで実施します。端末のDroid＋パッケージとホームActivityは調査済みですが、最終候補の端末導入・ツールバー編集からの通し操作は接続が切れたため未確認です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO)：送付先 `areteruhiro@gmail.com`
+- [PayPay](https://qr.paypay.ne.jp/p2p01_lf6ELD8pvzLJGHxr)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* expose Hissi Droid Plus toolbar action on ChMate 226 and 242 ([5bb9494](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5bb9494c61dc1f6eed5ca8e75c49e4ffb5448f74))
+
 # Haiagaru 1.12.3-dev.1
 
 1.12.2を基にしたプレリリースです。

@@ -503,7 +503,8 @@ public final class Haiagaru {
         Object result = addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
         try {
             String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
-            if ("0.8.10.191 dev".equals(version))
+            if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)
+                    || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, 0x7e000009, "haiagaru_hissi_droid_plus");
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
