@@ -402,3 +402,5 @@ scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixture�
 追記: build/checker-handoff-compile.log BUILD SUCCESSFUL（2m2s）、patches KotlinとAndroid Javaのコンパイル成功。LocalBackupDocuments/ExternalCheckerLinksの最終class生成確認。最終MPP生成・端末導入・外部送信側からの通し操作は未実施。
 
 2026-10-25 XIG05導入: checker-handoff-install-buildはLint中メモリ不足停止、生成済み最適化結果を再利用しchecker-handoff-install-retry.log通常Lint付きBUILD SUCCESSFUL 2m40s。最終MPPから通常242APK適用成功、署名照合データ保持更新Success。カスタムパッケージでEdge短縮URL/Hissi URLのVIEW解決を確認、PID12850起動。端末から実検索/バックアップ整理の通し確認は未完了、公開なし。詳細台帳参照。
+
+2026-10-25 1.12.2-dev.2プレ公開完了: ユーザー明示指示により軽量構成を先行公開。Semantic Release CI40166087786 success、source210fd3d/CI26ee2a1、draft=false/prerelease=true。公開MPP再取得SHA256 F852A6F96234DAD501485AE1148A8A2FD14EDD66D0F90C27AA8D303ECDF956C4がGitHub digestと一致、classes.dex/専用21,360byte MPE入り確認。公開JSON version1.12.2-dev.2、created_at2026-10-25T05:36:55（Zなし）、dev rawプレJSON確認。公式Latest1.12.1維持。未確認範囲はRelease説明へ明記。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.2-dev.2 。
