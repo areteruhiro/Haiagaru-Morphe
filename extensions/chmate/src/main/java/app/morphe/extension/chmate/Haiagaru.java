@@ -503,6 +503,8 @@ public final class Haiagaru {
         Object result = addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
         try {
             String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
+            if ("0.8.10.191 dev".equals(version))
+                result = addToolbarChoice(result, 0x7e000009, "haiagaru_hissi_droid_plus");
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
         } catch (Exception ignored) { }
@@ -640,6 +642,19 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if (itemId == 0x7e000009) {
+            Activity activity=toolbarActivity(fragment);
+            if(activity!=null&&!activity.isFinishing())try{
+                Intent launch=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                        .setClassName("com.chikuwadon.hissidroidplus","com.chikuwadon.hissidroidplus.HomeActivity");
+                activity.startActivity(launch);
+            }catch(android.content.ActivityNotFoundException missing){
+                Toast.makeText(activity,"必死チェッカーDroid＋がインストールされていません",Toast.LENGTH_LONG).show();
+            }catch(SecurityException denied){
+                Toast.makeText(activity,"必死チェッカーDroid＋を開けませんでした",Toast.LENGTH_LONG).show();
+            }
+            return true;
+        }
         if (FavoriteThreads.refresh(fragment, itemId)) return true;
         if (itemId == 0x7e000005 || itemId == 0x7e000006) {
             Activity activity = toolbarActivity(fragment);

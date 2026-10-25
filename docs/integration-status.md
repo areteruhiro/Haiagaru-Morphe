@@ -422,3 +422,7 @@ scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixture�
 2026-10-25 最終242確認: archive-top-back-final242署名一致データ保持更新Success。XIG05で上部空白除去、1行の「戻る・エッヂ過去ログ検索・検索折/開・表示」をスクリーンショット確認。画面内戻るで検索タブを閉じスレ本文へ戻ることをXML確認。PID28641新規crash bufferなし。VerifyArchiveBackHooksで242Activity wrapperが3レジスタ/元実装保持/元super委譲を確認。端末戻るキー試行中は端末の手動操作も入り、単独の通し操作の判定は保留。最終Frida再接続はptrace I/O errorで失敗、成功扱いにしない。通常Lint付きCI確認後に正式昇格する。
 
 2026-10-25 Release説明更新: ユーザー指示により1.12.1タグからの107ファイル/3実装修正コミットを確認し、dev.1の操作バー高さ/走査テンプレート/間隔/ページ端/フィルター/外部板ブラウザ案内も正式説明に追加。READMEの最新master d08b69a（API blob573bc4c）でPayPayがp2p01_lf6ELD8pvzLJGHxrへ更新されていることを確認、HTTP HEAD200。origin.fetchがdevのみだったためmasterを明示refspecで更新し、README更新を通常マージで保持。READMEの支援者6名と寄付案内、今回の報告者4名を既存.releaserc headerへ反映。CHANGELOG/メタデータは手編集なし。最終MPPから191/226のパッチ適用・署名にも成功、3版VerifyArchiveBackHooksで独立レジスタ/元実装保持を確認。191/226の今回最終候補の再インストール・端末通し確認は未実施。
+
+2026-10-25 公式1.12.2完了: source4d931f1/CI1128f9e。Release CI40172281344/Build40172281343 success、draft=false/prerelease=false/Latest1.12.2。公開6資材の全digest一致、MPP classes.dexあり、JSON2点version1.12.2/created_at2026-10-25T07:20:10（Zなし）。README謝辞/寄付/最新PayPayリンク/1.12.1全差分リンクがRelease本文に存在。公開MPP build/stable-1.12.2-publicへ保存。
+
+2026-10-25 次プレ候補: 191の既存addQuickFilterToolbarChoiceカタログへ未選択のID0x7e000009/必死チェッカーDroid＋で開くを追加。既存クリック入口で明示HomeActivityへ起動、未導入/権限失敗を表示。ID/本文の自動送信なし。既存icon配列へ末尾追加。新バイトコードフックなし。接続中XIG05でcom.chikuwadon.hissidroidplus/.HomeActivityとResultActivityのVIEW/SEND受口を調査、実導入後の通し操作前に端末切断。プレReleaseはユーザー明示依頼、最終Androidビルドは既存CIで実施。別依頼のUA復元はcodex/ua-with-posting-20261025/専用ローカルworktreeへ隔離し、このプレへ含めない。
