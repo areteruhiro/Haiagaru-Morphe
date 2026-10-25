@@ -3,6 +3,8 @@ package app.morphe.extension.chmate
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -391,7 +394,7 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
 /** Bounded result viewport: do not nest it in ModelScreen's scrolling form. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable internal fun ArchiveSearchScreen(activity: android.app.Activity, root: LinearLayout,
-    back: () -> Unit = { @Suppress("DEPRECATION") activity.onBackPressed() },
+    back: () -> Unit = { activity.finish() },
     showTopBar: Boolean = true, embedded: Boolean = false) {
     var localRevision by remember(root) { mutableIntStateOf(0) }
     val revision = rememberModelRevision(root) + localRevision
@@ -405,18 +408,24 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     val layoutScale = EddiArchiveSearchUi.clampControlLayout(root.getTag(EddiArchiveSearchUi.CONTROL_LAYOUT_TAG) as? Int ?: 100)
     val controlsDensity = Density(density.density, density.fontScale * controlScale / 100f)
     val resultsDensity = Density(density.density, density.fontScale * resultScale / 100f)
+    if (!embedded && LocalOnBackPressedDispatcherOwner.current != null) {
+        BackHandler(enabled = LocalView.current.isShown) { back() }
+    }
     Scaffold(contentWindowInsets = if (embedded) WindowInsets(0.dp) else ScaffoldDefaults.contentWindowInsets,
-        topBar = { if (showTopBar) CompositionLocalProvider(LocalDensity provides controlsDensity) { TopAppBar(title = { Text("エッヂ過去ログ検索") }, navigationIcon = {
+        topBar = { if (showTopBar) CompositionLocalProvider(LocalDensity provides controlsDensity) { TopAppBar(
+        windowInsets = if (embedded) WindowInsets(0.dp) else TopAppBarDefaults.windowInsets,
+        title = { Text("エッヂ過去ログ検索", fontSize = 18.sp, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }, navigationIcon = {
         TextButton(onClick = back) { Text("戻る") }
-    }, actions = { TextButton(onClick = { appearance.performClick(); changed() }) { Text(appearance.text.toString()) } }) } }) { insets ->
+    }, actions = {
+        TextButton(onClick = { searchVisibility.performClick(); changed() },
+            modifier = Modifier.semantics { contentDescription = searchVisibility.text.toString() }) { Text("検索折/開") }
+        TextButton(onClick = { appearance.performClick(); changed() }) { Text(appearance.text.toString()) }
+    }) } }) { insets ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(insets).imePadding().padding(horizontal = 16.dp)) {
             val formHeight = maxHeight * if (embedded) .30f else .40f
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy((8f * layoutScale / 100f).dp)) {
                 CompositionLocalProvider(LocalDensity provides controlsDensity, LocalArchiveControlLayout provides layoutScale) {
-                TextButton(onClick = { searchVisibility.performClick(); changed() },
-                    modifier = Modifier.fillMaxWidth()) {
-                    Text(searchVisibility.text.toString())
-                }
                 if (form.visibility == View.VISIBLE) {
                 Column(Modifier.fillMaxWidth().heightIn(max = formHeight).verticalScroll(rememberScrollState())) {
                     for (index in 0 until form.childCount) {

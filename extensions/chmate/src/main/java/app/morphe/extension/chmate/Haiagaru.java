@@ -454,6 +454,8 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            View decor=activity.getWindow().peekDecorView();
+                            if(decor!=null&&shouldHideAds())hideRememberedAdViews(decor);
                             NativeToolTabs.resumed(activity);
                             ExternalBoardAuth.resumed(activity);
                             NativeRestore191.onActivityResumed(activity);
@@ -3042,7 +3044,7 @@ public final class Haiagaru {
 
     public static void hideAdView(View view) {
         if (view == null || !shouldHideAds()) return;
-
+        watchAdVisibility(view);
         safeCollapseAdView(view);
         safePostCollapseAdView(view, 0);
         safePostCollapseAdView(view, 300);
@@ -3228,9 +3230,9 @@ public final class Haiagaru {
         // The image viewer is added later to an initially empty Fragment host.
         // Never turn that host (or the Activity content root) into an ad spacer.
         if (AdContainerSafety.isScreenHost(view.getClass(), view.getId())) return;
-        view.setVisibility(View.GONE);
+        if(view.getVisibility()!=View.GONE)view.setVisibility(View.GONE);
         ViewGroup.LayoutParams params = view.getLayoutParams();
-        if (params != null) {
+        if (params != null && params.height != 0) {
             params.height = 0;
             view.setLayoutParams(params);
         }
@@ -3241,6 +3243,50 @@ public final class Haiagaru {
             collapseAdView(view);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to collapse ChMate ad view", error);
+        }
+    }
+
+    /** Re-hide an identified ad before a resumed SDK can draw its restored slot. */
+    private static void watchAdVisibility(View view) {
+        if(AdContainerSafety.isScreenHost(view.getClass(),view.getId()))return;
+        final int tag=0x48690b28;
+        if(view.getTag(tag) instanceof AdVisibilityWatch)return;
+        AdVisibilityWatch watch=new AdVisibilityWatch(view);
+        view.setTag(tag,watch);view.addOnAttachStateChangeListener(watch);
+        if(view.isAttachedToWindow())watch.onViewAttachedToWindow(view);
+    }
+
+    private static final class AdVisibilityWatch implements View.OnAttachStateChangeListener, android.view.ViewTreeObserver.OnPreDrawListener {
+        final java.lang.ref.WeakReference<View> target;
+        android.view.ViewTreeObserver observer;
+        boolean measured;
+        AdVisibilityWatch(View view){target=new java.lang.ref.WeakReference<>(view);measured=view.getHeight()>0;}
+        @Override public void onViewAttachedToWindow(View view){
+            if(observer!=null&&observer.isAlive())observer.removeOnPreDrawListener(this);
+            observer=view.getViewTreeObserver();observer.addOnPreDrawListener(this);
+        }
+        @Override public void onViewDetachedFromWindow(View view){
+            if(observer!=null&&observer.isAlive())observer.removeOnPreDrawListener(this);
+            observer=null;
+        }
+        @Override public boolean onPreDraw(){
+            View view=target.get();
+            if(view==null||!shouldHideAds()||AdContainerSafety.isScreenHost(view.getClass(),view.getId()))return true;
+            measured|=view.getHeight()>0;
+            long before=layoutStamp(view);
+            safeCollapseAdView(view);
+            // A previously measured ad may remain GONE while its wrapper is expanded on resume.
+            if(measured)try{collapseAdContainer(view,true);}catch(RuntimeException error){Log.w(LOG_TAG,"Unable to collapse resumed ad container",error);}
+            return before==layoutStamp(view);
+        }
+        private static long layoutStamp(View view){
+            long stamp=1;
+            for(int depth=0;view!=null&&depth<5;depth++){
+                stamp=stamp*31+view.getVisibility();
+                stamp=stamp*31+(view.getLayoutParams()==null?-3:view.getLayoutParams().height);
+                view=view.getParent() instanceof View?(View)view.getParent():null;
+            }
+            return stamp;
         }
     }
 
@@ -3543,6 +3589,10 @@ public final class Haiagaru {
         live.choice(settingsLanguage, () -> preferences.edit().putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition())).apply());
         live.toggle(hideAd, "hideAd");
         LightweightSetup.controls(activity,layout);
+        Button resetSettings=new Button(activity);
+        resetSettings.setText(text("Haiagaruの設定を初期設定に戻す","Reset Haiagaru settings to defaults"));
+        resetSettings.setOnClickListener(v->SettingsProfiles.confirmReset(activity));
+        layout.addView(resetSettings);
         return layout;
     }
 

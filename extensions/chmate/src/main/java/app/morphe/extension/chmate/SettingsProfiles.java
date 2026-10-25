@@ -79,7 +79,7 @@ public final class SettingsProfiles {
         defaultValue("imageVpnDomains",ImageVpnRequestPolicy.DEFAULT_DOMAINS);
     }
     private static final String[] EXTRA_BOOLEAN={
-        "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled",
+        "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled","videoAutoplay",
         "siteCardsEnabled","siteCardImages",XPostPreviewPosition.ENABLED,"patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
         "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","wacchoiLongPressSuffixSearch","wacchoiLongPressPrefixSearch","wacchoiLongPressSuffixNg","wacchoiLongPressPrefixNg","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
@@ -88,6 +88,34 @@ public final class SettingsProfiles {
         ThreadRefreshOptions.KEY
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}
+    static boolean resetDefaults(Activity activity){
+        catalog(activity);
+        SharedPreferences.Editor edit=prefs(activity).edit();
+        for(String key:RULES.keySet())edit.remove(key);
+        edit.remove(MinimalSetup.ACTIVE);
+        if(!edit.commit())return false;
+        SharedPreferences.Editor archive=activity.getSharedPreferences("haiagaru_eddi_search",0).edit();
+        for(String key:new String[]{"controlTextScale","resultTextScale","resultVerticalPadding","controlLayoutScale","hideSearchForm"})archive.remove(key);
+        if(!archive.commit())return false;
+        for(String name:new String[]{PosterHighlight.PREFS,ProgrammableNgController.PREFS,"haiagaru.hidden-id-ng",StringReplacement.PREFS})
+            if(!activity.getSharedPreferences(name,0).edit().remove("enabled").commit())return false;
+        SharedPreferences.Editor actions=activity.getSharedPreferences("haiagaru_response_actions",0).edit();
+        for(String key:new String[]{"wacchoiLongPressSearch","wacchoiLongPressSuffixSearch","wacchoiLongPressPrefixSearch","wacchoiLongPressSuffixNg","wacchoiLongPressPrefixNg"})actions.remove(key);
+        for(int id:ResponseMenuSettings.IDS){actions.remove("visibility."+id);actions.remove("responseVisibility."+id);}
+        if(!actions.commit())return false;
+        DEFAULTS.clear();catalog(activity);
+        SiteCards.changed();XPostPreviewPosition.settingsChanged();FoldLayout.settingsChanged();
+        return true;
+    }
+    static void confirmReset(Activity activity){
+        new HaiagaruDialog.Builder(activity).setTitle("Haiagaruの設定を初期設定に戻す")
+            .setMessage("Haiagaruの表示・動作設定を初期値に戻します。ChMate標準設定、スレ・履歴・登録済みNGルール、ログイン情報、バックアップの保存先は保持します。反映には再起動が必要です。")
+            .setNegativeButton("キャンセル",null)
+            .setPositiveButton("初期設定に戻す",(dialog,which)->{
+                if(resetDefaults(activity))SettingsRestart.confirm(activity);
+                else new HaiagaruDialog.Builder(activity).setTitle("初期設定に戻せませんでした").setMessage("一部の設定が変更されている可能性があります。保存状態を確認し、もう一度お試しください。").setPositiveButton("閉じる",null).show();
+            }).show();
+    }
     static JSONObject exportData(Context c)throws JSONException{
         Map<String,Object> all=new LinkedHashMap<>(DEFAULTS);all.putAll(prefs(c).getAll());
         JSONObject values=new JSONObject();for(Map.Entry<String,?> e:all.entrySet()){

@@ -22,6 +22,7 @@ public final class NativeToolFragment extends android.app.Fragment {
     private LinearLayout frame;
     private LinearLayout header;
     private TextView title, close;
+    private Runnable releaseArchiveBack;
     private android.content.SharedPreferences preferences;
     private final android.content.SharedPreferences.OnSharedPreferenceChangeListener headerListener=(prefs,key)->{
         if(NativeToolTabs.HEADER_HEIGHT_KEY.equals(key)&&host!=null)host.runOnUiThread(this::updateHeader);
@@ -60,12 +61,37 @@ public final class NativeToolFragment extends android.app.Fragment {
         header.addView(close,new LinearLayout.LayoutParams(width,-1));
         applyHeaderHeight(NativeToolTabs.headerHeightDp(host));
         frame.addView(header,new LinearLayout.LayoutParams(-1,Math.round(NativeToolTabs.headerHeightDp(host)*host.getResources().getDisplayMetrics().density)));
-        if("hissi".equals(tool)||"checker".equals(tool))header.setVisibility(View.GONE);
+        if("hissi".equals(tool)||"checker".equals(tool)||"eddi".equals(tool))header.setVisibility(View.GONE);
         frame.addView(content.view,new LinearLayout.LayoutParams(-1,0,1));
         preferences=host.getSharedPreferences(WacchoiSearchOptions.PREFS,0);
         preferences.registerOnSharedPreferenceChangeListener(headerListener);
         updateHeader();
+        if("eddi".equals(tool)&&android.os.Build.VERSION.SDK_INT>=33)
+            releaseArchiveBack=ArchiveBack.attach(frame,host,()->{
+                if(!NativeToolTabs.closeCurrentTab(host,this))
+                    android.widget.Toast.makeText(host,"この画面のタブを閉じられませんでした",android.widget.Toast.LENGTH_SHORT).show();
+            });
         return frame;
+    }
+    /** Only the visible archive pane intercepts system Back; hidden tabs release it. */
+    private static final class ArchiveBack {
+        static Runnable attach(View view,Activity activity,Runnable close){
+            android.window.OnBackInvokedDispatcher dispatcher=activity.getOnBackInvokedDispatcher();
+            android.window.OnBackInvokedCallback callback=close::run;
+            boolean[] registered={false};
+            android.view.ViewTreeObserver.OnGlobalLayoutListener listener=()->{
+                boolean visible=view.isShown()&&view.isAttachedToWindow();
+                if(visible==registered[0])return;
+                if(visible)dispatcher.registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,callback);
+                else dispatcher.unregisterOnBackInvokedCallback(callback);
+                registered[0]=visible;
+            };
+            view.getViewTreeObserver().addOnGlobalLayoutListener(listener);
+            return ()->{
+                if(view.getViewTreeObserver().isAlive())view.getViewTreeObserver().removeOnGlobalLayoutListener(listener);
+                if(registered[0])dispatcher.unregisterOnBackInvokedCallback(callback);
+            };
+        }
     }
     private void updateHeader(){
         if(host==null||frame==null||header==null)return;
@@ -113,6 +139,7 @@ public final class NativeToolFragment extends android.app.Fragment {
         super.onSaveInstanceState(state);
     }
     @Override public void onDestroyView() {
+        if(releaseArchiveBack!=null){releaseArchiveBack.run();releaseArchiveBack=null;}
         if(preferences!=null){preferences.unregisterOnSharedPreferenceChangeListener(headerListener);preferences=null;}
         frame=null;header=null;title=null;close=null;
         if(content!=null){content.save(new Bundle());content.close();content=null;}

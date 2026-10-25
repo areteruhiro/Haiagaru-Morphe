@@ -12,6 +12,20 @@ import java.lang.reflect.*;
 public final class NativeToolTabs {
     public static final String KEY="nativeToolTabs";
     public static final String HEADER_HEIGHT_KEY="nativeToolTabHeaderHeightDp";
+    public static boolean dispatchArchiveBack(Activity activity,android.view.KeyEvent event){
+        if(event==null||event.getKeyCode()!=android.view.KeyEvent.KEYCODE_BACK)return false;
+        View root=activity.getWindow().peekDecorView();
+        return root!=null&&dispatchArchiveBack(root,event);
+    }
+    private static boolean dispatchArchiveBack(View view,android.view.KeyEvent event){
+        if(!view.isShown())return false;
+        if(view instanceof NativeToolTabSwipeLayout&&((NativeToolTabSwipeLayout)view).closeArchiveOnBack(event))return true;
+        if(view instanceof android.view.ViewGroup){
+            android.view.ViewGroup group=(android.view.ViewGroup)view;
+            for(int i=group.getChildCount()-1;i>=0;i--)if(dispatchArchiveBack(group.getChildAt(i),event))return true;
+        }
+        return false;
+    }
     static int headerHeightDp(android.content.Context context){
         return Math.max(48,Math.min(80,context.getSharedPreferences(WacchoiSearchOptions.PREFS,0)
                 .getInt(HEADER_HEIGHT_KEY,48)));
@@ -365,6 +379,9 @@ public final class NativeToolTabs {
         try{return (Bundle)fragment.getClass().getMethod("getArguments").invoke(fragment);}
         catch(Exception error){throw new IllegalStateException("Native tool arguments unavailable",error);}
     }
+    static boolean isArchiveFragment(Object fragment){
+        return fragment instanceof NativeToolFragment&&"eddi".equals(tool(arguments(fragment)));
+    }
     abstract static class Content {
         final View view;
         Content(View view){this.view=view;}
@@ -379,9 +396,10 @@ public final class NativeToolTabs {
         if("eddi".equals(tool(args))){
             Bundle state=restored==null?new Bundle():new Bundle(restored);
             if(!state.containsKey(EddiArchiveSearchUi.STATE_KEY)&&args.containsKey(Intent.EXTRA_TEXT))state.putString(EddiArchiveSearchUi.STATE_KEY,args.getString(Intent.EXTRA_TEXT));
-            EddiArchiveSearchUi ui=EddiArchiveSearchUi.embed(activity,Uri.parse("https://eddiarchive3rd.boy.jp/"),url->openThread(activity,url),state,()->back(activity));
+            Runnable close=()->{if(!closeCurrentTab(activity,fragment))Toast.makeText(activity,"この画面のタブを閉じられませんでした",Toast.LENGTH_SHORT).show();};
+            EddiArchiveSearchUi ui=EddiArchiveSearchUi.embed(activity,Uri.parse("https://eddiarchive3rd.boy.jp/"),url->openThread(activity,url),state,close);
             ui.onStateSaved=value->args.putString(Intent.EXTRA_TEXT,compactState(value));
-            Content content=new Content(ToolScreenUi.archive(activity,ui.rootView(),()->back(activity))){
+            Content content=new Content(ToolScreenUi.archive(activity,ui.rootView(),close,true,true)){
                 @Override void save(Bundle out){Bundle temporary=new Bundle();ui.saveState(temporary);String value=compactState(temporary.getString(EddiArchiveSearchUi.STATE_KEY));if(value!=null)out.putString(EddiArchiveSearchUi.STATE_KEY,value);}
                 @Override void close(){ui.saveState(null);ui.dispose();}
             };
