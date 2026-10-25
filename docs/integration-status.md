@@ -404,3 +404,5 @@ scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixture�
 2026-10-25 XIG05導入: checker-handoff-install-buildはLint中メモリ不足停止、生成済み最適化結果を再利用しchecker-handoff-install-retry.log通常Lint付きBUILD SUCCESSFUL 2m40s。最終MPPから通常242APK適用成功、署名照合データ保持更新Success。カスタムパッケージでEdge短縮URL/Hissi URLのVIEW解決を確認、PID12850起動。端末から実検索/バックアップ整理の通し確認は未完了、公開なし。詳細台帳参照。
 
 2026-10-25 1.12.2-dev.2プレ公開完了: ユーザー明示指示により軽量構成を先行公開。Semantic Release CI40166087786 success、source210fd3d/CI26ee2a1、draft=false/prerelease=true。公開MPP再取得SHA256 F852A6F96234DAD501485AE1148A8A2FD14EDD66D0F90C27AA8D303ECDF956C4がGitHub digestと一致、classes.dex/専用21,360byte MPE入り確認。公開JSON version1.12.2-dev.2、created_at2026-10-25T05:36:55（Zなし）、dev rawプレJSON確認。公式Latest1.12.1維持。未確認範囲はRelease説明へ明記。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.2-dev.2 。
+
+2026-10-25 公式昇格指示: 今回追加したチェッカーツールバー右端×のみ未コミット差分から除去、dev.2と同じコードへ復帰、XIG05も署名一致データ保持で戻した。ユーザーより完了後の公式Releaseを明示依頼。既存CIでmasterへ昇格する。軽量構成は検証用任意パッチとして残し、dev.2記載の未確認範囲を公式説明でも維持する。
