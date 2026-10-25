@@ -174,22 +174,11 @@ final class LocalAutoBackup {
                     if(!p.edit().putString("files",files.toString()).putLong("last",System.currentTimeMillis()).putString("status","バックアップ成功").commit())
                         throw new IOException("バックアップは保存されましたが管理記録を保存できません（古いファイルは削除しません）");
                     java.util.List<String> tracked=new java.util.ArrayList<>();
-                    for(int i=0;i<files.length();i++)tracked.add(files.getString(i));
-                    LocalBackupRetention.Result result=LocalBackupRetention.prune(tracked,p.getInt("keep",3),new LocalBackupRetention.Documents(){
-                        public LocalBackupRetention.Presence inspect(String value){
-                            try{Uri old=Uri.parse(value);
-                                if(!tree.getAuthority().equals(old.getAuthority())||!DocumentsContract.getTreeDocumentId(tree).equals(DocumentsContract.getTreeDocumentId(old)))
-                                    return LocalBackupRetention.Presence.UNVERIFIED;
-                                try(android.database.Cursor cursor=c.getContentResolver().query(old,new String[]{DocumentsContract.Document.COLUMN_DISPLAY_NAME},null,null,null)){
-                                    if(cursor==null)return LocalBackupRetention.Presence.UNVERIFIED;
-                                    if(!cursor.moveToFirst())return LocalBackupRetention.Presence.MISSING;
-                                    String name=cursor.getString(0);
-                                    return name!=null&&name.startsWith("haiagaru-auto-")&&name.endsWith(".zip")?LocalBackupRetention.Presence.OWNED:LocalBackupRetention.Presence.UNVERIFIED;
-                                }
-                            }catch(Exception unavailable){return LocalBackupRetention.Presence.UNVERIFIED;}
-                        }
-                        public boolean delete(String value){try{return DocumentsContract.deleteDocument(c.getContentResolver(),Uri.parse(value));}catch(Exception unavailable){return false;}}
-                    });
+                    LocalBackupDocuments documents=new LocalBackupDocuments(c,tree);
+                    // Equivalent plain/tree URIs must count as one file, or pruning an
+                    // old alias could delete the newest protected alias of the same ZIP.
+                    for(int i=0;i<files.length();i++)tracked.add(documents.canonical(files.getString(i)));
+                    LocalBackupRetention.Result result=LocalBackupRetention.prune(tracked,p.getInt("keep",3),documents);
                     String status="バックアップ成功（管理中 "+result.retained.size()+"件）";
                     if(result.unresolved>0)status+="\n注意：古いバックアップの確認・削除に失敗しました（"+result.unresolved+"件）。保持件数を超える場合があります。保存先のアクセス権を確認してください。";
                     if(!p.edit().putString("files",new JSONArray(result.retained).toString()).putString("status",status).commit())

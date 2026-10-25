@@ -22,6 +22,7 @@ abstract class ToolScreenController extends ContextThemeWrapper {
         this.host=host;this.intent=new Intent(intent);this.embedded=embedded;this.back=back;this.render=render;
     }
     final Intent getIntent(){return intent;}
+    final boolean navigationPending(){return finishPending||closed;}
     final void setIntent(Intent value){intent=new Intent(value);}
     final Window getWindow(){return host.getWindow();}
     final boolean isFinishing(){return closed||host.isFinishing();}

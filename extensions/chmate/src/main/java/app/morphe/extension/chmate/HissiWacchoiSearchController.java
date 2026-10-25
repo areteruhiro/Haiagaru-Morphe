@@ -167,6 +167,14 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         fromInput.setText(HissiScanTemplate.date(days));toInput.setText(HissiScanTemplate.date(0));searchUiChanged();
     }
     boolean postsOnly(){return getIntent().getBooleanExtra(HissiScanTemplate.POSTS,false);}
+    String templateBoardCodes(){return android.text.TextUtils.join(",",selectedBoards);}
+    String[][] templateBoardEntries(){
+        String[][] rows=new String[availableBoards.size()][2];
+        for(int i=0;i<rows.length;i++){BoardEntry board=availableBoards.get(i);rows[i]=new String[]{board.code,board.label};}
+        return rows;
+    }
+    void reloadTemplateBoards(){if(!stopButton.isEnabled()){boardsRequested=true;loadBoards();}}
+
     private boolean startBackground(Intent args){
         if(!backgroundEnabled())return false;
         int active=0;for(WacchoiBackgroundJob job:WacchoiSearchService.jobs().values())if(job.running)active++;
@@ -238,6 +246,12 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         }
         if(!allowsSource(searchSource))searchSource=allowsSource(0)?0:1;
         if(getIntent().getBooleanExtra(HissiScanTemplate.AUTO,false)&&fields==null&&selectedBackground()==null){
+            String templateBoards=getIntent().getStringExtra("haiagaru.hissi.template.boards");
+            if(templateBoards!=null&&!templateBoards.trim().isEmpty()){
+                selectedBoards.clear();
+                for(String board:templateBoards.split("[,\\s]+"))if(board.matches("[A-Za-z0-9_-]+"))selectedBoards.add(board);
+                restoredBoards=true;restoreAllBoards=false;renderBoardChoices();
+            }
             useDaysAgo(getIntent().getIntExtra("haiagaru.hissi.daysAgo",0));
             pageLimitInput.setText(Integer.toString(getIntent().getIntExtra("haiagaru.hissi.pages",100)));
             requestLimitInput.setText(Integer.toString(getIntent().getIntExtra("haiagaru.hissi.requests",0)));
@@ -337,6 +351,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
     boolean isFullWacchoiSearch() {
         return searchSource == 0 && getIntent().getBooleanExtra("haiagaru.wacchoi.hissi", false);
     }
+    boolean fullProviderSwitchAllowed(){return SettingsProfiles.prefs(this).getInt(HissiScanTemplate.PROVIDER,0)==3;}
     void openFullWacchoiKyodemo() {
         if (stopButton.isEnabled()) return;
         String query = fourInput.getText().toString().trim();
@@ -372,7 +387,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             finish();
         }
         getSharedPreferences("haiagaru_checker_choice", MODE_PRIVATE).edit()
-                .putBoolean(host.toLowerCase(Locale.ROOT) + "/" + board, true).apply();
+                .putBoolean(FullWacchoiProvider.choiceKey(host,board), true).apply();
     }
     void searchUiChanged() { if (composeChanged != null) composeChanged.run(); }
     void selectSource(int source) {
@@ -681,7 +696,10 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         openZzzSearch(ZZZSEARCH_URL + "?s=5&query=" + Uri.encode(query.toString().trim()));
     }
 
+    private boolean boardListLoading;
     private void loadBoards() {
+        if(boardListLoading)return;
+        boardListLoading=true;
         boardStatus.setText("Hissiから板一覧を取得しています…");
         executor.submit(() -> {
             try {
@@ -699,6 +717,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
                 if (loaded.isEmpty()) throw new IllegalStateException("板一覧を読み取れませんでした");
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
+                    boardListLoading=false;
                     availableBoards.clear(); availableBoards.addAll(loaded);
                     if(restoreAllBoards){selectedBoards.addAll(seen);restoreAllBoards=false;}
                     else if (!restoredBoards && selectedBoards.isEmpty() && seen.contains("android")) selectedBoards.add("android");
@@ -709,6 +728,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             } catch (Exception error) {
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
+                    boardListLoading=false;
                     boardsRequested = false;
                     boardStatus.setText("板一覧を取得できません: " + error.getMessage()
                             + "。通信後に検索画面を開き直してください。");

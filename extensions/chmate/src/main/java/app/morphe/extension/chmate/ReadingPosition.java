@@ -39,9 +39,10 @@ public final class ReadingPosition {
         try {
             Session old = SESSIONS.remove(fragment);
             if (old != null) old.close();
-            if (!FeatureSwitches.enabled(ENABLED, true)) return;
             View root = (View) fragment.getClass().getMethod("getView").invoke(fragment);
             View list = FilterPosition.findList(root);
+            XPostPreviewPosition.opening(list);
+            if (!FeatureSwitches.enabled(ENABLED, true)) return;
             Activity activity = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
             if (list == null || activity == null) return;
             Session session = new Session(fragment, activity, list);

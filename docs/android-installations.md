@@ -766,3 +766,44 @@ emulator-5554へ既存署名を照合して更新。各版のpackage、APK/MPP�
 最終APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-final242.apk` SHA256 `0BD6DD822EE771F9C4C3E949E74AFDD427A9FE10D5EBE1533264B9508B48138C`。MPP同root `build/prerelease-final.mpp` SHA256 `8D9DB23E9B75E0539E2B7BDDBA5ED6FDCB0721020A9CD3F6946594732B126DEE`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。2026-10-25 07時台JST導入Success（build/minote-prerelease-install.log）。
 
 検索/過去ログ/チェッカー複数タブを作り、Android設定からの復帰、HOME移動後am killでプロセス終了→再起動でフォーム復元を画像確認。Part3本文表示、links付き標準画像ビューアでImgur画像表示を確認。通常Intent dataだけでは画像一覧に渡らず空画面になるので、これは画像表示の成功とは扱わずlinks経路で再確認した。crash bufferに新しいアプリのFATALなし。120Hz性能やXIG05での長時間再発確認、Hissi実走査は未実施。
+
+## 2026-10-25 テンプレート・検索先優先・リンクカード位置対策（導入済み）
+
+- XIG05 serial `730eae72` とMi Note10 serial `d5497008`、表示名Haiagaru 検証242、ChMate0.8.10.242 dev、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/template-priority-position242.apk` SHA256 `14B02A1E4A4A783D56BB8C620FBD0D4860F45D35B0C509D06A6BD73268AB4106`。
+- MPP同root `build/template-priority-position.mpp` SHA256 `FE775076966B4854CBC176864FB7B4701C4E8900D55302BA994B1704E4217A4C`。
+- 鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias Morphe、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-10-25 JST、両端末ともInstallVerifiedApk.ps1で既存署名照合後install-r Success。既存データ保持、削除なし。ログbuild/template-priority-position242-install.log、build/template-priority-position242-xig05-install.log。通常Lint付きbuild成功4m32s、242元APK適用成功。テンプレート板保存/無効化/検索先優先とカード初期位置補正回避を収録。端末上での症状改善の通し検証は未完了。広告だけプリセット・独立軽量パッチ準備コードもMPPに含むが、導入APKは通常Haiagaruを選択しており独立軽量構成ではない。未公開。
+
+## 2026-10-25 板一覧選択・全文検索先の修正版（導入済み）
+
+- XIG05 `730eae72`、Mi Note10 `d5497008`のChMate0.8.10.242 dev、表示名 `Haiagaru 検証242`、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` を更新。
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/template-board-picker242.apk` SHA256 `545D62F01339CA33BCCBC3A43F32710F35FE2C4720FBDDFDE96288FF59B971F9`。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/template-board-picker.mpp` SHA256 `4CA2D5CED6E6B30126C1DF2E821AA8EC73E9EAC225BD64B4C1C470AA01F180FD`。
+- 鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias Morphe、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-10-25 JST、両端末ともInstallVerifiedApk.ps1で既存署名一致、データ保持install-r Success。起動PID XIG05=3624、Mi Note10=10366を確認。ログbuild/template-board-picker242-xig05-install.log、build/template-board-picker242-minote-install.log。アンインストール/データ消去なし。
+- テンプレートの板一覧取得・検索・複数選択、全文検索先の自動/hissi.org/Kyodemo/両方、外部板を5ch側として扱う修正を収録。端末UIの通し動作確認と公開は未実施。通常Haiagaru構成であり、独立した広告だけ構成の導入ではない。
+
+## 2026-10-25 広告だけ構成の初回検証（未公開）
+
+Mi Note10 serial `d5497008`。以下は既存アプリの削除・データ消去なし。
+
+- ChMate 0.8.10.242 dev / Haiagaru 広告のみ 242 / package `jp.co.airfront.android.a2chMate.haiagaru.adsonly242`。2026-10-25 13時台JST。別パッケージ追加、InstallVerifiedApk.ps1署名検査後Success。初回案内とHome表示、板一覧画面起動。スレ本文・画像の通し確認は未完了。
+  APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-isolated242.apk` SHA256 `3745A97C4B9E04B198B370F4E26348ECAB85CB3DEA5FCAD1D13B8E73A2AE3AA2`。
+  MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-isolated-review.mpp` SHA256 `034E1FF98866C87CDEDF892301D82E00221552AE1C8C3CCAF2AB9D543048DCA8`。
+- ChMate 0.8.10.242 dev / Haiagaru 検証 242 / package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。2026-10-25 13時台JST。既存署名一致後install-r Success。TabletHomeActivity起動。広告プリセットの適用/復元11項目合格、検証終了時に元の設定を復元。
+  APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-preset-review242.apk` SHA256 `C8A553583205144A804253935EB188E9B337178770B22E7337610787A935711F`。
+  MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-final.mpp` SHA256 `0D5F46F7CD17DDD3B5321FD44C1ACA8DF85560F0A2B8A0098CBE5AB9E5FD556C`。
+署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。導入ログbuild/ads-only-isolated242-install.log、build/ads-only-preset242-install.log。端末のcrash bufferに新たなアプリFATALなし。性能・長時間利用の確認とは区別する。
+
+広告専用191: Mi Note10 `d5497008`、表示名 `Haiagaru 広告のみ 191`、ChMate0.8.10.191 dev、package `jp.co.airfront.android.a2chMate.haiagaru.adsonly191`。2026-10-25 13時台JST、署名検査後の別パッケージ追加Success、HomeActivity起動後のプロセス生存を確認。本文/画像通し操作は未完了。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-isolated191.apk` SHA256 `5F01B3A6D427A0CE06CFF334873ABE501F1DB7B8DC30D8EA1D9375344C26D0F2`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-final.mpp` SHA256 `0D5F46F7CD17DDD3B5321FD44C1ACA8DF85560F0A2B8A0098CBE5AB9E5FD556C`。署名鍵/alias/証明書は上記と同一。導入ログbuild/ads-only-isolated191-install.log。
+
+広告専用226: Mi Note10 `d5497008`、表示名 `Haiagaru 広告のみ 226`、ChMate0.8.10.226 dev、package `jp.co.airfront.android.a2chMate.haiagaru.adsonly226`。2026-10-25 13時台JST、署名検査後の別パッケージ追加Success、HomeActivity起動後のプロセス生存を確認。本文/画像通し操作は未完了。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-isolated226.apk` SHA256 `BF26757C231C46ED97758C4732EC6AC16BDA4569C7CCEAF85CBC72C9D09EAABF`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ads-only-final.mpp` SHA256 `0D5F46F7CD17DDD3B5321FD44C1ACA8DF85560F0A2B8A0098CBE5AB9E5FD556C`。署名鍵/alias/証明書は上記と同一。導入ログbuild/ads-only-isolated226-install.log。
+
+## 2026-10-25 XIG05 外部チェッカーURL連携・バックアップ保持修正
+
+serial `730eae72` / XIG05 / 表示名Haiagaru 検証 242 / ChMate0.8.10.242 dev / package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。InstallVerifiedApk.ps1で既存署名一致後install-r Success、データ保持。TabletHomeActivity起動PID12850。
+
+APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/checker-handoff-xig05242.apk` SHA256 `55CDB01C62D2A09354C95CC94A04831DBD455F0FE37B97C1C7CE5D10F4B64A77`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/checker-handoff-xig05.mpp` SHA256 `DD5E9CA1303554A04DF9A3431A6EC1E7BFA011DCA45D61339A9AEF556F398B2D`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。ログbuild/checker-handoff-xig05242-install.log。
+
+エッヂ短縮スレURLのBROWSABLE VIEWがOpenUrlActivity、Hissi/read.phpがHissiMenuActivityへ、このカスタムパッケージで解決することをcmd package resolve-activityで確認。送信側からの通し操作と実保存先のバックアップ削除は未確認。通常構成、広告専用パッチは非選択。未公開。

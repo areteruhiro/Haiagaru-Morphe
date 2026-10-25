@@ -380,3 +380,25 @@ Hissi過去履歴: 809245b（2026-10-19、5ch全文ワッチョイからHissiへ
 2026-10-25 1.12.2-dev.1プレ公開完了: 既存Semantic Release CI 40152656554 success。公開Releaseはdraft=false/prerelease=true、タグ1.12.2-dev.1。MPP再取得SHA256 E59F2FCC0B0FD57D3769109E539F9E85AFC1E9DB61C4CADC72773129EC362376がGitHub digestと一致。JSON2点も再取得、created_at=2026-10-25T01:59:40（Zなし）。dev raw正式名/プレ名両方version1.12.2-dev.1。公式Latest1.12.1を維持。公開元42cfd45、CI生成75a0812。共有NG別作業9コミットを含めずdev上で再build成功（build/prerelease-dev-confirm.log、1m3s）。191元APKへの適用/署名成功、nativeタブとcached検索hook命令保持検査成功。端末UIは242共通確認を採用し191の重複操作省略。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.2-dev.1 。
 
 次回の超軽量構成に着手。アプリ内プリセットは保存済み設定の復元を用意し、広告・枠除去以外の追加機能/常駐監視を停止する。パッチ時構成は単に全設定falseではなく、広告除去・再署名導入に必要な互換処理・クラッシュ回避だけを選別して組み込む。既存haiagaruBytecodePatchは機能hookと起動/署名対策が一体化しているため、冒頭の早期returnだけではクラッシュする。依存分離と対応版の起動確認が必要。今回のプレには未収録。次回公開も自動実施せず、実装/適用/端末検証後に扱う。
+
+2026-10-25 テンプレート板選択の追修正（未公開）: SearchComposeUiの板コード直接入力を独立Compose選択画面へ置換。Hissi板一覧取得/更新、名前・コード検索、複数Checkbox、全解除、保存/キャンセル。検索フォームのselectedBoardsとは別の下書きSetを使い、保存時のみテンプレートprefsを変更。取得連打の重複リクエストをboardListLoadingで抑止。全文検索先は自動/hissi.org/Kyodemo/両方に変更、両方は板別前回選択を使い画面上で切替（postsOnlyにも切替表示）。外部板の全文検索は5ch.io名前空間へ正規化、エッヂは従来Kyodemoを維持。対応するHissi板が存在しない場合の検索結果は保証しない。旧値3（毎回選択）は両方へ意味変更。通常Lint付きbuild/template-board-picker-build.log成功6m25s、再build確認中。端末への新候補適用・実UI確認・公開は未実施。ユーザーの先行の軽量構成/カード位置対策等の未コミット変更は保持。
+追記: 最終再build/template-board-picker-confirm.logも通常Lint付きBUILD SUCCESSFUL（39秒）。Java UP-TO-DATE、Kotlin再確認、最終MPP生成成功。端末未導入・未公開は変わらず。
+
+2026-10-25 広告だけの超軽量構成の準備（未公開）: パッチ時構成をextensions/chmate-ads-onlyへ分離し、通常拡張DEXではなく21,360 bytesの専用DEXを同じMPPへ同梱。広告除去と再署名/パッケージ変更の互換処理のみ接続。31クラス追加、検索/Compose/動画/表示位置監視などの混入を禁止するAPK検査を191/226/242で成功（許可された呼出238/268/266）。通常Haiagaruおよび依存する任意パッチとの併用はmarkerで拒否。専用構成のImage NG/VPN追加データは不要。242専用APK43,648,076 bytes、通常候補66,710,614 bytes（任意パッチ/フォント条件も異なるため純粋なランタイム性能比較ではない）。
+
+アプリ内プリセットに文字列置換、別保存先のワッチョイ長押し/レス操作、保存済み追加ツールバー項目のOFFを補完。退避情報は再適用で上書きせず、後から増えた対象キーだけ初回変更前に追加退避。元のキー不在も復元。絵文字補完を新しいexpertスイッチへ接続し、OFFで起動時のフォント読込/表示監視/行走査を停止（再起動反映）。既存の位置補完/カード保持/条件付き取得切替もプリセットでOFF。広範な非クラッシュ修正の全任意化は未完了。アプリ内プリセットは既存の全フックを除去する構成とは区別。
+
+通常Lint付きbuild/ads-only-isolated-runtime-build2.log成功3m43s、その後の最終再buildはPCコミットメモリ不足でdaemon停止。使用メモリを抑えて直列再build/ads-only-final-retry-build.log成功4m33s。最終MPP build/ads-only-final.mpp SHA256 0D5F46F7CD17DDD3B5321FD44C1ACA8DF85560F0A2B8A0098CBE5AB9E5FD556C。191/226専用候補と通常242設定確認候補はこのMPP。専用242は直前の専用runtime同一候補MPP（台帳参照）。
+
+Mi Note10に広告専用191/226/242をそれぞれ別パッケージで追加し起動プロセスを確認、242の初回案内/Home表示スクリーンショット確認。既存通常242は署名一致でデータ保持更新。広告プリセット適用/再適用/キー不在復元/追加キー退避/追加ツールバーOFFと正確な復元13項目合格、検証後は全保存先を元へ復元（build/ads-only-preset242-frida.log）。226専用runtimeで広告collapse/Activity content保護/空popup host保護/通常レス維持/null Intentの6項目合格（build/ads-only226-runtime-frida.log）。新規アプリFATALなし。本文/画像の通し操作・長時間利用・性能測定は未完了。URL付き起動コマンドは実行環境のポリシーで拒否され、成功扱いにしていない。公開操作なし。案内docs/ads-only-configuration.md。
+
+同時作業の242取得済み検索は通常242候補に含まれ、実native画面で下4桁チェックの表示位置、ON/OFF、手入力維持、Activity再作成後の状態/元query復帰の16項目合格（build/cached-wacchoi242-final-frida.log）。全文検索先routing検証はfixture側のConsumer実装/経路捕捉に問題があり未合格、検索先実動作の解決済みとは扱わない。
+
+2026-10-25 ローカル自動バックアップ保持件数の再調査（未公開）: 既存削除判定は作成済みファイルURIへgetTreeDocumentIdを要求し、plain /document/idを返す保存先では例外をUNVERIFIEDとして削除しない経路があった。LocalBackupDocumentsを追加し、選択フォルダの直接子一覧のdocument ID/名前と管理記録を照合、削除用URIは選択treeから組み直す。別authority/別フォルダ/手動ZIP/未管理ZIPは削除しない。記録内のplain/tree別名をcanonical化し、同一ファイルを複数件として最新世代まで消すことを防止。既に管理記録が失われたZIPの自動削除はしない。
+
+scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixtureで13項目成功（8件から最新5件、削除URIのtree権限、異なるauthority/移動済み/手動/未管理の保護、権限拒否、削除失敗、URI別名）、既存保持ポリシー24016項目成功。build/local-backup-provider-tests.log。実際の利用者保存先の調査/ファイル削除は未実施。初回buildはPCコミットメモリ不足でdaemon停止、低メモリ設定で再build中（build/local-backup-retention-retry-build.log）。接続Mi Note10は途中切断、XIG05接続復帰。端末更新/公開は行っていない。
+
+2026-10-25 外部チェッカー連携（作業中/未公開）: ユーザーからIssue7の許可提示、APIで所有者の許可を確認。送信側main e5dd048のThreadOpener/ExternalThreadAppsを参照（流用なし）。Edge2hostのcanonical/short URL受信filterをOpenUrlActivityへ追加、短縮リンクのレス番号/範囲/query/fragment保持正規化、Hissi明示OpenUrl入口を追加。専用viewerパッチ設定OFF時にもHissi受信filterを残す。外部送信側「他のアプリ」からの動的URL検出向け、固定パッケージ宛の専用Haiagaru選択は受信側のみで解決できない。送信側変更/PRは未実施。ExternalCheckerLinksTest 20ケース成功。checker-handoff-compile.logでKotlin/Android Javaコンパイル確認中。前件backup保持はprovider13+policy24016成功だが最終Android build2回ともPCコミットメモリ不足でdaemon停止、端末導入/実データ削除なし。
+追記: build/checker-handoff-compile.log BUILD SUCCESSFUL（2m2s）、patches KotlinとAndroid Javaのコンパイル成功。LocalBackupDocuments/ExternalCheckerLinksの最終class生成確認。最終MPP生成・端末導入・外部送信側からの通し操作は未実施。
+
+2026-10-25 XIG05導入: checker-handoff-install-buildはLint中メモリ不足停止、生成済み最適化結果を再利用しchecker-handoff-install-retry.log通常Lint付きBUILD SUCCESSFUL 2m40s。最終MPPから通常242APK適用成功、署名照合データ保持更新Success。カスタムパッケージでEdge短縮URL/Hissi URLのVIEW解決を確認、PID12850起動。端末から実検索/バックアップ整理の通し確認は未完了、公開なし。詳細台帳参照。

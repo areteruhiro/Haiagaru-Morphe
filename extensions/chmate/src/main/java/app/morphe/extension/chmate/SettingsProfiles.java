@@ -40,6 +40,11 @@ public final class SettingsProfiles {
         numberKey(CheckerBarOptions.PROVIDERS,20,80);
         defaultValue(CheckerBarOptions.PROVIDERS,32);
         numberKey(HissiScanTemplate.DAYS,0,36524);
+        booleanKey(HissiScanTemplate.ENABLED);
+        defaultValue(HissiScanTemplate.ENABLED,true);
+        numberKey(HissiScanTemplate.PROVIDER,0,3);
+        RULES.put(HissiScanTemplate.BOARDS,v->v instanceof String&&((String)v).length()<=4096
+                &&(((String)v).isBlank()||((String)v).matches("[A-Za-z0-9_,\\s-]+")));
         numberKey(HissiScanTemplate.PAGES,1,10000);
         numberKey(HissiScanTemplate.REQUESTS,0,Integer.MAX_VALUE);
         defaultValue(CheckerBarOptions.TABS,40);
@@ -52,6 +57,12 @@ public final class SettingsProfiles {
         defaultValue(SiteCards.CACHE_HOURS_KEY,24);
         booleanKey(XPostPreviewPosition.ENABLED);
         defaultValue(XPostPreviewPosition.ENABLED,true);
+        booleanKey(ReadingPosition.ENABLED);
+        defaultValue(ReadingPosition.ENABLED,true);
+        booleanKey(EmojiFontFallback.ENABLED);
+        defaultValue(EmojiFontFallback.ENABLED,true);
+        booleanKey(ThreadRefreshOptions.KEY);
+        defaultValue(ThreadRefreshOptions.KEY,true);
         booleanKey("hissiViewerShowAdjust");
         defaultValue(NativeToolTabs.HEADER_HEIGHT_KEY,48);
         defaultValue("hissiViewerShowAdjust",true);
@@ -152,6 +163,16 @@ public final class SettingsProfiles {
     private static void error(Activity a,Exception e){a.runOnUiThread(()->{if(!a.isFinishing()&&!a.isDestroyed())new HaiagaruDialog.Builder(a)
         .setTitle("設定ファイル").setMessage(e.getMessage()).setPositiveButton("閉じる",(d,w)->{if(a instanceof SettingsImportActivity)a.finish();}).show();});}
     private SettingsProfiles(){}
+    /** Existing optional settings only. Native ChMate settings and user data stay outside this map. */
+    static Map<String,Object> adsOnlyValues(){
+        Map<String,Object> out=new LinkedHashMap<>();
+        for(Map.Entry<String,Rule> entry:RULES.entrySet())
+            if(entry.getValue().accepts(false))out.put(entry.getKey(),false);
+        out.put("hideAd",true);
+        out.put("urlVideoFetchMode",3);
+        out.put(GifAutoFetchPolicy.KEY,3);
+        return out;
+    }
     static Map<String,Object> minimalValues(){
         Map<String,Object> out=new LinkedHashMap<>();for(Map.Entry<String,Rule> e:RULES.entrySet())if(e.getValue().accepts(false))out.put(e.getKey(),false);
         for(String key:new String[]{"edgeReporterId","edgeReporterBoardList","dedicatedViewerEnabled","kyodemoEnhancedViewer","automaticDat",

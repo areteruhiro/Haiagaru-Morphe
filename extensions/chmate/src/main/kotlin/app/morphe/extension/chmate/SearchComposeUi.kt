@@ -43,9 +43,28 @@ import androidx.compose.ui.unit.dp
     }
 }
 
-@Composable private fun HissiTemplateSettings(prefs: SharedPreferences) {
+@Composable private fun HissiTemplateSettings(prefs: SharedPreferences, a: HissiWacchoiSearchController) {
     Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Hissi走査テンプレート", style = MaterialTheme.typography.titleMedium)
+        var enabled by remember { mutableStateOf(prefs.getBoolean(HissiScanTemplate.ENABLED,true)) }
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            Text("長押し検索にテンプレートを適用して自動走査",Modifier.weight(1f))
+            Switch(enabled,{enabled=it;prefs.edit().putBoolean(HissiScanTemplate.ENABLED,it).apply()})
+        }
+        Text("オフなら検索条件を表示して、開始を押すまで走査しません。",style=MaterialTheme.typography.bodySmall)
+        var provider by remember { mutableIntStateOf(prefs.getInt(HissiScanTemplate.PROVIDER,0)) }
+        Text("ワッチョイで検索の必死チェッカー")
+        ChoiceChips(listOf("自動","hissi.org","Kyodemo","両方"),provider,true) {
+            provider=it;prefs.edit().putInt(HissiScanTemplate.PROVIDER,it).apply()
+        }
+        Text("自動は5ch・外部板でhissi.org、エッヂでKyodemoを使います。両方は前回の検索先を保持し、画面上で切り替えます。",style=MaterialTheme.typography.bodySmall)
+        var boards by remember { mutableStateOf(prefs.getString(HissiScanTemplate.BOARDS,"") ?: "") }
+        var picker by remember { mutableStateOf(false) }
+        OutlinedButton(onClick={picker=true;a.loadBoardsOnDemand()},modifier=Modifier.fillMaxWidth()) {
+            Text("検索する板（${boards.split(',').count { it.isNotBlank() }}件選択）")
+        }
+        Text("未選択なら長押し元の板を使います。",style=MaterialTheme.typography.bodySmall)
+        if(picker) TemplateBoardPicker(a,boards,{boards=it;prefs.edit().putString(HissiScanTemplate.BOARDS,it).apply()}) { picker=false }
         listOf(Triple(HissiScanTemplate.DAYS,"何日前から探す",0), Triple(HissiScanTemplate.PAGES,"一覧ページ上限",100),
             Triple(HissiScanTemplate.REQUESTS,"通信回数上限（0は無制限）",0)).forEach { (key,label,fallback) ->
             var value by remember(key) { mutableStateOf(prefs.getInt(key,fallback).toString()) }
@@ -55,6 +74,37 @@ import androidx.compose.ui.unit.dp
             OutlinedTextField(value,{value=it;it.toIntOrNull()?.takeIf{n->n in min..max}?.let{n->prefs.edit().putInt(key,n).apply()}},
                 label={Text(label)},singleLine=true,isError=number==null||number !in min..max,
                 keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(keyboardType=androidx.compose.ui.text.input.KeyboardType.Number),modifier=Modifier.fillMaxWidth())
+        }
+    }
+}
+
+@Composable private fun TemplateBoardPicker(a:HissiWacchoiSearchController, saved:String, save:(String)->Unit, close:()->Unit) {
+    var filter by rememberSaveable { mutableStateOf("") }
+    var selected by remember { mutableStateOf(saved.split(',').filter { it.isNotBlank() }.toSet()) }
+    var refresh by remember { mutableIntStateOf(0) }
+    LaunchedEffect(a) { while(true){kotlinx.coroutines.delay(500);refresh++} }
+    @Suppress("UNUSED_VARIABLE") val revision=refresh
+    val rows=a.templateBoardEntries().filter { it[0].contains(filter,true)||it[1].contains(filter,true) }
+    androidx.compose.ui.window.Dialog(onDismissRequest=close,properties=androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth=false)) {
+        Surface(Modifier.fillMaxSize(),color=MaterialTheme.colorScheme.surface) {
+            Column(Modifier.fillMaxSize().imePadding().padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("テンプレートで検索する板",style=MaterialTheme.typography.titleLarge)
+                OutlinedTextField(filter,{filter=it},label={Text("板名・カテゴリ・板コードで検索")},singleLine=true,modifier=Modifier.fillMaxWidth())
+                Row {
+                    OutlinedButton(onClick={a.reloadTemplateBoards()}){Text("板一覧を取得・更新")}
+                    TextButton(onClick={selected=emptySet()}){Text("全解除")}
+                }
+                Text("${selected.size}件選択 / ${a.boardStatus.text}",style=MaterialTheme.typography.bodySmall)
+                LazyColumn(Modifier.weight(1f)) {
+                    items(rows,key={it[0]}) { row ->
+                        Row(Modifier.fillMaxWidth().toggleable(selected.contains(row[0]),role=Role.Checkbox,onValueChange={on->selected=if(on)selected+row[0] else selected-row[0]}).padding(8.dp),verticalAlignment=Alignment.CenterVertically) {
+                            Checkbox(selected.contains(row[0]),null)
+                            Text("${row[1]} (${row[0]})",Modifier.padding(start=8.dp))
+                        }
+                    }
+                }
+                Row { TextButton(onClick=close){Text("キャンセル")}; Button(onClick={save(selected.sorted().joinToString(","));close()},modifier=Modifier.weight(1f)){Text("選択を保存")} }
+            }
         }
     }
 }
@@ -170,7 +220,14 @@ private fun SearchScreen(a: HissiWacchoiSearchController, showTopBar: Boolean, e
     }) { insets ->
         LazyColumn(state = list, modifier = Modifier.fillMaxSize().padding(insets),
             contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (embedded) item { TextButton(onClick = { options=true }) { Text("検索設定・Hissi走査テンプレート") } }
+            item { OutlinedButton(onClick = { options=true },modifier=Modifier.fillMaxWidth()) { Text("検索設定・Hissi走査テンプレート") } }
+            if(a.postsOnly() && fullWacchoi && a.fullProviderSwitchAllowed()) item {
+                HaiagaruUi.Group("検索先") {
+                    ChoiceChips(listOf("Kyodemo","hissi.org"),1,editing) {
+                        if(it==0)a.openFullWacchoiKyodemo()
+                    }
+                }
+            }
             if (!a.postsOnly()) item { OutlinedButton(onClick = { a.prepareAnotherScan(); changed() }, enabled = enabled,
                 modifier = Modifier.fillMaxWidth()) { Text("別の走査を準備（バックグラウンド・同時3件まで）") } }
             if (errors.isNotEmpty()) item {
@@ -184,7 +241,7 @@ private fun SearchScreen(a: HissiWacchoiSearchController, showTopBar: Boolean, e
             if (!a.postsOnly()) item {
                 if (fullWacchoi) {
                     HaiagaruUi.Group("検索先") {
-                        ChoiceChips(listOf("Kyodemo", "Hissi"), 1, editing) {
+                        if(a.fullProviderSwitchAllowed())ChoiceChips(listOf("Kyodemo", "Hissi"), 1, editing) {
                             if (it == 0) a.openFullWacchoiKyodemo()
                         }
                         Text("Hissiの日別投稿者一覧から、上側・下側を合わせた全文を照合します。板と日付を確認して検索してください。Kyodemoへ切り替えても入力条件は保持します。",
@@ -370,7 +427,7 @@ private fun SearchOptionsSheet(a: HissiWacchoiSearchController, prefs: SharedPre
     }
     LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("検索の設定", style = MaterialTheme.typography.headlineSmall) }
-        item { HissiTemplateSettings(prefs) }
+        item { HissiTemplateSettings(prefs,a) }
         listOf(
             Triple("wacchoiBackgroundSearch", "画面を閉じても検索する", "通知から停止・検索画面への復帰ができます"),
             Triple("wacchoiSearchHistory", "検索条件と結果を保存する", "履歴から再検索・通信なしの閲覧ができます"),

@@ -64,6 +64,10 @@ public final class CachedWacchoiSearch {
             FrameLayout page = new FrameLayout(context);
             page.addView(nativeView, new FrameLayout.LayoutParams(-1, -1));
             root.addView(page, new LinearLayout.LayoutParams(-1, 0, 1));
+            // Keep a real, measured fallback row until the native condition
+            // anchor becomes available. Never make the only entry disappear.
+            root.addView(toggle,new LinearLayout.LayoutParams(-1,Math.round(48*context.getResources().getDisplayMetrics().density)));
+            toggle.setVisibility(View.VISIBLE);
             root.post(() -> bind(fragment, nativeView, page, toggle));
             return root;
         } catch (Exception error) { Log.w("Haiagaru", "Cached search toggle", error); return nativeView; }
@@ -144,15 +148,18 @@ public final class CachedWacchoiSearch {
                     Toast.makeText(toggle.getContext(), "検索条件を切り替えられませんでした", Toast.LENGTH_SHORT).show();
                 }
             });
-            keepBesideSearchOptions(page, nativeView, toggle);
+            keepBesideSearchOptions(page, nativeView, toggle,query);
             if (available && !restored && prefs.getBoolean(KEY, false)) toggle.setChecked(true);
         } catch (Exception error) { toggle.setEnabled(false); toggle.setVisibility(View.VISIBLE); Log.w("Haiagaru", "Cached search form unavailable", error); }
     }
 
-    private static void keepBesideSearchOptions(FrameLayout page, View nativeView, CheckBox toggle) {
+    private static void keepBesideSearchOptions(FrameLayout page, View nativeView, CheckBox toggle,Query query) {
+        final LinearLayout wrapper=(LinearLayout)page.getParent();
         final Runnable[] pulse = new Runnable[1];
         pulse[0] = () -> {
             if (!page.isAttachedToWindow()) return;
+            try{toggle.setEnabled(toggle.isChecked()||CachedWacchoiQuery.suffix(query.get())!=null);}
+            catch(Exception error){toggle.setEnabled(false);}
             Rect body = findTextBounds(nativeView, "本文");
             boolean bodyAnchor = body != null;
             if (body == null) body = findTextBounds(nativeView, "ヘッダー");
@@ -192,9 +199,13 @@ public final class CachedWacchoiSearch {
             if (!placed) {
                 if (!"ワッチョイを下4桁で検索".contentEquals(toggle.getText()))
                     toggle.setText("ワッチョイを下4桁で検索");
-                // Do not detach the control from the native condition chips and
-                // show it as a misleading standalone row at the top of the page.
-                toggle.setVisibility(View.GONE);
+                ViewGroup parent=(ViewGroup)toggle.getParent();
+                if(parent!=wrapper){
+                    if(parent!=null)parent.removeView(toggle);
+                    wrapper.addView(toggle,new LinearLayout.LayoutParams(-1,Math.round(48*page.getResources().getDisplayMetrics().density)));
+                }
+                toggle.setBackgroundColor(HaiagaruUi.toolTabHeaderColors(toggle.getContext())[0]);
+                toggle.setVisibility(View.VISIBLE);
             }
             page.postDelayed(pulse[0], 500L);
         };

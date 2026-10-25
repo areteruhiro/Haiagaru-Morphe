@@ -248,6 +248,9 @@ public final class Haiagaru {
     private Haiagaru() {
     }
 
+    /** Build marker set only by the isolated ads-only patch. */
+    public static boolean adsOnlyBuild() { return false; }
+
     /** Makes ChMate's distributed integrity calculations see its original certificate. */
     @SuppressWarnings("deprecation")
     public static synchronized void installSignatureSpoof() {
@@ -1465,6 +1468,7 @@ public final class Haiagaru {
     }
 
     public static boolean shouldHideAds(Context context) {
+        if(adsOnlyBuild())return true;
         if (context != null) {
             Context resolvedContext = context.getApplicationContext();
             applicationContext = resolvedContext == null ? context : resolvedContext;
@@ -3056,7 +3060,7 @@ public final class Haiagaru {
         // This adapter hook runs for every bound response, including when ad
         // hiding is disabled. Keep emoji fallback independent of that setting.
         try {
-            EmojiFontFallback.applyToRow(view);
+            if(!adsOnlyBuild())EmojiFontFallback.applyToRow(view);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to apply emoji font fallback", error);
         }
@@ -3538,6 +3542,7 @@ public final class Haiagaru {
 
         live.choice(settingsLanguage, () -> preferences.edit().putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition())).apply());
         live.toggle(hideAd, "hideAd");
+        LightweightSetup.controls(activity,layout);
         return layout;
     }
 
@@ -3956,6 +3961,13 @@ public final class Haiagaru {
                 },
                 preferences.getInt(HISSI_CHECKER_MODE_KEY, 0)
         );
+        Spinner fullSearchProvider=addSpinner(layout,activity,"ワッチョイで検索の必死チェッカー",
+                new String[]{"自動（5ch・外部板はhissi.org／エッヂはKyodemo）","hissi.orgを使用","Kyodemoを使用","両方（画面上で切り替え）"},
+                preferences.getInt(HissiScanTemplate.PROVIDER,0));
+        live.choice(fullSearchProvider,HissiScanTemplate.PROVIDER);
+        Switch templateEnabled=addSwitch(layout,activity,"Hissiのワッチョイ検索（全文・上／下4桁）にテンプレートを使う",
+                preferences.getBoolean(HissiScanTemplate.ENABLED,true));
+        live.toggle(templateEnabled,HissiScanTemplate.ENABLED);
         Switch dedicatedViewerEnabled = addSwitch(
                 layout,
                 activity,

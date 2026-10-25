@@ -134,41 +134,39 @@ public final class HissiMenuController extends ToolScreenController {
         // Read the current setting again here. ChMate may cache an expanded
         // menu template, so the mode embedded in its URL can be stale.
         int checkerMode = Haiagaru.hissiCheckerMode();
+        int fullMode=SettingsProfiles.prefs(this).getInt(HissiScanTemplate.PROVIDER,0);
         String target;
-        if (wacchoiSearchLaunch && initialWacchoiQuery != null
-                && WacchoiSearch.SLIP.matcher(initialWacchoiQuery).matches()
-                && !getIntent().getBooleanExtra("haiagaru.wacchoi.providerChosen",false)) {
-            final Intent source=new Intent(getIntent());
-            boolean five=sourceHost!=null&&isHissiHost(sourceHost);
-            if(five){
-                new HaiagaruDialog.Builder(this).setTitle("ワッチョイ全文検索")
-                    .setItems(new String[]{"Kyodemoで検索","Hissiテンプレートで検索"},(dialog,index)->{
-                        Intent next=new Intent(source).setClass(this,HissiMenuActivity.class).putExtra("haiagaru.wacchoi.providerChosen",true);
-                        if(index==0)next.putExtra("haiagaru.wacchoi.kyodemo",true);
-                        else next.putExtra("haiagaru.wacchoi.useTemplate",true);
-                        startActivity(next);finish();
-                    }).setOnCancelListener(dialog->finish()).show();
-                return;
+        if (wacchoiSearchLaunch && FullWacchoiProvider.full(initialWacchoiQuery)) {
+            // Non-Edge external boards use the 5ch checker namespace, as requested.
+            boolean edge=FullWacchoiProvider.edge(sourceHost);
+            if(!edge&&(sourceHost==null||!isHissiHost(sourceHost))){
+                sourceHost="5ch.io";getIntent().putExtra("haiagaru.wacchoi.host",sourceHost);
             }
-            getIntent().putExtra("haiagaru.wacchoi.providerChosen",true).putExtra("haiagaru.wacchoi.kyodemo",true);
+            boolean explicit=getIntent().getBooleanExtra("haiagaru.wacchoi.providerChosen",false);
+            boolean previous=getSharedPreferences(CHECKER_CHOICE_PREFS,Context.MODE_PRIVATE).getBoolean(choiceKey(),false);
+            boolean kyodemo=explicit?getIntent().getBooleanExtra("haiagaru.wacchoi.kyodemo",false)
+                    :FullWacchoiProvider.kyodemo(fullMode,edge,previous);
+            if(edge)kyodemo=true;
+            getIntent().putExtra("haiagaru.wacchoi.providerChosen",true).putExtra("haiagaru.wacchoi.kyodemo",kyodemo)
+                    .putExtra("haiagaru.wacchoi.useTemplate",!kyodemo);
         }
         if (wacchoiSearchLaunch) {
             if (initialWacchoiQuery != null && initialWacchoiQuery.matches("-[^\\s()（）<>]{4}")) {
-                startActivity(new android.content.Intent(this, HissiWacchoiSearchActivity.class)
+                startActivity(HissiScanTemplate.applyPartial(this,new android.content.Intent(this, HissiWacchoiSearchActivity.class)
                         .putExtra("haiagaru.wacchoi.query", initialWacchoiQuery)
                         .putExtra("haiagaru.wacchoi.host", sourceHost)
-                        .putExtra("haiagaru.wacchoi.board", sourceBoard));
+                        .putExtra("haiagaru.wacchoi.board", sourceBoard)));
                 finish();
                 return;
             }
             if (!getIntent().getBooleanExtra("haiagaru.wacchoi.kyodemo", false)
-                    && (getIntent().getBooleanExtra("haiagaru.wacchoi.useTemplate",false)||checkerMode == 1 || (checkerMode == 3
-                    && !getSharedPreferences(CHECKER_CHOICE_PREFS, Context.MODE_PRIVATE)
-                            .getBoolean(choiceKey(), true))) && openHissiWacchoiSearch()) {
+                    && getIntent().getBooleanExtra("haiagaru.wacchoi.useTemplate",false) && openHissiWacchoiSearch()) {
                 finish();
                 return;
             }
             currentUsesKyodemo = true;
+            if(FullWacchoiProvider.full(initialWacchoiQuery))getSharedPreferences(CHECKER_CHOICE_PREFS,Context.MODE_PRIVATE)
+                    .edit().putBoolean(choiceKey(),true).apply();
             hissiTarget = null;
             kyodemoTarget = KyodemoRouting.wacchoiSearchUrl(sourceHost, sourceBoard,
                     initialWacchoiQuery);
@@ -499,7 +497,7 @@ public final class HissiMenuController extends ToolScreenController {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 Math.round(Haiagaru.hissiViewerToolbarHeightDp() * getResources().getDisplayMetrics().density)
         ));
-        if (wacchoiSearchLaunch && sourceHost != null && isHissiHost(sourceHost)) {
+        if (wacchoiSearchLaunch && fullMode==3 && sourceHost != null && isHissiHost(sourceHost)) {
             LinearLayout providers = new LinearLayout(this);
             providers.setTag(CheckerBarOptions.PROVIDERS_TAG, Boolean.TRUE);
             providers.setPadding(16, 8, 16, 8);
@@ -512,7 +510,7 @@ public final class HissiMenuController extends ToolScreenController {
             hissi.setOnClickListener(view -> { if (openHissiWacchoiSearch()) finish(); });
             providers.addView(hissi, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             layout.addView(providers);
-        } else if (!eddiArchiveMode && checkerMode == 3) {
+        } else if (!wacchoiSearchLaunch && !eddiArchiveMode && checkerMode == 3) {
             Button alternate = toolbarButton(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
@@ -1782,8 +1780,8 @@ public final class HissiMenuController extends ToolScreenController {
     private boolean openHissiWacchoiSearch() {
         if (sourceHost == null || !isHissiHost(sourceHost) || sourceBoard == null
                 || !sourceBoard.matches("[A-Za-z0-9_-]+")) return false;
-        java.util.regex.Matcher slip = WacchoiSearch.SLIP.matcher(
-                initialWacchoiQuery == null ? "" : initialWacchoiQuery);
+        java.util.regex.Matcher slip = WacchoiSearch.SLIP.matcher(WacchoiSearch.normalizeSlipText(
+                initialWacchoiQuery == null ? "" : initialWacchoiQuery));
         if (!slip.find()) return false;
         startActivity(HissiScanTemplate.apply(this,new Intent(this, HissiWacchoiSearchActivity.class)
                 .putExtra("haiagaru.wacchoi.hissi", true)
@@ -1798,6 +1796,7 @@ public final class HissiMenuController extends ToolScreenController {
     }
 
     private String choiceKey() {
+        if(getIntent().getBooleanExtra("haiagaru.wacchoi.search",false))return FullWacchoiProvider.choiceKey(sourceHost,sourceBoard);
         return (sourceHost == null ? "" : sourceHost.toLowerCase(java.util.Locale.ROOT))
                 + "/" + (sourceBoard == null ? "" : sourceBoard);
     }
