@@ -79,6 +79,7 @@ public final class SettingsProfiles {
         defaultValue("imageVpnDomains",ImageVpnRequestPolicy.DEFAULT_DOMAINS);
     }
     private static final String[] EXTRA_BOOLEAN={
+        "hideNgWordIdReplies",
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled","videoAutoplay",
         "siteCardsEnabled","siteCardImages",XPostPreviewPosition.ENABLED,"patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
         "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",

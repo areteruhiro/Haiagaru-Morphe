@@ -4380,6 +4380,15 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         HiddenIdNg.addSettingsButton(layout, activity);
+        Switch hideNgWordIdReplies = addSwitch(layout, activity,
+                text("NGWord-IDへの返信も非表示", "Hide replies to NGWord-ID responses"),
+                preferences.getBoolean("hideNgWordIdReplies", false));
+        TextView posterIdChainDescription = new TextView(activity);
+        posterIdChainDescription.setText(text(
+                "同じNGワードの「連鎖」「非表示」「投稿者のIDもNG」がすべてONのとき、その投稿者の別レスへの返信と、その先の返信も非表示にします。初期OFF。変更後はスレを閉じて開き直してください。",
+                "When one NG word rule enables chain, hidden and also block poster ID, also hides replies to that author's other responses and subsequent replies. Off by default. Close and reopen the thread after changing this setting."));
+        posterIdChainDescription.setTextSize(13);
+        layout.addView(posterIdChainDescription, rowParams(activity));
         Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
                 "ワッチョイ長押しメニューをNG登録優先の順番にする",
                 preferences.getBoolean("wacchoiNgFirstMenu", false));
@@ -4473,6 +4482,7 @@ public final class Haiagaru {
         );
 
         live.toggle(wacchoiNgFirstMenu,"wacchoiNgFirstMenu");live.toggle(hideShowHiddenNgMenu,"hideShowHiddenNgMenu");
+        live.toggle(hideNgWordIdReplies,"hideNgWordIdReplies");
         live.number(ngRegistrationLimit,NG_REGISTRATION_LIMIT_KEY,0,100000);
         LiveSettings nativeLive=new LiveSettings(chMatePreferences,()->layout.invalidate());
         nativeLive.toggle(abbrevSingleId,CHMATE_ABBREV_SINGLE_ID_KEY);
@@ -5441,6 +5451,11 @@ public final class Haiagaru {
     private static SharedPreferences preferencesOrNull() {
         Context context = applicationContext;
         return context == null ? null : preferences(context);
+    }
+
+    public static boolean hideNgWordIdReplies() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean("hideNgWordIdReplies", false);
     }
 
     public static boolean hideShowHiddenNgMenu() {

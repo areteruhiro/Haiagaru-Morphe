@@ -810,6 +810,20 @@ APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 
 2026-10-25 追加×の取り消し: ユーザー指示により今回だけのHissiMenuController/ModelUiの未コミット差分を取り消し、XIG05 serial730eae72のresumefix242をbuild/checker-handoff-xig05242.apk（SHA256 55CDB01C62D2A09354C95CC94A04831DBD455F0FE37B97C1C7CE5D10F4B64A77）へ署名一致install-r更新Success。元のMPP build/checker-handoff-xig05.mpp/鍵/aliasは同台帳の直前記録どおり。PID12699起動。今回の新しい×は公開しない。既存の閉じる操作は保持。
 
+## 2026-10-25 NGWord-ID返信非表示オプション候補（APK生成のみ）
+
+生成日時2026-10-25 23:21〜23:24 JST。端末シリアルなし、実機へ未導入・未起動。端末の既存アプリやデータは変更していません。すべて元APKからの適用/再構築/署名検証成功、公開なし。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/poster-hidden-option.mpp` SHA256 `0aee90ccdff9a65561493aa42f71027ddc9554c5550f2ec8e98c76ed2da29f6a`。全APKの鍵は`C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+| ChMate / 表示名 / package | APK絶対パス | APK SHA256 |
+| --- | --- | --- |
+| 0.8.10.191 dev / Haiagaru 検証 191 / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/poster-hidden-option191.apk | 9636055f219b5a171e1e9438fb13ae4c2bea680d3da1946dddec7437f6f41eca |
+| 0.8.10.226 dev / Haiagaru 検証 226 / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/poster-hidden-option226.apk | 5ed75f45dacdf604d11d4a6366c75e61999c41fa82eda8611d8e6de6f6f26365 |
+| 0.8.10.242 dev / Haiagaru 検証 242 / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 | C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/poster-hidden-option242.apk | f8dd8009d2f9fd0ad51915a26a570ba1e79593e8cec5af1c2e918b5c3ea6e0e2 |
+
+`build/poster-hidden-option{191,226,242}-patch.log`、`build/poster-hidden-final-apks.log`。3完成APKに追加設定/補助クラスとnative透明NGフックを確認、各2箇所の分岐がフックへ到達。端末のNG登録・表示確認は未実施。
+
 ## 2026-10-25 XIG05 検索余白・戻る・動画操作候補
 serial730eae72 / XIG05 / ChMate0.8.10.242 dev / 表示名Haiagaru 検証 242 / package jp.co.airfront.android.a2chMate.haiagaru.resumefix242。
 最終APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/archive-top-back-final242.apk SHA256 F8FCAACA5CE89AB506B41D52623ABA1724B76012871EA231E2C7A8AB6ECCDB34。MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/archive-top-back-final.mpp SHA256 D76C4519B9702076486B8297D6DF2E9E5F55F04C78F75C2BFA75C437049FFAA3。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。署名一致install-r Success、既存データ保持。導入16:08JST、ログbuild/archive-top-back-final242-install.log。余白除去と1行見出しスクリーンショットbuild/xig05-search-final.png、戻る後の本文表示build/xig05-back-test.xml、PID28641新規crash bufferなし。広告9/初期値7/動画12チェックは同一該当コードの前候補66B0F5D3で実施、今回の変更は検索insets/Activity BACK境界。Samsung Android16報告の広告現象そのものは未再現。
