@@ -917,3 +917,16 @@ Mi Note10/Android11/serial d5497008。既存package/署名を照合後、両pack
 `build/dalvik-three-bundle-build.log`の:patches:buildは成功26s、APKパッチ/署名成功。root buildは軽量版lintDebugの既存NewApiで失敗、追加の通常版lintReleaseも既存箇所を含む168 errors/365 warningsで失敗（build/dalvik-three-install-build.log、dalvik-three-release-build.log）。Lint設定の恒久無効化はしていない。ホスト30項目は成功。実機テンプレートメニューの自動確認はFrida RPC失敗、続く再attachがProcessNotRespondingで失敗したため未完了として扱う。実機画面は書き込み下書き表示中のため追加UI操作を停止。公開や5chへの自動投稿/再送はしていない。
 
 導入ログ: `build/dalvik-three242-install.log`、起動ログ: `build/dalvik-three242-launch.log`、端末画面: `build/dalvik-three242-current.png`、クラッシュ確認: `build/dalvik-three242-crash.log`。実サーバーによるUA受理は未確認。
+
+## 2026-10-27 native識別名保持UAの更新記録補完
+
+前セッションでXIG05/serial730eae72の既存resumefix242へ同一署名install-r Success、データ保持。表示名Haiagaru 検証242、ChMate0.8.10.242 dev。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-ua-identity242.apk` SHA256 `56D3C7E775F5F60AC54423CA7E1BA4B109069DDE090BF6B84D137E54E2BCA459`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-ua-identity-final.mpp` SHA256 `5A4D5964FE9EE49D84E6C549AEA64FCD2C44CC761B1C077045837B048EAEC17F`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。起動成功、crash空。利用者から投稿成功の報告。正確な導入時刻は以前のログに依存し、この追記時点では端末切断のため再取得していない。
+
+
+## 2026-10-27 02:33:36 JST 次プレ最終候補の3版データ保持更新
+Mi Note10 / Android11 / serial d5497008。以下を既存署名一致後install-r Success、データ保持更新。191/226/242 HomeActivity起動成功、PID12291/10149/11146、各PIDの新規crash buffer空。242は既存閲覧履歴からPart3本文/サムネイル/画像表示をスクリーンショットで確認。191/226本文・画像の重複確認は共通処理のため利用者指示により省略、191巡回長時間停滞は未再現。
+MPP: C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-cards-final.mpp / SHA256 70FC681DDF1D801C446CE614686582362D54B676EFD5ECED18795E76F8C58552
+鍵: C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed
+- Haiagaru 検証 191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-cards191.apk / SHA256 36B85B39577F5F59432C3F1FF3B9291CF4F39921A161501A0F9592F03F8A80E0
+- Haiagaru 検証 226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-cards226.apk / SHA256 5E462EE46815462B1EDCBFE626AFA2FB975C78DF9B085B6F6E360A357E73C796
+- Haiagaru 検証 242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-cards242.apk / SHA256 FBE30096027AAB2BD49E646A52903D2B85BEAD635B3AF117E31FA76AE6E1615F

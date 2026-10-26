@@ -461,3 +461,7 @@ scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixture�
 
 2026-10-27 次プレ最終確認: X/URLカードの期限切れ再取得時に取得済みDataを保持し、X展開状態を表示行とnative復元測定行で共有。Android上でdev.2の高さ縮小6件を再現、修正版13項目と1000回bind/layoutの性能12項目・一時失敗再試行に成功（build/preview-layout-final-runtime.log）。ホスト回帰187項目、タブgesture36項目成功。Expert最上位は詳細項目の表示切替であることを明記、UAテンプレート選択を直下へ移動。実投稿は自動送信せず、利用者から投稿成功の報告あり。
 191巡回停滞は226と比較調査中。両版のnative共通clientは接続/読込/書込の設定が各15秒で同じ。レスポンスclose命令も両版に存在。PatrolImagesの同期待機は画像自動保存ON時のみで設定初期OFF、報告時設定と停滞中スタックは未取得。原因断定や未検証のprotocol変更は行わない。今回の位置ずれ修正で巡回停滞も治ったとは扱わない。
+
+2026-10-27 次プレ公開前検証完了: origin/devのdev.2を通常merge（e1b99b0）し、動画長押し倍速とGIF URI正規化を両方保持。統合後の通常:patches:build（LintVital含む）成功3m17s、build/prerelease-merged-final-build.log。固定MPP SHA25670FC681DDF1D801C446CE614686582362D54B676EFD5ECED18795E76F8C58552。191/226/242適用・署名成功、3版のUA request constructor元命令/レジスタ/分岐とnativeタブfactory/Fragment基底化・新タブ生成・下書き保存wrapperを検査。242 text binding142箇所/dispatch7箇所/write再入guardも成功。
+Mi Note10 d5497008へ3版の既存署名照合install-r成功・データ保持、3版HomeActivity起動成功/対象PID新規crash空。242で既存履歴からPart3本文とサムネイル/画像全体表示を確認（build/prerelease242-thread-settled.png、prerelease242-image.png）。191/226の共通UI重複操作は利用者指示で省略。実View Expert ON/OFF・機能値保持・個別プレビュー位置保持ON/OFFと実処理参照・UA直下のテンプレート配置の9項目成功、設定はfinallyで元値へ復元（build/prerelease-expert-final.log）。初回fixtureはActivity基底クラスのheap検索で対象なしだったため、実HomeActivityを検索して修正・完走。製品不具合とは扱わない。
+指定URLをADB intentで起動するコマンドは自動承認審査blocked by policyで実行されず、この方法は再試行していない。端末に既存の閲覧履歴から通常UIで本文/画像を確認した。191巡回停滞/報告Android16環境の長期再現、全サイト認証・実アカウント復元は未確認。追加全体lintReleaseの既存債務と必須通常ビルドの成功を区別し、チェックは無効化していない。公開は既存Semantic Release CIのみで進める。
