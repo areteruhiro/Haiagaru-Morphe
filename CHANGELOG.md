@@ -1,3 +1,50 @@
+# Haiagaru 1.13.0-dev.4
+
+板別Cookieを有効にした際、「Cookie分離の対象板を特定できません」と表示され、書き込めなくなる問題を修正しました。
+
+## 変更内容
+
+- 板を特定できない通信は、従来のCookieをそのまま使って処理を続けるようにしました。
+- 191 devを含む投稿データの読み取りを修正し、実際に送信する板名からCookieの保存先を判定するようにしました。
+- 本文に「bbs」「board」と書いた際の誤判定と、送信データの一部分だけを使う形式の判定を修正しました。
+- 板を特定できる場合は板別の管理を続けます。書き込みメニューのCookie削除は、選択した板だけが対象です。
+
+エッヂで使っているCookieを板別管理へ引き継ぐ場合は、設定の「Cookieに合う板を探して割り当て」から対象の板を選べます。今回の修正で、保存済みCookieを自動削除することはありません。
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip`／`haiagaru-image-vpn-v2.zip` を、それぞれ展開せずに指定してください。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO)：送付先 `areteruhiro@gmail.com`
+- [PayPay](https://qr.paypay.ne.jp/p2p01_lf6ELD8pvzLJGHxr)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* retain legacy cookies when the posting board cannot be identified ([2e7952f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2e7952fa6c6de089b17faaee8959247a5c92b5ea))
+
 # Haiagaru 1.13.0-dev.3
 
 X・URLカードの位置ずれ修正と、追加画面・認証まわりの改善をまとめたプレリリースです。
