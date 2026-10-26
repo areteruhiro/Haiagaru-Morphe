@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 final class NativeToolTabSwipeLayout extends LinearLayout {
     private final Activity host;
     private final Object fragment;
+    private final NativeToolTabChMateGestures chMateGestures;
     private final android.os.Handler mainHandler=new android.os.Handler(android.os.Looper.getMainLooper());
     private final float minimum,slop;
     private float startX,startY;
@@ -21,6 +22,7 @@ final class NativeToolTabSwipeLayout extends LinearLayout {
         super(host);this.host=host;this.fragment=fragment;
         minimum=96*getResources().getDisplayMetrics().density;
         slop=ViewConfiguration.get(host).getScaledTouchSlop();
+        chMateGestures=new NativeToolTabChMateGestures(host,fragment,this);
     }
     static boolean ownsHistoryGesture(View view){
         for(View current=view;current!=null;){
@@ -49,6 +51,22 @@ final class NativeToolTabSwipeLayout extends LinearLayout {
         return true;
     }
     @Override public boolean dispatchTouchEvent(MotionEvent event){
+        if(chMateGestures.available()){
+            boolean wasConsumed=chMateGestures.intercepted();
+            boolean consumedByChMate=chMateGestures.dispatch(event);
+            if(consumedByChMate){
+                if(!wasConsumed){
+                    MotionEvent cancel=MotionEvent.obtain(event);
+                    cancel.setAction(MotionEvent.ACTION_CANCEL);
+                    try{super.dispatchTouchEvent(cancel);}finally{cancel.recycle();}
+                }
+                return true;
+            }
+            // A recognized ChMate gesture replaces the old fixed-direction swipe.
+            // Unknown or disabled assignments leave scrolling and text selection intact.
+            return super.dispatchTouchEvent(event);
+        }
+        // Compatibility fallback only if the native ChMate recognizer is unavailable.
         int action=event.getActionMasked();
         if(action==MotionEvent.ACTION_DOWN){
             threadSide=NativeToolTabs.isSelectedThreadTool(host,fragment);
