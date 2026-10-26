@@ -137,6 +137,26 @@ public final class NativeToolTabs {
     }
     /** Explicit manual action does not change or depend on automatic routing preferences. */
     static boolean openManual(Activity activity,String tool){return createTab(activity,tool,null);}
+    /**
+     * ChMate's "new tab" assignment creates another tab for this exact tool in its
+     * existing pane. Copy the serialized page arguments, never reroute it using the
+     * current HOME/thread default; the active tool can be in either pane.
+     */
+    static boolean duplicateToolTab(Activity activity,Object fragment){
+        if(!supported()||!tablet(activity)||!(fragment instanceof NativeToolFragment))return false;
+        try {
+            Bundle original=arguments(fragment);
+            if(!marker(original))return false;
+            String uri=original.getString("_data");
+            if(uri==null||!uri.startsWith(PREFIX))return false;
+            Bundle duplicate=new Bundle(original);
+            duplicate.putString("_data",uri+"&newTab="+java.util.UUID.randomUUID());
+            return openNativePage(activity,duplicate,uri.contains("pane=home"));
+        }catch(RuntimeException error){
+            android.util.Log.w("Haiagaru","Could not duplicate tool tab",error);
+            return false;
+        }
+    }
     private static boolean createTab(Activity activity,String tool,Intent launch){
         if(!supported()||!tablet(activity)||!java.util.Arrays.asList("settings","eddi","search","checker","hissi","wacchoi").contains(tool))return false;
         boolean home=enabled(activity);
@@ -146,6 +166,9 @@ public final class NativeToolTabs {
         if(launch!=null&&!"settings".equals(tool))args.putString("_data",args.getString("_data")+"&request="+java.util.UUID.randomUUID());
         args.putString(Intent.EXTRA_TITLE,"settings".equals(tool)?"Haiagaru設定":"eddi".equals(tool)?"エッヂ過去ログ検索":"search".equals(tool)?"投稿を探す":"checker".equals(tool)?"投稿検索・結果":"hissi".equals(tool)?"必死チェッカーもどき":"ワッチョイ全文検索");
         if(launch!=null)try{args.putString(Intent.EXTRA_TEXT,new org.json.JSONObject().put("launch",launch.toUri(Intent.URI_INTENT_SCHEME)).toString());}catch(org.json.JSONException error){throw new IllegalArgumentException(error);}
+        return openNativePage(activity,args,home);
+    }
+    private static boolean openNativePage(Activity activity,Bundle args,boolean home){
         try{
             String version=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
             String pageName,paneName,positionName,methodName;
