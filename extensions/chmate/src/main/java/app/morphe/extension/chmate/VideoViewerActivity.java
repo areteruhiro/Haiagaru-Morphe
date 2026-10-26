@@ -35,6 +35,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private float gifAspect;
     private Runnable unregisterBack;
     private Button speedButton;
+    private TextView holdSpeedIndicator;
     private Button muteButton;
     private boolean muted;
     private float playbackSpeed = 1f;
@@ -97,6 +98,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         speedButton.setOnClickListener(v -> cyclePlaybackSpeed());
         speedButton.setOnLongClickListener(v -> {
             holdSpeedActive = false;
+            showHoldSpeedIndicator(false);
             applyPlaybackSpeed(1f);
             return true;
         });
@@ -118,6 +120,27 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         frame.addView(video, new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER));
         // Overlay controls so hiding them does not resize or shift the video.
         frame.addView(toolbar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
+        // Keep the temporary hold-speed badge visible even when player controls are hidden.
+        holdSpeedIndicator = new TextView(this);
+        holdSpeedIndicator.setText("2x");
+        holdSpeedIndicator.setContentDescription("長押しで2倍速再生中");
+        holdSpeedIndicator.setTextColor(Color.WHITE);
+        holdSpeedIndicator.setTextSize(17);
+        holdSpeedIndicator.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        holdSpeedIndicator.setGravity(Gravity.CENTER);
+        float density = getResources().getDisplayMetrics().density;
+        holdSpeedIndicator.setPadding(Math.round(12 * density), Math.round(6 * density),
+                Math.round(12 * density), Math.round(6 * density));
+        android.graphics.drawable.GradientDrawable indicatorBackground =
+                new android.graphics.drawable.GradientDrawable();
+        indicatorBackground.setColor(0xB8000000);
+        indicatorBackground.setCornerRadius(16 * density);
+        holdSpeedIndicator.setBackground(indicatorBackground);
+        holdSpeedIndicator.setVisibility(View.GONE);
+        FrameLayout.LayoutParams indicatorLayout =
+                new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        indicatorLayout.topMargin = Math.round(12 * density);
+        frame.addView(holdSpeedIndicator, indicatorLayout);
         root.addView(frame, new LinearLayout.LayoutParams(-1, 0, 1));
         status = new TextView(this); status.setTextColor(Color.WHITE); status.setPadding(16, 8, 16, 12);
         root.addView(HaiagaruUi.controls(this, status));
@@ -172,6 +195,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             setStatus("再生が終了しました。再生ボタンで最初から再生できます"); controls.show(0);
         });
         video.setOnErrorListener((player, what, extra) -> {
+            endHoldSpeed();
             prepared = false; mediaPlayer = null; playWhenReady = false;
             if (startGifFallback()) return true;
             setStatus("動画を再生できません（エラー " + what + "/" + extra
@@ -265,6 +289,13 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         speedBeforeHold = playbackSpeed;
         holdSpeedActive = true;
         applyPlaybackSpeed(2f);
+        if (Math.abs(playbackSpeed - 2f) < 0.001f) showHoldSpeedIndicator(true);
+        else holdSpeedActive = false; // No badge if the player rejected the speed change.
+    }
+
+    private void showHoldSpeedIndicator(boolean visible) {
+        if (holdSpeedIndicator != null)
+            holdSpeedIndicator.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     boolean isHoldSpeedActive() { return holdSpeedActive; }
@@ -279,10 +310,12 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     void endHoldSpeed() {
         if (!holdSpeedActive) return;
         holdSpeedActive = false;
+        showHoldSpeedIndicator(false);
         applyPlaybackSpeed(speedBeforeHold);
     }
 
     private void load() {
+        endHoldSpeed();
         closeGifFallback();
         gifFallbackAttempted=false;
         video.setVisibility(View.VISIBLE);
@@ -310,6 +343,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             gifFallbackView.setOnClickListener(v->{if(gifFallback!=null)gifFallback.setPlayWhenReady(!gifFallback.getPlayWhenReady());});
             ((FrameLayout)video.getParent()).addView(gifFallbackView,new FrameLayout.LayoutParams(-1,-1));
             toolbar.bringToFront();
+            holdSpeedIndicator.bringToFront();
             gifFallback.setRepeatMode(androidx.media3.common.Player.REPEAT_MODE_ONE);
             gifFallback.addListener(new androidx.media3.common.Player.Listener(){
                 @Override public void onVideoSizeChanged(androidx.media3.common.VideoSize size){
