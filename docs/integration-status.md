@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-10-26 プレリリース1.13.0-dev.1公開完了: ユーザーの「再検査を省略して公開する」により本文/画像通し再検査の省略を明記、devの5f0d55eを既存Semantic Release CI40247335981で公開。Release https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.13.0-dev.1 、draft=false/prerelease=true、CIとAttest成功、生成4a4e01eをdevへFF取得。配布6資材のGitHub SHA256 digestが全一致、MPP d9ce9dfbb8326c80cc82762718c4112d2175157c0fb891c94fb01ba3de122e18。公開/ローカルdevの更新JSON2本も1.13.0-dev.1と同一download URLで一致。最新正式版は1.12.2を保持。net→io/元確認フォーム再表示/共有記憶順/NGWord-ID任意オプション、謝辞と寄付を本文へ収録。実サイト認証・投稿成功は未確認でその旨明記、公開MPPでの再適用/導入とMorphe端末側カード更新確認は未実施。
+
 2026-10-26 公開前検査省略承認: ユーザーが「再検査を省略して公開する」と明示。今回候補の実スレ本文・画像表示の通し再検査は191/226/242で省略し、既存の基本表示検査と今回の起動/URL変換/オフライン認証画面検査を利用する。241/243端末操作・実krsw/rid認証/投稿成功は引き続き未確認、Release本文へ記載。通常のSemantic Release CIでdevプレリリースを開始する。
 
 2026-10-26 08:40頃 プレリリース準備: ユーザー公開許可、origin/devのdev.2を通常merge ce1670d。通常Lint最終build4m33s成功。軽量191/226/242の完成APK/署名照合更新/起動と各10項目、軽量runtime非混入、226/242新規crash空を確認。公開説明をnet→io/元認証フォーム再表示/NGWord-ID任意設定/記憶共有順へ更新、謝辞/寄付保持、PayPay公開URL HTTP200。実スレ本文・画像の通し再検査は自動審査blocked by policyで拒否されたため、AGENTSの重複省略規定に基づき省略指示を確認中。実認証/投稿も未確認、未push・未公開。

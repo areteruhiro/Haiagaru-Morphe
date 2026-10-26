@@ -37,3 +37,11 @@ krsw等のサーバーが返した計算認証/CAPTCHAのHTMLを、一時メモ�
 公開前の実スレ本文・画像通し再検査の起動コマンドは自動承認審査blocked by policyで拒否、詳細理由なし。別の経路で同操作を行わず、AGENTS.mdの共通重複検証省略規定に従い、その再検査を省略して公開するかユーザーへ確認。現時点ではdevへpushせず未公開。
 
 2026-10-26 ユーザーが「再検査を省略して公開する」と明示。191/226/242の今回候補での実スレ本文/画像表示の通し再検査は共通処理の重複検証として省略、対象/理由/残課題をRelease説明へ反映した。実krsw/rid認証・投稿成功、241/243端末操作は未確認のまま。通常Semantic Release CIでdevから公開する。
+
+## 公開結果
+
+2026-10-26、既存Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/40247335981 がRelease/Attestを含めsuccess。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.13.0-dev.1 、prerelease=true/draft=false。手動タグ/Release/資材uploadなし。生成コミット4a4e01eをdevへFF取得。
+
+配布6資材をbuild/release-1.13.0-dev.1-verifyへ取得し、GitHubのSHA256 digestを全件照合成功。Android MPP SHA256 d9ce9dfbb8326c80cc82762718c4112d2175157c0fb891c94fb01ba3de122e18、ZIP構造確認。公開の更新JSON2本とローカルdev生成JSONはversion/download URL含め一致。Release本文のnet→io・未確認の実認証/投稿・検査省略・謝辞・寄付先を確認。最新正式版は1.12.2のまま。
+
+実機試験は直前の同一変更ソース候補。公開CI版MPPのAPK再適用/導入、Morphe上の更新カード表示は未実施。krsw/ridの実認証・投稿目標は完了としていない。
