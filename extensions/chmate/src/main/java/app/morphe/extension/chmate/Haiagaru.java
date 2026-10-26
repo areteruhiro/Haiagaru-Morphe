@@ -3914,7 +3914,7 @@ public final class Haiagaru {
         Switch boardCookies=addSwitch(layout,activity,text("Cookieを板ごとに管理する","Manage cookies separately for each board"),preferences.getBoolean(BoardCookies.KEY,false));
         live.toggle(boardCookies,BoardCookies.KEY);
         TextView cookieHelp=new TextView(activity);
-        cookieHelp.setText("オンにしてアクセスした板からCookieを個別に保存します。既存の共通Cookieを使う板は「Cookieに合う板を探して割り当て」から選択してください。書き込みメニューのCookie削除はその板のみが対象です。オフにすると本体の共通Cookieへ戻ります。保存済みの板別Cookieや他の板の認証は自動で削除しません。");
+        cookieHelp.setText("オンにしてアクセスした板からCookieを個別に保存します。既存の共通Cookieを使う板は「Cookieに合う板を探して割り当て」から選択してください。板を特定できない通信は、従来の共通Cookieをそのまま使います。書き込みメニューのCookie削除はその板のみが対象です。オフにすると本体の共通Cookieへ戻ります。保存済みの板別Cookieや他の板の認証は自動で削除しません。");
         layout.addView(cookieHelp);BoardCookies.addSettings(layout,activity);
         Switch removeMonaKey = addSwitch(
                 layout,

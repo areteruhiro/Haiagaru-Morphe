@@ -35,33 +35,8 @@ public final class BoardCookies {
         Scope before=CURRENT.get();
         try{
             if(enabled()){
-                Object request=requestFromChain(chain);String address=null,boardName=null;
-                String urlField=request.getClass().getName().equals("o.zzdA")?"h":"f";
-                Field url=request.getClass().getDeclaredField(urlField);url.setAccessible(true);address=String.valueOf(url.get(request));
-                for(Field field:request.getClass().getDeclaredFields()){
-                    if(Modifier.isStatic(field.getModifiers()))continue;field.setAccessible(true);Object body=field.get(request);if(body==null)continue;
-                    try{body.getClass().getMethod("contentLength");}catch(NoSuchMethodException notBody){continue;}
-                    // Native FormBody stores encoded names and values in two same-sized Lists.
-                    ArrayList<List<?>> lists=new ArrayList<>();
-                    for(Field part:body.getClass().getDeclaredFields())if(!Modifier.isStatic(part.getModifiers())&&List.class.isAssignableFrom(part.getType())){
-                        part.setAccessible(true);Object value=part.get(body);if(value instanceof List)lists.add((List<?>)value);
-                    }
-                    if(lists.size()==2&&lists.get(0).size()==lists.get(1).size()){
-                        for(int reverse=0;reverse<2;reverse++){
-                            List<?> names=lists.get(reverse),values=lists.get(1-reverse);
-                            for(int i=0;i<names.size();i++)if("bbs".equals(names.get(i))||"board".equals(names.get(i))){
-                                String value=java.net.URLDecoder.decode(String.valueOf(values.get(i)),"UTF-8");
-                                if(boardName!=null&&!boardName.equals(value))throw new IOException("Ambiguous board cookie target");boardName=value;
-                            }
-                        }
-                    }
-                    for(Field part:body.getClass().getDeclaredFields())if(!Modifier.isStatic(part.getModifiers())&&part.getType()==byte[].class){
-                        part.setAccessible(true);byte[] value=(byte[])part.get(body);
-                        if(value!=null&&value.length<=131072){String parsed=BoardCookiePolicy.formBoard(new String(value,java.nio.charset.StandardCharsets.ISO_8859_1));if(parsed!=null)boardName=parsed;}
-                    }
-                }
-                String board=BoardCookiePolicy.board(address,boardName);
-                if(board==null&&new java.net.URI(address).getPath().equals("/test/bbs.cgi"))throw new IOException("Cookie分離の対象板を特定できません");
+                String board=BoardCookieRequest.board(requestFromChain(chain));
+                // Unknown targets use the unchanged native jar, as requested.
                 if(board!=null)CURRENT.set(new Scope(board));else CURRENT.remove();
             }else CURRENT.remove();
             return nativeIntercept(bridge,chain);
