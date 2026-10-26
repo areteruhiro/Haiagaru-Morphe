@@ -35,3 +35,5 @@ krsw等のサーバーが返した計算認証/CAPTCHAのHTMLを、一時メモ�
 2026-10-26 公開準備追記: ユーザーが「プレリリースしていいよ」と指示。origin/devの既公開1.12.3-dev.2と226/242 Droid＋対応3行を通常merge（ce1670d）、通常Lint付き最終Android build成功4m33s（build/prerelease-net-io-build.log）。軽量226/242の完成APK検査・署名一致install-r・起動・各10fixture・新規crash空まで確認済み、191分と合わせ30項目。READMEの謝辞/寄付先を再照合し、PayPay公開URLはHTTP200を確認（送金機能そのものの検証ではない）。.releasercの既存headerPartialを今回の実装と未確認範囲へ更新。
 
 公開前の実スレ本文・画像通し再検査の起動コマンドは自動承認審査blocked by policyで拒否、詳細理由なし。別の経路で同操作を行わず、AGENTS.mdの共通重複検証省略規定に従い、その再検査を省略して公開するかユーザーへ確認。現時点ではdevへpushせず未公開。
+
+2026-10-26 ユーザーが「再検査を省略して公開する」と明示。191/226/242の今回候補での実スレ本文/画像表示の通し再検査は共通処理の重複検証として省略、対象/理由/残課題をRelease説明へ反映した。実krsw/rid認証・投稿成功、241/243端末操作は未確認のまま。通常Semantic Release CIでdevから公開する。
