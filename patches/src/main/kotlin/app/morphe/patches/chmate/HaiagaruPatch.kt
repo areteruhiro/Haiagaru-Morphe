@@ -1602,6 +1602,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchHomeRefreshKeywords(packageMetadata.versionName)
         patchClipboardHistory(packageMetadata.versionName)
         patchNgEditGesture(packageMetadata.versionName)
+        patchViewingUserAgent(packageMetadata.versionName)
         patchToolbarIcons(packageMetadata.versionName)
         patchHiddenNgMenu(packageMetadata.versionName)
         patchNativeUploadHistory(packageMetadata.versionName)
@@ -1974,6 +1975,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchPatrolImages(packageMetadata.versionName)
         patchPatrolInterval(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)
+        patchBoardCookies(packageMetadata.versionName)
         patchBeAutoLogout(packageMetadata.versionName)
         patchExternalBoardEditor(packageMetadata.versionName)
         patchPosterHighlight(packageMetadata.versionName)
@@ -5176,7 +5178,7 @@ val haiagaruPatch = resourcePatch(
                     "app.morphe.extension.chmate.ExternalBoardAuthActivity")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme",
-                    "@android:style/Theme.Material.Light.NoActionBar")
+                    "@android:style/Theme.Translucent.NoTitleBar")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
             })
             application.appendChild(document.createElement("activity").apply {

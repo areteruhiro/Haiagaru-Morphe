@@ -949,6 +949,7 @@ public final class Haiagaru {
         ImageVpnController.initialize(appContext);
         PatrolImages.initialize(appContext);
         ExternalBoardAuth.initialize(appContext);
+        BoardCookies.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         EdgeReporterOptions.initialize(appContext);
@@ -958,6 +959,7 @@ public final class Haiagaru {
         runtimePackageName = appContext.getPackageName();
         migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
+        ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
     }
 
     /** Installs the optional crash logger before ChMate's startup provider does any work. */
@@ -3541,6 +3543,14 @@ public final class Haiagaru {
                 text("タブレットの追加画面をホーム側のタブで開く", "Open extra tablet screens in HOME tabs"),
                 preferences.getBoolean(NativeToolTabs.KEY, false));
         live.toggle(nativeTabs, NativeToolTabs.KEY);
+        Switch nativeGestures = addSwitch(layout, activity,
+                text("追加画面のタブでChMateのジェスチャーを使う", "Use ChMate gestures in tool tabs"),
+                preferences.getBoolean(NativeToolTabChMateGestures.KEY, false));
+        live.toggle(nativeGestures, NativeToolTabChMateGestures.KEY);
+        TextView nativeGestureHelp = new TextView(activity);
+        nativeGestureHelp.setText(text("ChMateの「設定 → ジェスチャー」の「タブを閉じる」「左のタブ」「右のタブ」「戻る」「進む」「新しいタブ」を使います。戻る・進むはビューア内の閲覧履歴を移動し、戻る履歴がなければタブを閉じます。設定のカテゴリ内では設定一覧へ戻ります。新しいタブは同じペインに本体の空タブを追加します。オンの間は固定スワイプを使いません。初期オフ、再起動不要です。",
+                "Uses ChMate's Close/Left/Right tab, Back, Forward and New tab assignments. Back/Forward navigate browser history; Back at the root closes the tool (or returns to the settings category list). New tab creates a native blank tab in the same pane. Replaces fixed swipes. Off by default; no restart required."));
+        layout.addView(nativeGestureHelp);
         EditText gestureSensitivity = addTextField(layout, activity,
                 text("Haiagaru設定内のジェスチャー感度（50〜200%）", "Settings gesture sensitivity (50–200%)"),
                 Integer.toString(preferences.getInt(HaiagaruSettingsGestures.SENSITIVITY, 100)));
@@ -3888,6 +3898,24 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch viewingUa = addSwitch(layout,activity,text("User-Agentを変更する","Change User-Agent"),
+                preferences.getBoolean(BrowserUaTemplates.ENABLED,false));
+        live.toggle(viewingUa,BrowserUaTemplates.ENABLED);
+        Button uaTemplate = new Button(activity);uaTemplate.setText(text("UAテンプレートを選ぶ","Choose UA template"));layout.addView(uaTemplate);
+        uaTemplate.setOnClickListener(v->new HaiagaruDialog.Builder(activity).setTitle("UAテンプレート")
+                .setItems(BrowserUaTemplates.labels(),(dialog,index)->{
+                    preferences.edit().putString("userAgent",BrowserUaTemplates.value(index)).apply();
+                    Toast.makeText(activity,"UAテンプレートを保存しました。開いている認証画面は一度閉じてください。",Toast.LENGTH_LONG).show();
+                }).setNegativeButton("閉じる",null).show());
+        TextView uaHelp = new TextView(activity);
+        uaHelp.setText(text("閲覧・投稿・認証に選択したAndroid情報を適用します。ChMateが付ける識別名と版番号は保持します。Cookie・SessionIDを保持し、テンプレートの自動切替は行いません。開いている認証画面のUAは変更しないため、認証中の切替は避けてください。UAの変更は、投稿制限や認証の解除を保証するものではありません。",
+                "Applies the selected Android information to reading, posting and authentication, retaining ChMate's client name and version where provided. Keeps cookies and SessionID; no automatic rotation. Existing authentication windows keep their original UA, so avoid switching during authentication. UA does not guarantee removal of restrictions or authentication."));
+        layout.addView(uaHelp);
+        Switch boardCookies=addSwitch(layout,activity,text("Cookieを板ごとに管理する","Manage cookies separately for each board"),preferences.getBoolean(BoardCookies.KEY,false));
+        live.toggle(boardCookies,BoardCookies.KEY);
+        TextView cookieHelp=new TextView(activity);
+        cookieHelp.setText("オンにしてアクセスした板からCookieを個別に保存します。既存の共通Cookieを使う板は「Cookieに合う板を探して割り当て」から選択してください。書き込みメニューのCookie削除はその板のみが対象です。オフにすると本体の共通Cookieへ戻ります。保存済みの板別Cookieや他の板の認証は自動で削除しません。");
+        layout.addView(cookieHelp);BoardCookies.addSettings(layout,activity);
         Switch removeMonaKey = addSwitch(
                 layout,
                 activity,

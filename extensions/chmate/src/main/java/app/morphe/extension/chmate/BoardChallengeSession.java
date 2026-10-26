@@ -54,12 +54,16 @@ public final class BoardChallengeSession {
 
     public static final class Page {
         final String board, base, html, encoding;
-        final boolean calculation;
+        final boolean calculation, captcha;
         final long created;
+        Runnable posted;
         Page(String board, String base, String html, long created) {
             this.board = board; this.base = base; this.html = html; this.created = created;
             this.encoding = encoding(html);
             this.calculation = html.contains("計算による投稿確認");
+            String lower = html.toLowerCase(Locale.ROOT);
+            this.captcha = lower.contains("g-recaptcha") || lower.contains("h-captcha")
+                    || lower.contains("cf-turnstile") || (!calculation && lower.contains("captcha"));
         }
         byte[] bytes() { return html.getBytes(java.nio.charset.Charset.forName(
                 encoding.equals("Shift_JIS") ? "windows-31j" : encoding)); }

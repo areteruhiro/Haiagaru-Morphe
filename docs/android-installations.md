@@ -1,5 +1,29 @@
 # Android導入・署名台帳
 
+## 2026-10-26 CAPTCHA/計算＋ジェスチャー6操作の統合242（未公開）
+
+ユーザーの実機導入/最新認証変更も含める指示による。XIG05/Android15、serial `730eae72`、ChMate `0.8.10.242 dev`、表示名 `Haiagaru 検証 242`、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。23:17頃JST、`InstallVerifiedApk.ps1`で既存署名と一致を確認してinstall-r Success、データ保持。TabletHomeActivity cold起動Status ok、PID3607。
+
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/combined-gestures-captcha242.apk`、SHA256 `333F17F6AD6FD47A7AE9BE989C9A68F45A446DE730C538621B310F7F3F8CAAB4`。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/combined-gestures-captcha.mpp`、SHA256 `6A734DA86369A0AC9ED53279B7320A029F76CA6CD089C673A8B86BF389B26742`。生成版名1.13.0-dev.1は公開版と異なるローカル候補。
+- 元APK `C:/Users/narum/Downloads/chamate/242/chmate-0-8-10-242-dev.apk`。
+- 鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+通常Lint付きbuild5m19s成功、APK適用/署名成功、完成APKのタブfactory/元命令/レジスターとnative下書き保存writer wrapperを検査成功。最新認証ダイアログ/計算/投稿成功後処理と、ジェスチャー6操作を含む。ログ `build/combined-gestures-captcha-c1-build.log` / `build/combined-gestures-captcha242-patch.log` / `build/combined-gestures-captcha242-install.log`。
+
+実機ではHOME/スレ両ペインのnative空タブ追加・追加先設定反転・fixture除去/設定復元19項目成功。その後XIG05が切断、ADBはMi Note10/d5497008へ切替。実WebView履歴fixtureは未実行、別端末未操作。今回新しい3操作の実スワイプ/実サイト認証投稿成功/終了時crash log再取得は未確認。詳細 [tool-tab-chmate-gestures-20261026.md](tool-tab-chmate-gestures-20261026.md)。
+
+## 2026-10-26 PR #93ジェスチャー改善候補242（未公開）
+
+XIG05/Android15/serial `730eae72`、ChMate `0.8.10.242 dev`、表示名 `Haiagaru 検証 242`、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。21:59頃JST、`scripts/InstallVerifiedApk.ps1` で既存署名一致を確認しinstall-r Success、データ保持。TabletHomeActivity cold起動Status ok。
+
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/tool-tab-gestures242.apk`、SHA256 `0AE196B772467805E44CB76AD86CDB5D48CE21D8863DB5835A74C9D961B724EE`。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/tool-tab-gestures.mpp`、SHA256 `44986460A48FC4C6CA7EFA397BEA0087AF77F85FDC40100E3358D1C4CEF0E924`。生成名1.13.0-dev.1だが公開版とは異なる候補。
+- 元APK `C:/Users/narum/Downloads/chamate/242/chmate-0-8-10-242-dev.apk`。
+- 署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+ログ `build/tool-tab-gestures-isolated-build.log` / `build/tool-tab-gestures242-patch.log` / `build/tool-tab-gestures242-install.log`。HEAD df758a3+今回の5ソースだけの分離ビルド候補で、並行作業中の認証画面変更は含まない。設定スイッチの初期OFF/ON保存/OFF保存を実機確認、実スワイプ/タブロックは未確認。試験中は通知パネル前面でタブView生成待ちが失敗し、検査設定は復元、空fixture2タブも除去した。attach前の21:59:27終了はLOW_MEMORY。詳細 [tool-tab-chmate-gestures-20261026.md](tool-tab-chmate-gestures-20261026.md)。
+
 ## 2026-10-24 取得済みスレの下4桁検索トグル242（未公開）
 
 emulator-5554/resumefix242へ初回候補を署名照合install-r更新Success、データ保持。APK/MPP絶対root・SHA256・鍵・途中のステータスバー重複と追試は[cached-wacchoi-suffix-search-20261024.md](cached-wacchoi-suffix-search-20261024.md)。初回の内部ON/OFF確認を可視位置までの完成確認と区別する。実機/公開は未変更。
@@ -878,3 +902,18 @@ Mi Note10/Android11/serial d5497008。既存package/署名を照合後、両pack
 - 242 APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/lightweight-io242.apk SHA256 42895FFA8603DC66F7AE2643910B9BB239BB7F0DE875C9C557F220781F05D3C1。
 
 鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。両完成APKで軽量runtime31クラスと許可された参照の解決（226=331/242=267）を確認、通常runtime混入なし。ログbuild/lightweight-io{226,242}-{patch,install,runtime,crash}.log。リモートdev.2のDroid＋変更は通常版のみの3行で、検査した軽量runtime/patchコードと同一。公開準備としてremoteを通常mergeし最終buildを別途実行。
+
+## 2026-10-27 XIG05 Dalvikテンプレート3種・Cookie割当検索の検証版更新
+
+導入記録日時: 2026-10-27 01:13:15 JST。XIG05 / ADB serial `730eae72` / ChMate `0.8.10.242 dev` / 表示名 `Haiagaru 検証 242` / package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。既存APKと新APKのパッケージ・証明書一致を確認し、install -r Successでデータ保持更新。HomeActivity cold起動Status ok、PID20622。実機スクリーンショットで既存Part3本文/画像/書き込み下書き画面の表示を確認、当該PIDのcrash buffer空。ユーザーの投稿ボタン操作は行っていない。
+
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/dalvik-three242.apk`
+- APK SHA-256: `D6C558773191C9E02146D73FA6D3028010E3EA5A95FE73CC90C6982A34D9D71C`
+- MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/dalvik-three-final.mpp`
+- MPP SHA-256: `E4C9604FC59CC01C49B6B28E2A2BB0F9C40F5CFDF9B9B842C8BA6C43C5EE5B2B`
+- 署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+- 証明書 SHA-256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+
+`build/dalvik-three-bundle-build.log`の:patches:buildは成功26s、APKパッチ/署名成功。root buildは軽量版lintDebugの既存NewApiで失敗、追加の通常版lintReleaseも既存箇所を含む168 errors/365 warningsで失敗（build/dalvik-three-install-build.log、dalvik-three-release-build.log）。Lint設定の恒久無効化はしていない。ホスト30項目は成功。実機テンプレートメニューの自動確認はFrida RPC失敗、続く再attachがProcessNotRespondingで失敗したため未完了として扱う。実機画面は書き込み下書き表示中のため追加UI操作を停止。公開や5chへの自動投稿/再送はしていない。
+
+導入ログ: `build/dalvik-three242-install.log`、起動ログ: `build/dalvik-three242-launch.log`、端末画面: `build/dalvik-three242-current.png`、クラッシュ確認: `build/dalvik-three242-crash.log`。実サーバーによるUA受理は未確認。

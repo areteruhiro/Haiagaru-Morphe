@@ -24,6 +24,10 @@ public final class SettingsProfiles {
         // Expert is a projection of these same controls, not a second catalog.
         for(SettingsSections.Category c:SettingsSections.Category.values())if(c!=SettingsSections.Category.EXPERT)Haiagaru.settingsCategory(activity,c.name());
         booleanKey(ExpertSettings.KEY);
+        booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
+        booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
+        RULES.put("userAgent",value->value instanceof String&&ViewingUserAgentRules.valid((String)value));
+        defaultValue("userAgent",BrowserUaTemplates.DEFAULT);
         numberKey(HaiagaruSettingsGestures.SENSITIVITY,50,200);
         defaultValue(HaiagaruSettingsGestures.SENSITIVITY,100);
         defaultValue(ExpertSettings.KEY,false);
@@ -85,7 +89,7 @@ public final class SettingsProfiles {
         "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","wacchoiLongPressSuffixSearch","wacchoiLongPressPrefixSearch","wacchoiLongPressSuffixNg","wacchoiLongPressPrefixNg","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
-        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabHissi","nativeToolTabWacchoi","floatingQuickFilterButton","hissiViewerCompactHeader",
+        "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabHissi","nativeToolTabWacchoi",NativeToolTabChMateGestures.KEY,"floatingQuickFilterButton","hissiViewerCompactHeader",
         ThreadRefreshOptions.KEY
     };
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);}

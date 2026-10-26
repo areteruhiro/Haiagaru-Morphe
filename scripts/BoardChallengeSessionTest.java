@@ -48,6 +48,11 @@ public final class BoardChallengeSessionTest {
         String captchaToken=BoardChallengeSession.remember(board,captcha,now);
         check(!BoardChallengeSession.find(captchaToken,board,now).calculation,"CAPTCHA receives matching instructions");
         check(BoardChallengeSession.baseUrl(board,captcha.replace("./bbs.cgi","https://evil.example/test/bbs.cgi")).isEmpty(),"CAPTCHA cannot redirect draft to another origin");
+        check(BoardChallengeSession.find(captchaToken,board,now).captcha,"CAPTCHA uses the compact dialog");
+        check(!shift.captcha,"calculation-only page retains its controls");
+        String dual=html.replace("</form>","<div class='g-recaptcha'></div></form>");
+        String dualToken=BoardChallengeSession.remember(board,dual,now);
+        check(BoardChallengeSession.find(dualToken,board,now).captcha&&BoardChallengeSession.find(dualToken,board,now).calculation,"combined provider and calculation keeps both original form operations");
         System.out.println("PASS "+checks+" original posting-challenge policy/lifetime checks");
     }
 }

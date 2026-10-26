@@ -33,6 +33,8 @@ public final class ExternalBoardAuth {
     private static WeakReference<Activity> resumed = new WeakReference<>(null);
     private static final Map<Activity,String> targets = new WeakHashMap<>();
     private static final Map<Activity,WeakReference<android.view.View>> editors = new WeakHashMap<>();
+    private static final Map<Activity,WeakReference<EditText>> bodies = new WeakHashMap<>();
+    private static final Map<Activity,WeakReference<Object>> owners = new WeakHashMap<>();
     private static final Map<MenuItem,WeakReference<Activity>> menus = new WeakHashMap<>();
     private static final Map<Activity,String> prompted = new WeakHashMap<>();
     private static final Map<Activity,String> challenges = new WeakHashMap<>();
@@ -42,10 +44,15 @@ public final class ExternalBoardAuth {
     static SharedPreferences prefs(Context c) { return c.getSharedPreferences("haiagaru.external-board-auth",0); }
     public static void initialize(Context c) { context=c.getApplicationContext(); }
     public static void rememberJar(Object jar) { nativeJar=new WeakReference<>(jar); }
+    static Object nativeJar(){return nativeJar.get();}
+    static String targetBoard(Object owner){Activity activity=activity(owner);return activity==null?null:BoardCookiePolicy.board(targets.get(activity),null);}
     public static Object parseUrl(String address) { return null; } // Bound at patch time.
 
     /** Seed the existing native identity before the first authentication request, not afterwards. */
     static void prepareWebSession(Activity activity,String board,String auth,Runnable ready) {
+        if(!BoardCookies.beginAuth(activity)){
+            Toast.makeText(activity,"他の認証画面を閉じてからお試しください。板ごとのCookieを保護するため同時に開けません。",Toast.LENGTH_LONG).show();activity.finish();return;
+        }
         final Object jar=nativeJar.get();
         new Thread(()->{
             ArrayList<String[]> seed=new ArrayList<>();
@@ -57,7 +64,7 @@ public final class ExternalBoardAuth {
                     Object url=parseUrl(address);if(url==null)continue;
                     java.lang.reflect.Method read=jar.getClass().getDeclaredMethod("haiagaruNativeAuthCookies",url.getClass());
                     read.setAccessible(true);
-                    for(Object cookie:(List<?>)read.invoke(jar,url))seed.add(new String[]{address,cookie.toString()});
+                    for(Object cookie:BoardCookies.authCookies(board,(List<?>)read.invoke(jar,url),url))seed.add(new String[]{address,cookie.toString()});
                 }
             }catch(Exception error){
                 activity.runOnUiThread(()->{
@@ -67,7 +74,7 @@ public final class ExternalBoardAuth {
                         .setPositiveButton("閉じる",null).show();
                 });return;
             }
-            activity.runOnUiThread(()->seedNext(activity,seed,0,ready));
+            activity.runOnUiThread(()->BoardCookies.prepareBrowser(activity,board,auth,()->seedNext(activity,seed,0,ready)));
         },"Haiagaru-auth-session").start();
     }
     private static void seedNext(Activity a,List<String[]> seed,int index,Runnable ready) {
@@ -90,16 +97,19 @@ public final class ExternalBoardAuth {
         try { return (Activity)owner.getClass().getMethod("getActivity").invoke(owner); }
         catch(Exception ignored) { return null; }
     }
-    public static void target(Object owner, String url) {
+    public static void target(Object owner, String url) { target(owner,url,null); }
+    public static void target(Object owner, String url, EditText body) {
         if(url!=null && url.startsWith("http://")) url="https://"+url.substring(7);
         Activity a=activity(owner);
         if(a!=null && !BoardAuthRules.origin(url).isEmpty()) {
             targets.put(a,url);
+            if(body!=null){bodies.put(a,new WeakReference<>(body));owners.put(a,new WeakReference<>(owner));}
             try { editors.put(a,new WeakReference<>((android.view.View)owner.getClass().getMethod("getView").invoke(owner))); }
             catch(Exception ignored) { }
         }
     }
     public static void addPostingMenu(Object owner, Menu menu) {
+        BoardCookies.decorateMenu(owner,menu);
         Activity a=activity(owner);
         if(!Haiagaru.preparePostingMenu(a,menu,MENU,"showExternalBoardAuthMenu")) return;
         MenuItem item=menu.add(Menu.NONE,MENU,Menu.NONE,"外部板の認証ページ");
@@ -108,6 +118,7 @@ public final class ExternalBoardAuth {
         item.setOnMenuItemClickListener(v->handlePostingMenu(owner,v));
     }
     public static boolean handlePostingMenu(Object owner, MenuItem item) {
+        if(BoardCookies.handleMenu(owner,item))return true;
         if(item==null || item.getItemId()!=MENU) return false;
         Activity a=activity(owner);
         if(a==null) return false;
@@ -119,6 +130,7 @@ public final class ExternalBoardAuth {
         return true;
     }
     public static boolean handlePostingActivityMenu(MenuItem item) {
+        if(BoardCookies.handleActivityMenu(item))return true;
         WeakReference<Activity> ref=menus.get(item);
         return ref!=null && ref.get()!=null && handlePostingMenu(ref.get(),item);
     }
@@ -205,11 +217,43 @@ public final class ExternalBoardAuth {
             if(previous!=null)BoardChallengeSession.forget(previous);
             if(!token.isEmpty()){
                 challenges.put(a,token);
+                BoardChallengeSession.Page page=BoardChallengeSession.find(token,board);
+                if(page!=null)page.posted=draftCompletion(a,board);
                 new Handler(Looper.getMainLooper()).postDelayed(()->BoardChallengeSession.forget(token),5*60*1000L);
             }
             String suggested=BoardAuthRules.suggested(board,text);
             showError(a,board,suggested,text);
         },400);
+    }
+    private static Runnable draftCompletion(Activity parent,String target) {
+        WeakReference<EditText> input=bodies.get(parent);
+        WeakReference<Object> owner=owners.get(parent);
+        if(input==null||input.get()==null||owner==null||owner.get()==null)return null;
+        byte[] expected=BoardPostResult.fingerprint(input.get().getText());
+        WeakReference<Activity> activity=new WeakReference<>(parent);
+        return ()->{
+            Activity host=activity.get();EditText body=input.get();Object fragment=owner.get();
+            if(host==null||body==null||fragment==null||host.isFinishing()||host.isDestroyed()
+                    ||!target.equals(targets.get(host))||bodies.get(host)==null||bodies.get(host).get()!=body
+                    ||!BoardPostResult.sameDraft(expected,body.getText()))return;
+            boolean posting=false;
+            for(Class<?> type=host.getClass();type!=null;type=type.getSuperclass())
+                if(type.getName().equals("jp.syoboi.a2chMate.activity.ResEditActivity")){posting=true;break;}
+            if(!posting)return;
+            String previous=body.getText().toString();
+            try {
+                java.lang.reflect.Method save=fragment.getClass().getMethod("haiagaruSaveExternalDraft");
+                body.setText("");
+                // The editor is paused behind the browser: persist now rather than
+                // depending on a second onPause that may never run before finish.
+                save.invoke(fragment);
+                host.setResult(Activity.RESULT_OK);
+                host.finish();
+            }catch(Exception failure){
+                if(body.getText().length()==0)body.setText(previous);
+                Toast.makeText(host,"投稿は完了しましたが、入力欄の後処理を確認できませんでした。二重送信せず画面を確認してください。",Toast.LENGTH_LONG).show();
+            }
+        };
     }
     private static String errorFingerprint(String text) {
         try {
@@ -226,7 +270,9 @@ public final class ExternalBoardAuth {
         final String readable=error;
         final boolean browserRequired=BoardAuthRules.browserRequired(readable);
         final String challenge=challenges.get(a);
-        final boolean hasChallenge=challenge!=null&&BoardChallengeSession.find(challenge,board)!=null;
+        final BoardChallengeSession.Page page=challenge==null?null:BoardChallengeSession.find(challenge,board);
+        final boolean hasChallenge=page!=null;
+        if(page!=null&&(page.captcha||page.calculation)){openChallenge(a,board,challenge);return;}
         final String code=BoardAuthRules.code(readable);
         LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
         int pad=(int)(20*a.getResources().getDisplayMetrics().density);box.setPadding(pad,pad,pad,pad);
@@ -261,8 +307,13 @@ public final class ExternalBoardAuth {
         dialog.show();
     }
     private static void openChallenge(Activity activity,String board,String token) {
-        if(BoardChallengeSession.find(token,board)==null){
+        BoardChallengeSession.Page page=BoardChallengeSession.find(token,board);
+        if(page==null){
             Toast.makeText(activity,"確認ページの期限が切れました。新しい投稿確認ページを取得してください。",Toast.LENGTH_LONG).show();return;
+        }
+        if(page.captcha||page.calculation){
+            activity.startActivity(new Intent(activity,ExternalBoardAuthActivity.class)
+                .putExtra("board",board).putExtra("challenge",token));return;
         }
         new HaiagaruDialog.Builder(activity).setTitle("ChMate内で投稿確認")
             .setMessage("サイトから受け取った今回の投稿確認ページを表示します。ページ上の認証・送信操作は実際の投稿につながる場合があります。計算や送信は自動で開始しません。")
@@ -306,6 +357,7 @@ public final class ExternalBoardAuth {
         } catch(Exception ignored) { }
     }
     public static List<?> cookies(List<?> nativeCookies,Object url) {
+        if(BoardCookies.active())return BoardCookies.load(nativeCookies,url);
         Context c=context;if(c==null || url==null) return nativeCookies;
         String address=url.toString(), origin=BoardAuthRules.origin(address);
         if(origin.isEmpty() || !prefs(c).getBoolean("enabled:"+origin,false)) return nativeCookies;

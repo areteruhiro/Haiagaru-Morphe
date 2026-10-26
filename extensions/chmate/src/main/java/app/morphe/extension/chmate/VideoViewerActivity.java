@@ -60,7 +60,9 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         if (intent.getComponent() != null || intent.getPackage() != null) return;
         if (YouTubeUrls.videoId(uri.toString()) != null && VideoViewerSettings.youtubeEnabled(context)) {
             intent.setClass(context, YouTubeViewerActivity.class);
-        } else if (GifViewerActivity.supported(uri.toString())) intent.setClass(context, GifViewerActivity.class);
+        } else if (GifViewerActivity.supported(uri.toString())) {
+            intent.setData(Uri.parse(PreviewUrls.normalize(uri.toString())));intent.setClass(context, GifViewerActivity.class);
+        }
         else if (XMediaAttachments.isVideo(uri.toString())) intent.setClass(context, VideoViewerActivity.class);
     }
 
