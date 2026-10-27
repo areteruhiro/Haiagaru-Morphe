@@ -487,3 +487,6 @@ Mi Note10 d5497008へ3版の既存署名照合install-r成功・データ保持�
 
 
 2026-10-27 公式昇格準備: ユーザーがプレ依頼を公式Releaseへ変更し、Amazon Gift Card送付先areteruhiro@gmail.comとPayPay p2p01_FSEj08sDQx0enogOの掲載を指定。正式1.12.2以降の差分を確認して既存.releasercへユーザー向け説明を集約、UAと機種名の記載は追加せず、追加NG/VPN ZIPのダウンロードと非展開指定を明記。新規ビューア設定3項目は初期OFFのまま。masterのDependabot更新（Gradle9.8.1/Conventional changelog10.4.1）を通常mergeで保持。実装ソースが32項目確認済み5a83cceから変わっていないことをdiffで確認。Gradle更新後の通常LintVital付き:patches:build成功7m13s（build/stable-1.13.0-final-build.log、105実行/8cache）、チェック無効化なし。公開は既存Semantic Releaseのみ。mainは1128f9e正式1.12.2と同一treeの兼用mirrorであることを確認し、公式生成commitの正常mergeで同期する。
+
+
+2026-10-27 公式CIのノート生成互換修正: 初回Release40440025717はgenerateNotesで停止、正式1.13.0のtag/Release公開前。並行Build40440026091はsuccess。master既存Dependabotがconventional-changelog-conventionalcommitsを9.3.1→10.4.1へ更新していたが、現在のrelease-notes-generator14.1.1はwriter^8で、preset10はwriter9以上を要求してMissing helperになった。既存package.jsonの互換依存を^9.3.1へ戻す1行修正。release.ymlや公開手順の再実装なし、Gradle9.8.1/README新PayPayは保持。実generator14.1.1+preset9.3.1を隔離buildディレクトリへ導入し、既存.releasercと実40コミットからgenerateNotes成功。画像/動画/Cookie/設定説明、NG/VPN追加DL、謝辞、Amazon送付先と新PayPay、非公開指定話題が出ないことをassert（build/stable-1.13.0-notes-compat-test.log）。確認コードは読み取り専用の検査でtag/metadata/Release操作なし。アプリ本体の変更なし、通常Android build7m13s成功と32UI項目の結果を維持。
