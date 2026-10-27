@@ -188,3 +188,6 @@ rpc.exports.actualSearch=function(){return main(()=>{
  i.putExtra('haiagaru.wacchoi.query','abcd-');i.putExtra('haiagaru.wacchoi.half','upper');
  Java.use(P+'WacchoiLongPressMenu').launchSearch(app(),i);return true;
 });};
+
+rpc.exports.threadGallery=function(){return main(()=>{const a=current(),i=Java.use('android.content.Intent').$new(a.getIntent());i.putExtra('haiagaru.media.thread',true);a.setIntent(i);prefs.edit().putBoolean('mediaSwipeWholeThread',true).commit();return true;});};
+rpc.exports.upSwipe=function(direction){return main(()=>{const a=current(),r=area(a),t=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,0,r.x,r.y,t);touch(a,2,r.x,r.y+direction*240,t);touch(a,1,r.x,r.y+direction*240,t);return true;});};
