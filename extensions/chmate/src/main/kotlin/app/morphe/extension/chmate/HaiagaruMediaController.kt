@@ -46,6 +46,8 @@ open class HaiagaruMediaController(context: Context) : MediaController(context) 
     override fun hide() { visible = false; panel?.visibility = View.GONE }
     override fun isShowing() = visible
 
+    fun controlHeight(): Int = if (visible) panel?.height ?: 0 else 0
+
     fun containsControlTouch(x: Float, y: Float): Boolean {
         val view = panel ?: return false
         if (!visible || !view.isShown) return false

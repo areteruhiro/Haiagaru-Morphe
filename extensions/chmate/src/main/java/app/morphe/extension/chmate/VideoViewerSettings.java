@@ -35,6 +35,8 @@ public final class VideoViewerSettings {
         LinearLayout body = new LinearLayout(activity); body.setOrientation(LinearLayout.VERTICAL);
         int pad = (int) (16 * activity.getResources().getDisplayMetrics().density);
         body.setPadding(pad, pad, pad, pad);
+        cornerSetting(body, activity, "戻るボタンの位置", ViewerCornerControls.BACK, 1);
+        cornerSetting(body, activity, "︙メニューの位置", ViewerCornerControls.MORE, 0);
         Switch brightness = toggle(body, activity, "左半分の上下スワイプで明るさ調整", prefs.getBoolean("videoSwipeBrightness", false));
         Switch volume = toggle(body, activity, "右半分の上下スワイプで音量調整", prefs.getBoolean("videoSwipeVolume", false));
         Switch autoplay = toggle(body, activity, "動画を開いたら自動再生する", prefs.getBoolean("videoAutoplay", true));
@@ -80,6 +82,16 @@ public final class VideoViewerSettings {
         });
         new HaiagaruDialog.Builder(activity).setTitle("ビューアの操作設定").setView(scroll)
                 .setNegativeButton("戻る",null).show();
+    }
+    private static void cornerSetting(LinearLayout body, Activity activity, String label, String key, int fallback){
+        TextView title=new TextView(activity);title.setText(label);body.addView(title);
+        Spinner choice=new Spinner(activity);
+        choice.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"右上","左上","右下","左下"}));
+        int value=prefs(activity).getInt(key,fallback);choice.setSelection(value>=0&&value<4?value:fallback);
+        choice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(AdapterView<?> parent,android.view.View view,int position,long id){prefs(activity).edit().putInt(key,position).apply();}
+            public void onNothingSelected(AdapterView<?> parent){}
+        });body.addView(choice);
     }
     private static Switch toggle(LinearLayout body, Context context, String title, boolean checked) {
         Switch view = new LiveSettings.Toggle(context); view.setText(title); view.setChecked(checked); body.addView(view); return view;

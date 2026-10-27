@@ -3493,6 +3493,12 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotati
             invoke-static {v1, v0}, Lapp/morphe/extension/chmate/ImageViewerRotationButton;->install(Landroid/app/Activity;Ljava/lang/String;)V
         """.trimIndent())
     }
+    val prepareMenu = mutableClassDefBy(activityType).methods.single {
+        it.name == "onPrepareOptionsMenu" && it.parameterTypes == listOf("Landroid/view/Menu;") && it.returnType == "Z"
+    }
+    // A void entry call preserves every native local, return and menu command.
+    prepareMenu.addInstructionsWithLabels(0,
+        "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImageViewerRotationButton;->prepareMenu(Landroid/app/Activity;Landroid/view/Menu;)V")
     println("Image viewer rotation button: $versionName -> $targetImageView")
 }
 

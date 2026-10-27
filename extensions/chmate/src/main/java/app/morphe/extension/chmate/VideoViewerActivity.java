@@ -19,7 +19,7 @@ import android.widget.*;
 public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private VideoView video;
     private MediaController controls;
-    private LinearLayout toolbar;
+    private ViewerCornerControls toolbar;
     private FrameLayout mediaFrame;
     private TextView status;
     private String url;
@@ -95,10 +95,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
-        toolbar = new LinearLayout(this); toolbar.setGravity(Gravity.CENTER_VERTICAL);
         Button back = overlayButton("戻る"); back.setOnClickListener(v -> finish());
-        toolbar.addView(back, new LinearLayout.LayoutParams(-2, -2));
-        toolbar.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
         Button more = overlayButton("︙"); more.setContentDescription("動画メニュー");
         speedButton = overlayButton(speedLabel(playbackSpeed));
         speedButton.setContentDescription("再生速度");
@@ -112,10 +109,8 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         muteButton=overlayButton(muted?"音声ON":"ミュート");
         muteButton.setContentDescription(muted?"ミュートを解除":"ミュートする");
         muteButton.setOnClickListener(v->{muted=!muted;applyMute();});
-        more.setOnClickListener(this::showMenu); toolbar.addView(more);
-        LinearLayout toolbarModel = toolbar;
-        toolbar = new LinearLayout(this);
-        toolbar.addView(HaiagaruUi.controls(this, toolbarModel), new LinearLayout.LayoutParams(-1, -2));
+        more.setOnClickListener(this::showMenu);
+        toolbar = new ViewerCornerControls(this, back, more);
         FrameLayout frame = new FrameLayout(this);mediaFrame=frame;
         video = new VideoView(this);
         setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
@@ -124,7 +119,11 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         video.setOnTouchListener((view, event) -> true);
         frame.addView(video, new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER));
         // Overlay controls so hiding them does not resize or shift the video.
-        frame.addView(toolbar, new FrameLayout.LayoutParams(-1, -2, Gravity.TOP));
+        frame.addView(toolbar, new FrameLayout.LayoutParams(-1, -1));
+        frame.getViewTreeObserver().addOnPreDrawListener(() -> {
+            if(controls instanceof HaiagaruMediaController) toolbar.bottomInset(((HaiagaruMediaController)controls).controlHeight());
+            return true;
+        });
         // Keep the temporary hold-speed badge visible even when player controls are hidden.
         holdSpeedIndicator = new TextView(this);
         holdSpeedIndicator.setText("2x");
@@ -425,9 +424,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     boolean dispatchVideoTouch(MotionEvent event) { return super.dispatchTouchEvent(event); }
     boolean isVideoToolbarTouch(float x, float y) {
         if(controls instanceof HaiagaruMediaController&&((HaiagaruMediaController)controls).containsControlTouch(x,y))return true;
-        if (toolbar == null || toolbar.getVisibility() != View.VISIBLE) return false;
-        int[] p = new int[2]; toolbar.getLocationOnScreen(p);
-        return x >= p[0] && x < p[0] + toolbar.getWidth() && y >= p[1] && y < p[1] + toolbar.getHeight();
+        return toolbar != null && toolbar.contains(x,y);
     }
     void performVideoGesture(String key) {
         if(gifFallback!=null){
