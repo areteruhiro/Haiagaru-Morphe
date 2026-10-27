@@ -1,3 +1,61 @@
+# Haiagaru 1.15.0
+
+XのGIFと通常GIFの自動再生を、使い方に合わせて設定できるようにしました。
+
+## 変更内容
+
+- 「X MP4 GIFを自動再生する（開いた後）」を追加しました。通常のGIF・動画の自動再生とは別に切り替えられます。初期値はオンです。
+- XのGIFを代替プレーヤーへ切り替えると、自動再生が止まってしまう問題を修正しました。
+- 「GIFを開かずにスレ内で自動再生する」を追加しました。通常のGIFリンク、X投稿のGIF、XのGIF動画への直接リンクが対象です。初期値はオフです。
+- スレ内の同時再生数を1〜8件、通常GIFの取得サイズ上限を1〜64MiBから指定できます。初期値は2件・8MiBです。
+- スレ内再生はレスごとに最初のGIFが対象です。画面外や他のアプリへ移動した場合は停止し、設定をオフにすると再生処理を解放します。
+- 新しい設定はHaiagaru設定の共有・バックアップにも含まれます。
+
+設定は「Haiagaru設定 → 画像・動画 → 画像・GIF・動画ビューアの操作設定」から変更できます。スレ内再生は通信量や電池消費が増えます。長時間・多数同時再生時の性能や、スクロール中の表示位置には引き続き改善の余地があります。
+
+通常GIFとXのGIFで再生・非表示時の停止・設定オフ時の解放を確認しています。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* add independent X GIF autoplay and configurable inline animation limits ([d010a24](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d010a2431a82110b8c76e7abc38b2887484428c1))
+
 # Haiagaru 1.14.3
 
 画像の回転操作を︙メニューにまとめた場合、メニューを選んでも回転しないことがある問題を修正しました。
