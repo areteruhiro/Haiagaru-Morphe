@@ -39,6 +39,7 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
     /** Called after the native image activity's super.onCreate, before it loads images. */
     public static boolean redirectNative(Activity activity) {
         if (!Haiagaru.videoViewerEnabled()) return false;
+        MediaViewerNavigation.nativeOpening(activity);
         Intent incoming = activity.getIntent();
         if (incoming == null) return false;
         java.util.ArrayList<String> links = incoming.getStringArrayListExtra("links");
