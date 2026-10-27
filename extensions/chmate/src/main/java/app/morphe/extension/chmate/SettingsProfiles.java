@@ -28,6 +28,8 @@ public final class SettingsProfiles {
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
         numberKey(CachedSearchOrder.KEY,0,2);defaultValue(CachedSearchOrder.KEY,0);
+        booleanKey(GlobalTitleSearch.KEY);defaultValue(GlobalTitleSearch.KEY,false);
+        RULES.put(GlobalTitleSearch.BOARDS,v->v instanceof String&&GlobalTitleSearch.validSelection((String)v));defaultValue(GlobalTitleSearch.BOARDS,"");
         for(String key:new String[]{VideoViewerSettings.GIF_NATIVE,VideoViewerSettings.VIDEO_NATIVE,VideoViewerSettings.THREAD_MEDIA}){
             booleanKey(key);defaultValue(key,false);
         }

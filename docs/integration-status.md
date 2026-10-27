@@ -502,3 +502,10 @@ Mi Note10 d5497008へ3版の既存署名照合install-r成功・データ保持�
 
 
 2026-10-27 1.14.0-dev.1プレ公開完了: source4dc452b/CI284a12a、既存Semantic Release40459460378のRelease/Attestともsuccess。draft=false/prerelease=true、正式Latest1.13.0維持。公開6資材を再取得し全SHA256がGitHub digest一致。MPP4A38650BA3EAEADB5786560AC7866C8D92166F87B27043447D24A19DD7489D8A（6,519,095bytes）、全ZIP CRCとAndroid classes.dex magic確認。公開JSON2点とdev raw通常/pre名version1.14.0-dev.1/created_at2026-10-27T06:11:20（Zなし）。master/main通常/pre名の4rawは正式1.13.0維持。Release本文の検索画面の新旧作成日時順・標準初期値・独立保存・件数やクリック対象保持・設定共有、追加ZIP案内、謝辞、最新Amazon/PayPayを確認。UA記載なし。検証build/cached-search-order-public-verification.log / cached-search-order-prerelease-ci.log。CI生成commitへFF、生成metadata/CHANGELOG/版表記の手編集なし。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.14.0-dev.1 。端末Morpheの登録/カード表示変更は行わず、リモート確認と区別。
+
+
+2026-10-27 公式候補（未公開）: 最軽量191/226/242へ再署名後の投稿/画像UP/UPLIFTクラッシュ対策追加。191generated authのみ既存wrapper、session変更は導入せず。226生成認証/投稿・画像cache正規化、242Talk9calls/scoped primitive/画像/UPLIFT比較。32class/全extension参照解決成功、full runtime混入なし。241/243は現公開サポート対象外につき未適用、未検証分岐を今回追加から除外。Talk242/243既存算術fixture成功（242100003値）。
+メディアnative Intent sourceがApplicationの経路にも対応、191f/226oの現page、242screen-local model登録からSavedStateHandle f.dを参照。DOWN時の選択を保持しnative途中移動後も元画像へ戻らない。3版factory/touch元命令/register/分岐と242model ctor保持検査成功。実操作36項目成功build/media-final-gallery242-runtime.log。
+X/Siteカード有効のcold process復元を追加、初期native復元1.5秒/新着/明示レス/ユーザーtouch優先、復元中save抑制。実停止起動で103/-17px復元build/media-final-restart242.log。
+全板検索は既存ff5ch TSV/native parser維持、登録済external+PINK subject補完を独立初期OFF設定、板名/URL検索・複数選択・保存/全対象/全解除。最大同時2/30秒/2MiB subject/3分cache/5000結果、失敗部分表示/新query cancel、Cookieを読まず送信なし。3版native URL/parser hook保持と各6runtime成功、1018host、選択UI6、実HOME入力→混在結果→スレ本文、PINK312行取得成功。
+Hissi検索board catalogは独立single-flight worker/cache、選択変更はrestoreAllBoardsを解消、Compose lazy scopeへ新snapshotを渡し即反映。host9+242実UIチェック/件数/遅延catalog保持成功。最終通常LintVital付きbuild/hissi-board-selection-final-build.log成功3m34s。最終MPP 0DB6E20F198576394934632941D15A94FCCFD4AEF0A486BB489F1283D155AE84。台帳参照。最終共通UI差分の191/226重複はユーザー指定で省略。公式Releaseは明示許可済み、既存Semantic Releaseのみ。

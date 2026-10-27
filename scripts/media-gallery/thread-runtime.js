@@ -37,6 +37,8 @@ rpc.exports.threadCollection=function(){return main(()=>{
   threadLaunch=Java.retain(on);
   if(!group||group.size()!==3||String(group.get(0))!==first||String(group.get(1))!==second||String(group.get(2))!==third)throw Error('Wrong thread media collection '+(group?group.toString():'null'));
   if(!on.getBooleanExtra('haiagaru.media.thread',false)||on.getIntExtra('index',-1)!==0||on.getStringArrayListExtra('links').size()!==1||on.getStringArrayListExtra('sharedElements').size()!==1)throw Error('Native selection or original transition changed');
+  const appIntent=native.e.overload('android.content.Context','java.util.List','int','java.util.List').call(native,source.getApplicationContext(),input,0,null);
+  if(!appIntent.getBooleanExtra('haiagaru.media.thread',false)||appIntent.getStringArrayListExtra('haiagaru.media.links').size()!==3)throw Error('Application context loses the source thread gallery');
   if(Extra.threadMedia(source,'https://gallery.example.org/other.jpg')!==null)throw Error('Foreign thread URL accepted');
   const flagMethod=Index.b.overload('int'),fixtureThread=String(Java.use('java.lang.Thread').currentThread().getId()),blocked=chosen[1].o.value;
   try{
@@ -104,3 +106,18 @@ rpc.exports.nativeDeclined=function(){return main(()=>{
   return true;
  }finally{a.setIntent(intent);const e=prefs.edit();prior.forEach(s=>s.had?e.putBoolean(s.key,s.value):e.remove(s.key));e.commit();}
 });};
+
+// Let ChMate itself change its native page first, then turn our mixed-media
+// gestures on. This detects regressions hidden by destination-only fixtures.
+rpc.exports.nativeMulti=function(){return main(()=>{
+ const all=Java.use('java.util.ArrayList').$new();['/a.png','/b.png','/clip.mp4','/one.gif'].forEach(path=>all.add(J().$new(base+path)));
+ prefs.edit().putBoolean('gifUseNativeViewer',true).putBoolean('videoUseNativeViewer',false).putBoolean('mediaSwipeWholeThread',false).putBoolean('mediaSwipeNavigation',false).commit();
+ const intent=Java.use(P+'MediaViewerNavigation').destination(current(),all,0);intent.putExtra.overload('java.lang.String','boolean').call(intent,'haiagaru.media.thread',true);
+ current().startActivity(intent);return true;
+});};
+rpc.exports.nativeGifPage=function(){return main(()=>{
+ const all=Java.use('java.util.ArrayList').$new();['/a.png','/b.png','/one.gif','/clip.mp4'].forEach(path=>all.add(J().$new(base+path)));
+ prefs.edit().putBoolean('gifUseNativeViewer',true).putBoolean('mediaSwipeWholeThread',true).putBoolean('mediaSwipeNavigation',true).commit();
+ const intent=Java.use(P+'MediaViewerNavigation').destination(current(),all,2);intent.putExtra.overload('java.lang.String','boolean').call(intent,'haiagaru.media.thread',true);current().startActivity(intent);return true;
+});};
+rpc.exports.nativeModelRegistered=function(){return main(()=>{const Nav=Java.use(P+'MediaViewerNavigation'),a=current(),models=Nav.class.getDeclaredField('MODELS');models.setAccessible(true);const map=Java.cast(models.get(null),Java.use('java.util.Map')),weak=map.get(a);if(!weak)throw Error('Native screen model registration missing');const model=Java.cast(weak,Java.use('java.lang.ref.WeakReference')).get();if(!model||String(model.getClass().getName())!=='jp.syoboi.a2chMate.activity.ImagesViewerViewModel')throw Error('Wrong native screen model');return Number(Nav.nativeIndex(a).intValue());});};
