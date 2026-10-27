@@ -22,7 +22,7 @@ public final class MediaViewerNavigation {
     }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
-    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;String selected;}
+    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;String selected;MediaViewerBackGesture back;}
     private static final WeakHashMap<Activity,WeakReference<Object>> MODELS=new WeakHashMap<>();
 
     static void rememberBody(TextView view,MotionEvent event) {
@@ -219,20 +219,34 @@ public final class MediaViewerNavigation {
                     ||controlAt(activity.getWindow().getDecorView(),swipe.x,swipe.y)
                     ||activity instanceof VideoViewerActivity&&((VideoViewerActivity)activity).isVideoToolbarTouch(swipe.x,swipe.y)
                     ||surface==null&&zoomed(activity.getWindow().getDecorView());
+            if(!swipe.blocked){swipe.back=new MediaViewerBackGesture(activity);swipe.back.dispatch(event);}
             SWIPES.put(activity,swipe);return false;
         }
         if(swipe==null)return false;
         if(event.getPointerCount()>1||action==MotionEvent.ACTION_POINTER_DOWN){swipe.blocked=true;return swipe.dragging;}
         if(action==MotionEvent.ACTION_CANCEL){SWIPES.remove(activity);return false;}
         if(swipe.blocked){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return swipe.dragging;}
+        if(swipe.back!=null&&swipe.back.dispatch(event)){SWIPES.remove(activity);return true;}
+        boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
-        int step=MediaGallery.step(dx,dy,Math.max(48,48*activity.getResources().getDisplayMetrics().density));
-        if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging){
+        float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);
+        int step=activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
+                ?MediaGallery.threadStep(dx,dy,threshold):MediaGallery.step(dx,dy,threshold);
+        if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging&&!backPriority){
             swipe.dragging=true;swipe.cancelling=true;MotionEvent cancel=MotionEvent.obtain(event);cancel.setAction(MotionEvent.ACTION_CANCEL);
             try{activity.dispatchTouchEvent(cancel);}finally{cancel.recycle();swipe.cancelling=false;}
         }
         if(action==MotionEvent.ACTION_UP){
-            SWIPES.remove(activity);if(swipe.dragging){if(step!=0)move(activity,step,swipe.selected);return true;}
+            SWIPES.remove(activity);if(swipe.dragging||backPriority&&step!=0){
+                if(step!=0){
+                    if(backPriority){
+                        final Swipe completed=swipe;
+                        // Native recognizers post completion to the main Handler.
+                        activity.getWindow().getDecorView().post(()->{
+                            if(!completed.back.returned()&&!activity.isFinishing()&&!activity.isDestroyed())move(activity,step,completed.selected);
+                        });
+                    }else move(activity,step,swipe.selected);
+                }return true;}
         }
         return swipe.dragging;
     }
