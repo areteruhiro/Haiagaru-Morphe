@@ -1,3 +1,51 @@
+# Haiagaru 1.14.3
+
+画像の回転操作を︙メニューにまとめた場合、メニューを選んでも回転しないことがある問題を修正しました。
+
+- ︙メニューから回転処理を直接実行するようにしました。
+- 画面上の回転ボタンへの切り替え、回転操作のオン・オフは引き続き利用できます。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* execute image rotation directly from native overflow menu ([7875f97](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7875f9709c07ebcf3aee97b54b32771dea50639c))
+
 # Haiagaru 1.14.2
 
 スレ内のメディア移動と、動画・GIFビューアの操作を改善しました。

@@ -3499,6 +3499,17 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotati
     // A void entry call preserves every native local, return and menu command.
     prepareMenu.addInstructionsWithLabels(0,
         "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImageViewerRotationButton;->prepareMenu(Landroid/app/Activity;Landroid/view/Menu;)V")
+    val select = mutableClassDefBy(activityType).methods.single {
+        it.name == "onOptionsItemSelected" && it.parameterTypes == listOf("Landroid/view/MenuItem;") && it.returnType == "Z"
+    }
+    val first = select.implementation!!.instructions.first()
+    select.addInstructionsWithLabels(0, """
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ImageViewerRotationButton;->handleMenu(Landroid/app/Activity;Landroid/view/MenuItem;)Z
+        move-result v0
+        if-eqz v0, :native_rotation_menu
+        const/4 v0, 0x1
+        return v0
+    """.trimIndent(), ExternalLabel("native_rotation_menu", first))
     println("Image viewer rotation button: $versionName -> $targetImageView")
 }
 
