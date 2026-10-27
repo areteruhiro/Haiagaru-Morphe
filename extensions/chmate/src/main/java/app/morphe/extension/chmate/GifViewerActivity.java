@@ -46,7 +46,8 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
         if (links == null || index < 0 || index >= links.size()) return false;
         String selected=PreviewUrls.normalize(links.get(index));
         if(!supported(selected)&&!DirectVideoUrls.supported(selected))return false;
-        java.util.ArrayList<String> group=MediaGallery.links(links,selected);
+        if(supported(selected)?VideoViewerSettings.nativeGif(activity):VideoViewerSettings.nativeVideo(activity))return false;
+        java.util.ArrayList<String> group=MediaViewerNavigation.links(activity);
         activity.startActivity(MediaViewerNavigation.destination(activity,group,group.indexOf(selected)));
         activity.finish(); return true;
     }

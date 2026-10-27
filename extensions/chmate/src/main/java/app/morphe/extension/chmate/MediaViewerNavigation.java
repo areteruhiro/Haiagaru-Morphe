@@ -13,7 +13,13 @@ import java.util.*;
 /** One current viewer Activity; moving media does not grow the Android back stack. */
 public final class MediaViewerNavigation {
     static final String EXTRA="haiagaru.media.links";
+    static final String THREAD_EXTRA="haiagaru.media.thread";
     private static final WeakHashMap<Activity,Swipe> SWIPES=new WeakHashMap<>();
+    private static final WeakHashMap<Intent,ThreadGallery> THREAD_GALLERIES=new WeakHashMap<>();
+    private static final class ThreadGallery {
+        final ArrayList<String> source,links;final String selected;
+        ThreadGallery(ArrayList<String> source,String selected,ArrayList<String> links){this.source=source;this.selected=selected;this.links=links;}
+    }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
     private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;}
@@ -26,8 +32,26 @@ public final class MediaViewerNavigation {
         if(intent.hasExtra(EXTRA)||intent.getData()==null)return;
         TextView view=body.get();body.clear();
         if(view==null||!view.isShown()||!view.hasWindowFocus()||SystemClock.uptimeMillis()-touched>5000)return;
+        if(prepareThread(intent,view.getContext(),intent.getDataString()))return;
         ArrayList<String> links=MediaGallery.links(bodyLinks(view.getText()),intent.getDataString());
         if(links.size()>1)intent.putStringArrayListExtra(EXTRA,links);
+    }
+    /** Invoked at ChMate's original thumbnail Intent factory, while its source pane is still visible. */
+    public static void prepareNativeIntent(Intent intent,android.content.Context context) {
+        if(intent==null||context==null||!Haiagaru.videoViewerEnabled())return;
+        ArrayList<String> nativeLinks=intent.getStringArrayListExtra("links");int index=intent.getIntExtra("index",0);
+        if(nativeLinks==null||index<0||index>=nativeLinks.size())return;
+        if(context.getClass().getName().equals("jp.syoboi.a2chMate.activity.ImageListActivity")
+                &&VideoViewerSettings.prefs(context).getBoolean(VideoViewerSettings.THREAD_MEDIA,false)){
+            intent.putStringArrayListExtra(EXTRA,MediaGallery.links(nativeLinks,nativeLinks.get(index),4096)).putExtra(THREAD_EXTRA,true);return;
+        }
+        prepareThread(intent,context,nativeLinks.get(index));
+    }
+    private static boolean prepareThread(Intent intent,android.content.Context context,String selected) {
+        if(!VideoViewerSettings.prefs(context).getBoolean(VideoViewerSettings.THREAD_MEDIA,false))return false;
+        ArrayList<String> links=ExtraQuickFilters.threadMedia(context,selected);
+        if(links==null||links.size()<2)return false;
+        intent.putStringArrayListExtra(EXTRA,links).putExtra(THREAD_EXTRA,true);return true;
     }
     static java.util.List<String> bodyLinks(CharSequence source) {
         StringBuilder text=new StringBuilder(XPostPreview.originalText(source));
@@ -46,7 +70,16 @@ public final class MediaViewerNavigation {
     static ArrayList<String> links(Activity activity) {
         Intent intent=activity.getIntent();ArrayList<String> links=intent.getStringArrayListExtra(EXTRA);
         if(links==null)links=intent.getStringArrayListExtra("links");
-        return MediaGallery.links(links,current(activity));
+        String selected=current(activity);boolean thread=intent.getBooleanExtra(THREAD_EXTRA,false);
+        if(thread){
+            // Our launch snapshot is immutable. Do not normalize thousands of URLs
+            // again on every tap, gesture DOWN, or position counter update.
+            ThreadGallery cached=THREAD_GALLERIES.get(intent);
+            if(cached!=null&&cached.source==links&&Objects.equals(cached.selected,selected))return cached.links;
+            ArrayList<String> result=MediaGallery.links(links,selected,4096);
+            THREAD_GALLERIES.put(intent,new ThreadGallery(links,selected,result));return result;
+        }
+        return MediaGallery.links(links,selected);
     }
     static String current(Activity activity) {
         Intent intent=activity.getIntent();
@@ -57,13 +90,18 @@ public final class MediaViewerNavigation {
     static Intent destination(Activity activity,ArrayList<String> links,int index) {
         String url=links.get(index);Intent intent=new Intent();ArrayList<String> nativeLinks=new ArrayList<>(links);int nativeIndex=index;
         if(activity.getIntent().getExtras()!=null)intent.putExtras(activity.getIntent().getExtras());
-        if(GifAutoFetchPolicy.supported(url))intent.setClass(activity,GifViewerActivity.class).setData(Uri.parse(url));
-        else if(DirectVideoUrls.supported(url))intent.setClass(activity,VideoViewerActivity.class).setData(Uri.parse(url));
+        // Shared-element names belong to the original thumbnail row, not this
+        // new page or its expanded/reindexed native image list.
+        intent.removeExtra("sharedElements");
+        if(GifAutoFetchPolicy.supported(url)&&!VideoViewerSettings.nativeGif(activity))intent.setClass(activity,GifViewerActivity.class).setData(Uri.parse(url));
+        else if(DirectVideoUrls.supported(url)&&!VideoViewerSettings.nativeVideo(activity))intent.setClass(activity,VideoViewerActivity.class).setData(Uri.parse(url));
         else {
             intent.setClassName(activity,"jp.syoboi.a2chMate.activity.ImagesViewer2Activity");
             // The native pager eagerly loads neighbours. Give it only still images;
             // our separate list keeps GIF/video neighbours without duplicate transfers.
-            nativeLinks.clear();for(String item:links)if(!GifAutoFetchPolicy.supported(item)&&!DirectVideoUrls.supported(item))nativeLinks.add(item);
+            nativeLinks.clear();for(String item:links)
+                if((!GifAutoFetchPolicy.supported(item)||VideoViewerSettings.nativeGif(activity))
+                        &&(!DirectVideoUrls.supported(item)||VideoViewerSettings.nativeVideo(activity)))nativeLinks.add(item);
             nativeIndex=nativeLinks.indexOf(url);
         }
         return intent.putStringArrayListExtra(EXTRA,new ArrayList<>(links))
@@ -84,7 +122,8 @@ public final class MediaViewerNavigation {
         if(action!=MotionEvent.ACTION_DOWN&&swipe==null)return false;
         if(action==MotionEvent.ACTION_DOWN&&!Haiagaru.videoViewerEnabled()
                 ||!VideoViewerSettings.prefs(activity).getBoolean("videoViewerEnabled",true)
-                ||!VideoViewerSettings.prefs(activity).getBoolean(VideoViewerSettings.MEDIA_SWIPE,true)){
+                ||!VideoViewerSettings.prefs(activity).getBoolean(activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
+                        ?VideoViewerSettings.THREAD_MEDIA:VideoViewerSettings.MEDIA_SWIPE,!activity.getIntent().getBooleanExtra(THREAD_EXTRA,false))){
             SWIPES.remove(activity);return false;
         }
         if(swipe!=null&&swipe.cancelling)return false;

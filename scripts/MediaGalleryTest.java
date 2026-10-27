@@ -14,6 +14,12 @@ public final class MediaGalleryTest {
         for(String url:Arrays.asList("javascript:evil.gif","https://user:secret@example.org/a.gif","https://example.org/page",null))eq(MediaGallery.supported(url),false);
         eq(MediaGallery.step(-100,5,48),1);eq(MediaGallery.step(100,5,48),-1);
         eq(MediaGallery.step(-20,5,48),0);eq(MediaGallery.step(100,100,48),0);eq(MediaGallery.step(0,100,48),0);
+        List<String> thread=new ArrayList<>();for(int i=0;i<500;i++)thread.add("https://example.org/"+i+".jpg");
+        eq(MediaGallery.links(thread,thread.get(350),4096).size(),500);
+        eq(MediaGallery.links(thread,thread.get(350)).size(),1);
+        eq(MediaGallery.links(thread,thread.get(0)).size(),128);
+        eq(MediaGallery.links(thread,thread.get(350),4096).indexOf(thread.get(350)),350);
+        thread.add(thread.get(0));eq(MediaGallery.links(thread,thread.get(0),4096).size(),500);
         System.out.println("PASS MediaGallery "+checks+" checks");
     }
 }

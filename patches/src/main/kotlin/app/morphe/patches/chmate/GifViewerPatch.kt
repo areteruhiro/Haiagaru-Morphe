@@ -17,6 +17,36 @@ internal val gifViewerRoutingPatch = bytecodePatch {
     dependsOn(haiagaruPatch)
     execute {
         val owner = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity;")
+        // Capture the source Activity at its native thumbnail factory, before a new
+        // viewer takes focus. A wrapper keeps every native argument and instruction.
+        val factoryOwner = when(packageMetadata.versionName) {
+            "0.8.10.191 dev" -> owner
+            "0.8.10.226 dev" -> mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity\$read;")
+            else -> mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity\$RemoteActionCompatParcelizer;")
+        }
+        val factory=factoryOwner.methods.single {
+            it.returnType=="Landroid/content/Intent;" && it.parameterTypes.size==(if(packageMetadata.versionName=="0.8.10.242 dev")4 else 3)
+                && it.parameterTypes[0]=="Landroid/content/Context;"
+                && it.parameterTypes[1] in setOf("Ljava/util/List;","Ljava/util/ArrayList;")
+                && it.parameterTypes[2]=="I"
+        }
+        val nativeFactory=MutableMethod(ImmutableMethod(factoryOwner.type,"haiagaruNativeMediaIntent",factory.parameters,
+            factory.returnType,factory.accessFlags,factory.annotations,factory.hiddenApiRestrictions,factory.implementation))
+        factoryOwner.methods.remove(factory);factoryOwner.methods.add(nativeFactory)
+        val staticFactory=(factory.accessFlags and 0x8)!=0
+        val words=factory.parameterTypes.size+(if(staticFactory)0 else 1)
+        val invoke=if(staticFactory)"invoke-static/range" else if((factory.accessFlags and 0x2)!=0)"invoke-direct/range" else "invoke-virtual/range"
+        val context=if(staticFactory)"p0" else "p1"
+        factoryOwner.methods.add(MutableMethod(ImmutableMethod(factoryOwner.type,factory.name,factory.parameters,
+            factory.returnType,factory.accessFlags,factory.annotations,factory.hiddenApiRestrictions,
+            ImmutableMethodImplementation(words+2,emptyList(),emptyList(),emptyList()))).apply {
+            addInstructions(0,"""
+                $invoke {p0 .. p${words-1}}, $nativeFactory
+                move-result-object v0
+                invoke-static {v0, $context}, Lapp/morphe/extension/chmate/MediaViewerNavigation;->prepareNativeIntent(Landroid/content/Intent;Landroid/content/Context;)V
+                return-object v0
+            """.trimIndent())
+        })
         val originalTouch=owner.methods.singleOrNull { it.name == "dispatchTouchEvent" && it.parameterTypes == listOf("Landroid/view/MotionEvent;") }
         val fallback=if(originalTouch!=null){
             val delegate=MutableMethod(ImmutableMethod(owner.type,"haiagaruNativeMediaTouch",originalTouch.parameters,

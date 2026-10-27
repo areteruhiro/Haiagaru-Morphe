@@ -13,9 +13,15 @@ final class MediaGallery {
         catch(RuntimeException invalid){return false;}
     }
     static ArrayList<String> links(Collection<String> input,String selected) {
+        return links(input,selected,128);
+    }
+    static ArrayList<String> links(Collection<String> input,String selected,int maximum) {
         String current=PreviewUrls.normalize(selected);
         LinkedHashSet<String> result=new LinkedHashSet<>();
-        if(input!=null)for(String item:input){String url=PreviewUrls.normalize(item);if(supported(url))result.add(url);if(result.size()>=128)break;}
+        int characters=0;
+        if(input!=null)for(String item:input){String url=PreviewUrls.normalize(item);
+            if(supported(url)&&!result.contains(url)){if(characters+url.length()>96000)break;result.add(url);characters+=url.length();}
+            if(result.size()>=Math.min(4096,Math.max(1,maximum)))break;}
         // Never associate a clicked link with a list from a different response.
         if(!result.contains(current)){result.clear();if(supported(current))result.add(current);}
         return new ArrayList<>(result);

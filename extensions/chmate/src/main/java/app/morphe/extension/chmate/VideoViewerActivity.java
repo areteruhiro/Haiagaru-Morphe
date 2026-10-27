@@ -61,6 +61,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         if (uri == null) return;
         // Do not replace unrelated explicit destinations or pin to another installed app.
         if (intent.getComponent() != null || intent.getPackage() != null) return;
+        if(GifViewerActivity.supported(uri.toString())?VideoViewerSettings.nativeGif(context):VideoViewerSettings.nativeVideo(context))return;
         MediaViewerNavigation.prepare(intent);
         if (YouTubeUrls.videoId(uri.toString()) != null && VideoViewerSettings.youtubeEnabled(context)) {
             intent.setClass(context, YouTubeViewerActivity.class);

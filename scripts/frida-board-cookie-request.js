@@ -47,6 +47,3 @@ rpc.exports.run=function(){return new Promise((resolve,reject)=>Java.perform(()=
  resolve({package:pkg,checks:checks.length,passed:checks});
  }catch(e){reject(Error(String(e.stack||e)));}
 }));};
-
-
-

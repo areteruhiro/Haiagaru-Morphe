@@ -8,7 +8,8 @@ import android.widget.*;
 
 public final class VideoViewerSettings {
     static final String HOLD_SPEED="videoHoldDoubleSpeed",TAP_CONTROLS="videoTapControls",CHMATE_GESTURES="videoChmateGestures",
-            MEDIA_SWIPE="mediaSwipeNavigation",GIF_AUTOPLAY="gifAutoplay";
+            MEDIA_SWIPE="mediaSwipeNavigation",GIF_AUTOPLAY="gifAutoplay",GIF_NATIVE="gifUseNativeViewer",
+            VIDEO_NATIVE="videoUseNativeViewer",THREAD_MEDIA="mediaSwipeWholeThread";
     private VideoViewerSettings() { }
     static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config", 0);
@@ -20,6 +21,8 @@ public final class VideoViewerSettings {
     static boolean youtubeEnabled(Context context) {
         return prefs(context).getBoolean("videoYoutubeEnabled", true);
     }
+    static boolean nativeGif(Context context){return prefs(context).getBoolean(GIF_NATIVE,false);}
+    static boolean nativeVideo(Context context){return prefs(context).getBoolean(VIDEO_NATIVE,false);}
     static void addSettingsButton(LinearLayout layout, Activity activity) {
         Button button = new Button(activity);
         button.setText("画像・GIF・動画ビューアの操作設定");
@@ -35,6 +38,9 @@ public final class VideoViewerSettings {
         Switch brightness = toggle(body, activity, "左半分の上下スワイプで明るさ調整", prefs.getBoolean("videoSwipeBrightness", false));
         Switch volume = toggle(body, activity, "右半分の上下スワイプで音量調整", prefs.getBoolean("videoSwipeVolume", false));
         Switch autoplay = toggle(body, activity, "動画を開いたら自動再生する", prefs.getBoolean("videoAutoplay", true));
+        Switch nativeGif=toggle(body,activity,"GIFをHaiagaru専用ビューアで開かない",nativeGif(activity));
+        Switch nativeVideo=toggle(body,activity,"動画をHaiagaru専用ビューアで開かない",nativeVideo(activity));
+        Switch threadMedia=toggle(body,activity,"サムネイルからスレ全体の画像・GIF・動画へ左右移動",prefs.getBoolean(THREAD_MEDIA,false));
         Switch gifAutoplay=toggle(body,activity,"GIFを開いたら自動再生する",prefs.getBoolean(GIF_AUTOPLAY,true));
         Switch holdSpeed=toggle(body,activity,"動画の長押し中は2倍速で再生する",prefs.getBoolean(HOLD_SPEED,true));
         Switch tapControls=toggle(body,activity,"動画のタップで再生バーを表示・非表示",prefs.getBoolean(TAP_CONTROLS,true));
@@ -50,7 +56,7 @@ public final class VideoViewerSettings {
         body.addView(seconds);
         Switch youtube = toggle(body, activity, "YouTubeをアプリ内の公式プレーヤーで開く", youtubeEnabled(activity));
         TextView note = new TextView(activity);
-        note.setText("左右スワイプは同じレスの画像・GIF・動画が対象です。長押し2倍速や再生バーなどの動画操作は動画専用ビューアに適用します。自動再生は次に開くメディアから反映します。上下操作をオンにした側ではChMateの縦ジェスチャーより優先します。"
+        note.setText("専用ビューアで開かない設定は、GIF・動画をそれぞれChMate標準の動作に戻します。YouTubeも動画側の設定に従います。スレ全体への左右移動は読み込み済みレスのメディアが対象で、同じレス内への左右移動より優先します。変更は次に開くメディアから反映します。長押し2倍速や再生バーなどは専用ビューアに適用します。上下操作をオンにした側ではChMateの縦ジェスチャーより優先します。"
                 + "明るさはこの画面内だけ、音量は端末のメディア音量を変更します。"
                 + "YouTubeは公式Webプレーヤーの操作を使います。広告・地域制限・埋め込み制限などは回避しません。");
         body.addView(note);
@@ -58,6 +64,7 @@ public final class VideoViewerSettings {
         LiveSettings live=new LiveSettings(prefs,()->body.invalidate());
         live.toggle(brightness,"videoSwipeBrightness");live.toggle(volume,"videoSwipeVolume");
         live.toggle(autoplay,"videoAutoplay");
+        live.toggle(nativeGif,GIF_NATIVE);live.toggle(nativeVideo,VIDEO_NATIVE);live.toggle(threadMedia,THREAD_MEDIA);
         live.toggle(gifAutoplay,GIF_AUTOPLAY);live.toggle(holdSpeed,HOLD_SPEED);live.toggle(tapControls,TAP_CONTROLS);
         live.toggle(nativeGestures,CHMATE_GESTURES);live.toggle(mediaSwipe,MEDIA_SWIPE);
         live.toggle(doubleTap,"videoDoubleTapSeek");live.toggle(youtube,"videoYoutubeEnabled");
