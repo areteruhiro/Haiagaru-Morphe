@@ -58,7 +58,7 @@ try:
  rpc.preference('videoTapControls',False);rpc.controls(False);rpc.press(0);rpc.press(1);time.sleep(.1);check(not rpc.state()['controls'],'tap control OFF leaves bar hidden')
  rpc.preference('videoTapControls',True);rpc.press(0);rpc.press(1);time.sleep(.1);check(rpc.state()['controls'],'tap control ON shows bar once');rpc.controls(False)
  check(rpc.native_gestures_off(),'ChMate gestures OFF does not start recognition');rpc.toolbar_swipe();time.sleep(.3);check(rpc.state()['url'].endswith('/clip.mp4'),'toolbar drag does not switch media')
- rpc.show_settings();time.sleep(.5);result=rpc.check_settings();check(result==8,'eight real settings switches save and restore their values');time.sleep(.3)
+ rpc.show_settings();time.sleep(.5);result=rpc.check_settings();check(result==9,'nine real settings switches save and restore their values');time.sleep(.3)
  wait_state('/clip.mp4','VideoViewerActivity',True)
  print('VIDEO_SWIPE_STATE',rpc.state(),flush=True);rpc.swipe(-1,False);check(wait_state('/two.gif','GifViewerActivity',True)['index']==3,'video to next GIF')
  rpc.swipe(-1,False);time.sleep(.3);check(rpc.state()['url'].endswith('/two.gif'),'last item does not wrap')

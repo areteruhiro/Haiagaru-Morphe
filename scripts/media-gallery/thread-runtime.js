@@ -2,8 +2,8 @@
 let threadLaunch;
 const originalSetup=rpc.exports.setup;
 rpc.exports.setup=function(value){return originalSetup(value).then(result=>main(()=>{
- for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread']){
-  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,false)});prefs.edit().putBoolean(key,false).commit();
+ for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread','videoLetterboxTouch']){
+  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,key==='videoLetterboxTouch')});prefs.edit().putBoolean(key,key==='videoLetterboxTouch').commit();
  }
  return result;
 }));};
@@ -139,4 +139,52 @@ rpc.exports.counterRemap=function(){return main(()=>{
   intent.removeExtra('haiagaru.media.links');Nav.setNativeCounter(view,J().$new('1/2'));if(String(view.getText())!=='1/2')throw Error('Native-only scope changed');
   return 'PASS selected media uses full-gallery position/total, out-of-range and native-only scope preserved';
  }finally{a.setIntent(original);}
+});};
+rpc.exports.portrait=function(){return main(()=>{current().setRequestedOrientation(1);return true;});};
+rpc.exports.letterboxPoint=function(){return main(()=>{
+ const a=cast(current()),video=a.video.value,frame=a.mediaFrame.value,p=Java.array('int',[0,0]),q=Java.array('int',[0,0]);video.getLocationOnScreen(p);frame.getLocationOnScreen(q);
+ const top=Number(q[1]),videoTop=Number(p[1]),gap=videoTop-top;
+ if(gap<100)throw Error('Reference video has no usable vertical letterbox gap: '+gap);
+ return {x:Number(q[0])+frame.getWidth()*.5,y:top+gap*.65,videoTop,frameTop:top,frameHeight:frame.getHeight(),videoHeight:video.getHeight()};
+});};
+rpc.exports.touchPoint=function(action,x,y){return main(()=>{const a=current();if(action===0)pressDown=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,action,x,y,pressDown);return true;});};
+rpc.exports.swipePoint=function(x,y){return main(()=>{const a=current(),t=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,0,x,y,t);touch(a,2,x-260,y,t);touch(a,1,x-260,y,t);return true;});};
+rpc.exports.playbackActions=function(){return main(()=>{const a=cast(current());return {muted:a.muted.value,speed:Number(a.playbackSpeed.value),speedCaption:String(a.speedButton.value.getText()),muteCaption:String(a.muteButton.value.getText())};});};
+
+rpc.exports.rotationMenu=function(){return main(()=>{
+ const a=current(),menu=Java.use('android.widget.PopupMenu').$new(a,a.getWindow().getDecorView()).getMenu(),Rotate=Java.use(P+'ImageViewerRotationButton');
+ const key='imageViewerRotationInMenu',had=prefs.contains(key),old=prefs.getBoolean(key,true),enabledHad=prefs.contains('imageViewerRotationButton'),enabled=prefs.getBoolean('imageViewerRotationButton',true);
+ try{prefs.edit().putBoolean('imageViewerRotationButton',true).putBoolean(key,true).commit();Rotate.prepareMenu(a,menu);let item=menu.findItem(0x48415255);if(!item||!item.isVisible())throw Error('Rotation menu missing');
+ prefs.edit().putBoolean(key,false).commit();Rotate.prepareMenu(a,menu);if(item.isVisible())throw Error('Screen button mode still shows menu');
+ prefs.edit().putBoolean(key,true).putBoolean('imageViewerRotationButton',false).commit();Rotate.prepareMenu(a,menu);if(item.isVisible())throw Error('Disabled rotation still shown');return 'PASS overflow/screen/off';
+ }finally{const e=prefs.edit();had?e.putBoolean(key,old):e.remove(key);enabledHad?e.putBoolean('imageViewerRotationButton',enabled):e.remove('imageViewerRotationButton');e.commit();}
+});};
+rpc.exports.corners=function(){return main(()=>{
+ const a=cast(current()),key1='viewerBackCorner',key2='viewerMoreCorner',keys=[key1,key2],before=keys.map(k=>({k,had:prefs.contains(k),v:prefs.getInt(k,k===key1?1:0)}));
+ const cls=Java.use(P+'ViewerCornerControls'),b=Java.use('android.widget.Button').$new(a),m=Java.use('android.widget.Button').$new(a),root=Java.cast(a.findViewById(16908290),Java.use('android.view.ViewGroup'));
+ const host=cls.$new(a,b,m);root.addView(host,Java.use('android.view.ViewGroup$LayoutParams').$new(-1,-1));
+ try{let count=0;for(let x=0;x<4;x++)for(let y=0;y<4;y++){prefs.edit().putInt(key1,x).putInt(key2,y).commit();host.bottomInset(count%2?100:101);let p=Java.cast(b.getLayoutParams(),Java.use('android.widget.FrameLayout$LayoutParams')),q=Java.cast(m.getLayoutParams(),Java.use('android.widget.FrameLayout$LayoutParams'));
+ const gs=[53,51,85,83];if(p.gravity.value!==gs[x]||q.gravity.value!==gs[y])throw Error('Wrong corner '+x+'/'+y);
+ if(x===y&&p.leftMargin.value===q.leftMargin.value&&p.rightMargin.value===q.rightMargin.value)throw Error('Buttons overlap');count++;}return 'PASS '+count+' independent positions with same-corner separation';}
+ finally{root.removeView(host);const e=prefs.edit();before.forEach(s=>s.had?e.putInt(s.k,s.v):e.remove(s.k));e.commit();}
+});};
+
+rpc.exports.backPriority=async function(){
+ let state;
+ await main(()=>{
+ const a=cast(current()),p=Java.use('android.preference.PreferenceManager').getDefaultSharedPreferences(a),keys=['gesture','gestureBack','gestureLength'],old=keys.map(k=>({k,had:p.contains(k),v:k==='gesture'?p.getBoolean(k,true):p.getInt(k,0)}));
+ const finish=Java.use('android.app.Activity').finish.overload();state={p,old,finish,closed:false};finish.implementation=function(){state.closed=true;};
+ p.edit().putBoolean('gesture',true).putInt('gestureLength',40).putInt('gestureBack',4).commit();
+ const Back=Java.use(P+'MediaViewerBackGesture'),recognizer=Back.$new(a),r=area(a),t=Number(Java.use('android.os.SystemClock').uptimeMillis()),Motion=Java.use('android.view.MotionEvent');state.recognizer=recognizer;const native=Java.cast(recognizer.recognizer.value,Java.use('o.TTVideoLandingPageActivity3'));state.native=native;
+ for(const [action,x,y] of [[0,r.x,r.y],[2,r.x-200,r.y],[2,r.x-500,r.y],[1,r.x-600,r.y]]){const e=Motion.obtain(t,t+100,action,x,y,0);try{recognizer.dispatch(e);}finally{e.recycle();}}
+ });
+ await new Promise(resolve=>setTimeout(resolve,250));
+ return main(()=>{try{if(!state.recognizer.returned())throw Error('Asynchronous Back did not finish; closed='+state.closed+' code='+field(state.native,'d').getInt(state.native)+' phase='+field(state.native,'c').getInt(state.native));return 'PASS native asynchronous Back completion';}
+ finally{state.finish.implementation=null;const e=state.p.edit();state.old.forEach(s=>s.had?(s.k==='gesture'?e.putBoolean(s.k,s.v):e.putInt(s.k,s.v)):e.remove(s.k));e.commit();}});
+};
+
+rpc.exports.actualSearch=function(){return main(()=>{
+ const i=Java.use('android.content.Intent').$new(app(),Java.use(P+'HissiWacchoiSearchActivity').class);
+ i.putExtra('haiagaru.wacchoi.query','abcd-');i.putExtra('haiagaru.wacchoi.half','upper');
+ Java.use(P+'WacchoiLongPressMenu').launchSearch(app(),i);return true;
 });};

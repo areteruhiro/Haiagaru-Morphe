@@ -9,7 +9,7 @@ import android.widget.*;
 public final class VideoViewerSettings {
     static final String HOLD_SPEED="videoHoldDoubleSpeed",TAP_CONTROLS="videoTapControls",CHMATE_GESTURES="videoChmateGestures",
             MEDIA_SWIPE="mediaSwipeNavigation",GIF_AUTOPLAY="gifAutoplay",GIF_NATIVE="gifUseNativeViewer",
-            VIDEO_NATIVE="videoUseNativeViewer",THREAD_MEDIA="mediaSwipeWholeThread";
+            VIDEO_NATIVE="videoUseNativeViewer",THREAD_MEDIA="mediaSwipeWholeThread",LETTERBOX_TOUCH="videoLetterboxTouch";
     private VideoViewerSettings() { }
     static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config", 0);
@@ -35,6 +35,8 @@ public final class VideoViewerSettings {
         LinearLayout body = new LinearLayout(activity); body.setOrientation(LinearLayout.VERTICAL);
         int pad = (int) (16 * activity.getResources().getDisplayMetrics().density);
         body.setPadding(pad, pad, pad, pad);
+        cornerSetting(body, activity, "戻るボタンの位置", ViewerCornerControls.BACK, 1);
+        cornerSetting(body, activity, "︙メニューの位置", ViewerCornerControls.MORE, 0);
         Switch brightness = toggle(body, activity, "左半分の上下スワイプで明るさ調整", prefs.getBoolean("videoSwipeBrightness", false));
         Switch volume = toggle(body, activity, "右半分の上下スワイプで音量調整", prefs.getBoolean("videoSwipeVolume", false));
         Switch autoplay = toggle(body, activity, "動画を開いたら自動再生する", prefs.getBoolean("videoAutoplay", true));
@@ -46,6 +48,7 @@ public final class VideoViewerSettings {
         Switch tapControls=toggle(body,activity,"動画のタップで再生バーを表示・非表示",prefs.getBoolean(TAP_CONTROLS,true));
         Switch nativeGestures=toggle(body,activity,"動画ビューアでChMateのジェスチャーを使う",prefs.getBoolean(CHMATE_GESTURES,true));
         Switch mediaSwipe=toggle(body,activity,"左右スワイプで同じレスの画像・GIF・動画へ移動",prefs.getBoolean(MEDIA_SWIPE,true));
+        Switch letterbox=toggle(body,activity,"動画の上下・左右の余白でもタッチ操作する",prefs.getBoolean(LETTERBOX_TOUCH,true));
         Switch doubleTap = toggle(body, activity, "左ダブルタップで巻き戻し／右ダブルタップで早送り", prefs.getBoolean("videoDoubleTapSeek", false));
         TextView label = new TextView(activity); label.setText("戻る／進む・ダブルタップで移動する秒数"); body.addView(label);
         Spinner seconds = new Spinner(activity);
@@ -67,6 +70,7 @@ public final class VideoViewerSettings {
         live.toggle(nativeGif,GIF_NATIVE);live.toggle(nativeVideo,VIDEO_NATIVE);live.toggle(threadMedia,THREAD_MEDIA);
         live.toggle(gifAutoplay,GIF_AUTOPLAY);live.toggle(holdSpeed,HOLD_SPEED);live.toggle(tapControls,TAP_CONTROLS);
         live.toggle(nativeGestures,CHMATE_GESTURES);live.toggle(mediaSwipe,MEDIA_SWIPE);
+        live.toggle(letterbox,LETTERBOX_TOUCH);
         live.toggle(doubleTap,"videoDoubleTapSeek");live.toggle(youtube,"videoYoutubeEnabled");
         final int[] previous={seconds.getSelectedItemPosition()};
         seconds.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
@@ -78,6 +82,16 @@ public final class VideoViewerSettings {
         });
         new HaiagaruDialog.Builder(activity).setTitle("ビューアの操作設定").setView(scroll)
                 .setNegativeButton("戻る",null).show();
+    }
+    private static void cornerSetting(LinearLayout body, Activity activity, String label, String key, int fallback){
+        TextView title=new TextView(activity);title.setText(label);body.addView(title);
+        Spinner choice=new Spinner(activity);
+        choice.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"右上","左上","右下","左下"}));
+        int value=prefs(activity).getInt(key,fallback);choice.setSelection(value>=0&&value<4?value:fallback);
+        choice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            public void onItemSelected(AdapterView<?> parent,android.view.View view,int position,long id){prefs(activity).edit().putInt(key,position).apply();}
+            public void onNothingSelected(AdapterView<?> parent){}
+        });body.addView(choice);
     }
     private static Switch toggle(LinearLayout body, Context context, String title, boolean checked) {
         Switch view = new LiveSettings.Toggle(context); view.setText(title); view.setChecked(checked); body.addView(view); return view;
