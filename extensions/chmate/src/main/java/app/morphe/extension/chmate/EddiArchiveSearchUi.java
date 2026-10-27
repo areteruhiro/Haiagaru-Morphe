@@ -351,7 +351,8 @@ final class EddiArchiveSearchUi {
                 JSONArray threads = new JSONArray();
                 for (ThreadResult thread : displayedPage.threads) {
                     threads.put(new JSONObject().put("title", thread.title)
-                            .put("date", thread.date).put("url", thread.url));
+                            .put("date", thread.date).put("url", thread.url)
+                            .put("kyodemoUrl", thread.kyodemoUrl));
                 }
                 saved.put("threads", threads);
             }
@@ -404,7 +405,8 @@ final class EddiArchiveSearchUi {
                     JSONObject row = rows.getJSONObject(index);
                     String url = row.getString("url");
                     if (!HissiLinkRouting.isThreadUrl(url)) return false;
-                    threads.add(new ThreadResult(row.getString("title"), row.optString("date"), url));
+                    threads.add(new ThreadResult(row.getString("title"), row.optString("date"), url,
+                            row.optString("kyodemoUrl", kyodemoUrl(url))));
                 }
                 displayedQuery = saved.optString("resultQuery", query.toString());
                 display(Math.max(1, saved.optInt("page", page)),
@@ -560,7 +562,8 @@ final class EddiArchiveSearchUi {
                         java.nio.charset.Charset.forName("Windows-31J")), KyodemoArchive.page(uri.toString()));
                 List<ThreadResult> threads = new ArrayList<>();
                 for (KyodemoArchive.Row row : parsed.rows)
-                    threads.add(new ThreadResult(clean(row.titleHtml), clean(row.dateHtml), row.url));
+                    threads.add(new ThreadResult(clean(row.titleHtml), clean(row.dateHtml), row.url,
+                            row.kyodemoUrl));
                 return new SearchPage(threads, -1, parsed.hasNext);
             }
             return parse(new String(bytes.toByteArray(), StandardCharsets.UTF_8));
@@ -591,7 +594,7 @@ final class EddiArchiveSearchUi {
             if (!HissiLinkRouting.isThreadUrl(url)) continue;
             Matcher date = DATE.matcher(block);
             threads.add(new ThreadResult(clean(anchor.group(2)),
-                    date.find() ? clean(date.group(1)) : "", url));
+                    date.find() ? clean(date.group(1)) : "", url, kyodemoUrl(url)));
         }
         return new SearchPage(threads, count);
     }
@@ -619,6 +622,11 @@ final class EddiArchiveSearchUi {
             TextView title = resultText(thread.title, 16, foreground);
             card.addView(title);
             card.addView(resultText(thread.date, 12, muted));
+            if (!thread.kyodemoUrl.isEmpty()) {
+                TextView kyodemoLink = resultText(thread.kyodemoUrl, 12, muted);
+                kyodemoLink.setTextIsSelectable(true);
+                card.addView(kyodemoLink);
+            }
             card.setOnClickListener(view -> {
                 try {
                     saveState(null);
@@ -918,11 +926,25 @@ final class EddiArchiveSearchUi {
         final String title;
         final String date;
         final String url;
-        ThreadResult(String title, String date, String url) {
+        final String kyodemoUrl;
+        ThreadResult(String title, String date, String url, String kyodemoUrl) {
             this.title = title;
             this.date = date;
             this.url = url;
+            this.kyodemoUrl = kyodemoUrl == null ? "" : kyodemoUrl;
         }
+    }
+
+    private static String kyodemoUrl(String sourceUrl) {
+        try {
+            java.net.URI uri = java.net.URI.create(sourceUrl);
+            String[] path = uri.getPath().split("/");
+            if (path.length >= 5 && "test".equals(path[1]) && "read.cgi".equals(path[2])
+                    && "liveedge".equals(path[3]) && path[4].matches("[0-9]{9,12}")) {
+                return "https://www.kyodemo.net/sdemo/r/e_e_liveedge/" + path[4] + "/";
+            }
+        } catch (RuntimeException ignored) { }
+        return "";
     }
 
     private static final class SearchPage {

@@ -237,7 +237,16 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             String board = getIntent().getStringExtra("haiagaru.wacchoi.board");
             if (host != null && (host.equals("5ch.io") || host.endsWith(".5ch.io")
                     || host.equals("5ch.net") || host.endsWith(".5ch.net") || host.endsWith(".2ch.net"))) searchSource = 0;
-            else if (host != null && (host.equals("bbs.eddibb.cc") || host.equals("bbs.eddibb.com"))) searchSource = 1;
+            else if (host != null && (host.equals("bbs.eddibb.cc") || host.equals("bbs.eddibb.com"))) {
+                searchSource = 1;
+                String id = WacchoiSearch.normalizeEdgeIdFilter(query);
+                if (query != null && !query.trim().isEmpty()
+                        && !KyodemoRouting.isWacchoiToken(query)
+                        && id.matches("[A-Za-z0-9+./_-]{1,64}")) {
+                    fourInput.setText(query.trim());
+                    edgeMode.setSelection(0);
+                }
+            }
             if (board != null && board.matches("[A-Za-z0-9_-]+")) {
                 selectedBoards.clear(); selectedBoards.add(board); restoredBoards = true; restoreAllBoards = false;
                 renderBoardChoices();
@@ -245,6 +254,10 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             if (host != null) restoredDraft = true;
         }
         if(!allowsSource(searchSource))searchSource=allowsSource(0)?0:1;
+        boolean hasSavedForm = fields != null
+                || getIntent().getBooleanExtra(WacchoiSearchState.RESTORE, false)
+                || getIntent().getParcelableExtra("haiagaru.wacchoi.form") != null;
+        if (!hasSavedForm && searchSource == 1) setDefaultEdgeIdDateRange();
         if(getIntent().getBooleanExtra(HissiScanTemplate.AUTO,false)&&fields==null&&selectedBackground()==null){
             String templateBoards=getIntent().getStringExtra("haiagaru.hissi.template.boards");
             if(templateBoards!=null&&!templateBoards.trim().isEmpty()){
@@ -392,6 +405,10 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
     void searchUiChanged() { if (composeChanged != null) composeChanged.run(); }
     void selectSource(int source) {
         if(!allowsSource(source))return;
+        if (source == 1 && searchSource != 1
+                && HissiScanTemplate.date(0).equals(fromInput.getText().toString())
+                && HissiScanTemplate.date(0).equals(toInput.getText().toString()))
+            setDefaultEdgeIdDateRange();
         searchSource = source;
         getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putInt("search.lastSource",source).apply();
         if (restoreAllBoards && source == 0) loadBoardsOnDemand();
@@ -922,6 +939,12 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         fourInput.setError(null);
         final String four = fourInput.getText().toString().trim();
         edgeMatchMode = edgeMode.getSelectedItemPosition();
+        edgeTitleWords = titleKeywordInput.getText().toString().trim();
+        edgeBodyWords = bodyKeywordInput.getText().toString().trim();
+        if (edgeMatchMode == 0) {
+            startKyodemoIdSearch(four);
+            return;
+        }
         if (edgeMatchMode == 0 ? !WacchoiSearch.normalizeEdgeIdFilter(four).matches("[A-Za-z0-9._+/-]*")
                 : !four.matches("[A-Za-z0-9+/-]*")) {
             fourInput.setError(edgeMatchMode == 0 ? "投稿IDを入力してください（ID:付きでも可）" : "ワッチョイ文字を英数字・+・/・-で入力してください（空欄可）");
@@ -936,8 +959,6 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             pageLimitInput.setError("1〜10000を指定してください"); return;
         }
         if (!configureRequestBudget()) return;
-        edgeTitleWords = titleKeywordInput.getText().toString().trim();
-        edgeBodyWords = bodyKeywordInput.getText().toString().trim();
         edgeArchive = edgePast.isChecked();
         if(startBackground(new Intent().putExtra("edge",true).putExtra("four",four)
                 .putExtra("upper",firstHalf).putExtra("limit",threadLimit).putExtra("requestLimit",requestBudget.limit)
@@ -955,6 +976,52 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         stopButton.setEnabled(true); resultsLayout.removeAllViews();
         statusView.setText("Kyodemoのエッヂ板からスレ一覧を取得しています。取得間隔は" + Haiagaru.kyodemoScanIntervalSeconds() + "秒です。");
         job = executor.submit(() -> runEdgeSearch(four, firstHalf, threadLimit, null));
+    }
+
+    private void startKyodemoIdSearch(String rawId) {
+        String id = WacchoiSearch.normalizeEdgeIdFilter(rawId);
+        if (!id.matches("[A-Za-z0-9+./_-]{1,64}")) {
+            fourInput.setError("投稿IDを入力してください（ID:付きでも可）");
+            searchUiChanged();
+            return;
+        }
+        String from = fromInput.getText().toString().trim();
+        String to = toInput.getText().toString().trim();
+        if (!validDate(from) || !validDate(to) || from.compareTo(to) > 0) {
+            fromInput.setError("開始日と終了日を確認してください");
+            searchUiChanged();
+            return;
+        }
+        if (daysBetween(from, to) >= 7) {
+            toInput.setError("ID検索は7日以内の日付範囲を指定してください");
+            searchUiChanged();
+            return;
+        }
+        String sourceHost = getIntent().getStringExtra("haiagaru.wacchoi.host");
+        String sourceBoard = getIntent().getStringExtra("haiagaru.wacchoi.board");
+        if (sourceHost == null || sourceHost.isEmpty()) sourceHost = "bbs.eddibb.cc";
+        if (sourceBoard == null || sourceBoard.isEmpty()) sourceBoard = "liveedge";
+        String target = KyodemoRouting.idSearchRangeUrl(sourceHost, sourceBoard, id, from, to);
+        if (target == null) {
+            fourInput.setError("この板ではKyodemoのID検索を利用できません");
+            searchUiChanged();
+            return;
+        }
+        Intent checker = new Intent(host, HissiMenuActivity.class)
+                .setAction(Intent.ACTION_VIEW)
+                .setData(Uri.parse(target))
+                .putExtra("haiagaru.wacchoi.host", sourceHost)
+                .putExtra("haiagaru.wacchoi.board", sourceBoard)
+                .putExtra("haiagaru.wacchoi.query", id);
+        if (!NativeToolTabs.open(host, "hissi", checker)) {
+            host.startActivity(checker);
+            finish();
+        }
+    }
+
+    private void setDefaultEdgeIdDateRange() {
+        fromInput.setText(HissiScanTemplate.date(6));
+        toInput.setText(HissiScanTemplate.date(0));
     }
 
     private boolean configureRequestBudget() {

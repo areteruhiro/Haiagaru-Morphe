@@ -102,6 +102,32 @@ public final class KyodemoRouting {
         return url.toString();
     }
 
+    /** Kyodemo's native ID index accepts a date range, so no thread-by-thread scan is needed. */
+    public static String idSearchRangeUrl(String host, String board, String id, String from, String to) {
+        String slug = boardSlug(host, board);
+        if (slug == null || id == null || !id.matches("[A-Za-z0-9+./_-]{1,64}")
+                || !validDate(from) || !validDate(to) || from.compareTo(to) > 0) return null;
+        return "https://www.kyodemo.net/sdemo/b/" + slug + "/?bs=hi&kt=k_&k=" + encode(id)
+                + "&fr=" + isoDate(from) + "&to=" + isoDate(to);
+    }
+
+    private static boolean validDate(String date) {
+        if (date == null || !date.matches("[0-9]{8}")) return false;
+        try {
+            java.text.SimpleDateFormat format = new java.text.SimpleDateFormat("yyyyMMdd",
+                    java.util.Locale.US);
+            format.setLenient(false);
+            format.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            return format.parse(date) != null;
+        } catch (java.text.ParseException invalid) {
+            return false;
+        }
+    }
+
+    private static String isoDate(String date) {
+        return date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8);
+    }
+
     public static String wacchoiSearchUrl(String host, String board, String wacchoi) {
         if (wacchoi == null) return null;
         // A suffix search intentionally has no carrier label or first half.

@@ -171,6 +171,11 @@ public final class HissiMenuController extends ToolScreenController {
             kyodemoTarget = KyodemoRouting.wacchoiSearchUrl(sourceHost, sourceBoard,
                     initialWacchoiQuery);
             target = kyodemoTarget;
+        } else if (isKyodemoBoardSearch(incoming)) {
+            currentUsesKyodemo = true;
+            hissiTarget = null;
+            kyodemoTarget = incoming.buildUpon().scheme("https").build().toString();
+            target = kyodemoTarget;
         } else if (eddiArchiveMode) {
             // The archive is a normal HTML search site. Keep its query intact
             // so a saved search can be opened directly in ChMate as well.
@@ -510,7 +515,8 @@ public final class HissiMenuController extends ToolScreenController {
             hissi.setOnClickListener(view -> { if (openHissiWacchoiSearch()) finish(); });
             providers.addView(hissi, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             layout.addView(providers);
-        } else if (!wacchoiSearchLaunch && !eddiArchiveMode && checkerMode == 3) {
+        } else if (!wacchoiSearchLaunch && !eddiArchiveMode && checkerMode == 3
+                && hissiTarget != null && kyodemoTarget != null) {
             Button alternate = toolbarButton(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setText(currentUsesKyodemo ? "hissi.orgで開く" : "Kyodemoで開く");
             alternate.setTextColor(Color.BLUE);
@@ -1720,6 +1726,14 @@ public final class HissiMenuController extends ToolScreenController {
 
     private static String toKyodemoUrl(Uri uri, String sourceHost) {
         return toKyodemoUrl(uri, sourceHost, null);
+    }
+
+    private static boolean isKyodemoBoardSearch(Uri uri) {
+        if (uri == null || !("www.kyodemo.net".equalsIgnoreCase(uri.getHost())
+                || "kyodemo.net".equalsIgnoreCase(uri.getHost()))) return false;
+        String path = uri.getPath();
+        return path != null && path.matches("/sdemo/b/[A-Za-z0-9_-]+/")
+                && uri.getQueryParameter("k") != null;
     }
 
     private static String toKyodemoUrl(Uri uri, String sourceHost, String dateOverride) {
