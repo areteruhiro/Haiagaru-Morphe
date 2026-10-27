@@ -206,7 +206,8 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
         val first = view.getTag(EddiArchiveSearchUi.RESULT_FIRST_TAG) == true
         val padding = EddiArchiveSearchUi.clampResultPadding(view.getTag(EddiArchiveSearchUi.RESULT_PADDING_TAG) as? Int ?: 16)
         Box(modifier.fillMaxWidth().heightIn(min = 48.dp).combinedClickable(
-            enabled = view.isEnabled, onClick = { view.performClick(); changed() }) .drawBehind {
+            enabled = view.isEnabled, onClick = { view.performClick(); changed() },
+            onLongClick = { view.performLongClick(); changed() }) .drawBehind {
             val stroke = 1.dp.toPx()
             if (first) drawLine(ruleColor, Offset(0f, stroke / 2), Offset(size.width, stroke / 2), stroke)
             drawLine(ruleColor, Offset(0f, size.height - stroke / 2), Offset(size.width, size.height - stroke / 2), stroke)

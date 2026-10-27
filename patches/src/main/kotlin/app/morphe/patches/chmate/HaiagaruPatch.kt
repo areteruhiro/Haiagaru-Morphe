@@ -1556,6 +1556,11 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchUnreadToolbarCount(packageMetadata.versionName)
         patchHiddenNgUnread(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
+        if (packageMetadata.versionName == "0.8.10.242 dev") {
+            mutableClassDefBy(profile.homeFragmentClass).methods.single {
+                it.name == "onViewCreated" && it.parameterTypes == listOf("Landroid/view/View;", "Landroid/os/Bundle;")
+            }.addInstruction(0,"invoke-static {p0, p1}, Lapp/morphe/extension/chmate/HomeSelectionBar;->bind(Ljava/lang/Object;Landroid/view/View;)V")
+        }
 
         val readManager = when (packageMetadata.versionName) {
             "0.8.10.241" -> "Lo/hLn11;"
@@ -1965,6 +1970,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             patchPostVersionInfo(profile.applicationClass)
         }
         patchImageViewerRotationButton(packageMetadata.versionName)
+        patchThreadSearchText(packageMetadata.versionName)
         patchLargeImageAlignment(packageMetadata.versionName)
         patchLegacyAutoReload(packageMetadata.versionName)
         patchAutoScrollControlColors(packageMetadata.versionName)
@@ -3468,6 +3474,29 @@ private fun BytecodePatchContext.patchLargeImageAlignment(version: String) {
         invoke-static {p1, v2, v4, p4, p2}, Lapp/morphe/extension/chmate/LargeImageAlignment;->correct(Landroid/graphics/Matrix;IIFF)V
     """.trimIndent())
     println("$version large-image draft centre correction ($type->$methodName)")
+}
+
+private fun app.morphe.patcher.patch.BytecodePatchContext.patchThreadSearchText(version: String) {
+    val (owner,name,response,body)=when(version){
+        "0.8.10.191 dev"->listOf("Lo/m9ExternalSyntheticLambda1\$4;","performFiltering","Lo/processAdDisplayErrorPostbackForUserError;","c")
+        "0.8.10.226 dev"->listOf("Lo/listener;","b","Lo/BouncyCastleSocketAdapterCompanion;","d")
+        "0.8.10.242 dev"->listOf("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel\$menuHostHelperlambda0;","invokeSuspend","Lo/KeJ11;","h")
+        else->return
+    }
+    val method=mutableClassDefBy(owner).methods.single { it.name==name&&(version!="0.8.10.226 dev"||it.parameterTypes==listOf("Lo/listener;","Ljava/lang/CharSequence;"))&&it.implementation!!.instructions.any { instruction ->
+        val field=(instruction as? ReferenceInstruction)?.reference as? FieldReference
+        field?.definingClass==response&&field.name==body
+    } }
+    val code=method.implementation!!.instructions.toList()
+    val site=code.withIndex().single { (_,instruction)->val field=(instruction as? ReferenceInstruction)?.reference as? FieldReference
+        instruction.opcode==Opcode.IGET_OBJECT&&field?.definingClass==response&&field.name==body }
+    val field=site.value as TwoRegisterInstruction
+    val reset=(site.index+1..site.index+3).single { i->val ref=(code[i] as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass=="Ljava/util/regex/Matcher;"&&ref.name=="reset" }
+    val call=code[reset] as FiveRegisterInstruction
+    method.replaceInstruction(site.index,"move-object v${field.registerA}, v${field.registerB}")
+    if(reset>site.index+1)method.replaceInstruction(site.index+1,"nop")
+    method.replaceInstruction(reset,"invoke-static {v${call.registerC}, v${call.registerD}}, Lapp/morphe/extension/chmate/ThreadSearchText;->reset(Ljava/util/regex/Matcher;Ljava/lang/Object;)Ljava/util/regex/Matcher;")
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotationButton(

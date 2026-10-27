@@ -3696,6 +3696,7 @@ public final class Haiagaru {
         PopularReplies.addSettings(layout,activity);
         QuickFilterOptions.addSettings(layout,activity);
         QuickFilterOptions.addToolbarEntry(layout,activity);
+        HomeSelectionBar.addSettings(layout,activity);
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,

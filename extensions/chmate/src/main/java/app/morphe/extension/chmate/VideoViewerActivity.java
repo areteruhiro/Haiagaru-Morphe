@@ -147,7 +147,14 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         frame.addView(holdSpeedIndicator, indicatorLayout);
         root.addView(frame, new LinearLayout.LayoutParams(-1, 0, 1));
         status = new TextView(this); status.setTextColor(Color.WHITE); status.setPadding(16, 8, 16, 12);
-        root.addView(HaiagaruUi.controls(this, status));
+        // Status overlays the player; transient messages must never resize the video.
+        FrameLayout.LayoutParams statusLayout=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+        frame.addView(status,statusLayout);
+        frame.getViewTreeObserver().addOnPreDrawListener(()->{
+            int inset=controls instanceof HaiagaruMediaController?((HaiagaruMediaController)controls).controlHeight():0;
+            FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)status.getLayoutParams();
+            if(lp.bottomMargin!=inset){lp.bottomMargin=inset;status.setLayoutParams(lp);}return true;
+        });
         HaiagaruUi.showPlayer(this, root); root.requestApplyInsets();
         controls = new HaiagaruMediaController(this) {
             private Runnable unregisterControllerBack;

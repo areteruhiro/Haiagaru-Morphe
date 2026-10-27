@@ -9,7 +9,7 @@ final class PreviewUrls {
     private static final String LABEL="[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
     private static final Pattern LINKS=Pattern.compile("(?<![\\p{L}\\p{N}_@/.:+-])"
             +"(?:(?:https?|ttps?|tps?)://|//)?(?:"+LABEL+"\\.)+[a-z]{2,63}"
-            +"(?::[0-9]{1,5})?(?:[/?#][^\\s<>\"'()（）]*)?",Pattern.CASE_INSENSITIVE);
+            +"(?::[0-9]{1,5})?(?:[/?#][^\\s<>\"'()（）]*)?(?![A-Za-z0-9_.-])",Pattern.CASE_INSENSITIVE);
     static String normalize(String value){
         if(value==null)return null;
         String url=value.trim().replace("&amp;","&").replaceAll("[.,、。]+$","");

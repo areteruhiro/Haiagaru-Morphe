@@ -157,7 +157,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
     private boolean backgroundEnabled(){return getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).getBoolean("wacchoiBackgroundSearch",false);}
     boolean allowsSource(int source) {
         String origin=getIntent().getStringExtra("haiagaru.wacchoi.host");
-        if(origin==null)return true;
+        if(origin==null||getIntent().getBooleanExtra("haiagaru.search.allowCrossBoard",false))return true;
         origin=origin.toLowerCase(Locale.ROOT);
         boolean edge=origin.contains("eddibb.")||origin.contains("liveedge");
         boolean five=origin.equals("5ch.io")||origin.endsWith(".5ch.io")||origin.equals("5ch.net")||origin.endsWith(".5ch.net")||origin.endsWith(".2ch.net");
@@ -243,6 +243,11 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
                 renderBoardChoices();
             }
             if (host != null) restoredDraft = true;
+        }
+        String rangeFrom=getIntent().getStringExtra("haiagaru.search.from"),rangeTo=getIntent().getStringExtra("haiagaru.search.to");
+        if(rangeFrom!=null&&rangeTo!=null){fromInput.setText(rangeFrom);toInput.setText(rangeTo);}
+        if(query!=null&&getIntent().getBooleanExtra("haiagaru.search.allowCrossBoard",false)){
+            fourInput.setText(query);if(query.regionMatches(true,0,"ID:",0,3))edgeMode.setSelection(0);
         }
         if(!allowsSource(searchSource))searchSource=allowsSource(0)?0:1;
         if(getIntent().getBooleanExtra(HissiScanTemplate.AUTO,false)&&fields==null&&selectedBackground()==null){
@@ -349,13 +354,14 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
     private boolean boardsRequested;
     void setComposeChanged(Runnable changed) { composeChanged = changed; }
     boolean isFullWacchoiSearch() {
-        return searchSource == 0 && getIntent().getBooleanExtra("haiagaru.wacchoi.hissi", false);
+        return searchSource == 0 && !fourInput.getText().toString().trim().regionMatches(true,0,"ID:",0,3) && getIntent().getBooleanExtra("haiagaru.wacchoi.hissi", false);
     }
+    boolean idSearch(){return fourInput.getText().toString().trim().regionMatches(true,0,"ID:",0,3);}
     boolean fullProviderSwitchAllowed(){return SettingsProfiles.prefs(this).getInt(HissiScanTemplate.PROVIDER,0)==3;}
     void openFullWacchoiKyodemo() {
         if (stopButton.isEnabled()) return;
         String query = fourInput.getText().toString().trim();
-        if (!WacchoiSearch.SLIP.matcher(query).matches()) {
+        if (!idSearch() && !WacchoiSearch.SLIP.matcher(query).matches()) {
             fourInput.setError("ワッチョイ全文を入力してください（例：abcd-Ef12）");
             searchUiChanged(); return;
         }
@@ -373,6 +379,18 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
         if (KyodemoRouting.wacchoiSearchUrl(host, board, kyodemoQuery) == null) {
             boardStatus.setError("この板のKyodemo検索先が見つかりません");
             searchUiChanged(); return;
+        }
+        if(idSearch()){
+            String from=fromInput.getText().toString(),to=toInput.getText().toString();
+            if(!from.matches("[0-9]{8}")||!to.matches("[0-9]{8}")||from.compareTo(to)>0){fromInput.setError("開始日と終了日を確認してください");return;}
+            String address=KyodemoRouting.wacchoiSearchUrl(host,board,query);
+            Uri.Builder builder=Uri.parse(address).buildUpon();
+            builder.appendQueryParameter("fr",from.substring(0,4)+"-"+from.substring(4,6)+"-"+from.substring(6));
+            builder.appendQueryParameter("to",to.substring(0,4)+"-"+to.substring(4,6)+"-"+to.substring(6));
+            Intent checker=new Intent(this,HissiMenuActivity.class).setData(builder.build())
+                .putExtra("haiagaru.wacchoi.host",host).putExtra("haiagaru.wacchoi.board",board)
+                .putExtra("haiagaru.checker.forceKyodemo",true).putExtra("haiagaru.wacchoi.form",captureSearchFields());
+            WacchoiLongPressMenu.launchSearch(this,checker);return;
         }
         Intent checker = new Intent(this, HissiMenuActivity.class)
                 .putExtra("haiagaru.wacchoi.search", true)
@@ -1150,6 +1168,14 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
             // assuming that the poster name/ID is always the final table cell.
             String names = Html.fromHtml(row, Html.FROM_HTML_MODE_LEGACY).toString()
                     .replace('\u00a0', ' ').replace('\u3000', ' ').trim();
+            if(four.regionMatches(true,0,"ID:",0,3)){
+                String encoded=Uri.parse(profileUrl).getLastPathSegment();
+                if(encoded!=null&&encoded.endsWith(".html"))try{
+                    String id=new String(android.util.Base64.decode(encoded.substring(0,encoded.length()-5),android.util.Base64.DEFAULT),java.nio.charset.StandardCharsets.UTF_8);
+                    if(id.equals(four.substring(3)))found.add(profileUrl+"\n"+names+"\nID:"+id);
+                }catch(IllegalArgumentException invalid){}
+                continue;
+            }
             Matcher slip = SLIP.matcher(WacchoiSearch.normalizeSlipText(names));
             while (slip.find()) {
                 if (WacchoiSearch.matchesFilter(four, slip, firstHalf)) {

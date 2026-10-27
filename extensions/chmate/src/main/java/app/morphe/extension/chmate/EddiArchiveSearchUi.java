@@ -619,6 +619,7 @@ final class EddiArchiveSearchUi {
             TextView title = resultText(thread.title, 16, foreground);
             card.addView(title);
             card.addView(resultText(thread.date, 12, muted));
+            card.setOnLongClickListener(view -> { showResultCopy(thread); return true; });
             card.setOnClickListener(view -> {
                 try {
                     saveState(null);
@@ -649,6 +650,24 @@ final class EddiArchiveSearchUi {
             restoreScrollY = -1;
             HaiagaruUi.scrollTo(scroll, position);
         }
+    }
+
+    private void showResultCopy(ThreadResult thread){
+        Uri uri=Uri.parse(thread.url);java.util.List<String> parts=uri.getPathSegments();
+        String board="liveedge",key=null;
+        if(parts.size()>=4&&parts.get(0).equals("sdemo")&&parts.get(1).equals("r")){board=parts.get(2).replaceFirst("^e_e_","");key=parts.get(3);}
+        else if(parts.size()>=4&&parts.get(0).equals("test")&&parts.get(1).equals("read.cgi")){board=parts.get(2);key=parts.get(3);}
+        if(key==null||!key.matches("[0-9]{9,12}"))return;
+        String nativeUrl="https://bbs.eddibb.cc/test/read.cgi/"+board+"/"+key+"/";
+        String kyodemo="https://www.kyodemo.net/sdemo/r/e_e_"+board+"/"+key+"/";
+        String label="liveedge".equals(board)?"エッヂ":board;
+        String[] values={kyodemo,nativeUrl,label+"\n"+nativeUrl,thread.title+"\n"+nativeUrl};
+        new HaiagaruDialog.Builder(activity).setTitle("検索結果をコピー")
+                .setItems(new String[]{"KyodemoのURL","スレのURL","板名とスレのURL","スレタイとURL"},(dialog,which)->{
+                    android.content.ClipboardManager clipboard=(android.content.ClipboardManager)activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("スレ",values[which]));
+                    android.widget.Toast.makeText(activity,"コピーしました",android.widget.Toast.LENGTH_SHORT).show();
+                }).setNegativeButton("キャンセル",null).show();
     }
 
     private String resultStatus() {
