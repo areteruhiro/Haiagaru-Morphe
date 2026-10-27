@@ -86,6 +86,13 @@ try:
   check(state['count']==3 and state['index']==1,'thumbnail preserves selected media in full-thread gallery')
   snapshot=rpc.thread_snapshot_reuse();check(snapshot['count']==3 and snapshot['index']==1,'thread snapshot reused for 100 interaction lookups')
   rpc.swipe(-1,False);check(wait_state('/clip.mp4','VideoViewerActivity',True)['index']==2,'whole-thread swipe crosses posts even when same-response swipe is OFF')
+ rpc.native_multi();wait_state('/a.png','ImagesViewer2Activity');time.sleep(1)
+ subprocess.run([adb,'-s',serial,'shell','input','swipe','1650','600','250','600','300'],check=True);wait_state('/b.png','ImagesViewer2Activity');check(True,'actual standard pager changes current media independently of launch Intent')
+ if package.endswith('242'):check(rpc.native_model_registered()==1,'screen-local native ViewModel follows actual pager index')
+ rpc.preference('mediaSwipeWholeThread',True);rpc.preference('mediaSwipeNavigation',True)
+ rpc.swipe(-1,False);wait_state('/clip.mp4','VideoViewerActivity',True);check(True,'thread gallery takes priority over same-response gestures after native paging')
+ rpc.native_gif_page();wait_state('/one.gif','ImagesViewer2Activity');time.sleep(.5)
+ rpc.swipe(-1,False);wait_state('/clip.mp4','VideoViewerActivity',True);check(True,'standard GIF gesture crosses to next thread video with both options ON')
  print(json.dumps({'checks':len(checks),'passed':checks,'requests':dict(counts)},ensure_ascii=False),flush=True)
  pathlib.Path('build/media-gallery-runtime-result.json').write_text(json.dumps({'checks':checks,'requests':dict(counts)},ensure_ascii=False,indent=2),encoding='utf-8')
 finally:

@@ -47,6 +47,15 @@ internal val gifViewerRoutingPatch = bytecodePatch {
                 return-object v0
             """.trimIndent())
         })
+        if(packageMetadata.versionName=="0.8.10.242 dev"){
+            // The Compose viewer owns a screen-local ViewModelStore. Register
+            // its fully constructed model without changing SavedStateHandle state.
+            val model=mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewerViewModel;")
+            val constructor=model.methods.single { it.name=="<init>" && it.parameterTypes==listOf("Lo/isUserConsentSet;","Landroid/content/Context;") }
+            val returns=constructor.implementation!!.instructions.mapIndexedNotNull { index,instruction -> if(instruction.opcode==Opcode.RETURN_VOID)index else null }
+            check(returns.isNotEmpty()) { "Native Compose media model constructor changed" }
+            returns.asReversed().forEach { index -> constructor.addInstructions(index,"invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/MediaViewerNavigation;->registerNativeModel(Ljava/lang/Object;)V") }
+        }
         val originalTouch=owner.methods.singleOrNull { it.name == "dispatchTouchEvent" && it.parameterTypes == listOf("Landroid/view/MotionEvent;") }
         val fallback=if(originalTouch!=null){
             val delegate=MutableMethod(ImmutableMethod(owner.type,"haiagaruNativeMediaTouch",originalTouch.parameters,

@@ -1,3 +1,114 @@
+# Haiagaru 1.14.0
+
+全板検索の対象板を選べるようにし、ワッチョイ検索の板選択やビューアの動作を修正しました。広告だけの超軽量構成にも、基本操作でのクラッシュ対策を追加しています。
+
+## 変更内容
+
+- ワッチョイ全文・上4桁・下4桁検索で、板一覧の取得を待たされることや、選択のオン・オフがすぐ表示に反映されない問題を修正しました。取得済みの一覧を再利用し、画面内で再取得もできます。
+- HOMEの全板検索に、登録済みの外部板・bbspinkの結果を追加できるようにしました（初期オフ）。設定の「探す・過去ログ」で、板名・URLで絞り込みながら検索対象を選べます。
+- 標準の画像・GIFビューアと、Haiagaru専用のGIF・動画ビューアで、読み込み済みのスレ全体のメディアへ左右に移動できるよう修正しました。標準ビューア内で画像を切り替えた後も、表示中の画像から移動します。
+- 「サムネイルからスレ全体の画像・GIF・動画へ左右移動」をオンにした場合は、同じレス内の左右移動の設定より優先します。この設定の初期値はオフです。
+- XやWebサイトのリンクカードを表示しているとき、アプリを終了して開き直すと表示位置が上にずれる問題を修正しました。レス番号を指定して開く操作や、新着位置への移動、ユーザーのスクロールを優先します。
+- 「広告だけの超軽量構成」にも、投稿・画像アップロード・UPLIFTでの0除算などによるクラッシュ対策を追加しました。
+- 「取得済みのスレから検索」の画面に並び順を追加しました。標準・スレ作成日時が新しい順・古い順を選べます。アーカイブ一覧とは別に保存し、設定の共有・バックアップにも含めます。
+
+投稿・画像アップロード・UPLIFTは、パッチの適用と原因となる計算処理を確認しています。各サービスへの実送信・ログインは今回の確認に含めていません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* search selected external boards and fix viewer and board selection state ([557cc6c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/557cc6c57a88e472d7c7e2bffa1ec63772e40608))
+* sort cached thread search results by creation date ([4dc452b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4dc452b7658eb244f9f503715ba3d1e1b76bade2))
+
+# Haiagaru 1.14.0-dev.1
+
+「取得済みのスレから検索」の結果を、スレの作成日時で並べ替えられるようにしました。
+
+## 変更内容
+
+- 検索画面に「並び順」を追加しました。「標準の並び順」「スレ作成日時：新しい順」「スレ作成日時：古い順」をその場で選べます。
+- アーカイブ一覧の設定とは別に、検索結果の並び順を保存します。取得済みスレとアーカイブのどちらを検索する場合にも使えます。
+- レスの投稿日時ではなく、スレの作成日時を使います。同じ作成日時の結果は元の順番を保ち、作成日時が分からない結果は末尾に表示します。検索条件・件数・開く対象は変更しません。
+
+初期設定は標準の並び順です。選んだ順番は次回の検索にも使われ、設定の共有・バックアップにも含まれます。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* sort cached thread search results by creation date ([4dc452b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4dc452b7658eb244f9f503715ba3d1e1b76bade2))
+
 # Haiagaru 1.13.0
 
 正式版1.12.2からの更新です。メディアの表示・移動、板別Cookie、認証画面、追加画面のタブ操作を改善しました。

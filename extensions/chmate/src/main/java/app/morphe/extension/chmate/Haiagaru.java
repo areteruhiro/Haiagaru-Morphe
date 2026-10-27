@@ -4562,6 +4562,7 @@ public final class Haiagaru {
         layout.addView(responseArchive);
         ArchiveOrigins.addSettings(layout, activity);
         RelatedThreads.addSettings(layout, activity);
+        GlobalTitleSearch.addSettings(layout, activity);
         EditText archiveRouteTemplatesValue = null;
         try {
             archiveRouteTemplatesValue = addArchiveRouteControl(
