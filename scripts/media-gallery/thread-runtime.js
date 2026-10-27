@@ -191,3 +191,18 @@ rpc.exports.actualSearch=function(){return main(()=>{
 
 rpc.exports.threadGallery=function(){return main(()=>{const a=current(),i=Java.use('android.content.Intent').$new(a.getIntent());i.putExtra('haiagaru.media.thread',true);a.setIntent(i);prefs.edit().putBoolean('mediaSwipeWholeThread',true).commit();return true;});};
 rpc.exports.upSwipe=function(direction){return main(()=>{const a=current(),r=area(a),t=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,0,r.x,r.y,t);touch(a,2,r.x,r.y+direction*240,t);touch(a,1,r.x,r.y+direction*240,t);return true;});};
+
+rpc.exports.rotateCheck=function(){return main(()=>{
+ const a=current(),root=a.findViewById(16908290),R=Java.use(P+'ImageViewerRotationButton'),clazz=String(a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName.value).includes('191')?'o.qhbExternalSyntheticLambda0':'o.TTVideoLandingPageActivity4';
+ function image(v){if(String(v.getClass().getName())===clazz)return v;if(Java.use('android.view.ViewGroup').class.isInstance(v)){const g=Java.cast(v,Java.use('android.view.ViewGroup'));for(let n=0;n<g.getChildCount();n++){const found=image(g.getChildAt(n));if(found)return found;}}return null;}
+ const v=image(root);if(!v)throw Error('No image canvas');
+ const key='imageViewerRotationInMenu',before={had:prefs.contains(key),v:prefs.getBoolean(key,true)},en={had:prefs.contains('imageViewerRotationButton'),v:prefs.getBoolean('imageViewerRotationButton',true)};
+ try{prefs.edit().putBoolean(key,true).putBoolean('imageViewerRotationButton',true).commit();const menu=Java.use('android.widget.PopupMenu').$new(a,root).getMenu();R.prepareMenu(a,menu);const start=v.getRotation(),clicked=Java.use('jp.syoboi.a2chMate.activity.ImagesViewer2Activity').onOptionsItemSelected.call(a,menu.findItem(0x48415255));const after=v.getRotation();if(after!==(start+90)%360)throw Error('Native menu did not rotate');
+ for(let n=0;n<3;n++)Java.use('jp.syoboi.a2chMate.activity.ImagesViewer2Activity').onOptionsItemSelected.call(a,menu.findItem(0x48415255));if(v.getRotation()!==start)throw Error('Four rotations did not restore');
+ prefs.edit().putBoolean(key,false).commit();Java.cast(a.findViewById(0x48415254),Java.use('android.view.View')).performClick();if(v.getRotation()!==(start+90)%360)throw Error('Screen button broken');
+ prefs.edit().putBoolean('imageViewerRotationButton',false).commit();Java.use('jp.syoboi.a2chMate.activity.ImagesViewer2Activity').onOptionsItemSelected.call(a,menu.findItem(0x48415255));if(v.getRotation()!==(start+90)%360)throw Error('Disabled rotation still acts');
+ return {start,after,clicked,canvas:clazz,button:!!a.findViewById(0x48415254)};
+ }finally{const e=prefs.edit();before.had?e.putBoolean(key,before.v):e.remove(key);en.had?e.putBoolean('imageViewerRotationButton',en.v):e.remove('imageViewerRotationButton');e.commit();}
+});};
+
+rpc.exports.nativeMenu=function(){return main(()=>{current().openOptionsMenu();return true;});};
