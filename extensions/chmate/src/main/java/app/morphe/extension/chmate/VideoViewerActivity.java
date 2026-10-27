@@ -20,6 +20,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private VideoView video;
     private MediaController controls;
     private LinearLayout toolbar;
+    private FrameLayout mediaFrame;
     private TextView status;
     private String url;
     private int position;
@@ -108,16 +109,14 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             applyPlaybackSpeed(1f);
             return true;
         });
-        toolbar.addView(speedButton);
         muteButton=overlayButton(muted?"音声ON":"ミュート");
         muteButton.setContentDescription(muted?"ミュートを解除":"ミュートする");
         muteButton.setOnClickListener(v->{muted=!muted;applyMute();});
-        toolbar.addView(muteButton);
         more.setOnClickListener(this::showMenu); toolbar.addView(more);
         LinearLayout toolbarModel = toolbar;
         toolbar = new LinearLayout(this);
         toolbar.addView(HaiagaruUi.controls(this, toolbarModel), new LinearLayout.LayoutParams(-1, -2));
-        FrameLayout frame = new FrameLayout(this);
+        FrameLayout frame = new FrameLayout(this);mediaFrame=frame;
         video = new VideoView(this);
         setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
         touchControls = new VideoTouchControls(this);
@@ -180,6 +179,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
                 toolbar.setVisibility(View.INVISIBLE);
             }
         };
+        ((HaiagaruMediaController)controls).setPlaybackActions(speedButton,muteButton);
         controls.setAnchorView(frame); video.setMediaController(controls);
         // The save menu must work before preparation completes, or even after a playback error.
         controls.setMediaPlayer(video);
@@ -268,7 +268,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     }
 
     private void applyPlaybackSpeed(float speed) {
-        if(gifFallback!=null){gifFallback.setPlaybackSpeed(speed);playbackSpeed=speed;speedButton.setText(speedLabel(speed));return;}
+        if(gifFallback!=null){gifFallback.setPlaybackSpeed(speed);playbackSpeed=speed;speedButton.setText(speedLabel(speed));refreshPlaybackActions();return;}
         if (!prepared || mediaPlayer == null || android.os.Build.VERSION.SDK_INT < 23) return;
         applyPlaybackSpeed(mediaPlayer, speed);
     }
@@ -283,6 +283,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             if (speedButton != null) {
                 speedButton.setText(speedLabel(speed));
                 speedButton.setContentDescription("再生速度 " + speedLabel(speed));
+                refreshPlaybackActions();
             }
         } catch (RuntimeException error) {
             Toast.makeText(this, "この動画では再生速度を変更できません", Toast.LENGTH_SHORT).show();
@@ -307,11 +308,13 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
 
     boolean isHoldSpeedActive() { return holdSpeedActive; }
 
+    private void refreshPlaybackActions(){if(controls instanceof HaiagaruMediaController)((HaiagaruMediaController)controls).refreshPlaybackActions();}
     private void applyMute(){
         float volume=muted?0f:1f;
         if(mediaPlayer!=null)try{mediaPlayer.setVolume(volume,volume);}catch(IllegalStateException ignored){}
         if(gifFallback!=null)gifFallback.setVolume(volume);
         if(muteButton!=null){muteButton.setText(muted?"音声ON":"ミュート");muteButton.setContentDescription(muted?"ミュートを解除":"ミュートする");}
+        refreshPlaybackActions();
     }
 
     void endHoldSpeed() {
@@ -380,10 +383,15 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         android.graphics.Matrix matrix=new android.graphics.Matrix();matrix.setScale(sx,sy,width/2,height/2);gifFallbackView.setTransform(matrix);
     }
 
+    View videoGestureSurface(){
+        if(mediaFrame!=null&&VideoViewerSettings.prefs(this).getBoolean(VideoViewerSettings.LETTERBOX_TOUCH,true))return mediaFrame;
+        return gifFallbackView!=null?gifFallbackView:video;
+    }
     @Override public boolean dispatchTouchEvent(MotionEvent event) {
-        if(MediaViewerNavigation.onTouch(this,event,gifFallbackView!=null?gifFallbackView:video))return true;
-        if (touchControls != null && video != null && touchControls.dispatch(event, video)) return true;
-        if (gestures != null && gestures.dispatch(event, video)) {
+        View surface=videoGestureSurface();
+        if(MediaViewerNavigation.onTouch(this,event,surface))return true;
+        if (touchControls != null && video != null && touchControls.dispatch(event, surface)) return true;
+        if (gestures != null && gestures.dispatch(event, surface)) {
             if (touchControls != null) touchControls.cancel();
             return true;
         }

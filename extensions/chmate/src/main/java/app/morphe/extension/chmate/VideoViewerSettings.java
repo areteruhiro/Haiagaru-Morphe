@@ -9,7 +9,7 @@ import android.widget.*;
 public final class VideoViewerSettings {
     static final String HOLD_SPEED="videoHoldDoubleSpeed",TAP_CONTROLS="videoTapControls",CHMATE_GESTURES="videoChmateGestures",
             MEDIA_SWIPE="mediaSwipeNavigation",GIF_AUTOPLAY="gifAutoplay",GIF_NATIVE="gifUseNativeViewer",
-            VIDEO_NATIVE="videoUseNativeViewer",THREAD_MEDIA="mediaSwipeWholeThread";
+            VIDEO_NATIVE="videoUseNativeViewer",THREAD_MEDIA="mediaSwipeWholeThread",LETTERBOX_TOUCH="videoLetterboxTouch";
     private VideoViewerSettings() { }
     static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config", 0);
@@ -46,6 +46,7 @@ public final class VideoViewerSettings {
         Switch tapControls=toggle(body,activity,"動画のタップで再生バーを表示・非表示",prefs.getBoolean(TAP_CONTROLS,true));
         Switch nativeGestures=toggle(body,activity,"動画ビューアでChMateのジェスチャーを使う",prefs.getBoolean(CHMATE_GESTURES,true));
         Switch mediaSwipe=toggle(body,activity,"左右スワイプで同じレスの画像・GIF・動画へ移動",prefs.getBoolean(MEDIA_SWIPE,true));
+        Switch letterbox=toggle(body,activity,"動画の上下・左右の余白でもタッチ操作する",prefs.getBoolean(LETTERBOX_TOUCH,true));
         Switch doubleTap = toggle(body, activity, "左ダブルタップで巻き戻し／右ダブルタップで早送り", prefs.getBoolean("videoDoubleTapSeek", false));
         TextView label = new TextView(activity); label.setText("戻る／進む・ダブルタップで移動する秒数"); body.addView(label);
         Spinner seconds = new Spinner(activity);
@@ -67,6 +68,7 @@ public final class VideoViewerSettings {
         live.toggle(nativeGif,GIF_NATIVE);live.toggle(nativeVideo,VIDEO_NATIVE);live.toggle(threadMedia,THREAD_MEDIA);
         live.toggle(gifAutoplay,GIF_AUTOPLAY);live.toggle(holdSpeed,HOLD_SPEED);live.toggle(tapControls,TAP_CONTROLS);
         live.toggle(nativeGestures,CHMATE_GESTURES);live.toggle(mediaSwipe,MEDIA_SWIPE);
+        live.toggle(letterbox,LETTERBOX_TOUCH);
         live.toggle(doubleTap,"videoDoubleTapSeek");live.toggle(youtube,"videoYoutubeEnabled");
         final int[] previous={seconds.getSelectedItemPosition()};
         seconds.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){

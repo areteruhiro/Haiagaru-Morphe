@@ -2,8 +2,8 @@
 let threadLaunch;
 const originalSetup=rpc.exports.setup;
 rpc.exports.setup=function(value){return originalSetup(value).then(result=>main(()=>{
- for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread']){
-  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,false)});prefs.edit().putBoolean(key,false).commit();
+ for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread','videoLetterboxTouch']){
+  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,key==='videoLetterboxTouch')});prefs.edit().putBoolean(key,key==='videoLetterboxTouch').commit();
  }
  return result;
 }));};
@@ -140,3 +140,13 @@ rpc.exports.counterRemap=function(){return main(()=>{
   return 'PASS selected media uses full-gallery position/total, out-of-range and native-only scope preserved';
  }finally{a.setIntent(original);}
 });};
+rpc.exports.portrait=function(){return main(()=>{current().setRequestedOrientation(1);return true;});};
+rpc.exports.letterboxPoint=function(){return main(()=>{
+ const a=cast(current()),video=a.video.value,frame=a.mediaFrame.value,p=Java.array('int',[0,0]),q=Java.array('int',[0,0]);video.getLocationOnScreen(p);frame.getLocationOnScreen(q);
+ const top=Number(q[1]),videoTop=Number(p[1]),gap=videoTop-top;
+ if(gap<100)throw Error('Reference video has no usable vertical letterbox gap: '+gap);
+ return {x:Number(q[0])+frame.getWidth()*.5,y:top+gap*.65,videoTop,frameTop:top,frameHeight:frame.getHeight(),videoHeight:video.getHeight()};
+});};
+rpc.exports.touchPoint=function(action,x,y){return main(()=>{const a=current();if(action===0)pressDown=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,action,x,y,pressDown);return true;});};
+rpc.exports.swipePoint=function(x,y){return main(()=>{const a=current(),t=Number(Java.use('android.os.SystemClock').uptimeMillis());touch(a,0,x,y,t);touch(a,2,x-260,y,t);touch(a,1,x-260,y,t);return true;});};
+rpc.exports.playbackActions=function(){return main(()=>{const a=cast(current());return {muted:a.muted.value,speed:Number(a.playbackSpeed.value),speedCaption:String(a.speedButton.value.getText()),muteCaption:String(a.muteButton.value.getText())};});};

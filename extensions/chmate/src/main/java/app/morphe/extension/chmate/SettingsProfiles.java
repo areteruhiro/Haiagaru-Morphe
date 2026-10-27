@@ -40,7 +40,7 @@ public final class SettingsProfiles {
         defaultValue(ExpertSettings.KEY,false);
         for(String key:EXTRA_BOOLEAN)booleanKey(key);
         for(String key:new String[]{VideoViewerSettings.HOLD_SPEED,VideoViewerSettings.TAP_CONTROLS,VideoViewerSettings.CHMATE_GESTURES,
-                VideoViewerSettings.MEDIA_SWIPE,VideoViewerSettings.GIF_AUTOPLAY}){booleanKey(key);defaultValue(key,true);}
+                VideoViewerSettings.MEDIA_SWIPE,VideoViewerSettings.GIF_AUTOPLAY,VideoViewerSettings.LETTERBOX_TOUCH}){booleanKey(key);defaultValue(key,true);}
         numberKey("videoPreviewMinimumSeconds",0,86459);
         numberKey("checkerHeaderPercent",10,60);
         numberKey("hissiViewerResponseSpacingDp",0,20);

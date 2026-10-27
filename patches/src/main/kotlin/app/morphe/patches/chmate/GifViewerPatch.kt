@@ -49,6 +49,21 @@ internal val gifViewerRoutingPatch = bytecodePatch {
                 return-object v0
             """.trimIndent())
         })
+        if(packageMetadata.versionName=="0.8.10.191 dev"){
+            // 191's real response thumbnail launcher constructs its own Intent
+            // instead of calling RM_. Capture that Intent before ActivityCompat
+            // starts the viewer, while the source thread still owns the window.
+            val launcher=owner.methods.single { it.name=="d" && it.parameterTypes==listOf("Landroid/app/Activity;","Landroid/view/View;","Ljava/util/ArrayList;","I","I") && it.returnType=="V" }
+            val site=launcher.implementation!!.instructions.withIndex().single { (_,instruction)->
+                val ref=(instruction as? ReferenceInstruction)?.reference as? MethodReference
+                ref?.returnType=="V"&&ref.parameterTypes==listOf("Landroid/app/Activity;","Landroid/content/Intent;","I","Landroid/os/Bundle;")
+            }
+            val call=site.value as FiveRegisterInstruction
+            check(call.registerCount==4&&site.value.opcode==Opcode.INVOKE_STATIC){"191 thumbnail launch arguments changed"}
+            val ref=(site.value as ReferenceInstruction).reference
+            launcher.replaceInstruction(site.index,"invoke-static {v${call.registerD}, v${call.registerC}}, Lapp/morphe/extension/chmate/MediaViewerNavigation;->prepareNativeIntent(Landroid/content/Intent;Landroid/content/Context;)V")
+            launcher.addInstructions(site.index+1,"invoke-static {v${call.registerC}, v${call.registerD}, v${call.registerE}, v${call.registerF}}, $ref")
+        }
         if(packageMetadata.versionName=="0.8.10.242 dev"){
             // The Compose viewer owns a screen-local ViewModelStore. Register
             // its fully constructed model without changing SavedStateHandle state.

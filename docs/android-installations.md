@@ -994,3 +994,11 @@ serial emulator-5554 / Haiagaru_Root_API36 / Haiagaru 検証242 / ChMate0.8.10.2
 APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-counter242.apk SHA256 E5CE57A5A7B3E3C6E9F74D188CCC221E837C2D6F0FC9F9A223639C3DF9960E97
 MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-counter-final.mpp SHA256 4747989F62B081492840D76FB596B1DB972FE4787E35B97AB70551D407AD1403
 通常LintVital付きmedia-counter-build.log成功3m19s、191/226/242適用・署名成功。3版とも旧候補APKとの差分検査でnative counterのsetTextだけを静的helperへ変更・レジスタ/元引数/他命令/分岐保持確認。242実UI5項目成功build/media-counter242-runtime2.log、静止画1/4→2/4→動画3/4・標準GIF3/4、1/2→2/4と2/2→4/4、単一画像1/1→4/4、範囲外/元標準の維持を確認。画像proofはbuild/media-counter-proof.png。初回のnative swipeはSystemUI冷起動ANRに阻まれ中断、Wait後の新fixture完走。crash bufferのBluetooth SIGABRTはcom.google.android.bluetoothでChMate PID2602の新規crashなし。共通Javaの191/226重複UIはユーザー指定で省略。公開はユーザー最新指示で公式Releaseへ進める。
+
+
+## 2026-10-27 サムネイル・下部動画操作候補
+MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-thumbnail-controls-final.mpp / SHA256 ef8249ba95aec3d88c1840cfaddffce4c75dae346cd5c7becd811574610ad6be
+鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。ADB serial emulator-5554。
+- Haiagaru 検証191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-thumbnail-controls191.apk / SHA256 7fad64ca07830649e4e2a826aba158be8c4dc3349a0e0e0042e4bcf36c38c949 / 署名照合install-r成功、cold起動・実スレ/画像/別レス動画移動成功
+- Haiagaru 検証226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-thumbnail-controls226.apk / SHA256 efc0ff46cf5ba24aeeed1394c2139e13e44c5d4d6f03d3bd486ff6e85f273262 / APK生成・署名成功。ADB起動未完でinstall失敗、導入完了とは扱わない
+- Haiagaru 検証242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\media-thumbnail-controls242.apk / SHA256 2e3f4b1f775262d2664ec524a7185bd05882565f14f5676a01ea4f0dc0e38c29 / APK生成・署名成功、今回導入なし
