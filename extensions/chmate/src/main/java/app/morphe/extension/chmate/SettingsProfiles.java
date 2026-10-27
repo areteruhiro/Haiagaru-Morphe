@@ -27,6 +27,7 @@ public final class SettingsProfiles {
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
+        numberKey(CachedSearchOrder.KEY,0,2);defaultValue(CachedSearchOrder.KEY,0);
         for(String key:new String[]{VideoViewerSettings.GIF_NATIVE,VideoViewerSettings.VIDEO_NATIVE,VideoViewerSettings.THREAD_MEDIA}){
             booleanKey(key);defaultValue(key,false);
         }
