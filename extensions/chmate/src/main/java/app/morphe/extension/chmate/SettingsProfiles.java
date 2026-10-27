@@ -28,6 +28,10 @@ public final class SettingsProfiles {
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         numberKey(ViewerCornerControls.BACK,0,3);defaultValue(ViewerCornerControls.BACK,1);
         numberKey(ViewerCornerControls.MORE,0,3);defaultValue(ViewerCornerControls.MORE,0);
+        numberKey(VideoViewerSettings.INLINE_LIMIT,1,8);defaultValue(VideoViewerSettings.INLINE_LIMIT,2);
+        numberKey(VideoViewerSettings.INLINE_MB,1,64);defaultValue(VideoViewerSettings.INLINE_MB,8);
+        booleanKey(VideoViewerSettings.X_GIF_AUTOPLAY);defaultValue(VideoViewerSettings.X_GIF_AUTOPLAY,true);
+        booleanKey(VideoViewerSettings.INLINE_GIF);defaultValue(VideoViewerSettings.INLINE_GIF,false);
         booleanKey(ImageViewerRotationButton.MENU_KEY);defaultValue(ImageViewerRotationButton.MENU_KEY,true);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
         numberKey(CachedSearchOrder.KEY,0,2);defaultValue(CachedSearchOrder.KEY,0);

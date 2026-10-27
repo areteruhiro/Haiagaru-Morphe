@@ -2,8 +2,8 @@
 let threadLaunch;
 const originalSetup=rpc.exports.setup;
 rpc.exports.setup=function(value){return originalSetup(value).then(result=>main(()=>{
- for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread','videoLetterboxTouch']){
-  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,key==='videoLetterboxTouch')});prefs.edit().putBoolean(key,key==='videoLetterboxTouch').commit();
+ for(const key of ['gifUseNativeViewer','videoUseNativeViewer','mediaSwipeWholeThread','videoLetterboxTouch','xMp4GifAutoplay','inlineGifAutoplay']){
+  saved.push({key,had:prefs.contains(key),value:prefs.getBoolean(key,key==='videoLetterboxTouch'||key==='xMp4GifAutoplay')});prefs.edit().putBoolean(key,key==='videoLetterboxTouch').commit();
  }
  return result;
 }));};
@@ -206,3 +206,31 @@ rpc.exports.rotateCheck=function(){return main(()=>{
 });};
 
 rpc.exports.nativeMenu=function(){return main(()=>{current().openOptionsMenu();return true;});};
+
+rpc.exports.openXGif=function(enabled){return main(()=>{
+ prefs.edit().putBoolean('videoAutoplay',!enabled).putBoolean('gifAutoplay',!enabled).putBoolean('xMp4GifAutoplay',enabled).commit();
+ const a=current(),Intent=Java.use('android.content.Intent'),i=Intent.$new(a,Java.use(P+'VideoViewerActivity').class);i.setData(Java.use('android.net.Uri').parse('https://video.twimg.com/tweet_video/G51IpxIXsAAZGU0.mp4'));a.startActivity(i);return true;
+});};
+rpc.exports.xGifState=function(){return main(()=>{
+ const a=Java.cast(current(),Java.use(P+'VideoViewerActivity')),fallback=a.gifFallback.value;
+ function invoke(o,name){const obj=Java.cast(o,Java.use('java.lang.Object'));return obj.getClass().getMethod(name,Java.array('java.lang.Class',[])).invoke(obj,Java.array('java.lang.Object',[]));}
+ const player=fallback!==null?fallback:a.video.value;
+ return {prepared:a.prepared.value,playing:String(invoke(player,'isPlaying'))==='true',wanted:a.playWhenReady.value,loop:fallback!==null?true:a.mediaPlayer.value!==null&&Java.cast(a.mediaPlayer.value,Java.use('android.media.MediaPlayer')).isLooping(),position:Number(invoke(player,'getCurrentPosition'))};
+});};
+let inlineFixture;
+rpc.exports.inlineSetup=function(){return main(()=>{
+ const a=current(),Group=Java.use('android.view.ViewGroup'),root=Java.cast(a.findViewById(16908290),Group),Direct=Java.use(P+'DirectBodySelection');
+ function find(v){if(Direct.isBody(v)&&v.isShown()&&v.getGlobalVisibleRect(Java.use('android.graphics.Rect').$new()))return Java.cast(v,Java.use('android.widget.TextView'));if(Group.class.isInstance(v)){let g=Java.cast(v,Group);for(let n=0;n<g.getChildCount();n++){let child=find(g.getChildAt(n));if(child)return child;}}return null;}
+ const body=find(root);if(!body)throw Error('Open thread body required');inlineFixture={body,root,original:body.getText(),visibility:body.getVisibility()};
+ body.setText.overload('java.lang.CharSequence','android.widget.TextView$BufferType').call(body,Java.use('android.text.SpannableString').$new(J().$new('GIF https://fixture.example/one.gif')),Java.use('android.widget.TextView$BufferType').SPANNABLE.value);prefs.edit().putBoolean('inlineGifAutoplay',true).commit();const loader=Java.use(P+'GifMediaLoader').load;loader.implementation=function(context,url,limit,force,cancelled){return loader.call(this,context,J().$new(base+'/one.gif'),limit,force,cancelled);};Java.use(P+'InlineGifPlayback').onBound(body);return {type:String(body.getClass().getName()),spanned:Java.use('android.text.Spanned').class.isInstance(body.getText()),body:Direct.isBody(body),tag:body.getTag(0x48694731)!==null,text:String(body.getText())};
+});};
+rpc.exports.inlineState=function(){return main(()=>{const slot=inlineFixture.body.getTag(0x48694731);if(!slot)return {slot:false};const r=field(slot,'installed').getBoolean(slot),drawable=field(slot,'drawable').get(slot),player=field(slot,'player').get(slot);return {text:String(inlineFixture.body.getText()),expected:String(field(slot,'text').get(slot)),slot:true,installed:r,closed:field(slot,'closed').getBoolean(slot),animated:drawable!==null,playing:drawable!==null?Java.use('android.graphics.drawable.Animatable').class.isInstance(drawable)&&Java.cast(drawable,Java.use('android.graphics.drawable.Animatable')).isRunning():player!==null&&String(Java.cast(player,Java.use('java.lang.Object')).getClass().getMethod('isPlaying',Java.array('java.lang.Class',[])).invoke(player,Java.array('java.lang.Object',[])))==='true'};});};
+rpc.exports.inlineX=function(){return main(()=>{inlineFixture.body.setVisibility(0);inlineFixture.body.setText(Java.use('android.text.SpannableString').$new(J().$new('https://x.com/Z3RO_GRAVITY_/status/1989826585013424339')));Java.use(P+'InlineGifPlayback').onBound(inlineFixture.body);return true;});};
+rpc.exports.inlineHide=function(){return main(()=>{inlineFixture.body.setVisibility(4);return true;});};
+rpc.exports.inlineCleanup=function(){return main(()=>{Java.use(P+'GifMediaLoader').load.implementation=null;if(inlineFixture){inlineFixture.body.setText(inlineFixture.original);inlineFixture.body.setVisibility(inlineFixture.visibility);inlineFixture=null;}return true;});};
+
+rpc.exports.inlineLimits=function(){return main(()=>{
+ const S=Java.use(P+'VideoViewerSettings'),keys=['inlineGifLimit','inlineGifMaxMb'],old=keys.map(k=>({k,had:prefs.contains(k),v:prefs.getInt(k,k==='inlineGifLimit'?2:8)}));
+ try{for(const [limit,mb] of [[1,1],[2,8],[8,64]]){prefs.edit().putInt(keys[0],limit).putInt(keys[1],mb).commit();if(S.inlineLimit(app())!==limit||S.inlineMaxMb(app())!==mb)throw Error('Limits not applied');}return 'PASS user limits minimum/default/maximum';}
+ finally{const e=prefs.edit();old.forEach(s=>s.had?e.putInt(s.k,s.v):e.remove(s.k));e.commit();}
+});};
