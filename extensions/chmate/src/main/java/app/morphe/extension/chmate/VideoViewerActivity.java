@@ -79,7 +79,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         Uri uri = getIntent().getData();
         if (uri == null || !XMediaAttachments.isVideo(uri.toString())) { finish(); return; }
         url = uri.toString();
-        playWhenReady = VideoViewerSettings.prefs(this).getBoolean("videoAutoplay",true);
+        playWhenReady = VideoViewerSettings.autoplay(this,url);
         if (state != null) {
             position = state.getInt("position", 0);
             playWhenReady = state.getBoolean("playing", true);
@@ -187,8 +187,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             mediaPlayer = player;
             applyMute();
             // X's GIFs are silent MP4s. Preserve their repeating animation behavior.
-            Uri source=Uri.parse(url);
-            if("video.twimg.com".equalsIgnoreCase(source.getHost())&&source.getPath()!=null&&source.getPath().startsWith("/tweet_video/"))player.setLooping(true);
+            if(VideoViewerSettings.xGif(url))player.setLooping(true);
             applyPlaybackSpeed(player, playbackSpeed);
             if (position > 0) video.seekTo(position);
             setStatus("");
@@ -201,8 +200,9 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         });
         video.setOnErrorListener((player, what, extra) -> {
             endHoldSpeed();
-            prepared = false; mediaPlayer = null; playWhenReady = false;
+            prepared = false; mediaPlayer = null;
             if (startGifFallback()) return true;
+            playWhenReady = false;
             setStatus("動画を再生できません（エラー " + what + "/" + extra
                     + "）。︙から再読み込み、または外部アプリで開いてください");
             return true;
@@ -522,6 +522,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         super.onResume(); foreground = true;
         if (video != null) gestures = new VideoViewerGestures(this);
         if (prepared && playWhenReady) video.start();
+        if (gifFallback != null && playWhenReady) gifFallback.play();
     }
     @Override protected void onPause() {
         if (touchControls != null) touchControls.cancel();
