@@ -121,3 +121,22 @@ rpc.exports.nativeGifPage=function(){return main(()=>{
  const intent=Java.use(P+'MediaViewerNavigation').destination(current(),all,2);intent.putExtra.overload('java.lang.String','boolean').call(intent,'haiagaru.media.thread',true);current().startActivity(intent);return true;
 });};
 rpc.exports.nativeModelRegistered=function(){return main(()=>{const Nav=Java.use(P+'MediaViewerNavigation'),a=current(),models=Nav.class.getDeclaredField('MODELS');models.setAccessible(true);const map=Java.cast(models.get(null),Java.use('java.util.Map')),weak=map.get(a);if(!weak)throw Error('Native screen model registration missing');const model=Java.cast(weak,Java.use('java.lang.ref.WeakReference')).get();if(!model||String(model.getClass().getName())!=='jp.syoboi.a2chMate.activity.ImagesViewerViewModel')throw Error('Wrong native screen model');return Number(Nav.nativeIndex(a).intValue());});};
+rpc.exports.nativeCounterText=function(){return main(()=>{
+ const a=current(),Text=Java.use('android.widget.TextView'),Group=Java.use('android.view.ViewGroup'),labels=[];
+ function walk(v){if(Text.class.isInstance(v)){const text=String(Java.cast(v,Text).getText());if(/^\d+\/\d+$/.test(text)&&v.isShown())labels.push(text);}if(Group.class.isInstance(v)){const g=Java.cast(v,Group);for(let i=0;i<g.getChildCount();i++)walk(g.getChildAt(i));}}
+ walk(a.getWindow().getDecorView());return labels;
+});};
+rpc.exports.counterRemap=function(){return main(()=>{
+ const a=current(),Nav=Java.use(P+'MediaViewerNavigation'),Text=Java.use('android.widget.TextView'),view=Text.$new(a),intent=a.getIntent();
+ const original=Java.use('android.content.Intent').$new(intent),list=Java.use('java.util.ArrayList').$new(),native=Java.use('java.util.ArrayList').$new();
+ ['/one.gif','/a.png','/clip.mp4','/b.png'].forEach(path=>list.add(J().$new(base+path)));['/a.png','/b.png'].forEach(path=>native.add(J().$new(base+path)));
+ try{
+  intent.putStringArrayListExtra('haiagaru.media.links',list).putStringArrayListExtra('links',native).putExtra.overload('java.lang.String','boolean').call(intent,'haiagaru.media.thread',true);
+  Nav.setNativeCounter(view,J().$new('1/2'));if(String(view.getText())!=='2/4')throw Error('First native image should be mixed page 2/4');
+  Nav.setNativeCounter(view,J().$new('2/2'));if(String(view.getText())!=='4/4')throw Error('Second native image should be mixed page 4/4');
+  const single=Java.use('java.util.ArrayList').$new();single.add(J().$new(base+'/b.png'));intent.putStringArrayListExtra('links',single);Nav.setNativeCounter(view,J().$new('1/1'));if(String(view.getText())!=='4/4')throw Error('Singleton native image should show full gallery 4/4');intent.putStringArrayListExtra('links',native);
+  Nav.setNativeCounter(view,J().$new('103/200'));if(String(view.getText())!=='103/200')throw Error('Unknown native page changed');
+  intent.removeExtra('haiagaru.media.links');Nav.setNativeCounter(view,J().$new('1/2'));if(String(view.getText())!=='1/2')throw Error('Native-only scope changed');
+  return 'PASS selected media uses full-gallery position/total, out-of-range and native-only scope preserved';
+ }finally{a.setIntent(original);}
+});};

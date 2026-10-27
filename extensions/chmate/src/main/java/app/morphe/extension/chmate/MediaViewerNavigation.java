@@ -158,6 +158,36 @@ public final class MediaViewerNavigation {
         return intent.putStringArrayListExtra(EXTRA,new ArrayList<>(links))
                 .putStringArrayListExtra("links",nativeLinks).putExtra("index",nativeIndex);
     }
+    /** Native pager contains only media ChMate can load. Its label must still
+     * index the complete mixed-media gallery used by our swipe gesture. */
+    public static void setNativeCounter(TextView view,CharSequence nativeLabel){
+        CharSequence label=nativeLabel;
+        try{
+            android.content.Context context=view.getContext();
+            for(int depth=0;depth<16&&context instanceof android.content.ContextWrapper&&!(context instanceof Activity);depth++){
+                android.content.Context base=((android.content.ContextWrapper)context).getBaseContext();if(base==context)break;context=base;
+            }
+            if(context instanceof Activity){
+                Activity activity=(Activity)context;Intent intent=activity.getIntent();
+                ArrayList<String> gallery=intent.getStringArrayListExtra(EXTRA),nativeLinks=intent.getStringArrayListExtra("links");
+                if(gallery!=null&&nativeLinks!=null&&nativeLabel!=null){
+                    java.util.regex.Matcher page=java.util.regex.Pattern.compile("^\\s*([0-9]+)\\s*/\\s*[0-9]+\\s*$").matcher(nativeLabel);
+                    if(page.matches()){
+                        // The native callback formats the next page before updating
+                        // its Activity field / pager; use the label's own index.
+                        int index=Integer.parseInt(page.group(1))-1;
+                        if(index>=0&&index<nativeLinks.size()){
+                            String selected=PreviewUrls.normalize(nativeLinks.get(index));
+                            ArrayList<String> all=MediaGallery.links(gallery,selected,intent.getBooleanExtra(THREAD_EXTRA,false)?4096:128);
+                            int position=all.indexOf(selected);
+                            if(position>=0)label=(position+1)+"/"+all.size();
+                        }
+                    }
+                }
+            }
+        }catch(RuntimeException ignored){/* Leave native count intact for unknown media. */}
+        view.setText(label);
+    }
     static String counter(Activity activity) {
         ArrayList<String> links=links(activity);return links.size()>1?" · "+(links.indexOf(current(activity))+1)+"/"+links.size():"";
     }
