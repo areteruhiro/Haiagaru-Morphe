@@ -229,7 +229,9 @@ public final class MediaViewerNavigation {
         if(swipe.back!=null&&swipe.back.dispatch(event)){SWIPES.remove(activity);return true;}
         boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
-        int step=MediaGallery.step(dx,dy,Math.max(48,48*activity.getResources().getDisplayMetrics().density));
+        float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);
+        int step=activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
+                ?MediaGallery.threadStep(dx,dy,threshold):MediaGallery.step(dx,dy,threshold);
         if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging&&!backPriority){
             swipe.dragging=true;swipe.cancelling=true;MotionEvent cancel=MotionEvent.obtain(event);cancel.setAction(MotionEvent.ACTION_CANCEL);
             try{activity.dispatchTouchEvent(cancel);}finally{cancel.recycle();swipe.cancelling=false;}
