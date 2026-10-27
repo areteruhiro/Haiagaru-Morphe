@@ -1853,6 +1853,11 @@ public final class Haiagaru {
         return value == 30 || value == 60 || value == 120 ? value : 0;
     }
 
+    public static boolean fresh191UpdateConnection() {
+        SharedPreferences settings = preferencesOrNull();
+        return settings == null || settings.getBoolean(UpdateConnectionHeaders.KEY, true);
+    }
+
     /**
      * Returns the maximum number of locally persisted NG entries for each
      * ChMate NG category. Zero means unlimited; the stock value is 300.
@@ -3983,8 +3988,18 @@ public final class Haiagaru {
         }
         Switch update191Progress = null;
         Switch update191Connect = null;
+        Switch update191FreshConnection = null;
         Spinner update191Timeout = null;
         if ("0.8.10.191 dev".equals(chMateVersion)) {
+            update191FreshConnection = addSwitch(layout, activity,
+                    text("191の板・スレ取得で接続を再利用しない", "Avoid reusing board/thread connections (191)"),
+                    fresh191UpdateConnection());
+            TextView freshConnectionDescription = new TextView(activity);
+            freshConnectionDescription.setText(text(
+                    "巡回やスレ取得が詰まる場合に試してください。板・スレ取得の接続を使い終わるたびに閉じ、次は接続し直します。通信量・接続時間・電池消費が増える場合があります。投稿・画像・動画の取得は変更しません。次の取得から反映し、既に待機中の通信は中断しません。",
+                    "Try this when patrol or thread loading stalls. Closes each board/thread connection after use. New connections may increase latency, traffic and battery use. Posting and media are unchanged. Applies to future requests; does not interrupt an existing wait."));
+            freshConnectionDescription.setTextSize(13);
+            layout.addView(freshConnectionDescription, rowParams(activity));
             update191Connect = addSwitch(layout, activity,
                     text("191の代替IPへの切り替えを速くする", "Faster alternative IP fallback (191)"),
                     fast191UpdateConnect());
@@ -4011,6 +4026,7 @@ public final class Haiagaru {
         }
         final Switch update191ProgressSetting = update191Progress;
         final Switch update191ConnectSetting = update191Connect;
+        final Switch update191FreshConnectionSetting = update191FreshConnection;
         final Spinner update191TimeoutSetting = update191Timeout;
 
         ExternalBoardAuth.addSettingsButton(layout, activity);
@@ -4026,6 +4042,7 @@ public final class Haiagaru {
         live.toggle(tabletResumeReloadSetting,"suppressTabletThreadResumeReload");
         live.toggle(update191ProgressSetting,"optimize191UpdateProgress");
         live.toggle(update191ConnectSetting,"fast191UpdateConnect");
+        live.toggle(update191FreshConnectionSetting,UpdateConnectionHeaders.KEY);
         live.choice(update191TimeoutSetting,"update191TimeoutSeconds",i->new int[]{0,30,60,120}[i]);
         return layout;
     }

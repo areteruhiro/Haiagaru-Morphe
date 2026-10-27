@@ -43,9 +43,11 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
         if (incoming == null) return false;
         java.util.ArrayList<String> links = incoming.getStringArrayListExtra("links");
         int index = incoming.getIntExtra("index", 0);
-        if (links == null || index < 0 || index >= links.size() || !supported(links.get(index))) return false;
-        activity.startActivity(new Intent(activity, GifViewerActivity.class)
-                .setData(Uri.parse(PreviewUrls.normalize(links.get(index)))));
+        if (links == null || index < 0 || index >= links.size()) return false;
+        String selected=PreviewUrls.normalize(links.get(index));
+        if(!supported(selected)&&!DirectVideoUrls.supported(selected))return false;
+        java.util.ArrayList<String> group=MediaGallery.links(links,selected);
+        activity.startActivity(MediaViewerNavigation.destination(activity,group,group.indexOf(selected)));
         activity.finish(); return true;
     }
 
@@ -54,6 +56,7 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
         Uri uri = getIntent().getData();
         if (!Haiagaru.videoViewerEnabled() || uri == null || !supported(uri.toString())) { finish(); return; }
         url = PreviewUrls.normalize(uri.toString());
+        playing=VideoViewerSettings.prefs(this).getBoolean(VideoViewerSettings.GIF_AUTOPLAY,true);
         if (state != null) { playing = state.getBoolean("playing", true); pendingSave = state.getBoolean("save", false); }
         unregisterBack = VideoViewerBack.register(this);
         LinearLayout root = new LinearLayout(this);
@@ -67,7 +70,7 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
         // be lost when converting a model toolbar into Compose controls.
         LinearLayout toolbar = new LinearLayout(this); toolbar.setGravity(Gravity.CENTER_VERTICAL);
         toolbar.setPadding(dp(8), 0, dp(8), 0);
-        TextView title = new TextView(this); title.setText("GIF"); title.setTextColor(Color.WHITE);
+        TextView title = new TextView(this); title.setText("GIF"+MediaViewerNavigation.counter(this)); title.setTextColor(Color.WHITE);
         title.setTextSize(16); title.setGravity(Gravity.CENTER_VERTICAL); title.setPadding(dp(8), 0, dp(12), 0);
         toolbar.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         play = button(playing ? "一時停止" : "再生"); play.setEnabled(false);
@@ -124,6 +127,11 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
     }
     private boolean forceReload;
 
+    @Override public boolean dispatchTouchEvent(android.view.MotionEvent event) {
+        if(MediaViewerNavigation.onTouch(this,event,image))return true;
+        return super.dispatchTouchEvent(event);
+    }
+
     private void showMenu(View anchor) {
         HaiagaruPopupMenu menu = new HaiagaruPopupMenu(this, anchor);
         menu.getMenu().add(0, 1, 0, "再読み込み");
@@ -131,6 +139,7 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
         menu.getMenu().add(0, 3, 2, "URLをコピー");
         menu.getMenu().add(0, 4, 3, "GIFを保存");
         menu.getMenu().add(0, 5, 4, "画面を回転");
+        menu.getMenu().add(0, 6, 5, "ビューアの操作設定");
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1: forceReload=true;load();forceReload=false;return true;
@@ -146,6 +155,7 @@ public final class GifViewerActivity extends HaiagaruComposeActivity {
                 case 5: setRequestedOrientation(getResources().getConfiguration().orientation == 2
                         ? android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                         : android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE); return true;
+                case 6: VideoViewerSettings.show(this);return true;
                 default: return false;
             }
         }); menu.show();

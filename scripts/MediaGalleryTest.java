@@ -1,0 +1,19 @@
+package app.morphe.extension.chmate;
+import java.util.*;
+public final class MediaGalleryTest {
+    static int checks;
+    static void eq(Object value,Object expected){if(!Objects.equals(value,expected))throw new AssertionError(value+" != "+expected);checks++;}
+    public static void main(String[] args){
+        String image="https://example.org/a.jpg",gif="https://example.org/b.gif",video="https://example.org/c.mp4";
+        eq(MediaGallery.links(Arrays.asList(image,gif,video,gif,"https://example.org/page"),gif),new ArrayList<>(Arrays.asList(image,gif,video)));
+        eq(MediaGallery.links(Arrays.asList(image,gif),video),new ArrayList<>(Arrays.asList(video)));
+        eq(MediaGallery.links(null,gif),new ArrayList<>(Arrays.asList(gif)));
+        eq(MediaGallery.links(Arrays.asList(image,gif),"file:///bad.gif"),new ArrayList<String>());
+        eq(MediaGallery.links(Arrays.asList("ttps://example.org/b.gif",gif),gif).size(),1);
+        for(String url:Arrays.asList(image,gif,video,"https://example.org/a.webp?x=1","https://example.org/a.webm"))eq(MediaGallery.supported(url),true);
+        for(String url:Arrays.asList("javascript:evil.gif","https://user:secret@example.org/a.gif","https://example.org/page",null))eq(MediaGallery.supported(url),false);
+        eq(MediaGallery.step(-100,5,48),1);eq(MediaGallery.step(100,5,48),-1);
+        eq(MediaGallery.step(-20,5,48),0);eq(MediaGallery.step(100,100,48),0);eq(MediaGallery.step(0,100,48),0);
+        System.out.println("PASS MediaGallery "+checks+" checks");
+    }
+}

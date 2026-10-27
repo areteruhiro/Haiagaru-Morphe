@@ -26,12 +26,15 @@ public final class SettingsProfiles {
         booleanKey(ExpertSettings.KEY);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
+        booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
         RULES.put("userAgent",value->value instanceof String&&ViewingUserAgentRules.valid((String)value));
         defaultValue("userAgent",BrowserUaTemplates.DEFAULT);
         numberKey(HaiagaruSettingsGestures.SENSITIVITY,50,200);
         defaultValue(HaiagaruSettingsGestures.SENSITIVITY,100);
         defaultValue(ExpertSettings.KEY,false);
         for(String key:EXTRA_BOOLEAN)booleanKey(key);
+        for(String key:new String[]{VideoViewerSettings.HOLD_SPEED,VideoViewerSettings.TAP_CONTROLS,VideoViewerSettings.CHMATE_GESTURES,
+                VideoViewerSettings.MEDIA_SWIPE,VideoViewerSettings.GIF_AUTOPLAY}){booleanKey(key);defaultValue(key,true);}
         numberKey("videoPreviewMinimumSeconds",0,86459);
         numberKey("checkerHeaderPercent",10,60);
         numberKey("hissiViewerResponseSpacingDp",0,20);

@@ -6,12 +6,42 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 
 /** Direct links and native image thumbnails both open the GIF player. */
 internal val gifViewerRoutingPatch = bytecodePatch {
     dependsOn(haiagaruPatch)
     execute {
-        val method = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity;").methods.single {
+        val owner = mutableClassDefBy("Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity;")
+        val originalTouch=owner.methods.singleOrNull { it.name == "dispatchTouchEvent" && it.parameterTypes == listOf("Landroid/view/MotionEvent;") }
+        val fallback=if(originalTouch!=null){
+            val delegate=MutableMethod(ImmutableMethod(owner.type,"haiagaruNativeMediaTouch",originalTouch.parameters,
+                originalTouch.returnType,originalTouch.accessFlags,originalTouch.annotations,originalTouch.hiddenApiRestrictions,originalTouch.implementation))
+            owner.methods.remove(originalTouch);owner.methods.add(delegate)
+            "invoke-virtual {p0, p1}, $delegate"
+        }else{
+            "invoke-super {p0, p1}, ${owner.superclass}->dispatchTouchEvent(Landroid/view/MotionEvent;)Z"
+        }
+        owner.methods.add(MutableMethod(ImmutableMethod(owner.type,"dispatchTouchEvent",
+            listOf(ImmutableMethodParameter("Landroid/view/MotionEvent;",emptySet(),null)),"Z",1,emptySet(),emptySet(),
+            ImmutableMethodImplementation(3,emptyList(),emptyList(),emptyList()))).apply {
+            addInstructions(0,"""
+                invoke-static {p0, p1}, Lapp/morphe/extension/chmate/MediaViewerNavigation;->onNativeTouch(Landroid/app/Activity;Landroid/view/MotionEvent;)Z
+                move-result v0
+                if-eqz v0, :native_touch
+                const/4 v0, 0x1
+                return v0
+                :native_touch
+                $fallback
+                move-result v0
+                return v0
+            """.trimIndent())
+        })
+        val method = owner.methods.single {
             it.name == "onCreate" && it.parameterTypes == listOf("Landroid/os/Bundle;") && it.returnType == "V"
         }
         val instructions = method.implementation!!.instructions.toList()

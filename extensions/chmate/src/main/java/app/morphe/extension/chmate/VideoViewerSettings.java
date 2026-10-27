@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.widget.*;
 
 public final class VideoViewerSettings {
+    static final String HOLD_SPEED="videoHoldDoubleSpeed",TAP_CONTROLS="videoTapControls",CHMATE_GESTURES="videoChmateGestures",
+            MEDIA_SWIPE="mediaSwipeNavigation",GIF_AUTOPLAY="gifAutoplay";
     private VideoViewerSettings() { }
     static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config", 0);
@@ -20,7 +22,7 @@ public final class VideoViewerSettings {
     }
     static void addSettingsButton(LinearLayout layout, Activity activity) {
         Button button = new Button(activity);
-        button.setText("動画ビューアの操作・YouTube設定");
+        button.setText("画像・GIF・動画ビューアの操作設定");
         button.setEnabled(VideoViewerActivity.installed(activity));
         button.setOnClickListener(v -> show(activity));
         layout.addView(button);
@@ -33,6 +35,11 @@ public final class VideoViewerSettings {
         Switch brightness = toggle(body, activity, "左半分の上下スワイプで明るさ調整", prefs.getBoolean("videoSwipeBrightness", false));
         Switch volume = toggle(body, activity, "右半分の上下スワイプで音量調整", prefs.getBoolean("videoSwipeVolume", false));
         Switch autoplay = toggle(body, activity, "動画を開いたら自動再生する", prefs.getBoolean("videoAutoplay", true));
+        Switch gifAutoplay=toggle(body,activity,"GIFを開いたら自動再生する",prefs.getBoolean(GIF_AUTOPLAY,true));
+        Switch holdSpeed=toggle(body,activity,"動画の長押し中は2倍速で再生する",prefs.getBoolean(HOLD_SPEED,true));
+        Switch tapControls=toggle(body,activity,"動画のタップで再生バーを表示・非表示",prefs.getBoolean(TAP_CONTROLS,true));
+        Switch nativeGestures=toggle(body,activity,"動画ビューアでChMateのジェスチャーを使う",prefs.getBoolean(CHMATE_GESTURES,true));
+        Switch mediaSwipe=toggle(body,activity,"左右スワイプで同じレスの画像・GIF・動画へ移動",prefs.getBoolean(MEDIA_SWIPE,true));
         Switch doubleTap = toggle(body, activity, "左ダブルタップで巻き戻し／右ダブルタップで早送り", prefs.getBoolean("videoDoubleTapSeek", false));
         TextView label = new TextView(activity); label.setText("戻る／進む・ダブルタップで移動する秒数"); body.addView(label);
         Spinner seconds = new Spinner(activity);
@@ -43,7 +50,7 @@ public final class VideoViewerSettings {
         body.addView(seconds);
         Switch youtube = toggle(body, activity, "YouTubeをアプリ内の公式プレーヤーで開く", youtubeEnabled(activity));
         TextView note = new TextView(activity);
-        note.setText("操作設定は通常の動画専用ビューアが対象です。上下操作をオンにした側ではChMateの縦ジェスチャーより優先します。"
+        note.setText("左右スワイプは同じレスの画像・GIF・動画が対象です。長押し2倍速や再生バーなどの動画操作は動画専用ビューアに適用します。自動再生は次に開くメディアから反映します。上下操作をオンにした側ではChMateの縦ジェスチャーより優先します。"
                 + "明るさはこの画面内だけ、音量は端末のメディア音量を変更します。"
                 + "YouTubeは公式Webプレーヤーの操作を使います。広告・地域制限・埋め込み制限などは回避しません。");
         body.addView(note);
@@ -51,6 +58,8 @@ public final class VideoViewerSettings {
         LiveSettings live=new LiveSettings(prefs,()->body.invalidate());
         live.toggle(brightness,"videoSwipeBrightness");live.toggle(volume,"videoSwipeVolume");
         live.toggle(autoplay,"videoAutoplay");
+        live.toggle(gifAutoplay,GIF_AUTOPLAY);live.toggle(holdSpeed,HOLD_SPEED);live.toggle(tapControls,TAP_CONTROLS);
+        live.toggle(nativeGestures,CHMATE_GESTURES);live.toggle(mediaSwipe,MEDIA_SWIPE);
         live.toggle(doubleTap,"videoDoubleTapSeek");live.toggle(youtube,"videoYoutubeEnabled");
         final int[] previous={seconds.getSelectedItemPosition()};
         seconds.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
@@ -60,7 +69,7 @@ public final class VideoViewerSettings {
             }
             public void onNothingSelected(android.widget.AdapterView<?> parent){}
         });
-        new HaiagaruDialog.Builder(activity).setTitle("動画ビューアの操作設定").setView(scroll)
+        new HaiagaruDialog.Builder(activity).setTitle("ビューアの操作設定").setView(scroll)
                 .setNegativeButton("戻る",null).show();
     }
     private static Switch toggle(LinearLayout body, Context context, String title, boolean checked) {

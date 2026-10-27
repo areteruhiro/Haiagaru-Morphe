@@ -43,11 +43,13 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private boolean holdSpeedActive;
     private static final float[] PLAYBACK_SPEEDS = {0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
 
+    private static volatile Boolean installationStatus;
     public static boolean installed(Context context) {
         if (context == null) return false;
+        Boolean known=installationStatus;if(known!=null)return known;
         try (java.io.InputStream marker = context.getAssets().open("haiagaru/video-viewer/installed")) {
-            return marker.read() == '1';
-        } catch (java.io.IOException ignored) { return false; }
+            boolean installed=marker.read()=='1';installationStatus=installed;return installed;
+        } catch (java.io.IOException ignored) { installationStatus=false;return false; }
     }
 
     /** Called only at native external-launch boundaries, never at the external menu below. */
@@ -59,6 +61,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         if (uri == null) return;
         // Do not replace unrelated explicit destinations or pin to another installed app.
         if (intent.getComponent() != null || intent.getPackage() != null) return;
+        MediaViewerNavigation.prepare(intent);
         if (YouTubeUrls.videoId(uri.toString()) != null && VideoViewerSettings.youtubeEnabled(context)) {
             intent.setClass(context, YouTubeViewerActivity.class);
         } else if (GifViewerActivity.supported(uri.toString())) {
@@ -286,6 +289,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     }
 
     void beginHoldSpeed() {
+        if(!VideoViewerSettings.prefs(this).getBoolean(VideoViewerSettings.HOLD_SPEED,true))return;
         if (holdSpeedActive || (!prepared && gifFallback==null) || android.os.Build.VERSION.SDK_INT < 23) return;
         cancelNativeVideoGesture();
         speedBeforeHold = playbackSpeed;
@@ -376,6 +380,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     }
 
     @Override public boolean dispatchTouchEvent(MotionEvent event) {
+        if(MediaViewerNavigation.onTouch(this,event,gifFallbackView!=null?gifFallbackView:video))return true;
         if (touchControls != null && video != null && touchControls.dispatch(event, video)) return true;
         if (gestures != null && gestures.dispatch(event, video)) {
             if (touchControls != null) touchControls.cancel();

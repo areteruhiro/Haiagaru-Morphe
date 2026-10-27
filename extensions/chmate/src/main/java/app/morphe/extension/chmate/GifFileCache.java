@@ -9,13 +9,17 @@ import java.util.*;
 final class GifFileCache {
     static final int MAX_FILE=64*1024*1024;
     static final long MAX_TOTAL=96L*1024*1024, MAX_AGE=7L*24*60*60*1000;
-    private static final Object[] LOCKS=new Object[16];
-    static{for(int i=0;i<LOCKS.length;i++)LOCKS[i]=new Object();}
+    private static final Map<String,KeyLock> LOCKS=new HashMap<>();
+    private static final class KeyLock {final java.util.concurrent.locks.ReentrantLock lock=new java.util.concurrent.locks.ReentrantLock();int users;}
     interface Cancellation{boolean getAsBoolean();}
     interface Downloader{void download(OutputStream output,Cancellation cancelled)throws IOException;}
     static File get(File directory,String url,int limit,boolean force,Cancellation cancelled,Downloader downloader)throws IOException{
         String key=key(url);
-        synchronized(LOCKS[(key.hashCode()&0x7fffffff)%LOCKS.length]){
+        KeyLock entry;synchronized(LOCKS){entry=LOCKS.get(key);if(entry==null){entry=new KeyLock();LOCKS.put(key,entry);}entry.users++;}
+        boolean locked=false;
+        try{
+            do{if(cancelled.getAsBoolean())throw new InterruptedIOException("GIF cancelled");}
+            while(!(locked=entry.lock.tryLock(100,java.util.concurrent.TimeUnit.MILLISECONDS)));
             if(cancelled.getAsBoolean())throw new InterruptedIOException("GIF cancelled");
             if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("GIF cache unavailable");
             File file=new File(directory,key+".gif"),backup=new File(directory,key+".old");long now=System.currentTimeMillis();
@@ -49,11 +53,12 @@ final class GifFileCache {
                 if(backup.exists())backup.delete();
                 prune(directory,file,now);return file;
             }finally{if(staging.exists())staging.delete();}
-        }
+        }catch(InterruptedException interrupted){Thread.currentThread().interrupt();throw new InterruptedIOException("GIF cancelled");}
+        finally{if(locked)entry.lock.unlock();synchronized(LOCKS){if(--entry.users==0)LOCKS.remove(key);}}
     }
     static void invalidate(File directory,String url,File file){
         try{
-            File expected=new File(directory,key(url)).getCanonicalFile();
+            File expected=new File(directory,key(url)+".gif").getCanonicalFile();
             if(expected.equals(file.getCanonicalFile()))file.delete();
         }catch(IOException ignored){}
     }
