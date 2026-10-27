@@ -514,3 +514,5 @@ Hissi検索board catalogは独立single-flight worker/cache、選択変更はres
 
 
 2026-10-27 メディア件数修正候補: 標準viewer native listは静止画/標準GIFのみで、左右swipe用のEXTRA galleryより小さいため1/1・1/2を表示していた。native counter setText一箇所だけをsetNativeCounterへ委譲（191d(I)/226a(I)/242VN10.e(IZ)）。native callbackはActivity index更新前にラベルを作るので、そのラベルのindex→native links URL→full gallery indexへ射影し正しい番号/総数を表示。取得・pager一覧・移動順は変更しない。3版パッチ適用/署名/フック元命令/register/branch保持成功。242実UI5項目とsingleton/異種gallery/fallback確認成功、通常ビルド3m19s。台帳参照。公式Release明示許可済み。
+
+2026-10-27 公式1.14.1公開完了: source0d0c5cd（実装2723f20）/CI生成73e3342。既存Release40488386592/Build40488386487 success、draft=false/prerelease=false/Latest1.14.1。公開6資材すべて再取得digest一致、MPP09118B37C8598209BECDAA94A037ED98B9570790AE174E48D8F37B4523C9B189（6,539,904bytes）、全ZIP CRC/DEX確認。公開JSON2点とmaster/main/dev通常/pre全6rawがversion1.14.1/created_at2026-10-27T10:27:42（Zなし）/DL先一致。件数表示1/1・1/2修正、スレ全体galleryの番号/総数、設定名と読み込み済みscope、追加ZIP案内・謝辞・寄付をRelease説明へ記載。UA/機種名記載なし。build/stable-1.14.1-public-verification.log / stable-1.14.1-channel-verification.log。生成ファイル手編集なし、devをCI生成へFF。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.14.1
