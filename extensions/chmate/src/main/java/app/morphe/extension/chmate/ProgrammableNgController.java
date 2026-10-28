@@ -62,6 +62,7 @@ public final class ProgrammableNgController {
         context = application == null ? supplied : application;
         try {
             reload();
+            F9NgUpdates.maybeUpdate(context);
         } catch (Exception error) {
             report("初期化", error);
         }
@@ -91,7 +92,7 @@ public final class ProgrammableNgController {
         return enabled;
     }
 
-    static void save(boolean newEnabled, List<ProgrammableNgRuleSet.Rule> newRules) {
+    static synchronized void save(boolean newEnabled, List<ProgrammableNgRuleSet.Rule> newRules) {
         Context current = context;
         if (current == null) throw new IllegalStateException("Haiagaruが初期化されていません");
         ProgrammableNgRuleSet checked = new ProgrammableNgRuleSet(newRules);
@@ -138,6 +139,9 @@ public final class ProgrammableNgController {
                         + "    samePoster: true,\n"
                         + "    chainReplies: true\n"
                         + "  };\n}");
+            case 5:
+                return new ProgrammableNgRuleSet.Rule(id, "F9スクリプトを対策する", "body",
+                        true, true, "", context==null?F9NgTemplate.SCRIPT:F9NgUpdates.currentScript(context));
             default:
                 return newRule();
         }
@@ -149,6 +153,7 @@ public final class ProgrammableNgController {
         button.setText("高度なNGルール（条件・スクリプト）");
         button.setOnClickListener(view -> ProgrammableNgDialog.show(activity));
         parent.addView(button);
+        F9NgUpdates.addSettings(parent,activity);
     }
 
     /**
