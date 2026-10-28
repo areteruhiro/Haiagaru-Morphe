@@ -622,15 +622,12 @@ final class EddiArchiveSearchUi {
             TextView title = resultText(thread.title, 16, foreground);
             card.addView(title);
             card.addView(resultText(thread.date, 12, muted));
-<<<<<<< HEAD
             card.setOnLongClickListener(view -> { showResultCopy(thread); return true; });
-=======
             if (!thread.kyodemoUrl.isEmpty()) {
                 TextView kyodemoLink = resultText(thread.kyodemoUrl, 12, muted);
                 kyodemoLink.setTextIsSelectable(true);
                 card.addView(kyodemoLink);
             }
->>>>>>> origin/dev
             card.setOnClickListener(view -> {
                 try {
                     saveState(null);

@@ -107,7 +107,7 @@ public final class KyodemoRouting {
         String slug = boardSlug(host, board);
         if (slug == null || id == null || !id.matches("[A-Za-z0-9+./_-]{1,64}")
                 || !validDate(from) || !validDate(to) || from.compareTo(to) > 0) return null;
-        return "https://www.kyodemo.net/sdemo/b/" + slug + "/?bs=hi&kt=k_&k=" + encode(id)
+        return "https://www.kyodemo.net/sdemo/b/" + slug + "/?bs=hi&kt=k_&k=" + encode("ID:" + id)
                 + "&fr=" + isoDate(from) + "&to=" + isoDate(to);
     }
 

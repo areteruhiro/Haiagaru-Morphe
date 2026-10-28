@@ -1030,7 +1030,7 @@ public final class HissiWacchoiSearchController extends ToolScreenController {
                 .setData(Uri.parse(target))
                 .putExtra("haiagaru.wacchoi.host", sourceHost)
                 .putExtra("haiagaru.wacchoi.board", sourceBoard)
-                .putExtra("haiagaru.wacchoi.query", id);
+                .putExtra("haiagaru.wacchoi.query", "ID:" + id);
         if (!NativeToolTabs.open(host, "hissi", checker)) {
             host.startActivity(checker);
             finish();

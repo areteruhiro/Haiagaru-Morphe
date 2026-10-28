@@ -250,7 +250,7 @@ private fun SearchScreen(a: HissiWacchoiSearchController, showTopBar: Boolean, e
                     }
                 }
             }
-            if(a.idSearch()) item { OutlinedButton(onClick={a.openFullWacchoiKyodemo()},enabled=editing,modifier=Modifier.fillMaxWidth()){Text("このIDと日付範囲でKyodemoを検索")} }
+            if(a.idSearch() && source != 1) item { OutlinedButton(onClick={a.openFullWacchoiKyodemo()},enabled=editing,modifier=Modifier.fillMaxWidth()){Text("このIDと日付範囲でKyodemoを検索")} }
             if (!a.postsOnly()) item {
                 if (fullWacchoi) {
                     HaiagaruUi.Group("検索先") {
