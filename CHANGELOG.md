@@ -1,3 +1,67 @@
+# Haiagaru 1.16.0-dev.3
+
+投稿者の検索とメディア表示を改善したプレリリースです。
+
+## 変更内容
+
+- 必死チェッカーの「ID/ﾜｯﾁｮｲ」から、開始日・終了日を指定して検索できるようにしました。カレンダーでも選べます。「エッヂで検索」は、IDと日付範囲を引き継いでKyodemoの結果を直接開きます。
+- ワッチョイ検索画面でも `ID:` 付きのIDを検索できます。5chではHissi、エッヂではKyodemoを基本に、検索先を選べます。
+- スレ内検索の対象を本文・名前・ID・ワッチョイに広げました。空白区切りと `AND` による絞り込みに対応します。
+- Hissiの「分析」で時間帯別の投稿数と当日順位を表示できます。取得できない順位はその旨を表示します。
+- エッヂ過去ログの検索結果を長押しすると、KyodemoのURL・スレURL・板名付きURL・タイトル付きURLをコピーできます。
+- スレ内のGIF再生で、動画がレスの外へはみ出す表示と縦横比を修正しました。「Wi-Fi接続時のみ」の設定も追加しました。
+- 専用動画ビューアで操作メッセージが表示されても、動画の表示領域が上下に動かないようにしました。
+- IDの一部がWebサイトのリンクと誤判定され、リンクカードが付く問題を修正しました。
+- 242に「HOMEの複数選択ボタンを下部に表示」を追加しました。初期値はオフです。表示中は一覧の下端に余白を確保し、スレが操作バーに隠れないようにします。
+- 取得済みスレの検索結果をスレ作成日時で並べ替える修正を含みます。
+
+日付のカレンダー選択・KyodemoへのIDと期間の引き継ぎ・HOME操作バーの配置を確認しています。実サイトの検索結果・順位取得、長時間のスレ内再生、実際のWi-Fi切り替えについては引き続き確認中です。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* integrate ID date searches and preserve archive improvements ([7c2955b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7c2955b34e5f7499e0185129ea8797c7421f0e71))
+
+### ✨ New Features
+
+* improve poster search and media layout controls ([18c1d4c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/18c1d4c95f33bd924246792e296bdf1ce636aea8))
+
 # Haiagaru 1.16.0-dev.2
 
 XのGIFと通常GIFの自動再生を、使い方に合わせて設定できるようにしました。
