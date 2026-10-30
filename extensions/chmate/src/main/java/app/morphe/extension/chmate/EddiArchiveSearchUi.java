@@ -50,6 +50,8 @@ final class EddiArchiveSearchUi {
     static final int REFRESH_ACTION_TAG = 0x48690c07;
     static final int REFRESH_ENABLED_TAG = 0x48690c08;
     static final int SEARCH_BUSY_TAG = 0x48690c09;
+    static final int RESULTS_REVISION_TAG = 0x48690c0a;
+    private int resultsRevision;
     interface ThreadOpener {
         boolean open(String url);
     }
@@ -220,8 +222,8 @@ final class EddiArchiveSearchUi {
         advanced.addView(sort);
         startDate = input("開始日 YYYY-MM-DD", false);
         endDate = input("終了日 YYYY-MM-DD", false);
-        advanced.addView(startDate);
-        advanced.addView(endDate);
+        advanced.addView(dateControl(startDate,"開始日"));
+        advanced.addView(dateControl(endDate,"終了日"));
         advancedScroll = new ScrollView(activity);
         advancedScroll.addView(advanced);
         advancedScroll.setVisibility(View.GONE);
@@ -314,6 +316,7 @@ final class EddiArchiveSearchUi {
                 displayedPage = null;
                 displayedQuery = null;
                 results.removeAllViews();
+        results.setTag(RESULTS_REVISION_TAG,++resultsRevision);
                 resultTextSizes.clear();
                 previous.setEnabled(false);
                 next.setEnabled(false);
@@ -605,6 +608,7 @@ final class EddiArchiveSearchUi {
         displayedPage = result;
         totalResults = result.total;
         results.removeAllViews();
+        results.setTag(RESULTS_REVISION_TAG,++resultsRevision);
         resultTextSizes.clear();
         status.setText(resultStatus());
         if (result.threads.isEmpty()) {
@@ -729,6 +733,19 @@ final class EddiArchiveSearchUi {
         return view;
     }
 
+    private View dateControl(EditText field,String label) {
+        LinearLayout row=new LinearLayout(activity);row.setGravity(Gravity.CENTER_VERTICAL);
+        Button choose=new Button(activity),clear=new Button(activity);clear.setText("解除");
+        Runnable update=()->{String value=field.getText().toString();choose.setText(label+"："+(value.isEmpty()?"未指定":value)+" ▦");clear.setEnabled(!value.isEmpty());};
+        field.addTextChangedListener(new android.text.TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){update.run();}public void afterTextChanged(android.text.Editable e){}});
+        choose.setOnClickListener(v->{java.util.Calendar initial=java.util.Calendar.getInstance();
+            try{java.text.SimpleDateFormat format=new java.text.SimpleDateFormat("yyyy-MM-dd",java.util.Locale.ROOT);format.setLenient(false);initial.setTime(format.parse(field.getText().toString()));}catch(Exception empty){}
+            HaiagaruDates.show(activity,initial,(year,month,day)->field.setText(String.format(java.util.Locale.ROOT,"%04d-%02d-%02d",year,month+1,day)));
+        });clear.setOnClickListener(v->field.setText(""));update.run();
+        controlTextSizes.put(choose,14f);controlTextSizes.put(clear,14f);
+        row.addView(choose,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1));row.addView(clear);return row;
+    }
+
     private EditText input(String hint, boolean numeric) {
         EditText view = new EditText(activity);
         view.setHint(hint);
@@ -785,6 +802,7 @@ final class EddiArchiveSearchUi {
     }
 
     private void applyAppearance() {
+        results.setTag(RESULTS_REVISION_TAG,++resultsRevision);
         root.setTag(CONTROL_SCALE_TAG, controlScale);
         root.setTag(RESULT_SCALE_TAG, resultScale);
         root.setTag(CONTROL_LAYOUT_TAG, controlLayoutScale);

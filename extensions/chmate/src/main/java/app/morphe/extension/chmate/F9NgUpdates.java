@@ -26,7 +26,7 @@ final class F9NgUpdates {
         if(p.getBoolean(AUTO,false)&&System.currentTimeMillis()-p.getLong(ATTEMPT,0)>=DAY&&!p.getString(URL_KEY,DEFAULT_URL).isEmpty())fetch(c,null);
     }
     static void addSettings(LinearLayout parent,Activity activity){
-        Button button=new Button(activity);button.setText("F9対策ルールの自動更新");parent.addView(button);
+        Button button=new Button(activity);button.setText("F9対策ルールの自動更新（開発中）");parent.addView(button);
         button.setOnClickListener(v->show(activity));
     }
     private static void show(Activity a){
@@ -47,7 +47,7 @@ final class F9NgUpdates {
         };
         now.setOnClickListener(v->{try{save.run();now.setEnabled(false);status.setText("更新を確認しています…");fetch(a,result->a.runOnUiThread(()->{now.setEnabled(true);status.setText(result);}));}catch(IllegalArgumentException invalid){url.setError(invalid.getMessage());}});
         ScrollView scroll=new ScrollView(a);scroll.addView(form);
-        new HaiagaruDialog.Builder(a).setTitle("F9対策ルールの自動更新").setView(scroll)
+        new HaiagaruDialog.Builder(a).setTitle("F9対策ルールの自動更新（開発中）").setView(scroll)
             .setPositiveButton("保存",(d,w)->{try{save.run();maybeUpdate(a);}catch(IllegalArgumentException invalid){Toast.makeText(a,invalid.getMessage(),Toast.LENGTH_LONG).show();}})
             .setNegativeButton("閉じる",null).show();
     }

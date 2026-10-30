@@ -50,6 +50,7 @@ public final class XMediaAttachments {
     }
 
     static void setGeneratedPoster(String url, String poster) { POSTERS.put(url, poster); }
+    static boolean hasFramePoster(String url,String variant){return FRAME_POSTERS.containsKey(variant+":"+url);}
     static void setFramePoster(String url, String variant, String poster) { FRAME_POSTERS.put(variant + ":" + url, poster); }
     static boolean isPoster(String url) { return POSTERS.containsValue(url) || FRAME_POSTERS.containsValue(url); }
     static String generatedPoster(String url) {

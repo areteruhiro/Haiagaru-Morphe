@@ -321,6 +321,14 @@ public final class ExtraQuickFilters {
     private static boolean legacy(Object a) { return a.getClass().getName().equals("o.m9ExternalSyntheticLambda1"); }
     private static boolean middle(Object a) { return a.getClass().getName().equals("o.listener"); }
     private static Object model(Object a) throws Exception { return field(a,legacy(a)?"Y":middle(a)?"L":"k"); }
+    static Object visibleFragment(Activity activity) throws Exception {
+        for(WeakReference<Object> ref:new ArrayList<>(OWNERS)){
+            Object fragment=ref.get();if(fragment==null)continue;
+            View view=(View)call(fragment,"getView",new Class<?>[0]);
+            if(view!=null&&view.isShown()&&call(fragment,"getActivity",new Class<?>[0])==activity)return fragment;
+        }
+        return null;
+    }
     private static Object adapter(Object fragment) throws Exception {
         View root=(View)call(fragment,"getView",new Class<?>[0]);
         View list=FilterPosition.findList(root);

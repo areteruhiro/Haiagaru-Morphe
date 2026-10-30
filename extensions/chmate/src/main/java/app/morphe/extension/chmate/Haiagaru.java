@@ -4433,6 +4433,14 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         HiddenIdNg.addSettingsButton(layout, activity);
+        Switch autoNgRedIds = addSwitch(layout, activity, "赤いIDのレスをこのスレ内だけ自動で非表示にする",
+                preferences.getBoolean(RedIdAutoNg.KEY, false));
+        TextView autoNgRedIdsDescription = new TextView(activity);
+        autoNgRedIdsDescription.setText("ChMateで赤色（多数投稿）の扱いになるIDのレスを、そのスレ内だけ非表示にします。初期OFF。通常のNGIDには登録しません。設定や除外リストを変更した後はスレを開き直してください。");
+        autoNgRedIdsDescription.setTextSize(13);
+        layout.addView(autoNgRedIdsDescription, rowParams(activity));
+        live.toggle(autoNgRedIds, RedIdAutoNg.KEY);
+        RedIdAutoNg.addExclusionsButton(layout, activity);
         Switch hideNgWordIdReplies = addSwitch(layout, activity,
                 text("NGWord-IDへの返信も非表示", "Hide replies to NGWord-ID responses"),
                 preferences.getBoolean("hideNgWordIdReplies", false));

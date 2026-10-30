@@ -432,6 +432,9 @@ private fun BytecodePatchContext.patchNgRegistrationLimit() {
         "Unable to identify ChMate NGWord save routine (found ${candidates.size})"
     }
     val saveMethod = candidates.single()
+    saveMethod.addBeforeEveryReturn(
+        "invoke-static {}, Lapp/morphe/extension/chmate/PersonalNgSubmissions;->changed()V"
+    )
     val limitConstants = saveMethod.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
         if (instruction.opcode == Opcode.CONST_16
             && (instruction as? NarrowLiteralInstruction)?.narrowLiteral == 300) {
