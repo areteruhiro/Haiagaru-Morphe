@@ -34,6 +34,8 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import org.w3c.dom.Element
 import org.w3c.dom.Document
 import java.net.URI
@@ -2820,6 +2822,20 @@ private fun BytecodePatchContext.patchThumbnailClickAttachments(version: String)
         invoke-static {p0, p1, v$result}, Lapp/morphe/extension/chmate/ThumbnailClickAttachments;->links(Ljava/lang/Object;Ljava/lang/Object;[Ljava/lang/CharSequence;)[Ljava/lang/CharSequence;
         move-result-object v$result
     """.trimIndent())
+    val native=MutableMethod(ImmutableMethod(row.type,"haiagaruNativeThumbnailClick",click.parameters,click.returnType,
+        click.accessFlags,click.annotations,click.hiddenApiRestrictions,click.implementation))
+    val wrapper=MutableMethod(ImmutableMethod(row.type,click.name,click.parameters,click.returnType,
+        click.accessFlags,click.annotations,click.hiddenApiRestrictions,ImmutableMethodImplementation(3,emptyList(),emptyList(),emptyList())))
+    wrapper.addInstructionsWithLabels(0,"""
+        invoke-static {p1}, Lapp/morphe/extension/chmate/ThumbnailClickAttachments;->openThread(Ljava/lang/Object;)Z
+        move-result v0
+        if-eqz v0, :native
+        return-void
+        :native
+        invoke-virtual {p0, p1}, $native
+        return-void
+    """.trimIndent())
+    row.methods.remove(click);row.methods.add(native);row.methods.add(wrapper)
 }
 
 private fun BytecodePatchContext.patchImageListResolvedMedia(version: String) {

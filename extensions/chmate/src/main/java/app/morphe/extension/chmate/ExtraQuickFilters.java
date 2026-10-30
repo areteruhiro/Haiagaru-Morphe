@@ -686,9 +686,15 @@ public final class ExtraQuickFilters {
                 if(++inspected>10000)break;
                 if(!response(response))continue;
                 if((((Number)flags.invoke(idx,number(response))).intValue()&0x1010)!=0)continue;
-                Method attachments=response.getClass().getDeclaredMethod(legacy(a)||middle(a)?"d":"haiagaruPatrolAttachments");
-                attachments.setAccessible(true);String[] values=(String[])attachments.invoke(response);
-                if(values!=null)for(String value:values){String url=PreviewUrls.normalize(value);
+                String[] values=null;
+                try{
+                    Method attachments=response.getClass().getDeclaredMethod(legacy(a)||middle(a)?"d":"haiagaruPatrolAttachments");
+                    attachments.setAccessible(true);values=(String[])attachments.invoke(response);
+                }catch(ReflectiveOperationException unavailable){/* Original body remains usable. */}
+                String text=(String)field(response,legacy(a)?"c":middle(a)?"d":"h");
+                for(String value:ThreadMediaUrls.collect(text,values)){
+                    String sourceVideo=XMediaAttachments.sourceVideo(value);
+                    String url=PreviewUrls.normalize(sourceVideo==null?value:sourceVideo);
                     if(MediaGallery.supported(url)&&!urls.contains(url)){if(characters+url.length()>96000)break;urls.add(url);characters+=url.length();}
                     if(urls.size()>=4096)break;}
                 if(urls.size()>=4096||characters>=96000)break;

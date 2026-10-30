@@ -4429,10 +4429,10 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         HiddenIdNg.addSettingsButton(layout, activity);
-        Switch autoNgRedIds = addSwitch(layout, activity, "赤いIDのレスをこのスレ内だけ自動で非表示にする",
+        Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動で非表示にする",
                 preferences.getBoolean(RedIdAutoNg.KEY, false));
         TextView autoNgRedIdsDescription = new TextView(activity);
-        autoNgRedIdsDescription.setText("ChMateで赤色（多数投稿）の扱いになるIDのレスを、そのスレ内だけ非表示にします。初期OFF。通常のNGIDには登録しません。設定や除外リストを変更した後はスレを開き直してください。");
+        autoNgRedIdsDescription.setText("オンにすると、開くすべてのスレで動作します。投稿数は各スレ内で判定し、ChMateで赤色（8件以上）のIDのレスを非表示にします。あるスレで赤くなったIDも、別のスレで8件未満ならこの機能では隠しません。初期OFF。通常のNGIDには登録しません。除外IDは全スレ共通です。変更後はスレを開き直してください。");
         autoNgRedIdsDescription.setTextSize(13);
         layout.addView(autoNgRedIdsDescription, rowParams(activity));
         live.toggle(autoNgRedIds, RedIdAutoNg.KEY);

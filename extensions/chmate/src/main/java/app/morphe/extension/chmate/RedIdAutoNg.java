@@ -12,13 +12,53 @@ import java.util.Objects;
 import java.util.Set;
 
 /** Opt-in thread-local visibility overlay; native NGID storage and response fields stay untouched. */
-final class RedIdAutoNg {
+public final class RedIdAutoNg {
     static final String KEY = "autoNgRedIds";
     static final String EXCLUSIONS = "autoNgRedIdExclusions";
     private static volatile SharedPreferences preferences;
     private static final java.util.regex.Pattern EMPTY_ID=java.util.regex.Pattern.compile("[?？!！*＊\\-]+");
     private static String exclusionSource;
     private static Set<String> exclusionIds = java.util.Collections.emptySet();
+    private static final int MENU_EXCLUSION=0x7e484b02;
+    private static final Map<android.view.MenuItem,String> MENU_IDS=new java.util.WeakHashMap<>();
+
+    static void appendMenu(Object menuObject,Object response){
+        if(!(menuObject instanceof android.view.Menu)||response==null)return;
+        try{
+            String key=response.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError")?"h":
+                    response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"j":"g";
+            String id=literalId((String)ResponseArchiveEntry.field(response,key));if(id==null)return;
+            android.view.Menu menu=(android.view.Menu)menuObject;if(menu.findItem(MENU_EXCLUSION)!=null)return;
+            android.view.MenuItem item=menu.add(android.view.Menu.NONE,MENU_EXCLUSION,menu.size(),"自動NGの除外IDに追加");
+            MENU_IDS.put(item,id);item.setOnMenuItemClickListener(RedIdAutoNg::handleMenu);
+        }catch(ReflectiveOperationException|IllegalArgumentException ignored){}
+    }
+    static boolean handleMenu(Object value){
+        if(!(value instanceof android.view.MenuItem)||((android.view.MenuItem)value).getItemId()!=MENU_EXCLUSION)return false;
+        registerExclusion(Haiagaru.toolbarActivity(null),MENU_IDS.get(value));return true;
+    }
+    /** The native ID menu provides the exact tapped ID; no lookup in neighbouring rows. */
+    public static void appendIdSheet(Object builder,Object board,String raw){
+        String id=literalId(raw);if(id==null)return;
+        try{ResponseArchive.appendSheetAction(builder,"自動NGの除外IDに追加",android.R.drawable.ic_menu_add,
+                ()->registerExclusion(Haiagaru.toolbarActivity(null),id));}
+        catch(Exception ignored){}
+    }
+    private static String literalId(String raw){
+        try{Set<String> ids=RedIdExclusions.parse(raw);return ids.size()==1?ids.iterator().next():null;}
+        catch(IllegalArgumentException invalid){return null;}
+    }
+    private static void registerExclusion(Activity activity,String raw){
+        if(activity==null||activity.isFinishing()||activity.isDestroyed()||raw==null)return;
+        try{
+            String id=literalId(raw);if(id==null)return;
+            Set<String> ids=new java.util.LinkedHashSet<>(RedIdExclusions.parse(prefs(activity).getString(EXCLUSIONS,"")));
+            if(!ids.add(id)){Toast.makeText(activity,"このIDは自動NGの除外リストに登録済みです",Toast.LENGTH_SHORT).show();return;}
+            String updated=android.text.TextUtils.join("\n",ids);RedIdExclusions.parse(updated);
+            if(!prefs(activity).edit().putString(EXCLUSIONS,updated).commit())throw new IllegalStateException("除外IDを保存できませんでした");
+            Toast.makeText(activity,"自動NGの除外IDに追加しました。スレを開き直すと反映されます",Toast.LENGTH_LONG).show();
+        }catch(IllegalArgumentException|IllegalStateException error){Toast.makeText(activity,error.getMessage(),Toast.LENGTH_LONG).show();}
+    }
 
     private static SharedPreferences prefs(Context context) {
         SharedPreferences value=preferences;
@@ -45,7 +85,7 @@ final class RedIdAutoNg {
             int padding = Math.round(16 * activity.getResources().getDisplayMetrics().density);
             form.setPadding(padding, padding, padding, padding);
             TextView help = new TextView(activity);
-            help.setText("除外するIDを1行に1件入力してください（ID:付きも可、最大500件）。すべての板でIDの完全一致に適用します。行を消すと除外を解除します。保存後はスレを開き直してください。\n\nこの除外は赤いIDの自動非表示に適用されます。通常のNG設定による非表示は別に判定します。");
+            help.setText("除外するIDを1行に1件入力してください（ID:付きも可、最大500件）。除外リストは全スレ共通で、IDの完全一致に適用します。IDメニューの「自動NGの除外IDに追加」からも登録できます。行を消すと除外を解除します。保存後はスレを開き直してください。\n\nこの除外は赤いIDの自動非表示に適用されます。通常のNG設定による非表示は別に判定します。");
             form.addView(help);
             EditText input = new EditText(activity); input.setMinLines(4); input.setMaxLines(10);
             input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
