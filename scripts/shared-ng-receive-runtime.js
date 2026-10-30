@@ -1,7 +1,7 @@
 rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>{
  const app=Java.use('android.app.ActivityThread').currentApplication();if(!/\.haiagaru\.(settingsfix191|resumefix226|resumefix242)$/.test(String(app.getPackageName()))){reject('verification package required');return;}
  const S=Java.use('app.morphe.extension.chmate.SharedNg'),Input=Java.use('app.morphe.extension.chmate.ProgrammableNgScript$Input'),Map=Java.use('java.util.HashMap'),List=Java.use('java.util.ArrayList'),Array=Java.use('org.json.JSONArray');
- 
+
  const prefs=app.getSharedPreferences('haiagaru.shared-ng',0),saved=prefs.getAll(),field=S.class.getDeclaredField('rules');field.setAccessible(true);const old=Java.retain(field.get(null));let checks=[];
  function check(v,label){if(!v)throw Error(label);checks.push(label);}
  const keys={enabled:['boolean',false],threshold:['int',5],filterLevel:['int',3],cursor:['long',0],lastSync:['long',0],failures:['int',0],'kind.suffix':['boolean',true],exceptions:['set',null],excludedBoards:['set',null]};const previous={};for(const k in keys){let t=keys[k][0];previous[k]={has:prefs.contains(k),value:t==='boolean'?prefs.getBoolean(k,keys[k][1]):t==='int'?prefs.getInt(k,keys[k][1]):t==='long'?prefs.getLong(k,0):prefs.getStringSet(k,Java.use('java.util.HashSet').$new())};}

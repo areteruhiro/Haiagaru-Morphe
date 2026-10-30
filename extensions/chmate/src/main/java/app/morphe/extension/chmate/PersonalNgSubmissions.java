@@ -162,4 +162,3 @@ public final class PersonalNgSubmissions {
     private static JSONObject operation(JSONObject condition,String action)throws Exception{return publicCondition(condition).put("action",action).put("operationId",hash(UUID.randomUUID().toString()));}
     private PersonalNgSubmissions(){}
 }
-
