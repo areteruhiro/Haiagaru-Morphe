@@ -18,7 +18,7 @@ check(policy({board:'bbs.eddibb.cc/liveedge',kind:'id',value:'abc',period:'2026-
 check(policy({board:'bbs.eddibb.cc/liveedge',kind:'suffix',value:'Ab12',period:''},1).state==='approved');
 console.log('PASS external lifetime and disabled-scope checks');
 
-for(const kind of ['id','wacchoi','prefix','suffix'])check(policy({board:'*',kind,value:'Ab12',period:'2026-10-22'},99).state==='pending');
+for(const kind of ['id','wacchoi','prefix','suffix'])check(policy({board:'*',kind,value:kind==='wacchoi'?'Ab12-Cd34':'Ab12',period:''},99).state==='approved');
 console.log('PASS '+checks+' total moderation checks');
 
 check(policy({...c,flags:32,regex:false},99).state==='pending');

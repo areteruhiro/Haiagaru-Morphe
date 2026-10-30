@@ -16,13 +16,14 @@ function ngConditionKey_(c){return ngHash_(JSON.stringify([ngFamilyBoard_(c.boar
 function ngInboxSetup_(){const b=SpreadsheetApp.openById(NG_CONFIG.spreadsheetId);const headers={Inbox:['operationId','reporter','conditionJson','action','receivedAt','state','reason','policyVersion','decisionJson'],ReviewPolicy:['key','value']};for(const name of Object.keys(headers)){let s=b.getSheetByName(name)||b.insertSheet(name);if(s.getLastRow()===0)s.getRange(1,1,1,headers[name].length).setValues([headers[name]]);else if(JSON.stringify(s.getRange(1,1,1,headers[name].length).getValues()[0])!==JSON.stringify(headers[name]))throw Error('Unexpected '+name+' headers');}}
 function ngInboxValidate_(r){
  if(!r||typeof r.operationId!=='string'||!/^[a-f0-9]{64}$/.test(r.operationId)||!['upsert','delete'].includes(r.action))throw Error('Invalid operation');
- if(!['id','wacchoi','prefix','suffix','name','trip','keyword'].includes(r.kind)||typeof r.value!=='string'||r.value.length<1||r.value.length>2000)throw Error('Invalid personal condition');
+ if(!['id','wacchoi','prefix','suffix','name','trip','keyword','reporter'].includes(r.kind)||typeof r.value!=='string'||r.value.length<1||r.value.length>2000)throw Error('Invalid personal condition');
  if(typeof r.board!=='string'||!(r.board==='*'||/^([a-z0-9.-]+)(:\d+)?(\/[A-Za-z0-9_.-]+)+$/.test(r.board))||r.board.length>300)throw Error('Invalid board');
  if(['prefix','suffix'].includes(r.kind)&&!/^[A-Za-z0-9+/]{4}$/.test(r.value))throw Error('Invalid Wacchoi part');
  if(r.kind==='wacchoi'&&!/^[A-Za-z0-9+/]{4}-[A-Za-z0-9+/]{4}$/.test(r.value))throw Error('Invalid Wacchoi');
  if(r.kind==='id'&&r.regex!==true&&!/^[A-Za-z0-9+/!_.-]{1,100}$/.test(r.value))throw Error('Invalid ID');
+ if(r.kind==='reporter'&&(ngFamilyBoard_(r.board)!=='edge/all'||r.regex===true||r.flags!==16||!/^[A-Za-z0-9+/!_.-]{1,100}$/.test(r.value)))throw Error('Invalid reporter ID');
  if(!Number.isInteger(r.flags)||r.flags<0||r.flags>65535)throw Error('Invalid flags');
- const c={board:ngFamilyBoard_(r.board),kind:r.kind,value:r.value,period:"",regex:r.regex===true||(r.flags&0x20)!==0,flags:r.flags};
+ const c={board:r.board==='unknown.invalid/unresolved'?'*':ngFamilyBoard_(r.board),kind:r.kind,value:r.value,period:"",regex:r.regex===true||(r.flags&0x20)!==0,flags:r.flags};
  return {operationId:r.operationId,action:r.action,condition:c};
 }
 /** A malformed administrative/imported row must not stop valid reports from being reviewed. */
@@ -61,7 +62,7 @@ function ngReviewPersonalLocked_(){
  for(const x of active.values()){
   const perBoard=(config.boards||{})[ngFamilyBoard_(x.c.board)]||{},policy=Object.assign({},config,perBoard);
   const decision=x.row[3]==='delete'?{state:'withdrawn',reason:'reporter_deleted',minLevel:5,minVotes:0}:overrides[x.key]||ngPolicy_(x.c,(groups.get(x.key)||new Set()).size,policy);
-  if(decision.state==='approved'&&(x.c.board==='unknown.invalid/unresolved'||x.c.regex||((x.c.flags&0x70)!==0&&(x.c.flags&0x70)!==0x10)||(['id','wacchoi','prefix','suffix'].includes(x.c.kind)&&x.c.board==='*'))){decision.state='pending';decision.reason='scope_or_lifetime_review';}
+  if(decision.state==='approved'&&(x.c.board==='unknown.invalid/unresolved'||x.c.regex||((x.c.flags&0x70)!==0&&(x.c.flags&0x70)!==0x10)||(x.c.kind==='reporter'&&x.c.board!=='edge/all'))){decision.state='pending';decision.reason='scope_or_lifetime_review';}
   if(x.row[3]==='upsert'&&x.c.kind==='keyword'&&!ngShareableKeyword_(x.c.value)){decision.state='rejected';decision.reason='ineligible_keyword';}
   x.row[5]=decision.state;x.row[6]=decision.reason;x.row[7]=policyVersion;x.row[8]=JSON.stringify(decision);
  }

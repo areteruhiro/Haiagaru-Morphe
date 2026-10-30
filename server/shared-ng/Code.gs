@@ -66,7 +66,7 @@ function ngRecover_(book,props){
   SpreadsheetApp.flush();props.setProperty('REVISION',String(revision));props.deleteProperty('PENDING');
 }
 function doGet(e){try{
-  if(e&&e.parameter&&e.parameter.action==='reviewed')return reviewedSharedNgFeed();
+  if(e&&e.parameter&&e.parameter.action==='reviewed')return reviewedSharedNgFeed(e);
   const params=e&&e.parameter?e.parameter:{},since=params.since===undefined?0:Number(params.since),offset=params.offset===undefined?0:Number(params.offset),snapshot=params.snapshot===undefined?null:Number(params.snapshot);
   if(!Number.isSafeInteger(since)||since<0||!Number.isSafeInteger(offset)||offset<0||offset>NG_CONFIG.maxRules||(snapshot!==null&&(!Number.isSafeInteger(snapshot)||snapshot<0))||(offset>0&&snapshot===null))throw Error('Invalid cursor');
   const props=PropertiesService.getScriptProperties();

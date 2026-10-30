@@ -41,7 +41,9 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
         setContent { HaiagaruUi.Theme { SettingsScreen() } }
         gestures = HaiagaruSettingsGestures(this, window.decorView,
             { onBackPressedDispatcher.onBackPressed() }, { top() }, { bottom() }).also { it.setCloseAction { finish() } }
-        if (savedInstanceState == null) window.decorView.post { MinimalSetup.offer(this) }
+        if (savedInstanceState == null) window.decorView.post {
+            PersonalNgSubmissions.offerOnSettingsOpen(this) { MinimalSetup.offer(this) }
+        }
     }
 
     @Deprecated("Activity result compatibility")

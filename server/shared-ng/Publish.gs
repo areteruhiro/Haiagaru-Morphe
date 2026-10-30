@@ -45,10 +45,11 @@ function installSharedNgPublishTrigger(){
 }
 
 /** Anonymous reads expose only the same approved data as the optional GitHub feed. */
-function reviewedSharedNgFeed(){
- const cache=CacheService.getScriptCache(),cached=cache.get('reviewed-feed-v6');
- if(cached)return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
- const data=exportReviewedSharedNg();if(data.length<20000)cache.put('reviewed-feed-v6',data,300);
+function reviewedSharedNgFeed(e){
+ const cache=CacheService.getScriptCache();let data=cache.get('reviewed-feed-v7');
+ if(!data){data=exportReviewedSharedNg();if(data.length<20000)cache.put('reviewed-feed-v7',data,300);}
+ // Older clients reject unknown kinds; expose the new kind only on explicit capability opt-in.
+ const feed=JSON.parse(data),cap=e&&e.parameter||{};feed.rules=feed.rules.filter(r=>(cap.reporter==='1'||r.kind!=='reporter')&&(cap.globalIdentity==='1'||r.board!=='*'||!['id','wacchoi','prefix','suffix'].includes(r.kind)));data=JSON.stringify(feed);
  return ContentService.createTextOutput(data).setMimeType(ContentService.MimeType.JSON);
 }
 /** Read-only audit: never re-review, publish, change revision, or log personal values. */
@@ -82,8 +83,8 @@ function ngAuditReviewedLocked_(){
   if(x.row[3]==='delete'){withdrawn++;if(state!=='withdrawn')issue('WITHDRAWAL_NOT_REVIEWED');continue;}
   const policy=Object.assign({},config,(config.boards||{})[x.c.board]||{});
   const expected=overrides[x.key]||ngPolicy_(x.c,votes.get(x.key),policy);
-  const identity=['id','wacchoi','prefix','suffix'].includes(x.c.kind);
-  const unsafe=x.c.board==='unknown.invalid/unresolved'||x.c.regex||((x.c.flags&0x70)!==0&&(x.c.flags&0x70)!==0x10)||(identity&&x.c.board==='*');
+  const identity=['id','wacchoi','prefix','suffix','reporter'].includes(x.c.kind);
+  const unsafe=x.c.board==='unknown.invalid/unresolved'||x.c.regex||((x.c.flags&0x70)!==0&&(x.c.flags&0x70)!==0x10)||(x.c.kind==='reporter'&&x.c.board!=='edge/all');
   const expectedState=unsafe&&expected.state==='approved'?'pending':expected.state;
   if(state!==expectedState){waitingReview++;issue('REVIEW_STATE_MISMATCH');}
   if(state==='approved'){
@@ -93,7 +94,7 @@ function ngAuditReviewedLocked_(){
    approved.set(x.key,(approved.get(x.key)||0)+1);
   }
  }
- const cached=CacheService.getScriptCache().get('reviewed-feed-v6');let cachedPublished=null;
+ const cached=CacheService.getScriptCache().get('reviewed-feed-v7');let cachedPublished=null;
  if(cached)try{
   const feed=JSON.parse(cached),seen=new Set();cachedPublished=feed.rules.length;
   if(!feed.ok||!feed.full||!Array.isArray(feed.rules))throw Error('format');

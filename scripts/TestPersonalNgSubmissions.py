@@ -12,6 +12,9 @@ public class PersonalNgSubmissions {
  static long retryDelay=-1;static void cancelRetry(){retryDelay=-1;}static void scheduleRetry(long delay){retryDelay=delay;}
  static int checks; static void check(boolean x,String message){if(!x)throw new AssertionError(message);checks++;}
  static class Context{}
+ static class ProgrammableNgRuleSet {List<Rule> rules=new ArrayList<>();static class Rule {boolean enabled=true,allBoards=true;String target="title",boards="",script;Rule(String s){script=s;}}}
+ static class ProgrammableNgController {static boolean enabled;static final ProgrammableNgRuleSet rules=new ProgrammableNgRuleSet();static boolean isEnabled(){return enabled;}static ProgrammableNgRuleSet currentRules(){return rules;}}
+
  static class SharedNgBoardCatalog{static String resolve(Context c,String scope){return SharedNgRules.boardScope(scope,List.of());}}
  static class SharedPreferences {
   Map<String,Object> map=new HashMap<>(); int commits;
@@ -74,7 +77,7 @@ tests=r"""
   check(SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").getJSONObject(0).getString("action").equals("delete"),"personal removal withdraws report");
   NativeNgStore.stores.put("ID",List.of(new NativeNgStore.Entry("abc123","android",16)));ready();collect();
   JSONObject id=SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").getJSONObject(0);
-  check(id.getString("board").equals("unknown.invalid/unresolved")&&!id.has("sourceScope"),"unresolved scope preserved");
+  check(id.getString("board").equals("*")&&!id.has("sourceScope"),"unresolved past scope shared globally");
   SharedNg.target="https://example.test/two";ready();collect();check(SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").length()==1,"new endpoint has independent snapshot");
   NativeNgStore.stores.put("WORD",List.of(new NativeNgStore.Entry("synthetic日本語","",16)));SharedNg.inFlight=()->{preferences.map.put("consent",false);preferences.map.put("generation",1L);};ready();collect();
   check(queue().length()==1,"stale HTTP result cannot overwrite state after consent change");
@@ -101,6 +104,15 @@ tests=r"""
   check(SharedNg.calls==legacyBefore+1&&migrated.length()==1&&migrated.getJSONObject(0).getString("action").equals("delete"),"old ineligible upsert pruned; withdrawal still sent");
   NativeNgStore.stores.put("WORD",List.of(new NativeNgStore.Entry("あ","",16),new NativeNgStore.Entry("abcde","",16),new NativeNgStore.Entry("あいうえお","",16)));
   collect();check(SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").length()==1,"only eligible keyword submitted");
+  preferences.map.put("type.REPORTER",true);ProgrammableNgController.enabled=true;
+  ProgrammableNgController.rules.rules.add(new ProgrammableNgRuleSet.Rule("function (text, options) { return options.posterId === \"Reporter123\"; }"));
+  collect();JSONObject reporter=SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").getJSONObject(0);
+  check(reporter.getString("kind").equals("reporter")&&reporter.getString("board").equals("edge/all")&&reporter.getString("value").equals("Reporter123")&&!reporter.has("script"),"reporter template submits literal ID without code");
+  ProgrammableNgController.enabled=false;collect();check(SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").getJSONObject(0).getString("action").equals("delete"),"disabled advanced NG withdraws reporter condition");
+  NativeNgStore.stores.put("THREAD",List.of(new NativeNgStore.Entry("[ReporterNative★]","bbs.eddibb.cc/liveedge",16),new NativeNgStore.Entry("ordinary title","edge/all",16),new NativeNgStore.Entry("[Disabled★]","edge/all",20),new NativeNgStore.Entry("[OtherBoard★]","https://egg.5ch.io/android/",16)));
+  collect();JSONObject nativeReporter=SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").getJSONObject(0);
+  check(nativeReporter.getString("value").equals("ReporterNative")&&nativeReporter.getString("kind").equals("reporter"),"native reporter-only NGThread submits without advanced NG");
+  check(SharedNg.sent.get(SharedNg.sent.size()-1).getJSONArray("reports").length()==1,"ordinary/disabled/other-board titles are not reporter conditions");
   System.out.println("PASS "+checks+" production collector checks (synthetic data only)");
  }
 }
@@ -108,5 +120,5 @@ tests=r"""
 out=root/'build/personal-ng-host';out.mkdir(parents=True,exist_ok=True)
 java=out/'PersonalNgSubmissions.java';java.write_text(preamble+methods+tests,encoding='utf-8')
 jdk=Path('C:/Users/narum/jdk-21.0.9+10/bin');jar=root/'build/shared-ng-json.jar'
-subprocess.run([str(jdk/'javac.exe'),'-J-Xmx96m','-cp',str(jar),'-d',str(out),str(java),str(root/'extensions/chmate/src/main/java/app/morphe/extension/chmate/SharedNgRules.java')],check=True)
+subprocess.run([str(jdk/'javac.exe'),'-J-Xmx96m','-cp',str(jar),'-d',str(out),str(java),str(root/'extensions/chmate/src/main/java/app/morphe/extension/chmate/SharedNgRules.java'),str(root/'extensions/chmate/src/main/java/app/morphe/extension/chmate/SharedNgReporter.java')],check=True)
 subprocess.run([str(jdk/'java.exe'),'-Xmx64m','-cp',str(out)+';'+str(jar),'app.morphe.extension.chmate.PersonalNgSubmissions'],check=True)

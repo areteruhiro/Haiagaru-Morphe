@@ -39,7 +39,7 @@ public final class SharedNgRulesTest {
    check(part.matches("https://greta.5ch.io/poverty/","","2741-wbKe","2026/10/28","",1),kind+" matching");
    check(part.matches("https://greta.5ch.io/poverty/","","2741-wbKe","2026/10/29","",1),kind+" no expiry");
   }
-  try{new SharedNgRules.Rule("f".repeat(64),"*","id","abc","2026-10-22",5,false);throw new AssertionError("global ID");}catch(IllegalArgumentException expected){checks++;}
+  check(new SharedNgRules.Rule("f".repeat(64),"*","id","abc","",5,false).matches("https://bbs.eddibb.cc/liveedge/","abc","","","",1),"unscoped past ID applies globally");
   for(int n:new int[]{1,2,7,11,1001,Integer.MAX_VALUE})check(SharedNgRules.reportThreshold(Integer.toString(n))==n,"arbitrary report threshold "+n);
   for(String invalid:new String[]{"", "0", "-1", "1.5", "2147483648", "abc"})try{SharedNgRules.reportThreshold(invalid);throw new AssertionError("invalid threshold");}catch(IllegalArgumentException expected){checks++;}
   var seven=new SharedNgRules.Rule("f".repeat(64),"5ch/poverty","id","abc123","2026-10-22",7,false);

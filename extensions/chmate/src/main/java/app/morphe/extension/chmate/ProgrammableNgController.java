@@ -104,6 +104,7 @@ public final class ProgrammableNgController {
             throw new IllegalStateException("設定を保存できませんでした");
         }
         reload();
+        PersonalNgSubmissions.changed();
     }
 
     static ProgrammableNgRuleSet.Rule newRule() {
@@ -172,8 +173,8 @@ public final class ProgrammableNgController {
         ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(values.size());
         for (Object value : values) inputs.add(threadInput(value, board));
         lastTitles = inputs;
-        if (!enabled || values.isEmpty()) return result;
-        boolean[] matches = rules.evaluate(inputs);
+        if ((!enabled && !SharedNg.enabled()) || values.isEmpty()) return result;
+        boolean[] matches = evaluateBodies(inputs);
         try {
             for (int index = matches.length - 1; index >= 0; index--) {
                 if (matches[index]) ((List<?>) result).remove(index);
@@ -213,8 +214,8 @@ public final class ProgrammableNgController {
                 inputs.add(threadInput(data, board));
             }
             lastTitles = inputs;
-            if (!enabled) return candidates;
-            boolean[] matches = rules.evaluate(inputs);
+            if (!enabled && !SharedNg.enabled()) return candidates;
+            boolean[] matches = evaluateBodies(inputs);
             ArrayList kept = new ArrayList();
             ArrayList excluded = new ArrayList();
             for (int index = 0; index < candidates.size(); index++) {

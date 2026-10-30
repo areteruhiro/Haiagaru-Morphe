@@ -20,8 +20,8 @@ function ngPolicy_(condition, votes, config) {
   if(c.board==='unknown.invalid/unresolved')return {state:'pending',reason:'unresolved_board',minLevel:5,minVotes:0};
   if(c.regex||(c.flags&0x20)!==0)return {state:'pending',reason:'regular_expression_review',minLevel:5,minVotes:0};
   if((c.flags&0x70)!==0&&(c.flags&0x70)!==0x10)return {state:'pending',reason:'unsupported_native_match_mode',minLevel:5,minVotes:0};
-  if(['id','wacchoi','prefix','suffix'].includes(c.kind)){
-    if(c.board==='*')return {state:'pending',reason:'missing_board_scope',minLevel:5,minVotes:0};
+  if(c.kind==='reporter'&&(c.board!=='edge/all'||! /^[A-Za-z0-9+/!_.-]{1,100}$/.test(c.value)))return {state:'pending',reason:'missing_board_scope',minLevel:5,minVotes:0};
+  if(['id','wacchoi','prefix','suffix','reporter'].includes(c.kind)){
     const minimum=1; // Required report count is selected by each Android client.
     return {state:votes>=minimum?'approved':'pending',reason:votes>=minimum?'independent_reports':'insufficient_reports',minLevel:['prefix','suffix'].includes(c.kind)?4:3,minVotes:minimum};
   }

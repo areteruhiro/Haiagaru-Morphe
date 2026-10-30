@@ -204,3 +204,16 @@ check(sheets.get('Inbox').rows.at(-1)[6]==='ineligible_keyword','short keyword r
 check(personal('1'.repeat(64),[{...short,action:'delete',operationId:crypto.randomBytes(32).toString('hex')}]).ok,'legacy short keyword can be withdrawn');
 context.reviewPersonalNg();check(sheets.get('Inbox').rows.at(-1)[5]==='withdrawn','withdrawal survives keyword policy');
 console.log('PASS '+checks+' final keyword policy integration checks');
+
+const reporterCondition={...c,operationId:crypto.randomBytes(32).toString('hex'),kind:'reporter',value:'ReporterFixture01',board:'edge/all'};
+check(personal('7'.repeat(64),[reporterCondition]).ok,'reporter condition accepted');
+check(!personal('7'.repeat(64),[{...reporterCondition,operationId:crypto.randomBytes(32).toString('hex'),board:'5ch/all'}]).ok,'reporter cannot target another service');
+const globalCondition={...c,operationId:crypto.randomBytes(32).toString('hex'),kind:'id',value:'GlobalFixture01',board:'unknown.invalid/unresolved'};
+check(personal('7'.repeat(64),[globalCondition]).ok,'legacy unknown ID accepted');
+cache.delete('reviewed-feed-v7');const oldFeed=JSON.parse(context.doGet({parameter:{action:'reviewed'}}).text);
+check(!oldFeed.rules.some(r=>r.kind==='reporter'||r.board==='*'&&['id','wacchoi','prefix','suffix'].includes(r.kind)),'old clients never receive incompatible conditions');
+const newFeed=JSON.parse(context.doGet({parameter:{action:'reviewed',reporter:'1',globalIdentity:'1'}}).text);
+check(newFeed.rules.some(r=>r.kind==='reporter'&&r.value==='ReporterFixture01'),'new client receives approved reporter ID');
+check(newFeed.rules.some(r=>r.kind==='id'&&r.value==='GlobalFixture01'&&r.board==='*'),'past unknown ID migrates to approved global condition');
+check(context.auditReviewedSharedNg().ok,'global and reporter publication passes audit');
+console.log('PASS '+checks+' reporter/global identity compatibility checks');

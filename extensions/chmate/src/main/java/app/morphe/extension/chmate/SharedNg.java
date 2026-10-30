@@ -61,6 +61,7 @@ final class SharedNg {
         for(int i=0;i<inputs.size();i++){
             ProgrammableNgScript.Input input=inputs.get(i);String url=string(input,"boardUrl");
             String board=boardCache.computeIfAbsent(url,SharedNgRules::board);
+            if("title".equals(input.values.get("target"))){out[i]=active.matchesTitle(board,string(input,"posterId"));continue;}
             out[i]=active.matches(board,string(input,"responseId"),string(input,"name"),input.text);
         }
         schedule();return out;
@@ -72,7 +73,7 @@ final class SharedNg {
         catch(RejectedExecutionException unavailable){syncQueued.set(false);}
     }
     static String configuredEndpoint(){String url=prefs().getString("endpoint","");return url==null||url.trim().isEmpty()?DEFAULT_ENDPOINT:url;}
-    static String feedEndpoint(){return endpoint()+"?action=reviewed";}
+    static String feedEndpoint(){return endpoint()+"?action=reviewed&reporter=1&globalIdentity=1";}
     static String endpoint(){String url=configuredEndpoint();if(!url.matches("https://script\\.google\\.com/macros/s/[A-Za-z0-9_-]+/exec"))throw new IllegalArgumentException("GASの /exec URLを指定してください");return url;}
     static void changeEndpoint(String next){synchronized(SOURCE_LOCK){
         if(next.equals(configuredEndpoint()))return;
@@ -207,7 +208,7 @@ final class SharedNg {
     static void settings(Activity a){LinearLayout box=new LinearLayout(a);box.setOrientation(1);int pad=(int)(16*a.getResources().getDisplayMetrics().density);box.setPadding(pad,0,pad,0);
         PersonalNgSubmissions.addSettings(box,a);
         Switch on=new Switch(a);on.setText("オンライン共有NGを使う");on.setChecked(enabled);box.addView(on);on.setOnCheckedChangeListener((v,b)->{if(b&&!PersonalNgSubmissions.consented()){on.setChecked(false);PersonalNgSubmissions.enableWithConsent(a,()->on.setChecked(true));return;}prefs().edit().putBoolean("enabled",b).apply();reload();schedule();});
-        TextView help=new TextView(a);help.setText("初回は個人NGの送信に同意すると共有NGが有効になります。送信対象は個人NGの送信設定で変更できます。承認された条件だけを受信し、必要な報告数・掲示板・種類・個別除外で絞り込みます。ID・ワッチョイは5ch・エッヂ・PINKなど掲示板ごとに適用し、有効期間は設けません。変更後はスレを開き直してください。");box.addView(help);
+        TextView help=new TextView(a);help.setText("初回は個人NGの送信に同意すると共有NGが有効になります。送信対象は個人NGの送信設定で変更できます。承認された条件だけを受信し、必要な報告数・掲示板・種類・個別除外で絞り込みます。ID・ワッチョイは保存された掲示板の区分で適用し、掲示板が不明な過去NGと全板指定のNGは全掲示板に適用します。有効期間は設けません。変更後はスレを開き直してください。");box.addView(help);
         TextView levelLabel=new TextView(a);levelLabel.setText("必要な報告数");box.addView(levelLabel);
         LinearLayout voteRow=new LinearLayout(a);voteRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
         EditText votes=new EditText(a);votes.setSingleLine(true);votes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);votes.setText(Integer.toString(threshold));votes.setContentDescription("共有NGに必要な報告数");voteRow.addView(votes,new LinearLayout.LayoutParams(0,-2,1));
@@ -215,7 +216,7 @@ final class SharedNg {
         TextView voteHelp=new TextView(a);voteHelp.setText("1以上の整数で指定します。審査済みの共有NGのうち、この報告数以上の条件を適用します。");box.addView(voteHelp);
         saveVotes.setOnClickListener(v->{try{int number=SharedNgRules.reportThreshold(votes.getText().toString());prefs().edit().putInt("threshold",number).apply();reload();votes.setText(Integer.toString(number));Toast.makeText(a,"必要な報告数を保存しました",Toast.LENGTH_SHORT).show();}catch(IllegalArgumentException invalid){votes.setError(invalid.getMessage());}});
 
-        String[] kinds={"id","wacchoi","prefix","suffix","keyword","name","trip"};String[] kindLabels={"ID","ワッチョイ全文","ワッチョイ上4桁","ワッチョイ下4桁","NGワード","NGName","トリップ"};
+        String[] kinds={"id","wacchoi","prefix","suffix","keyword","name","trip","reporter"};String[] kindLabels={"ID","ワッチョイ全文","ワッチョイ上4桁","ワッチョイ下4桁","NGワード","NGName","トリップ","エッヂの記者ID（スレ一覧）"};
         for(int i=0;i<kinds.length;i++){final String kind=kinds[i];Switch choice=new Switch(a);choice.setText(kindLabels[i]+"を共有NGの対象にする");choice.setChecked(prefs().getBoolean("kind."+kind,true));choice.setOnCheckedChangeListener((b,onValue)->{prefs().edit().putBoolean("kind."+kind,onValue).apply();reload();});box.addView(choice);}
         Button boards=new Button(a);boards.setText("対象掲示板を選ぶ（取得済みの共有条件）");box.addView(boards);boards.setOnClickListener(v->{Set<String> set=new TreeSet<>();for(SharedNgRules.Rule r:rules)set.add(r.board);String[] items=set.toArray(new String[0]);String[] labels=new String[items.length];for(int i=0;i<items.length;i++)labels[i]=SharedNgRules.boardLabel(items[i]);Set<String> excluded=new HashSet<>(prefs().getStringSet("excludedBoards",Collections.emptySet()));boolean[] checked=new boolean[items.length];for(int i=0;i<items.length;i++)checked[i]=!excluded.contains(items[i]);new HaiagaruDialog.Builder(a).setTitle("共有NGを適用する掲示板").setMultiChoiceItems(labels,checked,(d,n,b)->checked[n]=b).setPositiveButton("保存",(d,w)->{for(int i=0;i<items.length;i++)if(checked[i])excluded.remove(items[i]);else excluded.add(items[i]);prefs().edit().putStringSet("excludedBoards",excluded).apply();reload();}).setNegativeButton("戻る",null).show();});
         TextView state=new TextView(a);state.setText(status);box.addView(state);

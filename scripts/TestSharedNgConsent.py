@@ -23,3 +23,31 @@ code='''public class ConsentTest {
 out=root/'build/consent-host';out.mkdir(exist_ok=True);p=out/'ConsentTest.java';p.write_text(code,encoding='utf-8');jdk=Path('C:/Users/narum/jdk-21.0.9+10/bin')
 subprocess.run([str(jdk/'javac.exe'),'-J-Xmx96m','-d',str(out),str(p)],check=True)
 subprocess.run([str(jdk/'java.exe'),'-Xmx64m','-cp',str(out),'ConsentTest'],check=True)
+
+# Exercise the actual first-settings offer with a captured dialog and no networking.
+personal=(root/'extensions/chmate/src/main/java/app/morphe/extension/chmate/PersonalNgSubmissions.java').read_text(encoding='utf-8')
+a=personal.index('    static void offerOnSettingsOpen(');b=personal.index('    static void enableWithConsent(',a)
+offer=personal[a:b].replace("SharedPreferences p=", "Prefs p=")
+first=r"""import java.util.*;
+public class FirstSettingsConsentTest {
+ static int checks,shown,continued;static Runnable accept,dismiss;static Prefs personal=new Prefs();
+ static class Prefs {Map<String,Boolean> values=new HashMap<>();boolean contains(String k){return values.containsKey(k);}boolean getBoolean(String k,boolean d){return values.getOrDefault(k,d);}Prefs edit(){return this;}Prefs putBoolean(String k,boolean v){values.put(k,v);return this;}void apply(){}}
+ static class Activity {boolean dead;boolean isFinishing(){return dead;}boolean isDestroyed(){return dead;}Activity getWindow(){return this;}Activity getDecorView(){return this;}void post(Runnable r){r.run();}}
+ static class SharedNg {static Prefs p=new Prefs();static int scheduled;static void initialize(Activity a){}static Prefs prefs(){return p;}static void reload(){}static void schedule(){scheduled++;}}
+ static Prefs prefs(){return personal;}
+ static void showSettings(Activity a,boolean enabling,Runnable accepted,Runnable dismissed){shown++;accept=accepted;dismiss=dismissed;}
+ static void check(boolean v){if(!v)throw new AssertionError("case "+checks);checks++;}
+"""+offer+r"""
+ public static void main(String[] args){Activity a=new Activity();Runnable next=()->continued++;
+ offerOnSettingsOpen(a,next);check(shown==1&&continued==0);check(!personal.getBoolean("consent",false)&&!SharedNg.p.getBoolean("enabled",false));
+ dismiss.run();check(continued==1&&!SharedNg.p.getBoolean("enabled",false));offerOnSettingsOpen(a,next);check(shown==1&&continued==2);
+ personal=new Prefs();personal.putBoolean("consent",false);offerOnSettingsOpen(a,next);check(shown==1&&continued==3);
+ personal=new Prefs();personal.putBoolean("consent",true);offerOnSettingsOpen(a,next);check(shown==1&&continued==4);
+ personal=new Prefs();a.dead=true;offerOnSettingsOpen(a,next);check(shown==1&&continued==4);a.dead=false;
+ offerOnSettingsOpen(a,next);check(shown==2&&!SharedNg.p.getBoolean("enabled",false));personal.putBoolean("consent",true);accept.run();check(SharedNg.p.getBoolean("enabled",false)&&SharedNg.scheduled==1);
+ a.dead=true;dismiss.run();check(continued==4);
+ System.out.println("PASS "+checks+" first-settings consent lifecycle checks");}}
+"""
+p=out/'FirstSettingsConsentTest.java';p.write_text(first,encoding='utf-8')
+subprocess.run([str(jdk/'javac.exe'),'-J-Xmx96m','-d',str(out),str(p)],check=True)
+subprocess.run([str(jdk/'java.exe'),'-Xmx64m','-cp',str(out),'FirstSettingsConsentTest'],check=True)

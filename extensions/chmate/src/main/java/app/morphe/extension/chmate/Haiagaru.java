@@ -248,9 +248,6 @@ public final class Haiagaru {
     private Haiagaru() {
     }
 
-    /** Build marker set only by the isolated ads-only patch. */
-    public static boolean adsOnlyBuild() { return false; }
-
     /** Makes ChMate's distributed integrity calculations see its original certificate. */
     @SuppressWarnings("deprecation")
     public static synchronized void installSignatureSpoof() {
@@ -1488,7 +1485,6 @@ public final class Haiagaru {
     }
 
     public static boolean shouldHideAds(Context context) {
-        if(adsOnlyBuild())return true;
         if (context != null) {
             Context resolvedContext = context.getApplicationContext();
             applicationContext = resolvedContext == null ? context : resolvedContext;
@@ -3085,7 +3081,7 @@ public final class Haiagaru {
         // This adapter hook runs for every bound response, including when ad
         // hiding is disabled. Keep emoji fallback independent of that setting.
         try {
-            if(!adsOnlyBuild())EmojiFontFallback.applyToRow(view);
+            EmojiFontFallback.applyToRow(view);
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to apply emoji font fallback", error);
         }

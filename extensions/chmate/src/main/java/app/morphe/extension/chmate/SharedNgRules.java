@@ -95,12 +95,12 @@ final class SharedNgRules {
         }
         Rule(String id,String board,String kind,String value,String period,int votes,boolean revoked,int minLevel,int minVotes){
             if(id==null||!id.matches("[a-f0-9]{64}")||board==null||!(board.equals("*")||board.matches("[a-z0-9.-]+(?::[0-9]+)?(?:/[A-Za-z0-9_.-]+)+"))||board.equals("unknown.invalid/unresolved")||board.length()>300||votes<0)throw new IllegalArgumentException("共有NG形式が不正です");
-            if(!Arrays.asList("id","wacchoi","prefix","suffix","keyword","name","trip").contains(kind)||value==null||value.isEmpty()||value.length()>2000||period==null)throw new IllegalArgumentException("共有NG条件が不正です");
+            if(!Arrays.asList("id","wacchoi","prefix","suffix","keyword","name","trip","reporter").contains(kind)||value==null||value.isEmpty()||value.length()>2000||period==null)throw new IllegalArgumentException("共有NG条件が不正です");
             if(kind.equals("keyword")&&(text(value).isEmpty()||!period.isEmpty()))throw new IllegalArgumentException("キーワードまたは有効期間が不正です");
             if(kind.equals("id")&&!value.matches("[A-Za-z0-9+/!_.-]{1,100}"))throw new IllegalArgumentException("IDが不正です");
+            if(kind.equals("reporter")&&(!"edge/all".equals(family(board))||!value.matches("[A-Za-z0-9+/!_.-]{1,100}")))throw new IllegalArgumentException("記者IDが不正です");
             if(kind.equals("wacchoi")&&!WACCHOI.matcher(value).matches())throw new IllegalArgumentException("ワッチョイは全体を指定してください");
             if(Arrays.asList("prefix","suffix").contains(kind)&&!value.matches("[A-Za-z0-9+/]{4}"))throw new IllegalArgumentException("4桁が不正です");
-            if(Arrays.asList("id","wacchoi","prefix","suffix").contains(kind)){if(board.equals("*"))throw new IllegalArgumentException("ID・ワッチョイには板指定が必要です");}
             if(minLevel<1||minLevel>5||minVotes<0)throw new IllegalArgumentException("禁止レベルが不正です");
             this.minLevel=minLevel;this.minVotes=minVotes;this.id=id;this.board=family(board);this.kind=kind;this.value=kind.equals("keyword")?text(value):value;this.period="";this.votes=votes;this.revoked=revoked;
         }
@@ -108,12 +108,12 @@ final class SharedNgRules {
             return matchesPrepared(SharedNgRules.board(boardUrl),responseId,wacchoi(name),day(date),week(date),text(body),threshold);
         }
         boolean matchesPrepared(String currentBoard,String responseId,String currentWacchoi,String day,String week,String body,int threshold){
-            if(revoked||votes<Math.max(threshold,minVotes)||!(board.equals(currentBoard)||board.equals("*")&&kind.equals("keyword")))return false;
+            if(revoked||votes<Math.max(threshold,minVotes)||!(board.equals(currentBoard)||board.equals("*")&&!kind.equals("reporter")))return false;
             switch(kind){case "id":return value.equals(responseId);
                 case "wacchoi":return value.equals(currentWacchoi);
                 case "prefix":return currentWacchoi.startsWith(value+"-");
                 case "suffix":return currentWacchoi.endsWith("-"+value);
-                case "name":case "trip":return false;
+                case "name":case "trip":case "reporter":return false;
                 default:return body.contains(value);}
         }
     }
