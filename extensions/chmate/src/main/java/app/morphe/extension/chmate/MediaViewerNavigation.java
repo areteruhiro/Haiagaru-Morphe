@@ -282,9 +282,11 @@ public final class MediaViewerNavigation {
         if(!view.isShown())return false;
         // 191 uses its own FrameLayout renderer, not an ImageView/getScale API.
         if(view.getClass().getName().equals("o.qhbExternalSyntheticLambda0"))try{
-            java.lang.reflect.Field current=view.getClass().getDeclaredField("C"),minimum=view.getClass().getDeclaredField("B");
-            current.setAccessible(true);minimum.setAccessible(true);
-            float base=minimum.getFloat(view);if(base>0&&current.getFloat(view)>base+0.01f)return true;
+            java.lang.reflect.Field current=view.getClass().getDeclaredField("C"),minimum=view.getClass().getDeclaredField("B"),fit=view.getClass().getDeclaredField("aa");
+            current.setAccessible(true);minimum.setAccessible(true);fit.setAccessible(true);
+            // B is capped at 1 for small images, while native d() opens at aa
+            // (fit-to-window). That automatic enlargement is not a user zoom.
+            if(ImageZoomState.zoomed(current.getFloat(view),minimum.getFloat(view),fit.getFloat(view)))return true;
         }catch(ReflectiveOperationException ignored){}
         if(view instanceof ImageView)try{
             java.lang.reflect.Method scale=view.getClass().getMethod("getScale");
