@@ -171,6 +171,7 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
                 CookieManager.getInstance().flush();
                 if(captchaDialog)view.evaluateJavascript(CaptchaDialogContent.SCRIPT,null);
                 checkPosted(view,url,navigation);
+                checkEdgeAuthentication(view,url,navigation);
             }
             @Override public void onReceivedSslError(WebView view,android.webkit.SslErrorHandler handler,android.net.http.SslError error){
                 handler.cancel();setStatus("証明書を確認できないため接続を停止しました。");
@@ -200,6 +201,13 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
         if(challenge!=null)ExternalBoardAuth.prepareWebSession(this,board,auth,this::renderChallenge);
         else if(state==null || web.restoreState(state)==null)
             ExternalBoardAuth.prepareWebSession(this,board,auth,()->web.loadUrl(auth));
+    }
+    private void checkEdgeAuthentication(WebView view,String url,long generation){
+        if(!EdgeLevelNg.option(EdgeLevelNg.RECORD)||!EdgeLevelPolicy.edge(board)||!EdgeLevelPolicy.edge(url))return;
+        view.evaluateJavascript("JSON.stringify([document.title,(document.body?document.body.innerText:'').slice(0,4096)])",value->{
+            if(isFinishing()||isDestroyed()||web!=view||generation!=navigation||!url.equals(view.getUrl()))return;
+            try{Object raw=new org.json.JSONTokener(value).nextValue();org.json.JSONArray page=new org.json.JSONArray(String.valueOf(raw));EdgeLevelNg.authentication(board,url,page.optString(0),page.optString(1),CookieManager.getInstance().getCookie(url));}catch(Exception ignored){}
+        });
     }
     private void checkPosted(WebView view,String url,long generation){
         if(challenge==null||postingCompleted)return;

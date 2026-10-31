@@ -1165,3 +1165,16 @@ MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current
 |Haiagaru 検証 242 / 0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/chain-abone-242.apk`|`a3ec4dbf32b3edef0845fcd603dd457c125cc8cf06be9d01a69be24152575dce`|署名一致・更新/起動成功|
 
 新機能は実行中エンジンを複製し、合成レスとメモリ内NGName matcherで確認。保存NG登録・DATは変更していない。191/226各15、242は13項目。親の通常NG表示を残し子/孫の連鎖だけが非表示mapへ入る、OFF再構築、NG無効、初期OFF/UI保存に成功。191/226はnative row builderで実際の行除去と標準Show hidden NGによる復帰も確認。242のShow hidden NGを含むnativeフィルター/flowは直前の確認済み候補と全命令/register/branch一致で確認し、実メニュー操作を同一の試験としては扱わない。全版cold起動・既存Part4本文、NG設定UI生成、crash bufferは10/30の旧記録のみ。画像表示・242上スワイプ終了は直前のviewer-filter-toolbar-v2候補で確認した範囲を維持。証拠build/chain-abone-verification.json、build/chain-abone-*-runtime.log。
+
+
+## 2026-11-01 01:08 JST エッヂレベルNG・スレ内検索対象設定の最終候補
+
+対象はローカルAVD Haiagaru_Test_API36_16GiB、serial emulator-5580。既存検証packageと署名を照合し、install-r成功・データ保持・起動成功。アンインストールやデータ消去なし。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore、alias Morphe、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/edge-search-hardened.mpp` / SHA256 `5eff488a6de7a8bb7927f6c4813eca0b1ad8cf374759ab98c6b5f0a3736899ac`。最初のedge-search-final候補からCookie観測null保護・fingerprint同期・認証日送信失敗時も受信を継続する共通処理を追加したhardened候補へ再更新。
+
+- Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/edge-search-hardened-191.apk` / SHA256 `60e6e1490c5932d06ba8a1164adf19aefad6ec66a29a226b1b71c322e1400599` / 署名一致install-r・起動・nativeレベルNG11/検索37/模擬認証9項目成功。
+
+- Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/edge-search-hardened-226.apk` / SHA256 `99f612fdc3a080c77d5ef94a86b4654877576db68cedbd595493963bbfa5486b` / 署名一致install-r・起動・nativeレベルNG11/検索37/模擬認証9項目成功。
+
+- Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/edge-search-hardened-242.apk` / SHA256 `8468ca47ae6be2dd628cc5710663c2707f202f34cf6beb76370adf36f5a76daa` / 署名一致install-r・起動・nativeレベルNG11/検索37/模擬認証9項目成功。
+
+191で共有同意OFFのままGAS公開レベル1件の受信まで成功。通常NG/DATの保存変更なし、試験用preferencesはfinallyで復元、公開認証日の送信なし。最終crash buffer空。起動時SystemUI ANRはWaitで復帰しアプリcrashとは区別。初期226/242のレベル試験はスレengine未生成で失敗し、その後191/242はclone・226は隔離native engine生成で再試験成功。模擬認証試験の初期失敗はJS Int64の参照比較による試験側誤りで、値比較へ変更して3版成功。アプリRelease未公開。

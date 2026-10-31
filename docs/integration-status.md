@@ -724,3 +724,10 @@ CachedExtensionDexで拡張shardのstring/type sectionをpatch実行中だけmem
 公開asset `patches-bundle.json` SHA256 `3134c30d15a83551af42fba8614b288ba1c90d1aec3d24f0588f626cfd01ea13`、GitHub asset digestと一致。
 公開asset `patches-bundle-pre.json` SHA256 `3134c30d15a83551af42fba8614b288ba1c90d1aec3d24f0588f626cfd01ea13`、GitHub asset digestと一致。
 MPP CRC正常、ChainAboneVisibility/hideChainedAbone/videoFilterUrls/自動NG除外toolbar/NativeImageClosePatch同梱、軽量専用MPE不在を確認。master/devのpatches-bundle.json・patches-bundle-pre.json全4feedがversion1.16.0、download URLが正式MPPを指すことを確認。共有NG/F9の開発中表記維持。CI生成のversion/CHANGELOG/bundle JSONは手編集せず、CI backmerge済みdevをff同期。公開物検査証拠build/official116-41186777256/verification.json。端末検証範囲とnative Show hidden NGの版別確認方法は直前の連鎖NG検証記録を参照。
+
+
+2026-11-01 01:08 JST エッヂ認証日/公開レベルNG・スレ内検索対象ON/OFF
+利用者指定スレ1793457978と共有同意者全員の条件で実装。詳細docs/edge-level-auto-ng-plan.mdとthread-search-options.md。レベル実測/推定/認証記録は初期OFF、閾値個別・除外ID・スレ再表示で反映。通常NG/DATは変更しない。公開値優先、IDはedge板/投稿日単位。認証日共有は専用同意・接続先再同意・公開自身の直近レス照合・生Cookie等は送らない。認証日自体は自己申告、矛盾は配信しない。参考23時間推定は初期OFF、実レベル保証なし。
+GAS新設EdgeLevels.gsと既存Codeの分岐のみ追加。指定スレがkakoへ302転送された原因を特定し同じホスト/板/スレの正確な過去ログパスだけ追従。30分trigger1件、配信取得でクロールしない、7日/10000件、GET/POST31テスト成功。既存service40/personal148/moderation61維持。GAS既存deploymentをversion9へ更新00:59 JST、実行者/全員公開/URL維持、ソースfingerprint b5d2993eを照合。公開GETで観測1/最新L3/認証日0、既存共有NG revision16/273件ok、非公開項目なし。build/edge-gas-v9-verification.jsonとedge-gas-v9-audit.png。
+スレ内検索はDISPLAYへID/ワッチョイ/名前の各ON/OFF（初期全ON）、本文常時対象。名前とワッチョイ分離・ID抜出でOFFのメタデータ混入を防ぎ、AND/regex/本文引用/元データを維持。プロファイル保存/復元へ追加。host198項目、native各37項目成功。
+通常LintVital/R8の最終build3m35s成功、MPP SHA256 5eff488a6de7a8bb7927f6c4813eca0b1ad8cf374759ab98c6b5f0a3736899ac。emulator-5580の191/226/242既存隔離packageへ署名照合更新成功、各native表示11/検索37/模擬認証9項目成功。191は実GASレベル受信1件成功。最終crash buffer空。SystemUI ANRはWait復帰、初期native engine未生成とInt64試験側比較ミスは修正して再試験。実エッヂ認証→自身投稿→共有の通し確認は未完了。アプリRelease/タグ/配布feedは変更していない。

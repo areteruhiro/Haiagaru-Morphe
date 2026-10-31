@@ -1,0 +1,17 @@
+// Isolated verification package, synthetic cookie only, no network or public submissions.
+rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>Java.scheduleOnMainThread(()=>{
+ const P='app.morphe.extension.chmate.',app=Java.use('android.app.ActivityThread').currentApplication(),pkg=String(app.getPackageName());if(!/\.haiagaru\.(settingsfix191|resumefix226|resumefix242)$/.test(pkg)){reject(Error('verification package required'));return;}
+ const pref=app.getSharedPreferences('io.github.areteruhiro.chmate.haiagaru.ui-config',0),had=pref.contains('edgeLevelRecordAuth'),prior=pref.getBoolean('edgeLevelRecordAuth',false),local=app.getSharedPreferences('haiagaru.edge-levels',0),snapshot=local.getAll(),C=Java.use(P+'EdgeLevelNg'),StringClass=Java.use('java.lang.String');let count=0;function check(v,s){if(!v)throw Error(s);count++;}
+ try{pref.edit().putBoolean('edgeLevelRecordAuth',true).commit();const board='https://bbs.eddibb.cc/liveedge/',auth='https://bbs.eddibb.cc/auth',token='HAIAGARU_SYNTHETIC_COOKIE_ONLY',key=String(C.fingerprint(token));
+ C.cookies(null,null);C.cookies(StringClass.$new(board),null);check(true,'null cookie observer safe');
+ C.authentication(board,auth,'wrong title','認証に成功しました','edge-token='+token);check(!local.contains('auth:'+key),'wrong title ignored');
+ C.authentication('https://example.invalid/',auth,'認証成功 - Successful','認証に成功しました','edge-token='+token);check(!local.contains('auth:'+key),'wrong board ignored');
+ C.authentication(board,board,'認証成功 - Successful','認証に成功しました','edge-token='+token);check(!local.contains('auth:'+key),'wrong path ignored');
+ const cookies=Java.use('java.util.ArrayList').$new();cookies.add(StringClass.$new('edge-token='+token));C.cookies(StringClass.$new(board),cookies);check(!local.contains('auth:'+key),'first seen cookie not authentication');
+ C.authentication(board,auth,'認証成功 - Successful','認証に成功しました','edge-token='+token);check(local.getLong('auth:'+key,0)>0,'success records local timestamp');check(String(local.getString('current',''))===key,'cookie fingerprint bound');
+ const entries=local.getAll().values().toArray();check(!Array.from(entries).some(x=>String(x).includes(token)),'raw cookie never persisted');
+ const first=local.getLong('auth:'+key,0);C.authentication(board,auth,'認証成功 - Successful','認証に成功しました','edge-token='+token);check(String(local.getLong('auth:'+key,0))===String(first),'revisit preserves first auth time');
+ resolve({version:pkg.slice(-3),checks:count,syntheticCookieOnly:true,noNetwork:true});
+ }catch(e){reject(Error(String(e.stack||e)));}finally{
+ const edit=local.edit(),keys=local.getAll().keySet().toArray();for(const raw of keys){const k=String(raw);if(!snapshot.containsKey(raw)){edit.remove(k);continue;}const v=snapshot.get(raw),type=String(v.getClass().getName());if(type==='java.lang.String')edit.putString(k,String(v));else if(type==='java.lang.Long')edit.putLong(k,Java.cast(v,Java.use('java.lang.Long')).longValue());else if(type==='java.lang.Integer')edit.putInt(k,Java.cast(v,Java.use('java.lang.Integer')).intValue());else if(type==='java.lang.Boolean')edit.putBoolean(k,Java.cast(v,Java.use('java.lang.Boolean')).booleanValue());}edit.commit();const e=pref.edit();if(had)e.putBoolean('edgeLevelRecordAuth',prior);else e.remove('edgeLevelRecordAuth');e.commit();}
+})));}};
