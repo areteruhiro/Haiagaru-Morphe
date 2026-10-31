@@ -19,17 +19,18 @@ public final class RedIdAutoNg {
     private static final java.util.regex.Pattern EMPTY_ID=java.util.regex.Pattern.compile("[?？!！*＊\\-]+");
     private static String exclusionSource;
     private static Set<String> exclusionIds = java.util.Collections.emptySet();
-    private static final int MENU_EXCLUSION=0x7e484b02;
+    static final int MENU_EXCLUSION=0x7e484b02;
     private static final Map<android.view.MenuItem,String> MENU_IDS=new java.util.WeakHashMap<>();
 
     static void appendMenu(Object menuObject,Object response){
-        if(!(menuObject instanceof android.view.Menu)||response==null)return;
+        if(!(menuObject instanceof android.view.Menu)||response==null||!ResponseMenuSettings.visible(MENU_EXCLUSION))return;
         try{
             String key=response.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError")?"h":
                     response.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"j":"g";
             String id=literalId((String)ResponseArchiveEntry.field(response,key));if(id==null)return;
             android.view.Menu menu=(android.view.Menu)menuObject;if(menu.findItem(MENU_EXCLUSION)!=null)return;
-            android.view.MenuItem item=menu.add(android.view.Menu.NONE,MENU_EXCLUSION,menu.size(),"自動NGの除外IDに追加");
+            android.view.MenuItem item=menu.add(android.view.Menu.NONE,MENU_EXCLUSION,ResponseMenuSettings.order(MENU_EXCLUSION,menu.size()),"自動NGの除外IDに追加");
+            item.setIcon(android.R.drawable.ic_menu_add);
             MENU_IDS.put(item,id);item.setOnMenuItemClickListener(RedIdAutoNg::handleMenu);
         }catch(ReflectiveOperationException|IllegalArgumentException ignored){}
     }
@@ -39,6 +40,7 @@ public final class RedIdAutoNg {
     }
     /** The native ID menu provides the exact tapped ID; no lookup in neighbouring rows. */
     public static void appendIdSheet(Object builder,Object board,String raw){
+        if(!ResponseMenuSettings.visible(MENU_EXCLUSION))return;
         String id=literalId(raw);if(id==null)return;
         try{ResponseArchive.appendSheetAction(builder,"自動NGの除外IDに追加",android.R.drawable.ic_menu_add,
                 ()->registerExclusion(Haiagaru.toolbarActivity(null),id));}

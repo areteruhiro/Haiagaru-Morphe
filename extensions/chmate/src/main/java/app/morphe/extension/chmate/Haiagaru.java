@@ -3632,6 +3632,7 @@ public final class Haiagaru {
     private static LinearLayout settingsDISPLAY(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        ThreadSearchOptions.add(layout,activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         Switch automaticFold = addSwitch(layout, activity,
@@ -4443,6 +4444,7 @@ public final class Haiagaru {
         layout.addView(autoNgRedIdsDescription, rowParams(activity));
         live.toggle(autoNgRedIds, RedIdAutoNg.KEY);
         RedIdAutoNg.addExclusionsButton(layout, activity);
+        EdgeLevelSettings.add(layout,activity);
         Switch hideChainedAbone = addSwitch(layout, activity,
                 text("連鎖あぼーんを常に非表示", "Always hide chained aboon rows"),
                 preferences.getBoolean(ChainAboneVisibility.KEY, false));
