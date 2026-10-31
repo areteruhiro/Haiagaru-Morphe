@@ -731,3 +731,8 @@ MPP CRC正常、ChainAboneVisibility/hideChainedAbone/videoFilterUrls/自動NG�
 GAS新設EdgeLevels.gsと既存Codeの分岐のみ追加。指定スレがkakoへ302転送された原因を特定し同じホスト/板/スレの正確な過去ログパスだけ追従。30分trigger1件、配信取得でクロールしない、7日/10000件、GET/POST31テスト成功。既存service40/personal148/moderation61維持。GAS既存deploymentをversion9へ更新00:59 JST、実行者/全員公開/URL維持、ソースfingerprint b5d2993eを照合。公開GETで観測1/最新L3/認証日0、既存共有NG revision16/273件ok、非公開項目なし。build/edge-gas-v9-verification.jsonとedge-gas-v9-audit.png。
 スレ内検索はDISPLAYへID/ワッチョイ/名前の各ON/OFF（初期全ON）、本文常時対象。名前とワッチョイ分離・ID抜出でOFFのメタデータ混入を防ぎ、AND/regex/本文引用/元データを維持。プロファイル保存/復元へ追加。host198項目、native各37項目成功。
 通常LintVital/R8の最終build3m35s成功、MPP SHA256 5eff488a6de7a8bb7927f6c4813eca0b1ad8cf374759ab98c6b5f0a3736899ac。emulator-5580の191/226/242既存隔離packageへ署名照合更新成功、各native表示11/検索37/模擬認証9項目成功。191は実GASレベル受信1件成功。最終crash buffer空。SystemUI ANRはWait復帰、初期native engine未生成とInt64試験側比較ミスは修正して再試験。実エッヂ認証→自身投稿→共有の通し確認は未完了。アプリRelease/タグ/配布feedは変更していない。
+
+
+2026-11-01 01:28 JST 取得済みスレ検索の全レス混合順（未公開）
+利用者画像と追加回答により「スレ作成日時で全板混合」ではなく「全スレのレスを投稿日時で混合」が希望と確認。CachedResponseOrderを追加、既存CachedSearchOrder mode3/4と選択欄・profile0〜4対応。既存0〜2の意味は保持。本文に引用された日付を除いてnativeレスヘッダーの日時をJST/millisで比較、日時不明は末尾・同日時はstable。スレ名headerを必要な箇所に再配置し、レス行/本文span/URL/flagsの元objectを保持。通常検索処理・件数・query・DATは変更しない。nativeパッチhook追加変更なし。
+host新4027/旧2014成功、通常LintVital/R8 build3m11s成功。MPP SHA256 c24741235e7fc0035ef14cda83783eae3fe9399d51dd16fbc88cf5eff9213d3d。emulator-5580へ191/226/242を既存署名照合install-r成功。各native32/36/36項目で混合順・identity・クリック先・元state件数/query保持・標準復帰成功。242実UIで合成レス2022 A→2021 B→2020 Aの交差表示を目視、fixture解除・設定復元済み。初期試験のconstructor差異は試験側のみ修正し再成功。最終crash buffer空。docs/cached-search-response-order.mdとandroid-installations.mdに詳細。アプリRelease/配布feed更新なし。

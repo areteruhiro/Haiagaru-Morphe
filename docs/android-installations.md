@@ -1178,3 +1178,16 @@ MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/edge-search-hardened-242.apk` / SHA256 `8468ca47ae6be2dd628cc5710663c2707f202f34cf6beb76370adf36f5a76daa` / 署名一致install-r・起動・nativeレベルNG11/検索37/模擬認証9項目成功。
 
 191で共有同意OFFのままGAS公開レベル1件の受信まで成功。通常NG/DATの保存変更なし、試験用preferencesはfinallyで復元、公開認証日の送信なし。最終crash buffer空。起動時SystemUI ANRはWaitで復帰しアプリcrashとは区別。初期226/242のレベル試験はスレengine未生成で失敗し、その後191/242はclone・226は隔離native engine生成で再試験成功。模擬認証試験の初期失敗はJS Int64の参照比較による試験側誤りで、値比較へ変更して3版成功。アプリRelease未公開。
+
+
+## 2026-11-01 01:28 JST 全スレのレスを投稿日時で混合表示する検証候補
+
+emulator-5580（Haiagaru_Test_API36_16GiB）の既存隔離packageへ署名照合済みinstall-r成功・データ保持・起動成功。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/cached-response-final.mpp` / SHA256 `c24741235e7fc0035ef14cda83783eae3fe9399d51dd16fbc88cf5eff9213d3d`。
+
+- Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/cached-response-191.apk` / SHA256 `c031187fc7f7bd3f6a12330dce0b2eefab1adddbc5d53fea9f8831b37ca83f2e` / native混合順・元行identity・標準復帰 32項目成功。
+
+- Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/cached-response-226.apk` / SHA256 `95142ec677b91d0ecd2f5ac11fe2961cd8a85c32a939ebdb8e3b85d939337f7d` / native混合順・元行identity・標準復帰 36項目成功。
+
+- Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/cached-response-242.apk` / SHA256 `c19555615241d1a399752fc3ff246b9542492cea4db5a5eb4ed1e38c24fd3275` / native混合順・元行identity・標準復帰 36項目成功。
+
+242の実native検索UIへ表示中だけ合成結果を渡し、2022年A→2021年B→2020年Aの表示と投稿日時順の選択欄を目視確認。表示fixtureはFrida detachで解除し、設定値を元に復元、SearchActivityを戻るで閉じた。DAT/アーカイブの追加削除なし。build/cached-response242.pngと同XML、runtime logを保存。最終crash buffer空。初期native試験では242のAnnotatedStringのString単引数constructorがないこと、226 stateの先頭constructorが1引数であることを検出したため、試験を実型のString/List・4引数constructorへ合わせて再試験成功。アプリコード修正の追加は不要だった。アプリRelease未公開。

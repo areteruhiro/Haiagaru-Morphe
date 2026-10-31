@@ -36,7 +36,7 @@ public final class SettingsProfiles {
         booleanKey(VideoViewerSettings.INLINE_GIF);defaultValue(VideoViewerSettings.INLINE_GIF,false);
         booleanKey(ImageViewerRotationButton.MENU_KEY);defaultValue(ImageViewerRotationButton.MENU_KEY,true);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
-        numberKey(CachedSearchOrder.KEY,0,2);defaultValue(CachedSearchOrder.KEY,0);
+        numberKey(CachedSearchOrder.KEY,0,4);defaultValue(CachedSearchOrder.KEY,0);
         for(String k:new String[]{EdgeLevelNg.OBSERVED,EdgeLevelNg.ESTIMATE,EdgeLevelNg.RECORD}){booleanKey(k);defaultValue(k,false);}
         booleanKey("edgeLevelAutoSync");defaultValue("edgeLevelAutoSync",true);
         for(String k:new String[]{"edgeLevelThreshold","edgeLevelEstimateThreshold","edgeLevelInitial"}){numberKey(k,0,9999);defaultValue(k,k.equals("edgeLevelInitial")?1:5);}
