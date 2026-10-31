@@ -4,6 +4,8 @@ public final class PreviewUrlsTest {
  static int checks;
  static void check(boolean ok,String text){if(!ok)throw new AssertionError(text);checks++;}
  public static void main(String[] args){
+  for(String id:new String[]{"A.Af1CYTq","ID:A.Af1CYTq","abcd.xy123","A.Af1CYTq (3/3 緑川)"})
+   check(PreviewUrls.extract(id,8).isEmpty(),"ID must not become domain: "+id);
   String news="news.yahoo.co.jp/articles/07aad05fddc054aaa796a565184505e101616415";
   for(String prefix:new String[]{"https://","ttps://","tps://","ttp://","tp://","//",""}){
    check(PreviewUrls.normalize(prefix+news).equals("https://"+news),"normalize "+prefix);
