@@ -1217,3 +1217,16 @@ emulator-5580の既存隔離検証packageへ署名照合install-r成功、デー
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-card-id-guard-242.apk` / SHA256 `d70ecb9b35a2a08cd192b9918f5aece75603d6e2702160f1775872d993138bce` / URL抽出とSiteCards候補27項目成功。
 
 指定IDと実レス相当ヘッダー、空白/全角コロン付きIDの候補0件、後続URL/省略URL保持を確認。private SiteCards.urlsまで実行しネットワークmetadata取得なし、DAT/prefs変更なし。最終crash buffer空。利用者の症状発生版は不明、指定ID自体は変更前現行版でも候補0件のため原報告の再現成功とは扱わない。アプリRelease未公開。
+
+
+## 2026-11-01 02:20 JST 公式候補最終：メール自動入力抑止・認証日共有削除
+
+emulator-5580へ既存署名照合install-r・cold起動成功。既存アプリデータ保持。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/official117-final.mpp` / SHA256 `c03a67b63f250d1c0ec9ba3b62dd280bf3fa25be70c9cef99497aab683e8e634`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/official117-191.apk` / SHA256 `a814d5379057f1f438b90d17e9307e3edaacaec1f73f58a7ffeb75bafb113a74`。
+
+- Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/official117-226.apk` / SHA256 `da1fdeb34aa5edd5df9b4ffe7f524e397804056b2b14670edefba4d5d4b084fa`。
+
+- Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/official117-242.apk` / SHA256 `cc44e86dea0b88d832e3356c196daab4da3b571368117444d9ab54c992bd5afa`。
+
+各版：メール欄45・検索対象37・除外IDメニュー17・サイトカード27・公開レベル11項目成功。混合検索順191は32、226/242は36項目成功。既存native hook元命令/register保持検査成功。3版のPart4本文/通常画像表示を目視確認。Imgur候補は削除/429のため、実在するrepository main-screen.pngを通常画像viewerで表示（画像内容自体は旧投稿エラー画面のスクリーンショット）。最終crash buffer空、build/official117-final-crash.log。

@@ -348,7 +348,6 @@ public final class ExternalBoardAuth {
     }
     public static Object parseCookie(Object url,String cookie) { return null; } // Bound at patch time.
     public static void received(Object url,List<?> cookies) {
-        EdgeLevelNg.cookies(url,cookies);
         Context c=context;if(c==null || url==null) return;
         String address=url.toString(),origin=BoardAuthRules.origin(address);
         if(origin.isEmpty() || !prefs(c).getBoolean("enabled:"+origin,false)) return;
@@ -358,8 +357,7 @@ public final class ExternalBoardAuth {
         } catch(Exception ignored) { }
     }
     public static List<?> cookies(List<?> nativeCookies,Object url) {
-        if(BoardCookies.active()){List<?> selected=BoardCookies.load(nativeCookies,url);EdgeLevelNg.cookies(url,selected);return selected;}
-        EdgeLevelNg.cookies(url,nativeCookies);
+        if(BoardCookies.active())return BoardCookies.load(nativeCookies,url);
         Context c=context;if(c==null || url==null) return nativeCookies;
         String address=url.toString(), origin=BoardAuthRules.origin(address);
         if(origin.isEmpty() || !prefs(c).getBoolean("enabled:"+origin,false)) return nativeCookies;

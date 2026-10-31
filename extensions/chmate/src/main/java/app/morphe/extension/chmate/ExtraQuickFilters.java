@@ -423,7 +423,7 @@ public final class ExtraQuickFilters {
         if(key!=null){Object r=field(row,key);return response(r)?r:null;}
         return null;
     }
-    static Object index(Object a) throws Exception {
+    private static Object index(Object a) throws Exception {
         if(legacy(a))return call(field(a,"M"),"b",new Class<?>[0]);
         if(!middle(a))return call(a,"a",new Class<?>[0]);
         Object m=model(a);

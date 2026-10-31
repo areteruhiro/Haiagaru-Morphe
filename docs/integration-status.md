@@ -746,3 +746,9 @@ host新4027/旧2014成功、通常LintVital/R8 build3m11s成功。MPP SHA256 c24
 2026-11-01 01:56 JST IDがサイトカードになる誤検知の追加対策（未公開）
 利用者の指定URLエッヂ1793443391/101を公開DATで確認、ID:eRNd.ru1fで本文URLなし。版は利用者回答「不明」。変更前現行PreviewUrlsで指定ID単体/ID付きは候補0件、当時の症状そのものを再現したとは扱わない。一方ID:後の空白/タブや全角コロン付きID: Abcd.efgh/ID：Abcd.efghは変更前1件と再現。ID名前空間範囲を明示し、その範囲内の裸ドメイン推測を除外。明示/省略scheme URL・後続URL・普通の裸URLは保持。元本文/ID/native spanを変更せず抽出と候補だけを制限。
 host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 558cd04a602a56ada46c6a021068dd7ee4136d843eea46e3086ea8da36e8ee9e。emulator-5580へ3版署名一致install-r・cold起動成功、実SiteCards.urlsとPreviewUrls.extract各27項目成功（指定ID候補0、spaced/fullwidth ID候補0、通常リンク維持）。metadata要求/設定/NG/DAT変更なし、最終crash buffer空。docs/site-link-cards.mdとandroid-installations.mdに記録。公開なし。
+
+
+2026-11-01 02:20 JST 公式Release前の最終確認（未公開）
+利用者の追加指示によりエッヂ認証日の記録/同意/送信/推定をアプリから削除、GASも受付と配信を削除。公開スレで確認したレベルNGのみ初期OFFで残す。GAS既存deployment version10へ02:05 JST更新、既存URL/実行者/全員公開維持。公開GET observed1、authDays不在、旧認証API拒否、共有NG305件正常。build/gas-v10-verification.json、gas-v10-auth-removed.png。
+投稿メール欄のautofill/メール分類/IME候補抑止を既存投稿hookへ追加。191の実layoutではhint E-mailを使って特定。名前/本文/タイトル/他ログイン欄、sage/文字列/選択/key listenerを保持。通常LintVital/R8 build2m57s成功、MPP SHA256 c03a67b63f250d1c0ec9ba3b62dd280bf3fa25be70c9cef99497aab683e8e634。
+最終emulator-5580更新3版でメール45/検索37/除外ID17/カード27/公開レベル11、混合順32/36/36成功。native hook命令/register保持成功。3版起動/Part4本文/通常画像表示を確認、crash buffer空。初期fixtureのJava型比較と未接続Fragment生成問題を修正し再成功。runtime suiteに加えメール45最終結果を採用。host検証URL56/検索198/レス混合4027/旧ソート2014/公開レベル17/サーバー19、既存共有NG40/148/61成功。既存NG/DAT変更や実投稿なし。公開はCI完了後に別記。

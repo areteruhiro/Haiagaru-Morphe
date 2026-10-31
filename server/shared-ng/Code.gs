@@ -91,7 +91,7 @@ function doGet(e){try{
   const json=JSON.stringify(response);if(json.length<20000)cache.put('feed2:'+response.revision+':'+since+':'+offset,json,900);return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }catch(err){return ngJson_({ok:false,error:String(err.message||err)});}}
 function doPost(e){
-  try{const raw=e&&e.postData?e.postData.contents:'';if(raw.length<=65536&&Utilities.newBlob(raw).getBytes().length<=65536){const personal=JSON.parse(raw);if(personal.version===3&&personal.action==='edgeLevelAuth')return edgeReceiveAuth_(personal);if(personal.version===2)return ngReceivePersonal_(personal);}}catch(error){return ngJson_({ok:false,error:String(error.message||error)});}
+  try{const raw=e&&e.postData?e.postData.contents:'';if(raw.length<=65536&&Utilities.newBlob(raw).getBytes().length<=65536){const personal=JSON.parse(raw);if(personal.version===2)return ngReceivePersonal_(personal);}}catch(error){return ngJson_({ok:false,error:String(error.message||error)});}
   const lock=LockService.getScriptLock();try{
   const raw=e&&e.postData?e.postData.contents:'';if(raw.length>65536||Utilities.newBlob(raw).getBytes().length>65536)throw Error('Request too large');const body=JSON.parse(raw);
   if(body.version!==1||typeof body.device!=='string'||!/^[a-f0-9]{64}$/.test(body.device)||!Array.isArray(body.reports)||body.reports.length===0||body.reports.length>NG_CONFIG.maxBatch)throw Error('Invalid batch');

@@ -1,4 +1,4 @@
-/** Public Edge level observations. No cookies, tokens or exact authentication times. */
+/** Public Edge level observations only. No authentication data is accepted. */
 const EDGE_LEVEL_SOURCE='https://bbs.eddibb.cc/test/read.cgi/liveedge/1793457978/';
 const EDGE_LEVEL_HEADERS=['key','factJson','updatedAt'];
 function edgeThread_(value){
@@ -48,39 +48,23 @@ function crawlEdgeLevels(force){
   const sources=JSON.parse(p.getProperty('EDGE_LEVEL_SOURCES')||JSON.stringify([EDGE_LEVEL_SOURCE]));if(!Array.isArray(sources)||sources.length<1||sources.length>10)throw Error('Invalid sources');sources.forEach(edgeThread_);
   const sheet=edgeSheet_('EdgeLevels'),facts=edgeRead_(sheet);let fetched=0,failed=0;
   for(const source of sources){try{for(const f of edgeFetch_(source)){if(!f.verified)continue;const k=edgeKey_(f),old=facts.get(k);if(!old||f.at>old.at||(f.at===old.at&&f.level>old.level))facts.set(k,f);}fetched++;}catch(_){failed++;}}
-  edgeWrite_(sheet,facts);CacheService.getScriptCache().remove('edge-level-feed1');return {ok:failed===0,fetched,failed,observed:facts.size};
+  edgeWrite_(sheet,facts);CacheService.getScriptCache().remove('edge-level-feed2');return {ok:failed===0,fetched,failed,observed:facts.size};
  }finally{lock.releaseLock();}
 }
 function installEdgeLevelTrigger(){const name='crawlEdgeLevels';for(const t of ScriptApp.getProjectTriggers())if(t.getHandlerFunction()===name)ScriptApp.deleteTrigger(t);ScriptApp.newTrigger(name).timeBased().everyMinutes(30).create();return crawlEdgeLevels(true);}
 function edgeLevelFeed_(){
- const cache=CacheService.getScriptCache(),hit=cache.get('edge-level-feed1');if(hit)return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
+ const cache=CacheService.getScriptCache(),hit=cache.get('edge-level-feed2');if(hit)return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
  const lock=LockService.getScriptLock();lock.waitLock(10000);try{
   const observed=Array.from(edgeRead_(edgeSheet_('EdgeLevels')).values()).filter(f=>f.verified===true).map(f=>({board:f.board,day:f.day,id:f.id,level:f.level,at:f.at,thread:f.thread,response:f.response,verified:true}));
-  const grouped=new Map();for(const f of edgeRead_(edgeSheet_('EdgeAuthDays')).values()){const key=edgeKey_(f);let g=grouped.get(key);if(!g){g=new Set();grouped.set(key,g);}g.add(f.authDay);}
-  // Conflicting dates are withheld. A public post confirms the ID, never token ownership.
-  const authDays=[];for(const [key,days] of grouped)if(days.size===1){const [board,day,id]=key.split('|');authDays.push({board,day,id,authDay:Array.from(days)[0],selfReported:true});}
-  const json=JSON.stringify({ok:true,format:1,observed,authDays});if(json.length<90000)cache.put('edge-level-feed1',json,300);return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+  const json=JSON.stringify({ok:true,format:1,observed});if(json.length<90000)cache.put('edge-level-feed2',json,300);return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
  }finally{lock.releaseLock();}
-}
-function edgeReceiveAuth_(body){
- const lock=LockService.getScriptLock();try{
-  if(body.version!==3||body.action!=='edgeLevelAuth'||typeof body.device!=='string'||!/^[a-f0-9]{64}$/.test(body.device)||!Array.isArray(body.reports)||body.reports.length<1||body.reports.length>20)throw Error('Invalid Edge report batch');
-  const today=edgeToday_();const reports=body.reports.map(f=>{const t=edgeThread_(f.thread),day=edgeDay_(f.day),authDay=edgeDay_(f.authDay),id=edgeId_(f.id);if(t.board!==f.board||day!==today||authDay>day||!Number.isSafeInteger(f.response)||f.response<1||f.response>10000)throw Error('Invalid Edge report');return {board:t.board,day,id,authDay,thread:t.url,response:f.response};});
-  const urls=Array.from(new Set(reports.map(f=>f.thread)));if(urls.length>3)throw Error('Too many threads');
-  const props=PropertiesService.getScriptProperties(),pepper=props.getProperty('REPORTER_PEPPER');if(!pepper)throw Error('Run setupSharedNg');const reporter=ngHash_(pepper+':edge:'+body.device);
-  // Bound expensive verification before fetching; the quota is never part of the public feed.
-  const quota=CacheService.getScriptCache(),qkey='edge-auth:'+reporter;lock.waitLock(15000);let used=Number(quota.get(qkey)||0);if(used+urls.length>12)throw Error('Edge verification rate limit');quota.put(qkey,String(used+urls.length),3600);lock.releaseLock();
-  const posts=new Map(urls.map(url=>[url,edgeFetch_(url)]));for(const f of reports)if(!posts.get(f.thread).some(p=>p.response===f.response&&p.day===f.day&&p.id===f.id))throw Error('Public post mismatch');
-  lock.waitLock(15000);const sheet=edgeSheet_('EdgeAuthDays'),facts=edgeRead_(sheet);for(const f of reports)facts.set(reporter+'|'+edgeKey_(f),f);edgeWrite_(sheet,facts);CacheService.getScriptCache().remove('edge-level-feed1');return ngJson_({ok:true,accepted:reports.length});
- }catch(e){return ngJson_({ok:false,error:String(e.message||e)});}finally{if(lock.hasLock())lock.releaseLock();}
 }
 /** Editor-only audit: no ID, authentication date or submitter is logged. */
 function auditEdgeLevels(){
  const feed=JSON.parse(edgeLevelFeed_().getContent());
  if(feed.format!==1||feed.observed.some(f=>!f.verified||!edgeRecent_(f.day)||f.board!==edgeThread_(f.thread).board||!Number.isInteger(f.level)||f.level<0||f.level>9999))throw Error('Invalid level feed');
- if(feed.authDays.some(f=>f.selfReported!==true||!edgeRecent_(f.day)||edgeDay_(f.authDay)>f.day))throw Error('Invalid authentication-day feed');
- for(const f of feed.observed.concat(feed.authDays))for(const key of ['reporter','device','cookie','token','authTime'])if(key in f)throw Error('Private metadata exported');
- const result={ok:true,observed:feed.observed.length,selfReportedAuthDays:feed.authDays.length,crawlTriggers:ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='crawlEdgeLevels').length};
+ for(const f of feed.observed)for(const key of ['reporter','device','cookie','token','authTime'])if(key in f)throw Error('Private metadata exported');
+ const result={ok:true,observed:feed.observed.length,crawlTriggers:ScriptApp.getProjectTriggers().filter(t=>t.getHandlerFunction()==='crawlEdgeLevels').length};
  console.log(JSON.stringify(result));return result;
 }
 /** Editor-only transport diagnostics; never logs response contents. */

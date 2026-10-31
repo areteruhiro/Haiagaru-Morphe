@@ -17,9 +17,6 @@ public final class EdgeLevelPolicyTest{
   for(String bad:new String[]{"https://bbs.eddibb.cc.evil.invalid/test/read.cgi/liveedge/1793457978/","https://user@bbs.eddibb.cc/test/read.cgi/liveedge/1793457978/","https://bbs.eddibb.cc:443/test/read.cgi/liveedge/1793457978/","file:///test/read.cgi/liveedge/1793457978/"})check(EdgeLevelPolicy.thread(bad)==null,"bad source");
   check(EdgeLevelPolicy.day("2026-02-30")==null,"invalid date");
   check(EdgeLevelPolicy.day(null)==null,"null date");
-  check(EdgeLevelPolicy.estimate("2026-10-31","2026-11-01",1,23,20)==2,"date estimate");
-  check(EdgeLevelPolicy.estimate("2026-11-01","2026-10-31",1,23,20)==-1,"negative age");
-  check(EdgeLevelPolicy.estimate("2026-10-31","2026-11-01",1,0,20)==-1,"invalid interval");
   check(EdgeLevelPolicy.identity(url,4,"uaP115Eek","2026/11/01(日) 00:00:00.000").key().equals("edge/liveedge|2026-11-01|uaP115Eek"),"next day distinct");
   check(EdgeLevelPolicy.identity(url,4,"ID:uaP115Eek","2026/10/31(土) 23:46:25.611").id.equals("uaP115Eek"),"ID prefix");
   check(EdgeLevelPolicy.id("CAP_USER")==null,"cap excluded");

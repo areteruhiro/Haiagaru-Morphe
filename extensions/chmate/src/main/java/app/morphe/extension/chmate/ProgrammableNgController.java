@@ -334,7 +334,6 @@ public final class ProgrammableNgController {
         Object pending = PENDING_RESPONSE_LIST.get();
         PENDING_RESPONSE_LIST.remove();
         Map originalMap = RedIdAutoNg.modernFlags(pending, flags instanceof Map ? (Map) flags : null);
-        EdgeLevelNg.ownModern(pending,originalMap);
         if (!(pending instanceof List) || originalMap == null || context == null || !bodyRulesEnabled()) return originalMap;
         try {
             List<?> responses = originalResponses(pending);
