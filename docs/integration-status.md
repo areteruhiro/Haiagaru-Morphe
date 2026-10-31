@@ -741,3 +741,8 @@ host新4027/旧2014成功、通常LintVital/R8 build3m11s成功。MPP SHA256 c24
 2026-11-01 01:39 JST 自動NGの除外IDに追加：標準ツールバー設定対応（未公開）
 利用者報告の常時表示は、RedIdAutoNgが表示判定を参照せず追加し、native toolbarカタログIDSにも未登録だったことが原因。0x7e484b02をResponseMenuSettings.IDS/NAMES/iconと配布string index8へ追加し、標準表示設定・並び順・個別override・placeholder除去の既存経路を適用。appendMenuとappendIdSheetの両方に同じ表示gateを追加。初期表示は従来同様ON、最低限構成ではOFF。既存の除外リスト編集toolbarボタンとは別の、選択ID追加の操作として保持。native hook追加変更なし。
 通常LintVital/R8 build3m33s成功、MPP SHA256 dfe432433206e8a6e327e7ae0b70f4771d9c9892e7864818078cde91930cdad7。emulator-5580の191/226/242既存隔離packageへ署名照合install-r成功・cold起動成功。nativeカタログ1件/タイトルresource有効/重複なし/共有5先保持/標準ONOFF/独立性/順序/override/IDシートgateの各17項目成功。合成レスのみ、NG/除外ID登録なし、試験preferences復元。最終crash buffer空。docs/response-menu-settings.mdとandroid-installations.mdへ記録。アプリRelease/配布feed変更なし。
+
+
+2026-11-01 01:56 JST IDがサイトカードになる誤検知の追加対策（未公開）
+利用者の指定URLエッヂ1793443391/101を公開DATで確認、ID:eRNd.ru1fで本文URLなし。版は利用者回答「不明」。変更前現行PreviewUrlsで指定ID単体/ID付きは候補0件、当時の症状そのものを再現したとは扱わない。一方ID:後の空白/タブや全角コロン付きID: Abcd.efgh/ID：Abcd.efghは変更前1件と再現。ID名前空間範囲を明示し、その範囲内の裸ドメイン推測を除外。明示/省略scheme URL・後続URL・普通の裸URLは保持。元本文/ID/native spanを変更せず抽出と候補だけを制限。
+host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 558cd04a602a56ada46c6a021068dd7ee4136d843eea46e3086ea8da36e8ee9e。emulator-5580へ3版署名一致install-r・cold起動成功、実SiteCards.urlsとPreviewUrls.extract各27項目成功（指定ID候補0、spaced/fullwidth ID候補0、通常リンク維持）。metadata要求/設定/NG/DAT変更なし、最終crash buffer空。docs/site-link-cards.mdとandroid-installations.mdに記録。公開なし。

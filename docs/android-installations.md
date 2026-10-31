@@ -1204,3 +1204,16 @@ emulator-5580 / Haiagaru_Test_API36_16GiB の既存検証packageへ署名照合i
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/red-id-menu-settings-242.apk` / SHA256 `b6491d9875acb457eb740a17129e02c53808875d869c0bc521f223ffb2781496` / native catalog・表示設定17項目成功。
 
 native標準カタログに新IDと有効な文字列リソースが1件存在、重複登録なし、標準共有先5件保持、保存したツールバー設定のON/OFF、下4桁NGと独立、追加Menuの順序、placeholder除去、常に表示/非表示、IDシートへの反映を各版で確認。合成レスと隔離PopupMenu/シートを使用、通常NGや除外IDへ登録なし。preferencesはfinallyで元へ復元。最終crash buffer空。build/red-id-menu-settings191/226/242-runtime.log。アプリRelease未公開。
+
+
+## 2026-11-01 01:56 JST IDリンクカード誤検知の追加対策
+
+emulator-5580の既存隔離検証packageへ署名照合install-r成功、データ保持、cold起動成功。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-card-id-guard.mpp` / SHA256 `558cd04a602a56ada46c6a021068dd7ee4136d843eea46e3086ea8da36e8ee9e`。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。
+
+- Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-card-id-guard-191.apk` / SHA256 `a2c7133a963f7ac1305d7397b18e183e57f563a557a8e819fbf961045dc93466` / URL抽出とSiteCards候補27項目成功。
+
+- Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-card-id-guard-226.apk` / SHA256 `d4ab7e302e6d5c7f4876169f0d0f340f9c056e0e84922d859977030e3b15e02a` / URL抽出とSiteCards候補27項目成功。
+
+- Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-card-id-guard-242.apk` / SHA256 `d70ecb9b35a2a08cd192b9918f5aece75603d6e2702160f1775872d993138bce` / URL抽出とSiteCards候補27項目成功。
+
+指定IDと実レス相当ヘッダー、空白/全角コロン付きIDの候補0件、後続URL/省略URL保持を確認。private SiteCards.urlsまで実行しネットワークmetadata取得なし、DAT/prefs変更なし。最終crash buffer空。利用者の症状発生版は不明、指定ID自体は変更前現行版でも候補0件のため原報告の再現成功とは扱わない。アプリRelease未公開。
