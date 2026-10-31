@@ -736,3 +736,8 @@ GAS新設EdgeLevels.gsと既存Codeの分岐のみ追加。指定スレがkako�
 2026-11-01 01:28 JST 取得済みスレ検索の全レス混合順（未公開）
 利用者画像と追加回答により「スレ作成日時で全板混合」ではなく「全スレのレスを投稿日時で混合」が希望と確認。CachedResponseOrderを追加、既存CachedSearchOrder mode3/4と選択欄・profile0〜4対応。既存0〜2の意味は保持。本文に引用された日付を除いてnativeレスヘッダーの日時をJST/millisで比較、日時不明は末尾・同日時はstable。スレ名headerを必要な箇所に再配置し、レス行/本文span/URL/flagsの元objectを保持。通常検索処理・件数・query・DATは変更しない。nativeパッチhook追加変更なし。
 host新4027/旧2014成功、通常LintVital/R8 build3m11s成功。MPP SHA256 c24741235e7fc0035ef14cda83783eae3fe9399d51dd16fbc88cf5eff9213d3d。emulator-5580へ191/226/242を既存署名照合install-r成功。各native32/36/36項目で混合順・identity・クリック先・元state件数/query保持・標準復帰成功。242実UIで合成レス2022 A→2021 B→2020 Aの交差表示を目視、fixture解除・設定復元済み。初期試験のconstructor差異は試験側のみ修正し再成功。最終crash buffer空。docs/cached-search-response-order.mdとandroid-installations.mdに詳細。アプリRelease/配布feed更新なし。
+
+
+2026-11-01 01:39 JST 自動NGの除外IDに追加：標準ツールバー設定対応（未公開）
+利用者報告の常時表示は、RedIdAutoNgが表示判定を参照せず追加し、native toolbarカタログIDSにも未登録だったことが原因。0x7e484b02をResponseMenuSettings.IDS/NAMES/iconと配布string index8へ追加し、標準表示設定・並び順・個別override・placeholder除去の既存経路を適用。appendMenuとappendIdSheetの両方に同じ表示gateを追加。初期表示は従来同様ON、最低限構成ではOFF。既存の除外リスト編集toolbarボタンとは別の、選択ID追加の操作として保持。native hook追加変更なし。
+通常LintVital/R8 build3m33s成功、MPP SHA256 dfe432433206e8a6e327e7ae0b70f4771d9c9892e7864818078cde91930cdad7。emulator-5580の191/226/242既存隔離packageへ署名照合install-r成功・cold起動成功。nativeカタログ1件/タイトルresource有効/重複なし/共有5先保持/標準ONOFF/独立性/順序/override/IDシートgateの各17項目成功。合成レスのみ、NG/除外ID登録なし、試験preferences復元。最終crash buffer空。docs/response-menu-settings.mdとandroid-installations.mdへ記録。アプリRelease/配布feed変更なし。

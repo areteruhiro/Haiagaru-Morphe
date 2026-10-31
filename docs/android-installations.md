@@ -1191,3 +1191,16 @@ emulator-5580（Haiagaru_Test_API36_16GiB）の既存隔離packageへ署名照�
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/cached-response-242.apk` / SHA256 `c19555615241d1a399752fc3ff246b9542492cea4db5a5eb4ed1e38c24fd3275` / native混合順・元行identity・標準復帰 36項目成功。
 
 242の実native検索UIへ表示中だけ合成結果を渡し、2022年A→2021年B→2020年Aの表示と投稿日時順の選択欄を目視確認。表示fixtureはFrida detachで解除し、設定値を元に復元、SearchActivityを戻るで閉じた。DAT/アーカイブの追加削除なし。build/cached-response242.pngと同XML、runtime logを保存。最終crash buffer空。初期native試験では242のAnnotatedStringのString単引数constructorがないこと、226 stateの先頭constructorが1引数であることを検出したため、試験を実型のString/List・4引数constructorへ合わせて再試験成功。アプリコード修正の追加は不要だった。アプリRelease未公開。
+
+
+## 2026-11-01 01:39 JST 自動NG除外ID追加のツールバー設定対応
+
+emulator-5580 / Haiagaru_Test_API36_16GiB の既存検証packageへ署名照合install-r成功・データ保持・cold起動成功。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore、alias Morphe、証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/red-id-menu-settings.mpp` / SHA256 `dfe432433206e8a6e327e7ae0b70f4771d9c9892e7864818078cde91930cdad7`。
+
+- Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/red-id-menu-settings-191.apk` / SHA256 `00d49943279ffb48ccef5640c75416e4458baf589fc91ab1a69367f49b802cdb` / native catalog・表示設定17項目成功。
+
+- Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/red-id-menu-settings-226.apk` / SHA256 `a646b9a4d4fd41a95c2b6c5212fbdcbd97da06a92cb7e775249adc7e2312f3ff` / native catalog・表示設定17項目成功。
+
+- Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/red-id-menu-settings-242.apk` / SHA256 `b6491d9875acb457eb740a17129e02c53808875d869c0bc521f223ffb2781496` / native catalog・表示設定17項目成功。
+
+native標準カタログに新IDと有効な文字列リソースが1件存在、重複登録なし、標準共有先5件保持、保存したツールバー設定のON/OFF、下4桁NGと独立、追加Menuの順序、placeholder除去、常に表示/非表示、IDシートへの反映を各版で確認。合成レスと隔離PopupMenu/シートを使用、通常NGや除外IDへ登録なし。preferencesはfinallyで元へ復元。最終crash buffer空。build/red-id-menu-settings191/226/242-runtime.log。アプリRelease未公開。
