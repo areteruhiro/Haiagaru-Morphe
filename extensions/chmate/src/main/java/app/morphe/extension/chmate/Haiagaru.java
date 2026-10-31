@@ -4443,6 +4443,16 @@ public final class Haiagaru {
         layout.addView(autoNgRedIdsDescription, rowParams(activity));
         live.toggle(autoNgRedIds, RedIdAutoNg.KEY);
         RedIdAutoNg.addExclusionsButton(layout, activity);
+        Switch hideChainedAbone = addSwitch(layout, activity,
+                text("連鎖あぼーんを常に非表示", "Always hide chained aboon rows"),
+                preferences.getBoolean(ChainAboneVisibility.KEY, false));
+        TextView chainAboneDescription = new TextView(activity);
+        chainAboneDescription.setText(text(
+                "ChMateが「連鎖あぼーん」と判定した返信レスだけを、行ごと非表示にします。元のNG対象レスの表示方法やNG登録は変更しません。初期OFF。変更後はスレを開き直してください。標準の「非表示NGを表示」は引き続き使用できます。",
+                "Hides only rows ChMate identifies as chained aboon. Original NG targets and saved rules stay unchanged. Off by default. Reopen the thread to apply. The standard Show hidden NG action remains available."));
+        chainAboneDescription.setTextSize(13);
+        layout.addView(chainAboneDescription, rowParams(activity));
+        live.toggle(hideChainedAbone, ChainAboneVisibility.KEY);
         Switch hideNgWordIdReplies = addSwitch(layout, activity,
                 text("NGWord-IDへの返信も非表示", "Hide replies to NGWord-ID responses"),
                 preferences.getBoolean("hideNgWordIdReplies", false));
@@ -5515,6 +5525,11 @@ public final class Haiagaru {
     private static SharedPreferences preferencesOrNull() {
         Context context = applicationContext;
         return context == null ? null : preferences(context);
+    }
+
+    public static boolean hideChainedAbone() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean(ChainAboneVisibility.KEY, false);
     }
 
     public static boolean hideNgWordIdReplies() {

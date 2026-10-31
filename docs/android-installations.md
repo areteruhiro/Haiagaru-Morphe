@@ -1152,3 +1152,16 @@ MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current
 |Haiagaru 検証 242 / 0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-v2-242.apk`|`759800ce328c5652ba4c67906dd32941d268c48a2684cdbd87ddd25c0e4ea337`|署名一致 install -r 成功、データ保持|
 
 最終候補で3版のcold起動・Part4本文・サムネイル・標準画像表示を確認。191動画絞込みは「取得しない」「画像のみ」で83のMP4レスが残り、動画件数1、表示行4（構造行含む）を確認。242は122のサムネイル→画像表示→上スワイプで本文へ正常復帰、未attach終了callbackも例外なし。新規crash buffer記録なし。runtime/画像証拠はbuild/viewer-filter-toolbar-verification.jsonとbuild/viewer-filter-toolbar-v2-*。
+
+
+## 2026-10-31 17:49〜17:54 JST 連鎖あぼーん独立非表示の正式版候補
+
+`emulator-5580`の既存3パッケージへ証明書照合済み`install -r`で更新成功、データ保持。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/chain-abone-final.mpp` / SHA256 `aa70995b3fe8038b914459036d2bfe13ac02b293110c55670385c65e6d2c0f22`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+|表示名・ChMate版|パッケージ|APK絶対パス|APK SHA256|結果|
+|---|---|---|---|---|
+|Haiagaru 検証 191 / 0.8.10.191 dev|`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/chain-abone-191.apk`|`3e84fc7568eda828320c87a9a3488d946b03e3f5996f4bf54a57920c5a7ac1af`|署名一致・更新/起動成功|
+|Haiagaru 検証 226 / 0.8.10.226 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix226`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/chain-abone-226.apk`|`2a0f99fd85bcabd4f3bfd9e42257b802c35654bf2464fd6b6ffa744b1a7f0b62`|署名一致・更新/起動成功|
+|Haiagaru 検証 242 / 0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/chain-abone-242.apk`|`a3ec4dbf32b3edef0845fcd603dd457c125cc8cf06be9d01a69be24152575dce`|署名一致・更新/起動成功|
+
+新機能は実行中エンジンを複製し、合成レスとメモリ内NGName matcherで確認。保存NG登録・DATは変更していない。191/226各15、242は13項目。親の通常NG表示を残し子/孫の連鎖だけが非表示mapへ入る、OFF再構築、NG無効、初期OFF/UI保存に成功。191/226はnative row builderで実際の行除去と標準Show hidden NGによる復帰も確認。242のShow hidden NGを含むnativeフィルター/flowは直前の確認済み候補と全命令/register/branch一致で確認し、実メニュー操作を同一の試験としては扱わない。全版cold起動・既存Part4本文、NG設定UI生成、crash bufferは10/30の旧記録のみ。画像表示・242上スワイプ終了は直前のviewer-filter-toolbar-v2候補で確認した範囲を維持。証拠build/chain-abone-verification.json、build/chain-abone-*-runtime.log。
