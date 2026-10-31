@@ -501,8 +501,10 @@ public final class Haiagaru {
         try {
             String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)
-                    || "0.8.10.242 dev".equals(version))
+                    || "0.8.10.242 dev".equals(version)) {
                 result = addToolbarChoice(result, 0x7e000009, "haiagaru_hissi_droid_plus");
+                result = addToolbarChoice(result, ToolbarIcons.AUTO_NG_EXCLUSIONS, "haiagaru_auto_ng_exclusions");
+            }
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
         } catch (Exception ignored) { }
@@ -640,6 +642,10 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if (itemId == ToolbarIcons.AUTO_NG_EXCLUSIONS) {
+            RedIdAutoNg.showExclusions(toolbarActivity(fragment));
+            return true;
+        }
         if (itemId == 0x7e000009) {
             Activity activity=toolbarActivity(fragment);
             if(activity!=null&&!activity.isFinishing())try{

@@ -80,30 +80,33 @@ public final class RedIdAutoNg {
             catch (IllegalArgumentException invalid) { button.setText("自動NGから除外するID（入力を確認）"); }
         };
         update.run();
-        button.setOnClickListener(v -> {
-            LinearLayout form = new LinearLayout(activity); form.setOrientation(LinearLayout.VERTICAL);
-            int padding = Math.round(16 * activity.getResources().getDisplayMetrics().density);
-            form.setPadding(padding, padding, padding, padding);
-            TextView help = new TextView(activity);
-            help.setText("除外するIDを1行に1件入力してください（ID:付きも可、最大500件）。除外リストは全スレ共通で、IDの完全一致に適用します。IDメニューの「自動NGの除外IDに追加」からも登録できます。行を消すと除外を解除します。保存後はスレを開き直してください。\n\nこの除外は赤いIDの自動非表示に適用されます。通常のNG設定による非表示は別に判定します。");
-            form.addView(help);
-            EditText input = new EditText(activity); input.setMinLines(4); input.setMaxLines(10);
-            input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
-            input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            input.setText(prefs(activity).getString(EXCLUSIONS, "")); form.addView(input);
-            ScrollView scroll = new ScrollView(activity); scroll.addView(form);
-            HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("赤いIDの自動NG：除外リスト")
-                    .setView(scroll).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
-            dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(save -> {
-                try {
-                    Set<String> ids = RedIdExclusions.parse(input.getText().toString());
-                    prefs(activity).edit().putString(EXCLUSIONS, android.text.TextUtils.join("\n", ids)).apply();
-                    update.run(); dialog.dismiss();
-                } catch (IllegalArgumentException invalid) { input.setError(invalid.getMessage()); }
-            }));
-            dialog.show();
-        });
+        button.setOnClickListener(v -> showExclusions(activity, update));
         parent.addView(button);
+    }
+    public static void showExclusions(Activity activity) { showExclusions(activity, () -> {}); }
+    private static void showExclusions(Activity activity, Runnable update) {
+        if(activity==null||activity.isFinishing()||activity.isDestroyed())return;
+        LinearLayout form = new LinearLayout(activity); form.setOrientation(LinearLayout.VERTICAL);
+        int padding = Math.round(16 * activity.getResources().getDisplayMetrics().density);
+        form.setPadding(padding, padding, padding, padding);
+        TextView help = new TextView(activity);
+        help.setText("除外するIDを1行に1件入力してください（ID:付きも可、最大500件）。除外リストは全スレ共通で、IDの完全一致に適用します。IDメニューの「自動NGの除外IDに追加」からも登録できます。行を消すと除外を解除します。保存後はスレを開き直してください。\n\nこの除外は赤いIDの自動非表示に適用されます。通常のNG設定による非表示は別に判定します。");
+        form.addView(help);
+        EditText input = new EditText(activity); input.setMinLines(4); input.setMaxLines(10);
+        input.setGravity(android.view.Gravity.TOP | android.view.Gravity.START);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        input.setText(prefs(activity).getString(EXCLUSIONS, "")); form.addView(input);
+        ScrollView scroll = new ScrollView(activity); scroll.addView(form);
+        HaiagaruDialog dialog = new HaiagaruDialog.Builder(activity).setTitle("赤いIDの自動NG：除外リスト")
+                .setView(scroll).setNegativeButton("キャンセル", null).setPositiveButton("保存", null).create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(save -> {
+            try {
+                Set<String> ids = RedIdExclusions.parse(input.getText().toString());
+                prefs(activity).edit().putString(EXCLUSIONS, android.text.TextUtils.join("\n", ids)).apply();
+                update.run(); dialog.dismiss();
+            } catch (IllegalArgumentException invalid) { input.setError(invalid.getMessage()); }
+        }));
+        dialog.show();
     }
 
     // All three supported native ID palettes have eight entries. Native renderers use

@@ -1969,6 +1969,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchWacchoiLongPressMenu(packageMetadata.versionName)
         patchImageListResolvedMedia(packageMetadata.versionName)
         patchThumbnailClickAttachments(packageMetadata.versionName)
+        patchNativeImageCloseLifecycle(packageMetadata.versionName)
         patchThumbnailRebind242(packageMetadata.versionName)
         if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
             patchPostVersionInfo(profile.applicationClass)
@@ -4965,6 +4966,7 @@ val haiagaruPatch = resourcePatch(
             "haiagaru_wacchoi_lower" to "ﾜｯﾁｮｲ下4桁で検索",
             "haiagaru_wacchoi_upper" to "ﾜｯﾁｮｲ上4桁で検索",
             "haiagaru_hissi_droid_plus" to "必死チェッカーDroid＋で開く",
+            "haiagaru_auto_ng_exclusions" to "自動NG除外ID",
         )) {
             for (values in listOf("values", "values-en")) {
                 document("res/$values/strings.xml").use { strings ->
@@ -4979,6 +4981,8 @@ val haiagaruPatch = resourcePatch(
                 it.createPublicId("drawable", name)
             }
             val iconPath = when (name) {
+                "haiagaru_auto_ng_exclusions" ->
+                    "M12,2L3,6v6c0,5 9,10 9,10s9,-5 9,-10V6zM12,5l6,2.7V12c0,3 -4,6.2 -6,7.6C10,18.2 6,15 6,12V7.7zM8,11h8v2H8z"
                 "haiagaru_hissi_droid_plus" ->
                     "M3,3h12v2H5v14h14v-10h2v12H3zM13,3h8v8h-2V6.41l-8.29,8.3 -1.42,-1.42L17.59,5H13z"
                 "haiagaru_wacchoi_search" ->

@@ -464,12 +464,13 @@ public final class ExtraQuickFilters {
             if(legacy(a)||middle(a))urls=(String[])call(r,"d",new Class<?>[0]);
             else urls=(String[])r.getClass().getClassLoader().loadClass("o.KeJ11$RemoteActionCompatParcelizer")
                     .getMethod("a",String.class).invoke(null,field(r,"h"));
+            if(legacy(a))urls=videoFilterUrls(r,urls);
             boolean[] kinds=new boolean[3];
             for(String url:urls) {
                 ClassLoader loader=r.getClass().getClassLoader();Object movie;
                 Class<?> movieType=loader.loadClass(legacy(a)?"o.r0ExternalSyntheticLambda3":middle(a)?"o.MK":"o.zzbuc");
                 movie=movieType.getMethod(legacy(a)?"b":middle(a)?"d":"d",String.class).invoke(null,url);
-                if(movie!=null)kinds[2]=true;
+                if(videoFilterMatch(url,movie))kinds[2]=true;
                 else if(legacy(a))kinds[(Boolean)loader.loadClass("o.r8lambdaeAQm29xfY6v7mMntOfLRXKh8x10").getMethod("c",CharSequence.class).invoke(null,url)?1:0]=true;
                 else if(!middle(a)) {
                     Object helper=loader.loadClass("o.ApiApiOptionsNotRequiredOptions").getField("IconCompatParcelizer").get(null);
@@ -485,6 +486,21 @@ public final class ExtraQuickFilters {
         }
         s.aa=aa;s.mine=mine;s.replies=replies;s.counts=counts;s.failure=null;
         s.popularSnapshot=PopularNativeRows.find(source);
+    }
+    /** Native 191 URL extraction can omit direct videos when automatic fetch is off. */
+    public static String[] videoFilterUrls(Object response,String[] original) {
+        if(!legacyResponse(response))return original;
+        try {
+            String body=(String)field(response,"c");
+            LinkedHashSet<String> urls=new LinkedHashSet<>();
+            if(original!=null)Collections.addAll(urls,original);
+            int initial=urls.size();
+            for(String url:ThreadMediaUrls.collect(body,null))if(DirectVideoUrls.supported(url))urls.add(url);
+            return urls.size()==initial?original:urls.toArray(new String[0]);
+        }catch(Exception unsupported){return original;}
+    }
+    public static boolean videoFilterMatch(String url,Object nativeVideo) {
+        return nativeVideo!=null || DirectVideoUrls.supported(url);
     }
     private static boolean isImage226(ClassLoader loader,String url) throws Exception {
         return (Boolean)loader.loadClass("o.getColorFilter").getMethod("d",CharSequence.class).invoke(null,url);

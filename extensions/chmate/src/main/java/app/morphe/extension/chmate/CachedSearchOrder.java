@@ -10,7 +10,7 @@ import java.util.*;
 /** A display projection: native search order and click targets remain unchanged. */
 public final class CachedSearchOrder {
     static final String KEY="cachedSearchCreatedOrder";
-    private static final String[] LABELS={"標準の並び順","スレ作成日時：新しい順","スレ作成日時：古い順"};
+    private static final String[] LABELS={"標準の並び順","全板混合：スレ作成日時の新しい順","全板混合：スレ作成日時の古い順"};
     private static final Map<Object,List<?>> LEGACY=new WeakHashMap<>();
     static int mode(Context c){int n=SettingsProfiles.prefs(c).getInt(KEY,0);return n>=0&&n<3?n:0;}
     static long created(String url){

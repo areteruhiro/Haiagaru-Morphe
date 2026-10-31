@@ -1125,3 +1125,30 @@ serial `d5497008` / Mi Note10。MPP `C:/Users/narum/.codex/worktrees/945d/morphe
 - Haiagaru 検証191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\patch-timing-191-dev7\optimized\02-full.apk / SHA256 36bb6adb8df9ccdb8a9a5b2f35d9f1efb04473b7d9b1d82eaf92b5f534bcc4f3 / cold起動・本文・画像・設定トップ確認。
 - Haiagaru 検証226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\patch-performance-226.apk / SHA256 8d4c9313a70369cc5d01ffb4d6908ce295fe977fc62f029ea31f3328a2ad1823 / cold起動・本文・画像・設定トップ確認。
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\patch-performance-242.apk / SHA256 33a241d67780d7742878bc62a37ae96c1bda6af89bebd4edc451f389d8d6a4ee / cold起動・本文・画像・設定トップ確認。
+
+
+## 2026-10-31 17時台 画像終了・動画フィルター・自動NG除外ツールバー検証
+
+対象はローカルの `emulator-5580`。全6回とも既存パッケージとAPKの証明書を照合し、`install -r`でデータを保持して更新した。アンインストール・データ消去なし。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。中間候補は17:06〜17:16頃、最終候補は17:21〜17:26頃に導入。最終候補は未公開。
+
+### 中間候補・最終候補で置換済み
+
+MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-final.mpp` / SHA-256 `e53566ab379fbac950af658c1ad8b2af490f95b37f7e2223cf583db409f2e01a`。
+
+|表示名・ChMate版|パッケージ|APK絶対パス|APK SHA-256|結果|
+|---|---|---|---|---|
+|Haiagaru 検証 191 / 0.8.10.191 dev|`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-191.apk`|`5aa037ef5ec03083829f17a8a3ffda220529fec18536dba2443e96b259a33b08`|署名一致 install -r 成功、データ保持|
+|Haiagaru 検証 226 / 0.8.10.226 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix226`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-226.apk`|`075c19ae59cb43a95c2d7e5d38d7852dd18496117cda7d8cf39d2add47a8d921`|署名一致 install -r 成功、データ保持|
+|Haiagaru 検証 242 / 0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-242.apk`|`64222a67b157b73d837686d723257e5582d71d4b4d759e094dd5081d0daff25a`|署名一致 install -r 成功、データ保持|
+
+### 最終候補
+
+MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-v2.mpp` / SHA-256 `5e9a2116396e65ff148173e589705a13ffb5099170c60c80f77045e080594f88`。
+
+|表示名・ChMate版|パッケージ|APK絶対パス|APK SHA-256|結果|
+|---|---|---|---|---|
+|Haiagaru 検証 191 / 0.8.10.191 dev|`jp.co.airfront.android.a2chMate.haiagaru.settingsfix191`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-v2-191.apk`|`981031575bc7df63dc4719178fc2a33ed0771ca44f7fce0979dbf75e88359acc`|署名一致 install -r 成功、データ保持|
+|Haiagaru 検証 226 / 0.8.10.226 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix226`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-v2-226.apk`|`32e4150701abf6ba07a261b1428b98620b9f3bc794456c498359645ffb7db862`|署名一致 install -r 成功、データ保持|
+|Haiagaru 検証 242 / 0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.resumefix242`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/viewer-filter-toolbar-v2-242.apk`|`759800ce328c5652ba4c67906dd32941d268c48a2684cdbd87ddd25c0e4ea337`|署名一致 install -r 成功、データ保持|
+
+最終候補で3版のcold起動・Part4本文・サムネイル・標準画像表示を確認。191動画絞込みは「取得しない」「画像のみ」で83のMP4レスが残り、動画件数1、表示行4（構造行含む）を確認。242は122のサムネイル→画像表示→上スワイプで本文へ正常復帰、未attach終了callbackも例外なし。新規crash buffer記録なし。runtime/画像証拠はbuild/viewer-filter-toolbar-verification.jsonとbuild/viewer-filter-toolbar-v2-*。
