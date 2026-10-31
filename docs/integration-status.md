@@ -717,3 +717,38 @@ CachedExtensionDexで拡張shardのstring/type sectionをpatch実行中だけmem
 
 2026-10-31 正式公開追加要望: 「連鎖あぼーんを常に非表示」をNG設定に追加（hideChainedAbone、初期OFF、設定共有/復元対応）。#91とは独立し、既存PosterIdChainNg.applyHiddenの先頭から別クラスへ委譲。native SE_/d/cの判定結果にchain(0x1000)があり、native通常あぼーん理由mask0x54a38がないレスだけを、再構築時の透明NG mapへ投影する。元NG親の表示・保存NG・DAT・本文・履歴は変更しない。標準Show hidden NGはnative既存のmap適用分岐へ委ねる。OFF復帰はnative map再構築で反映。native chain cacheを利用し、各レスの祖先を独自に再帰解析しない。
 通常LintVital/R8 build成功4m11s、build/chain-abone-build.log。MPP SHA256 aa70995b3fe8038b914459036d2bfe13ac02b293110c55670385c65e6d2c0f22。3版順次適用/署名一致install-r成功。既存#91 host130+84、通常NG理由との組合せ524288件成功。最終ART191/226各15・242は13成功（親保持、子/孫非表示、無関係保持、OFF再構築、NG無効、設定初期OFF/保存）。191/226 native row builderで行自体の除去とShow hidden NG復帰成功。242はnative chain engine/legacy rebuildに加え、emptyToNullとNG flow全methodの命令/register/reference/branchが直前確認済みviewer-filter-toolbar-v2候補と同一と検証。新規hook挿入はない。fixtureはnativeengineの複製・合成レス・proxy matcherのみ、保存NG登録しない。crash buffer新記録なし。実メニュー操作での242 Show hidden NGは今回実施せずnative分岐同一性で確認した。UI画像と上スワイプ終了は直前候補での記録と区別する。利用者依頼の正式公開へ含めるため.releasercの説明だけ更新、生成metadata/CHANGELOG/versionの手編集なし。公開前。
+
+
+2026-10-31 正式版1.16.0公開完了: 利用者の正式Release指示に基づき、連鎖あぼーん独立非表示追加（09cc04a）と画像終了/動画filter/除外toolbar修正（e3ecc93）を含むdevをmasterへ通常merge（825160a）。READMEの運営側更新2commitは先にdevへ統合して保護。Semantic Release CI 41186777256 success、tag生成commit `721e973fa6e00e3eadece2c44a90290feac13986`、prerelease=false/draft=false/latest=true。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.16.0 。
+公開asset `patches-1.16.0.mpp` SHA256 `3278585f3d2804b00d8334f427e696429ad8ca1c295ea0cb5f1baec90a95fb38`、GitHub asset digestと一致。
+公開asset `patches-bundle.json` SHA256 `3134c30d15a83551af42fba8614b288ba1c90d1aec3d24f0588f626cfd01ea13`、GitHub asset digestと一致。
+公開asset `patches-bundle-pre.json` SHA256 `3134c30d15a83551af42fba8614b288ba1c90d1aec3d24f0588f626cfd01ea13`、GitHub asset digestと一致。
+MPP CRC正常、ChainAboneVisibility/hideChainedAbone/videoFilterUrls/自動NG除外toolbar/NativeImageClosePatch同梱、軽量専用MPE不在を確認。master/devのpatches-bundle.json・patches-bundle-pre.json全4feedがversion1.16.0、download URLが正式MPPを指すことを確認。共有NG/F9の開発中表記維持。CI生成のversion/CHANGELOG/bundle JSONは手編集せず、CI backmerge済みdevをff同期。公開物検査証拠build/official116-41186777256/verification.json。端末検証範囲とnative Show hidden NGの版別確認方法は直前の連鎖NG検証記録を参照。
+
+
+2026-11-01 01:08 JST エッヂ認証日/公開レベルNG・スレ内検索対象ON/OFF
+利用者指定スレ1793457978と共有同意者全員の条件で実装。詳細docs/edge-level-auto-ng-plan.mdとthread-search-options.md。レベル実測/推定/認証記録は初期OFF、閾値個別・除外ID・スレ再表示で反映。通常NG/DATは変更しない。公開値優先、IDはedge板/投稿日単位。認証日共有は専用同意・接続先再同意・公開自身の直近レス照合・生Cookie等は送らない。認証日自体は自己申告、矛盾は配信しない。参考23時間推定は初期OFF、実レベル保証なし。
+GAS新設EdgeLevels.gsと既存Codeの分岐のみ追加。指定スレがkakoへ302転送された原因を特定し同じホスト/板/スレの正確な過去ログパスだけ追従。30分trigger1件、配信取得でクロールしない、7日/10000件、GET/POST31テスト成功。既存service40/personal148/moderation61維持。GAS既存deploymentをversion9へ更新00:59 JST、実行者/全員公開/URL維持、ソースfingerprint b5d2993eを照合。公開GETで観測1/最新L3/認証日0、既存共有NG revision16/273件ok、非公開項目なし。build/edge-gas-v9-verification.jsonとedge-gas-v9-audit.png。
+スレ内検索はDISPLAYへID/ワッチョイ/名前の各ON/OFF（初期全ON）、本文常時対象。名前とワッチョイ分離・ID抜出でOFFのメタデータ混入を防ぎ、AND/regex/本文引用/元データを維持。プロファイル保存/復元へ追加。host198項目、native各37項目成功。
+通常LintVital/R8の最終build3m35s成功、MPP SHA256 5eff488a6de7a8bb7927f6c4813eca0b1ad8cf374759ab98c6b5f0a3736899ac。emulator-5580の191/226/242既存隔離packageへ署名照合更新成功、各native表示11/検索37/模擬認証9項目成功。191は実GASレベル受信1件成功。最終crash buffer空。SystemUI ANRはWait復帰、初期native engine未生成とInt64試験側比較ミスは修正して再試験。実エッヂ認証→自身投稿→共有の通し確認は未完了。アプリRelease/タグ/配布feedは変更していない。
+
+
+2026-11-01 01:28 JST 取得済みスレ検索の全レス混合順（未公開）
+利用者画像と追加回答により「スレ作成日時で全板混合」ではなく「全スレのレスを投稿日時で混合」が希望と確認。CachedResponseOrderを追加、既存CachedSearchOrder mode3/4と選択欄・profile0〜4対応。既存0〜2の意味は保持。本文に引用された日付を除いてnativeレスヘッダーの日時をJST/millisで比較、日時不明は末尾・同日時はstable。スレ名headerを必要な箇所に再配置し、レス行/本文span/URL/flagsの元objectを保持。通常検索処理・件数・query・DATは変更しない。nativeパッチhook追加変更なし。
+host新4027/旧2014成功、通常LintVital/R8 build3m11s成功。MPP SHA256 c24741235e7fc0035ef14cda83783eae3fe9399d51dd16fbc88cf5eff9213d3d。emulator-5580へ191/226/242を既存署名照合install-r成功。各native32/36/36項目で混合順・identity・クリック先・元state件数/query保持・標準復帰成功。242実UIで合成レス2022 A→2021 B→2020 Aの交差表示を目視、fixture解除・設定復元済み。初期試験のconstructor差異は試験側のみ修正し再成功。最終crash buffer空。docs/cached-search-response-order.mdとandroid-installations.mdに詳細。アプリRelease/配布feed更新なし。
+
+
+2026-11-01 01:39 JST 自動NGの除外IDに追加：標準ツールバー設定対応（未公開）
+利用者報告の常時表示は、RedIdAutoNgが表示判定を参照せず追加し、native toolbarカタログIDSにも未登録だったことが原因。0x7e484b02をResponseMenuSettings.IDS/NAMES/iconと配布string index8へ追加し、標準表示設定・並び順・個別override・placeholder除去の既存経路を適用。appendMenuとappendIdSheetの両方に同じ表示gateを追加。初期表示は従来同様ON、最低限構成ではOFF。既存の除外リスト編集toolbarボタンとは別の、選択ID追加の操作として保持。native hook追加変更なし。
+通常LintVital/R8 build3m33s成功、MPP SHA256 dfe432433206e8a6e327e7ae0b70f4771d9c9892e7864818078cde91930cdad7。emulator-5580の191/226/242既存隔離packageへ署名照合install-r成功・cold起動成功。nativeカタログ1件/タイトルresource有効/重複なし/共有5先保持/標準ONOFF/独立性/順序/override/IDシートgateの各17項目成功。合成レスのみ、NG/除外ID登録なし、試験preferences復元。最終crash buffer空。docs/response-menu-settings.mdとandroid-installations.mdへ記録。アプリRelease/配布feed変更なし。
+
+
+2026-11-01 01:56 JST IDがサイトカードになる誤検知の追加対策（未公開）
+利用者の指定URLエッヂ1793443391/101を公開DATで確認、ID:eRNd.ru1fで本文URLなし。版は利用者回答「不明」。変更前現行PreviewUrlsで指定ID単体/ID付きは候補0件、当時の症状そのものを再現したとは扱わない。一方ID:後の空白/タブや全角コロン付きID: Abcd.efgh/ID：Abcd.efghは変更前1件と再現。ID名前空間範囲を明示し、その範囲内の裸ドメイン推測を除外。明示/省略scheme URL・後続URL・普通の裸URLは保持。元本文/ID/native spanを変更せず抽出と候補だけを制限。
+host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 558cd04a602a56ada46c6a021068dd7ee4136d843eea46e3086ea8da36e8ee9e。emulator-5580へ3版署名一致install-r・cold起動成功、実SiteCards.urlsとPreviewUrls.extract各27項目成功（指定ID候補0、spaced/fullwidth ID候補0、通常リンク維持）。metadata要求/設定/NG/DAT変更なし、最終crash buffer空。docs/site-link-cards.mdとandroid-installations.mdに記録。公開なし。
+
+
+2026-11-01 02:20 JST 公式Release前の最終確認（未公開）
+利用者の追加指示によりエッヂ認証日の記録/同意/送信/推定をアプリから削除、GASも受付と配信を削除。公開スレで確認したレベルNGのみ初期OFFで残す。GAS既存deployment version10へ02:05 JST更新、既存URL/実行者/全員公開維持。公開GET observed1、authDays不在、旧認証API拒否、共有NG305件正常。build/gas-v10-verification.json、gas-v10-auth-removed.png。
+投稿メール欄のautofill/メール分類/IME候補抑止を既存投稿hookへ追加。191の実layoutではhint E-mailを使って特定。名前/本文/タイトル/他ログイン欄、sage/文字列/選択/key listenerを保持。通常LintVital/R8 build2m57s成功、MPP SHA256 c03a67b63f250d1c0ec9ba3b62dd280bf3fa25be70c9cef99497aab683e8e634。
+最終emulator-5580更新3版でメール45/検索37/除外ID17/カード27/公開レベル11、混合順32/36/36成功。native hook命令/register保持成功。3版起動/Part4本文/通常画像表示を確認、crash buffer空。初期fixtureのJava型比較と未接続Fragment生成問題を修正し再成功。runtime suiteに加えメール45最終結果を採用。host検証URL56/検索198/レス混合4027/旧ソート2014/公開レベル17/サーバー19、既存共有NG40/148/61成功。既存NG/DAT変更や実投稿なし。公開はCI完了後に別記。

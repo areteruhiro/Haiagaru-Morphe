@@ -239,6 +239,7 @@ public final class ProgrammableNgController {
 
     /** Index body-rule matches once per 191 adapter rebuild. */
     public static void prepareLegacyResponses(Object adapter) {
+        EdgeLevelNg.bindLegacy(adapter,false);
         HiddenNgUnread.begin(adapter);
         HiddenIdNg.prepare(adapter);
         try{previewSource=new java.lang.ref.WeakReference<>(field(adapter,"K"));previewBoard=boardUrl(field(field(adapter,"M"),"f"));}catch(Exception ignored){}
@@ -316,6 +317,7 @@ public final class ProgrammableNgController {
 
     /** 242's DAT result supplies the exact board; never borrow another open tab's board. */
     public static void bindModernResponses(Object result) {
+        try{EdgeLevelNg.bind(field(result,"a"),field(result,"d"));}catch(Exception ignored){}
         try {
             List<?> responses = originalResponses(field(result, "a"));
             if (responses.isEmpty()) return;
@@ -366,6 +368,7 @@ public final class ProgrammableNgController {
 
     /** 226 needs the whole source list to expand authors/replies and to refresh cached decisions. */
     public static void prepareModernResponses(Object owner) {
+        EdgeLevelNg.bindLegacy(owner,true);
         HiddenNgUnread.begin(owner);
         HiddenIdNg.prepare(owner);
         try{previewSource=new java.lang.ref.WeakReference<>(field(owner,"J"));previewBoard=boardUrl(field(field(owner,"E"),"j"));}catch(Exception ignored){}
