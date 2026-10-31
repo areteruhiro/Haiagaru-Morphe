@@ -31,6 +31,8 @@ public final class SettingsProfiles {
         numberKey(VideoViewerSettings.INLINE_LIMIT,1,8);defaultValue(VideoViewerSettings.INLINE_LIMIT,2);
         numberKey(VideoViewerSettings.INLINE_MB,1,64);defaultValue(VideoViewerSettings.INLINE_MB,8);
         booleanKey(VideoViewerSettings.X_GIF_AUTOPLAY);defaultValue(VideoViewerSettings.X_GIF_AUTOPLAY,true);
+        booleanKey(VideoViewerSettings.INLINE_WIFI);defaultValue(VideoViewerSettings.INLINE_WIFI,false);
+        booleanKey(HomeSelectionBar.KEY);defaultValue(HomeSelectionBar.KEY,false);
         booleanKey(VideoViewerSettings.INLINE_GIF);defaultValue(VideoViewerSettings.INLINE_GIF,false);
         booleanKey(ImageViewerRotationButton.MENU_KEY);defaultValue(ImageViewerRotationButton.MENU_KEY,true);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
@@ -99,7 +101,7 @@ public final class SettingsProfiles {
         defaultValue("imageVpnDomains",ImageVpnRequestPolicy.DEFAULT_DOMAINS);
     }
     private static final String[] EXTRA_BOOLEAN={
-        "hideNgWordIdReplies",
+        "hideNgWordIdReplies",ChainAboneVisibility.KEY,
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled","videoAutoplay",
         "siteCardsEnabled","siteCardImages",XPostPreviewPosition.ENABLED,"patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
         "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
