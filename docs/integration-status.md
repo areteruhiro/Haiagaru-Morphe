@@ -779,3 +779,16 @@ Compose設定描画がTextView.backgroundColorを無視し、色見本を通常�
 
 2026-11-01 19:49 JST 既存機能全体の版間対応調査へ拡張（進行中・未公開）
 利用者回答により直近修正だけでなく既存機能全体が対象。56ファイル/125関数・スコープ/397参照の自動索引docs/version-parity-source-index.mdを作成。索引は手動レビュー済みを意味しない。既読スレを上にのHaiagaru設定入口が226限定だったため、191/242等にも既存キー・scope選択・再描画を共用して追加。通常LintVital/R8 build2m20s成功、build/full-parity-settings.mpp SHA256 f261fa50e2711f0c4de1838c76068b4988687309bfa8b4a6e5dfa349c118a5db。今回追加のAPK適用/端末検証は未実施、インストール済みは前回version-parity-final版のまま。全既存機能の同等化完了とはしない。残確認はdocs/version-parity-20261101.md先頭へ記録。公開なし。
+
+
+2026-11-01 20:53 JST 共有NGの審査・種類別履歴保存をGAS本番へ反映（アプリ未公開）
+利用者指示で禁止語辞書ゲートを廃止、基本形式を満たす条件は正規表現を含め1報告から承認。NGワード5文字以上・英字のみ不可は維持。Java/GASの正規表現構文差により、構文検査はAndroidのPatternに委ね、invalid条件だけ受信時skip。旧appへregexを配信しないcapabilityを追加。Inboxは未審査キュー、NG_ID/NG_Word/NG_Wacchoi/NG_Name/NG_Reporter/NG_Otherへ審査済みの元履歴・理由を移動、退避journalで途中失敗を復旧。ID24h/ワッチョイ7日の期限削除は利用者の最新指示で撤回、永久削除なし。
+GASのcloud 4ファイルをHEAD基準と照合（Moderationは空行1つのみの差）、ローカルと全文hash一致を確認して保存。既存URL/owner/全員アクセスを維持して最終version13へ更新。初回配信試験のlock timeoutを受け、100KB制限で従来cacheされなかった大きなJSONを20,000文字ごとに分割cacheし、全片hash検証・manifest後置・審査時無効化を追加。旧app通常条件のflags18は0x70だけを見て保持。最終公開GET旧816件/新996件うちregex180件、private metadataなし、応答navigation2489ms/1605ms。読取専用監査は履歴2168/approved2168/配信996、issues/warnings空。Inbox見出しのみもUI確認。証跡build/shared-ng-v13-verification.jsonとbuild/shared-ng-v13-audit.jpg。
+Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules96/index10003/regex17成功。Android通常Lint/R8ビルドはホスト仮想メモリ不足で失敗、in-process再試行もR8中にPowerShell OutOfMemoryで中断。最終成功MPP更新・APK導入・アプリ公開なし。必死viewer=false検証/フィルター高さ/全機能版間確認は未完のまま保持。
+
+
+2026-11-01 公式Release候補（公開前）
+下部フィルター高さつまみを共通実装、popup/pinnedとも高さ保存・非表示保持・ScrollView・本文viewport予約を確認。必死viewerパッチfalseを専用UI生成/新タブ両経路へ適用。共有NGのJava正規表現decode/cache/match対応、GASの種類別履歴・辞書不要自動承認・期限削除撤回は前記v13へ配備済み。
+追加報告により191 GETの接続非再利用をpool分離/zero idleへ強化、50ms TCP候補開始、通信全体新規初期60秒（既存0保持）。前スレリンクの90日未満判定・HTTP HTTPS化・archive GET308等対応。通常投稿/メディア/外板へ5chミラー適用を拡げない。
+通常Lint/R8 build/release118-final-build.log 2m46s成功。最終MPP SHA256 d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910。3版最終APK署名一致install-r/起動、共有NG18/検索38/album7/Web検索6/高さ28、必死ON各4、OFF実APK各18、既読設定3/前スレURL6成功。native reader/patrol/update命令継続22/6/6と191橋15sites検査成功。191新pool8、local接続561/316/595/580ms、連続受信2003ms timeout後の次取得成功、stream17成功。メディアは226各8/242各14最終成功、191結果は後記。追加の再ビルドはホストnative memory不足で失敗、成功済みMPPは維持。エミュレータADB停止は同AVDのdataを保持して再起動し、242試験をやり直して成功。公開CI成功を最終条件とする。詳細docs/release-118-verification.md、台帳docs/android-installations.md。
+版別全機能の機械的移植は行わず、HOMEの下部選択バー等の版専用UIは適用範囲を維持。全既存機能の全版移植完了とは報告しない。公開はSemantic Release CI経由。

@@ -1295,3 +1295,22 @@ emulator-5580の既存隔離3版へ署名照合install-r成功。MPP `C:/Users/n
 - Haiagaru 検証 242 / ChMate0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-parity-final-242.apk` / SHA256 `2397b7aa444994017f1b483197d08123a6fd277153b1632952b681463c81caef` / 導入・起動、巡回ログの保存と設定UI、Web検索フラグ6項目、検索38項目、album7項目成功。
 
 native191/226各18、242は20項目成功。元worker命令/register/分岐先保持・例外再throw検査成功。crash buffer空。設定/ログfixtureは復元。詳細docs/version-parity-20261101.md。実機XIG05（730eae72）は接続消失により更新失敗、今回版は未導入、既存アプリ/データ保持。公開なし。
+
+
+## 2026-11-01 公式Release候補の検証
+
+対象はemulator-5580、署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。全更新で既存署名を照合、アンインストール・データ消去なし。
+
+- Haiagaru 検証 191 / ChMate0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-final-191.apk` / SHA256 `2252cf94fe1a4e9ad8016cd292952cd5e9ebd1566d3c1d27daaee50770a96845` / MPP SHA256 `d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+- Haiagaru 検証 226 / ChMate0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix226` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-final-226.apk` / SHA256 `ae276f532717da1c1b5c40d9ca54359899c51485f2ebc9184218c00fb952a4d4` / MPP SHA256 `d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+- Haiagaru 検証 242 / ChMate0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-final-242.apk` / SHA256 `d9a61f233825eb2862f8016163d3aeef4bbac55037bd1b0adbc0ac745a2ced3d` / MPP SHA256 `d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+- Haiagaru 必死OFF 191 / ChMate0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.checkerflag191` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-checker-off-191.apk` / SHA256 `04cfb4000057b7024c18eb764664ac8ee654bb5e24d24ead5351df22c36f54f7` / MPP SHA256 `3c9f127327e2e594ae14cc1f6c3139ea649b3e40dafbfd127600b31c99b3b20b` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+- Haiagaru 必死OFF 226 / ChMate0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.checkerflag226` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-checker-off-226.apk` / SHA256 `a77cc4e0092a117dcc07b0f718b7e12346d002916fe70fb0423f1e98ebf0658c` / MPP SHA256 `3c9f127327e2e594ae14cc1f6c3139ea649b3e40dafbfd127600b31c99b3b20b` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+- Haiagaru 必死OFF 242 / ChMate0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.checkerflag242` / emulator-5580 / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\release118-checker-off-242.apk` / SHA256 `e7ea883d50d4ed526316b954c06a4741858c67414e2d4086daa7603c4480e52f` / MPP SHA256 `3c9f127327e2e594ae14cc1f6c3139ea649b3e40dafbfd127600b31c99b3b20b` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-01 JST install-r Success。
+
+通常ON版は最終MPP release118-final.mpp、OFF版は先行MPP release118-verified.mppで必死OFF分岐を各18項目確認。先行OFF版は追加通信/前スレ修正より前のものとして区別。最終ON版は各4項目、共有NG18、フィルター高さ28、native reader191/226各18・242は20、album7/search38/Web検索6。191のpool分離8、ローカル接続4回、通信上限17確認。前スレリンクのURL/設定OFF/外板除外6、既読を上にの設定入口3を各版確認。メディア試験の最終ログはintegration-statusを参照。

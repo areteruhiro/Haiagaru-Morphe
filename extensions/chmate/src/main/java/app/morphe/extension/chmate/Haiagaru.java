@@ -1524,7 +1524,7 @@ public final class Haiagaru {
         if (original == null) return null;
         String rewritten = rewriteLegacyTalkBoardResource(original);
         if (!isChtoioEnabled()) return rewritten;
-        rewritten = rewritten.replace("5ch.net", "5ch.io");
+        rewritten = ArchiveThreadLinks.secure(rewritten.replace("5ch.net", "5ch.io"));
         try {
             Uri uri = Uri.parse(rewritten);
             String host = uri.getHost();
@@ -1853,7 +1853,7 @@ public final class Haiagaru {
 
     public static int update191TimeoutSeconds() {
         SharedPreferences settings = preferencesOrNull();
-        int value = settings == null ? 0 : settings.getInt("update191TimeoutSeconds", 0);
+        int value = settings == null ? 60 : settings.getInt("update191TimeoutSeconds", 60);
         return value == 30 || value == 60 || value == 120 ? value : 0;
     }
 
@@ -2474,7 +2474,7 @@ public final class Haiagaru {
             intent.removeExtra("haiagaru.archive.retry");
         }
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || ArchiveThreadLinks.is5chThread(original) || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling thread through the local DAT cache: " + original);
@@ -2516,7 +2516,7 @@ public final class Haiagaru {
         String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || ArchiveThreadLinks.is5chThread(original) || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);
@@ -4004,8 +4004,8 @@ public final class Haiagaru {
                     fresh191UpdateConnection());
             TextView freshConnectionDescription = new TextView(activity);
             freshConnectionDescription.setText(text(
-                    "巡回やスレ取得が詰まる場合に試してください。板・スレ取得の接続を使い終わるたびに閉じ、次は接続し直します。通信量・接続時間・電池消費が増える場合があります。投稿・画像・動画の取得は変更しません。次の取得から反映し、既に待機中の通信は中断しません。",
-                    "Try this when patrol or thread loading stalls. Closes each board/thread connection after use. New connections may increase latency, traffic and battery use. Posting and media are unchanged. Applies to future requests; does not interrupt an existing wait."));
+                    "巡回やスレ取得が詰まる場合に試してください。板・スレ取得ごとに専用の接続プールを使い、以前の接続を借りずに接続し直します。使い終わった接続も閉じます。通信量・接続時間・電池消費が増える場合があります。投稿・画像・動画の取得は変更しません。次の取得から反映し、既に待機中の通信は中断しません。",
+                    "Try this when patrol or thread loading stalls. Uses an isolated connection pool per board/thread request, and closes connections after use. New connections may increase latency, traffic and battery use. Posting and media are unchanged. Applies to future requests; does not interrupt an existing wait."));
             freshConnectionDescription.setTextSize(13);
             layout.addView(freshConnectionDescription, rowParams(activity));
             update191Connect = addSwitch(layout, activity,
@@ -4013,8 +4013,8 @@ public final class Haiagaru {
                     fast191UpdateConnect());
             TextView connectDescription = new TextView(activity);
             connectDescription.setText(text(
-                    "板・スレ取得で複数の接続先IPがある場合、約250ms後に次のTCP接続も並行して試します。取得時間は回線や接続先に依存します。投稿・画像取得・プロキシ経由・TLS認証は変更しません。オフで従来の逐次接続に戻ります。次の新規接続から反映します。",
-                    "For board/thread GETs with multiple direct IPs, starts another TCP connection after about 250ms. Actual load time depends on the network and server. Leaves posting, media, proxies and TLS verification unchanged. Turn off to restore sequential connections; applies to new connections."));
+                    "板・スレ取得で複数の接続先IPがある場合、約50ms後に次のTCP接続も並行して試します。取得時間は回線や接続先に依存します。投稿・画像取得・プロキシ経由・TLS認証は変更しません。オフで従来の逐次接続に戻ります。次の新規接続から反映します。",
+                    "For board/thread GETs with multiple direct IPs, starts another TCP connection after about 50ms. Actual load time depends on the network and server. Leaves posting, media, proxies and TLS verification unchanged. Turn off to restore sequential connections; applies to new connections."));
             connectDescription.setTextSize(13);
             layout.addView(connectDescription, rowParams(activity));
             update191Progress = addSwitch(layout, activity,
@@ -4027,7 +4027,7 @@ public final class Haiagaru {
                     new String[]{text("変更しない", "Unchanged"), "30s", "60s", "120s"}, timeoutChoice);
             TextView updateDescription = new TextView(activity);
             updateDescription.setText(text(
-                    "進捗の途中表示だけを最大毎秒10回にまとめます。受信データ・完了通知は省略しません。通信上限は次の取得から適用し、投稿・画像取得には適用しません。DNS等のOS処理は直ちに中断できない場合があります。",
+                    "進捗の途中表示だけを最大毎秒10回にまとめます。受信データ・完了通知は省略しません。通信上限の初期値は60秒です。保存済みの「変更しない」は維持します。次の取得から適用し、投稿・画像取得には適用しません。DNS等のOS処理は直ちに中断できない場合があります。",
                     "Coalesces intermediate progress to at most 10 updates/second without dropping data or completion. The optional call timeout applies to subsequent standard thread/board GETs, not posts or media. OS operations such as DNS may not stop immediately."));
             updateDescription.setTextSize(13);
             layout.addView(updateDescription, rowParams(activity));
