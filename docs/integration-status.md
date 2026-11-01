@@ -760,3 +760,8 @@ host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 55
 2026-11-01 投稿者強調の色見本修正（未公開）
 Compose設定描画がTextView.backgroundColorを無視し、色見本を通常の説明として扱ったため消えていた。PosterHighlight専用色タグを設定モデルのfingerprintとBoundSettingの比較へ反映し、タグ付き見本だけ背景色/太字を描画。登録画面を復旧、共通設定と登録ごとの一覧にも見本を追加。継承中だけ共通色変更へ追従。色の保存形式/表示span/既存NG/DATは変更しない。native bytecode hook追加変更なし。
 通常LintVital/R8付きbuild/highlight-preview-build.log成功3m42s。191/226/242へ生成・署名一致install-r/cold起動成功。各18項目と実画面の見本を確認、最終crash buffer空。初回191のruntime RPCが理由なしで失敗したため成功に数えず、診断を改善した再実行と登録画面を含む最終18項目で再確認成功。試験prefsはfinally復元。証跡build/highlight-preview-{191,226,242}-runtime.log、highlight-preview-after191/226/242.png。MPP SHA256 ea1def0406e55f0ae4c03e1df532c6fd0d7f453f9228b4e1a3ac018264974a97。公開/配布feedは変更していない。
+
+
+2026-11-01 242の標準メディア終了ジェスチャー競合修正（未公開）
+242/1.17.0相当で設定OFFなら上下スワイプで閉じ、ONなら上が次メディアへ移動、一覧先頭の下はイベントを消費するだけで閉じないことを再現。設定済みgestureBackを認識器単体で確認した旧試験では、標準Fragmentの上下ドラッグ終了を保護できていなかった。242のImagesViewer2Activityだけ縦移動をnativeへ渡し、左右の全スレ移動/保存済み戻る優先を維持。191/226には同じnative上下終了がないため適用せず、専用ビューアとともに従来の上下移動を保持。版判定はプロセスで一度取得し、gesture DOWNでsnapshot。native hook追加変更なし。
+最終通常LintVital/R8 build2m57s成功。MPP SHA256 a6e1785561872598e0fbf6f23551890619d63aa3625281fac7388bb407736ba6。3版へ署名照合更新/起動成功。242は14項目、191/226は各8項目成功。新crash buffer空。native GIFの極小1px fixture/中心タッチで戻る試験が失敗したため、標準controlsを避けた位置と320x240 animationに調整し、最終trialを再実行。旧失敗を成功に数えない。元preferencesは復元、NG/DAT/投稿変更なし。build/media-native-back-final-{191,226,242}-runtime.logとmedia-native-back-*-result.json。公開/配布feedは未変更。

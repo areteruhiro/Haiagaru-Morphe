@@ -22,7 +22,7 @@ public final class MediaViewerNavigation {
     }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
-    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;String selected;MediaViewerBackGesture back;}
+    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling,nativeDismiss;String selected;MediaViewerBackGesture back;}
     private static final WeakHashMap<Activity,WeakReference<Object>> MODELS=new WeakHashMap<>();
 
     static void rememberBody(TextView view,MotionEvent event) {
@@ -235,7 +235,7 @@ public final class MediaViewerNavigation {
         if(swipe!=null&&swipe.cancelling)return false;
         if(action==MotionEvent.ACTION_DOWN){
             if(links(activity).size()<2)return false;
-            swipe=new Swipe();swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
+            swipe=new Swipe();swipe.nativeDismiss=nativeVerticalDismiss(activity);swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
             Rect bounds=new Rect();View area=surface!=null?surface:activity.getWindow().getDecorView();
             swipe.blocked=!area.getGlobalVisibleRect(bounds)||!bounds.contains((int)swipe.x,(int)swipe.y)
                     ||controlAt(activity.getWindow().getDecorView(),swipe.x,swipe.y)
@@ -252,8 +252,11 @@ public final class MediaViewerNavigation {
         boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
         float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);
-        int step=activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
-                ?MediaGallery.threadStep(dx,dy,threshold):MediaGallery.step(dx,dy,threshold);
+        // 242's native canvas owns vertical drag-to-dismiss. Let the entire
+        // sequence reach it, even at gallery boundaries. The legacy and dedicated
+        // viewers have no such native action, so retain their vertical paging.
+        int step=MediaGallery.gestureStep(dx,dy,threshold,
+                activity.getIntent().getBooleanExtra(THREAD_EXTRA,false),swipe.nativeDismiss);
         if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging&&!backPriority){
             swipe.dragging=true;swipe.cancelling=true;MotionEvent cancel=MotionEvent.obtain(event);cancel.setAction(MotionEvent.ACTION_CANCEL);
             try{activity.dispatchTouchEvent(cancel);}finally{cancel.recycle();swipe.cancelling=false;}
@@ -271,6 +274,14 @@ public final class MediaViewerNavigation {
                 }return true;}
         }
         return swipe.dragging;
+    }
+    private static Boolean nativeDismissVersion;
+    private static boolean nativeVerticalDismiss(Activity activity) {
+        if(!activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.ImagesViewer2Activity"))return false;
+        if(nativeDismissVersion==null)try{
+            nativeDismissVersion="0.8.10.242 dev".equals(activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName);
+        }catch(android.content.pm.PackageManager.NameNotFoundException unavailable){return false;}
+        return nativeDismissVersion;
     }
     private static boolean controlAt(View view,float x,float y) {
         Rect rect=new Rect();if(!view.isShown()||!view.getGlobalVisibleRect(rect)||!rect.contains((int)x,(int)y))return false;
