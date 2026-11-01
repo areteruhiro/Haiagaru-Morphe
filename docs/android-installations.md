@@ -1230,3 +1230,16 @@ emulator-5580へ既存署名照合install-r・cold起動成功。既存アプリ
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/official117-242.apk` / SHA256 `cc44e86dea0b88d832e3356c196daab4da3b571368117444d9ab54c992bd5afa`。
 
 各版：メール欄45・検索対象37・除外IDメニュー17・サイトカード27・公開レベル11項目成功。混合検索順191は32、226/242は36項目成功。既存native hook元命令/register保持検査成功。3版のPart4本文/通常画像表示を目視確認。Imgur候補は削除/429のため、実在するrepository main-screen.pngを通常画像viewerで表示（画像内容自体は旧投稿エラー画面のスクリーンショット）。最終crash buffer空、build/official117-final-crash.log。
+
+
+## 2026-11-01 色見本修正の検証用導入
+
+emulator-5580の既存隔離packageへ署名照合install-r成功・cold起動成功、データ保持。表示名 Haiagaru 検証191/226/242。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/highlight-preview.mpp` / SHA256 `ea1def0406e55f0ae4c03e1df532c6fd0d7f453f9228b4e1a3ac018264974a97`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/highlight-preview-191.apk` / SHA256 `ea97b750b6f3d5082617a72784e55ef8c92547795e1bc86fd62b06be5088595c` / 色見本18項目と実画面表示成功。
+
+- ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/highlight-preview-226.apk` / SHA256 `ecf722205ca54feb48dbc292f498f91df9af2d2367984beb4efa8e04b3d29a85` / 色見本18項目と実画面表示成功。
+
+- ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/highlight-preview-242.apk` / SHA256 `c610a5db5ad86f1259bd953bdc424f69f0d3b37f250b58730cf102be1f2bc091` / 色見本18項目と実画面表示成功。
+
+初期共通色・個別色・継承の切替・共通色変更追従・行比較更新・説明文への統合除外・登録画面の色見本・未登録で保存しないことを確認。合成登録を検証中のみ使用し、元のrules/color/enabledはfinallyで復元。通常NG/DAT/実投稿へ変更なし。最終crash buffer空（build/highlight-preview-crash.log）。公開前。

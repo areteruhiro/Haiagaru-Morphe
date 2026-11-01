@@ -755,3 +755,8 @@ host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 55
 
 
 2026-11-01 02:27 JST 1.17.0公式公開完了: 最終実装5b8363c、master統合4e67bac、Semantic Release CI41224071485 success、生成commit f01897e。prerelease=false/draft=false/latest確認。公開MPP SHA256 e99a9fe28e13d8afcc2a3257bba5c0ddb517b0b07933b3a472137b2d43b6e708、更新JSON両方SHA256 61b1ca37eb1472e62e35116002e6ecec1fd550f75ca48a0bef40e8ab1a444be3。asset digest一致・CRC正常・PostMailInput/CachedResponseOrder/ThreadSearchOptions/公開レベルNG同梱、認証記録/共有/推定キーとAPI不在、master/dev両feed1.17.0一致、開発中表示を確認。証拠build/official117-public/verification.json。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.17.0 。旧ローカルタグとremoteの不一致は上書きせず、必要なbranchを--no-tagsで取得しCI backmergeをdevへff反映。
+
+
+2026-11-01 投稿者強調の色見本修正（未公開）
+Compose設定描画がTextView.backgroundColorを無視し、色見本を通常の説明として扱ったため消えていた。PosterHighlight専用色タグを設定モデルのfingerprintとBoundSettingの比較へ反映し、タグ付き見本だけ背景色/太字を描画。登録画面を復旧、共通設定と登録ごとの一覧にも見本を追加。継承中だけ共通色変更へ追従。色の保存形式/表示span/既存NG/DATは変更しない。native bytecode hook追加変更なし。
+通常LintVital/R8付きbuild/highlight-preview-build.log成功3m42s。191/226/242へ生成・署名一致install-r/cold起動成功。各18項目と実画面の見本を確認、最終crash buffer空。初回191のruntime RPCが理由なしで失敗したため成功に数えず、診断を改善した再実行と登録画面を含む最終18項目で再確認成功。試験prefsはfinally復元。証跡build/highlight-preview-{191,226,242}-runtime.log、highlight-preview-after191/226/242.png。MPP SHA256 ea1def0406e55f0ae4c03e1df532c6fd0d7f453f9228b4e1a3ac018264974a97。公開/配布feedは変更していない。
