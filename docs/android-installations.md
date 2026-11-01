@@ -1269,3 +1269,16 @@ emulator-5580、既存隔離packageへ署名照合install-r成功。データ保
 - Haiagaru 検証242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-242.apk` / SHA256 `6a9c9af3e31f086472f703025daa7fdf1b3a340f896830ece6cf493fab5471f5` / 設定一覧位置保持の実タップ往復2回、検索38項目、アルバム7項目、nativeキャッシュ失敗処理を確認。
 
 通常LintVital/R8 build成功2m21s、native元命令/register/分岐先保持を3版で確認。crash buffer空。詳細・未確認範囲はdocs/reader-ui-fixes-20261101.md。未公開。
+
+
+## 2026-11-01 18:27 JST XIG05へ未公開修正版を導入
+
+実機XIG05（ADB serial `730eae72`）へ別パッケージ3版を新規導入。既存ChMateとデータを保持。使用MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll.mpp` / SHA256 `6a5ed6b65425d9befc2555fcf3b395b3a3b065be12097b35a547bb7024ad3465`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- 表示名 Haiagaru 検証 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-191.apk` / SHA256 `209ffb612064a6a669a99298714609ba6eaa03292992d6f37a87f13c15894e6b` / install成功、起動プロセス確認。
+
+- 表示名 Haiagaru 検証 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix226` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-226.apk` / SHA256 `2a290c38023af94bcf669b38721e304c3bfb0c0ddea8fe22ac9dfdf2eb793656` / install成功、起動プロセス確認。
+
+- 表示名 Haiagaru 検証 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-242.apk` / SHA256 `6a9c9af3e31f086472f703025daa7fdf1b3a340f896830ece6cf493fab5471f5` / install成功、起動プロセス確認。
+
+アプリ初回設定・バックアップ復元・同意操作は未実施。191は背景移行後にプロセス終了していたため再起動しPID19093を確認、新規crash logは空。226 PID16994、242 PID18481。既存データ消去/アンインストール/投稿なし。公開なし。
