@@ -770,3 +770,8 @@ Compose設定描画がTextView.backgroundColorを無視し、色見本を通常�
 2026-11-01 18:19 JST 設定UI・スクロール復帰・検索・メディア順序・native一覧/投稿menu修正（未公開）
 設定一覧/検索/カテゴリのLazyListStateを分離し、カテゴリから戻ると先頭になる症状を修正。修正前191で実再現、最終3版でカテゴリ内スクロールと再訪問後もhome bounds完全一致。設定UIをコンパクト化、共有/読込を横並びへ。スレ内検索ID/名前/ワッチョイは新規初期OFF、保存済み選択保持、ヘッダー曜日は対象外。Imgur album遅延完了のサムネを本文URL位置へ挿入。native cached subjectのHTTP504が成功の空一覧になる経路を3版でnullへ戻し再読込へ渡す。226/242投稿popupはIMEを避ける測定modeへ。242純正巡回イベントへ失敗板URL/例外種類を追加。
 最終通常LintVital/R8 build2m21s成功、MPP SHA256 6a5ed6b65425d9befc2555fcf3b395b3a3b065be12097b35a547bb7024ad3465。emulator-5580の3版既存隔離packageへ署名一致install-r成功。各スクロール実往復2回、検索38/album7/native191と226は11、242は15項目成功。元native命令/register/分岐先保持確認、crash buffer空。242実投稿popupでGboard表示中の標準︙表示確認、実投稿なし。11タブ往復/最大Gboard/実巡回からイベント画面までの通し試験は未完了、巡回URLは242のみ。docs/reader-ui-fixes-20261101.mdと導入台帳に証跡/未確認範囲。公開なし。
+
+
+2026-11-01 18:54 JST 191/226/242対応差の整理と共通化（未公開）
+191/226へ巡回板取得のエラー捕捉を追加し、242も含めた端末内100件の共通エラー履歴を履歴カテゴリへ追加。242純正イベント追記は保持。共通Intent境界でACTION_WEB_SEARCHへNEW_TASKを付け、191専用の対策を全版へ適用。版固有のnative構造に対する修正は維持、docs/version-parity-20261101.mdに判断表。
+通常LintVital/R8 build2m31s成功、MPP SHA256 a7fca9a480f08b0339fd37136c165bdff6a6de2579c9ad8282663d895c420dda。emulator-5580の3版既存隔離packageへ署名一致更新。native各18/18/20、各album7/search38/Web検索6、共通ログ実UI表示成功、host609成功。worker元命令/引数/register/分岐先と例外同一性の検査成功、crash buffer空。実通信の巡回全体・実検索アプリへの遷移は未試験。XIG05はADB接続消失で更新失敗、先のreader-ui-scroll版維持。公開なし。

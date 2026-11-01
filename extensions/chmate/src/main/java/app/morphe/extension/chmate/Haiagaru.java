@@ -951,6 +951,7 @@ public final class Haiagaru {
         MediaUploadHosts.init(appContext);
         ImageVpnController.initialize(appContext);
         PatrolImages.initialize(appContext);
+        PatrolErrorHistory.initialize(appContext);
         ExternalBoardAuth.initialize(appContext);
         BoardCookies.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
@@ -1416,6 +1417,7 @@ public final class Haiagaru {
     /** Keeps ChMate's explicit self-navigation inside an optionally renamed installation. */
     public static Intent retargetSelfIntent(Intent intent) {
         if (intent == null) return null;
+        ExternalWebSearch.prepare(intent);
         ComponentName component = intent.getComponent();
         String currentPackage = runtimePackageName;
         if (component == null || currentPackage == null
@@ -4643,6 +4645,7 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         ClipboardHistory.addSettings(layout, activity);
+        PatrolErrorHistory.addSettings(layout, activity);
         final int savedPostHistoryCount = chMatePreferences.getInt(
                 CHMATE_POST_DATA_LIST_COUNT_KEY, DEFAULT_CHMATE_POST_DATA_LIST_COUNT);
         Switch unlimitedPostHistory = addSwitch(layout, activity,

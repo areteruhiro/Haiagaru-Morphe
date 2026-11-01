@@ -1282,3 +1282,16 @@ emulator-5580、既存隔離packageへ署名照合install-r成功。データ保
 - 表示名 Haiagaru 検証 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-242.apk` / SHA256 `6a9c9af3e31f086472f703025daa7fdf1b3a340f896830ece6cf493fab5471f5` / install成功、起動プロセス確認。
 
 アプリ初回設定・バックアップ復元・同意操作は未実施。191は背景移行後にプロセス終了していたため再起動しPID19093を確認、新規crash logは空。226 PID16994、242 PID18481。既存データ消去/アンインストール/投稿なし。公開なし。
+
+
+## 2026-11-01 18:54 JST 版間の対応統一・検証版導入
+
+emulator-5580の既存隔離3版へ署名照合install-r成功。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-parity-final.mpp` / SHA256 `a7fca9a480f08b0339fd37136c165bdff6a6de2579c9ad8282663d895c420dda`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- Haiagaru 検証 191 / ChMate0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.settingsfix191` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-parity-final-191.apk` / SHA256 `ae92afa46ffb44c59d7a978138e881ed2d492da8dbb8c467c437dfae1bb59cc6` / 導入・起動、巡回ログの保存と設定UI、Web検索フラグ6項目、検索38項目、album7項目成功。
+
+- Haiagaru 検証 226 / ChMate0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix226` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-parity-final-226.apk` / SHA256 `7cf22da4c2fda40e287f085c668f005bde3ce31c6b495e4f87864e13fe46b9ea` / 導入・起動、巡回ログの保存と設定UI、Web検索フラグ6項目、検索38項目、album7項目成功。
+
+- Haiagaru 検証 242 / ChMate0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-parity-final-242.apk` / SHA256 `2397b7aa444994017f1b483197d08123a6fd277153b1632952b681463c81caef` / 導入・起動、巡回ログの保存と設定UI、Web検索フラグ6項目、検索38項目、album7項目成功。
+
+native191/226各18、242は20項目成功。元worker命令/register/分岐先保持・例外再throw検査成功。crash buffer空。設定/ログfixtureは復元。詳細docs/version-parity-20261101.md。実機XIG05（730eae72）は接続消失により更新失敗、今回版は未導入、既存アプリ/データ保持。公開なし。
