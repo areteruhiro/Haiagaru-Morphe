@@ -794,3 +794,7 @@ Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules
 版別全機能の機械的移植は行わず、HOMEの下部選択バー等の版専用UIは適用範囲を維持。全既存機能の全版移植完了とは報告しない。公開はSemantic Release CI経由。
 
 最終メディア191/226各8・242は14項目成功。242はエミュレータ再起動後のrelease118-media242-final.logを採用。最終crash buffer空。実回線の巡回一巡は未再現のため、接続対策の改善と検証範囲をRelease説明へ明記。再ビルド時のnative allocation失敗はホストhs_errで確認、成功済みMPPと最終APKのSHA照合を維持。
+
+
+2026-11-01 公式1.18.0公開完了
+最終実装968d107、検証記録9bda440、master統合a681009、Semantic Release CI41308643478 success、生成commit33c5da2。prerelease=false/draft=false/latest=1.18.0を確認。公開MPP SHA256 71edb0db481229fc5e78b82fee0ead0f81ce771a0268da4600dc923b052d233a、GitHub asset digest一致・CRC正常。高さ設定2キー/191pool分離/timeout/archive308を公開MPP内で確認。master/dev両feed1.18.0・同downloadURL、添付feed2つSHA256 de129ed07e2c3a67985974448daea919832f04cff46e255e155ef3f0c4e7a031一致。公開CIのコンパイルでローカル再ビルド時の環境メモリ不足とは区別して成功確認。証跡build/official118-public/verification.jsonとci.log。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.18.0 。canonicalはdevへ戻しCI backmergeをff取り込み済み。
