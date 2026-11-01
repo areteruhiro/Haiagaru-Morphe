@@ -792,3 +792,5 @@ Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules
 追加報告により191 GETの接続非再利用をpool分離/zero idleへ強化、50ms TCP候補開始、通信全体新規初期60秒（既存0保持）。前スレリンクの90日未満判定・HTTP HTTPS化・archive GET308等対応。通常投稿/メディア/外板へ5chミラー適用を拡げない。
 通常Lint/R8 build/release118-final-build.log 2m46s成功。最終MPP SHA256 d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910。3版最終APK署名一致install-r/起動、共有NG18/検索38/album7/Web検索6/高さ28、必死ON各4、OFF実APK各18、既読設定3/前スレURL6成功。native reader/patrol/update命令継続22/6/6と191橋15sites検査成功。191新pool8、local接続561/316/595/580ms、連続受信2003ms timeout後の次取得成功、stream17成功。メディアは226各8/242各14最終成功、191結果は後記。追加の再ビルドはホストnative memory不足で失敗、成功済みMPPは維持。エミュレータADB停止は同AVDのdataを保持して再起動し、242試験をやり直して成功。公開CI成功を最終条件とする。詳細docs/release-118-verification.md、台帳docs/android-installations.md。
 版別全機能の機械的移植は行わず、HOMEの下部選択バー等の版専用UIは適用範囲を維持。全既存機能の全版移植完了とは報告しない。公開はSemantic Release CI経由。
+
+最終メディア191/226各8・242は14項目成功。242はエミュレータ再起動後のrelease118-media242-final.logを採用。最終crash buffer空。実回線の巡回一巡は未再現のため、接続対策の改善と検証範囲をRelease説明へ明記。再ビルド時のnative allocation失敗はホストhs_errで確認、成功済みMPPと最終APKのSHA照合を維持。

@@ -19,6 +19,8 @@
 - host TCP20（代替開始112ms計測）、archive URL18、HTTP転送8、共有NG rules96/index10003/regex17、GAS53/74/148等。
 - native命令継続：前回検証済みversion-parity-final APKと最終APKの対象reader/patrol/update 22/6/6メソッドで全命令/register/branch保持。191 configure橋の15execute sites、8regs、p0保持も検査。native未patch APKとの単純比較は既存変更も含めて失敗したため、今回追加差分の継続検査として区別。
 
+- 最終メディア：191/226各8項目、242は14項目成功。標準image/GIFと専用GIF/動画を実際に表示し、native終了/設定済み戻る/左右移動を確認。最終crash buffer空。
+
 ## 限界・試験の修正
 
 - 実回線での巡回一巡・報告された実前スレは未再現。DNSのOS処理等は即中断できない場合がある。取得先にログがない場合の取得保証なし。
