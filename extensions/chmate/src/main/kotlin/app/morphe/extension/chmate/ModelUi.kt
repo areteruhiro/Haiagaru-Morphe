@@ -132,6 +132,7 @@ private fun modelFingerprint(view: View?): Long {
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.RESULT_SCALE_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.REFRESH_ENABLED_TAG)?.hashCode() ?: 0)
     value = value * 31 + (view.getTag(EddiArchiveSearchUi.SEARCH_BUSY_TAG)?.hashCode() ?: 0)
+    value = value * 31 + (view.getTag(PosterHighlight.COLOR_PREVIEW_TAG)?.hashCode() ?: 0)
     value = value * 31 + view.visibility + if (view.isEnabled) 1 else 0
     when (view) {
         is TextView -> value = value * 31 + view.text.hashCode() + (view.error?.hashCode() ?: 0)

@@ -752,3 +752,45 @@ host URL/GIF56項目成功、通常LintVital/R8 build2m57s成功。MPP SHA256 55
 利用者の追加指示によりエッヂ認証日の記録/同意/送信/推定をアプリから削除、GASも受付と配信を削除。公開スレで確認したレベルNGのみ初期OFFで残す。GAS既存deployment version10へ02:05 JST更新、既存URL/実行者/全員公開維持。公開GET observed1、authDays不在、旧認証API拒否、共有NG305件正常。build/gas-v10-verification.json、gas-v10-auth-removed.png。
 投稿メール欄のautofill/メール分類/IME候補抑止を既存投稿hookへ追加。191の実layoutではhint E-mailを使って特定。名前/本文/タイトル/他ログイン欄、sage/文字列/選択/key listenerを保持。通常LintVital/R8 build2m57s成功、MPP SHA256 c03a67b63f250d1c0ec9ba3b62dd280bf3fa25be70c9cef99497aab683e8e634。
 最終emulator-5580更新3版でメール45/検索37/除外ID17/カード27/公開レベル11、混合順32/36/36成功。native hook命令/register保持成功。3版起動/Part4本文/通常画像表示を確認、crash buffer空。初期fixtureのJava型比較と未接続Fragment生成問題を修正し再成功。runtime suiteに加えメール45最終結果を採用。host検証URL56/検索198/レス混合4027/旧ソート2014/公開レベル17/サーバー19、既存共有NG40/148/61成功。既存NG/DAT変更や実投稿なし。公開はCI完了後に別記。
+
+
+2026-11-01 02:27 JST 1.17.0公式公開完了: 最終実装5b8363c、master統合4e67bac、Semantic Release CI41224071485 success、生成commit f01897e。prerelease=false/draft=false/latest確認。公開MPP SHA256 e99a9fe28e13d8afcc2a3257bba5c0ddb517b0b07933b3a472137b2d43b6e708、更新JSON両方SHA256 61b1ca37eb1472e62e35116002e6ecec1fd550f75ca48a0bef40e8ab1a444be3。asset digest一致・CRC正常・PostMailInput/CachedResponseOrder/ThreadSearchOptions/公開レベルNG同梱、認証記録/共有/推定キーとAPI不在、master/dev両feed1.17.0一致、開発中表示を確認。証拠build/official117-public/verification.json。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.17.0 。旧ローカルタグとremoteの不一致は上書きせず、必要なbranchを--no-tagsで取得しCI backmergeをdevへff反映。
+
+
+2026-11-01 投稿者強調の色見本修正（未公開）
+Compose設定描画がTextView.backgroundColorを無視し、色見本を通常の説明として扱ったため消えていた。PosterHighlight専用色タグを設定モデルのfingerprintとBoundSettingの比較へ反映し、タグ付き見本だけ背景色/太字を描画。登録画面を復旧、共通設定と登録ごとの一覧にも見本を追加。継承中だけ共通色変更へ追従。色の保存形式/表示span/既存NG/DATは変更しない。native bytecode hook追加変更なし。
+通常LintVital/R8付きbuild/highlight-preview-build.log成功3m42s。191/226/242へ生成・署名一致install-r/cold起動成功。各18項目と実画面の見本を確認、最終crash buffer空。初回191のruntime RPCが理由なしで失敗したため成功に数えず、診断を改善した再実行と登録画面を含む最終18項目で再確認成功。試験prefsはfinally復元。証跡build/highlight-preview-{191,226,242}-runtime.log、highlight-preview-after191/226/242.png。MPP SHA256 ea1def0406e55f0ae4c03e1df532c6fd0d7f453f9228b4e1a3ac018264974a97。公開/配布feedは変更していない。
+
+
+2026-11-01 242の標準メディア終了ジェスチャー競合修正（未公開）
+242/1.17.0相当で設定OFFなら上下スワイプで閉じ、ONなら上が次メディアへ移動、一覧先頭の下はイベントを消費するだけで閉じないことを再現。設定済みgestureBackを認識器単体で確認した旧試験では、標準Fragmentの上下ドラッグ終了を保護できていなかった。242のImagesViewer2Activityだけ縦移動をnativeへ渡し、左右の全スレ移動/保存済み戻る優先を維持。191/226には同じnative上下終了がないため適用せず、専用ビューアとともに従来の上下移動を保持。版判定はプロセスで一度取得し、gesture DOWNでsnapshot。native hook追加変更なし。
+最終通常LintVital/R8 build2m57s成功。MPP SHA256 a6e1785561872598e0fbf6f23551890619d63aa3625281fac7388bb407736ba6。3版へ署名照合更新/起動成功。242は14項目、191/226は各8項目成功。新crash buffer空。native GIFの極小1px fixture/中心タッチで戻る試験が失敗したため、標準controlsを避けた位置と320x240 animationに調整し、最終trialを再実行。旧失敗を成功に数えない。元preferencesは復元、NG/DAT/投稿変更なし。build/media-native-back-final-{191,226,242}-runtime.logとmedia-native-back-*-result.json。公開/配布feedは未変更。
+
+
+2026-11-01 18:19 JST 設定UI・スクロール復帰・検索・メディア順序・native一覧/投稿menu修正（未公開）
+設定一覧/検索/カテゴリのLazyListStateを分離し、カテゴリから戻ると先頭になる症状を修正。修正前191で実再現、最終3版でカテゴリ内スクロールと再訪問後もhome bounds完全一致。設定UIをコンパクト化、共有/読込を横並びへ。スレ内検索ID/名前/ワッチョイは新規初期OFF、保存済み選択保持、ヘッダー曜日は対象外。Imgur album遅延完了のサムネを本文URL位置へ挿入。native cached subjectのHTTP504が成功の空一覧になる経路を3版でnullへ戻し再読込へ渡す。226/242投稿popupはIMEを避ける測定modeへ。242純正巡回イベントへ失敗板URL/例外種類を追加。
+最終通常LintVital/R8 build2m21s成功、MPP SHA256 6a5ed6b65425d9befc2555fcf3b395b3a3b065be12097b35a547bb7024ad3465。emulator-5580の3版既存隔離packageへ署名一致install-r成功。各スクロール実往復2回、検索38/album7/native191と226は11、242は15項目成功。元native命令/register/分岐先保持確認、crash buffer空。242実投稿popupでGboard表示中の標準︙表示確認、実投稿なし。11タブ往復/最大Gboard/実巡回からイベント画面までの通し試験は未完了、巡回URLは242のみ。docs/reader-ui-fixes-20261101.mdと導入台帳に証跡/未確認範囲。公開なし。
+
+
+2026-11-01 18:54 JST 191/226/242対応差の整理と共通化（未公開）
+191/226へ巡回板取得のエラー捕捉を追加し、242も含めた端末内100件の共通エラー履歴を履歴カテゴリへ追加。242純正イベント追記は保持。共通Intent境界でACTION_WEB_SEARCHへNEW_TASKを付け、191専用の対策を全版へ適用。版固有のnative構造に対する修正は維持、docs/version-parity-20261101.mdに判断表。
+通常LintVital/R8 build2m31s成功、MPP SHA256 a7fca9a480f08b0339fd37136c165bdff6a6de2579c9ad8282663d895c420dda。emulator-5580の3版既存隔離packageへ署名一致更新。native各18/18/20、各album7/search38/Web検索6、共通ログ実UI表示成功、host609成功。worker元命令/引数/register/分岐先と例外同一性の検査成功、crash buffer空。実通信の巡回全体・実検索アプリへの遷移は未試験。XIG05はADB接続消失で更新失敗、先のreader-ui-scroll版維持。公開なし。
+
+
+2026-11-01 19:49 JST 既存機能全体の版間対応調査へ拡張（進行中・未公開）
+利用者回答により直近修正だけでなく既存機能全体が対象。56ファイル/125関数・スコープ/397参照の自動索引docs/version-parity-source-index.mdを作成。索引は手動レビュー済みを意味しない。既読スレを上にのHaiagaru設定入口が226限定だったため、191/242等にも既存キー・scope選択・再描画を共用して追加。通常LintVital/R8 build2m20s成功、build/full-parity-settings.mpp SHA256 f261fa50e2711f0c4de1838c76068b4988687309bfa8b4a6e5dfa349c118a5db。今回追加のAPK適用/端末検証は未実施、インストール済みは前回version-parity-final版のまま。全既存機能の同等化完了とはしない。残確認はdocs/version-parity-20261101.md先頭へ記録。公開なし。
+
+
+2026-11-01 20:53 JST 共有NGの審査・種類別履歴保存をGAS本番へ反映（アプリ未公開）
+利用者指示で禁止語辞書ゲートを廃止、基本形式を満たす条件は正規表現を含め1報告から承認。NGワード5文字以上・英字のみ不可は維持。Java/GASの正規表現構文差により、構文検査はAndroidのPatternに委ね、invalid条件だけ受信時skip。旧appへregexを配信しないcapabilityを追加。Inboxは未審査キュー、NG_ID/NG_Word/NG_Wacchoi/NG_Name/NG_Reporter/NG_Otherへ審査済みの元履歴・理由を移動、退避journalで途中失敗を復旧。ID24h/ワッチョイ7日の期限削除は利用者の最新指示で撤回、永久削除なし。
+GASのcloud 4ファイルをHEAD基準と照合（Moderationは空行1つのみの差）、ローカルと全文hash一致を確認して保存。既存URL/owner/全員アクセスを維持して最終version13へ更新。初回配信試験のlock timeoutを受け、100KB制限で従来cacheされなかった大きなJSONを20,000文字ごとに分割cacheし、全片hash検証・manifest後置・審査時無効化を追加。旧app通常条件のflags18は0x70だけを見て保持。最終公開GET旧816件/新996件うちregex180件、private metadataなし、応答navigation2489ms/1605ms。読取専用監査は履歴2168/approved2168/配信996、issues/warnings空。Inbox見出しのみもUI確認。証跡build/shared-ng-v13-verification.jsonとbuild/shared-ng-v13-audit.jpg。
+Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules96/index10003/regex17成功。Android通常Lint/R8ビルドはホスト仮想メモリ不足で失敗、in-process再試行もR8中にPowerShell OutOfMemoryで中断。最終成功MPP更新・APK導入・アプリ公開なし。必死viewer=false検証/フィルター高さ/全機能版間確認は未完のまま保持。
+
+
+2026-11-01 公式Release候補（公開前）
+下部フィルター高さつまみを共通実装、popup/pinnedとも高さ保存・非表示保持・ScrollView・本文viewport予約を確認。必死viewerパッチfalseを専用UI生成/新タブ両経路へ適用。共有NGのJava正規表現decode/cache/match対応、GASの種類別履歴・辞書不要自動承認・期限削除撤回は前記v13へ配備済み。
+追加報告により191 GETの接続非再利用をpool分離/zero idleへ強化、50ms TCP候補開始、通信全体新規初期60秒（既存0保持）。前スレリンクの90日未満判定・HTTP HTTPS化・archive GET308等対応。通常投稿/メディア/外板へ5chミラー適用を拡げない。
+通常Lint/R8 build/release118-final-build.log 2m46s成功。最終MPP SHA256 d32d05f38927879d4b9813846d3d47ea4cb2a081098875022f28b3ab58720910。3版最終APK署名一致install-r/起動、共有NG18/検索38/album7/Web検索6/高さ28、必死ON各4、OFF実APK各18、既読設定3/前スレURL6成功。native reader/patrol/update命令継続22/6/6と191橋15sites検査成功。191新pool8、local接続561/316/595/580ms、連続受信2003ms timeout後の次取得成功、stream17成功。メディアは226各8/242各14最終成功、191結果は後記。追加の再ビルドはホストnative memory不足で失敗、成功済みMPPは維持。エミュレータADB停止は同AVDのdataを保持して再起動し、242試験をやり直して成功。公開CI成功を最終条件とする。詳細docs/release-118-verification.md、台帳docs/android-installations.md。
+版別全機能の機械的移植は行わず、HOMEの下部選択バー等の版専用UIは適用範囲を維持。全既存機能の全版移植完了とは報告しない。公開はSemantic Release CI経由。
+
+最終メディア191/226各8・242は14項目成功。242はエミュレータ再起動後のrelease118-media242-final.logを採用。最終crash buffer空。実回線の巡回一巡は未再現のため、接続対策の改善と検証範囲をRelease説明へ明記。再ビルド時のnative allocation失敗はホストhs_errで確認、成功済みMPPと最終APKのSHA照合を維持。
