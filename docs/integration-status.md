@@ -775,3 +775,7 @@ Compose設定描画がTextView.backgroundColorを無視し、色見本を通常�
 2026-11-01 18:54 JST 191/226/242対応差の整理と共通化（未公開）
 191/226へ巡回板取得のエラー捕捉を追加し、242も含めた端末内100件の共通エラー履歴を履歴カテゴリへ追加。242純正イベント追記は保持。共通Intent境界でACTION_WEB_SEARCHへNEW_TASKを付け、191専用の対策を全版へ適用。版固有のnative構造に対する修正は維持、docs/version-parity-20261101.mdに判断表。
 通常LintVital/R8 build2m31s成功、MPP SHA256 a7fca9a480f08b0339fd37136c165bdff6a6de2579c9ad8282663d895c420dda。emulator-5580の3版既存隔離packageへ署名一致更新。native各18/18/20、各album7/search38/Web検索6、共通ログ実UI表示成功、host609成功。worker元命令/引数/register/分岐先と例外同一性の検査成功、crash buffer空。実通信の巡回全体・実検索アプリへの遷移は未試験。XIG05はADB接続消失で更新失敗、先のreader-ui-scroll版維持。公開なし。
+
+
+2026-11-01 19:49 JST 既存機能全体の版間対応調査へ拡張（進行中・未公開）
+利用者回答により直近修正だけでなく既存機能全体が対象。56ファイル/125関数・スコープ/397参照の自動索引docs/version-parity-source-index.mdを作成。索引は手動レビュー済みを意味しない。既読スレを上にのHaiagaru設定入口が226限定だったため、191/242等にも既存キー・scope選択・再描画を共用して追加。通常LintVital/R8 build2m20s成功、build/full-parity-settings.mpp SHA256 f261fa50e2711f0c4de1838c76068b4988687309bfa8b4a6e5dfa349c118a5db。今回追加のAPK適用/端末検証は未実施、インストール済みは前回version-parity-final版のまま。全既存機能の同等化完了とはしない。残確認はdocs/version-parity-20261101.md先頭へ記録。公開なし。

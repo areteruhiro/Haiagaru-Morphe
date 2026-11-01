@@ -3724,9 +3724,11 @@ public final class Haiagaru {
                 text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
                 initialHideNgThreadGroup);
         Switch readThreadsFirst = null;
-        // 191/241/242/243 expose this in ChMate's board display options.
-        // 226 keeps the Haiagaru toggle until its settings UI is migrated.
-        if ("0.8.10.226 dev".equals(chMateVersion)) {
+        // Keep the same entry point across the supported versions, in addition
+        // to their native board display controls. Both use ReadThreadsFirst.KEY.
+        if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
+                || "0.8.10.241".equals(chMateVersion) || "0.8.10.242 dev".equals(chMateVersion)
+                || "0.8.10.243 dev".equals(chMateVersion)) {
             readThreadsFirst = addSwitch(layout, activity,
                     text("板のスレ一覧で既読スレを上に", "Show read threads first in board lists"),
                     ReadThreadsFirst.enabled());
