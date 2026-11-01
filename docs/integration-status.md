@@ -798,3 +798,10 @@ Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules
 
 2026-11-01 公式1.18.0公開完了
 最終実装968d107、検証記録9bda440、master統合a681009、Semantic Release CI41308643478 success、生成commit33c5da2。prerelease=false/draft=false/latest=1.18.0を確認。公開MPP SHA256 71edb0db481229fc5e78b82fee0ead0f81ce771a0268da4600dc923b052d233a、GitHub asset digest一致・CRC正常。高さ設定2キー/191pool分離/timeout/archive308を公開MPP内で確認。master/dev両feed1.18.0・同downloadURL、添付feed2つSHA256 de129ed07e2c3a67985974448daea919832f04cff46e255e155ef3f0c4e7a031一致。公開CIのコンパイルでローカル再ビルド時の環境メモリ不足とは区別して成功確認。証跡build/official118-public/verification.jsonとci.log。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.18.0 。canonicalはdevへ戻しCI backmergeをff取り込み済み。
+
+
+2026-11-02 スレ全メディア移動の191/226/242共通化（未公開）
+利用者指定により242標準ビューアだけの上下終了優先を撤回。全スレ移動ONでは191/226/242共通で上下左右に移動し、保存済みの戻るジェスチャーは優先。242のサムネ直通も191/226と同じprepareNativeIntentを通し、最初のnativeページと全スレsnapshotを分離保持、GIF/動画は共通redirectNativeで選択。戻る認識器がある場合もnative canvasへCANCELを渡して242のnative終了が先取りしないようにした。拡大/複数指/操作部品の除外は維持。native bytecode hook追加変更なし。
+通常Lint/R8 build/gallery-parity-final-build.log成功2m58s、MPP build/gallery-parity.mpp SHA256 cf2505c955105e59e44145b26d9be42b124f1bf65df44a77070d31a7cb27387f。3版既存隔離packageを署名照合install-r/起動成功。host MediaGallery41項目成功。media191/226各18・242は20項目成功、標準画像/標準GIF/専用GIF/専用動画間の上下左右・戻る優先/非戻る方向の移動・242設定OFFの上下終了を確認。191/226では先頭下方向の非wrapと右方向復帰も確認。各版のnative factoryとサムネ直通/開いたviewerの実Intent確認は11項目、全スレsnapshot/クリック位置/ContextWrapper/OFF維持を確認。hook元命令/register/分岐を3版、242 thumbnail wrapperを別途検査成功。最終crash buffer空。
+初期試験は純正gesture方向codeを誤って1/2/3と仮定したため失敗、native認識器を調べ左4/左上84/左下24で試験を修正。captureしたstartActivityのhookに依存する試験を、実際に開いたviewerの確認へ置換。旧失敗を成功に数えない。全てのfixture変更設定をfinally復元、NG/DAT改変・投稿なし。URL指定のActivity起動は自動審査で拒否されたため保存済みスレ一覧から開いて検証。docs/image-gallery-media-compatibility.mdと導入台帳へ記録。Release/feed更新なし。
+追加191拡大判定確認: native renderer B=1/C=aa=6.7080746、初期fitは非拡大、手動1.5倍は拡大扱いとなり移動を抑止する判定を確認、元位置へ復元。build/gallery-parity-zoom191.log。
