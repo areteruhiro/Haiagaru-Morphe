@@ -290,12 +290,15 @@ public final class MediaViewerNavigation {
     }
     private static boolean zoomed(View view) {
         if(!view.isShown())return false;
-        // 191 uses its own FrameLayout renderer, not an ImageView/getScale API.
-        if(view.getClass().getName().equals("o.qhbExternalSyntheticLambda0"))try{
-            java.lang.reflect.Field current=view.getClass().getDeclaredField("C"),minimum=view.getClass().getDeclaredField("B"),fit=view.getClass().getDeclaredField("aa");
-            current.setAccessible(true);minimum.setAccessible(true);fit.setAccessible(true);
-            // B is capped at 1 for small images, while native d() opens at aa
-            // (fit-to-window). That automatic enlargement is not a user zoom.
+        // All three native canvases are FrameLayouts, so the ImageView API below
+        // cannot detect their zoom. Field bindings differ; the policy is shared.
+        String type=view.getClass().getName();
+        boolean v191=type.equals("o.qhbExternalSyntheticLambda0"),v226=type.equals("o.TTVideoLandingPageActivity4"),v242=type.equals("o.zzbfo");
+        if(v191||v226||v242)try{
+            java.lang.reflect.Field current=NativeFields.find(view.getClass(),v242?"mScale":v191?"C":"D"),
+                    minimum=NativeFields.find(view.getClass(),v242?"startScale":v191?"B":"C"),
+                    fit=NativeFields.find(view.getClass(),v242?"mFitScale":"aa");
+            // Fitting a small image to the window may enlarge it automatically.
             if(ImageZoomState.zoomed(current.getFloat(view),minimum.getFloat(view),fit.getFloat(view)))return true;
         }catch(ReflectiveOperationException ignored){}
         if(view instanceof ImageView)try{
