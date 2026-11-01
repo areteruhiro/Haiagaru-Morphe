@@ -1256,3 +1256,16 @@ emulator-5580、既存隔離packageへ署名一致install-r/cold起動成功、�
 - Haiagaru 検証242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/media-native-back-final-242.apk` / SHA256 `d68ed0c9389c8e92a2d70836e8caaa99ce135c27dc4b1f803528accefbddb414` / 完了確認2026-11-01 17時台JST。
 
 最終runtimeは242:14項目、191/226:各8項目成功。242標準画像/標準GIFのON/OFF上下終了、左右移動、保存された戻る設定を実タッチdispatch経由で確認。191/226は標準の上下終了機能がないため従来の上下移動保持を確認。専用GIF/動画の上下移動も保持。検証用の設定はfinally復元、実投稿/NG/DAT変更なし。crash buffer空。未公開。
+
+
+## 2026-11-01 18:19 JST 設定UI・一覧位置保持などの検証用導入
+
+emulator-5580、既存隔離packageへ署名照合install-r成功。データ保持。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll.mpp` / SHA256 `6a5ed6b65425d9befc2555fcf3b395b3a3b065be12097b35a547bb7024ad3465`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias Morphe / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- Haiagaru 検証191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.settingsfix191 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-191.apk` / SHA256 `209ffb612064a6a669a99298714609ba6eaa03292992d6f37a87f13c15894e6b` / 設定一覧位置保持の実タップ往復2回、検索38項目、アルバム7項目、nativeキャッシュ失敗処理を確認。
+
+- Haiagaru 検証226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix226 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-226.apk` / SHA256 `2a290c38023af94bcf669b38721e304c3bfb0c0ddea8fe22ac9dfdf2eb793656` / 設定一覧位置保持の実タップ往復2回、検索38項目、アルバム7項目、nativeキャッシュ失敗処理を確認。
+
+- Haiagaru 検証242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.resumefix242 / APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reader-ui-scroll-242.apk` / SHA256 `6a9c9af3e31f086472f703025daa7fdf1b3a340f896830ece6cf493fab5471f5` / 設定一覧位置保持の実タップ往復2回、検索38項目、アルバム7項目、nativeキャッシュ失敗処理を確認。
+
+通常LintVital/R8 build成功2m21s、native元命令/register/分岐先保持を3版で確認。crash buffer空。詳細・未確認範囲はdocs/reader-ui-fixes-20261101.md。未公開。

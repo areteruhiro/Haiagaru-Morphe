@@ -765,3 +765,8 @@ Compose設定描画がTextView.backgroundColorを無視し、色見本を通常�
 2026-11-01 242の標準メディア終了ジェスチャー競合修正（未公開）
 242/1.17.0相当で設定OFFなら上下スワイプで閉じ、ONなら上が次メディアへ移動、一覧先頭の下はイベントを消費するだけで閉じないことを再現。設定済みgestureBackを認識器単体で確認した旧試験では、標準Fragmentの上下ドラッグ終了を保護できていなかった。242のImagesViewer2Activityだけ縦移動をnativeへ渡し、左右の全スレ移動/保存済み戻る優先を維持。191/226には同じnative上下終了がないため適用せず、専用ビューアとともに従来の上下移動を保持。版判定はプロセスで一度取得し、gesture DOWNでsnapshot。native hook追加変更なし。
 最終通常LintVital/R8 build2m57s成功。MPP SHA256 a6e1785561872598e0fbf6f23551890619d63aa3625281fac7388bb407736ba6。3版へ署名照合更新/起動成功。242は14項目、191/226は各8項目成功。新crash buffer空。native GIFの極小1px fixture/中心タッチで戻る試験が失敗したため、標準controlsを避けた位置と320x240 animationに調整し、最終trialを再実行。旧失敗を成功に数えない。元preferencesは復元、NG/DAT/投稿変更なし。build/media-native-back-final-{191,226,242}-runtime.logとmedia-native-back-*-result.json。公開/配布feedは未変更。
+
+
+2026-11-01 18:19 JST 設定UI・スクロール復帰・検索・メディア順序・native一覧/投稿menu修正（未公開）
+設定一覧/検索/カテゴリのLazyListStateを分離し、カテゴリから戻ると先頭になる症状を修正。修正前191で実再現、最終3版でカテゴリ内スクロールと再訪問後もhome bounds完全一致。設定UIをコンパクト化、共有/読込を横並びへ。スレ内検索ID/名前/ワッチョイは新規初期OFF、保存済み選択保持、ヘッダー曜日は対象外。Imgur album遅延完了のサムネを本文URL位置へ挿入。native cached subjectのHTTP504が成功の空一覧になる経路を3版でnullへ戻し再読込へ渡す。226/242投稿popupはIMEを避ける測定modeへ。242純正巡回イベントへ失敗板URL/例外種類を追加。
+最終通常LintVital/R8 build2m21s成功、MPP SHA256 6a5ed6b65425d9befc2555fcf3b395b3a3b065be12097b35a547bb7024ad3465。emulator-5580の3版既存隔離packageへ署名一致install-r成功。各スクロール実往復2回、検索38/album7/native191と226は11、242は15項目成功。元native命令/register/分岐先保持確認、crash buffer空。242実投稿popupでGboard表示中の標準︙表示確認、実投稿なし。11タブ往復/最大Gboard/実巡回からイベント画面までの通し試験は未完了、巡回URLは242のみ。docs/reader-ui-fixes-20261101.mdと導入台帳に証跡/未確認範囲。公開なし。
