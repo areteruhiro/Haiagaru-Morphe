@@ -1,3 +1,62 @@
+# Haiagaru 1.18.1
+
+## 今回の更新
+
+- 191／226／242のスレ全メディア移動を共通化しました。サムネイルから開いた後、上下左右でスレ全体の画像・GIF・動画を移動できます。ChMateで設定した「戻る」ジェスチャーを優先します。
+- 拡大中は表示位置の調整を優先します。226／242の描画部品も拡大判定へ対応し、通常表示に戻すとメディアを移動できます。小さい画像の自動拡大は通常表示として扱います。
+- サムネイル起点のメディア一覧・開いた位置の引き継ぎをそろえました。全スレ移動OFFでは標準の動作を維持します。
+- ID／ワッチョイ検索への板情報の引き継ぎ、閲覧位置保存、共有NGのスレ情報取得を共通化しました。操作中のスレの情報を使い、別のタブの板を引き継ぎません。
+- スレ画面の準備中に一覧が非表示でも、閲覧位置を保存する処理が取り付けられるようにしました。
+- HOMEの複数選択ボタンの下部表示は、引き続き242専用です。版固有の通信・UI構造への対策と、保存済みの設定は維持します。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 確認範囲
+
+191／226／242の検証用エミュレータで起動・スレ本文・画像表示と変更箇所を確認しました。標準画像・標準GIF・専用GIF・専用動画のメディア移動、設定した戻る操作、拡大時の移動抑止、検索画面への板情報の引き継ぎを検証しています。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** align native thread context and zoom navigation ([2ce2680](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2ce26804c19daaeae66f8fbd2f6b18f3cd460a3e))
+* **chmate:** unify whole-thread media navigation across versions ([1eb6181](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1eb6181825ddfc99206d613c00f2e0817c1f6824))
+
 # Haiagaru 1.18.0
 
 ## 今回の更新

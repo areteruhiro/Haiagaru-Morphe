@@ -794,3 +794,23 @@ Node moderation53/lifecycle74/personal148/service40+legacy41/edge19、Java rules
 版別全機能の機械的移植は行わず、HOMEの下部選択バー等の版専用UIは適用範囲を維持。全既存機能の全版移植完了とは報告しない。公開はSemantic Release CI経由。
 
 最終メディア191/226各8・242は14項目成功。242はエミュレータ再起動後のrelease118-media242-final.logを採用。最終crash buffer空。実回線の巡回一巡は未再現のため、接続対策の改善と検証範囲をRelease説明へ明記。再ビルド時のnative allocation失敗はホストhs_errで確認、成功済みMPPと最終APKのSHA照合を維持。
+
+
+2026-11-01 公式1.18.0公開完了
+最終実装968d107、検証記録9bda440、master統合a681009、Semantic Release CI41308643478 success、生成commit33c5da2。prerelease=false/draft=false/latest=1.18.0を確認。公開MPP SHA256 71edb0db481229fc5e78b82fee0ead0f81ce771a0268da4600dc923b052d233a、GitHub asset digest一致・CRC正常。高さ設定2キー/191pool分離/timeout/archive308を公開MPP内で確認。master/dev両feed1.18.0・同downloadURL、添付feed2つSHA256 de129ed07e2c3a67985974448daea919832f04cff46e255e155ef3f0c4e7a031一致。公開CIのコンパイルでローカル再ビルド時の環境メモリ不足とは区別して成功確認。証跡build/official118-public/verification.jsonとci.log。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.18.0 。canonicalはdevへ戻しCI backmergeをff取り込み済み。
+
+
+2026-11-02 スレ全メディア移動の191/226/242共通化（未公開）
+利用者指定により242標準ビューアだけの上下終了優先を撤回。全スレ移動ONでは191/226/242共通で上下左右に移動し、保存済みの戻るジェスチャーは優先。242のサムネ直通も191/226と同じprepareNativeIntentを通し、最初のnativeページと全スレsnapshotを分離保持、GIF/動画は共通redirectNativeで選択。戻る認識器がある場合もnative canvasへCANCELを渡して242のnative終了が先取りしないようにした。拡大/複数指/操作部品の除外は維持。native bytecode hook追加変更なし。
+通常Lint/R8 build/gallery-parity-final-build.log成功2m58s、MPP build/gallery-parity.mpp SHA256 cf2505c955105e59e44145b26d9be42b124f1bf65df44a77070d31a7cb27387f。3版既存隔離packageを署名照合install-r/起動成功。host MediaGallery41項目成功。media191/226各18・242は20項目成功、標準画像/標準GIF/専用GIF/専用動画間の上下左右・戻る優先/非戻る方向の移動・242設定OFFの上下終了を確認。191/226では先頭下方向の非wrapと右方向復帰も確認。各版のnative factoryとサムネ直通/開いたviewerの実Intent確認は11項目、全スレsnapshot/クリック位置/ContextWrapper/OFF維持を確認。hook元命令/register/分岐を3版、242 thumbnail wrapperを別途検査成功。最終crash buffer空。
+初期試験は純正gesture方向codeを誤って1/2/3と仮定したため失敗、native認識器を調べ左4/左上84/左下24で試験を修正。captureしたstartActivityのhookに依存する試験を、実際に開いたviewerの確認へ置換。旧失敗を成功に数えない。全てのfixture変更設定をfinally復元、NG/DAT改変・投稿なし。URL指定のActivity起動は自動審査で拒否されたため保存済みスレ一覧から開いて検証。docs/image-gallery-media-compatibility.mdと導入台帳へ記録。Release/feed更新なし。
+追加191拡大判定確認: native renderer B=1/C=aa=6.7080746、初期fitは非拡大、手動1.5倍は拡大扱いとなり移動を抑止する判定を確認、元位置へ復元。build/gallery-parity-zoom191.log。
+
+
+2026-11-02 操作を基準にした版間差の共通化（公式公開候補）
+利用者指示で便利な動作へ統一、HOME複数選択の下部表示は242専用のまま維持。57ファイル412参照行の索引を更新し、native互換binding・純正の初期値継承と、利用者の操作差を区別。全ての既存機能を全実画面で再試験したとは扱わない。
+NativeThreadContextへ現在のFragmentのboard/flow/URL取得を集約し、検索toolbar・ReadingPosition・共有NG送信元選択で共用。226のlazy getterのaccessibilityも統一。選択中以外のtab/過去のboardをfallbackに使わない。226/242の画像canvasはFrameLayoutのため旧ImageView判定が効かず、手動拡大でもfalseになることを旧APKで再現。191/226/242のscale/min/fit bindingを共通ImageZoomStateへ接続し、fitは移動可・手動拡大はpanを優先。
+242のReadingPosition.SESSIONSが0の不具合を試験で発見、visible後の手動registerならanchorが得られることを診断。onViewCreated時は一覧非表示のためFilterPosition.findListが除外していた。findListForBindingだけ非表示一覧へ対応し、既存の表示中findList/anchor可視性は維持。最終実APKでは手動registerなしで3版のobserver/anchor取得を確認。
+通常Lint/R8最終build/parity-usability-final-build.log成功2m23s。最終MPP build/parity-usability-final.mpp SHA256 52daa4e5c3af282cd48fe3309a4bff998b1940cea04811845bc0406311b4fc48。3版署名照合install-r/起動成功。host context58/MediaGallery41成功。Android各context16（板/toolbar上下/observer/anchor/共有元/非表示binding）・thumbnail11・zoom8成功。最終メディア191/226各18、242は22項目、最終191結果は後記。元native touch命令/引数/register/分岐3版、242 thumbnail wrapper検査成功。詳細logs build/parity-usability-final-*、台帳android-installations.md。
+初回242の連続メディア試験は動画prepareが25秒以内に完了せず失敗、同packageをforce-stop/cold起動して全項目再実行し成功。native data-source content-resolver警告は過去の成功時も存在するため根因と断定しない。旧失敗を成功扱いしない。191UI dump一時nullはcontext/thumbnailの実Fragment取得と成功結果で確認。新規NG登録/投稿/送信なし、GAS変更なし。保存済みprefはfixture finallyで復元。最終crash確認と公開結果は後記。
+最終メディア191/226各18・242は22項目成功、3版context16/thumbnail11/zoom8成功を全ログJSONで再確認。最終crash buffer空、build/parity-usability-final-crash.log。UI設定の新規項目やキーの変更なし。公式公開は既存Semantic Release CI成功・配布asset/両feed検証を条件とする。

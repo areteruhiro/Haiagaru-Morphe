@@ -22,7 +22,7 @@ public final class MediaViewerNavigation {
     }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
-    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling,nativeDismiss;String selected;MediaViewerBackGesture back;}
+    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;String selected;MediaViewerBackGesture back;}
     private static final WeakHashMap<Activity,WeakReference<Object>> MODELS=new WeakHashMap<>();
 
     static void rememberBody(TextView view,MotionEvent event) {
@@ -61,14 +61,19 @@ public final class MediaViewerNavigation {
     static boolean openThreadThumbnail(android.content.Context context,String selected){
         if(context==null||!Haiagaru.videoViewerEnabled()||!VideoViewerSettings.prefs(context).getBoolean(VideoViewerSettings.THREAD_MEDIA,false))return false;
         String video=XMediaAttachments.sourceVideo(selected);if(video!=null)selected=video;
-        Intent source=new Intent().setData(Uri.parse(selected));if(!prepareThread(source,context,selected))return false;
         android.content.Context base=context;
         for(int depth=0;depth<16&&base instanceof android.content.ContextWrapper&&!(base instanceof Activity);depth++)base=((android.content.ContextWrapper)base).getBaseContext();
         if(!(base instanceof Activity))return false;
         Activity activity=(Activity)base;if(activity.isFinishing()||activity.isDestroyed())return false;
-        ArrayList<String> links=source.getStringArrayListExtra(EXTRA);int index=links.indexOf(PreviewUrls.normalize(selected));if(index<0)return false;
-        Intent destination=destination(activity,links,index).putExtra(THREAD_EXTRA,true).putExtra("forwardTabletHome",false);
-        activity.startActivity(destination);return true;
+        // Match the 191/226 native thumbnail entry: keep the clicked native page
+        // separate from the mixed-media snapshot, then let redirectNative select
+        // the configured GIF/video viewer. Do not invent a second launch scope.
+        ArrayList<String> nativeLinks=new ArrayList<>();nativeLinks.add(selected);
+        Intent incoming=new Intent().setClassName(activity,"jp.syoboi.a2chMate.activity.ImagesViewer2Activity")
+                .putStringArrayListExtra("links",nativeLinks).putExtra("index",0).putExtra("forwardTabletHome",false);
+        prepareNativeIntent(incoming,context);
+        if(!incoming.getBooleanExtra(THREAD_EXTRA,false))return false;
+        activity.startActivity(incoming);return true;
     }
     private static boolean prepareThread(Intent intent,android.content.Context context,String selected) {
         if(!VideoViewerSettings.prefs(context).getBoolean(VideoViewerSettings.THREAD_MEDIA,false))return false;
@@ -235,7 +240,7 @@ public final class MediaViewerNavigation {
         if(swipe!=null&&swipe.cancelling)return false;
         if(action==MotionEvent.ACTION_DOWN){
             if(links(activity).size()<2)return false;
-            swipe=new Swipe();swipe.nativeDismiss=nativeVerticalDismiss(activity);swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
+            swipe=new Swipe();swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
             Rect bounds=new Rect();View area=surface!=null?surface:activity.getWindow().getDecorView();
             swipe.blocked=!area.getGlobalVisibleRect(bounds)||!bounds.contains((int)swipe.x,(int)swipe.y)
                     ||controlAt(activity.getWindow().getDecorView(),swipe.x,swipe.y)
@@ -252,12 +257,14 @@ public final class MediaViewerNavigation {
         boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
         float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);
-        // 242's native canvas owns vertical drag-to-dismiss. Let the entire
-        // sequence reach it, even at gallery boundaries. The legacy and dedicated
-        // viewers have no such native action, so retain their vertical paging.
+        // Whole-thread paging has the same four directions in every version.
+        // The configured native Back recognizer above still gets first refusal.
         int step=MediaGallery.gestureStep(dx,dy,threshold,
-                activity.getIntent().getBooleanExtra(THREAD_EXTRA,false),swipe.nativeDismiss);
-        if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging&&!backPriority){
+                activity.getIntent().getBooleanExtra(THREAD_EXTRA,false));
+        // The Back recognizer has its own event stream. Cancel the native canvas
+        // even while it is active, or 242 may dismiss before a non-Back swipe can
+        // page. Keep forwarding events to Back above until its result is known.
+        if(action==MotionEvent.ACTION_MOVE&&step!=0&&!swipe.dragging){
             swipe.dragging=true;swipe.cancelling=true;MotionEvent cancel=MotionEvent.obtain(event);cancel.setAction(MotionEvent.ACTION_CANCEL);
             try{activity.dispatchTouchEvent(cancel);}finally{cancel.recycle();swipe.cancelling=false;}
         }
@@ -275,14 +282,6 @@ public final class MediaViewerNavigation {
         }
         return swipe.dragging;
     }
-    private static Boolean nativeDismissVersion;
-    private static boolean nativeVerticalDismiss(Activity activity) {
-        if(!activity.getClass().getName().equals("jp.syoboi.a2chMate.activity.ImagesViewer2Activity"))return false;
-        if(nativeDismissVersion==null)try{
-            nativeDismissVersion="0.8.10.242 dev".equals(activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName);
-        }catch(android.content.pm.PackageManager.NameNotFoundException unavailable){return false;}
-        return nativeDismissVersion;
-    }
     private static boolean controlAt(View view,float x,float y) {
         Rect rect=new Rect();if(!view.isShown()||!view.getGlobalVisibleRect(rect)||!rect.contains((int)x,(int)y))return false;
         if(view instanceof Button||view instanceof ImageButton||view instanceof SeekBar||view instanceof EditText)return true;
@@ -291,12 +290,15 @@ public final class MediaViewerNavigation {
     }
     private static boolean zoomed(View view) {
         if(!view.isShown())return false;
-        // 191 uses its own FrameLayout renderer, not an ImageView/getScale API.
-        if(view.getClass().getName().equals("o.qhbExternalSyntheticLambda0"))try{
-            java.lang.reflect.Field current=view.getClass().getDeclaredField("C"),minimum=view.getClass().getDeclaredField("B"),fit=view.getClass().getDeclaredField("aa");
-            current.setAccessible(true);minimum.setAccessible(true);fit.setAccessible(true);
-            // B is capped at 1 for small images, while native d() opens at aa
-            // (fit-to-window). That automatic enlargement is not a user zoom.
+        // All three native canvases are FrameLayouts, so the ImageView API below
+        // cannot detect their zoom. Field bindings differ; the policy is shared.
+        String type=view.getClass().getName();
+        boolean v191=type.equals("o.qhbExternalSyntheticLambda0"),v226=type.equals("o.TTVideoLandingPageActivity4"),v242=type.equals("o.zzbfo");
+        if(v191||v226||v242)try{
+            java.lang.reflect.Field current=NativeFields.find(view.getClass(),v242?"mScale":v191?"C":"D"),
+                    minimum=NativeFields.find(view.getClass(),v242?"startScale":v191?"B":"C"),
+                    fit=NativeFields.find(view.getClass(),v242?"mFitScale":"aa");
+            // Fitting a small image to the window may enlarge it automatically.
             if(ImageZoomState.zoomed(current.getFloat(view),minimum.getFloat(view),fit.getFloat(view)))return true;
         }catch(ReflectiveOperationException ignored){}
         if(view instanceof ImageView)try{
