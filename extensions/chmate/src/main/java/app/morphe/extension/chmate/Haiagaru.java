@@ -5214,6 +5214,10 @@ public final class Haiagaru {
         String savedClass = preferences == null
                 ? defaultAdClass()
                 : configuredAdClass(preferences);
+        return hideRememberedAdViews(view, savedClass);
+    }
+
+    private static boolean hideRememberedAdViews(View view, String savedClass) {
         boolean hidden = false;
         if (savedClass != null && savedClass.equals(view.getClass().getName())) {
             hideAdView(view);
@@ -5223,7 +5227,7 @@ public final class Haiagaru {
 
         ViewGroup group = (ViewGroup) view;
         for (int i = 0; i < group.getChildCount(); i++) {
-            hidden |= hideRememberedAdViews(group.getChildAt(i));
+            hidden |= hideRememberedAdViews(group.getChildAt(i), savedClass);
         }
         return hidden;
     }
@@ -5283,6 +5287,17 @@ public final class Haiagaru {
     }
 
     private static String defaultAdClass() {
+        return DefaultAdClass.VALUE;
+    }
+
+    // The built-in classes belong to the installed APK, whose class loader does
+    // not change within this process. A failed lookup is expensive too: 191
+    // otherwise constructs three ClassNotFoundExceptions for every visited View.
+    private static final class DefaultAdClass {
+        static final String VALUE = resolveDefaultAdClass();
+    }
+
+    private static String resolveDefaultAdClass() {
         if (classExists(AD_CLASS_243)) return AD_CLASS_243;
         if (classExists(AD_CLASS_242)) return AD_CLASS_242;
         if (classExists(AD_CLASS_241)) return AD_CLASS_241;
