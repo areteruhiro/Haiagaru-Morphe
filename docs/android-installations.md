@@ -1389,3 +1389,33 @@ native191/226各18、242は20項目成功。元worker命令/register/分岐先�
 - 表示名 `Haiagaru 更新移行検証` / ChMate 0.8.10.242 dev / package `jp.co.airfront.android.a2chMate.haiagaru.migration191242` / serial `emulator-5580` / APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\thread-open-ad-cache-242.apk` / SHA256 `76f65b593d10dd9350668878f219773e3368d87858cc61096cb2b0510f9b6de8` / MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\thread-open-ad-cache.mpp` / SHA256 `7f39bcc7e0ab49dc6e4e11f97854c20198fd2c0652fb94e6719f599d75c70711` / cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / 2026-11-02 JST 署名一致install-r Success。
 
 鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。最終アプリは191へ同一署名で再更新して通常本文を確認。広告10/画像GIF8を各版確認。AB比較用の公式1.18.2/1.18.3 APKは `build/thread-open-1.18.2-191.apk` と `build/thread-open-1.18.3-191.apk`、各SHA/使用MPP/certは `build/thread-open-install-1.18.2.json` / `thread-open-install-1.18.3.json`。実機/通常package/投稿/NG送信なし。
+
+## 2026-11-03 検索入力・通知・閲覧認証の検証アプリ（中間版を含む）
+
+全てローカル canonical workspace の build/ 配下。表示名 `Haiagaru 更新移行検証`、package `jp.co.airfront.android.a2chMate.haiagaru.migration191242`、ADB `emulator-5580`。既存packageの署名を照合してinstall-r Success。実機・通常packageの置換や消去はない。中間版のUI問題を最終成功としない。
+
+| 導入記録 | APK | APK SHA256 | 使用MPP SHA256 |
+| --- | --- | --- | --- |
+| `emoji-watch-auth-install-191.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-191.apk` | `eb4055f885b2a109dbf29bba0f89de8207969a7fa40869020ced40555a472b5d` | `5266b54ac049aa00f28c7e8e1aa07924f67c6e10886f8c586504dfa1bdf5a2c4` |
+| `emoji-watch-auth-interval-install-191.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-interval-191.apk` | `33d5d4e454e616d38b5e28203370f259c2c7db080fe73677f5bb4fd418b1f51e` | `ab4704726a386bec226185f7637e4c3fee2571537a39b7a1923c2d440b3bd353` |
+| `emoji-watch-auth-interval-install-226.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-interval-226.apk` | `9162938af83ecb23e4df9166db48df4c0c6d88d903e1b617259d93d57d40a0a8` | `ab4704726a386bec226185f7637e4c3fee2571537a39b7a1923c2d440b3bd353` |
+| `emoji-watch-auth-interval-install-242.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-interval-242.apk` | `a438777005c58db7bafc9dd0a8423a65c2b1f614f289027fbaa55c2e7ac17563` | `ab4704726a386bec226185f7637e4c3fee2571537a39b7a1923c2d440b3bd353` |
+| `emoji-watch-auth-footer-install-191.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-footer-191.apk` | `d9239c080fcff2079536a7e05ab4bb46521c8ca48f480cc04170283d16703f9a` | `324c873f51bb436a6d18256742c4acb9be2279aea10f5f558f10a59496f629f2` |
+| `emoji-watch-auth-footer-install-226.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-footer-226.apk` | `7789eaa9f02d37d66e2e412b24405d0485705f5148a1de5383863a8a3b9cf11c` | `324c873f51bb436a6d18256742c4acb9be2279aea10f5f558f10a59496f629f2` |
+| `emoji-watch-auth-footer-install-242.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-footer-242.apk` | `3f93153ed6a72aae9427c2c75656479f63be24a074393aa0c43223a24c4964dc` | `324c873f51bb436a6d18256742c4acb9be2279aea10f5f558f10a59496f629f2` |
+| `emoji-watch-auth-modal-install-191.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-modal-191.apk` | `fae1350c2eae7e9b929a9f02bd4d2912bb2a751f74bd32ada3214c66149879cb` | `379925b38ff3d1a1cb789d3ad194707b40a992f14ecd4ed08a9bef608fadfccb` |
+| `emoji-watch-auth-modal-install-226.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-modal-226.apk` | `b7276137adaeb3ce7a23028e4f5f3f422e92278c04d359081f2167ae418b25e2` | `379925b38ff3d1a1cb789d3ad194707b40a992f14ecd4ed08a9bef608fadfccb` |
+| `emoji-watch-auth-modal-install-242.json` | `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-modal-242.apk` | `42b19a93bacd433b26dec5f7d623aede8fed0c195a8546bde64d40ae1ce3b763` | `379925b38ff3d1a1cb789d3ad194707b40a992f14ecd4ed08a9bef608fadfccb` |
+
+署名証明書SHA256は全て `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。鍵の秘密情報は記載しない。使用MPPは同じphase名の build/*.mpp。modalが最終候補で、各APK内の版はファイル末尾191/226/242に対応する。各install JSONはAPK/MPPの絶対パス・hash・署名照合結果の証跡。
+
+## 2026-11-03 Mi Note 10へ通知・閲覧認証版242を導入
+
+利用者の実機インストール指示。serial `d5497008` / Mi Note 10 / Android 11。表示名 `Haiagaru 検証 242`、ChMate `0.8.10.242 dev`、既存package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` を同一署名でinstall-r Success。アプリのデータ消去・アンインストールなし。
+
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/watch-minote242.apk` SHA256 `fdb4881be27138e1b3b842c15ac26c84f72c653548f04031ed60c7893eb2022e`。導入後の実APK hash一致。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-watch-auth-modal.mpp` SHA256 `379925b38ff3d1a1cb789d3ad194707b40a992f14ecd4ed08a9bef608fadfccb`。別ブランチのランダムUA実験は含まない。
+- cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。既存APK・新APKで一致。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+- 2026-11-03 01:24 JST、PID18973の起動を確認、対象PIDのFATAL EXCEPTIONなし。最初の即時PID取得は起動より先で失敗したため、再インストールせず後続のPID・warm start・実APK hashで確認。VPNの接続設定は変更していない。
+
+証跡 `build/watch-minote242-install.json` / `watch-minote242-startup-crash.log` / `watch-minote242-patch.log`。ホストの最初のapksignerは仮想メモリ不足で失敗したため、検証AVDのみデータ保持で停止し、128MiB上限の署名検証で成功してからパッチ・導入。公式Release/feed/GAS更新なし。

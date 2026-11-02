@@ -24,3 +24,20 @@
 - 実タイトルUIで初期の追加ボタンがfull-window Composeシートの外へ出ることを発見。単体wrap試験だけで見た目の成功とは扱わず、native contentを上、追加操作を下へ変更。最終APKでの再確認は追記する。
 
 隔離packageは `jp.co.airfront.android.a2chMate.haiagaru.migration191242`、ADBはemulator-5580。実機・通常package・投稿・NG送信は変更しない。導入パス・hashはandroid-installations.mdへ記録する。
+
+## 2026-11-03 再開後の最終確認
+
+中断前のmodal版3APKが全てCLI成功していたことを再確認。同AVDをデータ保持で起動して署名一致のinstall-rを実施。最新のソースブランチには別作業のランダムUA実験が入っているため、ここではその実験を含まない中断前のmodal候補を検証した。ブランチや実験設定は変更していない。
+
+- 最終MPP `build/emoji-watch-auth-modal.mpp` SHA256 `379925b38ff3d1a1cb789d3ad194707b40a992f14ecd4ed08a9bef608fadfccb`。通常ビルド `build/emoji-watch-auth-modal-build.log` 成功5m56s。
+- 最終APKで191は53、226/242は各54項目成功。新しい別windowの装飾も検査。テストの偽FragmentがJavaへ返すActivity/View/BundleをFridaが解放する問題は、検証用参照のretainとDialog生成順序を修正。実装の不具合や成功項目に混同しない。
+- 242/226の実タイトルメニューで「このスレの新着通知」が同じ操作可能なwindowの下部に現れることを確認（watch-modal-menu.xml / watch-modal226-menu.xml）。最初のfooter版は別windowの背面に隠れていたため、成功版として扱わない。
+- 242で実メニューボタン→通知画面→確認間隔を変更→17分を入力→保存を操作し、保存値17を確認。最後に初期値へ復元。`build/watch-ui-interval-save.log`。
+- エッヂの正規スレURLから閲覧認証Activityの表示・HTTPSホスト表示・閲覧専用説明と解除ボタンを確認（watch-edge-auth-ready.xml）。反映ボタンの操作による実Cloudflare認証成功、VPN経由でのnative DAT取得成功は未確認。
+- Cookie/UA連携は合成cf_clearanceで6項目成功。閲覧GETの正確なUA、他host/POSTの除外、native識別Cookie保持、解除を検査。隔離アプリの合成Cookieは削除。外部接続を用いたCookie試験ではない。
+- native DEX検査は191/226/242のタイトルhook各1、Dialog onStart追加0/2/1、242のテキスト境界142。super呼出し・元のreturn・receiver/引数/結果registerを確認。JobServiceのBIND_JOB_SERVICE/非公開指定・起動後維持の権限もAPKで確認。
+- 冷起動時にbootanimationのSIGABRTとSystem UIの応答停止があった。対象アプリのクラッシュとは区別し、System UIのWait後に操作を再開。null rootのdumpを画面確認成功として数えない。
+
+公式Release、feed、GASは更新していない。端末の検証アプリへ導入済みであることと公開済みであることは区別する。1.12と1.18.3の実スレ速度の根因は未確定のまま保持する。
+
+実機導入の追加依頼により、Mi Note 10/Android11の既存検証用242へ同じmodal候補を適用。署名・実APK hash・PID起動を確認。導入台帳に記録。実機向け作成時のメモリ確保のため検証AVDを停止した際、残っていた旧コマンドが再開し、同名の242 runtimeログをdevice-not-foundで上書きした。54項目成功は停止前のRPC戻り値で確認済みであり、停止後の再実行失敗を成功とは扱わない。実UI・17分保存・他版のruntimeログも別途保持している。

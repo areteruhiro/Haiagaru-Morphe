@@ -58,9 +58,12 @@ rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>{
   for(const [name,value] of [[old?'i':mid?'g':'f','bbs.eddibb.cc'],[old?'b':mid?'f':'g','liveedge'],[mid?'c':'e',Java.use('java.lang.Long').valueOf(1793457978)]]){const f=info.class.getDeclaredField(name);f.setAccessible(true);f.set(native,typeof value==='string'?Java.use('java.lang.String').$new(value):value);}
   const bundle=Java.use('android.os.Bundle').$new();bundle.putParcelable('threadUrl',Java.cast(native,Java.use('android.os.Parcelable')));
   const original=Java.use('android.view.View').$new(a);
-  const Fake=Java.registerClass({name:'app.haiagaru.fixture.Title'+Date.now(),methods:{getArguments:[{returnType:'android.os.Bundle',argumentTypes:[],implementation(){return bundle;}}],getActivity:[{returnType:'android.app.Activity',argumentTypes:[],implementation(){return a;}}],isAdded:[{returnType:'boolean',argumentTypes:[],implementation(){return true;}}],getView:[{returnType:'android.view.View',argumentTypes:[],implementation(){return original;}}]}});
-  const owner=Fake.$new(),Actions=Java.use(P+'ThreadTitleActions'),Group=Java.use('android.view.ViewGroup');let wrapped=Actions.wrap(owner,original);
-  if(!old){check(wrapped.equals(original),'Compose fragment view untouched');const dialog=Java.use('android.app.Dialog').$new(a);dialog.setContentView.overload('android.view.View').call(dialog,original);Actions.decorateDialog(dialog);wrapped=Java.cast(dialog.getWindow().findViewById(16908290),Group).getChildAt(0);}
+  const Dialog=Java.use('android.app.Dialog'),fixtureDialog=old?null:Dialog.$new(a);
+  if(fixtureDialog)fixtureDialog.setContentView.overload('android.view.View').call(fixtureDialog,original);
+  const heldActivity=Java.retain(a),heldBundle=Java.retain(bundle),heldView=Java.retain(original);
+  const Fake=Java.registerClass({name:'app.haiagaru.fixture.Title'+Date.now(),methods:{getArguments:[{returnType:'android.os.Bundle',argumentTypes:[],implementation(){return Java.retain(heldBundle);}}],getActivity:[{returnType:'android.app.Activity',argumentTypes:[],implementation(){return Java.retain(heldActivity);}}],isAdded:[{returnType:'boolean',argumentTypes:[],implementation(){return true;}}],getView:[{returnType:'android.view.View',argumentTypes:[],implementation(){return Java.retain(heldView);}}]}});
+  const owner=Java.retain(Fake.$new()),Actions=Java.use(P+'ThreadTitleActions'),Group=Java.use('android.view.ViewGroup');let wrapped=Actions.wrap(owner,original);
+  if(!old){check(wrapped.equals(original),'Compose fragment view untouched');Actions.decorateDialog(fixtureDialog);wrapped=Java.cast(fixtureDialog.getWindow().findViewById(16908290),Group).getChildAt(0);}
   check(!wrapped.equals(original),'title view wrapped');const root=Java.cast(wrapped,Group),buttons=Java.cast(root.getChildAt(1),Group);check(root.getChildAt(0).equals(original)&&buttons.getChildCount()===2,'native title retained plus notification and auth');
   resolve({version,checks,networkRequests:0,fixturePreferencesRestored:true});
  }catch(e){reject(Error(String(e.stack||e)));}});
