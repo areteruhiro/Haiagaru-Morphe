@@ -1,3 +1,124 @@
+# Haiagaru 1.18.3
+
+## 今回の更新
+
+- Haiagaruの「保存用スレ」と「従来の保存レス」の選択一覧をAndroid標準のリストへ変更しました。スクロール位置とタップ対象を同じリストで扱い、入れ子のスクロール処理を通さず選択します。
+- 保存レスの詳細は、元の一覧を閉じてから開くようにしました。
+- ローカル自動バックアップをONにできなかった場合にもチェックだけONに見える不具合を修正しました。保存先未選択などで拒否された操作は、実際の設定値どおりに表示します。設定名の行全体からも切り替えられます。
+- 「最低限構成」「広告だけの設定プリセット」を適用・復元しても、ローカル自動バックアップのON/OFF・保存先・実行間隔・保持数・保存対象を変更しないようにしました。以前のプリセット退避情報から戻す際も現在のバックアップ設定を維持します。
+
+既にOFFになっている自動バックアップを推測でONにする動作はありません。必要な場合は保存先を確認してONにしてください。
+
+## 確認範囲
+
+191／226／242の隔離エミュレータで、一覧をスクロールした後のスレ・保存レス・従来形式のレスの選択、設定の保存、再起動・同一パッケージへの上書き更新後のON状態保持を確認しました。一括プリセットはON/OFFの両方で適用・復元を検証しています。
+
+一括プリセットが自動バックアップをOFFにする経路は再現して修正しました。APKの更新操作だけで保存済みの設定が消える現象は未再現です。アーカイブで「上に戻るだけ」の報告そのもの、およびOPPO／Android 12実機での解消は未確認です。今回の一覧変更はHaiagaruのレス保存側が対象で、ChMate標準のスレッドアーカイブのタップ処理は変更していません。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** preserve backup settings across presets and stabilize archive lists [skip ci] ([f20d8d7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f20d8d7df7d0e278e1da85f89cccfaf6284b7960))
+* **chmate:** synchronize dialog toggles and archive navigation ([703d5cd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/703d5cd3db6e8c80a1ea401efc0a543d7459429a))
+
+# Haiagaru 1.18.3-dev.1
+
+## 今回の更新
+
+- Haiagaru形式のZIPで「書き込み履歴」を保存する際、スレごとの索引（.idx）も含めるよう修正しました。DAT本文を保存しなくても、自分の書き込みマークなどを保存・復元できます。
+- DATを含むZIPから書き込み履歴だけを復元する場合も、索引を復元し、現在のDAT本文を保持します。
+- 設定バックアップに、ローカル自動バックアップの実行間隔・保持件数・保存項目の選択を追加しました。復元先で選んだ保存フォルダ・ON/OFF・保存済みZIPの管理記録は維持します。
+- 保存項目の名称を「書き込み履歴・レスの書き込みマーク」に変更しました。
+
+今回の索引保存に対応する前のバックアップでは、DATを含めていない場合に索引が保存されていないことがあります。バックアップに存在しないマークは、この更新だけでは取り戻せません。
+
+## 確認範囲と継続調査
+
+191／226／242の隔離エミュレータで、書き込み履歴だけのZIP、DAT入りZIPからの項目別復元、ChMate本体による復元済みマークの読み取り、設定の保存・復元を確認しました。
+
+自動バックアップのON/OFF・保存先の初期化、191→242更新後の返信通知と「ここまで読んだ」の表示は継続調査中です。隔離した同一パッケージの更新検証では設定の保持、通知からのスレ表示、未読位置の表示を確認しましたが、報告と同じ症状は再現しておらず、修正済みには含めていません。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** synchronize dialog toggles and archive navigation ([703d5cd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/703d5cd3db6e8c80a1ea401efc0a543d7459429a))
+
 # Haiagaru 1.18.2
 
 ## 今回の更新
