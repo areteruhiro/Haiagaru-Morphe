@@ -690,7 +690,8 @@ public final class ResponseArchive {
                             View child = posts.getChildAt(i);
                             if (child instanceof TextView && child.hasOnClickListeners()) {
                                 final int index = i / 2;
-                                child.setOnClickListener(v -> { viewer.dismiss(); detail(a, rows.get(index), current, offset); });
+                                child.setOnClickListener(v -> viewer.dismissForNavigation(
+                                        () -> detail(a, rows.get(index), current, offset)));
                             }
                         }
                     });
