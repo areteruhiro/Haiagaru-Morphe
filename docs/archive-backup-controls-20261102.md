@@ -29,3 +29,15 @@ API36エミュレータの隔離アプリで、ChMate標準に50件のスレッ�
 各版の標準画像・GIF移動・拡大時の操作を8項目ずつ確認、最終crash buffer空。初回画像スモークは入力動画ファイルのパス指定ミスで開始できず、実在するfixtureを指定した各8項目を採用した。
 
 証跡は`build/archive-toggle-{191,226,242}-ui-result.json`、`archive226-baseline-transition-trace.json`、`archive-toggle-226-final-trace.json`、`archive-toggle-image{191,226,242}.log`、`archive-toggle-final-crash.log`。テストで作った40保存用スレ・50標準アーカイブは、専用packageとパス・ID・ファイル名を照合して削除し、自動バックアップをOFFへ戻した（`archive-toggle-cleanup.json`）。実機・通常package・実投稿・NG送信・GASには変更なし。
+
+## 追加修正（未公開）
+
+「最低限構成」と「広告だけの設定プリセット」がローカル自動バックアップの`enabled`を強制的にfalseへ書いていた。修正前242の実アプリで、Fridaから広告だけのプリセットを適用すると保存済みONがOFFになることを確認。この経路からバックアップの名前空間を除外した。以前の退避情報を戻す処理でも同名前空間をスキップし、現在のバックアップ設定を維持する。利用者の報告がこの経路で起きたかは未確定であり、APKの上書きだけで値が消えたことを再現したとはしない。
+
+アーカイブのスレ選択と従来形式のレス選択は、Android標準AlertDialogのListViewへ変更した。選択項目の表示と位置・タップ判定を一つのListViewに任せ、Composeのスクロール領域の入れ子を通さない。保存用スレの内容・詳細・管理の機能と、元のファイル構造は維持する。ChMate標準のスレッドアーカイブのタップ処理は変更しない。
+
+追加修正の最終Lint/R8ビルドは3分で成功。MPP `build/archive-preset-final.mpp`のSHA256は`375b01f1056663269ac389d790e0d5fa2d61530fbe293705e31f710977226100`。191/242のUI各15項目、226はFrida遷移順を含め17項目成功。40保存用スレ・40従来形式レスで下方の選択と表示内容の一致、ListView実使用を確認した。`scripts/backup-preset-preservation-runtime.js`で各版15項目成功（ON/OFF両方のプリセット適用・復元・旧退避情報、名前空間全値一致、最低限設定の実コールバック実行）。テストのKotlinクラス名・最適化されたshow呼び出しの仮定を修正して再実施し、旧ハーネス失敗を成功扱いしない。
+
+各版の画像/GIF/拡大操作は8項目成功。同じAPKへ再度署名照合更新して、キャッシュ済み合成スレのレス45が実本文に表示されることを3版で確認（自動更新OFF、投稿なし）。bytecode patchのフック・レジスター・元命令には変更なし。最終crash buffer空。証跡は`build/archive-preset-{191,226,242}-ui-result.json`、`archive-preset-preservation{191,226,242}.json`、`archive-preset-image{191,226,242}.log`、`archive-preset-thread-smoke.json`、`archive-preset-final-crash.log`。
+
+40保存用スレと40従来形式レスはテスト作成ID/URL/パス/内容を照合して削除、自動バックアップをOFFへ戻した。`archive-preset-cleanup.json`、`archive-preset-legacy-cleanup.json`。実機/通常package/実投稿/NG送信/GAS変更なし。公式公開はSemantic Release CI経由、結果は`integration-status.md`へ別記する。
