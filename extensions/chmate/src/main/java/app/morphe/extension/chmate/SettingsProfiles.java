@@ -25,6 +25,7 @@ public final class SettingsProfiles {
         for(SettingsSections.Category c:SettingsSections.Category.values())if(c!=SettingsSections.Category.EXPERT)Haiagaru.settingsCategory(activity,c.name());
         booleanKey(ExpertSettings.KEY);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
+        booleanKey(RandomUserAgentRotation.KEY);defaultValue(RandomUserAgentRotation.KEY,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         numberKey(ViewerCornerControls.BACK,0,3);defaultValue(ViewerCornerControls.BACK,1);
         numberKey(ViewerCornerControls.MORE,0,3);defaultValue(ViewerCornerControls.MORE,0);

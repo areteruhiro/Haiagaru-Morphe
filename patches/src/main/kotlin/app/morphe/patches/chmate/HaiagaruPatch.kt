@@ -4968,6 +4968,7 @@ val haiagaruPatch = resourcePatch(
             "haiagaru_wacchoi_upper" to "ﾜｯﾁｮｲ上4桁で検索",
             "haiagaru_hissi_droid_plus" to "必死チェッカーDroid＋で開く",
             "haiagaru_auto_ng_exclusions" to "自動NG除外ID",
+            "haiagaru_thread_watch" to "このスレの新着通知",
         )) {
             for (values in listOf("values", "values-en")) {
                 document("res/$values/strings.xml").use { strings ->
@@ -4982,6 +4983,8 @@ val haiagaruPatch = resourcePatch(
                 it.createPublicId("drawable", name)
             }
             val iconPath = when (name) {
+                "haiagaru_thread_watch" ->
+                    "M12,22c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2zM18,16v-5c0,-3.1 -1.6,-5.6 -4.5,-6.3V4c0,-0.8 -0.7,-1.5 -1.5,-1.5S10.5,3.2 10.5,4v0.7C7.6,5.4 6,7.9 6,11v5l-2,2v1h16v-1z"
                 "haiagaru_auto_ng_exclusions" ->
                     "M12,2L3,6v6c0,5 9,10 9,10s9,-5 9,-10V6zM12,5l6,2.7V12c0,3 -4,6.2 -6,7.6C10,18.2 6,15 6,12V7.7zM8,11h8v2H8z"
                 "haiagaru_hissi_droid_plus" ->
@@ -5333,7 +5336,7 @@ val haiagaruPatch = resourcePatch(
                     })
                 })
             })
-            for(permission in listOf("android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC", "android.permission.POST_NOTIFICATIONS")){
+            for(permission in listOf("android.permission.RECEIVE_BOOT_COMPLETED", "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC", "android.permission.POST_NOTIFICATIONS")){
                 val exists=(0 until document.getElementsByTagName("uses-permission").length).any {
                     (document.getElementsByTagName("uses-permission").item(it) as Element).getAttributeNS(ANDROID_XML_NAMESPACE,"name")==permission
                 }
@@ -5341,6 +5344,11 @@ val haiagaruPatch = resourcePatch(
                     setAttributeNS(ANDROID_XML_NAMESPACE,"android:name",permission)
                 })
             }
+            application.appendChild(document.createElement("service").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ThreadWatchService")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:permission","android.permission.BIND_JOB_SERVICE")
+            })
             application.appendChild(document.createElement("service").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.VideoFrameDecodeService")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
@@ -7045,7 +7053,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
                     val reference = (instruction as? ReferenceInstruction)
                         ?.reference as? MethodReference
                         ?: return@mapIndexedNotNull null
-                    if (reference.name != "setText"
+                    if (instruction.opcode in setOf(Opcode.INVOKE_STATIC, Opcode.INVOKE_STATIC_RANGE)
+                        || reference.name != "setText"
                         || reference.parameterTypes.firstOrNull() != "Ljava/lang/CharSequence;"
                     ) {
                         return@mapIndexedNotNull null
@@ -7056,20 +7065,25 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchSetTextCalls() {
                         is RegisterRangeInstruction -> instruction.startRegister + 1
                         else -> return@mapIndexedNotNull null
                     }
-                    index to argumentRegister
+                    val emojiCall = when(instruction){
+                        is FiveRegisterInstruction -> "invoke-static {v${instruction.registerC}, v$argumentRegister}, $EXTENSION->processEmojiTextForView(Ljava/lang/Object;Ljava/lang/CharSequence;)Ljava/lang/CharSequence;"
+                        is RegisterRangeInstruction -> "invoke-static/range {v${instruction.startRegister} .. v$argumentRegister}, $EXTENSION->processEmojiTextForView(Ljava/lang/Object;Ljava/lang/CharSequence;)Ljava/lang/CharSequence;"
+                        else -> error("Unsupported text invocation")
+                    }
+                    Triple(index,argumentRegister,emojiCall)
                 }
                 ?.toList()
                 .orEmpty()
 
             if (matches.isEmpty()) return@forEach
             val mutableMethod = mutableClass.findMutableMethodOf(method)
-            matches.asReversed().forEach { (index, register) ->
+            matches.asReversed().forEach { (index, register, emojiCall) ->
                 mutableMethod.addInstructionsWithLabels(
                     index,
                     """
                         invoke-static/range { v$register .. v$register }, $EXTENSION->replace5chDomain(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
                         move-result-object v$register
-                        invoke-static/range { v$register .. v$register }, $EXTENSION->processEmojiText(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+                        $emojiCall
                         move-result-object v$register
                     """
                 )

@@ -850,3 +850,11 @@ emulator-5580の既存app.morphe.managerでHaiagaru配布元を確認。事前�
 2026-11-02 191の未取得5chスレ速度調査・広告走査最適化（未公開）
 利用者報告は1.18.2より1.18.3が遅い、段階/URL不明。実機未接続、利用者指定でエミュレータ確認。公開MPPから同選択/署名/packageの191を作り同データで比較。初回の最初のレス確認6.843s対8.692s、native HTTPヘッダー466/469msだったが、A再測定11.192s、B再測定9.422s、本文投稿数増加・System UI応答停止・PCビルドのnativeメモリ不足等もあり、版固有回帰や全体改善率は断定しない。通信処理の直接差分なし。mainサンプルの既存defaultAdClass/classExistsで、異版の未存在クラスを各ビューで反復検索していることを確認。既定選択をprocess内lazy holderへ、走査中は設定一度読込へ変更。任意設定は次の走査で反映、画面保護・折り畳み処理は維持。
 201ビュー単体の修正前248〜489ms→修正後191/226/242は0.30〜0.58ms。スレ起動全体の倍率ではない。通常Lint/R8最終build/thread-open-ad-cache-final-build.log成功2m43s、MPP SHA256 7f39bcc7e0ab49dc6e4e11f97854c20198fd2c0652fb94e6719f599d75c70711。emulator-5580の隔離migration191242へ署名一致更新、各広告10/画像GIF拡大8、native通常本文を確認。最終crash buffer空、native hook命令/register変更なし。System UI応答停止中の画像失敗・242 null dumpは再試験成功を採用。タスク所有の公開スレDAT/idx/bookmark/論理位置/markerは照合して削除、実機/通常package/投稿/NG送信/GAS変更なし。docs/thread-open-performance-20261102.mdに測定条件・生データ・残確認、台帳にAPK署名を記録。公式Release/更新feedは変更しない。
+
+
+2026-11-02 検索入力・通知・エッヂ閲覧認証の作業引継ぎ（未公開）
+emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterval/footer版で各53項目、242 native検索欄で入力後800msを待つ4項目を確認。通知は初期15分、15〜10080分の任意整数、JobSchedulerの永続化・背景合成20→22件で通知を確認。閲覧認証のCookie/UA連携6項目を3版で確認したが、実VPNのCloudflare成功は未確認。実タイトルUIでCompose別windowのため追加ボタンが外へ出る問題を発見し、native Dialog onStartで実windowを装飾する変更を実装、通常ビルドと3版CLI生成は成功。modal版の実メニュー表示確認は途中で利用者の新ブランチ要求へ移ったため未完。公式公開の成功扱いにしない。docs/emoji-thread-watch-reading-auth-20261102.mdに詳細。利用者提供の旧/新.haiagaru設定比較はdocs/settings-delay-comparison-20261102.md、原本は変更なし。
+
+2026-11-02 22:21 JST 5秒ランダムUAの実験ブランチ・191実機導入
+利用者指示によりdev/f2b2b45と進行中の変更からcodex/random-user-agent-5sを作成。閲覧・書き込み両方のUAを5秒区間ごとに5種類から変更、同一区間固定・次区間非反復。通信のない時間のタイマーなし、既存Cookie/本文/メソッド/送信先/通信中のUAを変更しない。通信・詳しい設定に独立ON/OFF（初期OFF）、設定ファイル対応。
+ホスト2500項目、通常Lint/R8 build/random-ua-5s-build.log成功4m20s。MPP SHA256 67a5c1856f26abc3acca572eb339bfce93ed5745810e9e20a41e9b6a888cd8f9。XIG05/Android15/730eae72へ別package jp.co.airfront.android.a2chMate.haiagaru.randomua191、Haiagaru UA切替191として導入成功、実APK hash一致。導入APKのnative191 POSTとjava.net GET/POSTの準備12項目をapp_process＋メモリ内設定で検証（実接続/投稿0件）、対象PID crash空。初回テストcompileのProxy曖昧参照を修正し再試験成功。端末の本設定は初期OFF、利用者が設定でONにする。docs/random-user-agent-5s-20261102.mdと導入台帳。公式Release/feed/GAS変更なし。

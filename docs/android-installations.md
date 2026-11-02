@@ -1,5 +1,14 @@
 # Android導入・署名台帳
 
+## 2026-11-02 22:21 JST 5秒ランダムUA・191実機用（実験ブランチ、未公開）
+
+利用者指定の `codex/random-user-agent-5s`。XIG05/Android15、serial `730eae72`。表示名 `Haiagaru UA切替191`、ChMate `0.8.10.191 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.randomua191`。導入前に同packageが存在しないことを確認、別packageとしてinstall Success。既存アプリの削除・データ消去なし。
+
+- APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/random-ua-5s-191.apk`、SHA256 `ba85f59794a9a7ef6acd5d0cba58abd476ec92ad7a6261cf6cd078723fe4063b`。導入後の実APKのsha256sum一致。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/random-ua-5s.mpp`、SHA256 `67a5c1856f26abc3acca572eb339bfce93ed5745810e9e20a41e9b6a888cd8f9`。
+- cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+- 起動成功。導入APKから191 native POST/java.net GET・POST等のヘッダー準備12項目成功。実通信・投稿を行わない検証。アプリ本体のランダムUA設定は初期OFFのまま。対象PIDのcrash buffer空。検証DEXは削除済み。詳細 `docs/random-user-agent-5s-20261102.md`、`build/random-ua-191-install.json`。
+
 ## 2026-10-26 CAPTCHA/計算＋ジェスチャー6操作の統合242（未公開）
 
 ユーザーの実機導入/最新認証変更も含める指示による。XIG05/Android15、serial `730eae72`、ChMate `0.8.10.242 dev`、表示名 `Haiagaru 検証 242`、package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242`。23:17頃JST、`InstallVerifiedApk.ps1`で既存署名と一致を確認してinstall-r Success、データ保持。TabletHomeActivity cold起動Status ok、PID3607。

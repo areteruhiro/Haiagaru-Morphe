@@ -469,6 +469,7 @@ public final class Haiagaru {
             }
         }
         EmojiFontFallback.register(application);
+        ThreadWatch.schedule(application);
         HaiagaruMegaSync.maybeBackupOnStartup(application);
     }
 
@@ -504,6 +505,7 @@ public final class Haiagaru {
                     || "0.8.10.242 dev".equals(version)) {
                 result = addToolbarChoice(result, 0x7e000009, "haiagaru_hissi_droid_plus");
                 result = addToolbarChoice(result, ToolbarIcons.AUTO_NG_EXCLUSIONS, "haiagaru_auto_ng_exclusions");
+                result = addToolbarChoice(result, ThreadWatch.ACTION, "haiagaru_thread_watch");
             }
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
@@ -642,6 +644,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(itemId==ThreadWatch.ACTION){ThreadWatch.show(fragment);return true;}
         if (itemId == ToolbarIcons.AUTO_NG_EXCLUSIONS) {
             RedIdAutoNg.showExclusions(toolbarActivity(fragment));
             return true;
@@ -922,6 +925,11 @@ public final class Haiagaru {
     /** Applies the bundled emoji fallback while preserving the original text. */
     public static CharSequence processEmojiText(CharSequence source) {
         return EmojiFontFallback.processText(source);
+    }
+
+    public static CharSequence processEmojiTextForView(Object view,CharSequence source){
+        if(view instanceof android.widget.EditText)return source;
+        return processEmojiText(source);
     }
 
     /** Leaves the editor/history intact and adapts only the outgoing post copy. */
@@ -3914,6 +3922,12 @@ public final class Haiagaru {
         Switch viewingUa = addSwitch(layout,activity,text("User-Agentを変更する","Change User-Agent"),
                 preferences.getBoolean(BrowserUaTemplates.ENABLED,false));
         live.toggle(viewingUa,BrowserUaTemplates.ENABLED);
+        Switch randomUa=addSwitch(layout,activity,"閲覧・書き込みのUAを5秒ごとにランダム変更（実験用）",
+                preferences.getBoolean(RandomUserAgentRotation.KEY,false));
+        live.toggle(randomUa,RandomUserAgentRotation.KEY);
+        TextView randomUaHelp=new TextView(activity);
+        randomUaHelp.setText("オンでは固定UAより優先し、5種類から切り替えます。同じ5秒区間では同じUAを使用し、次の区間では別のUAになります。通信がない間の定期処理は行いません。送信中のリクエストや、開いている認証画面は変更しません。Cookieに結び付いたUAが変わるため、認証が維持できない場合があります。");
+        layout.addView(randomUaHelp);
         Button uaTemplate = new Button(activity);uaTemplate.setText(text("UAテンプレートを選ぶ","Choose UA template"));layout.addView(uaTemplate);
         uaTemplate.setOnClickListener(v->new HaiagaruDialog.Builder(activity).setTitle("UAテンプレート")
                 .setItems(BrowserUaTemplates.labels(),(dialog,index)->{
