@@ -1449,3 +1449,5 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 |0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.bindings242` / Haiagaru binding 242|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3-242.apk`|`aaad23703484e030fcfd67f80527e9944fa70ea54ce32ac7e3dbc998009021a2`|
 
 照合日時は2026-11-03 03:17 JST、詳細 `build/class-bindings-installations.json`。任意の動画専用ビューア・画像VPNを含めた適用比較用APKだが、VPN自体は有効化していない。検証用キャッシュfixtureと設定は検証後に復元・解除する。
+
+最終確認で3版ともnative本文を再表示した後、所有marker/DAT内容/タイトルを照合してDAT・idx・bookmark・markerを削除。通知登録0、設定復元、新規fatalなし。`build/class-bindings-final-smoke.json` / `class-bindings-cleanup-{191,226,242}.log` / `class-bindings-crash-{191,226,242}.log`。この作業で起動したAVDはデータ保持で終了。公式1.19.0の公開MPPは別hashとなるため、上記の開発候補APKを公式配布MPPで生成したAPKとは扱わない。
