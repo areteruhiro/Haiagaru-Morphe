@@ -87,7 +87,7 @@ public final class ExternalBoardAuthActivity extends HaiagaruComposeActivity {
             root.addView(allowSend);
         }
         web=new WebView(this);WebSettings settings=web.getSettings();
-        String browserAgent=ViewingUserAgent.browserAgent(this);
+        String browserAgent=reading?WebSettings.getDefaultUserAgent(this):ViewingUserAgent.browserAgent(this);
         if(browserAgent!=null)settings.setUserAgentString(browserAgent);
         if(challenge!=null)settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
         settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);

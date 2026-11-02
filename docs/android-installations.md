@@ -1419,3 +1419,33 @@ native191/226各18、242は20項目成功。元worker命令/register/分岐先�
 - 2026-11-03 01:24 JST、PID18973の起動を確認、対象PIDのFATAL EXCEPTIONなし。最初の即時PID取得は起動より先で失敗したため、再インストールせず後続のPID・warm start・実APK hashで確認。VPNの接続設定は変更していない。
 
 証跡 `build/watch-minote242-install.json` / `watch-minote242-startup-crash.log` / `watch-minote242-patch.log`。ホストの最初のapksignerは仮想メモリ不足で失敗したため、検証AVDのみデータ保持で停止し、128MiB上限の署名検証で成功してからパッチ・導入。公式Release/feed/GAS更新なし。
+
+### 2026-11-03 02:04 JST 通知の日・時間・分UIへ更新
+
+同じMi Note 10 (`d5497008`)、同package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / 表示名Haiagaru 検証 242 / ChMate242を署名一致install-r。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-units-minote242.apk` SHA256 `d463be51ed1e2a71b87381c4f36d038d3b9e36ee0171d2389ede14d4e860ecdb`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-units-final.mpp` SHA256 `7c7b2a4817566995a113bb06c79ccb9ff7ef5fab0a0c8f98f3dce0b1849c946a`。
+署名証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。導入後hash一致、PID14277・startup fatalなし。証跡 `build/thread-watch-units-minote242-install.json`。この時点ではランダムUA実験を含む（初期OFF）。後続の利用者指示で実験削除を作業中。
+
+### 2026-11-03 02:25 / 02:40 JST エッヂ閲覧確認修正版
+
+同端末serial `d5497008` / Mi Note 10 / Android11、同package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` / Haiagaru 検証 242 / ChMate242を既存署名照合してinstall-r。署名証明書・鍵・aliasは上記と同じ。通常アプリの置換・データ消去なし。両版ともランダムUA実験を削除済み。
+
+| 時刻 | APK絶対パス | APK SHA256 | MPP絶対パス | MPP SHA256 |
+|---|---|---|---|---|
+|02:25|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reading-challenge-minote242.apk`|`9ce537d0cf6e4e5f2968e1c1a28372c75f7732128d69236a51d01903c003d3d8`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reading-challenge.mpp`|`5b7a62491f966bebb7bf5c227955cf69be9267fb9769cb43637fa691174bfcb5`|
+|02:40|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reading-challenge-final-minote242.apk`|`8132e0fc65682cabb211efcaf3846c3f6002c79f55e4091f203ae7af7a157aa8`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/reading-challenge-final.mpp`|`383311e2d2ded9656ee6b134d5f7fa7c4a6944843c8685fbb932b8afecaed0a9`|
+
+導入後hash一致、startup fatalなし。証跡 `build/reading-challenge-minote242-install.json` / `reading-challenge-final-minote242-install.json`。最終PID25887。最初の版は空一覧が残り成功扱いせず、最終版で認証表示・板一覧・本文の新着取得を確認。直接クラス指定への後続変更はこの導入に含まない。
+
+## 2026-11-03 固定クラス一覧版の3版エミュレータ検証
+
+serial `emulator-5580`、AVD `Haiagaru_Test_API36_16GiB`、Android16/SDK36。利用者の全クラス走査廃止・公式公開指示による隔離検証。通常アプリの削除・データ消去なし。次の検証packageへinstall-r Success、起動・導入後APK hash一致。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3.mpp` SHA256 `bdda80841ecabd3c1ea36be572045739587b208b80502b5ea8f6f38d2df76b1b`。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+
+| ChMate | package / 表示名 | APK絶対パス | SHA256 |
+|---|---|---|---|
+|0.8.10.191 dev|`jp.co.airfront.android.a2chMate.haiagaru.bindings191` / Haiagaru binding 191|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3-191.apk`|`fb6ba9a6a129c55213fd51f8e4423dd4922860f4ca8222de118b958783316a04`|
+|0.8.10.226 dev|`jp.co.airfront.android.a2chMate.haiagaru.bindings226` / Haiagaru binding 226|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3-226.apk`|`8114c0d1270a340c28a7e68b68a0c241a6b1d9837c4c91d3788aefd945de65e4`|
+|0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.bindings242` / Haiagaru binding 242|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3-242.apk`|`aaad23703484e030fcfd67f80527e9944fa70ea54ce32ac7e3dbc998009021a2`|
+
+照合日時は2026-11-03 03:17 JST、詳細 `build/class-bindings-installations.json`。任意の動画専用ビューア・画像VPNを含めた適用比較用APKだが、VPN自体は有効化していない。検証用キャッシュfixtureと設定は検証後に復元・解除する。

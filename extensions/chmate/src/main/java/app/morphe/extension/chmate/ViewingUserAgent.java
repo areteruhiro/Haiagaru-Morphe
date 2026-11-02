@@ -15,6 +15,8 @@ public final class ViewingUserAgent {
     private static volatile String defaultAgent;
     private static final Set<Class<?>> warned = Collections.newSetFromMap(new ConcurrentHashMap<>());
     static void init(SharedPreferences prefs, String fallback) {
+        // Retire the experimental switch without changing the user's fixed template.
+        if(prefs.contains("randomUserAgentEveryFiveSeconds"))prefs.edit().remove("randomUserAgentEveryFiveSeconds").apply();
         String saved = prefs.getString("userAgent", null);
         String updated = BrowserUaTemplates.resolve(saved);
         if (saved != null && !saved.equals(updated)) prefs.edit().putString("userAgent", updated).apply();
@@ -23,10 +25,6 @@ public final class ViewingUserAgent {
     }
 
     static String selected(String url, String method) {
-        SharedPreferences current=preferences;
-        if(current!=null&&current.getBoolean(RandomUserAgentRotation.KEY,false)
-                &&ViewingUserAgentRules.eligible(url,method))
-            return RandomUserAgentRotation.at(android.os.SystemClock.elapsedRealtime());
         String session=ReadingAuth.agent(url,method);if(session!=null)return session;
         SharedPreferences prefs = preferences;
         if (prefs == null || !prefs.getBoolean(BrowserUaTemplates.ENABLED, false)
