@@ -1,3 +1,69 @@
+# Haiagaru 1.22.0
+
+## 今回の追加・修正
+
+- スレタイのメニューに「更新対象に含む」を追加しました。別の板・スレで更新した際にも、登録したスレの新着本文を標準の巡回処理で取得します。お気に入り・通知登録とは別に管理し、Haiagaruバックアップにも保存します。
+- したらばの新着通知に対応しました。スレごとに「自分の書き込みへの返信だけ通知する」「自分への返信を通知したら定期確認を停止する」を選べます。書き込み後に監視へ自動登録する親設定も追加しました（初期OFF）。停止後も次の新しい投稿確認で再開します。
+- 標準の返信通知とHaiagaru通知は、同じスレの同じ新着レスについて先に通知した方を残します。返信先が同じでも、新しく投稿されたレス番号が違えば別の返信として扱います。
+- 242のタブレット表示で「Haiagaru設定」をタップするとセーフモードが表示される経路を修正しました。
+- 共有NGの「チェックした条件を適用しない」に検索を追加しました。レスメニューから、そのレスに一致する共有NGだけを除外する操作も追加しました。検索で隠れた選択や未受信の既存除外設定は保持します。
+- 読書位置の補助保存を背景処理へ移し、スクロール中・非表示のタブレットペインで不要な位置調査を抑えました。
+- 投稿者強調のトリップ前後にある全角空白・制御文字の扱いを修正しました。スレ内検索で本文とは別のヘッダー日時・曜日が黄色く強調される処理も修正しました。本文に書かれた日時は従来どおり検索対象です。
+- Shizukuによる移行パッチと設定入口・関連依存を削除しました。
+
+## 確認範囲
+
+191／226／242の隔離エミュレータで、更新対象の保存と標準ジョブへの受け渡し、通知内容・停止／再開・バックアップ、標準通知との重複抑止を確認しています。242のタブレット設定画面とセーフモードへの遷移も確認しています。検証のための掲示板への書き込みや共有NG送信は行っていません。今回変更していない本文表示・画像／GIF／動画の広範な再検証は利用者の指定により省略しています。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* smooth reading position and exclude search timestamp highlights [skip ci] ([b0d0231](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b0d0231ee8b21207eae2d71449da23a2a2543ec2))
+
+### ✨ New Features
+
+* add cross-board refresh and reply-aware notifications [skip ci] ([a82c0a7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a82c0a7544a64141e18bba2c67a7ebb62a8d9c2d))
+* exclude matching shared NG conditions from response menus [skip ci] ([b37b4c7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b37b4c74ebe0ecfc4a259294b13b4dc7ad30712b))
+* search received shared NG exception conditions [skip ci] ([4e05d85](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4e05d85f11ad01b1bef4fea928c0756fee46b454))
+
 # Haiagaru 1.21.1
 
 ## 今回の修正
