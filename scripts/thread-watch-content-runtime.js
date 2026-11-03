@@ -7,7 +7,7 @@ rpc.exports={test(){return run(()=>{
  nm=Java.cast(app.getSystemService('notification'),Java.use('android.app.NotificationManager'));const Atomic=Java.use('java.util.concurrent.atomic.AtomicBoolean'),Json=Java.use('org.json.JSONObject');
  function stored(){return Json.$new(pref.getString(url,'{}')).getInt('count');}
  function notes(){return nm.getActiveNotifications().filter(n=>String(n.getTag())===url);}
- W.fetch.implementation=function(address,cancel){const u=String(address);reads.push(u);if(u.endsWith('subject.txt'))return '1793113633.dat<>Thread &amp; title (part 2) ('+count+')\n1793113634.dat<>Second (20)\n';if(datFail)throw Java.use('java.io.IOException').$new('controlled unavailable');let dat='';for(let n=1;n<=count;n++)dat+='name<><>date<>body '+n+' &amp; <b>bold</b><br>next line<>title\n';return dat;};
+ W.fetch.implementation=function(address,cancel){const u=String(address);reads.push(u);if(u.endsWith('subject.txt'))return '1793113633.dat<>Thread &amp; title (part 2) ('+count+')\n1793113634.dat<>Second (20)\n';if(datFail)throw Java.use('java.io.IOException').$new('controlled unavailable');let dat='';for(let n=1;n<=count;n++)dat+='<b>name</b><><>date<>body '+n+' &amp; <b>bold</b><br>next line<>title\n';return dat;};
  const end=()=>{pref.edit().remove(url).remove(url2).commit();for(const u of [url,url2])nm.cancel.overload('java.lang.String','int').call(nm,u,0x48690031);W.fetch.implementation=null;};
  try{
   pref.edit().putString(url,'{"count":-1,"token":"content-one"}').putString(url2,'{"count":-1,"token":"content-two"}').commit();

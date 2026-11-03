@@ -1699,6 +1699,8 @@ private val haiagaruBytecodePatch = bytecodePatch {
             patchImageSelectionReflectionTrap()
             patchImageUploadIntegrityComparison()
         }
+        patchInlineSettingsEntry(packageMetadata.versionName)
+        if(packageMetadata.versionName=="0.8.10.242 dev")patchS2mSettingsStartup242()
         SettingsOnResumeFingerprint.method.addBeforeEveryReturn(
             "invoke-static/range { p0 .. p0 }, $EXTENSION->onSettingsResume(Landroid/app/Activity;)V"
         )
@@ -4744,6 +4746,15 @@ val haiagaruPatch = resourcePatch(
             checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream("/chmate/compose/$name")).use { input ->
                 get("assets/haiagaru-ui-$name.txt").outputStream().use(input::copyTo)
             }
+        }
+        document("res/values/strings.xml").use { strings ->
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name","haiagaru_settings_entry")
+                textContent="Haiagaru設定"
+            })
+        }
+        PublicXmlManager(get("res/values/public.xml")).use {
+            it.createPublicId("string","haiagaru_settings_entry")
         }
         val boardXmls = get("res/xml").listFiles().orEmpty().filter {
             it.extension == "xml" && it.readText().contains("updateBbsMenu")

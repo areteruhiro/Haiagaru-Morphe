@@ -25,3 +25,6 @@ hostのThreadWatchRulesTest30項目成功。emulator-5580 / Android16の既存�
 ## 公開
 
 利用者の公式Release指示あり。既存Semantic Release CIで公開し、配布MPP/両feed/README反映を確認して結果を追記する。手動タグ・Release・assetsアップロードなし。
+
+
+2026-11-03公開追記: 公式[1.20.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.0)へ収録済み。既存Semantic Release/Build CI成功、公開MPP SHA256 `fe849e75858486f27a7afeb722286955a90fe56000fb34358dfb6435cf79e669`、配布asset digest/CRC/更新feed6件/README一致を確認。詳細は`build/official1200-public/verification.json`とintegration-statusの公開記録。
