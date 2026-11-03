@@ -56,7 +56,7 @@
 
 最終master/main/devのpatches-bundle.json/patches-bundle-pre.json全6URLは1.12.0、created_at=2026-10-23T14:23:59（Z/offsetなし）、同じ公開MPP参照。main2本のCDN旧値は待機後に解消。emulator-5554のMorpheプレON/登録先を維持しfresh logcatでmain/dev実取得、Haiagaru versionHash1.12.0、ソースカードと詳細1.12.0を確認。別ソースMorphe Patches1.48.0はManager内patcher1.15.1に対する2.0.0要件エラーが出ており、Haiagaruとは区別して変更せず。登録先置換・データ消去なし。端末検証は直前の同ソース候補、公開CI版MPPからのAPK再適用と実機導入は未実施。canonicalはdevへ戻した。
 
-2026-10-23 正式公開前監査: origin/devの履歴が整理されており、手元HEADとのtree差分0を確認してローカル旧devをcodex/dev-before-remote-rewrite-20261023へ退避、新devをorigin/devから作成し未コミット修正を保持。fetch設定がdevのみだったためmaster/mainの追跡refも現行リモートへ更新。最新正式版998436e（1.11.3）との差分と既存検証記録を照合し、追加ライブラリ案内/確認範囲/謝辞を含む説明を.releasercへ直接作成。新たな公開説明MDは作らない。最終候補226をFridaなしでcold起動し実Part3本文・scroll・サムネイル→167KB/820x1800画像の表示を確認（build/official-image226-final.png）。旧Frida crash/旧Vungle startup ANR以降の新規記録なし。共通Javaの191/242重複操作は省略、全条件の完全解消は断言しない。既存Semantic Releaseでdevからmasterへの正式公開準備。
+2026-10-23 正式公開前監査: origin/devの履歴が整理されており、手元HEADとのtree差分0を確認してローカル旧devを作業ブランチ（dev-before-remote-rewrite-20261023）へ退避、新devをorigin/devから作成し未コミット修正を保持。fetch設定がdevのみだったためmaster/mainの追跡refも現行リモートへ更新。最新正式版998436e（1.11.3）との差分と既存検証記録を照合し、追加ライブラリ案内/確認範囲/謝辞を含む説明を.releasercへ直接作成。新たな公開説明MDは作らない。最終候補226をFridaなしでcold起動し実Part3本文・scroll・サムネイル→167KB/820x1800画像の表示を確認（build/official-image226-final.png）。旧Frida crash/旧Vungle startup ANR以降の新規記録なし。共通Javaの191/242重複操作は省略、全条件の完全解消は断言しない。既存Semantic Releaseでdevからmasterへの正式公開準備。
 
 2026-10-23 GIF自動取得・常時下部フィルターのpopup末尾（未公開）: GIF専用4モードと共有を追加、bounded workerで静止フレーム生成、通常画像/動画と分離。固定フィルターの本文余白だけではnative popup末尾が隠れることを226で再現（重なり126px/padding0）、補助レス一覧にも重なり余白を追加。最終通常Lint build成功、226署名照合データ保持更新、GIF policy27/Android19/実GIF decode・JPEG配信/実native popup9項目成功。popup末尾の実画面も確認。191/242共通重複操作は省略。実機と公開Releaseは変更なし。詳細gif-autofetch-pinned-popup-20261023.md。
 
@@ -148,9 +148,9 @@ ChMate自体の更新なし対策として、191／226／242のDAT取得時だ�
 
 2026-10-22 Kyodemoをエッヂ過去ログの代替検索先へ追加（未公開）: 検索先を利用者が選択、既存検索は維持。KyodemoのShift_JIS条件・日付・50件単位offset・元スレURL変換・次ページ検出・状態復元を追加。未対応の詳細条件は非表示、全件数を捏造せず当ページ件数を表示。切替で旧結果と進行中応答を無効化し、自動フェイルオーバー／巡回はしない。ホスト21項目成功、最終build/kyodemo-archive-final-build.log成功（2分36秒、既知ローカルLint3工程除外）。MPP8F6EE1698A27F87CB3A8298151EAB45925E76C8E89A5E3BF47F41BD3B5AC13CB。191を署名照合更新し実検索50行・日本語・View再生成時キャッシュ復元・切替13項目成功、native hook検査成功、新規アプリクラッシュ／ANRなし。226/242は共通処理につき今回の重複通信試験を省略。実機・公開リリース・版名は変更なし。docs/edge-archive-providers.md、導入台帳docs/android-installations.md。
 
-2026-10-22 08:23 JST プレリリース1.12.0-dev.2公開完了: 検証スナップショットd85251fをdevへ通常pushし、既存Release CI39692529791が成功。CI生成コミット6860ff8、draft=false/prerelease=true。6配布物をbuild/release-1.12.0-dev.2-verifyへ再取得しGitHub digest全件一致。Android MPP SHA2566d78c33c819071d85be7a79f326172c1083d4aa025266578c52ba08013d8135b、classes.dex確認。devのJSON2本はversion1.12.0-dev.2、created_at=2026-10-21T23:19:52（Zなし）、公開MPP参照。masterの公式メタデータは1.11.2維持、公開タグの日本語説明HTTP200。Morphe端末の更新カード表示とCI版MPPの端末再適用は未確認。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.2 。作業中のcodex/shared-ng-prototypeブランチ／index／server/は変更せず、ローカルの同じ未コミットAndroid差分は既にd85251fへ収録済み。今後の統合時は重複公開せずorigin/devと照合する。
+2026-10-22 08:23 JST プレリリース1.12.0-dev.2公開完了: 検証スナップショットd85251fをdevへ通常pushし、既存Release CI39692529791が成功。CI生成コミット6860ff8、draft=false/prerelease=true。6配布物をbuild/release-1.12.0-dev.2-verifyへ再取得しGitHub digest全件一致。Android MPP SHA2566d78c33c819071d85be7a79f326172c1083d4aa025266578c52ba08013d8135b、classes.dex確認。devのJSON2本はversion1.12.0-dev.2、created_at=2026-10-21T23:19:52（Zなし）、公開MPP参照。masterの公式メタデータは1.11.2維持、公開タグの日本語説明HTTP200。Morphe端末の更新カード表示とCI版MPPの端末再適用は未確認。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.12.0-dev.2 。作業中の作業ブランチ（shared-ng-prototype）ブランチ／index／server/は変更せず、ローカルの同じ未コミットAndroid差分は既にd85251fへ収録済み。今後の統合時は重複公開せずorigin/devと照合する。
 
-2026-10-22 タブ・Dialog最終候補の検証完了／プレ公開準備: build/tool-tabs-safe-candidate-build.log成功（既知ローカルLint3工程除外）。MPP0746F173D4395FD5ECCCF964BB9CFFD12BF733FDDE1931F499CD79E62985EF50から191/226/242を生成し署名照合更新。native hook全3版、設定242=16・検索タブ242=16・追加入口242=8・旧版タブ各12項目成功。画像長押しから一覧／実画像表示と復帰、242 GIFの実再生進行・ループ、タブ設定のカード実画面確認。新規アプリクラッシュなし、起動後ANRなし。プロセス終了後の結果復元、大量データ、実CAPTCHA、短スレ位置比較は継続確認。既存CIでプレリリースのみ公開予定、公式1.11.2は維持。並行作業のcodex/shared-ng-prototypeブランチとserver/は保持し、Android関連のスナップショットだけdevへ公開する。詳細docs/tool-tabs-settings-20261022.md。
+2026-10-22 タブ・Dialog最終候補の検証完了／プレ公開準備: build/tool-tabs-safe-candidate-build.log成功（既知ローカルLint3工程除外）。MPP0746F173D4395FD5ECCCF964BB9CFFD12BF733FDDE1931F499CD79E62985EF50から191/226/242を生成し署名照合更新。native hook全3版、設定242=16・検索タブ242=16・追加入口242=8・旧版タブ各12項目成功。画像長押しから一覧／実画像表示と復帰、242 GIFの実再生進行・ループ、タブ設定のカード実画面確認。新規アプリクラッシュなし、起動後ANRなし。プロセス終了後の結果復元、大量データ、実CAPTCHA、短スレ位置比較は継続確認。既存CIでプレリリースのみ公開予定、公式1.11.2は維持。並行作業の作業ブランチ（shared-ng-prototype）ブランチとserver/は保持し、Android関連のスナップショットだけdevへ公開する。詳細docs/tool-tabs-settings-20261022.md。
 
 2026-10-22 タブ追加入口・検索タブ（開発中）: 独立した新規タブ上のボタンを撤去し基本設定へ統合。投稿を探す／投稿検索・結果／ﾜｯﾁｮｲ全文検索の個別タブ選択とController分離を追加中。下部フィルターの取り外し後View.postとDialogの同期終了も修正。初期242候補はDialog11項目成功だがタブ内設定でisolated LifecycleOwner不在を検出し、独自Owner接続を追加。後続全体ビルドは並行する通信側の新APIと旧AARの不整合で失敗し、既存手順によるAAR再生成中。初期失敗候補は配布せず、エミュレータを確認済み長押し修正版へ署名照合更新で戻した。実機変更なし。詳細docs/tool-tabs-settings-20261022.md。未公開。
 
@@ -213,7 +213,7 @@ Java/KotlinとAndroid MPPビルド成功（build/archive-scale-fold-build.log、
 
 更新日: 2026-10-18（日本時間）
 
-主開発先は `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current`。
+主開発先は `<workspace>`。
 今後は他チャットもここで作業・ビルドする。親フォルダ、`StudioProjects/Haiagaru-release-1.8.9`、`StudioProjects/Haiagaru-Morphe` は参照用の旧作業先。
 
 ## 1.11.0クラッシュ追補（2026-10-20、ローカル修正）
@@ -445,9 +445,9 @@ scripts/TestLocalBackupProvider.ps1によるAndroid documents API代替fixture�
 
 2026-10-25 公式1.12.2完了: source4d931f1/CI1128f9e。Release CI40172281344/Build40172281343 success、draft=false/prerelease=false/Latest1.12.2。公開6資材の全digest一致、MPP classes.dexあり、JSON2点version1.12.2/created_at2026-10-25T07:20:10（Zなし）。README謝辞/寄付/最新PayPayリンク/1.12.1全差分リンクがRelease本文に存在。公開MPP build/stable-1.12.2-publicへ保存。
 
-2026-10-25 次プレ候補: 191の既存addQuickFilterToolbarChoiceカタログへ未選択のID0x7e000009/必死チェッカーDroid＋で開くを追加。既存クリック入口で明示HomeActivityへ起動、未導入/権限失敗を表示。ID/本文の自動送信なし。既存icon配列へ末尾追加。新バイトコードフックなし。接続中XIG05でcom.chikuwadon.hissidroidplus/.HomeActivityとResultActivityのVIEW/SEND受口を調査、実導入後の通し操作前に端末切断。プレReleaseはユーザー明示依頼、最終Androidビルドは既存CIで実施。別依頼のUA復元はcodex/ua-with-posting-20261025/専用ローカルworktreeへ隔離し、このプレへ含めない。
+2026-10-25 次プレ候補: 191の既存addQuickFilterToolbarChoiceカタログへ未選択のID0x7e000009/必死チェッカーDroid＋で開くを追加。既存クリック入口で明示HomeActivityへ起動、未導入/権限失敗を表示。ID/本文の自動送信なし。既存icon配列へ末尾追加。新バイトコードフックなし。接続中XIG05でcom.chikuwadon.hissidroidplus/.HomeActivityとResultActivityのVIEW/SEND受口を調査、実導入後の通し操作前に端末切断。プレReleaseはユーザー明示依頼、最終Androidビルドは既存CIで実施。別依頼のUA復元は作業ブランチ（ua-with-posting-20261025）/専用ローカルworktreeへ隔離し、このプレへ含めない。
 
-2026-10-25 1.12.3-dev.1プレ公開完了: source84db386/CI f78a9f8、Semantic Release40173750692 success、draft=false/prerelease=true、Latest正式版1.12.2を維持。公開MPP再取得sha256 b106c1d84e5ac35e88d476b212c6ab5adf2d947d4c2b96a20e0d16145360da45がGitHub digest一致、classes.dexあり。公開MPPから191元APKへのパッチ/再構築/署名成功build/droid-toolbar-public191.apk、Droid＋追加drawable/登録名/明示HomeActivity文字列をAPKから確認。端末切断のため最終候補の実ツールバー編集/アプリ往復は未確認、Release説明に明記。UA復元版はローカル別ブランチcodex/ua-with-posting-20261025 commit4e6a80cに隔離し、このプレには未収録。
+2026-10-25 1.12.3-dev.1プレ公開完了: source84db386/CI f78a9f8、Semantic Release40173750692 success、draft=false/prerelease=true、Latest正式版1.12.2を維持。公開MPP再取得sha256 b106c1d84e5ac35e88d476b212c6ab5adf2d947d4c2b96a20e0d16145360da45がGitHub digest一致、classes.dexあり。公開MPPから191元APKへのパッチ/再構築/署名成功build/droid-toolbar-public191.apk、Droid＋追加drawable/登録名/明示HomeActivity文字列をAPKから確認。端末切断のため最終候補の実ツールバー編集/アプリ往復は未確認、Release説明に明記。UA復元版はローカル別ブランチ作業ブランチ（ua-with-posting-20261025） commit4e6a80cに隔離し、このプレには未収録。
 
 2026-10-27 UA検出・Cookie割当検索（未公開）: 有効化後のテンプレートで不正ブラウザと表示される報告を受領。Chromium Dashの公式Stable APIを照会しWindows157.0.8103.15/Android156.0.8078.48を取得、テンプレートを完全なバージョン文字列へ更新。保存済みの旧156.0.0.0テンプレートも対応する新値へ移行し、設定インポート直後もUA選択時に旧値を解決。独自UAと有効/無効は保持、初期OFFとAndroid/Windows選択肢を維持（直前の既定ON変更は取り消した）。共通Cookieの割当候補一覧へ板名/URLのインクリメンタル検索を追加。実サーバーでの受理は未確認、公開なし。UA変更のリリース説明は追加しない。
 
@@ -685,7 +685,7 @@ Mi Note10 d5497008の既存settingsfix191/resumefix226/resumefix242へ最終cand
 添付画像に合わせ、設定トップを丸い検索欄、区切り線付き共有/読込/最低限構成メニュー、丸い線画アイコン付き9カテゴリカードへ変更。カテゴリ本文の既存設定writer/検索/保存は保持、ChMateの色と文字設定に追従。191のGIF検索結果、226/242のカテゴリ移動、3版のトップ表示を確認。
 本文由来のURL補完で191/242のPNG抜けを修正。242の静止画サムネイルはnative画像Fragmentへ直接渡されActivity factoryを通らないため、全スレ移動ONで対象スレを一意に特定できる場合だけ通常ビューアへ渡す。生成posterは元動画へ逆引きし重複抑制。エミュレータemulator-5580で報告スレ1793113633の83静止画サムネを実タップし、191/242ともVideoViewerActivity/16件一覧→スワイプで他レス画像へ移動を確認。242は画像から元動画への戻りも確認。既存の戻るジェスチャー優先は維持。
 最終3版ART: 報告PNG4件それぞれ16件gallery、動画poster逆引き、本文タッチなし動画Intent、OFF維持、自動NG除外追加/既存値保持/重複無視/通常NG非変更に成功。226は初回Part3表示のままPart4専用fixtureを実行して不足となったが、UIからPart4を開き直し再試験成功。native ID menu(226/242)、media dispatch(3版)、242サムネwrapperの元命令/register/分岐先保持を検査成功。サムネ検査の初期失敗は追加命令で変わるbranch offsetを直比較した検証側の誤りで、分岐先命令番号へ正規化して元target一致を確認。新規crash buffer空。
-host ThreadMediaUrls14/MediaGallery30/XPostTime16/RedIdExclusions18/production poster-source5成功。通常LintVital/R8付きbuild/settings-home-gallery-build.log BUILD SUCCESSFUL 5m10s。MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\gallery-id-jst-final.mpp SHA256 e2eb7fad35b516f6a995de6e5ed8b602996948c81a16aa0934f122fa50d0da72。設定画面証跡build/settings-home-final242.png, settings-home-final226.png, settings-home-search191.xml。最終APKはgallery-id-jst-191/226/242.apk。共有NG/F9は開発中維持。公開はCI完了後に別記。
+host ThreadMediaUrls14/MediaGallery30/XPostTime16/RedIdExclusions18/production poster-source5成功。通常LintVital/R8付きbuild/settings-home-gallery-build.log BUILD SUCCESSFUL 5m10s。MPP <workspace>\build\gallery-id-jst-final.mpp SHA256 e2eb7fad35b516f6a995de6e5ed8b602996948c81a16aa0934f122fa50d0da72。設定画面証跡build/settings-home-final242.png, settings-home-final226.png, settings-home-search191.xml。最終APKはgallery-id-jst-191/226/242.apk。共有NG/F9は開発中維持。公開はCI完了後に別記。
 
 最終後片付け追記: 検証後のbackground191/242へFrida再attachした際、attach timeout後に両プロセスのSIGSEGV(pc0x320/unknown、11:46:53/11:47:02 UTC)を記録。通常UI試験中のcrashとは区別しbuild/settings-gallery-cleanup-instrumentation-crash.logへ保存。cold processへの同じcleanup scriptは成功、191/242の一時mediaSwipeWholeThreadを元のキーなしへ復元。解析ツールなしでcold再起動後の本文スクロール/タブ操作は正常、11:47:49 UTC以後のcrash記録なし。原因を製品修正済みとは扱わず、再attach依存の検証環境事象として保持。
 
@@ -693,7 +693,7 @@ host ThreadMediaUrls14/MediaGallery30/XPostTime16/RedIdExclusions18/production p
 
 2026-10-30 191サムネイル121/122ジェスチャー再修正
 利用者が191と回答。旧candidateで121の332x176画像はnative minimum B=1/current C=5.7831326/fitted aa=5.7831326となり、C>Bだけの判定で初期の自動拡大まで手動zoomと誤認し移動を抑止することを再現。native d()はaaへ初期fitし、小画像ではBだけ1へclampすることを元DEXで確認。191に限り基準をmax(B,aa)へ変更するImageZoomStateを追加。226/242の分岐/ネイティブフック/戻る優先/一覧末端の挙動は変更しない。
-host native fit/zoom9項目成功。最終通常LintVital/R8 build/gallery-fit-zoom-final-build.log BUILD SUCCESSFUL 3m6s、MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\gallery-fit-zoom-final.mpp SHA256 266710f6d697794fd8be6b12338960ba0a3c6e706b38ccada9276712352a76b2。191APK適用/署名一致install-r/cold起動成功。native media wrapper元命令/register/branch検査成功。
+host native fit/zoom9項目成功。最終通常LintVital/R8 build/gallery-fit-zoom-final-build.log BUILD SUCCESSFUL 3m6s、MPP <workspace>\build\gallery-fit-zoom-final.mpp SHA256 266710f6d697794fd8be6b12338960ba0a3c6e706b38ccada9276712352a76b2。191APK適用/署名一致install-r/cold起動成功。native media wrapper元命令/register/branch検査成功。
 emulator-5580実UI: 121の1枚目をサムネから開きB1/C=aa5.7831326でinitialZoomBlocked false、native setPositionで手動zoom相当のscaleへ変更した際true/元scale復元。実左swipeで121の2枚目へ、B1/C=aa1.875でも同検査成功、実左swipeで122の画像へ（全16件）。122から実下swipeで121へ戻り成功。121の2枚目で実doubletapによりC2>aa1.875へ拡大、実左swipeでURL/index13が変わらずpan優先を確認。122のサムネから直接openする経路でもC=B=aa0.7653061/全16件/実下swipeで121へ移動成功。122は一覧最後のため左/上方向に次画像はないことを区別。
 検証中の初回zoom fixtureはdecode前のB=C=aa1で実行したため証拠から除外し、decode完了後に報告3画像で再確認成功。戻ると既存checkerタブが選ばれるため、以後はHOMEの既存Part4を選択し直して操作した。最終121/121second/122のruntime logはbuild/gallery-fit-final121-runtime.log等。検証用threadMedia preferenceは元のキーなしへ復元。13:09 UTC以降の新crash記録なし。修正範囲は191のみ、226/242のAPKは今回再生成せず前回確認と区別。公開前。
 
@@ -703,7 +703,7 @@ emulator-5580実UI: 121の1枚目をサムネから開きB1/C=aa5.7831326でinit
 利用者の計測依頼と、改善できた場合のプレ更新指示。公開dev7→元191を同じPC/CLI1.16.0/Java21/C1/SerialGC/2CPU/1GB heap/JFRで順方向・逆方向各2回比較。packageのみ25.96秒、Haiagaru+package77.34秒、MEGA/video/crashlogを含む構成74.70秒。0除算/整合性走査と関連upload/settings/authの直接挿入処理はJava agentで合計466.633ms、crash logger挿入0.425ms。共通DEX再書き出しの寄与をこの値へ含めず、全クラッシュ予防の合計とはしない。
 CachedExtensionDexで拡張shardのstring/type sectionをpatch実行中だけmemoize。HiddenNgUnreadの全参照toString照合をFieldReferenceのowner/name/type照合に変更。生extension2 shardと移設後2 shardは旧新でbyte一致。69,552 entryの値/offset/再読identityとoptional/不正index検証成功。scopeはextension読込のみ、元アプリ全体へのglobal cacheなし。通常LintVital/R8 buildは初回pack段階CodeCache64MiB枯渇、host CodeCache192MiBの再試行で成功30s（build/patch-timing-optimization-final-build.log）。
 同一構成の最適化後2回58.148/58.010秒、平均58.079秒。従来full平均74.6975秒から16.6185秒/22.25%短縮。詳細docs/patch-performance-191-2026-10-30.md。Android Morphe内蔵runtimeの実秒数ではない。0除算・クラッシュ対策は削除も無効化もしていない。
-最終MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\patch-performance-final.mpp / SHA256 32d22ab4702ed263b75b83bb0e1e130c777b79493061ac866cb7d1848cf6300e。191(optimized/02-full.apk)・226/242(追加生成APK)をemulator-5580へ署名一致install-r成功、既存data保持。3版cold起動/Part4本文/サムネと画像/設定トップ表示を目視確認、新crash buffer空。native unread hookは1914/2266/2428、元register/total/read/subtraction検査成功。旧新hook methodの全命令/参照/offset一致25/26/28件。初回226/242検査は191の期待値4を流用した試験側誤りで失敗、実期待値6/8へ修正して成功。同等性比較は最初から成功。source/bundleへのprofiling agent混入なし。公開前。
+最終MPP <workspace>\build\patch-performance-final.mpp / SHA256 32d22ab4702ed263b75b83bb0e1e130c777b79493061ac866cb7d1848cf6300e。191(optimized/02-full.apk)・226/242(追加生成APK)をemulator-5580へ署名一致install-r成功、既存data保持。3版cold起動/Part4本文/サムネと画像/設定トップ表示を目視確認、新crash buffer空。native unread hookは1914/2266/2428、元register/total/read/subtraction検査成功。旧新hook methodの全命令/参照/offset一致25/26/28件。初回226/242検査は191の期待値4を流用した試験側誤りで失敗、実期待値6/8へ修正して成功。同等性比較は最初から成功。source/bundleへのprofiling agent混入なし。公開前。
 
 2026-10-30 23:48 JST 1.16.0-dev.8公開完了: 最適化実装94fe1be、Semantic Release CI41074079690 success、prerelease=true/draft=false。公開MPP SHA256 4ae591fefbed8d62daf40ed7a9616deb295883a8293ab6723907333603707bb3、両更新JSON SHA256 31c345313f948e722db25b466f75b3e4edf85bf43ffeb5d7df8319b88c5c93e5。asset digest一致/CRC正常/CachedExtensionDex同梱/計測agent・JFR非同梱/両raw feed version1.16.0-dev.8一致/共有NG・F9開発中維持を確認。証拠build/patch-performance-dev8-public/verification.json。公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.16.0-dev.8
 
@@ -856,7 +856,7 @@ emulator-5580の既存app.morphe.managerでHaiagaru配布元を確認。事前�
 emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterval/footer版で各53項目、242 native検索欄で入力後800msを待つ4項目を確認。通知は初期15分、15〜10080分の任意整数、JobSchedulerの永続化・背景合成20→22件で通知を確認。閲覧認証のCookie/UA連携6項目を3版で確認したが、実VPNのCloudflare成功は未確認。実タイトルUIでCompose別windowのため追加ボタンが外へ出る問題を発見し、native Dialog onStartで実windowを装飾する変更を実装、通常ビルドと3版CLI生成は成功。modal版の実メニュー表示確認は途中で利用者の新ブランチ要求へ移ったため未完。公式公開の成功扱いにしない。docs/emoji-thread-watch-reading-auth-20261102.mdに詳細。利用者提供の旧/新.haiagaru設定比較はdocs/settings-delay-comparison-20261102.md、原本は変更なし。
 
 2026-11-02 22:21 JST 5秒ランダムUAの実験ブランチ・191実機導入
-利用者指示によりdev/f2b2b45と進行中の変更からcodex/random-user-agent-5sを作成。閲覧・書き込み両方のUAを5秒区間ごとに5種類から変更、同一区間固定・次区間非反復。通信のない時間のタイマーなし、既存Cookie/本文/メソッド/送信先/通信中のUAを変更しない。通信・詳しい設定に独立ON/OFF（初期OFF）、設定ファイル対応。
+利用者指示によりdev/f2b2b45と進行中の変更から作業ブランチ（random-user-agent-5s）を作成。閲覧・書き込み両方のUAを5秒区間ごとに5種類から変更、同一区間固定・次区間非反復。通信のない時間のタイマーなし、既存Cookie/本文/メソッド/送信先/通信中のUAを変更しない。通信・詳しい設定に独立ON/OFF（初期OFF）、設定ファイル対応。
 ホスト2500項目、通常Lint/R8 build/random-ua-5s-build.log成功4m20s。MPP SHA256 67a5c1856f26abc3acca572eb339bfce93ed5745810e9e20a41e9b6a888cd8f9。XIG05/Android15/730eae72へ別package jp.co.airfront.android.a2chMate.haiagaru.randomua191、Haiagaru UA切替191として導入成功、実APK hash一致。導入APKのnative191 POSTとjava.net GET/POSTの準備12項目をapp_process＋メモリ内設定で検証（実接続/投稿0件）、対象PID crash空。初回テストcompileのProxy曖昧参照を修正し再試験成功。端末の本設定は初期OFF、利用者が設定でONにする。docs/random-user-agent-5s-20261102.mdと導入台帳。公式Release/feed/GAS変更なし。
 
 2026-11-03 通知・閲覧認証modal版の確認とMi Note 10導入（未公開）
@@ -917,3 +917,7 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 
 2026-11-03 191の連続復元後の設定残存を修正（未公開）
 提供ZIP2件CRC正常、191/異なるZIP順次復元/再起動後も遅い/特にスレ開き。最後にどちらか不明。認証等を除外し通信OFFの専用restoreperf191で、Bの追加設定がA復元後もONで残ることを再現。通常復元のHaiagaru UI設定だけ、snapshotにない安全キーを初期値へ。初回案内・除外秘密キー・標準設定・ローカル自動バックアップ・不足分同期の既存保持を維持。通常build2m55s成功、合成48項目、提供ZIP全体A→A→B→B→AでUI47/66復帰/207 DAT関連/160履歴で増殖なし。cached本文可視6レス、待機2.453/2.218/2.079秒で大幅遅延自体は未再現。初期PCメモリ不足・System UI ANR中の画面試験は成功扱いせず再確認。MPP478e0d383753745aff2593c4f53043c822348c1a427e4753e7af7aebc14ef2cb。実APKhash一致/対象PID fatalなし。docs/restore-repeat-settings-20261103.mdと台帳。公式公開/feed/GAS/利用者実機は変更なし。
+
+
+2026-11-03 通知・保存設定の移行、公開メタデータ整理（未公開）
+通知登録/間隔/確認済み件数を設定バックアップへ追加、通常復元/旧ZIP保持/双方向同期/Job再予約に対応。ローカル保存選択、自動バックアップON/保存先候補も保存、SAF権限待ちは書込停止・UI説明・再選択初期URI。191/242各通知40・設定23、242本文17とUI確認成功。通常build3m3s、MPPa740c9107937c79e7e916620a4c8154a66d86f113999510c22e192e0c62538d1。VPN JNIの作業パス・module置換メタデータを除去して再ビルド、Goテスト/API17class同一/ELF16KiB/JNI起動成功、公開文書20件を一般化しローカル指示は公開対象外。過去履歴/既存Releaseは改変しない。docs/portable-backup-settings-20261103.md、public-build-metadata-20261103.md、導入台帳。NG登録済み操作の新要望は調査を別途継続。公式Release/feed変更なし。
