@@ -38,6 +38,42 @@ final class SharedNg {
     });}
     static void reload(){if(context==null)return;SharedPreferences p=prefs();enabled=p.getBoolean("enabled",false);threshold=p.getInt("threshold",5);if(threshold<1)threshold=5;exceptions=new HashSet<>(p.getStringSet("exceptions",Collections.emptySet()));new android.os.Handler(android.os.Looper.getMainLooper()).post(ProgrammableNgController::sharedNgChanged);}
     static boolean enabled(){return enabled;}
+    static void showResponseExclusions(Activity activity, ProgrammableNgScript.Input input) {
+        if (!enabled) return;
+        List<SharedNgRules.Rule> source = rules;
+        Set<String> ignored = new HashSet<>(exceptions);
+        Set<String> excluded = new HashSet<>(prefs().getStringSet("excludedBoards", Collections.emptySet()));
+        int votes = threshold, kinds = 0;
+        for (int i = 0; i < SharedNgIndex.KINDS.length; i++)
+            if (prefs().getBoolean("kind." + SharedNgIndex.KINDS[i], true)) kinds |= 1 << i;
+        final int activeKinds = kinds;
+        Toast.makeText(activity, "このレスに一致する共有NGを確認しています", Toast.LENGTH_SHORT).show();
+        IO.execute(() -> {
+            String board = SharedNgRules.board(string(input, "boardUrl"));
+            List<SharedNgRules.Rule> matched = SharedNgIndex.matchingRules(source, votes, ignored, excluded,
+                    activeKinds, board, string(input, "responseId"), string(input, "name"), input.text);
+            activity.runOnUiThread(() -> {
+                if (activity.isFinishing() || activity.isDestroyed()) return;
+                if (matched.isEmpty()) {
+                    Toast.makeText(activity, "このレスに一致する有効な共有NGはありません。個人NGや連鎖NGの設定も確認してください", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                SharedNgExceptions content = new SharedNgExceptions(activity, matched,
+                        prefs().getStringSet("exceptions", Collections.emptySet()));
+                new HaiagaruDialog.Builder(activity).setTitle("このレスに一致する共有NGを除外")
+                        .setMessage("除外する条件にチェックを入れて保存してください。この端末で、その条件を適用しなくなります。変更後はスレを開き直してください。個人NGや他の条件でも隠れている場合は残ります。")
+                        .setView(content).setPositiveButton("保存", (dialog, which) -> {
+                            Set<String> next = new HashSet<>(prefs().getStringSet("exceptions", Collections.emptySet()));
+                            Set<String> selected = content.selection();
+                            for (SharedNgRules.Rule rule : matched) {
+                                if (selected.contains(rule.id)) next.add(rule.id); else next.remove(rule.id);
+                            }
+                            prefs().edit().putStringSet("exceptions", next).apply(); reload();
+                            Toast.makeText(activity, "共有NGの除外設定を保存しました。スレを開き直してください", Toast.LENGTH_LONG).show();
+                        }).setNegativeButton("キャンセル", null).show();
+            });
+        });
+    }
     private static final class MatchPlan {
         final List<SharedNgRules.Rule> source;final Set<String> ignored,excluded;final int votes,kinds;final SharedNgIndex index;
         MatchPlan(List<SharedNgRules.Rule> source,Set<String> ignored,Set<String> excluded,int votes,int kinds){

@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-03 レスから共有NGを個別除外（未公開）: 共有NG有効時のレス長押しへ「このレスに一致する共有NGを除外」を追加。191／226／242通常メニューと242本文シートの既存ResponseArchive経路に接続。選択レス1件を既存sharedReportInputsへ渡し、板・報告数・種類・個別除外・配信停止を含む本番indexで一致する条件だけを背景検索。検索付き選択画面から端末の除外IDへ保存、既存除外保持、キャンセル無変更、スレ再表示案内。一致なしは個人／連鎖NG確認案内。個人NG／DAT／サーバー条件の変更・ネットワーク送信なし。新規263＋既存10,003判定試験成功、Java／Kotlin releaseコンパイル成功。実画面／APK適用／端末導入／公開は未実施。docs/shared-ng-response-exclusion.md参照。
+
 2026-11-03 共有NG個別除外の検索（未公開）: 「チェックした条件を適用しない」に条件／板／種類の検索欄、表示件数・該当なしを追加。条件IDによる編集中の除外集合と表示行を分離し、絞り込みで隠れたチェックと未受信の既存除外IDを保存時にも維持。「戻る」は未保存。ListView／adapterと既存Compose表示で可視行だけ生成。Java／Kotlin releaseコンパイル50s成功、diff検査成功。今回の実画面再検証・APK適用・導入・公開は未実施。docs/shared-ng-exceptions-search.md参照。
 
 2026-11-03 正式版1.21.1公開完了: 未登録NGボタンの条件付き追加をdevからmasterへ通常merge（6b82b73）。既存Semantic Release CI41623476039のRelease／Attest success、生成4db11baをdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.21.1 、draft=false／prerelease=false。公開6資材SHA256／サイズ全一致・CRC正常、MPP SHA256 b7785af03b77cb8bb057bb2044dfa474dbe50b147b18a97623ffa958028b8132。VPN4ABIは検証済みAARと一致、MPPの作業環境パス残存なし。master／main／devの更新JSON計6本は全て1.21.1と同一MPP URL。候補191／226／242の変更画面各17項目成功、未変更本文／画像／GIF／動画は既存指示で再検証省略。公開CI版MPPからの再適用・実機導入は未実施。検証AVDのネットワークを戻しデータ保持終了。build/release-1.21.1-verify/verification.json参照。
