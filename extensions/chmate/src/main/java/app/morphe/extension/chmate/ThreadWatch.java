@@ -17,8 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Opt-in, device-local subject polling. No server or automatic posting. */
 public final class ThreadWatch {
     static final int ACTION=0x7e00000b,JOB=0x48690031;
-    private static final String PREFS="haiagaru_thread_watch",CHANNEL="haiagaru_thread_updates";
-    private static final Object LOCK=new Object();
+    static final String PREFS="haiagaru_thread_watch";
+    private static final String CHANNEL="haiagaru_thread_updates";
+    static final Object LOCK=new Object();
     static SharedPreferences prefs(Context c){return c.getSharedPreferences(PREFS,0);}
     static int interval(Context c){return Math.max(1,Math.min(10080,c.getSharedPreferences(PREFS+"_options",0).getInt("minutes",15)));}
     static String intervalLabel(int minutes){
