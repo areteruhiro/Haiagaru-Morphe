@@ -1,4 +1,4 @@
-# 通知・バックアップ設定の移行補完（未公開）
+# 通知・バックアップ設定の移行補完（1.21.0で公開）
 
 ## 通知
 
@@ -15,3 +15,5 @@
 通常Lint/R8/Android用MPP・任意ZIP生成、build/portable-backup-settings-final-build.log成功3m3s。MPP SHA256 a740c9107937c79e7e916620a4c8154a66d86f113999510c22e192e0c62538d1。191/242既存隔離bindingsへ署名照合install-r、通知バックアップ各40/設定移行各23項目成功。実アンインストールやデータ消去を行わず、専用namespaceを空にして新規インストール相当を再現し、終了時に全値を復元。ZIP生成→読取→復元、旧ZIP保持、繰返し復元、双方向同期、予約再作成、範囲外拒否を含む。242既存通知本文17項目、実UIでON/保存先名/アクセス許可待ち/間隔6・保持6を確認。実保存先の権限再許可を利用者端末で実行した試験ではない。通知許可はAndroid設定を維持。226は共通Java処理の重複実機試験を省略。
 
 試験ハーネスの接続待ち不足・文字列lengthを関数で呼んだ失敗を修正して再実施、成功として数えない。対象PID新規fatalなし、導入実APK hash一致、試験通知登録0。証跡build/portable-backup-final-results.json、portable-backup-ui242-result.json、portable-backup-installed-final-verification.json、導入台帳。今回変更外のスレ本文/画像/GIF/動画の再検証は利用者指定で省略。投稿・共有NG送信・実機変更なし。
+
+2026-11-03: 正式版 [1.21.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.21.0) に収録。公開CIと配布6資材・更新JSONの照合を完了。試験範囲・再現に至らなかった条件は本文記載のとおり。

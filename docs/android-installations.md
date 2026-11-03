@@ -1546,3 +1546,16 @@ MPP `build/existing-ng-final.mpp` SHA256 `098e1a2a3aac52335ec5bf21f873d381b454a7
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T17:49:02.134273|`build/existing-ng-final-191.apk`|`191401bfb5e529a751f9aeaa481e39218acda9d1aa84c6fdd0218d9772cfa53d`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T17:51:13.184141|`build/existing-ng-final-226.apk`|`53df50735036518b358603046bdfa03bc9b193e1e548e9e55b9efeddc30621e9`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T17:52:21.888653|`build/existing-ng-final-242.apk`|`c1a8c16c085694b0b8389f69f6b5d9de92022b105afc39d0c1231238b8f1372f`|
+
+
+## 2026-11-03 未登録NGボタンの条件付き追加
+
+serial `emulator-5580` / Android16。既存bindings191／226／242と署名照合後install-r成功、データ保持。各版の変更画面17項目成功。登録済み／未登録／空欄／再入力のボタン追加・除去と重複防止、削除確認・キャンセル・有効／無効を確認。初回起動時のSystem UI ANRを終了してから再試験し成功、今回のapp crash buffer空。試験NG一覧は復元し個人NG送信同意OFF。本文／画像／GIF／動画の未変更部分は利用者指定で重複検査を省略。
+
+MPP `build/conditional-ng.mpp` SHA256 `39bd6943153ca78df74d3e131e084fd8fc9e0e3a75184c90c622c0c7ba44d0bf`。cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・鍵の場所を含む原本: `build/local-development-records/conditional-ng-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T19:52:09.849670|`build/conditional-ng-191.apk`|`30db689068d0e448e2bea699cbe111d7bbb566402730e049832f93226a3fb03a`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T19:53:29.752744|`build/conditional-ng-226.apk`|`8b6496752517224937dda2056b00f8a26fa18421ff43471b6ef44a01773b4c00`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T19:55:00.230190|`build/conditional-ng-242.apk`|`00e3b8ea0e15bcfe56d52c9e530c00fd17f299eb4baea4cba98b432f32268ea5`|
