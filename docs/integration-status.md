@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-03 未登録NGの操作ボタン（未公開）: 利用者の追加指定により、ワッチョイ上下4桁の追加画面では登録済み対象がある場合だけ操作ボタンを生成・追加するよう変更。未登録時はボタンを追加せず、入力・一致方式・対象板変更で一致がなくなるとViewを除去。標準画面は既存のtarget未検出時returnを維持。Java／Kotlin releaseコンパイル成功1m7s、diff検査成功。今回の実画面再検証・APK適用・導入・追加Releaseは未実施。
+
 2026-11-03 正式版1.21.0公開完了: 登録済みNGの削除・有効／無効、通知／バックアップ設定復元、通常復元時の残留画面設定、versionCode最大値、同梱ライブラリのビルド情報整理をdevからmasterへ通常merge（8aceb98）。既存Semantic Release CI41606969441はRelease／Attestともsuccess、生成9f9f971をdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.21.0 、draft=false／prerelease=false。公開6資材のGitHub SHA256 digestとサイズが全一致、ZIP／MPPのCRC正常。MPP SHA256 f9c88871cc3faa3879a9ac1af607845f3e76a08d6210b460b9e04d4bff90f99b、登録済みNGの新runtimeを確認、作業環境の絶対パス残存なし。VPN v2の4ABIは検証済みAARとバイト一致。master／main／devの更新JSON計6本は全て1.21.0と同一MPP URL。最終候補の191／226／242で保存各102＋実UI各13成功、未変更の本文／画像／GIF／動画再検査は利用者指定で省略。公式CI生成MPPからのAPK再適用・実機導入は今回未実施。検証AVDのネットワークを元に戻しデータ保持終了。公開ファイル検証はbuild/release-1.21.0-verify/verification.json、導入台帳参照。
 
 2026-11-03 登録済みNG操作（1.21.0公開済み）: 標準NG編集画面とワッチョイ上下4桁追加画面へ削除・有効／無効を追加。削除確認、条件／板／日時／他フラグ保持、操作後の編集画面終了、変更済み対象の拒否に対応。追加画面の操作ボタンは対象板の直下。固定3クラスへのonResume追加のみで全クラス検出なし。通常Lint付きAndroid build2m50s成功、191／226／242の最終候補で各102保存試験＋13実UIタップ成功。元編集メソッド命令は前候補と全一致、追加hookは各1レジスター3命令。新規crash buffer空。試験条件・送信設定を保護。変更していない本文／画像／GIF／動画の再検査は利用者指定で省略。通知・バックアップ設定／復元残留設定／versionCode最大値の既存dev修正も含め公式公開の指示あり。docs/existing-ng-actions.md・導入台帳参照。
