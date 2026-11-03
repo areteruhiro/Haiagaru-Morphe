@@ -885,3 +885,10 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 
 2026-11-03 通知本文・ChMateアイコン・設定入口最上部・README全面整理（公式公開候補）
 利用者指定でスレ名/新着本文最大3件/件数/ChMateアイコンを通知へ追加。新着時だけDAT追加取得、取得不可時はtitle/count通知。浮動PopupWindowを廃止し既存SettingActivity onResumeから同じcontentの最上部へ入口を追加、native/Compose viewはdetachしない。191/226/242各通知17・入口15項目成功、242背景Job合成20→22で本文付き通知1・次回予約成功。host30。最終通常build3m52s成功、MPP SHA256 60a554a4384e7611f3bfcafe5f8bdf03509f70e2524f9d5ea8dd012c02e0d2d0。登録/設定復元・新規fatalなし・実APKhash一致。利用者指定で変更外の本文/画像/GIF/動画の再検証省略、初期ANR/ハーネス失敗は除外。READMEとリンク先を現行9カテゴリ/署名条件/配布・操作へ更新し参照57件正常。台帳・詳細docs/notification-settings-readme-20261103.md。既存CIで正式公開し配布物/README/feed検証を次に行う。
+
+
+2026-11-03 1.20.0公式公開・配布・README確認完了
+実装767e693（通知本文/ChMateアイコン/最上部設定入口/README全面整理）、既存のDAT二重取得修正2fe4952をmasterへ統合e008610。Semantic Release CI41576859604とBuild CI41576859617がsuccess、生成commit525a2a5・tag1.20.0。手動タグ/Release/assets作成なし。
+公開MPP SHA256 fe849e75858486f27a7afeb722286955a90fe56000fb34358dfb6435cf79e669、GitHub asset digest一致・CRC正常。新入口/通知/初回DAT再利用を同梱、旧Popupボタンと廃止UA実験が不在。stable/pre両feed SHA256 e3b69047ff16464629228580903b161c46df903599cfd55fbccb722699e5f37f、master/dev/mainの両feed計6件が1.20.0・同MPP URL・今回説明で一致。draft=false/prerelease=false/latest確認。README masterのblob SHA355f44b885701f451472d52bdc77994b7529b24fが検証済みローカルと一致。build/official1200-public/verification.jsonとrelease.json、official1200-release-ci.log/build-ci.log。
+ユーザー指定で今回変更外の本文/画像/GIF/動画再検証を省略し、公開説明に明記。各通知17/設定入口15、背景Job→本文付き通知と次回予約、ソース/文書参照57件の検証は前記記録。検証AVDはデータ保持で停止済み、実機の導入/削除・投稿・GAS変更なし。CI生成履歴をmaster/devへff取込み、devへ戻した。
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.0 。
