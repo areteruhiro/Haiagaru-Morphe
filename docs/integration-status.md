@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-03 未登録NGボタンの公開前確認: 通常Lint付きbuild／buildAndroid成功3m57s。191／226／242の別packageへ署名一致更新し各17項目の実UI／元モデル確認成功。入力を未登録・空欄へ変更するとボタンのView自体が0件、登録済みへ戻すと1件、繰り返しても重複しない。既存の削除・確認キャンセル・有効／無効・編集画面終了も成功。新規app crash buffer空。元編集命令保持／既存onResume hookは3版で再照合成功。初回のSystem UI ANRは終了し再試験、試験スクリプトのEditText overload指定を修正。製品コードの追加変更なし。本文／画像／GIF／動画の再確認は既存利用者指定で省略。公式Release指示あり、既存CIへ進める。詳細はdocs/existing-ng-actions.md・導入台帳、build/conditional-ng-*。
+
 2026-11-03 未登録NGの操作ボタン（未公開）: 利用者の追加指定により、ワッチョイ上下4桁の追加画面では登録済み対象がある場合だけ操作ボタンを生成・追加するよう変更。未登録時はボタンを追加せず、入力・一致方式・対象板変更で一致がなくなるとViewを除去。標準画面は既存のtarget未検出時returnを維持。Java／Kotlin releaseコンパイル成功1m7s、diff検査成功。今回の実画面再検証・APK適用・導入・追加Releaseは未実施。
 
 2026-11-03 正式版1.21.0公開完了: 登録済みNGの削除・有効／無効、通知／バックアップ設定復元、通常復元時の残留画面設定、versionCode最大値、同梱ライブラリのビルド情報整理をdevからmasterへ通常merge（8aceb98）。既存Semantic Release CI41606969441はRelease／Attestともsuccess、生成9f9f971をdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.21.0 、draft=false／prerelease=false。公開6資材のGitHub SHA256 digestとサイズが全一致、ZIP／MPPのCRC正常。MPP SHA256 f9c88871cc3faa3879a9ac1af607845f3e76a08d6210b460b9e04d4bff90f99b、登録済みNGの新runtimeを確認、作業環境の絶対パス残存なし。VPN v2の4ABIは検証済みAARとバイト一致。master／main／devの更新JSON計6本は全て1.21.0と同一MPP URL。最終候補の191／226／242で保存各102＋実UI各13成功、未変更の本文／画像／GIF／動画再検査は利用者指定で省略。公式CI生成MPPからのAPK再適用・実機導入は今回未実施。検証AVDのネットワークを元に戻しデータ保持終了。公開ファイル検証はbuild/release-1.21.0-verify/verification.json、導入台帳参照。
