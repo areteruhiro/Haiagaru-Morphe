@@ -133,16 +133,36 @@ public final class ThreadWatch {
             Map<String,String> tokens=new HashMap<>();
             synchronized(LOCK){for(String key:group.getValue())try{tokens.put(key,new JSONObject(prefs(c).getString(key,"{}")).optString("token"));}catch(Exception ignored){}}
             try{
-                Map<String,Integer> counts=ThreadWatchRules.counts(fetch(group.getKey(),stopped));
+                String subject=fetch(group.getKey(),stopped);
+                Map<String,Integer> counts=ThreadWatchRules.counts(subject);
+                Map<String,String> titles=ThreadWatchRules.titles(subject);
                 for(String key:group.getValue()){
                     if(stopped.get())return;
                     ThreadWatchRules.Target t=ThreadWatchRules.target(key);Integer count=counts.get(t.id);if(count==null)continue;
+                    String preview="";
+                    int known;
+                    synchronized(LOCK){known=new JSONObject(prefs(c).getString(key,"{}")).optInt("count",-1);}
+                    if(ThreadWatchRules.increase(known,count)>0){
+                        try{
+                            StringBuilder lines=new StringBuilder();
+                            for(Map.Entry<Integer,String> body:ThreadWatchRules.bodies(fetch(t.dat,stopped),known,count).entrySet()){
+                                String text=notificationText(body.getValue(),300);
+                                if(text.isEmpty())continue;
+                                if(lines.length()>0)lines.append('\n');
+                                lines.append(">>").append(body.getKey()).append(' ').append(text);
+                            }
+                            preview=lines.toString();
+                        }catch(Exception unavailable){
+                            // Count/title notifications still work when DAT access needs authentication.
+                            if(stopped.get())return;
+                        }
+                    }
                     synchronized(LOCK){
                         if(stopped.get())return;
                         JSONObject item=new JSONObject(prefs(c).getString(key,"{}"));
                         if(!tokens.containsKey(key)||!tokens.get(key).equals(item.optString("token"))||!prefs(c).contains(key))continue;
                         int before=item.optInt("count",-1),delta=ThreadWatchRules.increase(before,count);
-                        if(delta>0&&!notify(c,t,delta,count))continue;
+                        if(delta>0&&!notify(c,t,delta,count,titles.get(t.id),preview))continue;
                         // Keep the high-water mark if the server briefly reports a smaller count.
                         item.put("count",Math.max(before,count));prefs(c).edit().putString(key,item.toString()).commit();
                     }
@@ -164,7 +184,14 @@ public final class ThreadWatch {
             }
         }finally{c.disconnect();}
     }
-    private static boolean notify(Context c,ThreadWatchRules.Target t,int delta,int count){
+    static String notificationText(String html,int limit){
+        if(html==null)return "";
+        String plain=android.text.Html.fromHtml(html).toString()
+                .replaceAll("[\\s\\p{Cc}]+"," ").trim();
+        int end=plain.offsetByCodePoints(0,Math.min(limit,plain.codePointCount(0,plain.length())));
+        return plain.substring(0,end)+(end<plain.length()?"…":"");
+    }
+    private static boolean notify(Context c,ThreadWatchRules.Target t,int delta,int count,String title,String preview){
         NotificationManager manager=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
         if(Build.VERSION.SDK_INT>=33&&c.checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=PackageManager.PERMISSION_GRANTED)return false;
         if(Build.VERSION.SDK_INT>=24&&!manager.areNotificationsEnabled())return false;
@@ -173,8 +200,18 @@ public final class ThreadWatch {
             .setClassName(c,"jp.syoboi.a2chMate.activity.ResListActivity");
         PendingIntent tap=PendingIntent.getActivity(c,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(c,CHANNEL):new Notification.Builder(c);
-        b.setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle("登録スレに新着 "+delta+"件")
-            .setContentText(Uri.parse(t.url).getHost()+" / "+t.id).setContentIntent(tap).setAutoCancel(true).setOnlyAlertOnce(true);
+        String name=notificationText(title,160);if(name.isEmpty())name=Uri.parse(t.url).getHost()+" / "+t.id;
+        String summary="新着 "+delta+"件",body=preview.isEmpty()?summary+"（本文を取得できませんでした）":preview;
+        b.setSmallIcon(c.getApplicationInfo().icon).setContentTitle(name)
+            .setContentText(body).setSubText(summary).setStyle(new Notification.BigTextStyle().bigText(body))
+            .setContentIntent(tap).setAutoCancel(true).setOnlyAlertOnce(true);
+        try{
+            android.graphics.drawable.Drawable icon=c.getPackageManager().getApplicationIcon(c.getApplicationInfo());
+            int size=Math.round(48*c.getResources().getDisplayMetrics().density);
+            android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(size,size,android.graphics.Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas=new android.graphics.Canvas(bitmap);icon.setBounds(0,0,size,size);icon.draw(canvas);
+            b.setLargeIcon(bitmap);
+        }catch(RuntimeException ignored){ }
         manager.notify(t.url,JOB,b.build());return true;
     }
     private ThreadWatch(){}

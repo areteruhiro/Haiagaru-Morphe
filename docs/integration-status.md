@@ -867,3 +867,21 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 通知は1分〜7日、日/時間/分の入力へ変更。1〜14分は永続単発Jobを終了後に再予約、15分以上は周期Jobを維持。初期15分・OS省電力遅延をUIへ記載。ランダムUA実験はコード/設定UI/profileを削除し旧キーを除去、固定テンプレート/カスタムを保持。エッヂ純正確認画面でテキストURL/通信用UAを使って空白になる経路を、HTML板ページ/標準WebView UA/DOM storageへ修正。失敗・challenge・空文書の間は古いCookieだけで閉じず、状態表示/再読込を追加。Mi Note 10/d5497008の検証242へ署名一致更新、VPN設定を変えずCloudflare表示→native板一覧→本文新着1→2件取得を確認。投稿側の別警告が出たことはdocsへ記録、投稿対応完了とは扱わない。
 認証3版は明示クラス名指定、さらに利用者要望でChMateパッチのclassDefForEach39か所を版別固定一覧へ置換。クラス型によるfallback探索なし。既存構造検査を残す。3版で旧走査版と全定義が一致（191 36,944/226 58,564/242 67,768クラス）。同梱DEXの衝突隔離とpatcherの必須DEX処理は維持。
 通常build/class-bindings-fixed3-build.log成功29s、MPP bdda80841ecabd3c1ea36be572045739587b208b80502b5ea8f6f38d2df76b1b。隔離emulator-5580のbindings191/226/242へ署名照合導入、各73項目とnative本文表示、新fatalなし。所有fixture削除/通知0/設定復元。初回BE worker一覧漏れ・比較ツールAPI指定・System UI応答停止中の画像失敗・242Compose反映待ち不足は修正/再試験して成功を確認、旧失敗を成功扱いしない。docs/full-class-scan-inventory-20261103.md、reading-native-challenge-20261103.md、thread-watch-short-intervals-20261103.md、android-installations.mdに証跡。利用者の公式Release指示あり。CI公開と配布asset/feed確認を次に行う。GAS変更なし。
+
+2026-11-03 1.19.0公式公開・配布検証完了
+実装25d533f、公開説明3e66d05、master統合e2368cb、CI生成f259458。Semantic Release CI41500539430とBuild Haiagaru CI41500539348がsuccess。公開説明の旧版テンプレートを検出した最初のCI41500202016は公開前にcancelled、1.19.0未作成を確認して.releasercのheaderPartialだけを今回の仕様/検証範囲へ更新した。手動タグ/Release/配布物の作成なし。
+公開MPP SHA256 c046889f72970d31cb39171dcffcdc6c3ac65135db037d1df6cc976e4367d40e。GitHub asset digest一致、CRC正常、3版の固定クラス一覧が検証済みsourceと一致、記録用ClassBindingTraceと廃止したRandomUserAgentRotationが不在、閲覧認証/通知/固定UA同梱を確認。stable/pre両feed SHA256 2bb062139c2cd68c28b03c73f89c25768fcf85182da1a3539337225404ad73ca。master/dev/mainの両feed計6件が1.19.0・同MPP URLで一致、日時形式・署名URL空・今回の公開説明を検査。draft=false/prerelease=false/latest=true。build/official1190-public/verification.json、release.json、ci.log。公開後のCI生成履歴をdevへff取込、検証AVDのみデータ保持で停止。通常アプリ/投稿/GAS変更なし。
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.19.0 。
+
+2026-11-03 共有NG GAS v14: 特定reporterを非公開IGNORED_REPORTERSで除外。有効報告へ正常応答/ACKし保存しない。既存履歴を保持し配信票から除外、他reporterは継続。local330チェック成功、GAS3ファイル保存再取得一致/同URL v14更新/UI設定一致/公開GET ok revision113・1704条件・private metadataなしを確認。追加editor exportはlock timeout、実POST未実施。アプリ変更・Releaseなし。詳細docs/shared-ng-review-implementation.md。
+
+
+2026-11-03 未取得5chスレの遷移前取得・二重ダウンロードを修正（未公開）
+利用者の191/1.12→1.19 GIFとコード差分から、968d107で通常の最近の5ch URLまでimporterを呼び、live DATの全取得後に破棄してnativeへ再ナビゲーションする経路を特定。600msの制御応答で一覧遷移を620ms待つことを再現。通常の最近の5chはnative画面を先に開き、既存DAT worker bridgeで初回取得DATを消費するよう変更。cache更新/IDX/設定OFF/外部板/Talk/VIP/旧過去ログ経路を保持。3版各18項目とnative初回1取得・本文レス45表示成功。通常build4m16s成功、MPP SHA256 9a6fe7f97a0924bb563ab508309de03c7fbc834427f7024e5bb52c1cafd5b7f3。nativeフックの追加・register変更なし。詳細docs/thread-open-prefetch-regression-20261103.md、台帳。Samsung17実時間/同一板一覧の実タップ比較は未確認、1.18.2/1.18.3間の全差を説明したとはしない。通常アプリ/実機/投稿/GAS/公式Release変更なし。
+
+
+2026-11-03 通知登録スレの実機確認: 730eae72/XIG05の利用者package jp.co.airfrt.android.chMate.haiagartu（191 dev）で既存1登録・1分設定をread-only確認。対象URL tagの実通知がNotificationManagerに存在、通知許可/channel有効、Job実行完了履歴と次回永続単発予約あり。ただし現在RARE・CONNECTIVITY/WITHIN_QUOTA未充足で実行待機、毎分実行を保証しない。新規投稿待ち/タップ/長時間消灯試験は未実施。設定/通知/実行枠変更・強制Job・投稿・APK導入なし。docs/thread-watch-real-device-20261103.md。
+
+
+2026-11-03 通知本文・ChMateアイコン・設定入口最上部・README全面整理（公式公開候補）
+利用者指定でスレ名/新着本文最大3件/件数/ChMateアイコンを通知へ追加。新着時だけDAT追加取得、取得不可時はtitle/count通知。浮動PopupWindowを廃止し既存SettingActivity onResumeから同じcontentの最上部へ入口を追加、native/Compose viewはdetachしない。191/226/242各通知17・入口15項目成功、242背景Job合成20→22で本文付き通知1・次回予約成功。host30。最終通常build3m52s成功、MPP SHA256 60a554a4384e7611f3bfcafe5f8bdf03509f70e2524f9d5ea8dd012c02e0d2d0。登録/設定復元・新規fatalなし・実APKhash一致。利用者指定で変更外の本文/画像/GIF/動画の再検証省略、初期ANR/ハーネス失敗は除外。READMEとリンク先を現行9カテゴリ/署名条件/配布・操作へ更新し参照57件正常。台帳・詳細docs/notification-settings-readme-20261103.md。既存CIで正式公開し配布物/README/feed検証を次に行う。

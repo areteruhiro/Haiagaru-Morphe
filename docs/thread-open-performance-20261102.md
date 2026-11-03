@@ -37,3 +37,22 @@ mainスレッドのサンプルで`Haiagaru.defaultAdClass → classExists → C
 作成した公開スレのDAT/idx/bookmark、対応する論理位置ファイル、所有markerを検証後に削除。他のスレや通常アプリのデータ、投稿・NG登録・共有NG送信・GASは変更していない。詳細は`build/thread-open-cache-cleanup.json`、`thread-open-position-cleanup.json`、`thread-open-ad-walk-after*.json`、`thread-open-image*.log`、`thread-open-ad-cache-final-crash.log`と導入台帳。
 
 修正は未公開。確定した広告確認処理の効率化を実装した段階であり、利用者報告と同条件の1.18.3固有の速度差は継続確認が必要。
+
+## 2026-11-03 利用者提供GIFによる1.12.0-dev.1 / 1.19.0比較
+
+上記の広告クラス確認最適化は1.19.0へ公開済み。ただし利用者から同じ191 dev / Samsung SM-S948Q / Android17で遅延が残る動画が提供された。旧 https://i.imgur.com/QuRrmef.gif 、新 https://i.imgur.com/nBZ3N63.gif 。GIFのデコードフレームと各フレームのdurationを集計した。見えているのはタブレット形式の板一覧からAdGuard Part104を開く操作で、読み込み中画面のURLも同じスレを示している。
+
+| 観察区間 | 1.12.0-dev.1 | 1.19.0 | 差 |
+|---|---:|---:|---:|
+| 行の選択色が初めて見える→空の読み込み画面 |約170ms|約1,250ms|約+1,080ms|
+| 空の読み込み画面→最初の本文 |約960ms|約1,290ms|約+330ms|
+| 選択色→最初の本文 |約1,130ms|約2,540ms|約+1,410ms|
+
+旧選択1080ms/読み込み1250ms/本文2210ms、新選択1000ms/読み込み2250ms/本文3540ms（各GIFの先頭基準）。フレーム間隔は約42ms。選択色は実際の入力時刻や処理開始時刻ではないため、正確なタップ遅延の計測とは区別する。1回ずつの別収録であり、通信・設定・キャッシュを統制したベンチマークではない。GIF単体からCPU/通信の根因を断定しない。
+
+主に増えているのは板一覧が残る区間。これまでのResListActivity直接起動による計測だけでは、タブレットの板一覧クリック経路や、既存スレからの切り替え前処理を十分に含めていない。今後はnative一覧クリック→旧画面のpause/save→新画面作成→通信/描画を区別する必要がある。候補の一つとして、追加のReadingPosition保存はnative onPauseにフックされ、AtomicFile.finishWriteまで同期実行しているが、この動画だけで原因と扱わない。
+
+1.19.0で廃止した39か所の全クラス走査はパッチ適用時の対象探索。アプリ内のスレ表示前処理とは別なので、走査廃止や全定義一致をこの遅延の解消確認として扱わない。検査用データ `build/thread-open-gifs-20261103/comparison.json` / `old-frames.json` / `new-frames.json` / contact PNG。動画の取得はフレーム分析用であり、GIF全長の差を表示速度差として数えていない。
+
+
+2026-11-03 追記: 差分の追加調査で、通常の未取得5chスレを画面遷移前に先行ダウンロードし、liveなら破棄してnativeで再取得する経路を特定。600msの制御通信で再ナビゲーションまで620msを再現し、worker取得への移動・DAT再利用を3版で確認。詳細は [遷移前DAT取得の回帰調査](thread-open-prefetch-regression-20261103.md)。旧版と新版本体・実回線の全遅延を同条件で比較できたという意味ではない。

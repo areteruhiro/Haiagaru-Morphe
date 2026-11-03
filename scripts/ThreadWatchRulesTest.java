@@ -17,6 +17,17 @@ public final class ThreadWatchRulesTest {
         check(ThreadWatchRules.increase(10,10)==0);
         check(ThreadWatchRules.increase(10,5)==0);
         check(ThreadWatchRules.increase(10,15)==5);
+        check(edge.dat.equals("https://bbs.eddibb.cc/liveedge/dat/1793457978.dat"));
+        check(ThreadWatchRules.titles("1793113633.dat<>Title (part 2) &amp; test (12)\n").get("1793113633").equals("Title (part 2) &amp; test"));
+        check(ThreadWatchRules.titles("<html>\n1793113633.dat<>fake (12)\n").isEmpty());
+        String dat="name<>mail<>date<>old<>title\nname<><>date<>new &amp; <b>bold</b><>\nname<><>date<>second<br>line<>\n";
+        check(ThreadWatchRules.bodies(dat,1,3).size()==2);
+        check(ThreadWatchRules.bodies(dat,1,3).get(2).equals("new &amp; <b>bold</b>"));
+        check(ThreadWatchRules.bodies(dat,3,3).isEmpty());
+        check(ThreadWatchRules.bodies("<html>challenge",1,3).isEmpty());
+        check(ThreadWatchRules.bodies(dat,-1,3).isEmpty());
+        check(ThreadWatchRules.bodies("broken\n",0,1).isEmpty());
+        check(ThreadWatchRules.bodies(dat+dat,0,6).keySet().equals(new java.util.LinkedHashSet<>(java.util.Arrays.asList(4,5,6))));
         System.out.println("ThreadWatchRules: "+checks+" passed");
     }
 }
