@@ -1479,3 +1479,25 @@ serial `emulator-5580`、AVD `Haiagaru_Test_API36_16GiB`、Android16。既存隔
 |0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T13:09:45.529550|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-242.apk`|`ddcbbf1fffcaae0bf53569bc7cddfa195cc8792ee0cd2bb302c0a1948cf203b1`|
 
 導入済み実APKのSHA256一致。各通知17/設定入口15項目、242の背景Job→本文付き通知→次回予約を確認。初期ANR/ハーネス失敗は成功に含めず再確認。各PID新規fatalなし。全版テスト登録0・設定復元。利用者指定で今回の本文/画像/GIF/動画再検証を省略。詳細docs/notification-settings-readme-20261103.md、build/notification-settings-final-summary.json。
+
+
+## 2026-11-03 5ch通知本文・native設定一覧 最終候補
+
+serial `emulator-5580` / AVD `Haiagaru_Test_API36_16GiB` / Android16。既存隔離packageとの署名照合後install-r Success。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。通常package/実機への導入・削除・データ消去なし。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-settings-row-release.mpp` SHA256 `3a2bbf4579eaf9b42ad06d69092f8d4ef8916795bd7e5212d7746c57a64a9033`。
+
+|版 / 表示名|package|導入日時 JST|APK絶対パス|SHA256|
+|---|---|---|---|---|
+|0.8.10.191 dev / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T14:35:40.257034|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-settings-row-release-191.apk`|`01094dcab5359adf04df5be7877f8da30616ec0907054bb20152a1ba646944dc`|
+|0.8.10.226 dev / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T14:36:20.204175|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-settings-row-release-226.apk`|`f50ad36a1d27cb744d9a2c8d1c99d793a373acb4efbcaaf90cef823276783c15`|
+|0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T14:34:40.603163|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/native-settings-row-release-242.apk`|`b5045a75bfb16b246a40583f3856dd86d22ea451820a3f5f24b105cf3ff98107`|
+
+各通知17、UI設定191/226各12・242は18、native内容保持191/226各6・242は8項目成功。対象実APK hash一致、新規fatalなし。242背景Job20→22件の本文通知/次回予約、実機の公開5ch DATでの純粋パーサーも確認。登録/通知/設定復元、実機一時DEX削除済み。詳細docs/notification-body-native-settings-20261103.md。
+
+
+### 追加: 242 S2M起動対策の最終候補
+
+同じ隔離package/署名/鍵/serialへ署名一致install-r Success。導入日時JST `2026-11-03T14:39:19.918795`、APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-settings-s2m-final-242.apk` SHA256 `ae5144ac5d2076bcb35ced77060cdc880ccf28a4c2bcd1e6137e08eccb2aa96c`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-settings-s2m-final.mpp` SHA256 `87ac79db6fdca09f4bb480046b1ff7951a570ea641b0bbae56472f02fbd666b4`。実インストールAPK hash一致。191/226は前候補とextension MPE同一のため前段の検証を継続採用、242で再確認。
+
+最終242で通知17/設定UI18/内容保持8、S2M画面3回の起動・再表示成功、新規fatalなし。Frida通信hook背景試験はART native異常終了のため無効とし、フック無し実5ch通信のJob試験へ変更。前回0件の試験基準→117件を取得して本文付き通知・次回Job確認、新規fatalなし、登録を削除・間隔を初期15分へ・通知0を確認。新規117投稿の観測ではない。利用者の通常アプリ/実機設定は変更なし。

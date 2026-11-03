@@ -1,60 +1,67 @@
 package app.morphe.extension.chmate;
 
 import android.app.Activity;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+import java.lang.reflect.*;
+import java.lang.ref.WeakReference;
+import java.util.*;
 
-/** An entry in the settings window, without detaching the native/Compose content. */
-final class InlineSettingsEntry {
-    static final String TAG="haiagaru.settings.inline";
-    static void attach(Activity activity) {
-        View view=activity.findViewById(android.R.id.content);
-        if(!(view instanceof FrameLayout))return;
-        FrameLayout content=(FrameLayout)view;
-        if(content.findViewWithTag(TAG)!=null)return;
-        if(content.getChildCount()==0)return;
-        java.util.List<View> originals=new java.util.ArrayList<>();
-        java.util.List<Integer> margins=new java.util.ArrayList<>();
-        for(int i=0;i<content.getChildCount();i++){
-            View child=content.getChildAt(i);
-            if(!(child.getLayoutParams() instanceof FrameLayout.LayoutParams))return;
-            originals.add(child);margins.add(((FrameLayout.LayoutParams)child.getLayoutParams()).topMargin);
-        }
-        int padding=dp(activity,16),height=dp(activity,72);
-        LinearLayout entry=new LinearLayout(activity);entry.setTag(TAG);
-        entry.setOrientation(LinearLayout.VERTICAL);entry.setGravity(Gravity.CENTER_VERTICAL);
-        entry.setPadding(padding,dp(activity,8),padding,dp(activity,8));
-        entry.setMinimumHeight(height);entry.setClickable(true);entry.setFocusable(true);
-        android.util.TypedValue attr=new android.util.TypedValue();
-        if(activity.getTheme().resolveAttribute(android.R.attr.colorBackground,attr,true))entry.setBackgroundColor(attr.data);
-        if(android.os.Build.VERSION.SDK_INT>=23&&activity.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,attr,true)&&attr.resourceId!=0)
-            entry.setForeground(activity.getDrawable(attr.resourceId));
-        TextView title=new TextView(activity);title.setText("Haiagaru設定");title.setTextSize(17);
-        TextView summary=new TextView(activity);summary.setText("追加機能・表示・通知などの設定");summary.setTextSize(13);
-        entry.addView(title);entry.addView(summary);entry.setElevation(dp(activity,2));
-        entry.setOnClickListener(v->Haiagaru.showSettingsDialog(activity));
-        java.util.function.IntConsumer reserve=top->{
-            for(int i=0;i<originals.size();i++){
-                View child=originals.get(i);
-                FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)child.getLayoutParams();
-                int margin=margins.get(i)+top;
-                if(params.topMargin!=margin){params.topMargin=margin;child.setLayoutParams(params);}
-            }
-        };
-        reserve.accept(height);
-        content.addView(entry,new FrameLayout.LayoutParams(-1,height,Gravity.TOP));
-        entry.setOnApplyWindowInsetsListener((v,insets)->{
-            int top=android.os.Build.VERSION.SDK_INT>=30?insets.getInsets(android.view.WindowInsets.Type.systemBars()).top:insets.getStableInsetTop();
-            entry.setPadding(padding,dp(activity,8)+top,padding,dp(activity,8));
-            ViewGroup.LayoutParams params=entry.getLayoutParams();params.height=height+top;entry.setLayoutParams(params);
-            reserve.accept(height+top);return insets;
-        });
-        entry.requestApplyInsets();
+/** Inserts an ordinary native row before Safe mode; never changes screen margins. */
+public final class InlineSettingsEntry {
+    static final String KEY="haiagaru.settings.entry";
+    private static final Map<Object,WeakReference<Object>> LEGACY=new WeakHashMap<>();
+    private static int title(Context context){
+        int id=context.getResources().getIdentifier("haiagaru_settings_entry","string",context.getPackageName());
+        if(id==0)throw new IllegalStateException("Settings entry title missing");return id;
     }
-    private static int dp(Activity activity,int value){return Math.round(value*activity.getResources().getDisplayMetrics().density);}
+    public static void legacy(Context context,Object screen){
+        if(context==null||screen==null)return;
+        try{
+            ClassLoader loader=context.getClassLoader();
+            Class<?> preference=Class.forName("androidx.preference.Preference",false,loader);
+            Class<?> group=Class.forName("androidx.preference.PreferenceGroup",false,loader);
+            WeakReference<Object> old=LEGACY.get(screen);Object previous=old==null?null:old.get();
+            if(previous!=null)for(Method method:preference.getMethods())
+                if(method.getReturnType()==group&&method.getParameterTypes().length==0&&method.invoke(previous)==screen)return;
+            Object row=preference.getConstructor(Context.class).newInstance(context);
+            preference.getMethod("f",int.class).invoke(row,title(context));
+            // The verified legacy header builders add all native rows after this call.
+            // Intent preferences use the standard click path without selecting a native subpage.
+            Intent open=new Intent(context,HaiagaruSettingsActivity.class);
+            for(Method method:preference.getMethods())if(method.getReturnType()==void.class
+                &&Arrays.equals(method.getParameterTypes(),new Class<?>[]{Intent.class})){method.invoke(row,open);break;}
+            group.getMethod("e",preference).invoke(screen,row);
+            LEGACY.put(screen,new WeakReference<>(row));
+        }catch(ReflectiveOperationException|RuntimeException error){Log.w("Haiagaru","Native settings entry unavailable",error);}
+    }
+    public static List<?> catalog242(List<?> original){
+        Context context=Haiagaru.applicationContextForExtension();
+        if(context==null||original==null||original.isEmpty())return original;
+        try{
+            Object safe=original.get(0);Class<?> type=safe.getClass();
+            if(!"safe".equals(NativeFields.find(type,"e").get(safe)))return original;
+            Constructor<?> ctor=type.getDeclaredConstructor(String.class,
+                Class.forName("o.zzakg$read",false,context.getClassLoader()),int.class,String.class,
+                Class.forName("o.zzakg$write",false,context.getClassLoader()),Integer.class,List.class);
+            ctor.setAccessible(true);
+            Object row=ctor.newInstance(KEY,NativeFields.find(type,"b").get(safe),title(context),
+                NativeFields.find(type,"h").get(safe),NativeFields.find(type,"d").get(safe),
+                NativeFields.find(type,"j").get(safe),Collections.emptyList());
+            List<Object> result=new ArrayList<>(original);result.add(0,row);return Collections.unmodifiableList(result);
+        }catch(ReflectiveOperationException|RuntimeException error){Log.w("Haiagaru","Native settings catalog unavailable",error);return original;}
+    }
+    public static boolean selectRow(Object row){
+        if(row==null)return false;
+        try{return select((String)NativeFields.find(row.getClass(),"e").get(row));}
+        catch(ReflectiveOperationException|RuntimeException error){return false;}
+    }
+    public static boolean select(String key){
+        if(!KEY.equals(key))return false;
+        Activity activity=Haiagaru.toolbarActivity(null);
+        if(activity!=null)Haiagaru.showSettingsDialog(activity);
+        return true;
+    }
     private InlineSettingsEntry(){}
 }

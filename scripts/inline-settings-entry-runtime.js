@@ -1,16 +1,12 @@
-let original,entry,host,checks=0;
-function main(fn){return new Promise((resolve,reject)=>Java.perform(()=>Java.scheduleOnMainThread(()=>{try{resolve(fn());}catch(e){reject(Error(String(e.stack||e)));}})));}
+let checks=0;
 function check(ok,label){if(!ok)throw Error(label);checks++;}
+function main(fn){return new Promise((resolve,reject)=>Java.perform(()=>Java.scheduleOnMainThread(()=>{try{resolve(fn());}catch(e){reject(Error(String(e.stack||e)));}})));}
 rpc.exports={test(){return main(()=>{
  const app=Java.use('android.app.ActivityThread').currentApplication();if(!/^jp\.co\.airfront\.android\.a2chMate\.haiagaru\.bindings(191|226|242)$/.test(String(app.getPackageName())))throw Error('isolated bindings required');
- host=Java.retain(Java.use('app.morphe.extension.chmate.Haiagaru').toolbarActivity(null));check(String(host.getClass().getName())==='jp.syoboi.a2chMate.activity.SettingActivity','native settings foreground');
- const root=Java.cast(host.findViewById(16908290),Java.use('android.widget.FrameLayout'));entry=root.findViewWithTag('haiagaru.settings.inline');check(entry!==null,'inline entry exists');entry=Java.retain(Java.cast(entry,Java.use('android.widget.LinearLayout')));
- original=Java.retain(root.getChildAt(0));check(!original.equals(entry),'native content retained');const params=Java.cast(entry.getLayoutParams(),Java.use('android.widget.FrameLayout$LayoutParams'));check((params.gravity.value&112)===48,'entry at top');
- check(Java.cast(entry.getParent(),Java.use('android.view.View')).equals(root),'same native window');check(String(Java.cast(entry.getChildAt(0),Java.use('android.widget.TextView')).getText())==='Haiagaru設定','entry label');
- check(entry.getBottom()<=original.getTop(),'entry does not cover native settings');check(entry.isShown()&&entry.isClickable()&&entry.isFocusable(),'entry accessible');
- const children=root.getChildCount(),margin=Java.cast(original.getLayoutParams(),Java.use('android.widget.FrameLayout$LayoutParams')).topMargin.value;
- const H=Java.use('app.morphe.extension.chmate.Haiagaru');H.onSettingsResume(host);H.onSettingsResume(host);
- check(root.getChildCount()===children,'resume does not duplicate entry');check(root.getChildAt(0).equals(original),'native/Compose view not detached');
- check(Java.cast(original.getLayoutParams(),Java.use('android.widget.FrameLayout$LayoutParams')).topMargin.value===margin,'resume does not increase reserved space');
- check(entry.performClick(),'entry click handled');return {checks,clicked:true,version:String(app.getPackageName()).slice(-3)};
- });},opened(){return main(()=>{const a=Java.use('app.morphe.extension.chmate.Haiagaru').toolbarActivity(null);check(String(a.getClass().getName()).endsWith('HaiagaruSettingsActivity'),'Haiagaru settings opened');return {checks,activity:String(a.getClass().getName())};});},returned(){return main(()=>{const a=Java.use('app.morphe.extension.chmate.Haiagaru').toolbarActivity(null);if(a===null||!String(a.getClass().getName()).endsWith('.SettingActivity'))return {ready:false};check(true,'back returns to native settings');check(Java.cast(a.findViewById(16908290),Java.use('android.widget.FrameLayout')).findViewWithTag('haiagaru.settings.inline')!==null,'entry retained after back');return {ready:true,checks};});}};
+ const H=Java.use('app.morphe.extension.chmate.Haiagaru'),a=H.toolbarActivity(null);check(a!==null&&String(a.getClass().getName()).endsWith('.SettingActivity'),'native settings foreground');
+ const root=Java.cast(a.findViewById(16908290),Java.use('android.widget.FrameLayout'));check(root.findViewWithTag('haiagaru.settings.inline')===null,'old overlay absent');const child=root.getChildAt(0),count=root.getChildCount();check(child!==null,'native content exists');H.onSettingsResume(a);H.onSettingsResume(a);check(root.getChildCount()===count&&root.getChildAt(0).equals(child),'resume keeps native content');
+ const E=Java.use('app.morphe.extension.chmate.InlineSettingsEntry');check(!E.select('safe'),'native selection not intercepted');check(!E.selectRow(null),'null row not intercepted');
+ if(String(app.getPackageName()).endsWith('242')){const C=Java.use('o.zzakg'),field=C.class.getDeclaredField('b');field.setAccessible(true);const list=Java.cast(field.get(null),Java.use('java.util.List'));check(list.size()>1,'catalog retained');const safe=Java.cast(list.get(1),Java.use('o.zzakg$RemoteActionCompatParcelizer'));check(String(safe.e.value)==='safe'&&!E.selectRow(safe),'Safe mode uses native click');}
+
+ return {checks,version:String(app.getPackageName()).slice(-3)};
+ });}};

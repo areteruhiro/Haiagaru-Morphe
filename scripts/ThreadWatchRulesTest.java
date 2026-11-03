@@ -27,6 +27,8 @@ public final class ThreadWatchRulesTest {
         check(ThreadWatchRules.bodies("<html>challenge",1,3).isEmpty());
         check(ThreadWatchRules.bodies(dat,-1,3).isEmpty());
         check(ThreadWatchRules.bodies("broken\n",0,1).isEmpty());
+        check(ThreadWatchRules.bodies("<b>name</b><>mail<>date<>body<>title\n",0,1).get(1).equals("body"));
+        check(ThreadWatchRules.bodies("<>mail<>date<>anonymous body<>title\n",0,1).get(1).equals("anonymous body"));
         check(ThreadWatchRules.bodies(dat+dat,0,6).keySet().equals(new java.util.LinkedHashSet<>(java.util.Arrays.asList(4,5,6))));
         System.out.println("ThreadWatchRules: "+checks+" passed");
     }
