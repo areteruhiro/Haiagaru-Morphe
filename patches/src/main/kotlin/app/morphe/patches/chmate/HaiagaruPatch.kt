@@ -1990,6 +1990,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchThreadRefreshValidators(packageMetadata.versionName)
         patchPatrolImages(packageMetadata.versionName)
         patchPatrolInterval(packageMetadata.versionName)
+        patchRefreshTargets(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)
         patchBoardCookies(packageMetadata.versionName)
         patchBeAutoLogout(packageMetadata.versionName)

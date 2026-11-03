@@ -2,6 +2,16 @@
 
 # Android導入・署名台帳
 
+## 2026-11-03 板横断更新・返信通知 最終候補（エミュレータ）
+
+serial `emulator-5580`。既存の版別隔離packageへ署名一致install-r Success、データ保持。実機への導入なし。
+
+- 191 / `jp.co.airfront.android.a2chMate.haiagaru.bindings191` / 表示名 `Haiagaru binding 191` / 2026-11-03T23:05:30+09:00。APK `<workspace>/build/refresh-watch-official-candidate-191.apk`、SHA256 `0792d59432056e2d958b32441b67ac0fb277fa017dd74a4a73f0b4e1df6b5332`。
+- 226 / `jp.co.airfront.android.a2chMate.haiagaru.bindings226` / 表示名 `Haiagaru binding 226` / 2026-11-03T23:07:31+09:00。APK `<workspace>/build/refresh-watch-official-candidate-226.apk`、SHA256 `a4fdd017b1f4b34f11b2f129d8a832ae5b0b2153b8b5afd9c07ab7887d5bcb42`。
+- 242 / `jp.co.airfront.android.a2chMate.haiagaru.bindings242` / 表示名 `Haiagaru binding 242` / 2026-11-03T23:08:11+09:00。APK `<workspace>/build/refresh-watch-official-candidate-242.apk`、SHA256 `acfb954605472e2ae4a5bf1b11aadb6205bdab59cfed25eb1069e9b5b428b324`。
+
+MPP `<workspace>/build/refresh-watch-official-candidate.mpp`、SHA256 `b327ef8b6a23af5d3c4eba35aaa0b7e7993019661ee8faf8375a9d3f99d5bdf0`。証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・署名鍵ファイルの所在は非公開台帳 `build/local-development-records/refresh-watch-official-candidate-installations.json` に記録。各版125項目とnative例外試験成功、詳細は `docs/cross-board-refresh-notifications-20261103.md`。
+
 ## 2026-11-02 22:21 JST 5秒ランダムUA・191実機用（実験ブランチ、未公開）
 
 利用者指定の `作業ブランチ（random-user-agent-5s）`。XIG05/Android15、serial `730eae72`。表示名 `Haiagaru UA切替191`、ChMate `0.8.10.191 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.randomua191`。導入前に同packageが存在しないことを確認、別packageとしてinstall Success。既存アプリの削除・データ消去なし。

@@ -660,6 +660,7 @@ public final class Haiagaru {
             }
             return true;
         }
+        RefreshTargets.refresh(fragment, itemId);
         if (FavoriteThreads.refresh(fragment, itemId)) return true;
         if (itemId == 0x7e000005 || itemId == 0x7e000006) {
             Activity activity = toolbarActivity(fragment);
@@ -3495,6 +3496,7 @@ public final class Haiagaru {
     private static LinearLayout settingsGENERAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        ThreadWatch.addSettingsButton(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
