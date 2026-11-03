@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-03 共有NG検索・レスから除外 実機導入（未公開）: 利用者の実機導入指示。初回buildはPC nativeメモリ不足で停止、低メモリ再試行で通常Lint付きbuildAndroid成功3m9s、242適用／署名成功。XIG05/730eae72の標準ChMate246を保護し、別package resumefix242 / Haiagaru 検証 242を新規install-r Success。cold起動Status ok、導入後APK全バイト一致、対象新規crashなし。NG除外の実画面操作は未確認、公開なし。導入台帳参照。
+
 2026-11-03 レスから共有NGを個別除外（未公開）: 共有NG有効時のレス長押しへ「このレスに一致する共有NGを除外」を追加。191／226／242通常メニューと242本文シートの既存ResponseArchive経路に接続。選択レス1件を既存sharedReportInputsへ渡し、板・報告数・種類・個別除外・配信停止を含む本番indexで一致する条件だけを背景検索。検索付き選択画面から端末の除外IDへ保存、既存除外保持、キャンセル無変更、スレ再表示案内。一致なしは個人／連鎖NG確認案内。個人NG／DAT／サーバー条件の変更・ネットワーク送信なし。新規263＋既存10,003判定試験成功、Java／Kotlin releaseコンパイル成功。実画面／APK適用／端末導入／公開は未実施。docs/shared-ng-response-exclusion.md参照。
 
 2026-11-03 共有NG個別除外の検索（未公開）: 「チェックした条件を適用しない」に条件／板／種類の検索欄、表示件数・該当なしを追加。条件IDによる編集中の除外集合と表示行を分離し、絞り込みで隠れたチェックと未受信の既存除外IDを保存時にも維持。「戻る」は未保存。ListView／adapterと既存Compose表示で可視行だけ生成。Java／Kotlin releaseコンパイル50s成功、diff検査成功。今回の実画面再検証・APK適用・導入・公開は未実施。docs/shared-ng-exceptions-search.md参照。

@@ -1559,3 +1559,10 @@ MPP `build/conditional-ng.mpp` SHA256 `39bd6943153ca78df74d3e131e084fd8fc9e0e3a7
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T19:52:09.849670|`build/conditional-ng-191.apk`|`30db689068d0e448e2bea699cbe111d7bbb566402730e049832f93226a3fb03a`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T19:53:29.752744|`build/conditional-ng-226.apk`|`8b6496752517224937dda2056b00f8a26fa18421ff43471b6ef44a01773b4c00`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T19:55:00.230190|`build/conditional-ng-242.apk`|`00e3b8ea0e15bcfe56d52c9e530c00fd17f299eb4baea4cba98b432f32268ea5`|
+
+
+## 2026-11-03 共有NG検索・レスから除外の実機導入（未公開版）
+
+serial `730eae72` / XIG05。接続時の標準ChMateは0.8.10.246。標準アプリを変更せず、ChMate0.8.10.242 dev / 表示名 `Haiagaru 検証 242` / package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` を別アプリとして新規導入。署名照合／APK package検査／install-r Success／cold起動Status ok／導入後APK全バイト一致／新規対象crashなし。データ消去・アンインストールなし。記録時刻JST `2026-11-03T20:20:17.294094+09:00`。今回のNG除外画面操作は未確認。
+
+APK `build/shared-ng-device-242.apk` SHA256 `4f5ac42050f3382b8ed73eff785a5d05eae6e4d5009b018a5b50fbf543078c50`、MPP `build/shared-ng-device.mpp` SHA256 `6f074172374f1a238d899840652a602b5d4bc8cbb9736238c443ab9419144b77`。cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・署名鍵の場所を含む原本は `build/local-development-records/shared-ng-device-installation.json`。
