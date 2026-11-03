@@ -23,7 +23,7 @@ rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>{
   check(nm.getActiveNotifications().filter(n=>String(n.getTag())===url).length===0,'no initial notification');
   response='1793113633.dat<>fixture (12)\n1793113634.dat<>second (20)\n';W.check(app,Atomic.$new(false));
   let notes=nm.getActiveNotifications().filter(n=>String(n.getTag())===url);check(notes.length===1,'new responses notify');
-  check(String(notes[0].getNotification().extras.value.getString('android.title')).includes('2件'),'delta in notification');
+  check(String(notes[0].getNotification().extras.value.getString('android.subText')).includes('2件'),'delta in notification');
   W.check(app,Atomic.$new(false));check(nm.getActiveNotifications().filter(n=>String(n.getTag())===url).length===1&&stored(url).getInt('count')===12,'no duplicate');
   response='1793113633.dat<>fixture (9)\n';W.check(app,Atomic.$new(false));check(stored(url).getInt('count')===12,'decrease does not reset');
   response='<html>challenge</html>';W.check(app,Atomic.$new(false));check(stored(url).getInt('count')===12,'challenge does not consume count');

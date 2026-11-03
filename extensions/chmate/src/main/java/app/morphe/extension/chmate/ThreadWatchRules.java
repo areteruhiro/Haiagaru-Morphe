@@ -11,8 +11,9 @@ final class ThreadWatchRules {
     private static final Pattern PATH=Pattern.compile("/test/read\\.cgi/([A-Za-z0-9_-]+)/([0-9]{9,11})(?:/.*)?");
     private static final Pattern ROW=Pattern.compile("^([0-9]{9,11})\\.dat<>(.*) \\(([0-9]{1,7})\\)\\s*$");
     static final class Target {
-        final String url,subject,id;
-        Target(String url,String subject,String id){this.url=url;this.subject=subject;this.id=id;}
+        final String url,subject,id,dat;
+        Target(String url,String subject,String id){this.url=url;this.subject=subject;this.id=id;
+            this.dat=subject.substring(0,subject.length()-"subject.txt".length())+"dat/"+id+".dat";}
     }
     static Target target(String value){
         try{
@@ -30,5 +31,23 @@ final class ThreadWatchRules {
         return out;
     }
     static int increase(int before,int after){return before>=0&&after>before?after-before:0;}
+    static Map<String,String> titles(String text){
+        Map<String,String> out=new HashMap<>();
+        if(text==null||text.trim().startsWith("<"))return out;
+        for(String line:text.split("\n")){Matcher m=ROW.matcher(line);if(m.matches())out.put(m.group(1),m.group(2));}
+        return out;
+    }
+    /** Last three new response bodies, bounded before HTML decoding. No images are fetched. */
+    static Map<Integer,String> bodies(String dat,int before,int count){
+        Map<Integer,String> out=new java.util.LinkedHashMap<>();
+        if(dat==null||before<0||dat.trim().startsWith("<"))return out;
+        String[] lines=dat.split("\n");
+        for(int no=Math.max(before+1,count-2);no<=count&&no<=lines.length;no++){
+            String[] fields=lines[no-1].split("<>",-1);
+            if(fields.length<5)continue;
+            String body=fields[3];out.put(no,body.substring(0,Math.min(body.length(),16384)));
+        }
+        return out;
+    }
     private ThreadWatchRules(){}
 }

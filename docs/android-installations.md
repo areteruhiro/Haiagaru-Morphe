@@ -1466,3 +1466,16 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 |0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T11:44:56.463556|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-242.apk`|`6def48f1db60cad83c64be930918d393150bd9519e28ee214cb4c476e212ac57`|
 
 導入後の実APKをpullしてhash一致、各対象PIDに新規fatalなし。各18項目・native未取得スレ本文レス45表示確認。証跡 `build/thread-prefetch-install-{191,226,242}.json` / `thread-prefetch-final-verification.json` / `thread-prefetch-native-{191,226,242}.xml`。試験設定復元・所有fixture削除済み。ユーザー実機への導入なし、公式配布物ではない。
+
+
+## 2026-11-03 通知内容・最上部設定入口 最終候補
+
+serial `emulator-5580`、AVD `Haiagaru_Test_API36_16GiB`、Android16。既存隔離package署名照合install-r Success。通常アプリ/実機への導入・アンインストール・データ消去なし。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix.mpp` SHA256 `60a554a4384e7611f3bfcafe5f8bdf03509f70e2524f9d5ea8dd012c02e0d2d0`。
+
+| ChMate / 表示名 | package | JST導入時刻 | APK絶対パス | SHA256 |
+|---|---|---|---|---|
+|0.8.10.191 dev / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T12:59:21.886860|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-191.apk`|`a90601d50f576486757a1f397d775c3e704e7fa13eca3f398c6abe0280c0c672`|
+|0.8.10.226 dev / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T13:09:09.264926|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-226.apk`|`4543b86b39ab4e92d54f2a130f61598282a974e4f5aa5cb1da323692afcb0223`|
+|0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T13:09:45.529550|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-242.apk`|`ddcbbf1fffcaae0bf53569bc7cddfa195cc8792ee0cd2bb302c0a1948cf203b1`|
+
+導入済み実APKのSHA256一致。各通知17/設定入口15項目、242の背景Job→本文付き通知→次回予約を確認。初期ANR/ハーネス失敗は成功に含めず再確認。各PID新規fatalなし。全版テスト登録0・設定復元。利用者指定で今回の本文/画像/GIF/動画再検証を省略。詳細docs/notification-settings-readme-20261103.md、build/notification-settings-final-summary.json。
