@@ -40,7 +40,10 @@ final class ThreadWatchRules {
     /** Last three new response bodies, bounded before HTML decoding. No images are fetched. */
     static Map<Integer,String> bodies(String dat,int before,int count){
         Map<Integer,String> out=new java.util.LinkedHashMap<>();
-        if(dat==null||before<0||dat.trim().startsWith("<"))return out;
+        // 5ch DAT names can start with <b> or be empty (<>). A leading '<'
+        // therefore does not distinguish a DAT from an HTML error page.
+        // Validate the response fields below instead.
+        if(dat==null||before<0)return out;
         String[] lines=dat.split("\n");
         for(int no=Math.max(before+1,count-2);no<=count&&no<=lines.length;no++){
             String[] fields=lines[no-1].split("<>",-1);

@@ -3421,7 +3421,6 @@ public final class Haiagaru {
     public static void onSettingsResume(Activity activity) {
         if (activity == null) return;
         applicationContext = activity.getApplicationContext();
-        InlineSettingsEntry.attach(activity);
     }
 
     static void showSettingsDialog(Activity activity) {

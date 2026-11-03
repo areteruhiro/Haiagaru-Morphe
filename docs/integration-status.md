@@ -885,3 +885,20 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 
 2026-11-03 通知本文・ChMateアイコン・設定入口最上部・README全面整理（公式公開候補）
 利用者指定でスレ名/新着本文最大3件/件数/ChMateアイコンを通知へ追加。新着時だけDAT追加取得、取得不可時はtitle/count通知。浮動PopupWindowを廃止し既存SettingActivity onResumeから同じcontentの最上部へ入口を追加、native/Compose viewはdetachしない。191/226/242各通知17・入口15項目成功、242背景Job合成20→22で本文付き通知1・次回予約成功。host30。最終通常build3m52s成功、MPP SHA256 60a554a4384e7611f3bfcafe5f8bdf03509f70e2524f9d5ea8dd012c02e0d2d0。登録/設定復元・新規fatalなし・実APKhash一致。利用者指定で変更外の本文/画像/GIF/動画の再検証省略、初期ANR/ハーネス失敗は除外。READMEとリンク先を現行9カテゴリ/署名条件/配布・操作へ更新し参照57件正常。台帳・詳細docs/notification-settings-readme-20261103.md。既存CIで正式公開し配布物/README/feed検証を次に行う。
+
+
+2026-11-03 1.20.0公式公開・配布・README確認完了
+実装767e693（通知本文/ChMateアイコン/最上部設定入口/README全面整理）、既存のDAT二重取得修正2fe4952をmasterへ統合e008610。Semantic Release CI41576859604とBuild CI41576859617がsuccess、生成commit525a2a5・tag1.20.0。手動タグ/Release/assets作成なし。
+公開MPP SHA256 fe849e75858486f27a7afeb722286955a90fe56000fb34358dfb6435cf79e669、GitHub asset digest一致・CRC正常。新入口/通知/初回DAT再利用を同梱、旧Popupボタンと廃止UA実験が不在。stable/pre両feed SHA256 e3b69047ff16464629228580903b161c46df903599cfd55fbccb722699e5f37f、master/dev/mainの両feed計6件が1.20.0・同MPP URL・今回説明で一致。draft=false/prerelease=false/latest確認。README masterのblob SHA355f44b885701f451472d52bdc77994b7529b24fが検証済みローカルと一致。build/official1200-public/verification.jsonとrelease.json、official1200-release-ci.log/build-ci.log。
+ユーザー指定で今回変更外の本文/画像/GIF/動画再検証を省略し、公開説明に明記。各通知17/設定入口15、背景Job→本文付き通知と次回予約、ソース/文書参照57件の検証は前記記録。検証AVDはデータ保持で停止済み、実機の導入/削除・投稿・GAS変更なし。CI生成履歴をmaster/devへff取込み、devへ戻した。
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.0 。
+
+
+2026-11-03 5ch通知本文・標準設定一覧の修正（公式候補）
+
+
+最終通常Lint/R8 build `build/native-settings-row-navigation-final-build.log` 成功3m30s、MPP SHA256 `3a2bbf4579eaf9b42ad06d69092f8d4ef8916795bd7e5212d7746c57a64a9033`。3版の設定追加フック計5メソッドは元の全命令・register数保持を検査（`build/native-settings-row-hook-verification.json`）。emulator-5580の署名一致隔離3packageで通知各17・native内容保持191/226各6、242は8・UI設定191/226各12、242は18項目成功。242背景Jobの本文通知と次回予約成功、テスト登録/通知/間隔を復元、実APK SHA一致、新規fatalなし。詳細`build/native-settings-release-final-summary.json`、`native-settings-row-result-{191,226,242}.json`、`thread-watch-content-background-result.json`、導入台帳。公開は既存Semantic Release CIで行う。
+実機d5497008で実5ch DATの旧先頭判定による誤除外を確認、純粋パーサー修正後に109件中最終本文180文字を取得。本文/IDはログに出さない。native設定入口をセーフモード直前へ移し説明文削除、242で戻るとSafe modeへ遷移する初期候補を修正し一覧復帰/標準Safe mode遷移確認。利用者指定で変更外本文/画像/GIF/動画の広い再検証省略。通常アプリ/投稿/共有NG/GAS変更なし。
+
+
+最終242: 通知17/設定UI18/内容保持8/S2M画面3回起動成功、最終実APK hash一致。Fridaの通信hook背景試験はART native SIGSEGVで中断し成功扱いせず、フック無しの実通信へ検証を変更。実5ch Jobで前回件数0のfixtureから117件取得→本文付き通知→次回予約成功、新規fatalなし。テスト登録と通知を除去、確認間隔初期15分へ。実際の新着117投稿を観測した試験ではない。build/notification-real5ch-uninstrumented-result.json、s2m242-final-runtime.json。Frida試験の追加コマンドは自動承認レビューでblocked by policy（具体理由なし）となり未実行、代わりにフック無し試験を完了。Pixel 10a/Android17実機未検証。

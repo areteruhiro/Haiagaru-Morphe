@@ -29,3 +29,6 @@ emulator-5580 / Android16の既存隔離bindings191/226/242へ署名照合instal
 導入後APKを再取得してhash一致、各対象PIDに新規fatalなし。台帳は `docs/android-installations.md`。Samsung / Android17の同一一覧タップによる実時間比較は未実施。実回線の混雑やnative転送・初回描画に別の遅延が残る可能性はあり、端末全体の改善率は主張しない。
 
 公式1.19.0の配布物やGASは更新しない。この修正は未公開。
+
+
+2026-11-03公開追記: 公式[1.20.0](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.0)へ収録済み。既存Semantic Release/Build CI成功、公開MPP SHA256 `fe849e75858486f27a7afeb722286955a90fe56000fb34358dfb6435cf79e669`、配布asset digest/CRC/更新feed6件/README一致を確認。詳細は`build/official1200-public/verification.json`とintegration-statusの公開記録。
