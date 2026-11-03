@@ -902,3 +902,10 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 
 
 最終242: 通知17/設定UI18/内容保持8/S2M画面3回起動成功、最終実APK hash一致。Fridaの通信hook背景試験はART native SIGSEGVで中断し成功扱いせず、フック無しの実通信へ検証を変更。実5ch Jobで前回件数0のfixtureから117件取得→本文付き通知→次回予約成功、新規fatalなし。テスト登録と通知を除去、確認間隔初期15分へ。実際の新着117投稿を観測した試験ではない。build/notification-real5ch-uninstrumented-result.json、s2m242-final-runtime.json。Frida試験の追加コマンドは自動承認レビューでblocked by policy（具体理由なし）となり未実行、代わりにフック無し試験を完了。Pixel 10a/Android17実機未検証。
+
+
+2026-11-03 1.20.2公式公開・配布検証
+実装60a18db、最初のmaster統合df69825。公開直前に利用者指定でPixel 10a/Android17未検証の一文を公開説明から削除。CI41585563555をGitHub Release作成前にcancelled（prepare段階で1.20.1のtag/生成commit a8b6a14は作られたがReleaseは未作成）。手動タグ削除・Release/assets作成なし。説明変更1e2bfd6とCI生成履歴を統合dd2de5aし既存CIを再実行、正式1.20.2を公開。Release CI41585872880/Build CI41585872879がsuccess、生成commit45a2f13。旧Build CI41585563461もsuccess。
+公開MPP SHA256 `a676f8f38b33b22171386265361ecbf2202a97d512966b25b470b2e8737864e0`、GitHub digest一致・CRC正常。公開DEXでThreadWatchRules.bodiesに先頭startsWith除外が無くDAT項目区切りを解析すること、S2Mの値0パッチ/新native入口同梱を検査。stable/pre両feed SHA256 `ab4b3cd422f0f5497d7498fdbde519033e17981855789918a039c6ae3905ba40`。master/dev/mainのrefs/heads URLの両feed計6件が1.20.2・同MPP・最新説明で一致、GitHub main/master feed blobも一致。短縮raw URLは5件が1.20.2、main/patches-bundle.jsonだけCDN HITで1.20.0残存を観測（JSON本体は変更しない）。README master blobと検証済みsource一致、latest=true/draft=false/prerelease=false。公開Release本文に削除指示の一文が無いことを確認。build/official1202-public/verification.jsonとrelease.json、official1202-release-ci.log/build-ci.log。
+CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ保持で停止、通常アプリ/実投稿/GAS変更なし。
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.2 。
