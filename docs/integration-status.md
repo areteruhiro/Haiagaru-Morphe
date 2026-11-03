@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-03 登録済みNG操作（公式公開準備）: 標準NG編集画面とワッチョイ上下4桁追加画面へ削除・有効／無効を追加。削除確認、条件／板／日時／他フラグ保持、操作後の編集画面終了、変更済み対象の拒否に対応。追加画面の操作ボタンは対象板の直下。固定3クラスへのonResume追加のみで全クラス検出なし。通常Lint付きAndroid build2m50s成功、191／226／242の最終候補で各102保存試験＋13実UIタップ成功。元編集メソッド命令は前候補と全一致、追加hookは各1レジスター3命令。新規crash buffer空。試験条件・送信設定を保護。変更していない本文／画像／GIF／動画の再検査は利用者指定で省略。通知・バックアップ設定／復元残留設定／versionCode最大値の既存dev修正も含め公式公開の指示あり。docs/existing-ng-actions.md・導入台帳参照。
+
 2026-10-26 最新CAPTCHA/計算＋ジェスチャー統合242導入（未公開）: ユーザーが認証側の最新差分も含めた実機導入を指定。主開発先の全差分を通常Lint付きbuild成功5m19s（build/combined-gestures-captcha-c1-build.log）。元確認ページ42/投稿結果と下書き保護27/ジェスチャー36のhost検査、3版native空タブAPI検査成功。242適用/署名/完成APKのタブfactory命令とnative下書きwriter wrapper検査成功。XIG05/730eae72の既存resumefix242へ署名一致install-r Success・データ保持・cold起動Status ok（23:17頃JST、PID3607）。HOME/スレの実native空タブ作成/追加先反転/復元19項目成功。XIG05切断後ADBがMi Note10へ切り替わり、実WebView履歴/新しい3操作の実スワイプ/実認証投稿/最終crash再取得は未確認、他端末は未操作。MPP build/combined-gestures-captcha.mpp SHA256 6A734DA86369A0AC9ED53279B7320A029F76CA6CD089C673A8B86BF389B26742。詳細docs/tool-tab-chmate-gestures-20261026.md・導入台帳、公開なし。
 
 2026-10-26 PR #93操作拡張（未公開）: ユーザーが前回候補を「良さそうです」と確認後、戻る/進む/新しいタブ追加を依頼。同じnativeToolTabChMateGesturesスイッチへ接続。表示中WebView履歴、戻る根で本体タブ終了、設定カテゴリ→一覧、進む根はno-op。新しいタブは実所属HOME/スレペインで本体のtype3空タブ作成APIへ委譲し、本体履歴リンクも保持。36の本番Java/fake Android試験・3版元APKのnative空タブAPI意味検査成功。Java Androidコンパイル成功、配布AndroidビルドはPCネイティブメモリ不足で停止し低メモリ再試行中。前回導入APKは今回拡張を含まない。新規コード/設定説明/試験を主開発先へ保存、PRへpush/merge/公開なし。詳細docs/tool-tab-chmate-gestures-20261026.md。

@@ -1534,3 +1534,15 @@ MPP `<workspace>/build/portable-backup-final.mpp` SHA256 `a740c9107937c79e7e9166
 |0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T16:43:54.077645|`build/portable-backup-final-242.apk`|`ad4699b24d4e12adfe64932471cabcd7f1bcf7a7755c0e804a153db2ea6c42fb`|
 
 各通知バックアップ40/新規環境相当の設定復元23項目成功。242は既存通知17・JNI初期化/close/切断確認成功。全版実APKhash一致/対象PID新規fatalなし/試験通知登録0。UI242で復元ON/保存先/権限待ち/間隔6・保持数6表示を確認。詳細docs/portable-backup-settings-20261103.md。
+
+
+## 2026-11-03 登録済みNG操作 最終確認
+
+serial `emulator-5580` / Android16。既存隔離アプリと署名一致を確認してinstall-r成功、データ保持。実機・通常パッケージへの導入なし。各版でネイティブ保存処理102項目、実画面タップ13項目成功。試験NGを元の一覧へ復元、送信同意OFF、試験中のネットワークOFF。新規crash buffer空。
+MPP `build/existing-ng-final.mpp` SHA256 `098e1a2a3aac52335ec5bf21f873d381b454a7aa1cb5a4306e95e76cda1bd98a`。cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・鍵の場所を含む非公開台帳は `build/local-development-records/existing-ng-final-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T17:49:02.134273|`build/existing-ng-final-191.apk`|`191401bfb5e529a751f9aeaa481e39218acda9d1aa84c6fdd0218d9772cfa53d`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T17:51:13.184141|`build/existing-ng-final-226.apk`|`53df50735036518b358603046bdfa03bc9b193e1e548e9e55b9efeddc30621e9`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T17:52:21.888653|`build/existing-ng-final-242.apk`|`c1a8c16c085694b0b8389f69f6b5d9de92022b105afc39d0c1231238b8f1372f`|
