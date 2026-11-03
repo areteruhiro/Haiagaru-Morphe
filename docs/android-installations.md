@@ -1451,3 +1451,18 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 照合日時は2026-11-03 03:17 JST、詳細 `build/class-bindings-installations.json`。任意の動画専用ビューア・画像VPNを含めた適用比較用APKだが、VPN自体は有効化していない。検証用キャッシュfixtureと設定は検証後に復元・解除する。
 
 最終確認で3版ともnative本文を再表示した後、所有marker/DAT内容/タイトルを照合してDAT・idx・bookmark・markerを削除。通知登録0、設定復元、新規fatalなし。`build/class-bindings-final-smoke.json` / `class-bindings-cleanup-{191,226,242}.log` / `class-bindings-crash-{191,226,242}.log`。この作業で起動したAVDはデータ保持で終了。公式1.19.0の公開MPPは別hashとなるため、上記の開発候補APKを公式配布MPPで生成したAPKとは扱わない。
+
+
+## 2026-11-03 遷移前DAT取得修正版（未公開）
+
+serial `emulator-5580` / AVD `Haiagaru_Test_API36_16GiB` / Android16。既存隔離packageと新APKの署名照合後install-r Success。既存通常アプリの置換・アンインストール・データ消去なし。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix.mpp` SHA256 `9a6fe7f97a0924bb563ab508309de03c7fbc834427f7024e5bb52c1cafd5b7f3`。
+
+| ChMate / 表示名 | package | 導入時刻 JST | APK絶対パス | SHA256 |
+|---|---|---|---|---|
+|0.8.10.191 dev / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T11:41:20.449657|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-191.apk`|`44c3c6e2a4fbb5430be8abb4ed450d70609ad95a3065d5f477e724002f032822`|
+|0.8.10.226 dev / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T11:43:56.656828|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-226.apk`|`76a8f0d66d7b4b5202b0f7ad0f47db12156e2cd809077cb03060dbdc7e49486b`|
+|0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T11:44:56.463556|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-242.apk`|`6def48f1db60cad83c64be930918d393150bd9519e28ee214cb4c476e212ac57`|
+
+導入後の実APKをpullしてhash一致、各対象PIDに新規fatalなし。各18項目・native未取得スレ本文レス45表示確認。証跡 `build/thread-prefetch-install-{191,226,242}.json` / `thread-prefetch-final-verification.json` / `thread-prefetch-native-{191,226,242}.xml`。試験設定復元・所有fixture削除済み。ユーザー実機への導入なし、公式配布物ではない。

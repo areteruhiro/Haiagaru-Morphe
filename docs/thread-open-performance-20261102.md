@@ -53,3 +53,6 @@ mainスレッドのサンプルで`Haiagaru.defaultAdClass → classExists → C
 主に増えているのは板一覧が残る区間。これまでのResListActivity直接起動による計測だけでは、タブレットの板一覧クリック経路や、既存スレからの切り替え前処理を十分に含めていない。今後はnative一覧クリック→旧画面のpause/save→新画面作成→通信/描画を区別する必要がある。候補の一つとして、追加のReadingPosition保存はnative onPauseにフックされ、AtomicFile.finishWriteまで同期実行しているが、この動画だけで原因と扱わない。
 
 1.19.0で廃止した39か所の全クラス走査はパッチ適用時の対象探索。アプリ内のスレ表示前処理とは別なので、走査廃止や全定義一致をこの遅延の解消確認として扱わない。検査用データ `build/thread-open-gifs-20261103/comparison.json` / `old-frames.json` / `new-frames.json` / contact PNG。動画の取得はフレーム分析用であり、GIF全長の差を表示速度差として数えていない。
+
+
+2026-11-03 追記: 差分の追加調査で、通常の未取得5chスレを画面遷移前に先行ダウンロードし、liveなら破棄してnativeで再取得する経路を特定。600msの制御通信で再ナビゲーションまで620msを再現し、worker取得への移動・DAT再利用を3版で確認。詳細は [遷移前DAT取得の回帰調査](thread-open-prefetch-regression-20261103.md)。旧版と新版本体・実回線の全遅延を同条件で比較できたという意味ではない。

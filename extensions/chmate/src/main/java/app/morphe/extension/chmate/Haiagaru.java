@@ -1610,7 +1610,14 @@ public final class Haiagaru {
      * remain available through the archived-thread search preset.
      */
     public static boolean loadLiveTalkDat(String url, File destination) throws IOException {
-        return ArchivedThreadImporter.loadLiveTalkDat(url, destination);
+        if (ArchivedThreadImporter.isTalkThreadUrl(url))
+            return ArchivedThreadImporter.loadLiveTalkDat(url, destination);
+        // This existing bridge runs on the native DAT worker, after the thread
+        // view exists and while ChMate owns its DAT lock. Do not preflight live
+        // 5ch threads from the navigation hook and then download them again.
+        return isChtoioEnabled() && applicationContext != null
+                && isAutomaticDatEnabled(applicationContext)
+                && ArchivedThreadImporter.loadInitial5chDat(applicationContext, url, destination);
     }
 
     /**
@@ -2482,7 +2489,7 @@ public final class Haiagaru {
             intent.removeExtra("haiagaru.archive.retry");
         }
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || ArchiveThreadLinks.is5chThread(original) || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling thread through the local DAT cache: " + original);
@@ -2524,7 +2531,7 @@ public final class Haiagaru {
         String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || ArchiveThreadLinks.is5chThread(original) || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);

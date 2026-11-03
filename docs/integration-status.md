@@ -874,3 +874,7 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.19.0 。
 
 2026-11-03 共有NG GAS v14: 特定reporterを非公開IGNORED_REPORTERSで除外。有効報告へ正常応答/ACKし保存しない。既存履歴を保持し配信票から除外、他reporterは継続。local330チェック成功、GAS3ファイル保存再取得一致/同URL v14更新/UI設定一致/公開GET ok revision113・1704条件・private metadataなしを確認。追加editor exportはlock timeout、実POST未実施。アプリ変更・Releaseなし。詳細docs/shared-ng-review-implementation.md。
+
+
+2026-11-03 未取得5chスレの遷移前取得・二重ダウンロードを修正（未公開）
+利用者の191/1.12→1.19 GIFとコード差分から、968d107で通常の最近の5ch URLまでimporterを呼び、live DATの全取得後に破棄してnativeへ再ナビゲーションする経路を特定。600msの制御応答で一覧遷移を620ms待つことを再現。通常の最近の5chはnative画面を先に開き、既存DAT worker bridgeで初回取得DATを消費するよう変更。cache更新/IDX/設定OFF/外部板/Talk/VIP/旧過去ログ経路を保持。3版各18項目とnative初回1取得・本文レス45表示成功。通常build4m16s成功、MPP SHA256 9a6fe7f97a0924bb563ab508309de03c7fbc834427f7024e5bb52c1cafd5b7f3。nativeフックの追加・register変更なし。詳細docs/thread-open-prefetch-regression-20261103.md、台帳。Samsung17実時間/同一板一覧の実タップ比較は未確認、1.18.2/1.18.3間の全差を説明したとはしない。通常アプリ/実機/投稿/GAS/公式Release変更なし。
