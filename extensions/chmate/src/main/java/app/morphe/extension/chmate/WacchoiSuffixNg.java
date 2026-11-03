@@ -119,9 +119,7 @@ public final class WacchoiSuffixNg {
             // Board scope is essential to registration, not optional help below the fold.
             content.removeView(scope);
             content.addView(scope, 0);
-            android.widget.Button existing = new android.widget.Button(activity);
-            existing.setText("登録済みNGの操作（削除・有効／無効）");
-            content.addView(existing, 1);
+            android.widget.Button[] existing = new android.widget.Button[1];
             HaiagaruDialog[] editor = new HaiagaruDialog[1];
             java.util.function.Supplier<NativeNgStore.Entry> existingTarget = () -> {
                 try {
@@ -131,15 +129,28 @@ public final class WacchoiSuffixNg {
                             registrationFlags((short) 0, regex.isChecked(), enabled.isChecked(), chain.isChecked(), hidden.isChecked()));
                 } catch (ReflectiveOperationException | RuntimeException error) { return null; }
             };
-            existing.setOnClickListener(v -> {
-                NativeNgStore.Entry target = existingTarget.get();
-                if (target != null) ExistingNgActions.show(activity, store, target, () -> editor[0].dismiss());
-            });
+            Runnable refreshExisting = () -> {
+                if (existingTarget.get() == null) {
+                    if (existing[0] != null) {
+                        content.removeView(existing[0]);
+                        existing[0] = null;
+                    }
+                } else if (existing[0] == null) {
+                    android.widget.Button button = new android.widget.Button(activity);
+                    button.setText("登録済みNGの操作（削除・有効／無効）");
+                    button.setOnClickListener(v -> {
+                        NativeNgStore.Entry target = existingTarget.get();
+                        if (target != null) ExistingNgActions.show(activity, store, target, () -> editor[0].dismiss());
+                    });
+                    existing[0] = button;
+                    content.addView(button, 1);
+                }
+            };
             TextView baseLabel = new TextView(activity); baseLabel.setText("追加先（同じ板・有効／連鎖／非表示設定の正規表現NG）"); content.addView(baseLabel);
             Spinner base = new Spinner(activity); content.addView(base);
             List<NativeNgStore.Entry> choices = new ArrayList<>();
             Runnable refresh = () -> {
-                existing.setVisibility(existingTarget.get() == null ? View.GONE : View.VISIBLE);
+                refreshExisting.run();
                 choices.clear();
                 List<String> labels = new ArrayList<>(); labels.add("新規登録");
                 try {
@@ -170,7 +181,7 @@ public final class WacchoiSuffixNg {
             text.addTextChangedListener(new android.text.TextWatcher() {
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    existing.setVisibility(existingTarget.get() == null ? View.GONE : View.VISIBLE);
+                    refreshExisting.run();
                 }
                 public void afterTextChanged(android.text.Editable value) {}
             });
