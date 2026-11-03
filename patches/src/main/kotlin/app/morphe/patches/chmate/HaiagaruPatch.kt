@@ -1990,6 +1990,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchThreadRefreshValidators(packageMetadata.versionName)
         patchPatrolImages(packageMetadata.versionName)
         patchPatrolInterval(packageMetadata.versionName)
+        patchRefreshTargets(packageMetadata.versionName)
         patchExternalBoardAuth(packageMetadata.versionName)
         patchBoardCookies(packageMetadata.versionName)
         patchBeAutoLogout(packageMetadata.versionName)
@@ -3500,6 +3501,29 @@ private fun BytecodePatchContext.patchLargeImageAlignment(version: String) {
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchThreadSearchText(version: String) {
+    val markerOwner=when(version){
+        "0.8.10.191 dev"->"Lo/MediationServiceImplExternalSyntheticLambda1;"
+        "0.8.10.226 dev"->"Lo/BouncyCastleSocketAdapterCompanionfactory1;"
+        "0.8.10.242 dev"->"Lo/KeJ13;"
+        else->return
+    }
+    val marker=mutableClassDefBy(markerOwner).methods.single {
+        it.parameterTypes.size==5&&it.parameterTypes.firstOrNull()=="Ljava/util/regex/Matcher;"&&it.returnType=="V"
+    }
+    var resets=0;var finds=0
+    marker.implementation!!.instructions.toList().withIndex().forEach { (index,instruction)->
+        val ref=(instruction as? ReferenceInstruction)?.reference as? MethodReference
+        if(ref?.definingClass=="Ljava/util/regex/Matcher;"&&ref.name=="reset"&&ref.parameterTypes==listOf("Ljava/lang/CharSequence;")){
+            val call=instruction as FiveRegisterInstruction
+            marker.replaceInstruction(index,"invoke-static {v${call.registerC}, v${call.registerD}}, Lapp/morphe/extension/chmate/ThreadSearchText;->resetHighlight(Ljava/util/regex/Matcher;Ljava/lang/CharSequence;)Ljava/util/regex/Matcher;")
+            resets++
+        }else if(ref?.definingClass=="Ljava/util/regex/Matcher;"&&ref.name=="find"&&ref.parameterTypes.isEmpty()){
+            val call=instruction as FiveRegisterInstruction
+            marker.replaceInstruction(index,"invoke-static {v${call.registerC}}, Lapp/morphe/extension/chmate/ThreadSearchText;->findHighlight(Ljava/util/regex/Matcher;)Z")
+            finds++
+        }
+    }
+    check(resets==1&&finds==1){"Search highlight boundaries changed: $version ($resets/$finds)"}
     val (owner,name,response,body)=when(version){
         "0.8.10.191 dev"->listOf("Lo/m9ExternalSyntheticLambda1\$4;","performFiltering","Lo/processAdDisplayErrorPostbackForUserError;","c")
         "0.8.10.226 dev"->listOf("Lo/listener;","b","Lo/BouncyCastleSocketAdapterCompanion;","d")
