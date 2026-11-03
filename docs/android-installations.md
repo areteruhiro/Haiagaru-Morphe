@@ -2,6 +2,16 @@
 
 # Android導入・署名台帳
 
+## 2026-11-04 検索結果・更新対象履歴・タイトル操作背景（プレ版候補）
+
+serial `emulator-5580`、版別隔離packageへ署名一致install-r Success、既存データ保持。実機未更新。
+
+- 191 / `jp.co.airfront.android.a2chMate.haiagaru.bindings191` / `Haiagaru binding 191` / 2026-11-04T01:02:16.947953+09:00。APK `<workspace>/build/search-history-final-191.apk`、SHA256 `8e9291fefd8a214eb5b16d90d334286b37b8af971ae8e985e293d753352de001`。
+- 226 / `jp.co.airfront.android.a2chMate.haiagaru.bindings226` / `Haiagaru binding 226` / 2026-11-04T01:03:04.380037+09:00。APK `<workspace>/build/search-history-final-226.apk`、SHA256 `c613ebcf5ec81bca48b54c8950725fed149768fd16a49a10e8abd5b401b9c7fb`。
+- 242 / `jp.co.airfront.android.a2chMate.haiagaru.bindings242` / `Haiagaru binding 242` / 2026-11-04T01:05:42.737689+09:00。APK `<workspace>/build/search-history-final-242.apk`、SHA256 `7bd8adb6695aba9eef0cb234f17523b2e87fb350b6124562b66b5155ea3913da`。
+
+MPP `<workspace>/build/search-history-final.mpp`、SHA256 `3c2788b8cd2ab13bebac1bc9211760ce4cffc165498dd758bf28900e787e6739`。証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・鍵所在・検証結果は非公開台帳 `build/local-development-records/search-history-final-installations.json`。
+
 ## 2026-11-03 共有NGツールバー・実チェック・トリップ制御文字 最終候補
 
 serial `emulator-5580`。ChMate版別隔離packageを署名照合install-r（191は候補から更新、226／242はこのAVDへ新規導入）、既存実機未更新。

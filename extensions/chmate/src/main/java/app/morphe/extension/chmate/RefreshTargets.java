@@ -15,7 +15,7 @@ public final class RefreshTargets {
     private static final Map<Object,Boolean> workers=new WeakHashMap<>();
     private static long queuedAt=-3000;
     static SharedPreferences prefs(Context context){return context.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);}
-    private static Set<String> selected(Context context){return new HashSet<>(prefs(context).getStringSet(KEY,Collections.emptySet()));}
+    static Set<String> selected(Context context){return new HashSet<>(prefs(context).getStringSet(KEY,Collections.emptySet()));}
     private static String identity(String board,long id){return board+"\n"+id;}
     private static String version(Context context)throws Exception{return context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName;}
 

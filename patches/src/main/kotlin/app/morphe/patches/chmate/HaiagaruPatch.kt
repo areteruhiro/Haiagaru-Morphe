@@ -4,6 +4,7 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.extensions.InstructionExtensions.removeInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.ApkFileType
 import app.morphe.patcher.patch.AppTarget
@@ -3524,6 +3525,36 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchThreadSearchText(
         }
     }
     check(resets==1&&finds==1){"Search highlight boundaries changed: $version ($resets/$finds)"}
+    // The search task that builds hit indices is separate from the adapter filter.
+    // Evaluate one response projection, then skip the stock header/mail/number fallbacks.
+    val (hitOwner,hitName)=when(version){
+        "0.8.10.191 dev"->"Lo/o3;" to "d"
+        "0.8.10.226 dev"->"Lo/setSelectedColor;" to "c"
+        else->"Lo/zzadk\$IconCompatParcelizer;" to "invokeSuspend"
+    }
+    val hits=mutableClassDefBy(hitOwner).methods.single { it.name==hitName&&it.returnType=="Ljava/lang/Object;" }
+    val hitCode=hits.implementation!!.instructions.toList()
+    val hitResets=hitCode.withIndex().filter { (_,instruction)->
+        val ref=(instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass=="Ljava/util/regex/Matcher;"&&ref.name=="reset"
+    }
+    check(hitResets.size==5){"Search result fields changed: $version"}
+    val firstReset=hitResets.first();val hitCall=firstReset.value as FiveRegisterInstruction
+    val rowField=hitCode.withIndex().last { (index,instruction)->index<firstReset.index&&instruction.opcode==Opcode.IGET_OBJECT&&
+        ((instruction as? ReferenceInstruction)?.reference as? FieldReference)?.type==when(version){
+            "0.8.10.191 dev"->"Lo/processAdDisplayErrorPostbackForUserError;"
+            "0.8.10.226 dev"->"Lo/BouncyCastleSocketAdapterCompanion;"
+            else->"Lo/KeJ11;"
+        }
+    }
+    val rowRegister=(rowField.value as TwoRegisterInstruction).registerA
+    val firstMiss=(firstReset.index+1 until firstReset.index+8).single { hitCode[it].opcode==Opcode.IF_EQZ }
+    val increment=hitCode.withIndex().single { (_,instruction)->instruction.opcode==Opcode.ADD_INT_LIT8&&
+        (instruction as NarrowLiteralInstruction).narrowLiteral==1 }
+    hits.replaceInstruction(firstReset.index,"invoke-static {v${hitCall.registerC}, v$rowRegister}, Lapp/morphe/extension/chmate/ThreadSearchText;->reset(Ljava/util/regex/Matcher;Ljava/lang/Object;)Ljava/util/regex/Matcher;")
+    val resultRegister=(hitCode[firstMiss] as OneRegisterInstruction).registerA
+    hits.removeInstruction(firstMiss)
+    hits.addInstructionsWithLabels(firstMiss,"if-eqz v$resultRegister, :next_search_response",ExternalLabel("next_search_response",increment.value))
     val (owner,name,response,body)=when(version){
         "0.8.10.191 dev"->listOf("Lo/m9ExternalSyntheticLambda1\$4;","performFiltering","Lo/processAdDisplayErrorPostbackForUserError;","c")
         "0.8.10.226 dev"->listOf("Lo/listener;","b","Lo/BouncyCastleSocketAdapterCompanion;","d")
