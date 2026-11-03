@@ -60,7 +60,7 @@ final class SharedNg {
                 }
                 SharedNgExceptions content = new SharedNgExceptions(activity, matched,
                         prefs().getStringSet("exceptions", Collections.emptySet()));
-                new HaiagaruDialog.Builder(activity).setTitle("このレスに一致する共有NGを除外")
+                new HaiagaruDialog.Builder(activity).setTitle(SharedNgResponseExclusion.TITLE)
                         .setMessage("除外する条件にチェックを入れて保存してください。この端末で、その条件を適用しなくなります。変更後はスレを開き直してください。個人NGや他の条件でも隠れている場合は残ります。")
                         .setView(content).setPositiveButton("保存", (dialog, which) -> {
                             Set<String> next = new HashSet<>(prefs().getStringSet("exceptions", Collections.emptySet()));

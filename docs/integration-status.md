@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-03 共有NG条件確認・除外チェック・したらばトリップ（公開準備完了）: 短い名称とnativeツールバーカタログ／表示・順番設定へ接続。チェック二重反転を修正。実機191のnative名前末尾U+0001がトリップへ混入する原因を確認、表示Identity一時補正で6欄強調成功、保存設定／DAT変更なし。77単体、最終3版各12項目＋実ComposeタップOFF→ON→OFF／本番保存成功、元命令／レジスター保持、crash空、通常Lint build4m27s。最終候補の実機更新なし。docs/shared-ng-toolbar-trip-controls-20261103.md・台帳参照。
+
+2026-11-03 正式版1.22.0公開完了: devからmasterへ通常merge39c10b0、既存Release CI41653052226のRelease／Attest成功。生成1be9ecfをdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.22.0 、draft=false／prerelease=false。公開6資材SHA256／サイズ一致・CRC正常、MPP 0a52610aff5e1e772d6a8ac967cf2b840d23ab733265bab753be5b945b74af0e。VPN ZIP2本は1.21.1とバイト一致、MPP内Shizuku資材なし。master／main／devの通常・pre更新JSON計6本は1.22.0と同じMPP URL。完成候補各125項目＋例外試験成功、実機導入なし。build/release-1.22.0-verify/verification.json参照。
+
 2026-11-03 板横断更新・返信通知・242タブレット設定（公式公開準備完了）: 191／226／242で各125項目＋例外finally試験成功。実WorkManager、標準通知helper経由の先着優先、同一返信先への別レス、停止／再開、保存／キャンセル／バックアップを確認。通常Lint build3m16s成功、元命令／レジスター保持、crash空。242タブレット設定とセーフモードの実画面確認成功。外部実投稿／実新着／今回の実機導入なし。未変更本文等の再確認は利用者指示で省略。docs/cross-board-refresh-notifications-20261103.md、導入台帳参照。
 
 2026-11-03 読書位置・トリップ・検索強調・Shizuku削除（未公開）: 読書位置のAtomicFile同期を単一背景writerへ移動、直近128件のメモリ保存とスクロール／非表示抑制・定常1秒調査・adapter accessor再利用。191実ListViewで500描画→1調査、scroll100／hidden50→0調査、連続2保存とも非UIスレッド・最終位置保持を確認。トリップ周囲Unicode空白／方向制御文字を除去し、69単体＋191 native model／Android背景色spanで指定コードの全板強調を確認。ただし報告端末の無強調原因の断定／FPS実測／実機再確認は未実施。指定スレをエミュレータで開く操作は自動承認審査拒否（詳細理由なし）のためネットワークなしfixtureへ切替。

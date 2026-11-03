@@ -12,8 +12,8 @@ final class PosterHighlightRules {
     static final int[] COLORS = {0x55ffc107,0x5542a5f5,0x5566bb6a,0x55ef5350,0x55ff9800,0x55ec407a,
             0x55ab47bc,0x5526c6da,0x5526a69a,0x55cddc39,0x55a1887f,0x559e9e9e};
     private static final Pattern SLIP = Pattern.compile("(?<![^\\s()（）\\[\\]<>])([^\\s()（）\\[\\]<>]{4}-[^\\s()（）\\[\\]<>]{4})(?=$|[\\s()（）\\[\\]<>])");
-    private static final Pattern TRIP = Pattern.compile("◆[\\s\\p{Z}\\p{Cf}]*([^\\s\\p{Z}\\p{Cf}◆◇()（）<>]+)");
-    private static final Pattern EDGE_SPACE = Pattern.compile("^[\\s\\p{Z}\\p{Cf}]+|[\\s\\p{Z}\\p{Cf}]+$");
+    private static final Pattern TRIP = Pattern.compile("◆[\\s\\p{Z}\\p{Cf}\\p{Cc}]*([^\\s\\p{Z}\\p{Cf}\\p{Cc}◆◇()（）<>]+)");
+    private static final Pattern EDGE_SPACE = Pattern.compile("^[\\s\\p{Z}\\p{Cf}\\p{Cc}]+|[\\s\\p{Z}\\p{Cf}\\p{Cc}]+$");
 
     static String tripValue(String value) {
         if (value == null) return "";
