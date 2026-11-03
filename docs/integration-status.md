@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 正式版1.22.1公開完了: 修正38dd511をdevからmasterへ通常merge e0bca27。既存Release CI41659758330のRelease／Attest成功、生成コミットをdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.22.1 、draft=false／prerelease=false。公開6資材のGitHub SHA256 digest／サイズ全一致、ZIP／MPP CRC正常。MPP SHA256 eff72e08ac3789471e5828133d0ccf163f0f8abf10e0b022bfd86f2e6b5101c2、classes.dexあり、Shizuku資材なし。追加VPN ZIP2本は1.21.1とバイト一致。master／main／devの通常・pre JSON計6本は1.22.1・同一MPP URL。最終候補3版のカタログ等各12＋検索9と実タップ／本番保存成功。実機191は原因診断と一時表示補正6欄成功、最終APK実機更新／公式MPPからの再適用は未実施。build/release-1.22.1-verify/verification.json参照。
+
 2026-11-03 共有NG条件確認・除外チェック・したらばトリップ（公開準備完了）: 短い名称とnativeツールバーカタログ／表示・順番設定へ接続。チェック二重反転を修正。実機191のnative名前末尾U+0001がトリップへ混入する原因を確認、表示Identity一時補正で6欄強調成功、保存設定／DAT変更なし。77単体、最終3版各12項目＋実ComposeタップOFF→ON→OFF／本番保存成功、元命令／レジスター保持、crash空、通常Lint build4m27s。最終候補の実機更新なし。docs/shared-ng-toolbar-trip-controls-20261103.md・台帳参照。
 
 2026-11-03 正式版1.22.0公開完了: devからmasterへ通常merge39c10b0、既存Release CI41653052226のRelease／Attest成功。生成1be9ecfをdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.22.0 、draft=false／prerelease=false。公開6資材SHA256／サイズ一致・CRC正常、MPP 0a52610aff5e1e772d6a8ac967cf2b840d23ab733265bab753be5b945b74af0e。VPN ZIP2本は1.21.1とバイト一致、MPP内Shizuku資材なし。master／main／devの通常・pre更新JSON計6本は1.22.0と同じMPP URL。完成候補各125項目＋例外試験成功、実機導入なし。build/release-1.22.0-verify/verification.json参照。
