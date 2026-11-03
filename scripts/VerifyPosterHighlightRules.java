@@ -16,6 +16,13 @@ public final class VerifyPosterHighlightRules {
         check(new PosterHighlightRules.Poster("","name ◆\u00a02ofgBR.b9E\u200e","").trip.equals(shitaraba.trip),"Native HTML spacing around trip");
         check(new PosterHighlightRules.Poster("","name ◇fake ◆2ofgBR.b9E","").trip.equals(shitaraba.trip),"Hollow marker cannot shadow actual trip");
         check(!new PosterHighlightRules.Rule(4,2,"","2ofgbr.b9E",true).matches(shitaraba,null,"any","any"),"Trip remains case sensitive");
+        var nativeTrip=new PosterHighlightRules.Poster("mLBTD5WQ0","areteruhiro\u0002 ◆2ofgBR.b9E\u0001","");
+        check(nativeTrip.trip.equals("2ofgBR.b9E"),"Actual native Shitaraba control delimiters");
+        check(new PosterHighlightRules.Rule(4,2,"","2ofgBR.b9E",true).matches(nativeTrip,null,"any","any"),"Saved global rule matches native trip");
+        check(new PosterHighlightRules.Rule(4,2,"","◆2ofgBR.b9E\u0001",true).matches(nativeTrip,null,"any","any"),"Legacy rule with native terminator remains usable");
+        for(char separator:new char[]{1,2,0,31,127}) {
+            check(new PosterHighlightRules.Poster("","name ◆2ofgBR.b9E"+separator+"next","").trip.equals("2ofgBR.b9E"),"Control delimiter ends trip "+(int)separator);
+        }
         var mobile=new PosterHighlightRules.Poster("different", "名前 (ｽｯﾌﾟ ef34-cD+/)", "");
         check(mobile.suffix.equals(a.suffix),"Carrier prefix independent suffix");
         check(!mobile.slip.equals(a.slip),"Full slip keeps prefix four characters");

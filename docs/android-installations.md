@@ -2,6 +2,16 @@
 
 # Android導入・署名台帳
 
+## 2026-11-03 共有NGツールバー・実チェック・トリップ制御文字 最終候補
+
+serial `emulator-5580`。ChMate版別隔離packageを署名照合install-r（191は候補から更新、226／242はこのAVDへ新規導入）、既存実機未更新。
+
+- 191 / `jp.co.airfront.android.a2chMate.haiagaru.bindings191` / `Haiagaru binding 191` / 2026-11-03T23:55:29.676082+09:00。APK `<workspace>/build/shared-ng-toolbar-trip-choice-191.apk`、SHA256 `bdc0398c4ef4389970c0cb5fd6e70e7331378edc2346959ce98582f3eed58b96`。
+- 226 / `jp.co.airfront.android.a2chMate.haiagaru.bindings226` / `Haiagaru binding 226` / 2026-11-03T23:57:07.664247+09:00。APK `<workspace>/build/shared-ng-toolbar-trip-choice-226.apk`、SHA256 `44f6129040067e71382afd5469f2c32e1a0fae8d3ec240ae819ec052d495ea10`。
+- 242 / `jp.co.airfront.android.a2chMate.haiagaru.bindings242` / `Haiagaru binding 242` / 2026-11-03T23:58:21.902466+09:00。APK `<workspace>/build/shared-ng-toolbar-trip-choice-242.apk`、SHA256 `d2e6234d44d9049ad2db018969edbd6a1a965eb38618523848b2eb1b6b825cee`。
+
+MPP `<workspace>/build/shared-ng-toolbar-trip-choice.mpp`、SHA256 `b6fe23cdb8928b15fc7de277f1ef3342b31d208737259f18b4f569ab467244ec`。証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・鍵所在は非公開台帳 `build/local-development-records/shared-ng-toolbar-trip-choice-installations.json`。各版native catalog等12項目＋実タップのチェック／保存成功、crash空、元命令／レジスター保持。
+
 ## 2026-11-03 板横断更新・返信通知 最終候補（エミュレータ）
 
 serial `emulator-5580`。既存の版別隔離packageへ署名一致install-r Success、データ保持。実機への導入なし。
