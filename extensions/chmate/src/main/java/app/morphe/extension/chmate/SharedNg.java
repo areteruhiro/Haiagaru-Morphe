@@ -226,7 +226,7 @@ final class SharedNg {
         TextView state=new TextView(a);state.setText(status);box.addView(state);
         Button update=new Button(a);update.setText("共有NGを同期");box.addView(update);update.setOnClickListener(v->{update.setEnabled(false);state.setText("同期中…");IO.execute(()->{sync(true);a.runOnUiThread(()->{state.setText(status);update.setEnabled(true);});});});
         Button report=new Button(a);report.setText("選んだ投稿から共有NGを報告");box.addView(report);report.setOnClickListener(v->report(a));
-        Button list=new Button(a);list.setText("受信した条件・個別解除");box.addView(list);list.setOnClickListener(v->{List<SharedNgRules.Rule> snapshot=rules;String[] names=new String[snapshot.size()];boolean[] disabled=new boolean[names.length];for(int i=0;i<names.length;i++){SharedNgRules.Rule r=snapshot.get(i);names[i]=SharedNgRules.boardLabel(r.board)+" / "+r.kind+" / "+r.value+" / "+r.votes+"票"+(r.revoked?"（配信停止）":"");disabled[i]=exceptions.contains(r.id);}new HaiagaruDialog.Builder(a).setTitle("チェックした条件を適用しない").setMultiChoiceItems(names,disabled,(d,i,b)->disabled[i]=b).setPositiveButton("保存",(d,w)->{Set<String> off=new HashSet<>();for(int i=0;i<disabled.length;i++)if(disabled[i])off.add(snapshot.get(i).id);prefs().edit().putStringSet("exceptions",off).apply();reload();}).setNegativeButton("戻る",null).show();});
+        Button list=new Button(a);list.setText("受信した条件・個別解除");box.addView(list);list.setOnClickListener(v->SharedNgExceptions.show(a,rules));
         ScrollView scroll=new ScrollView(a);scroll.addView(box);new HaiagaruDialog.Builder(a).setTitle("オンライン共有NG（開発中）").setView(scroll).setPositiveButton("閉じる",null).show();
     }
     static void report(Activity a){
