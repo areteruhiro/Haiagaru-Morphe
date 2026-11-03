@@ -487,8 +487,18 @@ final class HaiagaruSyncSnapshot {
             if(name.equals(LocalAutoBackup.PREFS)){
                 restoreLocalAutoBackup(context,values,false);continue;
             }
-            SharedPreferences.Editor editor = context.getSharedPreferences(
-                    targetName, Context.MODE_PRIVATE).edit();
+            SharedPreferences target = context.getSharedPreferences(targetName, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = target.edit();
+            if (HAIAGARU_PREFS.equals(name)) {
+                // A full UI-settings restore must also reset options absent from
+                // older snapshots. Otherwise restoring B then A keeps B's extra
+                // features enabled permanently, even after restarting ChMate.
+                // Preserve the device's first-open prompt and excluded secrets.
+                for (String key : target.getAll().keySet()) {
+                    if (safePreferenceKey(key) && !values.has(key)
+                            && !MinimalSetup.PROMPT.equals(key)) editor.remove(key);
+                }
+            }
             for (Iterator<String> keys = values.keys(); keys.hasNext();) {
                 String key = keys.next();
                 if (!safePreferenceKey(key)) continue;

@@ -1506,3 +1506,15 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 ## 2026-11-03 versionCode整数上限の生成確認（未導入）
 
 ChMate242 dev、表示名Haiagaru binding 242、package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-code-intmax-242.apk` SHA256 `94301c6657c7c4f46a9e4c65050f29202b5a7f32f517b66cf62d5c614ac25975`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-code-intmax.mpp` SHA256 `0136e0a5eb45e3131fda79bc54a48cf07f80c0efdfc619cd3ca677a390bea07b`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。aaptでversionCode=2147483647/versionName=0.8.10.242 devを確認、署名検証成功。端末serialなし・インストール未実施。
+
+
+## 2026-11-03 191連続復元調査（専用隔離package）
+
+serial `emulator-5580` / AVD `Haiagaru_Test_API36_16GiB` / Android16。通常アプリ・利用者実機への導入/削除/データ消去なし。表示名 `Haiagaru restore test 191`、ChMate `0.8.10.191 dev`、package `jp.co.airfront.android.a2chMate.haiagaru.restoreperf191`。初回新規導入、修正版は同署名を照合してinstall-r Success。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+|候補 / 導入記録時刻JST|APK絶対パス|APK SHA256|MPP絶対パス / SHA256|
+|---|---|---|---|
+|restore-perf-install191.json / 2026-11-03T15:25:36|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/restore-perf-191.apk`|`00f73befd6b009ee8e42544332f1076cc3f53627734c8bb2ddda35a53f1b0b38`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-code-intmax.mpp` / `0136e0a5eb45e3131fda79bc54a48cf07f80c0efdfc619cd3ca677a390bea07b`|
+|restore-ui-fixed-install191.json / 2026-11-03T15:40:43|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/restore-ui-fixed-191.apk`|`8accedc087942da08ad6742d5451864263a9879145b175cd476df10c504b0451`|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/restore-ui-snapshot.mpp` / `478e0d383753745aff2593c4f53043c822348c1a427e4753e7af7aebc14ef2cb`|
+
+最終実APK hash一致、新規fatalなし。48項目、提供ZIPの認証等を除いた全体5回復元、cached本文可視6レスを確認。最初のSystem UI ANR中の画像/画面測定は無効にして終了後再確認。提供ZIP由来のデータはこの隔離appだけに読み込み、network OFFで試験、原本不変。試験後はappをデータ保持で強制停止、転送用tmp4ファイル削除、AVDの通信を戻して停止。docs/restore-repeat-settings-20261103.md。公式公開物ではない。

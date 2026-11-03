@@ -913,3 +913,7 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 
 2026-11-03 versionCode最大化の初期値/入力上限をInt.MAX_VALUEへ（未公開）
 利用者の既存2147483647に対し生成APK512で上書き拒否の画像を受領。Change ChMate package nameの初期値と入力上限を2100000000→2147483647へ変更。null指定の元コード維持・利用者の明示オプションを保持。パッチ無効時に元APK512が残る点と、元packageを維持する設定方法/保存済みMorphe値の変更をREADME/FAQへ明記。通常Lint/R8 build/version-code-intmax-build.log成功3m52s、242へ初期値未指定で適用成功、aaptで2147483647・表示versionName維持確認、署名検証成功。nativeコード/拡張処理の変更なし、共通resourceオプションのため191/226の重複APK生成と端末導入は未実施。build/version-code-intmax-verification.json、導入台帳へ生成情報記録。公式Release/feed変更なし。
+
+
+2026-11-03 191の連続復元後の設定残存を修正（未公開）
+提供ZIP2件CRC正常、191/異なるZIP順次復元/再起動後も遅い/特にスレ開き。最後にどちらか不明。認証等を除外し通信OFFの専用restoreperf191で、Bの追加設定がA復元後もONで残ることを再現。通常復元のHaiagaru UI設定だけ、snapshotにない安全キーを初期値へ。初回案内・除外秘密キー・標準設定・ローカル自動バックアップ・不足分同期の既存保持を維持。通常build2m55s成功、合成48項目、提供ZIP全体A→A→B→B→AでUI47/66復帰/207 DAT関連/160履歴で増殖なし。cached本文可視6レス、待機2.453/2.218/2.079秒で大幅遅延自体は未再現。初期PCメモリ不足・System UI ANR中の画面試験は成功扱いせず再確認。MPP478e0d383753745aff2593c4f53043c822348c1a427e4753e7af7aebc14ef2cb。実APKhash一致/対象PID fatalなし。docs/restore-repeat-settings-20261103.mdと台帳。公式公開/feed/GAS/利用者実機は変更なし。
