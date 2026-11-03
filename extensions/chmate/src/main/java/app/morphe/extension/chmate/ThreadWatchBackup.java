@@ -20,7 +20,9 @@ final class ThreadWatchBackup {
                 ThreadWatchRules.Target target=ThreadWatchRules.target(url);
                 if(target==null)continue;
                 JSONObject item=new JSONObject(prefs.getString(url,"{}"));
-                threads.put(new JSONObject().put("url",target.url).put("count",item.optInt("count",-1)));
+                threads.put(new JSONObject().put("url",target.url).put("count",item.optInt("count",-1))
+                        .put("repliesOnly",item.optBoolean("repliesOnly",false)).put("stopAfterReply",item.optBoolean("stopAfterReply",false))
+                        .put("paused",item.optBoolean("paused",false)).put("own",item.optJSONArray("own")==null?new JSONArray():item.getJSONArray("own")));
             }
             JSONObject data=new JSONObject().put("intervalMinutes",ThreadWatch.interval(context)).put("threads",threads);
             validate(data);return data;
@@ -40,6 +42,11 @@ final class ThreadWatchBackup {
                     ?ThreadWatchRules.target((String)value):null;
             if(target==null||!urls.add(target.url))throw new IOException("通知登録のURLが不正または重複しています");
             integer(item,"count",-1,9_999_999);
+            for(String flag:new String[]{"repliesOnly","stopAfterReply","paused"})if(item.has(flag)&&!(item.opt(flag) instanceof Boolean))throw new IOException("通知設定のスイッチが不正です");
+            if(item.has("own")){
+                JSONArray own=item.optJSONArray("own");if(own==null||own.length()>1000)throw new IOException("自分の書き込み番号の形式が不正です");
+                for(int j=0;j<own.length();j++){Object no=own.opt(j);if(!(no instanceof Integer)&&!(no instanceof Long)||((Number)no).longValue()<1||((Number)no).longValue()>9_999_999)throw new IOException("自分の書き込み番号が不正です");}
+            }
         }
     }
     private static int integer(JSONObject data,String key,int min,int max)throws IOException{
@@ -70,7 +77,9 @@ final class ThreadWatchBackup {
                 registrationsChanged=true;
                 // In-flight checks from before restore cannot overwrite the restored count.
                 editor.putString(url,new JSONObject().put("count",item.getInt("count"))
-                        .put("token",UUID.randomUUID().toString()).toString());
+                        .put("token",UUID.randomUUID().toString()).put("repliesOnly",item.optBoolean("repliesOnly",false))
+                        .put("stopAfterReply",item.optBoolean("stopAfterReply",false)).put("paused",item.optBoolean("paused",false))
+                        .put("own",item.optJSONArray("own")==null?new JSONArray():item.getJSONArray("own")).toString());
             }
             if(registrationsChanged&&!editor.commit())throw new IOException("通知登録を復元できません");
             SharedPreferences options=context.getSharedPreferences(ThreadWatch.PREFS+"_options",0);
