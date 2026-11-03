@@ -1,3 +1,62 @@
+# Haiagaru 1.20.1
+
+## 今回の修正
+
+- 5chの新着通知で本文を取得できない問題を修正しました。名前欄がHTMLタグで始まる正常なDATをエラーページと誤判定していたため、DATの項目構造で判定するように変更しました。名前欄が空の場合にも対応します。
+- 「Haiagaru設定」をChMate標準の設定一覧内で「セーフモード」の直前に配置しました。「追加機能・表示・通知などの設定」の説明文と、画面上部の独立した入口を削除しました。
+
+- 242の有料オプション同期（S2M）設定を開いた際、初期化中の0除算でクラッシュする問題を修正しました。コールバックに渡す通常の値0を直接使用し、標準の設定初期化を維持します。
+
+## 確認範囲と制約
+
+191／226／242の隔離エミュレータで本文付き通知・設定項目の配置と遷移を確認しています。実際の5ch DATでも修正後の本文解析を確認しました。242のS2M設定画面の起動と再表示を確認しています。報告端末のPixel 10a／Android 17そのものでは未検証です。利用者の指定により、今回変更していない本文表示・画像／GIF／動画の再検証は省略しています。
+
+通知本文はDATが取得できる場合に表示します。通信エラーなどの場合はスレ名と件数を通知します。Androidの省電力・通信・実行回数の制限で通知が遅れる場合があります。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* release notification preview and native settings stability fixes ([df69825](https://github.com/areteruhiro/Haiagaru-Morphe/commit/df69825b05b1ab212f624892fb6813c3fbf81d70))
+* restore 5ch notification bodies and stabilize native settings entry and S2M startup [skip ci] ([60a18db](https://github.com/areteruhiro/Haiagaru-Morphe/commit/60a18db46ef492c8156119328a2dfc5c897e4b39))
+
 # Haiagaru 1.20.0
 
 ## 今回の更新
