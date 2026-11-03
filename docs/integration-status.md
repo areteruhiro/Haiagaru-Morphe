@@ -909,3 +909,7 @@ emojiMode=allのEditTextをEditable置換なしに修正。191/226/242のinterva
 公開MPP SHA256 `a676f8f38b33b22171386265361ecbf2202a97d512966b25b470b2e8737864e0`、GitHub digest一致・CRC正常。公開DEXでThreadWatchRules.bodiesに先頭startsWith除外が無くDAT項目区切りを解析すること、S2Mの値0パッチ/新native入口同梱を検査。stable/pre両feed SHA256 `ab4b3cd422f0f5497d7498fdbde519033e17981855789918a039c6ae3905ba40`。master/dev/mainのrefs/heads URLの両feed計6件が1.20.2・同MPP・最新説明で一致、GitHub main/master feed blobも一致。短縮raw URLは5件が1.20.2、main/patches-bundle.jsonだけCDN HITで1.20.0残存を観測（JSON本体は変更しない）。README master blobと検証済みsource一致、latest=true/draft=false/prerelease=false。公開Release本文に削除指示の一文が無いことを確認。build/official1202-public/verification.jsonとrelease.json、official1202-release-ci.log/build-ci.log。
 CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ保持で停止、通常アプリ/実投稿/GAS変更なし。
 公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.20.2 。
+
+
+2026-11-03 versionCode最大化の初期値/入力上限をInt.MAX_VALUEへ（未公開）
+利用者の既存2147483647に対し生成APK512で上書き拒否の画像を受領。Change ChMate package nameの初期値と入力上限を2100000000→2147483647へ変更。null指定の元コード維持・利用者の明示オプションを保持。パッチ無効時に元APK512が残る点と、元packageを維持する設定方法/保存済みMorphe値の変更をREADME/FAQへ明記。通常Lint/R8 build/version-code-intmax-build.log成功3m52s、242へ初期値未指定で適用成功、aaptで2147483647・表示versionName維持確認、署名検証成功。nativeコード/拡張処理の変更なし、共通resourceオプションのため191/226の重複APK生成と端末導入は未実施。build/version-code-intmax-verification.json、導入台帳へ生成情報記録。公式Release/feed変更なし。

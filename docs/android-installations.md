@@ -1501,3 +1501,8 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 同じ隔離package/署名/鍵/serialへ署名一致install-r Success。導入日時JST `2026-11-03T14:39:19.918795`、APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-settings-s2m-final-242.apk` SHA256 `ae5144ac5d2076bcb35ced77060cdc880ccf28a4c2bcd1e6137e08eccb2aa96c`、MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-settings-s2m-final.mpp` SHA256 `87ac79db6fdca09f4bb480046b1ff7951a570ea641b0bbae56472f02fbd666b4`。実インストールAPK hash一致。191/226は前候補とextension MPE同一のため前段の検証を継続採用、242で再確認。
 
 最終242で通知17/設定UI18/内容保持8、S2M画面3回の起動・再表示成功、新規fatalなし。Frida通信hook背景試験はART native異常終了のため無効とし、フック無し実5ch通信のJob試験へ変更。前回0件の試験基準→117件を取得して本文付き通知・次回Job確認、新規fatalなし、登録を削除・間隔を初期15分へ・通知0を確認。新規117投稿の観測ではない。利用者の通常アプリ/実機設定は変更なし。
+
+
+## 2026-11-03 versionCode整数上限の生成確認（未導入）
+
+ChMate242 dev、表示名Haiagaru binding 242、package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-code-intmax-242.apk` SHA256 `94301c6657c7c4f46a9e4c65050f29202b5a7f32f517b66cf62d5c614ac25975`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/version-code-intmax.mpp` SHA256 `0136e0a5eb45e3131fda79bc54a48cf07f80c0efdfc619cd3ca677a390bea07b`。鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。aaptでversionCode=2147483647/versionName=0.8.10.242 devを確認、署名検証成功。端末serialなし・インストール未実施。
