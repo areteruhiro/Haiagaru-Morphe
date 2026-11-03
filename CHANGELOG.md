@@ -1,3 +1,58 @@
+# Haiagaru 1.21.1
+
+## 今回の修正
+
+- ワッチョイ上下4桁のNG追加画面では、登録済みの条件がある場合だけ「登録済みNGの操作（削除・有効／無効）」ボタンを追加するようにしました。未登録時にはボタンを作成・追加しません。
+- 入力文字列・対象板・一致方式を変更して登録済み条件に一致しなくなった場合も、ボタンを取り除きます。再び一致すると追加します。
+- 標準NG登録画面は、従来どおり登録済み条件がある場合だけ操作メニューを表示します。
+
+## 確認範囲
+
+191／226／242の隔離エミュレータで、登録済み／未登録の表示、入力変更によるボタンの追加・除去、既存の削除・有効／無効操作を確認しています。今回変更していない本文表示・画像／GIF／動画の再検証は利用者の指定により省略しています。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* only add NG action button for registered conditions [skip ci] ([34e6fcd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/34e6fcd855d264c2c26121f949226404becec79b))
+
 # Haiagaru 1.21.0
 
 ## 今回の変更
