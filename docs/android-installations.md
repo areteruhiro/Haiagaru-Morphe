@@ -1449,3 +1449,33 @@ MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/
 |0.8.10.242 dev|`jp.co.airfront.android.a2chMate.haiagaru.bindings242` / Haiagaru binding 242|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/class-bindings-fixed3-242.apk`|`aaad23703484e030fcfd67f80527e9944fa70ea54ce32ac7e3dbc998009021a2`|
 
 照合日時は2026-11-03 03:17 JST、詳細 `build/class-bindings-installations.json`。任意の動画専用ビューア・画像VPNを含めた適用比較用APKだが、VPN自体は有効化していない。検証用キャッシュfixtureと設定は検証後に復元・解除する。
+
+最終確認で3版ともnative本文を再表示した後、所有marker/DAT内容/タイトルを照合してDAT・idx・bookmark・markerを削除。通知登録0、設定復元、新規fatalなし。`build/class-bindings-final-smoke.json` / `class-bindings-cleanup-{191,226,242}.log` / `class-bindings-crash-{191,226,242}.log`。この作業で起動したAVDはデータ保持で終了。公式1.19.0の公開MPPは別hashとなるため、上記の開発候補APKを公式配布MPPで生成したAPKとは扱わない。
+
+
+## 2026-11-03 遷移前DAT取得修正版（未公開）
+
+serial `emulator-5580` / AVD `Haiagaru_Test_API36_16GiB` / Android16。既存隔離packageと新APKの署名照合後install-r Success。既存通常アプリの置換・アンインストール・データ消去なし。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+
+MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix.mpp` SHA256 `9a6fe7f97a0924bb563ab508309de03c7fbc834427f7024e5bb52c1cafd5b7f3`。
+
+| ChMate / 表示名 | package | 導入時刻 JST | APK絶対パス | SHA256 |
+|---|---|---|---|---|
+|0.8.10.191 dev / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T11:41:20.449657|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-191.apk`|`44c3c6e2a4fbb5430be8abb4ed450d70609ad95a3065d5f477e724002f032822`|
+|0.8.10.226 dev / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T11:43:56.656828|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-226.apk`|`76a8f0d66d7b4b5202b0f7ad0f47db12156e2cd809077cb03060dbdc7e49486b`|
+|0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T11:44:56.463556|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-prefetch-fix-242.apk`|`6def48f1db60cad83c64be930918d393150bd9519e28ee214cb4c476e212ac57`|
+
+導入後の実APKをpullしてhash一致、各対象PIDに新規fatalなし。各18項目・native未取得スレ本文レス45表示確認。証跡 `build/thread-prefetch-install-{191,226,242}.json` / `thread-prefetch-final-verification.json` / `thread-prefetch-native-{191,226,242}.xml`。試験設定復元・所有fixture削除済み。ユーザー実機への導入なし、公式配布物ではない。
+
+
+## 2026-11-03 通知内容・最上部設定入口 最終候補
+
+serial `emulator-5580`、AVD `Haiagaru_Test_API36_16GiB`、Android16。既存隔離package署名照合install-r Success。通常アプリ/実機への導入・アンインストール・データ消去なし。署名cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix.mpp` SHA256 `60a554a4384e7611f3bfcafe5f8bdf03509f70e2524f9d5ea8dd012c02e0d2d0`。
+
+| ChMate / 表示名 | package | JST導入時刻 | APK絶対パス | SHA256 |
+|---|---|---|---|---|
+|0.8.10.191 dev / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T12:59:21.886860|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-191.apk`|`a90601d50f576486757a1f397d775c3e704e7fa13eca3f398c6abe0280c0c672`|
+|0.8.10.226 dev / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T13:09:09.264926|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-226.apk`|`4543b86b39ab4e92d54f2a130f61598282a974e4f5aa5cb1da323692afcb0223`|
+|0.8.10.242 dev / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T13:09:45.529550|`C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/notification-inline-final-fix-242.apk`|`ddcbbf1fffcaae0bf53569bc7cddfa195cc8792ee0cd2bb302c0a1948cf203b1`|
+
+導入済み実APKのSHA256一致。各通知17/設定入口15項目、242の背景Job→本文付き通知→次回予約を確認。初期ANR/ハーネス失敗は成功に含めず再確認。各PID新規fatalなし。全版テスト登録0・設定復元。利用者指定で今回の本文/画像/GIF/動画再検証を省略。詳細docs/notification-settings-readme-20261103.md、build/notification-settings-final-summary.json。
