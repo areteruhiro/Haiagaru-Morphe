@@ -1566,3 +1566,16 @@ MPP `build/conditional-ng.mpp` SHA256 `39bd6943153ca78df74d3e131e084fd8fc9e0e3a7
 serial `730eae72` / XIG05。接続時の標準ChMateは0.8.10.246。標準アプリを変更せず、ChMate0.8.10.242 dev / 表示名 `Haiagaru 検証 242` / package `jp.co.airfront.android.a2chMate.haiagaru.resumefix242` を別アプリとして新規導入。署名照合／APK package検査／install-r Success／cold起動Status ok／導入後APK全バイト一致／新規対象crashなし。データ消去・アンインストールなし。記録時刻JST `2026-11-03T20:20:17.294094+09:00`。今回のNG除外画面操作は未確認。
 
 APK `build/shared-ng-device-242.apk` SHA256 `4f5ac42050f3382b8ed73eff785a5d05eae6e4d5009b018a5b50fbf543078c50`、MPP `build/shared-ng-device.mpp` SHA256 `6f074172374f1a238d899840652a602b5d4bc8cbb9736238c443ab9419144b77`。cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・署名鍵の場所を含む原本は `build/local-development-records/shared-ng-device-installation.json`。
+
+
+## 2026-11-03 読書位置・トリップ・検索強調・移行削除 最終候補
+
+serial `emulator-5580` / Android16。既存bindings191／226／242の署名照合後install-r成功、データ保持。各版本体の検索色付け処理15項目成功、191の読書位置・トリップの実Android16項目成功。新規app crash buffer空。実機は読み取り専用で検索画面・導入APKの検索フックを照合し、今回の更新・データ消去なし。未変更の本文／画像／GIF／動画は既存利用者指定で再検査省略。
+
+MPP `build/shared-read-search-final.mpp` SHA256 `b1616f6c6c8440a11adf162931235d113df8624eb1cc5ad284f10145805c4284`。cert SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias `Morphe`。絶対パス・鍵の場所を含む原本は `build/local-development-records/shared-read-search-final-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-03T21:06:36.456530|`build/shared-read-search-final-191.apk`|`3b352f5466fa340b8276e9925373ac6d65756b808c23e21005d0283a4c6be3fe`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-03T21:08:01.522533|`build/shared-read-search-final-226.apk`|`c9378f8e55139ccdff48e27eaa21f70d9bb527f48618ddffe9f5c0f9ec26b7fe`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-03T21:09:02.093717|`build/shared-read-search-final-242.apk`|`1826df7a96c44ea4d0d96f8a88c99ff5b1928c81168fd74674e8d89fbca00786`|

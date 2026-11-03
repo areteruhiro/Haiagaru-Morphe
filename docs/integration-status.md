@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-03 読書位置・トリップ・検索強調・Shizuku削除（未公開）: 読書位置のAtomicFile同期を単一背景writerへ移動、直近128件のメモリ保存とスクロール／非表示抑制・定常1秒調査・adapter accessor再利用。191実ListViewで500描画→1調査、scroll100／hidden50→0調査、連続2保存とも非UIスレッド・最終位置保持を確認。トリップ周囲Unicode空白／方向制御文字を除去し、69単体＋191 native model／Android背景色spanで指定コードの全板強調を確認。ただし報告端末の無強調原因の断定／FPS実測／実機再確認は未実施。指定スレをエミュレータで開く操作は自動承認審査拒否（詳細理由なし）のためネットワークなしfixtureへ切替。
+
+実機191の「03」検索画面で日付の黄色強調を確認。絞り込み用header除外とは別の本体色付けへ2呼出し置換を追加し、191／226／242のnative各15項目・単体233項目成功。本文日付は維持。Shizuku任意patch／設定入口／extension／AIDL／provider権限／依存／README案内を削除。最初のAPK適用で古い拡張R8クラス名を使う既存bindingが停止したためMedia3 HTTP source／OkHttp builderの名前を保持し固定ownerへ更新（全クラス走査追加なし）。通常Lint付き最終build2m45s成功、3版適用署名／隔離更新／検索helperの元reg・他命令保持／移行クラス・権限不在を確認。MPP b1616f6c6c8440a11adf162931235d113df8624eb1cc5ad284f10145805c4284。新規app crash buffer空。実機は読み取り専用の画面・APK照合のみ、導入・公開なし。各詳細文書と導入台帳参照。
+
 2026-11-03 共有NG検索・レスから除外 実機導入（未公開）: 利用者の実機導入指示。初回buildはPC nativeメモリ不足で停止、低メモリ再試行で通常Lint付きbuildAndroid成功3m9s、242適用／署名成功。XIG05/730eae72の標準ChMate246を保護し、別package resumefix242 / Haiagaru 検証 242を新規install-r Success。cold起動Status ok、導入後APK全バイト一致、対象新規crashなし。NG除外の実画面操作は未確認、公開なし。導入台帳参照。
 
 2026-11-03 レスから共有NGを個別除外（未公開）: 共有NG有効時のレス長押しへ「このレスに一致する共有NGを除外」を追加。191／226／242通常メニューと242本文シートの既存ResponseArchive経路に接続。選択レス1件を既存sharedReportInputsへ渡し、板・報告数・種類・個別除外・配信停止を含む本番indexで一致する条件だけを背景検索。検索付き選択画面から端末の除外IDへ保存、既存除外保持、キャンセル無変更、スレ再表示案内。一致なしは個人／連鎖NG確認案内。個人NG／DAT／サーバー条件の変更・ネットワーク送信なし。新規263＋既存10,003判定試験成功、Java／Kotlin releaseコンパイル成功。実画面／APK適用／端末導入／公開は未実施。docs/shared-ng-response-exclusion.md参照。

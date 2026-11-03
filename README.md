@@ -119,7 +119,7 @@ Morpheのログにある`ERROR`／例外と末尾を確認してください。H
 
 ### バックアップ・クラッシュログ
 
-ChMate標準のバックアップ／復元、またはHaiagaruのローカルバックアップを使用してください。MEGAは任意パッチです。Shizukuによる移行は必要な場合だけ`Migrate ChMate data with Shizuku`を選択し、Android 7.0（API 24）以降で利用します。
+ChMate標準のバックアップ／復元、またはHaiagaruのローカルバックアップを使用してください。MEGAは任意パッチです。
 
 `Save ChMate crash logs`を有効にすると、未処理例外のログを`Download/Haiagaru/`へ保存します。報告時にはアプリ・Haiagaruの版、再現手順、エラー末尾を添えてください。Cookieやトークン、認証情報入りバックアップは公開しないでください。
 
