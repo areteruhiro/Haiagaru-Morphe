@@ -10,6 +10,13 @@ final class SharedNgIndex {
         final Set<String> ids=new HashSet<>(), slips=new HashSet<>(), prefixes=new HashSet<>(), suffixes=new HashSet<>(), reporters=new HashSet<>();
         final List<String> names=new ArrayList<>(), words=new ArrayList<>();
         final List<SharedNgRules.Rule> expressions=new ArrayList<>();
+        NgLiteralMatcher wordMatcher,nameMatcher;
+        boolean hasBody;
+        void finish(){
+            wordMatcher=new NgLiteralMatcher(words);nameMatcher=new NgLiteralMatcher(names);
+            hasBody=!words.isEmpty();
+            for(SharedNgRules.Rule rule:expressions)hasBody|=rule.kind.equals("keyword");
+        }
         void add(SharedNgRules.Rule r) {
             if(r.regex){expressions.add(r);return;}
             switch(r.kind) {
@@ -30,13 +37,13 @@ final class SharedNgIndex {
                 if(r.expressionMatches(input))return true;
             }
             if(ids.contains(id))return true;
-            for(String value:names)if(name.contains(value))return true;
+            if(nameMatcher.matches(name))return true;
             if(slips.isEmpty()&&prefixes.isEmpty()&&suffixes.isEmpty())return false;
             String slip=SharedNgRules.wacchoi(name);
             return slips.contains(slip)||(slip.length()==9&&(prefixes.contains(slip.substring(0,4))||suffixes.contains(slip.substring(5))));
         }
-        boolean hasBody(){if(!words.isEmpty())return true;for(SharedNgRules.Rule r:expressions)if(r.kind.equals("keyword"))return true;return false;}
-        boolean body(String body,String raw) {for(String word:words)if(body.contains(word))return true;for(SharedNgRules.Rule r:expressions)if(r.kind.equals("keyword")&&r.expressionMatches(raw))return true;return false;}
+        boolean hasBody(){return hasBody;}
+        boolean body(String body,String raw) {if(wordMatcher.matches(body))return true;for(SharedNgRules.Rule r:expressions)if(r.kind.equals("keyword")&&r.expressionMatches(raw))return true;return false;}
     }
     SharedNgIndex(List<SharedNgRules.Rule> rules,int votes,Set<String> exceptions,Set<String> excludedBoards,int kinds) {
         for(SharedNgRules.Rule rule:rules) {
@@ -47,6 +54,7 @@ final class SharedNgIndex {
             if(rule.board.equals("*")&&rule.kind.equals("reporter"))continue;
             boards.computeIfAbsent(rule.board,key->new Bucket()).add(rule);
         }
+        for(Bucket bucket:boards.values())bucket.finish();
     }
     boolean matchesTitle(String board,String reporter) {
         Bucket local=boards.get(board);return local!=null&&"edge/all".equals(board)&&local.reporters.contains(reporter);
