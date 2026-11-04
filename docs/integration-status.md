@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 検証用プレ1.23.0-dev.9公開・配布検証完了。実装966f66e、Semantic Release CI41801477930/Attest success、生成c2a78ebをdevへFF。API name=1.23.0-dev.9（検証用）、draft=false/prerelease=true。公開6asset size/digest/SHA256・CRCと除外tag/本文cache修復ラベル同梱確認。MPP SHA256 9ca0276515379f619be52ae67042c7d57e6fa937f4229cf7400149f83757bf82。dev両feedはdev.9、master/main両feedは正式1.22.1維持。ユーザーの静的/検証用指定に従い、最終端末導入・実ZIP往復・板移行/常設filter/cache修復/速度未検証を冒頭明記。先行共有NG3版操作試験とは区別。実機/GAS/投稿変更なし。詳細docs/pinned-filter-board-backup-20261104.md・build/release-1.23.0-dev.9-verify/verification.json。
+
 2026-11-04 常設filter/既復元cache手動修復/板お気に入り/native設定backup（未公開候補）: 表示復帰/overlay detachedを描画前に検出し250ms制限で復旧、必要時のみbringToFront。設定に本文cache整合修復（履歴退避・worker・再起動後巡回、本文自動取得なし）。snapshotにboards追加/通常復元で既存flag/orderのみ/不足分同期既存優先。標準prefs許可リスト固定の3版ownerを特定、package変更に一致する保存名へ定数1個置換。共有NG先行修正保持。通常Lint最終build3m14s/CRC正常、最終MPP build/haiagaru-backup-filter-fixes.mpp SHA256 d921a3e5d964c15c01812322c7ba7ed4533fa703d4935100f378d535e76b5388。先行candidate3版適用・native設定名定数以外命令/register/offset保持成功、最終候補APK導入/ZIP復元/症状解消未確認。詳細docs/pinned-filter-board-backup-20261104.md。
 
 2026-11-04 共有NG除外の標準一覧へ変更（未公開候補）: dev.8でもcheck不可の追加報告。2入口をnative AlertDialog/ListView/CheckedTextViewへ、ID基準選択/bind checked/clear再構築でCompose変換を回避。通常Lint build2m21s・3版適用/署名照合更新。親検証menu実タップ→本番handle/dialog、チェック右端/文字の実表示/保存、12条件検索/隠れ保持/再表示成功。検索15/UA21各版、新規app crashなし。設定/static/network復元・AVDデータ保持停止。実スレ長押し起点とは区別。UAは14/15/16を本番設定で再確認、4.0.3は移行判定のみ。実機未接続、利用版/画面質問中。詳細docs/shared-ng-native-choice-20261104.md・導入台帳。

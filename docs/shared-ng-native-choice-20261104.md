@@ -14,3 +14,8 @@ UAテンプレートはdev.7から14（標準）/15/16。4.0.3は旧出荷設定
 
 
 2026-11-04 利用者が「検証用としてプレスリリースして」と指示。既存の静的修正方針を維持し、未確認項目を冒頭へ明記して既存Semantic Release CIからプレ公開へ進む。最終端末導入・ZIP往復・速度試験は追加実施せず、先行共有NG候補の試験結果とは区別する。
+
+
+## 検証用プレ公開完了
+
+[1.23.0-dev.9（検証用）](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.9)を既存Semantic Release CI41801477930で公開、Release/Attest success。実装966f66e/生成c2a78ebをdevへFF。draft=false/prerelease=true、release nameにも検証用を確認。公開6asset size/digest/SHA256・MPP/ZIP CRC、RestoredThreadCache/標準除外tag/修復ラベルと既存管理class同梱確認。公開MPP SHA256 `9ca0276515379f619be52ae67042c7d57e6fa937f4229cf7400149f83757bf82`。dev両feedは1.23.0-dev.9、master/main両feedは正式1.22.1を維持。VPN任意ZIPは1.21.1と同一。証跡build/release-1.23.0-dev.9-verify/verification.json。利用者指定の静的・検証用公開で、最終端末導入・実ZIP往復・フィルター症状解消・本文修復/速度は未確認と冒頭へ記載。公開後の追加端末試験は実施せず、先行共有NG候補の操作試験と区別。
