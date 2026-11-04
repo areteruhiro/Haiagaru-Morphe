@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 検証用プレ1.23.0-dev.10公開・配布検証完了: 実装2cfe5d3、Semantic Release CI41813804375のRelease/Attest success、生成347c58bをdevへFF。API name=1.23.0-dev.10（検証用）、draft=false/prerelease=true。公開6asset size/digest/SHA256・ZIP/MPP CRC・AA最適化class/hook同梱確認、作業環境パス残存なし。MPP SHA256 8b4b57e1af16e4d0c1549a4b4ecb8c6b9b24bede2da6a0dd41f007a7a6903a29。dev両feedはdev.10、master/main両feedは正式1.22.1維持。任意3ZIPは公開dev.9と同一。静的/検証用公開指定に従い、端末起動/本文/画像/設定切替/速度未確認・遅延主因未特定を公開冒頭明記。公開MPP再適用/実機導入/GAS変更なし。詳細docs/unread-initial-display-work-20261104.md・build/release-1.23.0-dev.10-verify/verification.json。
+
 2026-11-04 未読最適化226/242追加確認（未公開）: 両版の未パッチ本体AA判定も191と同一文字範囲/比率と確認し、固定ownerへ同じ最適化を追加。3版ともnullのみ保持したnativeへ委譲。通常Lint build1m11s、最終3版適用/署名/元命令・register/null分岐検査成功。原本bytecode限定評価は各70326件一致、Java参照296911+null再成功。最終MPP 7f33fe3d952958748119cc22f565afe695f878ec31cb75e9d0037d149b6914df、CRC正常。追加症状は「初期設定は開くまで、最低限構成は開いた後」「本文待ち/操作のどちらかは不明」であり主因未特定。端末導入・実描画/速度・公開なし。docs/unread-initial-display-work-20261104.md参照。
 
 2026-11-04 未読多数スレの本文表示前処理を静的最適化（未公開候補）: 利用者がfilter拡張OFFでも遅いと補足し本体最適化を許可。原因断定せず、countsOFFで全レスURL分類/件数用HTML変換、件数/人気popup/directすべてOFFでnative人気snapshotコピーを省略。modern snapshotに無効時raw通過、ONで再構築・遅延集計。191本体AA判定へ同一結果の早期確定、元命令保持。人気host7/AA等価296911+null成功、通常Lint build2m14s、191最終適用/署名/元命令・wrapper register検査成功。候補MPP 930c13adaba1462d7bdc06424391474d17dd7f8d48bb6409cf7e8e39e47e3b77。226/242最終適用・端末の速度/描画/切替/導入・公開は未実施。詳細docs/unread-initial-display-work-20261104.md。

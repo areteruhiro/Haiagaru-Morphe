@@ -29,3 +29,5 @@
 ## 検証用プレ公開
 
 利用者が静的確認結果・端末未確認の報告を受けて「プレリリースして」と明示。先行の静的修正/検証用公開指定と合わせ、端末の基本操作・速度計測は今回も未実施として公開する。必須端末試験を成功扱いせず、.releasercの公開冒頭に起動/本文/画像/設定切替/速度未確認、主因未特定を記載。新たな実機導入や投稿/GAS変更はしない。既存Semantic Release CIをdevへの通常pushで実行し、正式版は1.22.1を維持する。
+
+公開完了: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.10 、name=1.23.0-dev.10（検証用）、draft=false/prerelease=true、2026-11-04 19:29:54 JST公開。実装2cfe5d3、CI41813804375のRelease/Attest成功、生成347c58bをdevへFF取得。公開6assetのsize/digest/SHA256とZIP/MPP CRC、NativeAaClassifier/AAフック同梱、作業環境パス不在、任意3ZIPがdev.9と同一を確認。MPP SHA256 `8b4b57e1af16e4d0c1549a4b4ecb8c6b9b24bede2da6a0dd41f007a7a6903a29`。dev通常/pre feedはdev.10、master/mainは正式1.22.1保持。証跡 `build/release-1.23.0-dev.10-verify/verification.json`。公開CI版MPPの再適用/端末導入は実施せず、先行ローカル候補の3版静的検証と区別する。
