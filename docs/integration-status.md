@@ -1042,3 +1042,6 @@ Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生�
 
 2026-11-05 公開処理待機
 修正commit0f6e2140をorigin/devへpush済み。Semantic Release CI41864064857はqueued、GitHub公式statusでActions degraded_performance / Incident with Actions and Pages investigatingを確認。公開成功/版番号は未確定。ジョブ開始後はCIが公開を実施するため、手動タグ/Release/assets作成なしで継続可能。次回は同runの結果を確認し、成功後に実Release assetのdigest/CRC/3番目のcallback保護同梱/feedを検証する。今回ローカルの重大な未解決クラッシュはなく、エミュレータのSystem UI ANRと広い画面試験未確認は前記の通り。AVDはデータ保持で停止済み。
+
+2026-11-05 通常プレリリース1.23.0-dev.15公開確認
+上記queued表示は実際の処理状況と不一致。git fetchで生成commit c3bfda0f/tag1.23.0-dev.15、GitHub Releaseと配布assetの作成を確認。APIはなおqueuedを返すためCI successと断言せず、公開実体を検証。公開MPP SHA256 d2df76115f763ddb99c7b3c86ac317a3e22b69317da5af5d3627aeb36cb619ab、GitHub digest一致・CRC正常・3番目callback用検査文字列同梱・dev両feedのversion/URL一致。prerelease=true/draft=false/通常タイトル。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.15 。前記の実機/自然発生/最終目視の未確認は維持。
