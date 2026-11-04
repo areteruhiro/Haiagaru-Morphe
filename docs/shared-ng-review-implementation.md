@@ -117,3 +117,5 @@ GAS実配備: reviewPersonalNg/exportReviewedSharedNgの実行完了、毎時rev
 - 公開GET action=reviewedはok=true/revision113/rules1704、private metadataなし。公開POSTによる実reporterのなりすまし試験は行っていない。
 - editorでの追加export実行は他処理のlock保持により15秒でtimeout。公開GET成功と別の検証であり、追加export/auditの実行成功とは扱わない。
 - 今後の除外リスト変更はGASプロパティのみ。アプリ更新もGAS再デプロイも不要。GASコード変更時は既存deploymentの新バージョン公開が必要。
+
+2026-11-04追記: 利用者指定の識別子を履歴のB列で検索し、B1=reporterと確認。既存IGNORED_REPORTERSを保持して対象1件を追加し、GAS設定の保存後のdisabled値で2件の登録を確認。識別子そのものはGitへ記載しない。既存履歴は削除せず、既存実装により今後の保存/集計票から除外。コード変更・再デプロイ・アプリ更新なし。BAN後の公開feed再取得/実送信の試験は行っていない。画面確認記録build/shared-ng-reporter-ban-20261104.pngはIGNORED_REPORTERS行のみ（他の秘密プロパティを除外）。

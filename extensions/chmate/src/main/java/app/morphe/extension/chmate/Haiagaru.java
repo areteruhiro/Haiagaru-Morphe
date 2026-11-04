@@ -2490,7 +2490,7 @@ public final class Haiagaru {
             intent.removeExtra("haiagaru.archive.retry");
         }
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isLegacyServerThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling thread through the local DAT cache: " + original);
@@ -2532,7 +2532,7 @@ public final class Haiagaru {
         String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
         boolean shouldImport = talkThread
-                || (isAutomaticDatEnabled(activity) && (vipThread || isArchivedThreadUrl(original)));
+                || (isAutomaticDatEnabled(activity) && (vipThread || isLegacyServerThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
             Log.i(LOG_TAG, "Handling tablet thread through the local DAT cache: " + original);
@@ -2545,7 +2545,7 @@ public final class Haiagaru {
         return false;
     }
 
-    private static boolean isArchivedThreadUrl(String value) {
+    private static boolean isLegacyServerThreadUrl(String value) {
         try {
             Uri uri = Uri.parse(value);
             String host = uri.getHost();
@@ -2554,7 +2554,7 @@ public final class Haiagaru {
             java.util.regex.Matcher matcher = LEGACY_THREAD_READ_PATH.matcher(path);
             if (!matcher.matches()) matcher = LEGACY_THREAD_DAT_PATH.matcher(path);
             return matcher.matches()
-                    && isArchivedThreadCandidate(host.toLowerCase(Locale.ROOT), matcher.group(2));
+                    && ArchiveThreadLinks.requiresLegacyServerRecovery(host);
         } catch (Throwable ignored) {
             return false;
         }
@@ -2575,7 +2575,7 @@ public final class Haiagaru {
             if (!matcher.matches()) return normalized;
 
             String normalizedHost = host.toLowerCase(Locale.ROOT);
-            if (!isArchivedThreadCandidate(normalizedHost, matcher.group(2))) {
+            if (!ArchiveThreadLinks.requiresLegacyServerRecovery(normalizedHost)) {
                 return normalized;
             }
 
@@ -2599,45 +2599,6 @@ public final class Haiagaru {
         } catch (Throwable error) {
             Log.w(LOG_TAG, "Unable to rewrite legacy thread URL", error);
             return normalized;
-        }
-    }
-
-    private static boolean isArchivedThreadCandidate(String host, String threadKey) {
-        if (host.equals("2ch.net") || host.endsWith(".2ch.net")) return true;
-        if (!(host.endsWith(".5ch.net") || host.endsWith(".5ch.io"))) return false;
-
-        int dot = host.indexOf('.');
-        String server = dot > 0 ? host.substring(0, dot) : host;
-        switch (server) {
-            case "ai":
-            case "anago":
-            case "awabi":
-            case "daily":
-            case "fox":
-            case "hayabusa":
-            case "hayabusa2":
-            case "hayabusa3":
-            case "hayabusa5":
-            case "hayabusa6":
-            case "hello":
-            case "hope":
-            case "kanae":
-            case "maguro":
-            case "mastiff":
-            case "peace":
-            case "potato":
-            case "raptor":
-            case "wktk":
-                return true;
-            default:
-                try {
-                    long createdAtSeconds = Long.parseLong(threadKey);
-                    long ninetyDaysAgoSeconds = System.currentTimeMillis() / 1000L
-                            - 90L * 24L * 60L * 60L;
-                    return createdAtSeconds < ninetyDaysAgoSeconds;
-                } catch (NumberFormatException ignored) {
-                    return false;
-                }
         }
     }
 
