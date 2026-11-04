@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 /** Refresh registrations alongside the four stock history tabs. */
 public final class RefreshTargetHistory {
     static final String VISIBLE_KEY="showRefreshTargetsInHistoryPopup";
-    static boolean enabled(Context context){return RefreshTargets.prefs(context).getBoolean(VISIBLE_KEY,true);}
+    static boolean enabled(Context context){return RefreshTargets.prefs(context).getBoolean(VISIBLE_KEY,false);}
     private static final int TAG=0x48690e11;
     private static final ExecutorService IO=Executors.newSingleThreadExecutor();
     static final class Entry {

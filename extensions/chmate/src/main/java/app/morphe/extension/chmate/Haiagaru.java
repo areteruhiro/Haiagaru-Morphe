@@ -3664,7 +3664,7 @@ public final class Haiagaru {
         HomeSelectionBar.addSettings(layout,activity);
         Switch historyRefreshTargets=addSwitch(layout,activity,
                 text("履歴ポップアップに「対象」タブを表示", "Show refresh targets in the history popup"),
-                preferences.getBoolean(RefreshTargetHistory.VISIBLE_KEY,true));
+                preferences.getBoolean(RefreshTargetHistory.VISIBLE_KEY,false));
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,

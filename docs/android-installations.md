@@ -1644,3 +1644,14 @@ emulator-5580 / Android16。bindings191／226／242の既知実APK hash・署名
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T11:23:13.908021+09:00|`build/history-target-option-191.apk`|`662faa8ca27548fd5edb33db571cc34bc3109816d27927c1cd42207a0417beec`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T11:23:43.716830+09:00|`build/history-target-option-226.apk`|`38c492c15800723f376b88eef23fa71ffbaf66985c6bd02ced46905877fb05a3`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T11:24:02.697876+09:00|`build/history-target-option-242.apk`|`baab10bf1a10aea3a9a7cea4f3ce1b67be79b145740bf4573d706687de62c81f`|
+
+
+## 2026-11-04 共有NGチェック直接操作・履歴初期オフ
+
+emulator-5580 / Android16。bindings3版を既知実APK hashと署名照合後install-r成功、データ保持。共有NG本番dialogの合成条件でcheckbox/文字それぞれ実タップと保存、各版検索9/履歴48成功、新規対象app crashなし。MPP `build/shared-ng-toggle-defaultoff.mpp` SHA256 `d3bc222fab6e1faca1e210fd379145ecad9ed6d378ff9ec5fc49e544cf34fc25`。cert `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias Morphe。絶対パス・署名鍵の場所を含む原本 `build/local-development-records/shared-ng-toggle-defaultoff-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T11:45:21.868147+09:00|`build/shared-ng-toggle-defaultoff-191.apk`|`115d89cb1116762e035859680babf4364e121b03f7a3e4985cd78bef53a048a8`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T11:45:29.913699+09:00|`build/shared-ng-toggle-defaultoff-226.apk`|`17bdced32197d9aea84fc6c5d9f83e77eac83d9a3f081ea21717460d7343ef1c`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T11:45:36.847503+09:00|`build/shared-ng-toggle-defaultoff-242.apk`|`6b282ff23600ed5f9160fc2b07dda3cb9b023ac1821f8aca547eeaa9a4030910`|
