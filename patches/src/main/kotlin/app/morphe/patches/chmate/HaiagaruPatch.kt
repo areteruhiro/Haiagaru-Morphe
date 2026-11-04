@@ -1608,6 +1608,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchBrowsingAndSearchHistory(packageMetadata.versionName)
         patchGroupedBrowsingHistory(packageMetadata.versionName)
         patchNativeDrawDates(packageMetadata.versionName)
+        patchNativeAaClassifier(packageMetadata.versionName)
         patchNativeUiTheme(packageMetadata.versionName)
         patchFavoriteThreads(packageMetadata.versionName)
         patchHomeRefreshKeywords(packageMetadata.versionName)

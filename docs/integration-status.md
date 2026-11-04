@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 未読最適化226/242追加確認（未公開）: 両版の未パッチ本体AA判定も191と同一文字範囲/比率と確認し、固定ownerへ同じ最適化を追加。3版ともnullのみ保持したnativeへ委譲。通常Lint build1m11s、最終3版適用/署名/元命令・register/null分岐検査成功。原本bytecode限定評価は各70326件一致、Java参照296911+null再成功。最終MPP 7f33fe3d952958748119cc22f565afe695f878ec31cb75e9d0037d149b6914df、CRC正常。追加症状は「初期設定は開くまで、最低限構成は開いた後」「本文待ち/操作のどちらかは不明」であり主因未特定。端末導入・実描画/速度・公開なし。docs/unread-initial-display-work-20261104.md参照。
+
+2026-11-04 未読多数スレの本文表示前処理を静的最適化（未公開候補）: 利用者がfilter拡張OFFでも遅いと補足し本体最適化を許可。原因断定せず、countsOFFで全レスURL分類/件数用HTML変換、件数/人気popup/directすべてOFFでnative人気snapshotコピーを省略。modern snapshotに無効時raw通過、ONで再構築・遅延集計。191本体AA判定へ同一結果の早期確定、元命令保持。人気host7/AA等価296911+null成功、通常Lint build2m14s、191最終適用/署名/元命令・wrapper register検査成功。候補MPP 930c13adaba1462d7bdc06424391474d17dd7f8d48bb6409cf7e8e39e47e3b77。226/242最終適用・端末の速度/描画/切替/導入・公開は未実施。詳細docs/unread-initial-display-work-20261104.md。
+
 2026-11-04 検証用プレ1.23.0-dev.9公開・配布検証完了。実装966f66e、Semantic Release CI41801477930/Attest success、生成c2a78ebをdevへFF。API name=1.23.0-dev.9（検証用）、draft=false/prerelease=true。公開6asset size/digest/SHA256・CRCと除外tag/本文cache修復ラベル同梱確認。MPP SHA256 9ca0276515379f619be52ae67042c7d57e6fa937f4229cf7400149f83757bf82。dev両feedはdev.9、master/main両feedは正式1.22.1維持。ユーザーの静的/検証用指定に従い、最終端末導入・実ZIP往復・板移行/常設filter/cache修復/速度未検証を冒頭明記。先行共有NG3版操作試験とは区別。実機/GAS/投稿変更なし。詳細docs/pinned-filter-board-backup-20261104.md・build/release-1.23.0-dev.9-verify/verification.json。
 
 2026-11-04 常設filter/既復元cache手動修復/板お気に入り/native設定backup（未公開候補）: 表示復帰/overlay detachedを描画前に検出し250ms制限で復旧、必要時のみbringToFront。設定に本文cache整合修復（履歴退避・worker・再起動後巡回、本文自動取得なし）。snapshotにboards追加/通常復元で既存flag/orderのみ/不足分同期既存優先。標準prefs許可リスト固定の3版ownerを特定、package変更に一致する保存名へ定数1個置換。共有NG先行修正保持。通常Lint最終build3m14s/CRC正常、最終MPP build/haiagaru-backup-filter-fixes.mpp SHA256 d921a3e5d964c15c01812322c7ba7ed4533fa703d4935100f378d535e76b5388。先行candidate3版適用・native設定名定数以外命令/register/offset保持成功、最終候補APK導入/ZIP復元/症状解消未確認。詳細docs/pinned-filter-board-backup-20261104.md。

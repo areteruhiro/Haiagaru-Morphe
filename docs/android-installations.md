@@ -1745,3 +1745,53 @@ emulator-5580 / Android16。bindings3版を既知実APK hashと署名照合後in
   - 導入: 2026-11-04T16:26:16.229509+09:00 / signature matched, install-r Success; existing isolated app data retained
 
 3版で親メニューの実タップ→SharedNgResponseExclusion.handle→本番showResponseExclusionsへ。チェック右端/文字実タップの表示OFF→ON→OFF/保存成功。12条件検索/隠れ選択保持/全条件画面へ再表示の実タップ成功。検索model15/UA21各版成功。新規対象app crashなし。合成条件はメモリ内のみ、設定/static復元、通信/投稿/GAS変更なし。親は検証用メニューで、実スレ長押し起点の通し試験とは区別する。AVD表示/network復元・データ保持停止。原本build/local-development-records/shared-ng-native-choice-installations.json。
+
+## 2026-11-04 未読スレ表示の静的最適化候補（生成のみ）
+
+- 表示名: Haiagaru binding 191 / ChMate 0.8.10.191 dev
+- package: `jp.co.airfront.android.a2chMate.haiagaru.bindings191` / versionCode `2147483647`
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-191.apk`
+- APK SHA256: `2d74f4bfa29a45a8ec0c12076cf56b61105d810aa03fc01f8fa7c71902533ee9`
+- MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized.mpp`
+- MPP SHA256: `930c13adaba1462d7bdc06424391474d17dd7f8d48bb6409cf7e8e39e47e3b77`
+- 署名証明書SHA256（生成APKで照合）: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+- 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+- 端末シリアル/導入日時: 該当なし。今回APK生成のみ、ADB導入なし。
+- 結果: 適用・署名検証・191 AAの元命令/レジスター保持とwrapper検査成功。端末起動/画面/速度未確認。内部dev.9表記はローカル候補であり、公開dev.9とは異なる。
+
+
+## 2026-11-04 226/242確認・3版AA最適化候補（生成のみ）
+
+全APKは生成・署名検証のみ。端末シリアル・導入日時は該当なし、ADB導入なし。鍵は `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`。全証明書SHA256は `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。内部dev.9表記は未公開候補。
+
+- Haiagaru binding 226 / ChMate 226 dev / package `jp.co.airfront.android.a2chMate.haiagaru.bindings226`
+  - APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-226.apk`
+  - APK SHA256: `b5f78f7405216afeb81af79a99e65ffb55fc15d438451d49d85fa28f136e292a`
+  - MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized.mpp`
+  - MPP SHA256: `930c13adaba1462d7bdc06424391474d17dd7f8d48bb6409cf7e8e39e47e3b77`
+
+- Haiagaru binding 242 / ChMate 242 dev / package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`
+  - APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-242.apk`
+  - APK SHA256: `cb794dcce6d200b01eec69f518b975b74f90b4888c1a068130de63bc83f6fcae`
+  - MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized.mpp`
+  - MPP SHA256: `930c13adaba1462d7bdc06424391474d17dd7f8d48bb6409cf7e8e39e47e3b77`
+
+- Haiagaru binding 191 / ChMate 191 dev / package `jp.co.airfront.android.a2chMate.haiagaru.bindings191`
+  - APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-all-191.apk`
+  - APK SHA256: `c9da59d3f355e791322148f15b54eee01c281867376e6193047f40e1589a3652`
+  - MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized-all.mpp`
+  - MPP SHA256: `7f33fe3d952958748119cc22f565afe695f878ec31cb75e9d0037d149b6914df`
+
+- Haiagaru binding 226 / ChMate 226 dev / package `jp.co.airfront.android.a2chMate.haiagaru.bindings226`
+  - APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-all-226.apk`
+  - APK SHA256: `df0a04579afb3400c2e38ec28ba5eb67b19b0bf3e3c3d2d47f49555638beadfa`
+  - MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized-all.mpp`
+  - MPP SHA256: `7f33fe3d952958748119cc22f565afe695f878ec31cb75e9d0037d149b6914df`
+
+- Haiagaru binding 242 / ChMate 242 dev / package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`
+  - APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/unread-open-optimized-all-242.apk`
+  - APK SHA256: `dca42a8cc3cbeb7f3f3022b647d6d59bdafb0a5271bdbc85d04023cf02ac8a2a`
+  - MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/haiagaru-unread-open-optimized-all.mpp`
+  - MPP SHA256: `7f33fe3d952958748119cc22f565afe695f878ec31cb75e9d0037d149b6914df`
+
+先行226/242 APKは191だけAAフックの候補。最終all候補は3版AAフック・native null判定保持。最終3版の元命令/分岐/register・wrapper検査成功。端末起動/表示/速度未確認。証跡: `build/unread-open-optimized-all-verification.json`。

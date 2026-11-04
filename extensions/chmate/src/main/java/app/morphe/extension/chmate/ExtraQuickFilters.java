@@ -329,6 +329,7 @@ public final class ExtraQuickFilters {
         int pendingFilterMask;
         boolean[] pendingFilters = new boolean[4];
         int[] counts = new int[7];
+        boolean mediaCountsReady;
         Set<Integer> aa = new HashSet<>(), mine = new HashSet<>(), replies = new HashSet<>();
         Exception failure;
         PopularNativeRows.Snapshot popularSnapshot;
@@ -486,7 +487,7 @@ public final class ExtraQuickFilters {
         // update/dialog opening instead of reparsing every post during native callbacks.
         if(resetting()&&s.extra==0)return;
         int[] counts=new int[7];Set<Integer> aa=new HashSet<>(),mine=new HashSet<>(),replies=new HashSet<>();
-        if(source.isEmpty()){s.counts=counts;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return;}
+        if(source.isEmpty()){s.counts=counts;s.mediaCountsReady=true;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return;}
         Object idx=index(a);
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
         for(Object r:source)if(response(r)) {
@@ -499,16 +500,21 @@ public final class ExtraQuickFilters {
             int no=number(r);
             for(int anchor:anchors(r))if(anchor<no&&mine.contains(anchor)){replies.add(no);break;}
         }
-        Context c=context(a);int threshold=popularThreshold(a,c,source);
+        Context c=context(a);
+        boolean showCounts=QuickFilterOptions.counts(),directPopularity=PopularReplies.directFor(c);
+        int threshold=showCounts?popularThreshold(a,c,source):0;
         Map<Integer,Integer> direct=Collections.emptyMap();
-        if(PopularReplies.directFor(c)) {
+        if(showCounts&&directPopularity) {
             Map<Integer,String> posts=new LinkedHashMap<>();
             for(Object r:source)if(response(r))posts.put(number(r),android.text.Html.fromHtml((String)field(r,legacy(a)?"c":middle(a)?"d":"h")).toString());
             direct=PopularReplyRules.count(posts);
         }
         // Counts are per response, even when a response contains several links or anchors.
-        for(Object r:source)if(response(r)) {
-            if(PopularReplies.directFor(c)&&direct.getOrDefault(number(r),0)>=threshold)counts[0]++;
+        // Extra AA/own/reply filters need the sets above, not media totals.
+        // Native URL getters can also schedule metadata/thumbnail work, so do
+        // not visit every response merely to compute labels that are hidden.
+        if(showCounts)for(Object r:source)if(response(r)) {
+            if(directPopularity&&direct.getOrDefault(number(r),0)>=threshold)counts[0]++;
             String[] urls;
             if(legacy(a)||middle(a))urls=(String[])call(r,"d",new Class<?>[0]);
             else urls=(String[])r.getClass().getClassLoader().loadClass("o.KeJ11$RemoteActionCompatParcelizer")
@@ -529,11 +535,12 @@ public final class ExtraQuickFilters {
             for(int i=0;i<3;i++)if(kinds[i])counts[i+1]++;
         }
         counts[4]=aa.size();counts[5]=mine.size();counts[6]=replies.size();
-        if(!PopularReplies.directFor(c)) {
+        if(!directPopularity) {
             PopularNativeRows.Snapshot nativeRows=PopularNativeRows.find(source);
-            counts[0]=nativeRows==null?-1:nativeRows.selected(threshold).size();
+            counts[0]=nativeRows==null?-1:showCounts?nativeRows.selected(threshold).size():0;
         }
         s.aa=aa;s.mine=mine;s.replies=replies;s.counts=counts;s.failure=null;
+        s.mediaCountsReady=showCounts;
         s.popularSnapshot=PopularNativeRows.find(source);
     }
     /** Native 191 URL extraction can omit direct videos when automatic fetch is off. */
@@ -572,6 +579,11 @@ public final class ExtraQuickFilters {
             State s=state(a);
             if(snapshot==s.appliedSnapshot)snapshot=s.rawSnapshot;
             s.rawSnapshot=snapshot;
+            if(!QuickFilterOptions.counts()&&!QuickFilterOptions.extras()
+                    &&(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!selected(a)[0])) {
+                s.appliedSnapshot=snapshot;
+                return snapshot;
+            }
             collect(a,PopularReplies.fullList(field(snapshot,"j")));
             List<?> rows=(List<?>)field(snapshot,"b");
             List<?> filtered=filterCollected(a,rows);
@@ -647,16 +659,28 @@ public final class ExtraQuickFilters {
                 // save() keeps a larger full-layout snapshot when native filtering supplied
                 // only a subset, so this cannot regress an already complete capture.
                 try {
-                    List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":"J"));
-                    if(PopularNativeRows.find(source)==null)PopularNativeRows.captureLegacy(a,(List<?>)rows);
+                    if(PopularNativeRows.captureRequired()) {
+                        List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":"J"));
+                        if(PopularNativeRows.find(source)==null)PopularNativeRows.captureLegacy(a,(List<?>)rows);
+                    }
                 }catch(Exception captureError){Log.w("Haiagaru","Fallback popular layout capture",captureError);}
                 f.set(a,filterRows(a,(List<?>)rows));
             }
         }catch(Exception e){Log.e("Haiagaru","Extra legacy filters",e);}
     }
     private static String[] labels(Object a) {
-        int[] counts=state(a).counts;String[] result=new String[7];
-        for(int i=0;i<7;i++)result[i]=QuickFilterOptions.counts()?(counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;
+        State s=state(a);boolean showCounts=QuickFilterOptions.counts();
+        // Turning counts ON must populate the deferred values immediately,
+        // even if the native response list has not been rebuilt meanwhile.
+        if(showCounts&&!s.mediaCountsReady)try {
+            collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+        }catch(Exception error){
+            s.mediaCountsReady=true;
+            Arrays.fill(s.counts,-1);
+            Log.w("Haiagaru","Deferred filter counts unavailable",error);
+        }
+        int[] counts=s.counts;String[] result=new String[7];
+        for(int i=0;i<7;i++)result[i]=showCounts?(counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;
     }
     public static boolean reset(Object fragment){
         RESETTING.set(true);
