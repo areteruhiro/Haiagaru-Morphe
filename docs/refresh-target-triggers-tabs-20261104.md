@@ -28,3 +28,7 @@
 原本は公開対象外 build/local-development-records/refresh-history-tabs-installations.json、試験ログと画像はbuild/refresh-history-tabs-*。実機への導入はしていません。
 
 242のタイトルチェック欄の重なりについて、先行プレ版で記録した実画面未再確認の制限は残っています。今回の履歴popup試験はその診断とは別画面です。過去の追加診断の自動承認審査拒否（blocked by policy、詳細なし）を迂回していません。
+
+## プレ版公開
+
+Semantic Release CI41745383637とAttest成功、[1.23.0-dev.2](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.2)公開。実装a0624fc、生成e0e9ddd。公開MPP SHA256 `7599f447cf1c5e73bbfc8f4db35484690644735752f0c17a7f881ee3e258cc16`。配布6assetのsize/digest/SHA256・CRC・実装同梱を確認。dev両feedは1.23.0-dev.2、master/main両feedは正式1.22.1のまま。証跡build/release-1.23.0-dev.2-verify/verification.json。AVDはWiFi ON/mobile OFFへ戻し、データ保持で停止済み。
