@@ -19,3 +19,7 @@ HOMEのカタログへ対象スレID109を追加。★スレ108と同じ既存so
 追加のDB fixture作成/削除による試験は自動承認レビューがblocked by policy（詳細なし）と拒否し未実行。迂回せず、保存データを書き換えないメモリ内入力試験に変更。これを理由とする未完了はありません。先行242タイトル操作欄の実画面未確認は別の制限として維持。
 
 試験 scripts/history-bottom-tabs-memory-runtime.js、home-refresh-targets-runtime.js、VerifyHomeTargetNativePreservation.java。原本 build/local-development-records/history-bottom-tabs-installations.json。ログ build/history-bottom-tabs-*-{popup,home}-final.log、home-target-correct-final-summary.log。
+
+## プレ版公開
+
+[1.23.0-dev.3](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.3)を既存Semantic Release CI41757579447で公開、Attest success。実装6dbc55f/CI生成1c9bf55。公開MPP SHA256 `046cbc53a39e7b768ee0d78dc406b536a386d5747ebdcda2d4d8f033f239064f`、配布6assetのdigest/size/SHA256/CRCと対象クラス同梱を確認。dev両feedは1.23.0-dev.3、master/main両feedは正式1.22.1のまま。証跡build/release-1.23.0-dev.3-verify/verification.json。

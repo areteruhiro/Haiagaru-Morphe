@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 プレ版1.23.0-dev.3公開・配布検証完了。実装6dbc55f、Semantic Release CI41757579447/Attest success、生成1c9bf55をdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRC、HomeRefreshTargets/Tabs/対象ラベル/更新enqueue同梱・廃止Shizuku不在を確認。公開MPP SHA256 046cbc53a39e7b768ee0d78dc406b536a386d5747ebdcda2d4d8f033f239064f。VPN任意ZIPは既存1.21.1と同一。dev両feedは1.23.0-dev.3、master/main両feedは正式1.22.1を維持。証跡build/release-1.23.0-dev.3-verify/verification.json。HOME対象/★実表示比較3版と履歴各33項目成功、AVDデータ保持で停止済み。実機/GAS/投稿/正式Releaseは変更なし。
+
 2026-11-04 HOME対象スレ/履歴下部・選択表示 検証完了・プレ公開準備。HOME109を既存★108と同じsorterで抽出、登録集合共用。履歴下部のaccent下線/太字/文字色。191catalogアプリloader修正。最終Lint付きbuild32s・3版適用導入、履歴各33/HOME191/226各16・24214＋実表示XMLの対象/★独立比較成功、native43/51/66メソッド命令/branch/register保持、新規app crashなし。DB fixture試験は自動承認拒否で未実行、メモリ入力で完了。242は試験の結果stateへの直接入力を取り違えた一時p2候補を破棄し、正しいp1/native codeのまま再検証。詳細docs/home-refresh-targets-bottom-tabs-20261104.mdと導入台帳。次に既存Semantic Releaseでプレ公開。
 
 2026-11-04 履歴下部配置・選択表示・HOME対象スレ（作業中、未公開）: 利用者追加指示により履歴の5タブを下部へ、選択中はテーマ色の下線/文字色/太字。HOMEの★スレと同じカタログへ対象スレ109を追加、既存FavoriteThreadsフックを共用し102 snapshotから同じ登録集合で抽出、★表示は独立。HOME対象タブの更新は登録だけの本文取得。通常パッチbuild2m23s成功、3版へ適用済み、build/history-bottom-tabs.mppとhistory-bottom-tabs-{191,226,242}.apk。実行時検証はこれから。PC仮想メモリ不足でAVD/署名検査JVMが停止し、AVDをデータ保持・低メモリ・softwareGPUで再起動中。未検証のまま公開しない。scripts/home-refresh-targets-runtime.js（in-memory native row試験）と更新した履歴41項目の試験を準備。現在の公開版はプレ1.23.0-dev.2/正式1.22.1。
