@@ -198,6 +198,10 @@ final class HaiagaruSyncSnapshot {
 
     /** A recovery copy is created before any live data is changed. */
     static void restore(Context context, JSONObject snapshot, int categories) throws Exception {
+        restore(context, snapshot, categories, true);
+    }
+
+    static void restore(Context context, JSONObject snapshot, int categories, boolean reconcileDat) throws Exception {
         validate(snapshot.toString().getBytes(StandardCharsets.UTF_8));
         int available = snapshot.optInt("categories", 0);
         int selected = categories & available & ALL;
@@ -229,6 +233,7 @@ final class HaiagaruSyncSnapshot {
         }
         if ((selected & COOKIES) != 0) restoreCookies(context, snapshot.getJSONObject("cookies"), false);
         if ((selected & SETTINGS) != 0) ThreadWatchBackup.restore(context,snapshot.optJSONObject(ThreadWatchBackup.KEY),false);
+        if (reconcileDat && (selected & BOOKMARKS) != 0) RestoredThreadCache.reconcile(context,snapshot.optJSONArray("bookmarks"));
     }
 
     /**
@@ -238,6 +243,10 @@ final class HaiagaruSyncSnapshot {
      * preference, post, or memo.
      */
     static void mergeMissing(Context context, JSONObject snapshot, int categories) throws Exception {
+        mergeMissing(context, snapshot, categories, true);
+    }
+
+    static void mergeMissing(Context context, JSONObject snapshot, int categories, boolean reconcileDat) throws Exception {
         validate(snapshot.toString().getBytes(StandardCharsets.UTF_8));
         int selected = categories & snapshot.optInt("categories", 0) & ALL;
         if ((selected & BOOKMARKS) != 0) mergeBookmarks(context, snapshot.optJSONArray("bookmarks"), true);
@@ -255,6 +264,7 @@ final class HaiagaruSyncSnapshot {
         }
         if ((selected & COOKIES) != 0) restoreCookies(context, snapshot.getJSONObject("cookies"), true);
         if ((selected & SETTINGS) != 0) ThreadWatchBackup.restore(context,snapshot.optJSONObject(ThreadWatchBackup.KEY),true);
+        if (reconcileDat && (selected & BOOKMARKS) != 0) RestoredThreadCache.reconcile(context,snapshot.optJSONArray("bookmarks"));
     }
 
     private static boolean cookieStoreName(String name) {

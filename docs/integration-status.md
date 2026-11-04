@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 静的修正候補を検証用プレ公開へ: 利用者が「プレリリースして（検証用）として」と明示。端末検証省略の静的修正指定は維持。公開title/headerへ検証用、host97/build成功と実DB/表示/crash/速度未検証を明記。.releaserc既存github pluginのreleaseNameTemplateで今回dev.8だけ検証用suffix。既存Semantic Release CIで公開し、正式1.22.1維持。詳細docs/thread-open-restore-static-20261104.md。
+
+2026-11-04 スレ取得遅延の静的修正候補（未公開）: 利用者が静的に一回修正を指定。提供ZIP組合せ45 DAT欠落/正res_count、39件が191 native巡回省略の数値条件に一致。復元完了後に対象行のDAT欠落/空のみres_count=0へ整合、既読/サーバー数/マーク保持。ZIPはDAT展開後に遅延実施、JSON/不足分同期も対応。URL正規表現の再コンパイル/同一ループの設定再読込を削減。host97成功、通常Lint build2m13s/MPP CRC成功、ローカル候補build/haiagaru-thread-open-static.mpp SHA256 0d28771daeab8b3fec9a0471bdadbdfd4e8600f6499f6524d5fcad3178fe1847。修正後の端末計測/導入/公開はしない。詳細docs/thread-open-restore-static-20261104.md。
+
 2026-11-04 プレ版1.23.0-dev.7公開・配布検証完了。実装ca057c7、Semantic Release CI41782635101/Attest success、生成bf6a23bをdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRCと標準Android14 UA文字列同梱を確認。MPP SHA256 96c066a6bd73f78a207cc653374b8740977febbdbb753de0a6906600f68cba5a。dev両feedは1.23.0-dev.7、master/main両feedは正式1.22.1を維持。旧出荷4.0.3のみ移行、15/16/独自UA/ON-OFF保持。3版各21項目/host19成功、新規app crashなし。設定/ネットワーク復元・AVDデータ保持停止。実機/GAS/投稿なし。詳細docs/ua-android14-20261104.md・build/release-1.23.0-dev.7-verify/verification.json。
 
 2026-11-04 標準テンプレート更新（プレ公開準備）: BrowserUaTemplatesの4.0.3を14へ、旧出荷文字列だけresolve移行。15/16/独自UA/ON-OFF保持。新規bytecodeフックなし。通常Lint build2m19s/host nativeidentity19、3版適用・署名照合更新と各21項目成功。起動/設定menu/移行/HTTPヘッダー保持、新規app crashなし。設定/ネットワーク復元・AVDデータ保持停止。詳細docs/ua-android14-20261104.md、導入台帳。次に既存Semantic Releaseでdevプレ公開。
