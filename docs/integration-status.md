@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 更新対象操作連動・履歴対象タブ（次プレ版候補）: 191具体dispatcherの入口と3版のnative更新ID、標準one-shot巡回schedulerへ連動。選択コピーへの再帰なし・3秒/KEEP重複抑制を保持。履歴はスレ／対象／板／書き込み／画像で同popup内の対象一覧へ。配布用通常Lint付きbuild38s成功、3版適用・署名照合更新。各版popup34・更新11・worker5成功、元命令/register保持、対象app新規crashなし。初期PCメモリ不足/root debug lint失敗、Frida型/enum/nonnullと監視位置の失敗は修正・再検証して区別。先行242タイトル欄の実画面未確認は残す。詳細docs/refresh-target-triggers-tabs-20261104.md、導入台帳。次に既存Semantic Release CIでプレ公開・asset/feed検証を行う。
+
+2026-11-04 プレ版1.23.0-dev.1公開・配布検証完了。Semantic Release CI41673167082 success、生成d44616aをdevへFF。Releaseはdraft=false/prerelease=true、配布6assetのsize/SHA256/digest・MPP/ZIP CRC・DEX・廃止Shizuku不在を確認。VPN任意ZIPは既存1.21.1と同一。dev両feedは1.23.0-dev.1、master/main両feedは正式1.22.1のまま。証跡build/release-1.23.0-dev.1-verify/verification.json。追加利用者要望（スワイプ・ジェスチャー更新対象連動、履歴の対象タブ）を次プレ版へ実装・検証中。
+
 2026-11-04 検索結果日時除外・更新対象履歴（プレ公開準備）: native検索結果タスクの独自日時判定を既存投影へ接続。旧191で本文非一致まで火検索に出る症状を再現、最終191／226／242各48項目成功。実履歴ポップアップの更新対象一覧・native URL復元・選択起動各21項目成功。4m6s通常Lint build成功、3版隔離更新。242タイトル操作のチェックを不透明パネルへまとめたが、報告画面の再確認は未完了（添付429、単独native sheet表示不可、追加診断表示試験が自動承認審査blocked by policy／詳細なしで拒否）。プレ版の残確認として明記。docs/search-results-refresh-history-20261104.md・台帳参照。
 
 2026-11-04 正式版1.22.1公開完了: 修正38dd511をdevからmasterへ通常merge e0bca27。既存Release CI41659758330のRelease／Attest成功、生成コミットをdevへFF取得。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.22.1 、draft=false／prerelease=false。公開6資材のGitHub SHA256 digest／サイズ全一致、ZIP／MPP CRC正常。MPP SHA256 eff72e08ac3789471e5828133d0ccf163f0f8abf10e0b022bfd86f2e6b5101c2、classes.dexあり、Shizuku資材なし。追加VPN ZIP2本は1.21.1とバイト一致。master／main／devの通常・pre JSON計6本は1.22.1・同一MPP URL。最終候補3版のカタログ等各12＋検索9と実タップ／本番保存成功。実機191は原因診断と一時表示補正6欄成功、最終APK実機更新／公式MPPからの再適用は未実施。build/release-1.22.1-verify/verification.json参照。

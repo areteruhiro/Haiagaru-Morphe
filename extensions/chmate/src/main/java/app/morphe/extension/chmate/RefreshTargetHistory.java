@@ -7,11 +7,12 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.view.View;
+import android.view.Gravity;
 import android.widget.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-/** A read-only list of refresh registrations, reached from the stock history popup. */
+/** Refresh registrations alongside the four stock history tabs. */
 public final class RefreshTargetHistory {
     private static final int TAG=0x48690e11;
     private static final ExecutorService IO=Executors.newSingleThreadExecutor();
@@ -22,22 +23,105 @@ public final class RefreshTargetHistory {
     public static void attach(PopupWindow popup){
         View original=popup.getContentView();if(original==null)return;
         try{
-            Context context=original.getContext();
-            Button button=original.findViewWithTag(Integer.valueOf(TAG));
-            if(button==null){
-                if(original.isAttachedToWindow())return;
-                LinearLayout wrapper=new LinearLayout(context);wrapper.setOrientation(LinearLayout.VERTICAL);
-                button=new Button(context);button.setTag(Integer.valueOf(TAG));button.setAllCaps(false);
-                wrapper.addView(button,new LinearLayout.LayoutParams(-1,-2));
-                wrapper.addView(original,new LinearLayout.LayoutParams(-1,0,1));
-                popup.setContentView(wrapper);
-                button.setOnClickListener(v->{
-                    Activity activity=Haiagaru.toolbarActivity(null);if(activity==null)return;
-                    popup.dismiss();show(activity);
-                });
-            }
-            button.setText("更新対象のスレ（"+RefreshTargets.selected(context).size()+"）");
+            View existing=original.findViewWithTag(Integer.valueOf(TAG));
+            if(existing!=null){((Tabs)existing.getTag(TAG)).restore();return;}
+            if(original.isAttachedToWindow())return;
+            Tabs tabs=new Tabs(popup,original);
+            popup.setContentView(tabs.root);tabs.restore();
         }catch(Exception error){android.util.Log.w("Haiagaru","Refresh history entry unavailable",error);}
+    }
+    private static final class Tabs {
+        final PopupWindow popup;
+        final View nativeContent,nativeTabs;
+        final LinearLayout root;
+        final TextView[] buttons=new TextView[5];
+        final FrameLayout content;
+        final ListView list;
+        final TextView status;
+        final String version;
+        final Object flow;
+        final java.lang.reflect.Method read,write;
+        int selected,generation;
+        List<Entry> entries=Collections.emptyList();
+        Tabs(PopupWindow popup,View original)throws Exception{
+            this.popup=popup;nativeContent=original;
+            Context context=original.getContext();
+            version=context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName;
+            boolean old=version.contains("191"),middle=version.contains("226");
+            // Fixed native fields and public observable interfaces; no class scan.
+            Class<?> type=popup.getClass();
+            nativeTabs=(View)NativeFields.find(type,old?"o":middle?"r":"h").get(popup);
+            flow=NativeFields.find(type,old?"g":middle?"a":"b").get(popup);
+            Class<?> observable=Class.forName(old?"o.Converterc":middle?"o.zzbc":"o.zzcpf",false,context.getClassLoader());
+            read=observable.getMethod(old?"b":middle?"c":"d");
+            write=observable.getMethod(old?"a":middle?"e":"b",Object.class);
+            root=new LinearLayout(context);root.setOrientation(LinearLayout.VERTICAL);
+            // findViewWithTag uses the ordinary tag; keep state on a keyed tag.
+            root.setTag(Integer.valueOf(TAG));root.setTag(TAG,this);
+            android.util.TypedValue color=new android.util.TypedValue();
+            if(context.getTheme().resolveAttribute(android.R.attr.colorBackground,color,true))root.setBackgroundColor(color.data|0xff000000);
+            LinearLayout row=new LinearLayout(context);
+            String[] labels={"スレ","対象","板","書き込み","画像"};
+            for(int i=0;i<buttons.length;i++){
+                final int tab=i;
+                TextView button=new TextView(context);buttons[i]=button;
+                button.setText(labels[i]);button.setTextSize(12);button.setGravity(Gravity.CENTER);
+                button.setMinHeight(Math.round(48*context.getResources().getDisplayMetrics().density));
+                button.setFocusable(true);button.setClickable(true);
+                android.util.TypedValue selectable=new android.util.TypedValue();
+                if(context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,selectable,true))button.setBackgroundResource(selectable.resourceId);
+                button.setOnClickListener(v->select(tab));
+                row.addView(button,new LinearLayout.LayoutParams(0,-2,1));
+            }
+            root.addView(row,new LinearLayout.LayoutParams(-1,-2));
+            content=new FrameLayout(context);content.addView(original,new FrameLayout.LayoutParams(-1,-1));
+            list=new ListView(context);content.addView(list,new FrameLayout.LayoutParams(-1,-1));
+            status=new TextView(context);status.setGravity(Gravity.CENTER);status.setPadding(16,16,16,16);
+            content.addView(status,new FrameLayout.LayoutParams(-1,-1));
+            root.addView(content,new LinearLayout.LayoutParams(-1,0,1));
+            nativeTabs.setVisibility(View.GONE);
+            int nativeSelected=((Number)read.invoke(flow)).intValue();
+            selected=nativeSelected==0?0:Math.max(2,Math.min(4,nativeSelected+1));
+            list.setOnItemClickListener((parent,view,index,id)->{
+                if(index<0||index>=entries.size())return;
+                Activity activity=Haiagaru.toolbarActivity(null);if(activity==null)return;
+                String url=entries.get(index).url;
+                if(url==null){Toast.makeText(context,"保存された板情報を取得できませんでした",Toast.LENGTH_LONG).show();return;}
+                popup.dismiss();
+                activity.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)).setClassName(activity,"jp.syoboi.a2chMate.activity.ResListActivity"));
+            });
+        }
+        void restore(){nativeTabs.setVisibility(View.GONE);select(selected);}
+        void select(int tab){
+            selected=tab;int request=++generation;
+            for(int i=0;i<buttons.length;i++){
+                buttons[i].setSelected(i==tab);
+                buttons[i].setTypeface(null,i==tab?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);
+                buttons[i].setContentDescription(buttons[i].getText()+(i==1?" 更新対象のスレ（"+RefreshTargets.selected(root.getContext()).size()+"）":"")+(i==tab?" 選択中":""));
+            }
+            nativeContent.setVisibility(tab==1?View.GONE:View.VISIBLE);
+            list.setVisibility(View.GONE);status.setVisibility(View.GONE);
+            if(tab!=1){
+                try{write.invoke(flow,Integer.valueOf(tab==0?0:tab-1));}
+                catch(Exception error){android.util.Log.w("Haiagaru","Native history tab unavailable",error);}
+                return;
+            }
+            status.setText("読み込み中…");status.setVisibility(View.VISIBLE);
+            Set<String> keys=RefreshTargets.selected(root.getContext());
+            IO.execute(()->{
+                try{
+                    List<Entry> loaded=keys.isEmpty()?Collections.emptyList():load(root.getContext().getApplicationContext(),keys);
+                    root.post(()->{
+                        if(generation!=request)return;
+                        entries=loaded;String[] labels=new String[loaded.size()];for(int i=0;i<labels.length;i++)labels[i]=loaded.get(i).label;
+                        list.setAdapter(new ArrayAdapter<>(root.getContext(),android.R.layout.simple_list_item_1,labels));
+                        list.setVisibility(loaded.isEmpty()?View.GONE:View.VISIBLE);
+                        status.setText("登録はありません。スレタイトルの「更新対象に含む」で追加できます。");
+                        status.setVisibility(loaded.isEmpty()?View.VISIBLE:View.GONE);
+                    });
+                }catch(Exception error){root.post(()->{if(generation==request){status.setText("更新対象の一覧を読み込めませんでした");status.setVisibility(View.VISIBLE);}});android.util.Log.w("Haiagaru","Refresh history unavailable",error);}
+            });
+        }
     }
     static List<Entry> load(Context context,Set<String> keys)throws Exception{
         ArrayList<Entry> result=new ArrayList<>();
