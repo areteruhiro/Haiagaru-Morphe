@@ -1035,3 +1035,7 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生成043e78b9。中断された前CIのdev.13生成履歴をmerge保持し、タグ/Releaseの手動作成なし。公開MPP SHA256 5452b3be1eeefa6363f1d26dbd6a174d99127c148af1e1fca9f354b20d24baf3、GitHub digest一致・CRC正常・旧レス保存機能ラベル不在・新規共有NG関連クラス同梱・dev両feedのversion/asset一致。prerelease=true/draft=false/通常タイトル、公開説明に識別子生成方式の記載なし。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.14 。
 
 けんも板の通知追加要望を調査。既存の汎用test/read.cgi対象判定・スレタイボタン・subject/DAT取得がkenmo.orgにも適用され追加実装不要。指定1793798226でlive GETのsubject/DAT各200・Shift_JIS、既存parserで237件/タイトル/直近3件を読み取り成功（新着実通知の端末試験ではない）。Dalvik/Java/Monazilla各UAも200。Python標準UAは403のため対応UAへ変更。指定URL正規化・fromParts・subject/DAT/板root除外を回帰テストへ追加しThreadWatchRules66成功。利用者指定により端末操作確認省略。
+
+
+2026-11-05 242サムネイルの開始callback消去を修正（プレリリース候補）
+詳細thumbnail-third-loading242-20261105.md。既存2guard後のAsyncTask onPreExecuteから3回目のbitmap消去が残存。固定クラスの1invokeのみguardへ変更、register/元完了命令保持検査成功。Lint/R8 build3分成功。emulator-5580で修正前消去1項目、修正後106項目成功。元動画と同じ自然連続点滅/最終目視/実機は未確認。System UI ANRと試験側の初期失敗、追加画面操作の自動承認拒否（具体理由なし）を詳細へ記録。MPP 4aa26499fb00f76e6ea9928ea8127e6dc9a250f08c496e2c5bab238f0cd9eb2f、APK b0519ab3c229d587f9fe409c6422ad443eea2fabf3ec29befaaa77726b1d4a36。

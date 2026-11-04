@@ -90,5 +90,24 @@ internal fun BytecodePatchContext.patchThumbnailRebind242(version: String) {
     check(loadingCall.registerCount == 2)
     start.replaceInstruction(loading.index,
         "invoke-virtual {v${loadingCall.registerC}, v${loadingCall.registerD}}, ${image.type}->haiagaruResetForRequery(Lo/zzbes${'$'}write;)V")
+    // AsyncTask's onPreExecute publishes loading once more, after f() queued
+    // the decoder. The two guards above cannot prevent this third bitmap clear.
+    // Limit interception to that loading callback: completed errors/NG/URL
+    // changes must still clear an obsolete thumbnail through the native setter.
+    val callback = mutableClassDefBy("Lo/zzbes\$_init_lambda1;")
+    val beforeDecode = callback.methods.single {
+        it.name == "e" && it.parameterTypes.isEmpty() && it.returnType == "V"
+    }
+    val beforeSite = beforeDecode.implementation!!.instructions.withIndex().single { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == image.type && ref.name == "e" &&
+            ref.parameterTypes == listOf(image.type, "Lo/zzbes\$write;") && ref.returnType == "V"
+    }
+    val beforeCall = beforeSite.value as FiveRegisterInstruction
+    check(beforeSite.value.opcode == Opcode.INVOKE_STATIC && beforeCall.registerCount == 2) {
+        "242 thumbnail decode loading callback changed"
+    }
+    beforeDecode.replaceInstruction(beforeSite.index,
+        "invoke-virtual {v${beforeCall.registerC}, v${beforeCall.registerD}}, ${image.type}->haiagaruResetForRequery(Lo/zzbes${'$'}write;)V")
     image.methods.add(guarded)
 }
