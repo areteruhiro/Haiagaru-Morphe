@@ -14,6 +14,8 @@ import java.util.concurrent.*;
 
 /** Refresh registrations alongside the four stock history tabs. */
 public final class RefreshTargetHistory {
+    static final String VISIBLE_KEY="showRefreshTargetsInHistoryPopup";
+    static boolean enabled(Context context){return RefreshTargets.prefs(context).getBoolean(VISIBLE_KEY,true);}
     private static final int TAG=0x48690e11;
     private static final ExecutorService IO=Executors.newSingleThreadExecutor();
     static final class Entry {
@@ -102,8 +104,13 @@ public final class RefreshTargetHistory {
                 activity.startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)).setClassName(activity,"jp.syoboi.a2chMate.activity.ResListActivity"));
             });
         }
-        void restore(){nativeTabs.setVisibility(View.GONE);select(selected);}
+        void restore(){
+            nativeTabs.setVisibility(View.GONE);
+            ((View)buttons[1].getParent()).setVisibility(enabled(root.getContext())?View.VISIBLE:View.GONE);
+            select(selected);
+        }
         void select(int tab){
+            if(tab==1&&!enabled(root.getContext()))tab=0;
             selected=tab;int request=++generation;
             for(int i=0;i<buttons.length;i++){
                 buttons[i].setSelected(i==tab);

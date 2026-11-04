@@ -3662,6 +3662,9 @@ public final class Haiagaru {
         QuickFilterOptions.addSettings(layout,activity);
         QuickFilterOptions.addToolbarEntry(layout,activity);
         HomeSelectionBar.addSettings(layout,activity);
+        Switch historyRefreshTargets=addSwitch(layout,activity,
+                text("履歴ポップアップに「対象」タブを表示", "Show refresh targets in the history popup"),
+                preferences.getBoolean(RefreshTargetHistory.VISIBLE_KEY,true));
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
             compactFilters = addSwitch(layout, activity,
@@ -3729,6 +3732,7 @@ public final class Haiagaru {
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
         live.toggle(hideDroppedThreadsSwitch,HiddenDroppedThreads.KEY);
+        live.toggle(historyRefreshTargets,RefreshTargetHistory.VISIBLE_KEY);
         Switch excludeHiddenNgUnread=addSwitch(layout,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
         live.toggle(excludeHiddenNgUnread,HiddenNgUnread.KEY);
         TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("既読位置は変えず、取得してNG判定できた非表示レスだけを件数から除きます。未取得・未判定のレスは除きません。変更後はスレを開き直してください。");layout.addView(unreadNgHelp);

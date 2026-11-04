@@ -1633,3 +1633,14 @@ emulator-5580 / Android16、bindings191／226／242の既知APK hashと署名を
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T10:54:54.082846+09:00|`build/history-bottom-tabs-191.apk`|`e5340d83814cffc5bfc608490a3f592d757fdbea622b953df7d1a0a60a879ae6`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T10:55:00.860066+09:00|`build/history-bottom-tabs-226.apk`|`6839f4b9049e87708fc22e22a2096f0ca0c4536e7c017295c82c292ae9d01e53`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T10:55:07.193073+09:00|`build/history-bottom-tabs-242.apk`|`ab9286b92b1ba26207a50ce1d43622d540c9c8fc9ec803215a8fa171745cf36d`|
+
+
+## 2026-11-04 履歴対象タブ表示のオプション
+
+emulator-5580 / Android16。bindings191／226／242の既知実APK hash・署名照合install-r成功、データ保持。各47項目成功、元HOMEの全命令・branch・register保持、新規対象app crashなし。MPP `build/history-target-option.mpp` SHA256 `31d6e305258f3e4b11a2109269fe7ae2a57bbd1db720613f37654f5b3766323b`。署名cert `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias Morphe。絶対パス・署名鍵の場所を含む原本は `build/local-development-records/history-target-option-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T11:23:13.908021+09:00|`build/history-target-option-191.apk`|`662faa8ca27548fd5edb33db571cc34bc3109816d27927c1cd42207a0417beec`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T11:23:43.716830+09:00|`build/history-target-option-226.apk`|`38c492c15800723f376b88eef23fa71ffbaf66985c6bd02ced46905877fb05a3`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T11:24:02.697876+09:00|`build/history-target-option-242.apk`|`baab10bf1a10aea3a9a7cea4f3ce1b67be79b145740bf4573d706687de62c81f`|

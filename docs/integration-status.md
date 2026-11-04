@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 履歴対象タブ表示のオプション（プレ公開準備）: showRefreshTargetsInHistoryPopup初期trueを表示・操作と設定profileへ追加。OFFで対象cell全体をGONE、選択中ならスレへ復帰、ONで再表示。登録/更新/HOME対象は維持。通常Lint build2m37s、3版署名照合更新・各47成功、nativeHOME43/51/66メソッド全保持、新規app crashなし。原本build/local-development-records/history-target-option-installations.json、詳細docs/history-target-popup-option-20261104.md。AVD設定を戻しデータ保持停止、次に既存Semantic Releaseでプレ公開。
+
 2026-11-04 プレ版1.23.0-dev.3公開・配布検証完了。実装6dbc55f、Semantic Release CI41757579447/Attest success、生成1c9bf55をdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRC、HomeRefreshTargets/Tabs/対象ラベル/更新enqueue同梱・廃止Shizuku不在を確認。公開MPP SHA256 046cbc53a39e7b768ee0d78dc406b536a386d5747ebdcda2d4d8f033f239064f。VPN任意ZIPは既存1.21.1と同一。dev両feedは1.23.0-dev.3、master/main両feedは正式1.22.1を維持。証跡build/release-1.23.0-dev.3-verify/verification.json。HOME対象/★実表示比較3版と履歴各33項目成功、AVDデータ保持で停止済み。実機/GAS/投稿/正式Releaseは変更なし。
 
 2026-11-04 HOME対象スレ/履歴下部・選択表示 検証完了・プレ公開準備。HOME109を既存★108と同じsorterで抽出、登録集合共用。履歴下部のaccent下線/太字/文字色。191catalogアプリloader修正。最終Lint付きbuild32s・3版適用導入、履歴各33/HOME191/226各16・24214＋実表示XMLの対象/★独立比較成功、native43/51/66メソッド命令/branch/register保持、新規app crashなし。DB fixture試験は自動承認拒否で未実行、メモリ入力で完了。242は試験の結果stateへの直接入力を取り違えた一時p2候補を破棄し、正しいp1/native codeのまま再検証。詳細docs/home-refresh-targets-bottom-tabs-20261104.mdと導入台帳。次に既存Semantic Releaseでプレ公開。
