@@ -18,4 +18,3 @@ rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>Java.s
   resolve({ok:true,version,checks:checks.length,labels:checks});
  }catch(e){reject(Error(String(e.stack||e)));}
 })));}};
-

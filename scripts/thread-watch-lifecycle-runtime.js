@@ -41,4 +41,3 @@ rpc.exports={test(){return new Promise((resolve,reject)=>Java.perform(()=>{
   W.schedule.overload('android.content.Context').call(W,app);
  }
 }));}};
-

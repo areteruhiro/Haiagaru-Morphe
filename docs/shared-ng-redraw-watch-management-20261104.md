@@ -37,3 +37,8 @@ ResponseMenuOrderTestは115項目成功。3版のVerifyResponseShareOrderHooks�
 ## 最終確認・公開
 
 最終候補の191／226／242すべてで、checkboxと文字部分の実タップ後の画面上checked=true／falseと保存を確認した。検索15・履歴48も各版成功。新規対象app crashなし。設定・通知権限・wm size・WiFi ON/mobile OFFを復元し、AVDをデータ保持停止。集約build/shared-ng-watch-final-verification.json。公開asset/feed確認は完了後に追記する。正式版1.22.1は維持し、既存Semantic Release CIからdevプレ版として公開する。
+
+
+## プレ版公開完了
+
+[1.23.0-dev.6](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.6)を既存Semantic Release CI41780370219で公開、Release/Attest成功。実装2560d34、生成47d9882をdevへFF取得。draft=false/prerelease=true。公開6assetのsize/digest/SHA256・MPP/ZIP CRC、ThreadWatchManagement/ChoiceList/期限関連フィールド/既存対象クラスの同梱、廃止Shizuku不在を確認。公開MPP SHA256 `96db5182d471879b2b994c81b5c6004cbef862ec111aeadff157587007625f28`。dev両feedは1.23.0-dev.6、master/main両feedは正式1.22.1。VPN任意ZIP2本は1.21.1と同一。証跡build/release-1.23.0-dev.6-verify/verification.json。公開MPPからのAPK再生成・実機導入は今回行わず、実行試験は同じ実装の公開前最終候補。
