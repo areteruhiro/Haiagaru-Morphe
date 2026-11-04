@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 検証用プレ1.23.0-dev.8公開・配布検証完了。実装7c78146、Semantic Release CI41787507505/Attest success、生成2edac33をdevへFF。API release name=1.23.0-dev.8（検証用）、draft=false/prerelease=true。利用者の静的修正・検証用公開指定に基づき、build/host97成功と実DB/表示/crash/速度未検証を冒頭へ明記。公開6asset size/digest/SHA256・CRC・RestoredThreadCache同梱確認。MPP SHA256 c2daef1db7bf4d69733daebbeb7af05972664d0e833440a2b6bbc5e2998426a6。dev両feedはdev.8、master/main両feedは正式1.22.1を維持。公開MPP再適用・端末導入なし。詳細docs/thread-open-restore-static-20261104.md・build/release-1.23.0-dev.8-verify/verification.json。
+
 2026-11-04 静的修正候補を検証用プレ公開へ: 利用者が「プレリリースして（検証用）として」と明示。端末検証省略の静的修正指定は維持。公開title/headerへ検証用、host97/build成功と実DB/表示/crash/速度未検証を明記。.releaserc既存github pluginのreleaseNameTemplateで今回dev.8だけ検証用suffix。既存Semantic Release CIで公開し、正式1.22.1維持。詳細docs/thread-open-restore-static-20261104.md。
 
 2026-11-04 スレ取得遅延の静的修正候補（未公開）: 利用者が静的に一回修正を指定。提供ZIP組合せ45 DAT欠落/正res_count、39件が191 native巡回省略の数値条件に一致。復元完了後に対象行のDAT欠落/空のみres_count=0へ整合、既読/サーバー数/マーク保持。ZIPはDAT展開後に遅延実施、JSON/不足分同期も対応。URL正規表現の再コンパイル/同一ループの設定再読込を削減。host97成功、通常Lint build2m13s/MPP CRC成功、ローカル候補build/haiagaru-thread-open-static.mpp SHA256 0d28771daeab8b3fec9a0471bdadbdfd4e8600f6499f6524d5fcad3178fe1847。修正後の端末計測/導入/公開はしない。詳細docs/thread-open-restore-static-20261104.md。

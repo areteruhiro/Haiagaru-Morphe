@@ -26,3 +26,8 @@ HaiagaruSyncSnapshotのJSON復元/不足分同期は最後に整合確認。Haia
 ## 検証用プレ公開の指示
 
 2026-11-04 利用者が「プレリリースして（検証用）として」と明示。静的修正の指定を維持し、端末の復元・速度・表示再検証を行わず検証用プレ公開へ進む。公開説明の冒頭/タイトルへ検証用を明記し、ビルド/host97成功と未確認の実DB・表示・crash・実時間を区別する。既存Semantic Release CIだけを用い、正式版は1.22.1を維持する。
+
+
+## 検証用プレ公開完了
+
+[1.23.0-dev.8（検証用）](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.8)を既存Semantic Release CI41787507505で公開。Release/Attest success、実装7c78146/生成2edac33をdevへFF。draft=false/prerelease=true、APIのrelease nameも1.23.0-dev.8（検証用）。冒頭に実DB動作・修正後の表示/crash/速度が未確認と記載し、static/build/host97との区別を確認した。公開6assetのsize/digest/SHA256・MPP/ZIP CRCとRestoredThreadCache同梱を確認。公開MPP SHA256 `c2daef1db7bf4d69733daebbeb7af05972664d0e833440a2b6bbc5e2998426a6`。dev両feedは1.23.0-dev.8、master/main両feedは正式1.22.1のまま。任意VPN ZIP2本は1.21.1と同一。証跡build/release-1.23.0-dev.8-verify/verification.json。公開MPP再適用・端末導入は行わない。
