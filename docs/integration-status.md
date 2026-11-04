@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 検証用プレ1.23.0-dev.12公開・配布検証完了: 実装d6c5f61、Semantic Release CI41827274812のRelease/Attest success、生成5cdb378をdevへFF。2026-11-04 21:19:47 JST、name=1.23.0-dev.12（検証用）/draft=false/prerelease=true。公開6asset size/digest/SHA256・MPP/ZIP CRC・NgPlainTextCacheSettings/容量key/前版検索・URL・AA同梱、作業環境パス不在確認。MPP SHA256 9946d955a96b9e77d8bceef0def998f8e73c6d73988df37cc4a1cfe833b3f6d6。dev両feedはdev.12、master/main両feedは正式1.22.1維持。任意3ZIPはdev.9と同一。静的/検証用方針で端末の基本動作・設定操作・速度未確認を公開冒頭明記。公開MPP再適用/端末導入/GAS変更なし。build/release-1.23.0-dev.12-verify/verification.json、docs/shared-ng-input-preparation-20261104.md参照。
+
 2026-11-04 共有NGテキスト再利用の上限設定（未公開）: 利用者の任意指定要望でオンライン共有NGへ再利用設定を追加。件数/容量（入力+変換結果のUTF16文字数）を0〜最大int、初期512/1000000。どちらか0で無効、保存で即configure/LRU縮小・初期値入力復帰・キャンセル無変更。programmable-ng prefsで既存backup設定カテゴリ対象、呼出しごとのprefs読込なし。host5020成功（上限0/再有効化/縮小/最大int/変換中無効）。Android設定操作/backup往復/速度は未検証。docs/shared-ng-input-preparation-20261104.md参照。
 
 2026-11-04 共有NG有効時のHTML入力準備を追加最適化（未公開）: 利用者のgreta.5ch.io/poverty/1793682328でdev.11でも重い報告。全レスのHTML→plainを最大512件/入出力合計100万UTF16文字の内容キーcacheへ（変換中lockなし、NG判定結果は保存しない）。226はflag確認時responseDataで本文/名前再変換していたため既存l番号だけ取得へ変更、hookの型確認済み。共通変換は191/226/242。cache5014・index10306・regex17・除外263成功。通常Lint build2m21s、MPP CRC/cache同梱成功。候補build/haiagaru-shared-ng-input-preparation.mpp。端末Html/実スレ/起動描画/速度・改善未確認、APK生成/導入/公開/GAS変更なし。docs/shared-ng-input-preparation-20261104.md。

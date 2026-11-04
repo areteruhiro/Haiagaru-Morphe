@@ -21,3 +21,5 @@ dev.11配布後、利用者はオンライン共有NG有効でまだ遅いと報
 host cacheテストを5020項目へ拡張し、件数0/容量0/再有効化/縮小時破棄/最大int/実行中無効化を確認。設定追加後の通常Lint付きbuild/buildAndroidは2m14s成功（build/shared-ng-input-cache-settings-build.log）。候補build/haiagaru-shared-ng-cache-settings.mppのCRC/settings class同梱確認。Android上の設定画面・入力保存・キャンセル・バックアップ往復は未確認。端末導入/公開は実施していない。
 
 利用者が静的修正結果・端末未確認の報告後にプレリリースを指定。先行の静的/検証用公開方針を維持し、.releasercの冒頭に端末起動/本文/画像/設定操作/速度未確認を明記。本文の反復が少ない場合や標準NG/regexの負荷は残ること、5014→5020の単体試験とAndroid動作は別であることも記載。既存Semantic Release CIをdevへの通常pushで実行し、正式1.22.1を維持する。候補MPP SHA256 e6d49c44944ce192fc53a8e69594068370bc20b0221e9431b45d76c1cedea580。
+
+公開完了: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.12 、2026-11-04 21:19:47 JST。実装d6c5f61、CI41827274812のRelease/Attest success、生成5cdb378をdevへFF取得。API name=1.23.0-dev.12（検証用）/draft=false/prerelease=true。公開6asset size/digest/SHA256・MPP/ZIP CRC、NgPlainTextCacheSettings/容量keyと既存検索/URL/AA同梱、作業環境パス不在を確認。MPP SHA256 `9946d955a96b9e77d8bceef0def998f8e73c6d73988df37cc4a1cfe833b3f6d6`。dev両feedはdev.12、master/mainは正式1.22.1保持、任意3ZIPはdev.9と同一。証跡build/release-1.23.0-dev.12-verify/verification.json。公開CI版MPPの再適用/端末導入は実施していない。
