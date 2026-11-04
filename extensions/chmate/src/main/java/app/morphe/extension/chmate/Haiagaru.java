@@ -480,7 +480,8 @@ public final class Haiagaru {
         return addToolbarChoice(toolbarModel, MARK_ALL_READ_TOOLBAR_ID, "haiagaru_mark_all_read");
     }
     public static Object addFavoriteThreadsTab(Object toolbarModel) {
-        return addToolbarChoice(toolbarModel, FavoriteThreads.TAB, "haiagaru_favorite_threads");
+        Object result=addToolbarChoice(toolbarModel, FavoriteThreads.TAB, "haiagaru_favorite_threads");
+        return addToolbarChoice(result,HomeRefreshTargets.TAB,"haiagaru_refresh_target_threads");
     }
 
     public static boolean keepQuickFilterPosition() {
@@ -523,8 +524,9 @@ public final class Haiagaru {
             int iconId = context.getResources().getIdentifier(
                     resourceName, "drawable", context.getPackageName());
             if (titleId == 0 || iconId == 0) return toolbarModel;
-            int summaryId=actionId==FavoriteThreads.TAB?context.getResources().getIdentifier(
-                    "haiagaru_favorite_threads_description","string",context.getPackageName()):titleId;
+            boolean homeTab=actionId==FavoriteThreads.TAB||actionId==HomeRefreshTargets.TAB;
+            int summaryId=homeTab?context.getResources().getIdentifier(
+                    actionId==HomeRefreshTargets.TAB?"haiagaru_refresh_target_threads_description":"haiagaru_favorite_threads_description","string",context.getPackageName()):titleId;
             if(summaryId==0)summaryId=titleId;
             if (toolbarModel instanceof List) {
                 List<?> source = (List<?>) toolbarModel;
@@ -532,10 +534,10 @@ public final class Haiagaru {
                 @SuppressWarnings("unchecked")
                 List<Object> buttons = (List<Object>) source;
                 Class<?> itemClass = Class.forName("o.r8lambda98incQ33GAiiY2082BMi9yDa3l0",
-                        false, toolbarModel.getClass().getClassLoader());
+                        false, context.getClassLoader());
                 Object item = itemClass.getConstructor(int.class, int.class, int.class,
                         int.class, boolean.class).newInstance(
-                        actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
+                        actionId, homeTab ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
                 buttons.add(item);
                 return toolbarModel;
             }
@@ -557,7 +559,7 @@ public final class Haiagaru {
                     "jp.syoboi.a2chMate.feature.toolbar.ToolbarButtonSpec", false, loader);
             Object item = specClass.getConstructor(int.class, int.class, int.class,
                     int.class, boolean.class).newInstance(
-                    actionId, actionId == FavoriteThreads.TAB ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
+                    actionId, homeTab ? 0 : iconId, titleId, summaryId, MinimalSetup.toolbarDefault(actionId));
             // Modern ToolbarDefault keeps a mutable button list. Extending that
             // list preserves its position and configuration objects; rebuilding
             // the model can silently lose the new choice on some versions.

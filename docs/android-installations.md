@@ -1622,3 +1622,14 @@ MPP `build/refresh-history-tabs.mpp` SHA256 `f70eba83827f466ecbe35c8fa448d731dbf
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T09:00:38.206840+09:00|`build/refresh-history-tabs-191.apk`|`48cbee9f81fa15e4a2339e1f64c8ed9fbfbb71d88e5df441bcdb0485cb192c41`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T09:00:55.068145+09:00|`build/refresh-history-tabs-226.apk`|`0cbf80062107a1e2e1908a7631b22357017e8fefc75ea9f99a5d07069fb62e9b`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T09:01:19.569775+09:00|`build/refresh-history-tabs-242.apk`|`6a325824de1d2658bc2590cb0d4cc61fc8ef314642386d821814baae279850f4`|
+
+
+## 2026-11-04 HOME対象スレ・履歴下部選択タブ 最終候補
+
+emulator-5580 / Android16、bindings191／226／242の既知APK hashと署名を照合しinstall-r成功。データ保持。履歴各33項目、HOME191/226各16・242は14項目、対象と★の実表示XML比較を3版成功。新規対象app crashなし。MPP `build/history-bottom-tabs.mpp` SHA256 `d610036968d25704192c74f64a3b9a2d8abc34b194d800d299b26e7f7e0e2bc0`。署名cert `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、alias Morphe。絶対パス・署名鍵の場所を含む原本は `build/local-development-records/history-bottom-tabs-installations.json`。
+
+|版 / 表示名|package|導入日時 JST|APK|SHA256|
+|---|---|---|---|---|
+|191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T10:54:54.082846+09:00|`build/history-bottom-tabs-191.apk`|`e5340d83814cffc5bfc608490a3f592d757fdbea622b953df7d1a0a60a879ae6`|
+|226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T10:55:00.860066+09:00|`build/history-bottom-tabs-226.apk`|`6839f4b9049e87708fc22e22a2096f0ca0c4536e7c017295c82c292ae9d01e53`|
+|242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T10:55:07.193073+09:00|`build/history-bottom-tabs-242.apk`|`ab9286b92b1ba26207a50ce1d43622d540c9c8fc9ec803215a8fa171745cf36d`|

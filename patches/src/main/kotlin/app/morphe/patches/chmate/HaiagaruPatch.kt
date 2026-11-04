@@ -4914,6 +4914,14 @@ val haiagaruPatch = resourcePatch(
             favorites.textContent = "★スレ"
             strings.documentElement.appendChild(favorites)
             strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_refresh_target_threads")
+                textContent = "対象スレ"
+            })
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_refresh_target_threads_description")
+                textContent = "更新対象のスレ"
+            })
+            strings.documentElement.appendChild(strings.createElement("string").apply {
                 setAttribute("name", "haiagaru_favorite_threads_description")
                 textContent = "★スレのみ巡回"
             })
@@ -4940,6 +4948,14 @@ val haiagaruPatch = resourcePatch(
             favorites.textContent = "★ Threads"
             strings.documentElement.appendChild(favorites)
             strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_refresh_target_threads")
+                textContent = "Target threads"
+            })
+            strings.documentElement.appendChild(strings.createElement("string").apply {
+                setAttribute("name", "haiagaru_refresh_target_threads_description")
+                textContent = "Refresh target threads"
+            })
+            strings.documentElement.appendChild(strings.createElement("string").apply {
                 setAttribute("name", "haiagaru_favorite_threads_description")
                 textContent = "Shows starred threads across boards"
             })
@@ -4954,7 +4970,15 @@ val haiagaruPatch = resourcePatch(
             publicResources.createPublicId("string", "haiagaru_favorite_threads")
             publicResources.createPublicId("string", "haiagaru_favorite_threads_description")
             publicResources.createPublicId("drawable", "haiagaru_favorite_threads")
+            publicResources.createPublicId("string", "haiagaru_refresh_target_threads")
+            publicResources.createPublicId("string", "haiagaru_refresh_target_threads_description")
+            publicResources.createPublicId("drawable", "haiagaru_refresh_target_threads")
         }
+        get("res").resolve("drawable/haiagaru_refresh_target_threads.xml").writeText("""
+            <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+                <path android:fillColor="#FFFFFFFF" android:pathData="M17.65,6.35C16.2,4.9 14.21,4 12,4c-4.42,0 -7.99,3.58 -7.99,8s3.57,8 7.99,8c3.73,0 6.84,-2.55 7.73,-6h-2.08c-0.82,2.33 -3.04,4 -5.65,4 -3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6c1.66,0 3.14,0.69 4.22,1.78L13,11h7V4l-2.35,2.35z"/>
+            </vector>
+        """.trimIndent())
         get("res").resolve("drawable/haiagaru_favorite_threads.xml").writeText("""
             <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
                 <path android:fillColor="#FFFFFFFF" android:pathData="M12,17.27L18.18,21l-1.64,-7.03L22,9.24l-7.19,-0.61L12,2 9.19,8.63 2,9.24l5.46,4.73L5.82,21z"/>

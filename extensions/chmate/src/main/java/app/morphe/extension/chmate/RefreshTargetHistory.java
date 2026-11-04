@@ -35,6 +35,9 @@ public final class RefreshTargetHistory {
         final View nativeContent,nativeTabs;
         final LinearLayout root;
         final TextView[] buttons=new TextView[5];
+        final View[] indicators=new View[5];
+        final android.content.res.ColorStateList[] textColors=new android.content.res.ColorStateList[5];
+        final int accent;
         final FrameLayout content;
         final ListView list;
         final TextView status;
@@ -60,25 +63,33 @@ public final class RefreshTargetHistory {
             root.setTag(Integer.valueOf(TAG));root.setTag(TAG,this);
             android.util.TypedValue color=new android.util.TypedValue();
             if(context.getTheme().resolveAttribute(android.R.attr.colorBackground,color,true))root.setBackgroundColor(color.data|0xff000000);
-            LinearLayout row=new LinearLayout(context);
+            android.util.TypedValue highlight=new android.util.TypedValue();
+            accent=context.getTheme().resolveAttribute(android.R.attr.colorAccent,highlight,true)?highlight.data:0xff0086b3;
+            LinearLayout row=new LinearLayout(context);row.setGravity(Gravity.BOTTOM);
             String[] labels={"スレ","対象","板","書き込み","画像"};
             for(int i=0;i<buttons.length;i++){
                 final int tab=i;
                 TextView button=new TextView(context);buttons[i]=button;
+                textColors[i]=button.getTextColors();
                 button.setText(labels[i]);button.setTextSize(12);button.setGravity(Gravity.CENTER);
                 button.setMinHeight(Math.round(48*context.getResources().getDisplayMetrics().density));
                 button.setFocusable(true);button.setClickable(true);
                 android.util.TypedValue selectable=new android.util.TypedValue();
                 if(context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,selectable,true))button.setBackgroundResource(selectable.resourceId);
                 button.setOnClickListener(v->select(tab));
-                row.addView(button,new LinearLayout.LayoutParams(0,-2,1));
+                LinearLayout cell=new LinearLayout(context);cell.setOrientation(LinearLayout.VERTICAL);
+                cell.addView(button,new LinearLayout.LayoutParams(-1,-2));
+                View indicator=new View(context);indicators[i]=indicator;
+                indicator.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                cell.addView(indicator,new LinearLayout.LayoutParams(-1,Math.max(1,Math.round(3*context.getResources().getDisplayMetrics().density))));
+                row.addView(cell,new LinearLayout.LayoutParams(0,-2,1));
             }
-            root.addView(row,new LinearLayout.LayoutParams(-1,-2));
             content=new FrameLayout(context);content.addView(original,new FrameLayout.LayoutParams(-1,-1));
             list=new ListView(context);content.addView(list,new FrameLayout.LayoutParams(-1,-1));
             status=new TextView(context);status.setGravity(Gravity.CENTER);status.setPadding(16,16,16,16);
             content.addView(status,new FrameLayout.LayoutParams(-1,-1));
             root.addView(content,new LinearLayout.LayoutParams(-1,0,1));
+            root.addView(row,new LinearLayout.LayoutParams(-1,-2));
             nativeTabs.setVisibility(View.GONE);
             int nativeSelected=((Number)read.invoke(flow)).intValue();
             selected=nativeSelected==0?0:Math.max(2,Math.min(4,nativeSelected+1));
@@ -97,6 +108,8 @@ public final class RefreshTargetHistory {
             for(int i=0;i<buttons.length;i++){
                 buttons[i].setSelected(i==tab);
                 buttons[i].setTypeface(null,i==tab?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);
+                buttons[i].setTextColor(i==tab?android.content.res.ColorStateList.valueOf(accent):textColors[i]);
+                indicators[i].setBackgroundColor(i==tab?accent:android.graphics.Color.TRANSPARENT);
                 buttons[i].setContentDescription(buttons[i].getText()+(i==1?" 更新対象のスレ（"+RefreshTargets.selected(root.getContext()).size()+"）":"")+(i==tab?" 選択中":""));
             }
             nativeContent.setVisibility(tab==1?View.GONE:View.VISIBLE);

@@ -53,7 +53,7 @@ final class MinimalSetup {
             boolean changed=false;
             for(int i=0;i<rows.length();i++){
                 JSONObject row=rows.optJSONObject(i);if(row==null)continue;int id=row.optInt("id",Integer.MIN_VALUE);
-                boolean custom=id>=0x7e000001&&id<=0x7e000006||id==FavoriteThreads.TAB;
+                boolean custom=id>=0x7e000001&&id<=0x7e000006||id==FavoriteThreads.TAB||id==HomeRefreshTargets.TAB;
                 for(int action:ResponseMenuSettings.IDS)if(id==action)custom=true;
                 if(custom){row.put("visible",id==0x7e000001);changed=true;}
             }
