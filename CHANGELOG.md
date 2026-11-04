@@ -1,3 +1,52 @@
+# Haiagaru 1.23.0-dev.15
+
+242のスレ本文で、取得済みサムネイルが再読み込み通知によって一瞬消える経路を修正しました。
+
+## 変更内容
+
+- 非同期画像デコードの開始通知でも、通常の再取得中は表示済みサムネイルを保持します。既存の再取得開始・デコード予約時の保護に、漏れていた開始コールバックの保護を追加しました。
+- 手動再取得、別URLへの切替、取得エラーは従来の表示更新を維持します。191・226の処理は変更していません。
+
+## 確認範囲
+
+242の隔離エミュレータで、修正前の開始コールバックによる画像消去を再現し、修正後は100回の通知でも画像と画素が保持されること、手動再取得・URL変更・エラー時の消去を確認しました。計106項目の制御試験と、元命令・レジスター・完了コールバックの比較、Lint/R8ビルドが成功しています。報告動画と同じ条件での自然発生の連続点滅、および実機での最終画面確認は未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* retain 242 thumbnails during asynchronous loading notifications ([0f6e214](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0f6e2140c1c1fe572fd4977245dde75d0453f02b))
+
 # Haiagaru 1.23.0-dev.14
 
 共有NGが多いスレの初回判定と再表示を軽量化し、レポーター単位の除外とけんも板のスレ立てコマンドを追加しました。
