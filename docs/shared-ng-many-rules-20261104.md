@@ -11,3 +11,5 @@ SharedNgIndexの板別bucketに不変NgLiteralMatcherを追加。8種類以上�
 端末でのNG多数スレの起動/本文/画像/スクロール・正規表現多数・標準NG多数の所要時間、実機での症状改善は未確認。先行の静的修正方針を維持し、端末導入/GAS変更/公開はしない。前のURL遷移修正と、dev.11公開のGitHubタグ障害記録は保持する。
 
 利用者が結果報告後に「プレリリースして」と指定。先行の静的/検証用指定を維持し、今回の端末基本動作・クラッシュ・実速度を未確認として公開冒頭に明記する。前回未配布のURL遷移修正と合わせ、既存Semantic Release CIで公開へ。生成version/feedがdev.11でも前のタグ送信失敗によりReleaseは未作成だったため、次番号はCIの判定に委ねる。手動タグ/Release/asset/生成ファイル編集は行わない。
+
+公開完了: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.11 、2026-11-04 20:51:17 JST。実装f28f244、CI41823578007のRelease/Attest成功、生成01ce123をdevへFF取得。name=1.23.0-dev.11（検証用）、draft=false/prerelease=true。公開6assetのsize/digest/SHA256・MPP/ZIP CRC・NgLiteralMatcher/URL helper/AA最適化同梱、作業環境パス不在を確認。MPP SHA256 `8a4a7201b4647f8c0a0cb3b3ad40b8619fed33370ace207b84225e6542e3d472`。dev両feedはdev.11、master/mainは正式1.22.1保持。任意3ZIPはdev.9と同一。証跡build/release-1.23.0-dev.11-verify/verification.json。公開CI版MPPからのAPK再生成/端末導入は実施していない。
