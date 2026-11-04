@@ -1685,3 +1685,33 @@ emulator-5580 / Android16。bindings3版を既知実APK hashと署名照合後in
   - 導入: 2026-11-04T14:27:32.388415+09:00 / signature matched, install-r Success; existing isolated app data retained
 
 各版: 通知22/設定9/返信11/backup40/native order10成功、監視管理実タップ10操作成功。共有NG checkbox/文字の実表示OFF→ON→OFFと保存成功、検索15/履歴48成功。元native delegate/register/branch保持、host order115成功。新規対象app crashなし。設定・通知権限・wm size・WiFi ON/mobile OFFを復元しAVDデータ保持停止。実機未操作。元台帳build/local-development-records/shared-ng-rule-choice-model-installations.json、集約build/shared-ng-watch-final-verification.json、詳細docs/shared-ng-redraw-watch-management-20261104.md。
+
+
+## 2026-11-04 標準テンプレート更新の検証候補
+
+- Haiagaru binding 191 / ChMate 191 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings191`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14-191.apk`
+  - APK SHA256: `f0e479fb6009c2b23d666233f3e89f8c19461d510288b5e1683c6a55c4b71a47`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14.mpp`
+  - MPP SHA256: `b21af73820ae0de7adf77a3854bc46749c3ef91b87e121a3fb29fbbfc3c2b008`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:57:01.619882+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 226 / ChMate 226 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings226`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14-226.apk`
+  - APK SHA256: `c46f3cfe7a46b12f23c5c3b07be934741504c4d93d27700648e1868eb92ffaf1`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14.mpp`
+  - MPP SHA256: `b21af73820ae0de7adf77a3854bc46749c3ef91b87e121a3fb29fbbfc3c2b008`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:57:09.042100+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 242 / ChMate 242 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14-242.apk`
+  - APK SHA256: `897010815da0f5b0b1f11ec390b39685c618868059fd16a2935e5b5d60dc3cad`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ua-android14.mpp`
+  - MPP SHA256: `b21af73820ae0de7adf77a3854bc46749c3ef91b87e121a3fb29fbbfc3c2b008`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:57:14.859178+09:00 / signature matched, install-r Success; existing isolated app data retained
+
+各版起動・設定/テンプレート/移行/オフ/独自値/標準HTTPヘッダー保持21項目成功。通信/投稿なし、新規対象app crashなし。設定復元・wm size reset/WiFi ON/mobile OFF・AVDデータ保持停止。実機未操作。原本build/local-development-records/ua-android14-installations.json、詳細docs/ua-android14-20261104.md。
