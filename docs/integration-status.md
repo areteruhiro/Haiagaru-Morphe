@@ -1024,3 +1024,9 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 
 2026-11-05 通常プレリリース公開候補
 共有NG初回の必要文字列guard/HTML準備省略と正常regex非一致の再利用、レポーター単位の現在・将来の報告除外/解除/設定backup、報告数初期1（保存済み維持）、けんも板18コマンド、191最小構成の接続再利用抑止/高速IPfallback/進捗集約ON。ユーザー向け公開説明に識別子生成方式の変更は記載しない指示を維持。最終通常Lint/R8 build/shared-ng-minimal-191-final-build.log成功3m52s、MPP f4e8a11834fed916e604b5865ef4e3c6cf9961114fa0702c61176db1fee86136。host判定371723/再利用3024/index10306/regex17/条件除外263/レポーター20/けんも候補成功、server473成功。GAS v15の新旧capability互換GET成功。前候補の3版NG native hook検査と226実機12操作確認成功。Frida計測クラッシュは隔離して成功扱いせず標準Instrumentationへ切替。エミュレータはAPI36をデータ保持で起動後、PCメモリのため停止。利用者がエミュレータ設定変更の検証省略と先行配布を明示したため、最終191/226/242の起動/本文/画像・設定UIの再検証を省略し公開説明に確認範囲を記す。重大な通常操作の新規クラッシュは確認されていない。したらばのDNS一時エラーは利用者が解消を報告、追加修正なし。Semantic Releaseのdev pushで通常プレリリースを作成する。タグ/配布物の手動作成なし。
+
+
+2026-11-05 保存用スレの二重切替を廃止（プレリリース候補）
+保存用スレ選択ダイアログの「レス保存機能：オン／オフ」とその書込処理を削除。ResponseMenuSettings.visibleと保存確認・確定処理で旧responseArchiveEnabledを参照しないようにし、既存のOFF値が残る端末でもツールバーの各トグルに従う。既存の保存データ・設定値は削除せず、3版共通Javaのみ変更しnative hookは変更なし。通常一覧と保存先選択の作成/管理/次100件のindex分岐を静的確認。利用者が実機確認不要を明示したため今回の端末操作確認は省略。ビルドと公開配布物の検証後に公開結果を追記する。
+
+通常Lint/R8 build/response-archive-toolbar-final-build.log成功2m50s。MPP 83bb4c5b12bd341f9b16fe46abe370d8eab74cbc0764bcb4d8a591b5adef9388。ZIP CRC正常、配布DEXから旧ダイアログラベル消失・保存用スレ処理同梱を確認。引数のPowerShell解釈による初回build失敗は引用を修正後に再実行して成功。git diff --check成功。
