@@ -60,9 +60,9 @@ final class SharedNg {
                 }
                 SharedNgExceptions content = new SharedNgExceptions(activity, matched,
                         prefs().getStringSet("exceptions", Collections.emptySet()));
-                new HaiagaruDialog.Builder(activity).setTitle(SharedNgResponseExclusion.TITLE)
-                        .setMessage("除外する条件にチェックを入れて保存してください。この端末で、その条件を適用しなくなります。変更後はスレを開き直してください。個人NGや他の条件でも隠れている場合は残ります。")
-                        .setView(content).setPositiveButton("保存", (dialog, which) -> {
+                SharedNgExceptions.showDialog(activity, SharedNgResponseExclusion.TITLE,
+                        "除外する条件にチェックを入れて保存してください。この端末で、その条件を適用しなくなります。変更後はスレを開き直してください。個人NGや他の条件でも隠れている場合は残ります。",
+                        content, () -> {
                             Set<String> next = new HashSet<>(prefs().getStringSet("exceptions", Collections.emptySet()));
                             Set<String> selected = content.selection();
                             for (SharedNgRules.Rule rule : matched) {
@@ -70,7 +70,7 @@ final class SharedNg {
                             }
                             prefs().edit().putStringSet("exceptions", next).apply(); reload();
                             Toast.makeText(activity, "共有NGの除外設定を保存しました。スレを開き直してください", Toast.LENGTH_LONG).show();
-                        }).setNegativeButton("キャンセル", null).show();
+                        });
             });
         });
     }

@@ -4691,6 +4691,7 @@ public final class Haiagaru {
                 "local/optional MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
+        RestoredThreadCache.addSettings(layout, activity);
 
 
         return layout;

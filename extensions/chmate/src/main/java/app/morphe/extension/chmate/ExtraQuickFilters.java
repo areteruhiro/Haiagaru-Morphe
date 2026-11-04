@@ -160,6 +160,8 @@ public final class ExtraQuickFilters {
         final android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         final Runnable render=this::layout;BottomControls panel;View list;int originalPadding,appliedPadding=-1;
         int originalMargin,appliedMargin=-1;boolean closed,queued,reservationChanged;
+        boolean previouslyShown;
+        long lastVisibilityRecovery;
         final Map<View,int[]> popupPaddings=new WeakHashMap<>();
         PinnedPanel(Activity activity,Object fragment,View root){
             this.activity=activity;this.fragment=new WeakReference<>(fragment);this.root=root;host=activity.findViewById(android.R.id.content);
@@ -228,10 +230,11 @@ public final class ExtraQuickFilters {
                 root.getWindowVisibleDisplayFrame(visible);shown=shown&&bounds.intersect(visible);
                 if(!shown){if(panel!=null)panel.setVisibility(View.GONE);return;}
                 Object owner=fragment.get();if(owner==null){close();return;}Object a=adapter(owner);
-                if(panel==null||panel.adapter!=a||list!=current){
+                if(panel==null||panel.getParent()!=host||panel.adapter!=a||list!=current){
                     detachPanel();prime();if(panel==null)return;
                 }
                 panel.redraw();panel.setVisibility(View.VISIBLE);
+                if(host.indexOfChild(panel)!=host.getChildCount()-1)panel.bringToFront();
                 panel.measure(View.MeasureSpec.makeMeasureSpec(bounds.width(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
                 int height=panel.getMeasuredHeight(),width=bounds.width();FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)panel.getLayoutParams();
                 if(params.width!=width||params.height!=height){params.width=width;params.height=height;panel.setLayoutParams(params);}
@@ -280,6 +283,15 @@ public final class ExtraQuickFilters {
         public void onGlobalLayout(){schedule();}
         public boolean onPreDraw(){
             if(closed)return true;
+            // Retained tablet pages can become visible again without a fresh
+            // layout callback. Also recover an overlay removed by its host.
+            boolean shown=root.isShown();
+            long now=android.os.SystemClock.uptimeMillis();
+            if(shown&&(!previouslyShown||now-lastVisibilityRecovery>=250)
+                    &&(!previouslyShown||panel==null||panel.getParent()!=host||panel.getVisibility()!=View.VISIBLE)) {
+                lastVisibilityRecovery=now;schedule();
+            }
+            previouslyShown=shown;
             if(queued){handler.removeCallbacks(render);layout();}
             boolean changed=reservationChanged;reservationChanged=false;
             return !changed; // Never expose a frame whose native viewport is still full height.

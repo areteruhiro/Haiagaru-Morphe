@@ -1715,3 +1715,33 @@ emulator-5580 / Android16。bindings3版を既知実APK hashと署名照合後in
   - 導入: 2026-11-04T14:57:14.859178+09:00 / signature matched, install-r Success; existing isolated app data retained
 
 各版起動・設定/テンプレート/移行/オフ/独自値/標準HTTPヘッダー保持21項目成功。通信/投稿なし、新規対象app crashなし。設定復元・wm size reset/WiFi ON/mobile OFF・AVDデータ保持停止。実機未操作。原本build/local-development-records/ua-android14-installations.json、詳細docs/ua-android14-20261104.md。
+
+
+## 2026-11-04 共有NG除外・標準チェック一覧（未公開候補）
+
+- Haiagaru binding 191 / ChMate 191 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings191`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice-191.apk`
+  - APK SHA256: `143099a8d8dbb475b59b58772a50d4c21d0c89fe640689f87e145a0314e26254`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice.mpp`
+  - MPP SHA256: `06ae8093a08baf40ef23916c593b7466034e08967785be0f794604fb13a2e721`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T16:26:03.460685+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 226 / ChMate 226 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings226`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice-226.apk`
+  - APK SHA256: `8ce631b422580b3b5d667113b87762354734f088f990c2f81bf1e1b8a477f866`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice.mpp`
+  - MPP SHA256: `06ae8093a08baf40ef23916c593b7466034e08967785be0f794604fb13a2e721`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T16:26:09.939249+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 242 / ChMate 242 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice-242.apk`
+  - APK SHA256: `b218664ee15f15208ada8db92aeae2b193ce66419f9f18a1116c7949372601d2`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-native-choice.mpp`
+  - MPP SHA256: `06ae8093a08baf40ef23916c593b7466034e08967785be0f794604fb13a2e721`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T16:26:16.229509+09:00 / signature matched, install-r Success; existing isolated app data retained
+
+3版で親メニューの実タップ→SharedNgResponseExclusion.handle→本番showResponseExclusionsへ。チェック右端/文字実タップの表示OFF→ON→OFF/保存成功。12条件検索/隠れ選択保持/全条件画面へ再表示の実タップ成功。検索model15/UA21各版成功。新規対象app crashなし。合成条件はメモリ内のみ、設定/static復元、通信/投稿/GAS変更なし。親は検証用メニューで、実スレ長押し起点の通し試験とは区別する。AVD表示/network復元・データ保持停止。原本build/local-development-records/shared-ng-native-choice-installations.json。

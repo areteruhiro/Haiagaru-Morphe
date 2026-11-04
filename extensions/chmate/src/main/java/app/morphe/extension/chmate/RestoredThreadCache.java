@@ -10,6 +10,47 @@ import java.io.IOException;
 
 /** A restored history row is not evidence that its DAT was restored too. */
 final class RestoredThreadCache {
+    private static final java.util.concurrent.atomic.AtomicBoolean REPAIRING = new java.util.concurrent.atomic.AtomicBoolean();
+
+    static void addSettings(android.widget.LinearLayout box, android.app.Activity activity) {
+        android.widget.Button button = new android.widget.Button(activity);
+        button.setText("本文キャッシュの整合性を修復");
+        box.addView(button);
+        button.setOnClickListener(v -> new HaiagaruDialog.Builder(activity)
+                .setTitle("本文キャッシュの整合性を修復")
+                .setMessage("バックアップ復元後などに、本文DATがないのに取得済みとして残った履歴を修復します。既読位置・書き込みマークは保持します。履歴を退避してから補正し、本文のダウンロードは行いません。完了後にChMateを再起動し、通常の更新・巡回を行ってください。")
+                .setPositiveButton("修復", (d,w) -> repair(activity))
+                .setNegativeButton("キャンセル", null).show());
+    }
+
+    private static void repair(android.app.Activity activity) {
+        if (!REPAIRING.compareAndSet(false, true)) return;
+        Context context = activity.getApplicationContext();
+        android.widget.Toast.makeText(activity,"本文キャッシュを確認しています",android.widget.Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            String result;
+            try {
+                File recovery = new File(context.getFilesDir(), "haiagaru-sync-recovery");
+                if (!recovery.isDirectory() && !recovery.mkdirs()) throw new IOException("退避領域を作成できません");
+                byte[] snapshot = HaiagaruSyncSnapshot.capture(context, HaiagaruSyncSnapshot.BOOKMARKS);
+                android.util.AtomicFile backup = new android.util.AtomicFile(new File(recovery,
+                        "before-cache-repair-" + java.util.UUID.randomUUID() + ".json"));
+                java.io.FileOutputStream output = backup.startWrite();
+                try { output.write(snapshot); backup.finishWrite(output); }
+                catch (Exception error) { backup.failWrite(output); throw error; }
+                reconcile(context, new JSONObject(new String(snapshot, java.nio.charset.StandardCharsets.UTF_8)).getJSONArray("bookmarks"));
+                result = "整合性の修復が完了しました。ChMateを再起動し、更新・巡回を行ってください。本文はまだダウンロードしていません。";
+            } catch (Exception error) {
+                android.util.Log.w("Haiagaru", "Thread cache repair unavailable", error);
+                result = "修復できませんでした。保存領域・空き容量を確認してください。";
+            } finally { REPAIRING.set(false); }
+            final String message = result;
+            activity.runOnUiThread(() -> {
+                if (!activity.isFinishing() && !activity.isDestroyed())
+                    new HaiagaruDialog.Builder(activity).setTitle("本文キャッシュの修復").setMessage(message).setPositiveButton("閉じる",null).show();
+            });
+        }, "Haiagaru-cache-repair").start();
+    }
     static void reconcile(Context context, JSONArray rows) throws Exception {
         if (rows == null || rows.length() == 0) return;
         File external = context.getExternalFilesDir(null);

@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 常設filter/既復元cache手動修復/板お気に入り/native設定backup（未公開候補）: 表示復帰/overlay detachedを描画前に検出し250ms制限で復旧、必要時のみbringToFront。設定に本文cache整合修復（履歴退避・worker・再起動後巡回、本文自動取得なし）。snapshotにboards追加/通常復元で既存flag/orderのみ/不足分同期既存優先。標準prefs許可リスト固定の3版ownerを特定、package変更に一致する保存名へ定数1個置換。共有NG先行修正保持。通常Lint最終build3m14s/CRC正常、最終MPP build/haiagaru-backup-filter-fixes.mpp SHA256 d921a3e5d964c15c01812322c7ba7ed4533fa703d4935100f378d535e76b5388。先行candidate3版適用・native設定名定数以外命令/register/offset保持成功、最終候補APK導入/ZIP復元/症状解消未確認。詳細docs/pinned-filter-board-backup-20261104.md。
+
+2026-11-04 共有NG除外の標準一覧へ変更（未公開候補）: dev.8でもcheck不可の追加報告。2入口をnative AlertDialog/ListView/CheckedTextViewへ、ID基準選択/bind checked/clear再構築でCompose変換を回避。通常Lint build2m21s・3版適用/署名照合更新。親検証menu実タップ→本番handle/dialog、チェック右端/文字の実表示/保存、12条件検索/隠れ保持/再表示成功。検索15/UA21各版、新規app crashなし。設定/static/network復元・AVDデータ保持停止。実スレ長押し起点とは区別。UAは14/15/16を本番設定で再確認、4.0.3は移行判定のみ。実機未接続、利用版/画面質問中。詳細docs/shared-ng-native-choice-20261104.md・導入台帳。
+
 2026-11-04 検証用プレ1.23.0-dev.8公開・配布検証完了。実装7c78146、Semantic Release CI41787507505/Attest success、生成2edac33をdevへFF。API release name=1.23.0-dev.8（検証用）、draft=false/prerelease=true。利用者の静的修正・検証用公開指定に基づき、build/host97成功と実DB/表示/crash/速度未検証を冒頭へ明記。公開6asset size/digest/SHA256・CRC・RestoredThreadCache同梱確認。MPP SHA256 c2daef1db7bf4d69733daebbeb7af05972664d0e833440a2b6bbc5e2998426a6。dev両feedはdev.8、master/main両feedは正式1.22.1を維持。公開MPP再適用・端末導入なし。詳細docs/thread-open-restore-static-20261104.md・build/release-1.23.0-dev.8-verify/verification.json。
 
 2026-11-04 静的修正候補を検証用プレ公開へ: 利用者が「プレリリースして（検証用）として」と明示。端末検証省略の静的修正指定は維持。公開title/headerへ検証用、host97/build成功と実DB/表示/crash/速度未検証を明記。.releaserc既存github pluginのreleaseNameTemplateで今回dev.8だけ検証用suffix。既存Semantic Release CIで公開し、正式1.22.1維持。詳細docs/thread-open-restore-static-20261104.md。
