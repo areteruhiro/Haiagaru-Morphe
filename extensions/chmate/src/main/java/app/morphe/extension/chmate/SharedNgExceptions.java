@@ -33,21 +33,40 @@ final class SharedNgExceptions extends LinearLayout {
         search.setContentDescription("共有NG条件の検索");
         addView(search);
         count = new TextView(activity); addView(count);
-        list = new ListView(activity);
+        list = new ChoiceList(activity);
         list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         adapter = new ArrayAdapter<>(activity, android.R.layout.simple_list_item_multiple_choice, new ArrayList<>());
         adapter.setNotifyOnChange(false);
         list.setAdapter(adapter); addView(list);
-        list.setOnItemClickListener((parent, view, position, id) -> {
-            String key = rules.get(visible.get(position)).id;
-            if (list.isItemChecked(position)) disabled.add(key); else disabled.remove(key);
-        });
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int length, int after) {}
             public void onTextChanged(CharSequence s, int start, int before, int length) { filter(s.toString()); }
             public void afterTextChanged(Editable value) {}
         });
         filter("");
+    }
+
+    /** The Compose-hosted ListView is a model, not an attached native list.
+     * Keep selection by rule ID instead of relying on native layout/choice state. */
+    private final class ChoiceList extends ListView {
+        ChoiceList(Activity activity) { super(activity); }
+
+        @Override public boolean isItemChecked(int position) {
+            return position >= 0 && position < visible.size()
+                    && disabled.contains(rules.get(visible.get(position)).id);
+        }
+
+        @Override public boolean performItemClick(android.view.View view, int position, long id) {
+            if (!isEnabled() || position < 0 || position >= visible.size()
+                    || !adapter.isEnabled(position)) return false;
+            String key = rules.get(visible.get(position)).id;
+            boolean checked = !disabled.contains(key);
+            if (checked) disabled.add(key); else disabled.remove(key);
+            setItemChecked(position, checked);
+            adapter.notifyDataSetChanged();
+            sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED);
+            return true;
+        }
     }
 
     private static String normalize(String text) { return SharedNgRules.text(text).toLowerCase(Locale.ROOT); }

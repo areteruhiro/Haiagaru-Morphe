@@ -1655,3 +1655,33 @@ emulator-5580 / Android16。bindings3版を既知実APK hashと署名照合後in
 |191 / Haiagaru binding 191|`jp.co.airfront.android.a2chMate.haiagaru.bindings191`|2026-11-04T11:45:21.868147+09:00|`build/shared-ng-toggle-defaultoff-191.apk`|`115d89cb1116762e035859680babf4364e121b03f7a3e4985cd78bef53a048a8`|
 |226 / Haiagaru binding 226|`jp.co.airfront.android.a2chMate.haiagaru.bindings226`|2026-11-04T11:45:29.913699+09:00|`build/shared-ng-toggle-defaultoff-226.apk`|`17bdced32197d9aea84fc6c5d9f83e77eac83d9a3f081ea21717460d7343ef1c`|
 |242 / Haiagaru binding 242|`jp.co.airfront.android.a2chMate.haiagaru.bindings242`|2026-11-04T11:45:36.847503+09:00|`build/shared-ng-toggle-defaultoff-242.apk`|`6b282ff23600ed5f9160fc2b07dda3cb9b023ac1821f8aca547eeaa9a4030910`|
+
+
+## 2026-11-04 共有NG再描画・通知監視管理の最終候補（エミュレータ）
+
+- Haiagaru binding 191 / ChMate 191 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings191`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model-191.apk`
+  - APK SHA256: `be3294288b0a0f415bae965cfc80bf7669c289e23f683e6677f38f42ec2c753e`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model.mpp`
+  - MPP SHA256: `2b6286a99b7c56df0a525e5c86a4a20bef20328e8c1f5092274ad6e437185a7d`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:27:19.700470+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 226 / ChMate 226 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings226`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model-226.apk`
+  - APK SHA256: `471dfca4f8ba8d29079a78e002274ff9126e8b68b6e1afc1c8db04decf9c7db8`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model.mpp`
+  - MPP SHA256: `2b6286a99b7c56df0a525e5c86a4a20bef20328e8c1f5092274ad6e437185a7d`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:27:26.477963+09:00 / signature matched, install-r Success; existing isolated app data retained
+- Haiagaru binding 242 / ChMate 242 dev / serial `emulator-5580` / package `jp.co.airfront.android.a2chMate.haiagaru.bindings242`
+  - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model-242.apk`
+  - APK SHA256: `1a73b1187e6ce98aaa03e2d2c54344fcf637dd4253ceeb535c3515afc9cf9f31`
+  - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\shared-ng-rule-choice-model.mpp`
+  - MPP SHA256: `2b6286a99b7c56df0a525e5c86a4a20bef20328e8c1f5092274ad6e437185a7d`
+  - 署名証明書 SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+  - 鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`
+  - 導入: 2026-11-04T14:27:32.388415+09:00 / signature matched, install-r Success; existing isolated app data retained
+
+各版: 通知22/設定9/返信11/backup40/native order10成功、監視管理実タップ10操作成功。共有NG checkbox/文字の実表示OFF→ON→OFFと保存成功、検索15/履歴48成功。元native delegate/register/branch保持、host order115成功。新規対象app crashなし。設定・通知権限・wm size・WiFi ON/mobile OFFを復元しAVDデータ保持停止。実機未操作。元台帳build/local-development-records/shared-ng-rule-choice-model-installations.json、集約build/shared-ng-watch-final-verification.json、詳細docs/shared-ng-redraw-watch-management-20261104.md。
