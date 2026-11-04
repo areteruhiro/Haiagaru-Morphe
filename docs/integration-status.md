@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 プレ版1.23.0-dev.5公開・配布検証完了。実装10e18d9、Semantic Release CI41763130598/Attest success、生成96fc798をdevへFF。draft=false/prerelease=true、6asset size/SHA256/digest・CRC・設定キーと対象クラス同梱確認。MPP SHA256 3cd96dd81c3b92e442d727a1dcb5e3f38ec9377e22d44f7bdb2e0af40ce37f9a。dev両feedは1.23.0-dev.5、master/main両feedは正式1.22.1を維持。VPN任意ZIPは1.21.1と同一。証跡build/release-1.23.0-dev.5-verify/verification.json。3版の共有NG実タップcheckbox/文字各切替保存成功、検索9/履歴48成功。実機症状全体の再現は未確認と区別。AVD設定復元/データ保持停止、GAS/投稿/正式Release変更なし。
+
 2026-11-04 履歴対象初期OFF・共有NGチェック直接操作（プレ公開準備）: defaultfalse読込/設定へ統一し保存済み選択保持。Compose ListViewチェック自体へperformItemClick callback追加、行タップとの二重反転なし。旧191/242は文字タップ成功・checkbox semanticsなし、ユーザー症状の全体再現とは区別。最終3版で実response dialogのcheckbox/文字タップ各OFF→ON→OFF/本番保存成功、検索9/履歴48各成功、新規app crashなし。通常Lint build2m20s/3版署名照合更新。docs/shared-ng-direct-checkbox-default-off-20261104.md・導入台帳。AVDデータ保持停止。次に既存CIでプレ公開。
 
 2026-11-04 プレ版1.23.0-dev.4公開・検証完了。実装0b0704c、Semantic Release CI41760677393/Attest success、生成履歴をdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRC、showRefreshTargetsInHistoryPopup設定キー/既存対象クラスの同梱を確認。MPP SHA256 d1751efa4f065ae64060b422356e09a55dd584bc6198cac86aacd3211f67f904。dev両feedは1.23.0-dev.4、master/main両feedは正式1.22.1を維持。VPN任意ZIPは既存1.21.1と同一。証跡build/release-1.23.0-dev.4-verify/verification.json。各版47項目成功・AVDデータ保持停止。実機/GAS/投稿/正式Release変更なし。
