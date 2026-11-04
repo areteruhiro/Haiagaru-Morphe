@@ -1030,3 +1030,8 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 保存用スレ選択ダイアログの「レス保存機能：オン／オフ」とその書込処理を削除。ResponseMenuSettings.visibleと保存確認・確定処理で旧responseArchiveEnabledを参照しないようにし、既存のOFF値が残る端末でもツールバーの各トグルに従う。既存の保存データ・設定値は削除せず、3版共通Javaのみ変更しnative hookは変更なし。通常一覧と保存先選択の作成/管理/次100件のindex分岐を静的確認。利用者が実機確認不要を明示したため今回の端末操作確認は省略。ビルドと公開配布物の検証後に公開結果を追記する。
 
 通常Lint/R8 build/response-archive-toolbar-final-build.log成功2m50s。MPP 83bb4c5b12bd341f9b16fe46abe370d8eab74cbc0764bcb4d8a591b5adef9388。ZIP CRC正常、配布DEXから旧ダイアログラベル消失・保存用スレ処理同梱を確認。引数のPowerShell解釈による初回build失敗は引用を修正後に再実行して成功。git diff --check成功。
+
+2026-11-05 通常プレリリース1.23.0-dev.14公開完了
+Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生成043e78b9。中断された前CIのdev.13生成履歴をmerge保持し、タグ/Releaseの手動作成なし。公開MPP SHA256 5452b3be1eeefa6363f1d26dbd6a174d99127c148af1e1fca9f354b20d24baf3、GitHub digest一致・CRC正常・旧レス保存機能ラベル不在・新規共有NG関連クラス同梱・dev両feedのversion/asset一致。prerelease=true/draft=false/通常タイトル、公開説明に識別子生成方式の記載なし。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.14 。
+
+けんも板の通知追加要望を調査。既存の汎用test/read.cgi対象判定・スレタイボタン・subject/DAT取得がkenmo.orgにも適用され追加実装不要。指定1793798226でlive GETのsubject/DAT各200・Shift_JIS、既存parserで237件/タイトル/直近3件を読み取り成功（新着実通知の端末試験ではない）。Dalvik/Java/Monazilla各UAも200。Python標準UAは403のため対応UAへ変更。指定URL正規化・fromParts・subject/DAT/板root除外を回帰テストへ追加しThreadWatchRules66成功。利用者指定により端末操作確認省略。
