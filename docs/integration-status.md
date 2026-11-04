@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 共有NGテキスト再利用の上限設定（未公開）: 利用者の任意指定要望でオンライン共有NGへ再利用設定を追加。件数/容量（入力+変換結果のUTF16文字数）を0〜最大int、初期512/1000000。どちらか0で無効、保存で即configure/LRU縮小・初期値入力復帰・キャンセル無変更。programmable-ng prefsで既存backup設定カテゴリ対象、呼出しごとのprefs読込なし。host5020成功（上限0/再有効化/縮小/最大int/変換中無効）。Android設定操作/backup往復/速度は未検証。docs/shared-ng-input-preparation-20261104.md参照。
+
+2026-11-04 共有NG有効時のHTML入力準備を追加最適化（未公開）: 利用者のgreta.5ch.io/poverty/1793682328でdev.11でも重い報告。全レスのHTML→plainを最大512件/入出力合計100万UTF16文字の内容キーcacheへ（変換中lockなし、NG判定結果は保存しない）。226はflag確認時responseDataで本文/名前再変換していたため既存l番号だけ取得へ変更、hookの型確認済み。共通変換は191/226/242。cache5014・index10306・regex17・除外263成功。通常Lint build2m21s、MPP CRC/cache同梱成功。候補build/haiagaru-shared-ng-input-preparation.mpp。端末Html/実スレ/起動描画/速度・改善未確認、APK生成/導入/公開/GAS変更なし。docs/shared-ng-input-preparation-20261104.md。
+
 2026-11-04 検証用プレ1.23.0-dev.11公開・配布検証完了: 共有NG大量文字列検索f28f244とURL遷移432052bを既存Semantic Release CI41823578007で公開、Release/Attest success、生成01ce123をdevへFF。前回タグpushのGitHub障害から回復し、API name=1.23.0-dev.11（検証用）/draft=false/prerelease=true、2026-11-04 20:51:17 JST公開。公開6asset size/digest/SHA256・MPP/ZIP CRC・NgLiteralMatcher/URL経路helper/AA class&hook同梱・作業環境パス不在を確認。MPP SHA256 8a4a7201b4647f8c0a0cb3b3ad40b8619fed33370ace207b84225e6542e3d472。dev両feedはdev.11、master/main両feedは正式1.22.1維持。任意3ZIPはdev.9と同一。静的/検証用指定に従い端末の基本動作/クラッシュ/実速度未確認を公開冒頭明記。公開MPP再適用/端末導入/GAS変更なし。build/release-1.23.0-dev.11-verify/verification.json参照。
 
 2026-11-04 NG多数スレの共有通常文字列検索を最適化（未公開）: NGWord数だけ全文contains走査する経路へNgLiteralMatcherを追加。8語以上はUTF16 Aho-Corasick、少数/200000文字超は従来検索。名前/tripも共通適用。board/票/除外/失効/正規表現/標準NG/連鎖の意味は保持、191/226/242共通extensionのみ。literal等価95552・index10306・regex17・個別除外263成功。ホスト合成2000条件/非一致5500UTF16/1000回は2225.991→19.9041ms（Androidや遷移時間ではない）。通常Lint build2m21s、MPP CRC/matcher同梱成功。候補build/haiagaru-shared-ng-many-rules.mpp。端末動作/実速度/標準NG多数の主因は未確認、導入/公開/GAS変更なし。docs/shared-ng-many-rules-20261104.md。

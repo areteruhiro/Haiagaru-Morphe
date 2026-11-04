@@ -29,6 +29,7 @@ public final class ProgrammableNgController {
     private static final Pattern URL_INFO = Pattern.compile("server:([^,}]+),\\s*name:([^,}]+)");
     private static final Pattern REPORTER = Pattern.compile("\\s+\\[([^\\[\\]\\s]+)★\\]\\s*$");
     private static final String UNKNOWN_BOARD = "https://unknown.invalid/board/";
+    private static final NgPlainTextCache PLAIN_TEXT=new NgPlainTextCache(512,1_000_000);
     private static final Map<Object, Set<Integer>> LEGACY_RESPONSE_MATCHES =
             Collections.synchronizedMap(new WeakHashMap<>());
     private static final ThreadLocal<Object> PENDING_SUBJECT_LIST = new ThreadLocal<>();
@@ -73,6 +74,8 @@ public final class ProgrammableNgController {
         Context current = context;
         if (current == null) return;
         SharedPreferences preferences = current.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        PLAIN_TEXT.configure(preferences.getInt(NgPlainTextCacheSettings.COUNT,512),
+                preferences.getInt(NgPlainTextCacheSettings.CAPACITY,1_000_000));
         try {
             rules = ProgrammableNgRuleSet.decode(preferences.getString(RULES_KEY, ""));
             enabled = preferences.getBoolean(ENABLED_KEY, false);
@@ -403,7 +406,10 @@ public final class ProgrammableNgController {
         try {
             if (!MODERN_RESPONSE_MATCHES.containsKey(owner)) prepareModernResponses(owner);
             Set<Integer> matches = MODERN_RESPONSE_MATCHES.get(owner);
-            return HiddenNgUnread.observe(owner,response,matches != null && matches.contains(responseData(response).number) ? original | 0x10 : original);
+            // This boundary only needs the response number. Constructing ResponseData
+            // here also parsed the whole body/name again for every native flag query.
+            int number=((Number)field(response,"l")).intValue();
+            return HiddenNgUnread.observe(owner,response,matches != null && matches.contains(number) ? original | 0x10 : original);
         } catch (Exception error) {
             report("226レスフラグ", error);
             return original;
@@ -630,7 +636,7 @@ public final class ProgrammableNgController {
     }
     private static boolean bodyRulesEnabled(){if(SharedNg.enabled())return true;if(!enabled)return false;for(ProgrammableNgRuleSet.Rule rule:rules.rules)if(rule.enabled&&"body".equals(rule.target))return true;return false;}
     private static String plain(String html) {
-        return html == null ? "" : Html.fromHtml(html).toString();
+        return PLAIN_TEXT.plain(html,value->Html.fromHtml(value).toString());
     }
 
     static String status() {
