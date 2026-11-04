@@ -1,4 +1,9 @@
-◆8LNH56sLs6
+掲示板での問い合わせは以下のみです。
+
+◆2ofgBR.b9E <br>
+ChMate用Morpheパッチ「Haiagaru」 Part 1
+https://jbbs.shitaraba.net/bbs/read.cgi/computer/45040/1793701433/ <br> 
+
 # Haiagaru for Morphe
 
 ChMateに設定・閲覧・検索・NG・バックアップ機能を追加するMorpheパッチです。
