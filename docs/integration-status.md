@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 プレ版1.23.0-dev.4公開・検証完了。実装0b0704c、Semantic Release CI41760677393/Attest success、生成履歴をdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRC、showRefreshTargetsInHistoryPopup設定キー/既存対象クラスの同梱を確認。MPP SHA256 d1751efa4f065ae64060b422356e09a55dd584bc6198cac86aacd3211f67f904。dev両feedは1.23.0-dev.4、master/main両feedは正式1.22.1を維持。VPN任意ZIPは既存1.21.1と同一。証跡build/release-1.23.0-dev.4-verify/verification.json。各版47項目成功・AVDデータ保持停止。実機/GAS/投稿/正式Release変更なし。
+
 2026-11-04 履歴対象タブ表示のオプション（プレ公開準備）: showRefreshTargetsInHistoryPopup初期trueを表示・操作と設定profileへ追加。OFFで対象cell全体をGONE、選択中ならスレへ復帰、ONで再表示。登録/更新/HOME対象は維持。通常Lint build2m37s、3版署名照合更新・各47成功、nativeHOME43/51/66メソッド全保持、新規app crashなし。原本build/local-development-records/history-target-option-installations.json、詳細docs/history-target-popup-option-20261104.md。AVD設定を戻しデータ保持停止、次に既存Semantic Releaseでプレ公開。
 
 2026-11-04 プレ版1.23.0-dev.3公開・配布検証完了。実装6dbc55f、Semantic Release CI41757579447/Attest success、生成1c9bf55をdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRC、HomeRefreshTargets/Tabs/対象ラベル/更新enqueue同梱・廃止Shizuku不在を確認。公開MPP SHA256 046cbc53a39e7b768ee0d78dc406b536a386d5747ebdcda2d4d8f033f239064f。VPN任意ZIPは既存1.21.1と同一。dev両feedは1.23.0-dev.3、master/main両feedは正式1.22.1を維持。証跡build/release-1.23.0-dev.3-verify/verification.json。HOME対象/★実表示比較3版と履歴各33項目成功、AVDデータ保持で停止済み。実機/GAS/投稿/正式Releaseは変更なし。
