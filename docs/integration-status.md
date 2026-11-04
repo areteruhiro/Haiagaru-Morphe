@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-04 プレ版1.23.0-dev.7公開・配布検証完了。実装ca057c7、Semantic Release CI41782635101/Attest success、生成bf6a23bをdevへFF。draft=false/prerelease=true。公開6asset size/digest/SHA256・CRCと標準Android14 UA文字列同梱を確認。MPP SHA256 96c066a6bd73f78a207cc653374b8740977febbdbb753de0a6906600f68cba5a。dev両feedは1.23.0-dev.7、master/main両feedは正式1.22.1を維持。旧出荷4.0.3のみ移行、15/16/独自UA/ON-OFF保持。3版各21項目/host19成功、新規app crashなし。設定/ネットワーク復元・AVDデータ保持停止。実機/GAS/投稿なし。詳細docs/ua-android14-20261104.md・build/release-1.23.0-dev.7-verify/verification.json。
+
 2026-11-04 標準テンプレート更新（プレ公開準備）: BrowserUaTemplatesの4.0.3を14へ、旧出荷文字列だけresolve移行。15/16/独自UA/ON-OFF保持。新規bytecodeフックなし。通常Lint build2m19s/host nativeidentity19、3版適用・署名照合更新と各21項目成功。起動/設定menu/移行/HTTPヘッダー保持、新規app crashなし。設定/ネットワーク復元・AVDデータ保持停止。詳細docs/ua-android14-20261104.md、導入台帳。次に既存Semantic Releaseでdevプレ公開。
 
 2026-11-04 プレ版1.23.0-dev.6公開・配布検証完了。実装2560d34、Semantic Release CI41780370219/Attest success、生成47d9882をdevへFF。draft=false/prerelease=true、公開6asset size/digest/SHA256・CRC、ChoiceList/ThreadWatchManagement/期限フィールド同梱を確認。MPP SHA256 96db5182d471879b2b994c81b5c6004cbef862ec111aeadff157587007625f28。dev両feedは1.23.0-dev.6、master/main両feedは正式1.22.1を維持。VPN任意ZIPは1.21.1と同一。3版で実checkbox/文字チェック表示・保存、検索15/履歴48、通知22/設定9/返信11/backup40/native order10、監視一覧実タップ10操作成功。元命令保持・host115、新規app crashなし。設定/権限/表示/ネットワーク復元・AVDデータ保持停止。実機/GAS/投稿は変更なし。長押し通し試験は自動承認拒否のため未実施、直接本番dialogで検証。詳細docs/shared-ng-redraw-watch-management-20261104.md・build/release-1.23.0-dev.6-verify/verification.json。
