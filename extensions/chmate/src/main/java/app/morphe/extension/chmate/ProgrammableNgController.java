@@ -255,6 +255,10 @@ public final class ProgrammableNgController {
             lastBoardUrl = board;
             Object responseList = field(adapter, "K");
             List<?> responses = originalResponses(responseList);
+            if(!enabled&&SharedNg.enabled()){
+                Set<Integer> shared=SharedNg.matchNativeRows(responses,board);
+                if(shared!=null){lastBodies=Collections.emptyList();LEGACY_RESPONSE_MATCHES.put(adapter,shared);return;}
+            }
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>();
             ArrayList<Integer> numbers = new ArrayList<>();
             String title = null;
@@ -342,6 +346,15 @@ public final class ProgrammableNgController {
             List<?> responses = originalResponses(pending);
             String board = responses.isEmpty() ? null : RESPONSE_BOARDS.get(responses.get(0));
             if (board == null) board = UNKNOWN_BOARD;
+            if(!enabled&&SharedNg.enabled()){
+                Set<Integer> shared=SharedNg.matchNativeRows(responses,board);
+                if(shared!=null){
+                    lastBodies=Collections.emptyList();Map map=null;
+                    for(Integer number:shared){if(map==null)map=new LinkedHashMap(originalMap);Object previous=map.get(number);
+                        map.put(number,(previous instanceof Number?((Number)previous).intValue():0)|0x10);}
+                    return map==null?originalMap:map;
+                }
+            }
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(responses.size());
             ArrayList<Integer> numbers = new ArrayList<>(responses.size());
             for (Object response : responses) {
@@ -381,6 +394,10 @@ public final class ProgrammableNgController {
             String board = boardUrl(field(field(owner, "E"), "j"));
             if (board == null) return;
             List<?> responses = originalResponses(field(owner, "J"));
+            if(!enabled&&SharedNg.enabled()){
+                Set<Integer> shared=SharedNg.matchNativeRows(responses,board);
+                if(shared!=null){lastBodies=Collections.emptyList();MODERN_RESPONSE_MATCHES.put(owner,shared);return;}
+            }
             ArrayList<ProgrammableNgScript.Input> inputs = new ArrayList<>(responses.size());
             ArrayList<Integer> numbers = new ArrayList<>(responses.size());
             for (Object response : responses) {
@@ -635,7 +652,7 @@ public final class ProgrammableNgController {
         boolean[] shared=SharedNg.match(inputs);for(int i=0;i<result.length;i++)result[i]|=shared[i];return result;
     }
     private static boolean bodyRulesEnabled(){if(SharedNg.enabled())return true;if(!enabled)return false;for(ProgrammableNgRuleSet.Rule rule:rules.rules)if(rule.enabled&&"body".equals(rule.target))return true;return false;}
-    private static String plain(String html) {
+    static String plain(String html) {
         return PLAIN_TEXT.plain(html,value->Html.fromHtml(value).toString());
     }
 
@@ -659,7 +676,7 @@ public final class ProgrammableNgController {
 
 
     static String preview(ProgrammableNgRuleSet.Rule rule) {
-        if("body".equals(rule.target)&&!bodyRulesEnabled()){
+        if("body".equals(rule.target)&&(lastBodies.isEmpty()||!bodyRulesEnabled())){
             try{
                 List<?> responses=originalResponses(previewSource.get());List<ProgrammableNgScript.Input> inputs=new ArrayList<>();
                 for(Object response:responses){

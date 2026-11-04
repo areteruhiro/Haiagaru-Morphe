@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-04 共有NG再利用/SAF候補を実機191更新: 利用者の導入指定、730eae72/XIG05の既存jp.co.airfrt.android.chMate.haiagartuへ同一署名install-r Success（22:02:24 JST）。台帳と端末旧APK署名一致、native NG hook検査PASS、導入後APK hash一致、HomeActivity cold起動ok、新規対象fatalなし。APK SHA256 11a058d42ef655e4f21a1977db8b45c8de7b8b70478867562172538f08fefe2b、MPP d4428ce794f1b1ef457038ba9f52b13417ce4cbd070cec26de2e636b38729000。firstInstallTime保持/アンインストール・データ消去なし。SAF実選択/共有NG表示・速度未確認、公開なし。台帳とdocs/incremental-shared-ng-saf-20261104.md。
+
+2026-11-04 再表示共有NGの入力/判定再利用・SAF保存先再選択（未公開）: 利用者の新着だけ判定と任意フォルダ変更要望。shared-only経路で191/226/242 raw入力をimmutable index専用のcontent cacheへ、同条件/同内容のHTML/Input作成を省略。最大4096件/キー400万文字、条件/除外更新でindex置換、本文変更/追加分は再評価、regex非一致はtimeout可能性のため再評価。標準/プログラムNG連鎖は維持し必要時preview準備。host追加3017/index10306/regex17/除外263成功、通常Lint最終build3m4s、MPP CRC/cache/SAF extra同梱成功。自動backupは固定先なし、前回URIを渡さない再選択ボタン・無効grantのhint除外・primary直下ラベル・tree確認を追加。候補build/haiagaru-incremental-ng-saf.mpp。Android判定/SAF保存取消/速度未確認、APK生成/導入/公開なし。docs/incremental-shared-ng-saf-20261104.md。
+
 2026-11-04 検証用プレ1.23.0-dev.12公開・配布検証完了: 実装d6c5f61、Semantic Release CI41827274812のRelease/Attest success、生成5cdb378をdevへFF。2026-11-04 21:19:47 JST、name=1.23.0-dev.12（検証用）/draft=false/prerelease=true。公開6asset size/digest/SHA256・MPP/ZIP CRC・NgPlainTextCacheSettings/容量key/前版検索・URL・AA同梱、作業環境パス不在確認。MPP SHA256 9946d955a96b9e77d8bceef0def998f8e73c6d73988df37cc4a1cfe833b3f6d6。dev両feedはdev.12、master/main両feedは正式1.22.1維持。任意3ZIPはdev.9と同一。静的/検証用方針で端末の基本動作・設定操作・速度未確認を公開冒頭明記。公開MPP再適用/端末導入/GAS変更なし。build/release-1.23.0-dev.12-verify/verification.json、docs/shared-ng-input-preparation-20261104.md参照。
 
 2026-11-04 共有NGテキスト再利用の上限設定（未公開）: 利用者の任意指定要望でオンライン共有NGへ再利用設定を追加。件数/容量（入力+変換結果のUTF16文字数）を0〜最大int、初期512/1000000。どちらか0で無効、保存で即configure/LRU縮小・初期値入力復帰・キャンセル無変更。programmable-ng prefsで既存backup設定カテゴリ対象、呼出しごとのprefs読込なし。host5020成功（上限0/再有効化/縮小/最大int/変換中無効）。Android設定操作/backup往復/速度は未検証。docs/shared-ng-input-preparation-20261104.md参照。
@@ -1011,3 +1015,12 @@ CI生成履歴をmaster/devへff取込、devへ戻した。検証AVDはデータ
 
 2026-11-03 通知・保存設定の移行、公開メタデータ整理（未公開）
 通知登録/間隔/確認済み件数を設定バックアップへ追加、通常復元/旧ZIP保持/双方向同期/Job再予約に対応。ローカル保存選択、自動バックアップON/保存先候補も保存、SAF権限待ちは書込停止・UI説明・再選択初期URI。191/242各通知40・設定23、242本文17とUI確認成功。通常build3m3s、MPPa740c9107937c79e7e916620a4c8154a66d86f113999510c22e192e0c62538d1。VPN JNIの作業パス・module置換メタデータを除去して再ビルド、Goテスト/API17class同一/ELF16KiB/JNI起動成功、公開文書20件を一般化しローカル指示は公開対象外。過去履歴/既存Releaseは改変しない。docs/portable-backup-settings-20261103.md、public-build-metadata-20261103.md、導入台帳。NG登録済み操作の新要望は調査を別途継続。公式Release/feed変更なし。
+
+2026-11-04 実機スレ表示遅延の調査継続（未公開）
+730eae72/XIG05/191の起動前FridaはART SIGSEGVで中断、停止後に通常起動へ復帰。標準method profilerはnot profileable、2回のatraceは上書きがあり速度値の根拠にしない。GC/major faultを観測したが主因未特定。利用者指定によりplainTextCacheEntries/Characters各999999999を維持。共有NGの正常regex非一致まで再判定される箇所を修正し、実timeoutのみ再試行。host3020/index10306/regex17/exclusion263成功、低メモリbuild56秒成功。詳細docs/thread-open-live-profiling-20261104.md。実機速度改善・ANR解消は未確認、公開なし。
+
+上記regex再利用候補を22:40:29 JSTに実機の同一署名packageへinstall-r更新成功。実APK SHA一致、native hook検査PASS、起動ok、新PID crash buffer空。利用者から「かなり早くなりました」と改善報告あり。設定維持、定量速度/初回と再表示の内訳/226・242実速度は未測定。APK/MPP/certはandroid-installations.mdに記録。公開なし。
+
+
+2026-11-05 通常プレリリース公開候補
+共有NG初回の必要文字列guard/HTML準備省略と正常regex非一致の再利用、レポーター単位の現在・将来の報告除外/解除/設定backup、報告数初期1（保存済み維持）、けんも板18コマンド、191最小構成の接続再利用抑止/高速IPfallback/進捗集約ON。ユーザー向け公開説明に識別子生成方式の変更は記載しない指示を維持。最終通常Lint/R8 build/shared-ng-minimal-191-final-build.log成功3m52s、MPP f4e8a11834fed916e604b5865ef4e3c6cf9961114fa0702c61176db1fee86136。host判定371723/再利用3024/index10306/regex17/条件除外263/レポーター20/けんも候補成功、server473成功。GAS v15の新旧capability互換GET成功。前候補の3版NG native hook検査と226実機12操作確認成功。Frida計測クラッシュは隔離して成功扱いせず標準Instrumentationへ切替。エミュレータはAPI36をデータ保持で起動後、PCメモリのため停止。利用者がエミュレータ設定変更の検証省略と先行配布を明示したため、最終191/226/242の起動/本文/画像・設定UIの再検証を省略し公開説明に確認範囲を記す。重大な通常操作の新規クラッシュは確認されていない。したらばのDNS一時エラーは利用者が解消を報告、追加修正なし。Semantic Releaseのdev pushで通常プレリリースを作成する。タグ/配布物の手動作成なし。

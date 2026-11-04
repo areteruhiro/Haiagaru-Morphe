@@ -49,6 +49,13 @@ final class SharedNgExceptions extends LinearLayout {
         int height = Math.round(Math.max(120, Math.min(320, activity.getResources().getConfiguration().screenHeightDp / 3))
                 * activity.getResources().getDisplayMetrics().density);
         addView(list, new LayoutParams(LayoutParams.MATCH_PARENT, height));
+        Button reporters=new Button(activity);reporters.setText(SharedNgReporterBlocks.ACTION);addView(reporters);
+        reporters.setOnClickListener(v->{
+            if(visible.isEmpty())return;
+            if(visible.size()==1){SharedNgReporterBlocks.forRule(activity,rules.get(visible.get(0)));return;}
+            String[] choices=new String[visible.size()];for(int i=0;i<choices.length;i++)choices[i]=labels.get(visible.get(i));
+            new HaiagaruDialog.Builder(activity).setTitle("レポーターを確認する条件").setItems(choices,(d,n)->SharedNgReporterBlocks.forRule(activity,rules.get(visible.get(n)))).setNegativeButton("戻る",null).show();
+        });
         search.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int start, int length, int after) {}
             public void onTextChanged(CharSequence s, int start, int before, int length) { filter(s.toString()); }

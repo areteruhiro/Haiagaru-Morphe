@@ -22,6 +22,7 @@ import java.io.OutputStream;
 public final class HaiagaruLocalBackupActivity extends HaiagaruComposeActivity {
     public static final String EXTRA_MODE = "haiagaru.backup.mode";
     public static final String EXTRA_CATEGORIES = "haiagaru.backup.categories";
+    public static final String EXTRA_CHOOSE_OTHER_LOCATION = "haiagaru.backup.otherLocation";
     public static final int MODE_SAVE = 1;
     public static final int MODE_OPEN = 2;
     public static final int MODE_FOLDER = 3;
@@ -59,7 +60,7 @@ public final class HaiagaruLocalBackupActivity extends HaiagaruComposeActivity {
             try{pickerStarted=true;Intent folder=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                             |Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION|Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
-                if(android.os.Build.VERSION.SDK_INT>=26){Uri initial=LocalAutoBackup.folderHint(this);
+                if(android.os.Build.VERSION.SDK_INT>=26&&!getIntent().getBooleanExtra(EXTRA_CHOOSE_OTHER_LOCATION,false)){Uri initial=LocalAutoBackup.folderHint(this);
                     if(initial!=null)folder.putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI,initial);}
                 startActivityForResult(folder,REQUEST_DOCUMENT);}
             catch(Exception e){showError("フォルダ選択画面を開けませんでした");}return;
@@ -92,7 +93,8 @@ public final class HaiagaruLocalBackupActivity extends HaiagaruComposeActivity {
             return;
         }
         if(mode==MODE_FOLDER){
-            try{getContentResolver().takePersistableUriPermission(uri,data.getFlags()&(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+            try{if(!android.provider.DocumentsContract.isTreeUri(uri))throw new IOException("フォルダを選択してください");
+                getContentResolver().takePersistableUriPermission(uri,data.getFlags()&(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
                 LocalAutoBackup.setFolder(this,uri);Toast.makeText(this,"自動バックアップの保存先を設定しました",Toast.LENGTH_LONG).show();finish();}
             catch(Exception e){showError("保存先のアクセス権を保持できませんでした");}
         }
