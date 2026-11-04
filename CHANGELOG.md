@@ -1,3 +1,58 @@
+# Haiagaru 1.23.0-dev.7
+
+## 今回の追加・修正
+
+- 接続設定の標準テンプレートを更新し、保存済みの旧テンプレートを移行します。独自の設定値・他の選択肢・有効／無効の設定は保持します。
+
+## 確認範囲と残確認
+
+191／226／242の隔離エミュレータで、設定画面のテンプレート選択、旧設定の移行、独自設定と有効／無効の保持、リクエストのクライアント識別名・版番号と他ヘッダーの保持を確認しました。ネットワークに接続せず検証し、実サイトでの認証・投稿の受理は未確認です。試験用の設定は復元しています。新しいバイトコードフックは追加していません。
+
+今回変更していないスレ本文・画像／GIF／動画の広範な再検証は、既存の利用者指定により省略しています。242の「更新対象に含む」の重なりは、報告画面の再確認が未完了です。
+
+共有NG／F9対策とエッヂの公開レベルNGは開発中です。エッヂ認証日の記録・共有は含みません。
+
+## 追加ファイルについて
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加ファイルのダウンロードが必要です**。このページのAssetsから取得してください。
+
+- Image NG：`haiagaru-image-ng.zip`
+- 画像取得専用VPN：`haiagaru-image-vpn-v2.zip`
+
+それぞれZIPを展開せず、そのままMorpheのファイル選択で指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* update standard connection template and migrate legacy settings ([ca057c7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ca057c71ec3d9f9446e3e610fac2f52cb9564231))
+
 # Haiagaru 1.23.0-dev.6
 
 ## 今回の追加・修正
