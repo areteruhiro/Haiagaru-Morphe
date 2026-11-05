@@ -1092,3 +1092,7 @@ URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.24.0 。
 ThreadWatchの確認間隔ボタンを非終了操作へ変更し親Dialogを維持。Cancel/Backで元画面へ戻り未保存チェック/期限を保持、間隔保存後は個別監視の間隔説明を更新。OpenTabsRefreshは作成済み/attach済みFragmentへ各版固定の標準action5を直接dispatchしUI更新、成功分をWorkManager対象から除外。直接dispatch中のRefreshTargets.refreshを抑制して追加巡回を防止。未作成/未接続/未受付ページは従来のscope取得へfallback、背景スレのみsubject統合。native method自体は変更せず新bridgeのreceiver/action/sourceとregister4を検査、全クラス走査なし。
 最終Lint/R8 build/interval-live-tabs-final-build.log成功2m43s・91tasks。3版適用成功、VerifyLiveTabsHooks/VerifyOpenTabsHooks各全版成功。API36/emulator-5580でcore各33計99成功（interval-live-tabs{191,226,242}-runtime.log）。242実UIは自動監視/個別通知→確認間隔→Cancelの親復帰・未保存チェック維持・保存値不変の6項目成功（interval-navigation242-runtime-retry.log）。初回UI試験はエミュレータSystem UI ANRダイアログが遮り失敗、Wait後の再試験成功で区別。final-crash.log空。実通信一括取得と実機連続操作は未確認として公開説明に記載。AVDデータ保持正常停止、実機導入なし。
 MPP ba7d5e58004cb6f225d3bd674e2734dceb6665c320ee2ccb65d5ccd55055d55e、CRC正常。既存Semantic Releaseから公式公開する。
+
+
+2026-11-05 1.24.1公式公開・配布検証完了
+実装c051d156、master統合5990f810、生成/tagcb9de0fd/1.24.1。CI42019751152は全体status cancelledだがRelease/Attest/Post各step success、公開実体でdraft=false/prerelease=falseを確認。全体successとは表現しない。MPP SHA256 1d264114e626c419f1de5a6e8c06d37b8953daa4ef7d92a630f03efe8ec7476d、GitHub digest一致・CRC正常・nativeRefresh/keepParentForInterval同梱。master/dev/main×両feed6件が1.24.1と同assetを参照。build/official1241-public/{release.json,verification.json,feeds.json}。既存CI生成履歴をff取込しdevへ復帰。fetch設定がdevのみのためmaster/mainも明示refspecで更新。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.24.1 。
