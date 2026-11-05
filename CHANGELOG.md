@@ -1,3 +1,54 @@
+# Haiagaru 1.23.1
+
+スレ内検索の戻る操作とサムネイルの再生マークを修正し、外部板の認証メニューを初期ONにしました。
+
+## 主な変更
+
+- 191・242で、スレ内検索の入力欄を閉じるための戻る処理が有効にならない経路を修正しました。キーボードはAndroid標準の戻る操作で先に隠し、検索欄を閉じた後は通常の画面遷移に戻ります。226は入力状態の呼び出し構造が異なるため、この変更の対象外です。
+- 191・226・242で、取得済みGIFサムネイルを再表示した際に再生マークが消える経路を修正しました。別URLへの切り替え時は旧マークを消去し、動画用の再生マーク・手動再取得・エラー処理は従来の動作を維持します。
+- 「メニューに外部板の認証ページを表示」の初期値をONにしました。保存済みのON/OFF設定は維持します。
+
+## 確認範囲
+
+3版へのパッチ適用と元命令・レジスターの保持を検査し、隔離エミュレータで検索の戻る処理とサムネイルの合成データ試験365項目を確認しました。今回の利用者報告は発生版・実症状が未確認で、報告された症状と修正経路が同じ原因かは確定していません。実機や実スレでのキーボードから検索終了までの連続操作は未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* restore thread search back handling and thumbnail playback badges ([5801a07](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5801a072b3424cb383d55226cbe43008c772b36b))
+* show external board authentication menu by default ([1776df8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1776df81f862613e8a722947c959e8c4303615bb))
+
 # Haiagaru 1.23.0
 
 サムネイル表示のちらつき対策を191・226・242へそろえ、通常のChMateからのアーカイブ取り込みと、Shizukuによる選択式の上書き移行を追加しました。
