@@ -1096,3 +1096,10 @@ MPP ba7d5e58004cb6f225d3bd674e2734dceb6665c320ee2ccb65d5ccd55055d55e、CRC正常
 
 2026-11-05 1.24.1公式公開・配布検証完了
 実装c051d156、master統合5990f810、生成/tagcb9de0fd/1.24.1。CI42019751152は全体status cancelledだがRelease/Attest/Post各step success、公開実体でdraft=false/prerelease=falseを確認。全体successとは表現しない。MPP SHA256 1d264114e626c419f1de5a6e8c06d37b8953daa4ef7d92a630f03efe8ec7476d、GitHub digest一致・CRC正常・nativeRefresh/keepParentForInterval同梱。master/dev/main×両feed6件が1.24.1と同assetを参照。build/official1241-public/{release.json,verification.json,feeds.json}。既存CI生成履歴をff取込しdevへ復帰。fetch設定がdevのみのためmaster/mainも明示refspecで更新。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.24.1 。
+
+
+2026-11-06 外部板・設定リンク・動画サムネイル修正版プレリリース候補
+191のBBSMENUへのscript混入を入力限定sanitize/単一板補正で修正。3版の外部板サイト別表示は初期OFF、表示モデルだけを補正し板ID/履歴/ログを保持。226の板名メニューに標準検索項目を追加しnative prepare-menu/dispatchを保持。日本語の設定リンクはタップ後に確認し実control経由で適用、候補一覧のPopularReplies移行書込みを起動側へ移し、ヘッダーの>>を含む名前にも対応。日本語一覧はdocs/settings-links-list.md/CSV。
+動画サムネイルは容量超過X MP4の範囲取得、失敗理由PNG、再取得/再生の独立ボタンを追加。解析専用プロセスのメモリkillをexit-infoで識別、一時停止の1分待機/明示再試行、BIND_IMPORTANTを使用。原動画のnative再生経路を維持。3版の全レス連続表示は元Viewを保持（191実機NPEの原因を除去）、元Viewなしでは拡張しない。191は単純Viewのため操作をrootへ重ね、detach中の親children変更をHandlerへ延期。毎フレームのbringToFrontを除去し複数失敗画像の再描画ループを防止。0byte error PNGを再生成しatomicに保存。
+最終通常Lint/R8 retry-detach-final-build.log成功3m44s/91tasks。3版適用/VerifyBbsMenuHooks/VerifyMediaSelectionHooks全成功。エミュレータ245項目成功、crash空、詳細は導入台帳。合成48MiB超MP4は266158bytes/2rangesでAndroidフレーム/JPEG生成、停止フラグの待機後復帰も確認。ホストBBS30、設定リンク64、範囲取得8206、失敗分類49、同時再取得抑制1142。途中失敗は上記修正後に再成功。
+実スレ本文の追加スモーク起動は自動承認レビューに拒否されたため未実施。実機LOW_MEMORY/NPEはログで特定、報告実動画の表示改善は未確認。Mi Note 10は3版install-r成功・RUNNING_LOCKEDでUI未確認。ユーザーは睡眠中の追加確認なしのプレ公開を明示。最終確認範囲/未確認を既存.releasercに記載し、既存Semantic Releaseのdevからプレ公開する。手動tag/Release/assets/feed変更なし。

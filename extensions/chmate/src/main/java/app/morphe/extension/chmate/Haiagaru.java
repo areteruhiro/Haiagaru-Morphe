@@ -928,7 +928,7 @@ public final class Haiagaru {
 
     /** Applies the bundled emoji fallback while preserving the original text. */
     public static CharSequence processEmojiText(CharSequence source) {
-        return EmojiFontFallback.processText(source);
+        return SettingsOptionLinks.apply(EmojiFontFallback.processText(source));
     }
 
     public static CharSequence processEmojiTextForView(Object view,CharSequence source){
@@ -969,6 +969,7 @@ public final class Haiagaru {
         ExternalBoardEditor.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         EdgeReporterOptions.initialize(appContext);
+        PopularReplies.initialize(appContext);
         ProgrammableNgController.initialize(appContext);
         HiddenIdNg.initialize(appContext);
         PosterHighlight.initialize(appContext);
@@ -3472,6 +3473,11 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch siteGroups=addSwitch(layout,activity,text("外部板をサイト別に板一覧の最上位へ表示","Show external boards by site at the top level"),preferences.getBoolean(ExternalBoardGroups.KEY,false));
+        live.toggle(siteGroups,ExternalBoardGroups.KEY);
+        TextView siteGroupsHelp=new TextView(activity);siteGroupsHelp.setText("初期OFF。オンではエッヂ・けんも板・したらばなどをサイト別に表示します。板一覧のキャッシュへ反映するため、変更後はChMateを再起動してください。");layout.addView(siteGroupsHelp);
+        android.widget.Button settingLinks=new android.widget.Button(activity);settingLinks.setText("設定リンクを作成");layout.addView(settingLinks);
+        settingLinks.setOnClickListener(v->activity.startActivity(new Intent(activity,SettingLinkActivity.class)));
         Switch nativeTabs = addSwitch(layout, activity,
                 text("タブレットの追加画面をホーム側のタブで開く", "Open extra tablet screens in HOME tabs"),
                 preferences.getBoolean(NativeToolTabs.KEY, false));

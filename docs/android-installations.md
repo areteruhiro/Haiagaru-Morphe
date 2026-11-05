@@ -1893,3 +1893,21 @@ API36/emulator-5580。既存reporter全版の証明書をpull照合後install-r�
 - ChMate226 / Haiagaru NG確認 226 / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/interval-live-tabs226.apk / SHA256 74b9eca5642c432faa7a2871ccc48b86bdb71d01d6dfabcfe7f181cd4b09e035 / install-r成功、core33成功。
 - ChMate242 / Haiagaru NG確認 242 / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/interval-live-tabs242.apk / SHA256 d32ee1c75d7fad3690b34c4d284e8ebb7e927141204d74824fbc0caf7b80c4d9 / install-r成功、core33成功。
 試験APK build/open-tabs-inst/interval{191,226,242}.apk、app.haiagaru.tests.opentabs{191,226,242}、同署名更新。242追加NotificationNavigationInstrumentationの実UI6項目成功。初回SystemUI ANRによる失敗は再試験と区別（integration-status参照）。最終crash空、AVD正常停止、実機導入なし。
+
+## 2026-11-05 23:44 実機の動画サムネイル操作候補
+端末730eae72 / Xiaomi XIG05。利用者指定の既存検証用191を証明書pull照合後にinstall-r成功。削除/データ消去なし。使用中カスタムパッケージは更新なし。
+表示名 Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / package jp.co.airfront.android.a2chMate.haiagaru.reporter191。
+APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thumbnail-controls191.apk / SHA256 00f11175d1732e87657749532bf6a7e86d9554a478d7b22729387b73bbf1cee9。
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thumbnail-controls-final.mpp / SHA256 1a0aeaf6c76a792e07d8683fb4b8643fe7144cc8b02e1144c20d8e9c9e3fe357。
+署名key C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。
+ビルド thumbnail-play-final-build.log 成功3m36s/91tasks、191適用成功、署名照合/上書き成功/pm pathの更新先を確認。起動操作後は別アプリが前面だったため、継続起動と報告動画の表示成功は未確認。crash bufferにこのpackageの新規AndroidRuntimeログは見られないが、起動成功とは扱わない。再取得/再生UIとプレリリース確認は継続中。バージョン文字列1.24.1は開発元の現行値であり、この候補は未公開。
+先行候補の実機導入: build/boards-links-video191.apk / SHA256 0b2241d256681e98129bfc5e7685ff19cd217f8bcebcec8f7cc5d9be16022c93、MPP build/boards-links-video-candidate.mpp / SHA256 d42311ede5171091fb69be98da2d3e6a181bd92985dce453d33622bad9bf495f、同package/署名/端末install-r成功。今回候補で更新済み。
+
+## 2026-11-06 動画サムネイル・設定リンク・外部板の最終検証候補
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-detach-final.mpp / SHA256 a7c36112329345557965631d2f2b6ed1c4fd6873ac2e4223fc9f753193f87609。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。
+各版の既存署名をpull照合後install-r。アンインストール/データ消去なし。Mi Note 10（d5497008）への導入は利用者が明示許可、起動確認はRUNNING_LOCKEDのため未実施。元のXIG05（730eae72）はこの最終候補では未更新。
+- ChMate191 / Haiagaru NG確認 191 / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-detach191.apk / SHA256 516eaf92729faec0dbc2dfd91f6ebce28d46e8409dafa46ca7baac3eed13856b / emulator-5580とd5497008のinstall-r成功。エミュレータ起動・変更UI検証成功。
+- ChMate226 / Haiagaru NG確認 226 / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-detach226.apk / SHA256 b321f08f8d981d96452f9aea6a40e20868d7a33f3840736202371a5d742a4709 / emulator-5580とd5497008のinstall-r成功。エミュレータ起動・変更UI検証成功。
+- ChMate242 / Haiagaru NG確認 242 / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/prerelease-detach242.apk / SHA256 0b6e84dc76259557885e9dd75bff485bb505fc057ea8e05fdace89e2a5e8696a / emulator-5580とd5497008のinstall-r成功。エミュレータ起動・変更UI検証成功。
+試験APK build/open-tabs-inst/publish{191,226,242}.apk。API36/emulator-5580で各80項目（失敗画像/再取得/再生12、native連続表示9、設定リンク実UI30、外部板20、合成AVC/停止後復帰9）計240項目成功。226の検索メニュー5項目を加え計245。新規crash buffer空。設定リンクの日本語書き出し191=184/226=181/242=181項目、統合188設定/394操作、重複名0/リンク化不能0。詳細publish*.log、detach226*.log。
+途中候補はSystem UI ANRや低メモリ・空PNG、試験側の起動待機/古いAccessibilityノードで失敗し、試験を修正した最終成功と区別。空PNGと画面閉じ時のView取り外しを製品側で修正。最終候補の実スレ本文追加起動は自動承認レビュー拒否（詳細理由なし）により未実施、報告実動画/実機連続操作の未確認範囲は公開説明に記載。AVDの一時解像度/densityをreset後、データ保持正常停止。

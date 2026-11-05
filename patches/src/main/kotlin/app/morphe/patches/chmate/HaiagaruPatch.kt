@@ -5410,6 +5410,21 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
             })
+            application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.SettingLinkActivity")
+                setAndroidAttribute("exported", "true")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
+                setAndroidAttribute("windowSoftInputMode", "adjustResize")
+                appendChild(document.createElement("intent-filter").apply {
+                    appendChild(document.createElement("action").apply { setAndroidAttribute("name", "android.intent.action.VIEW") })
+                    for (category in listOf("android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"))
+                        appendChild(document.createElement("category").apply { setAndroidAttribute("name", category) })
+                    appendChild(document.createElement("data").apply {
+                        setAndroidAttribute("scheme", "haiagaru")
+                        setAndroidAttribute("host", "settings")
+                    })
+                })
+            })
             application.appendChild(document.createElement("provider").apply {
                 setAndroidAttribute("name", "app.morphe.extension.chmate.SettingsShareProvider")
                 setAndroidAttribute("authorities", document.documentElement.getAttribute("package") + ".haiagaru.settings")

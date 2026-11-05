@@ -66,18 +66,20 @@ internal fun prepareSettingsBindings(root: ViewGroup) {
     }
 }
 
-internal fun settingsRows(root: ViewGroup): List<BoundSetting> {
+internal fun settingsRows(root: ViewGroup): List<BoundSetting> = settingsRows(root, false)
+
+internal fun settingsRows(root: ViewGroup, includeHidden: Boolean): List<BoundSetting> {
     val result = mutableListOf<BoundSetting>()
     fun collect(parent: ViewGroup) {
         var index = 0
         while (index < parent.childCount) {
             val view = parent.getChildAt(index++)
-            if (view.visibility != View.VISIBLE) continue
+            if (!includeHidden && view.visibility != View.VISIBLE) continue
             val next = parent.getChildAt(index)
             if (view is TextView && view !is Button && view !is EditText &&
                 !view.hasOnClickListeners() && (next is EditText || next is Spinner)) {
                 index++
-                if (next.visibility == View.VISIBLE) {
+                if (includeHidden || next.visibility == View.VISIBLE) {
                     val text = view.text.toString()
                     // Floating labels cannot display paragraphs, route syntax or examples.
                     // Keep the complete help text in the row, separate from its short label.

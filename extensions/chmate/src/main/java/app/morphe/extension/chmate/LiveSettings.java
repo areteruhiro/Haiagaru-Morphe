@@ -39,6 +39,7 @@ final class LiveSettings {
     void toggle(Switch v,String key){toggle(v,key,null);}
     void toggle(Switch v,String key,Runnable effect){
         if(v==null)return;
+        v.setTag(SettingLinkEntry.KEY_TAG,key);
         if(prefs==SettingsProfiles.prefs(v.getContext())){SettingsProfiles.booleanKey(key);SettingsProfiles.defaultValue(key,v.isChecked());}
         final boolean[] previous={v.isChecked()};
         ((Toggle)v).changed=()->{boolean value=v.isChecked();if(previous[0]==value)return;previous[0]=value;
@@ -47,6 +48,7 @@ final class LiveSettings {
     void choice(Spinner v,String key){choice(v,key,i->i);}
     interface NumberValue { int value(int position); }
     void choice(Spinner v,String key,NumberValue value){
+        if(v!=null)v.setTag(SettingLinkEntry.KEY_TAG,key);
         if(v!=null&&prefs==SettingsProfiles.prefs(v.getContext())){java.util.Set<Integer> allowed=new java.util.HashSet<>();for(int i=0;i<v.getCount();i++)allowed.add(value.value(i));SettingsProfiles.choiceKey(key,allowed);SettingsProfiles.defaultValue(key,value.value(v.getSelectedItemPosition()));}
         choice(v,()->prefs.edit().putInt(key,value.value(v.getSelectedItemPosition())).apply());
     }
@@ -63,8 +65,8 @@ final class LiveSettings {
             public void afterTextChanged(Editable e){}
         });
     }
-    void string(EditText v,String key){watch(v,()->{prefs.edit().putString(key,v.getText().toString().trim()).apply();refreshed.run();});}
-    void number(EditText v,String key,int min,int max){watch(v,()->{
+    void string(EditText v,String key){if(v!=null)v.setTag(SettingLinkEntry.KEY_TAG,key);watch(v,()->{prefs.edit().putString(key,v.getText().toString().trim()).apply();refreshed.run();});}
+    void number(EditText v,String key,int min,int max){if(v!=null)v.setTag(SettingLinkEntry.KEY_TAG,key);watch(v,()->{
         try{int value=Integer.parseInt(v.getText().toString().trim());if(value<min||value>max)throw new NumberFormatException();
             v.setError(null);prefs.edit().putInt(key,value).apply();refreshed.run();
         }catch(NumberFormatException e){v.setError(min+"〜"+max);}
