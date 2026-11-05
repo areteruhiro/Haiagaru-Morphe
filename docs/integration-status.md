@@ -1054,3 +1054,8 @@ Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生�
 API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元8・合成AIDLサービスの選択上書き9項目成功。実Shizuku認証/別アプリ実データ全移行は未確認。191の最初の未初期化theme、226のabstract theme生成失敗は試験側修正後に再成功。過去bootanimation PID570のnative abortをcrash bufferで観測したが、今回ChMateの新規fatalはなし。AVDはデータ保持で停止、実機操作/実ユーザーデータ移行なし。
 利用者がクラッシュ等の最低限確認後の公開を明示したため広い再試験を省略。最終2つの純粋ZIPパス処理と、破棄Activityへの完了Dialog抑止は36host項目/ソース/最終MPP文字列で追加検証し、APK3版の重複再生成を省略。公開説明には実Shizuku未確認を明記。
 最終通常Lint/R8 build/official-migration-release-build.log成功2m57s、91tasks。MPP 21910c46ebd2953347d472b3bc72c2bd9a1fd515098984bc725c3684d772ee5a、CRC/新機能/任意Shizuku/完了guard同梱確認。端末試験MPP 38c864bb5955a1b9569a6c70671feddc7e471a3276bae81506bcab52b00691f8 と区別。既存Semantic Releaseでdev→master正式公開へ進む。
+
+2026-11-05 1.23.0正式公開・配布検証完了
+実装a91d8816、master統合6cb72386、Semantic Release CI41941761473 success、生成ef83352c・tag1.23.0。手動tag/Release/assets操作なし。公開MPP SHA256 f5cfd046acb7bf11b6b3a6652f13802313f965124cb1a014549c024b1c76a5e4、GitHub digest一致・CRC正常。新アーカイブ移行3class、任意Shizuku/API setter/完了guard、191/226/242サムネイルフック同梱を検査。draft=false/prerelease=false/latest1.23.0、通常title。bodyに利用者指示の識別子生成方式の記載なし。
+既存backmergeでmaster→dev/mainを確認。GitHub contents APIで3branch×両feed計6件が正式1.23.0と同MPP URLを参照。build/official1230-public/release.json・verification.json・feeds.json。CI生成履歴をff取込、devへ復帰。実機インストールなし、AVDはデータ保持停止。
+正式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0 。
