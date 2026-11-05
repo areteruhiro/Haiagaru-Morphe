@@ -1054,3 +1054,17 @@ Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生�
 API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元8・合成AIDLサービスの選択上書き9項目成功。実Shizuku認証/別アプリ実データ全移行は未確認。191の最初の未初期化theme、226のabstract theme生成失敗は試験側修正後に再成功。過去bootanimation PID570のnative abortをcrash bufferで観測したが、今回ChMateの新規fatalはなし。AVDはデータ保持で停止、実機操作/実ユーザーデータ移行なし。
 利用者がクラッシュ等の最低限確認後の公開を明示したため広い再試験を省略。最終2つの純粋ZIPパス処理と、破棄Activityへの完了Dialog抑止は36host項目/ソース/最終MPP文字列で追加検証し、APK3版の重複再生成を省略。公開説明には実Shizuku未確認を明記。
 最終通常Lint/R8 build/official-migration-release-build.log成功2m57s、91tasks。MPP 21910c46ebd2953347d472b3bc72c2bd9a1fd515098984bc725c3684d772ee5a、CRC/新機能/任意Shizuku/完了guard同梱確認。端末試験MPP 38c864bb5955a1b9569a6c70671feddc7e471a3276bae81506bcab52b00691f8 と区別。既存Semantic Releaseでdev→master正式公開へ進む。
+
+2026-11-05 1.23.0正式公開・配布検証完了
+実装a91d8816、master統合6cb72386、Semantic Release CI41941761473 success、生成ef83352c・tag1.23.0。手動tag/Release/assets操作なし。公開MPP SHA256 f5cfd046acb7bf11b6b3a6652f13802313f965124cb1a014549c024b1c76a5e4、GitHub digest一致・CRC正常。新アーカイブ移行3class、任意Shizuku/API setter/完了guard、191/226/242サムネイルフック同梱を検査。draft=false/prerelease=false/latest1.23.0、通常title。bodyに利用者指示の識別子生成方式の記載なし。
+既存backmergeでmaster→dev/mainを確認。GitHub contents APIで3branch×両feed計6件が正式1.23.0と同MPP URLを参照。build/official1230-public/release.json・verification.json・feeds.json。CI生成履歴をff取込、devへ復帰。実機インストールなし、AVDはデータ保持停止。
+正式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0 。
+
+2026-11-05 検索Backとサムネイル再生マークを修正（未公開）
+191/242の検索入力用Back callback更新を、スレ画面overrideから親へdelegateする1命令を追加。226はprivate updaterのため変更なし。3版の通常bindで保持bitmapのnative GIFマークを消さず、URL変更時は旧GIFマークを消去して別画像へ持ち越さない。動画用nativeマーク・元完了/手動再取得は保持。Lint/R8 build3m37s成功、3版適用/元命令・register保持検査成功。API36/emulator-5580の標準Instrumentationで旧版の欠落を確認後、191123/226121/242121項目成功、crash buffer空。実スレ起動コマンドは自動承認レビューで拒否（詳細理由なし）、合成試験へ限定し実機・キーボード連続操作の目視未確認。詳細search-back-playback-overlay-20261105.md、導入台帳。MPP2a508401850fb4f5ea5c06359637a53cc5c668cc9fe1fbe4986d7217ba1443af。Release/feed変更なし。AVDはデータ保持停止。
+
+2026-11-05 外部板の認証メニューを初期ON（未公開）
+showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとpreparePostingMenuの両方でtrueへ変更。他のメニュー設定の初期値と保存済みON/OFFは保持。:extensions:chmate:compileReleaseJavaWithJavac成功55秒、git diff --check成功。既存共通Javaの既定値のみ変更しnative hook/端末データ変更なし。MPP再生成・端末導入・公開なし。なお先の検索/再生マークの利用者報告は発生版不明・実症状未確認との補足あり。合成試験で確認した経路と報告症状の因果は未確定として扱う。
+
+2026-11-05 1.23.1公式公開候補
+利用者が公式公開を明示。検索Back/サムネイルマーク修正と外部板認証メニュー初期ONを含め、既存.releasercの公開説明を今回の差分・確認範囲へ更新。最終通常Lint/R8 :patches:build/:patches:buildAndroid成功2m36s・91 tasks、MPP CRCと新native helper/設定key同梱検査成功。検索/サムネイルは直前の3版native命令・register保持/標準Instrumentation365項目/新規crash空の確認を使用。最後の初期値2行はJavaコンパイルと今回最終buildで検査し端末再導入は省略。実機・実スレでの連続操作と利用者症状との因果は未確認として公開説明に記載。公式CIでdev→master、手動tag/Release/assets/feed編集なし。

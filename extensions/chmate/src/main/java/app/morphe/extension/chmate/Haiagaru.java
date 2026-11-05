@@ -3737,7 +3737,8 @@ public final class Haiagaru {
                 {"showExternalBoardAuthMenu", text("メニューに「外部板の認証ページ」を表示", "Show external board authentication in the menu")}
         };
         for (String[] option : menuOptions) {
-            Switch toggle = addSwitch(layout, activity, option[1], preferences.getBoolean(option[0], false));
+            Switch toggle = addSwitch(layout, activity, option[1],
+                    preferences.getBoolean(option[0], "showExternalBoardAuthMenu".equals(option[0])));
             live.toggle(toggle, option[0]);
         }
         TextView menuDescription = new TextView(activity);
@@ -5452,7 +5453,7 @@ public final class Haiagaru {
             menu.removeItem(itemId);
             return false;
         }
-        boolean visible = preferences(context).getBoolean(key, false);
+        boolean visible = preferences(context).getBoolean(key, "showExternalBoardAuthMenu".equals(key));
         MenuItem existing = menu.findItem(itemId);
         if (existing != null) existing.setVisible(visible);
         return visible && existing == null;

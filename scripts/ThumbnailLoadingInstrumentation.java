@@ -21,6 +21,9 @@ public final class ThumbnailLoadingInstrumentation extends Instrumentation {
   result.putString("result","PASS "+checks+" native thumbnail checks; baseline="+baseline);finish(Activity.RESULT_OK,result);
  }catch(Throwable error){result.putString("error",android.util.Log.getStackTraceString(error));finish(Activity.RESULT_CANCELED,result);}}
  private void runChecks(Activity activity)throws Exception{
+  checkSearchBack(activity);
+  checkPlaybackOverlay(activity);
+  if(baseline)return;
   if(!activity.getPackageName().endsWith("242")){runLegacy(activity);return;}
   ClassLoader loader=activity.getClassLoader();Class<?> image=loader.loadClass("o.zzbes"),bitmap=loader.loadClass("o.VN22"),state=loader.loadClass("o.zzbes$write");
   Object view=image.getConstructor(Context.class).newInstance(activity);
@@ -45,6 +48,56 @@ public final class ThumbnailLoadingInstrumentation extends Instrumentation {
   setState.invoke(view,error);check(held.get(view)==null,"completed error clears old bitmap");
   held.set(view,decoded);image.getMethod("setImageUrl",String.class).invoke(view,url+"?changed");
   check(held.get(view)==null,"changed URL clears old bitmap");
+ }
+ private Object allocate(Class<?> type)throws Exception{
+  Class<?> c=Class.forName("sun.misc.Unsafe");Object u=field(c,"theUnsafe").get(null);
+  return c.getMethod("allocateInstance",Class.class).invoke(u,type);
+ }
+ private Field inherited(Class<?> type,String name)throws Exception{
+  for(Class<?> c=type;c!=null;c=c.getSuperclass())try{return field(c,name);}catch(NoSuchFieldException ignored){}
+  throw new NoSuchFieldException(name);
+ }
+ private void checkSearchBack(Activity activity)throws Exception{
+  boolean old=activity.getPackageName().endsWith("191");if(activity.getPackageName().endsWith("226"))return;
+  ClassLoader l=activity.getClassLoader();Class<?> type=l.loadClass(old?"o.pa":"jp.syoboi.a2chMate.ui.reslist.ResListFragment");Object fragment=type.getConstructor().newInstance();
+  Class<?> base=l.loadClass(old?"o.r8lambdahIGIGCNpKpFqE0lgDli724UCuDM":"jp.syoboi.a2chMate.fragment.RoidonListFragment");
+  Field modelField=field(base,old?"p":"f");Object model=allocate(modelField.getType());modelField.set(fragment,model);
+  Object[] showing={Boolean.TRUE};
+  if(old){Field input=inherited(model.getClass(),"c");input.set(model,l.loadClass("o.doHash").getConstructor(Object.class).newInstance(Boolean.TRUE));}
+  else {
+   Field read=inherited(model.getClass(),"g"),write=inherited(model.getClass(),"d");
+   Object flow=java.lang.reflect.Proxy.newProxyInstance(l,new Class<?>[]{write.getType()},(p,m,a)->{
+    if(m.getName().equals("d")&&m.getParameterTypes().length==0)return showing[0];
+    if(m.getName().equals("b")&&a!=null&&a.length==1){showing[0]=a[0];return null;}return null;
+   });read.set(model,flow);write.set(model,flow);
+   Field nav=field(type,"S");Object controller=allocate(l.loadClass("o.zzaee"));nav.set(fragment,java.lang.reflect.Proxy.newProxyInstance(l,new Class<?>[]{nav.getType()},(p,m,a)->controller));
+   Field vm=field(type,"t");Object responseModel=allocate(l.loadClass("jp.syoboi.a2chMate.ui.reslist.ResListFragmentViewModel"));
+   Object closed=field(l.loadClass("o.zzaef$ComponentActivity"),"INSTANCE").get(null);Field mode=field(responseModel.getClass(),"t");mode.set(responseModel,java.lang.reflect.Proxy.newProxyInstance(l,new Class<?>[]{mode.getType()},(p,m,a)->closed));
+   vm.set(fragment,java.lang.reflect.Proxy.newProxyInstance(l,new Class<?>[]{vm.getType()},(p,m,a)->responseModel));
+  }
+  Method update=type.getDeclaredMethod(old?"A":"q");update.setAccessible(true);update.invoke(fragment);
+  Object callback=field(base,old?"t":"l").get(fragment);Field enabled=field(l.loadClass(old?"o.setTransitioning":"o.getNavigationEventDispatcher"),old?"b":"d");
+  check(enabled.getBoolean(callback)!=baseline,"search input Back callback enabled without a query or hit bar");
+  if(old){Field input=inherited(model.getClass(),"c");Object flow=input.get(model);flow.getClass().getMethod("a",Object.class).invoke(flow,Boolean.FALSE);}
+  else {check(Boolean.TRUE.equals(type.getMethod("c").invoke(fragment)),"native Back consumes input close");check(Boolean.FALSE.equals(showing[0]),"native Back closes input state");}
+  update.invoke(fragment);check(!enabled.getBoolean(callback),"search input Back releases navigation after closing");
+ }
+ private void checkPlaybackOverlay(Activity activity)throws Exception{
+  boolean old=activity.getPackageName().endsWith("191"),mid=activity.getPackageName().endsWith("226");ClassLoader l=activity.getClassLoader();
+  Class<?> image=l.loadClass(old?"o.qaf":mid?"o.TTRewardExpressVideoActivity":"o.zzbes"),bitmap=l.loadClass(old?"o.onAdRequestStarted":mid?"o.buildIfSupporteddefault":"o.VN22");
+  Context context=old?new android.view.ContextThemeWrapper(activity.getApplicationContext(),android.R.style.Theme_Material):activity;
+  Object view=image.getConstructor(Context.class).newInstance(context);Field held=field(image,old?"c":mid?"b":"a"),url=field(image,old?"f":mid?"P":"u"),res=field(image,old?"I":mid?"H":"mOverlayResId");
+  int gif=old?2131231093:mid?2131231171:2131231061,video=gif+2;String address="https://example.invalid/animation.gif";
+  held.set(view,decoded(bitmap,address));url.set(view,address);image.getMethod("setAutoLoad",boolean.class).invoke(view,false);
+  Method bind=image.getMethod(baseline?"setOverlayDrawable":"haiagaruBindOverlay",android.graphics.drawable.Drawable.class);
+  image.getMethod("setOverlayResource",int.class).invoke(view,gif);bind.invoke(view,new Object[]{null});
+  check(res.getInt(view)==(baseline?0:gif),"same-URL GIF marker retention");if(baseline)return;
+  for(int i=0;i<5;i++){bind.invoke(view,new Object[]{null});check(res.getInt(view)==gif,"repeated GIF marker retention");}
+  image.getMethod("haiagaruOverlayUrl",String.class).invoke(view,address);check(res.getInt(view)==gif,"same URL keeps GIF marker");
+  image.getMethod("haiagaruOverlayUrl",String.class).invoke(view,"https://example.invalid/still.png");check(res.getInt(view)==0,"new still URL clears old GIF marker");
+  image.getMethod("setOverlayResource",int.class).invoke(view,video);image.getMethod("haiagaruOverlayUrl",String.class).invoke(view,"https://example.invalid/movie.mp4");check(res.getInt(view)==video,"new URL preserves native video marker");
+  bind.invoke(view,new Object[]{null});check(res.getInt(view)==0,"ordinary overlay clearing remains native");
+  held.set(view,null);image.getMethod("setOverlayResource",int.class).invoke(view,gif);bind.invoke(view,new Object[]{null});check(res.getInt(view)==0,"unloaded image clears GIF marker");
  }
  private Object decoded(Class<?> type,String url)throws Exception{
   Bitmap b=Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888);b.eraseColor(Color.GREEN);
