@@ -1,3 +1,82 @@
+# Haiagaru 1.23.0
+
+サムネイル表示のちらつき対策を191・226・242へそろえ、通常のChMateからのアーカイブ取り込みと、Shizukuによる選択式の上書き移行を追加しました。
+
+## 主な変更
+
+- 242の非同期読み込み開始通知で取得済みサムネイルが一瞬消える経路を修正しました。191・226も、通常の再取得と同じURLのレス再表示で画像を保持します。手動再取得・別URLへの切替・エラー処理は維持します。
+- ローカルのアーカイブフォルダ・ZIPからDAT・IDXを復元できます。対象を個別／全選択し、同名ファイルは確認後に上書きします。元データと選択していない項目は変更しません。
+- 任意パッチ「Migrate ChMate data with Shizuku」を復元しました。移行元パッケージを指定し、Android/data/パッケージ名/files/2chMate 内のフォルダ・ファイルを個別／全選択して上書き移行できます。Android 7以降・Shizuku v13以降が必要です。アプリ内部の設定領域は対象外です。
+- 共有NGの文字列検索を索引化し、不要なHTML変換を削減しました。同じレスの判定結果や正常に完了した正規表現の非一致を再利用し、追加レス・本文や条件・除外設定の変更は再判定します。テキスト再利用の件数・容量も設定できます。
+- 「共有NG条件確認」からレポーター単位で現在・今後の報告を除外できます。他のレポーターの票は残し、除外設定はバックアップに含まれます。必要な報告数の初期値は1です。保存済みの値は維持します。
+- 未読スレ・スレ内URLを開く処理と、復元後のDAT件数整合、板のお気に入り・標準設定のバックアップ、下部フィルターの表示復帰を改善しました。
+- 更新対象のスレをHOMEや履歴から確認でき、スレ末端スワイプ・巡回ジェスチャーでも更新します。履歴への対象タブ追加は初期OFFのオプションです。
+- スレ内検索の日付・曜日だけによる一致を結果から除外し、共有NGの条件チェック表示と新着通知の監視期限・管理を修正しました。
+- けんも板のスレ立てコマンド18種類、Android 14のUAテンプレート、191の最低限構成で接続再利用抑止・高速IP切替・進捗通知集約をオンにする設定を追加しました。
+- 保存用スレダイアログの機能オン／オフを削除し、ツールバーのトグルに従うようにしました。ローカル自動バックアップの保存先選び直しも改善しました。
+
+## 確認範囲
+
+242のサムネイルちらつきは、プレリリース適用後に利用者から解消報告をいただいています。対応版へのパッチ適用、元命令・レジスターの比較、隔離エミュレータでのサムネイル保持、移行処理の制御試験と新規クラッシュログを確認しています。Shizuku移行は合成AIDLサービスを使った選択・上書き処理の試験で、実際の移行元アプリを用いた全データ移行は未確認です。フォルダ選択でAndroid/dataを開けない場合は、元フォルダをDownloadなどへコピーするか、任意のShizuku移行パッチをご利用ください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* enable direct shared NG checkbox actions and default history targets off ([10e18d9](https://github.com/areteruhiro/Haiagaru-Morphe/commit/10e18d92a9550652e347558d90aa750d06d159ca))
+* open older current-server thread links before fetching DAT ([432052b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/432052bfbd730c3de96e89dba85f1f7c10ee11eb))
+* preserve board backups and recover pinned filters and shared NG choices ([966f66e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/966f66e2a98a777d3baa5a1e77dcb375027fdefc))
+* reconcile restored DAT counts and reduce attachment URL overhead ([7c78146](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7c781464f5e8600284abdb1ee0f6a6b82581d42c))
+* redraw shared NG choices and manage thread watch lifetimes ([2560d34](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2560d3436f31fc2e3303db68e074eafb1c9e2742))
+* refresh selected threads from gestures and add history target tab ([a0624fc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a0624fc2f9d7fb852f3eaa5232a6023e456e6274))
+* retain 242 thumbnails during asynchronous loading notifications ([0f6e214](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0f6e2140c1c1fe572fd4977245dde75d0453f02b))
+* update standard connection template and migrate legacy settings ([ca057c7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ca057c71ec3d9f9446e3e610fac2f52cb9564231))
+* use toolbar toggles for saved response actions ([5e2787e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5e2787e196a8a5fb266b1c79a43de888b472e05b))
+
+### ✨ New Features
+
+* add HOME refresh-target tab and bottom history selection ([6dbc55f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/6dbc55f7ad6fa7bd238bbf8d8adafa6fa1cb81fe))
+* add persistent shared NG reporter exclusions and Kenmo commands ([0fd4d23](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0fd4d23872894a42e6dc80a6812947a981a59e1d))
+* add refresh-target history and exclude header search hits ([8d6d209](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8d6d2099a4b856d72bc57a87acacf096ff04ed2f))
+* make refresh targets in history popup optional ([0b0704c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0b0704c04adf6901163fbd4ab415e1c6abb5266e))
+* restore selective data migration and retain native thumbnails ([a91d881](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a91d881600a734b7e1fc2da3215a1d7a1fea941c))
+
+### 🔧 Improvements
+
+* index shared NG literals for threads with many conditions ([f28f244](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f28f244f6d0932963d3cc787ce78eaceb4ede057))
+* reduce optional unread thread preparation and native AA scans ([2cfe5d3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2cfe5d3f844d033302113d7f06abbfa1234175b5))
+* reuse NG plain text with configurable memory limits ([d6c5f61](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d6c5f61bc38d2878889c55cb99482f7603f70e8b))
+
 # Haiagaru 1.23.0-dev.15
 
 242のスレ本文で、取得済みサムネイルが再読み込み通知によって一瞬消える経路を修正しました。
