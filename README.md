@@ -68,6 +68,7 @@ ChMateに設定・閲覧・検索・NG・バックアップ機能を追加する
 - エッヂの記者ID表示、過去ログ検索、外部板の認証と登録板の編集。[記者ID](docs/edge-reporter-id.md) ／ [認証](docs/external-board-auth.md) ／ [外部板編集](docs/external-board-editor.md)
 - 標準添付のアップロード先切り替え、アップロード履歴管理。[対応先・制限](docs/upload-hosts.md) ／ [標準履歴](docs/native-upload-history.md)
 - ローカルバックアップ・自動バックアップ、任意のMEGA同期、設定の`.haiagaru`共有。[自動バックアップ](docs/local-auto-backup.md) ／ [MEGA](docs/mega-backup.md) ／ [設定共有](docs/settings-sharing-history-resume.md)
+- 通常ChMateのアーカイブをフォルダ／ZIPから選択して上書き復元。任意のShizukuパッチで共有データのフォルダ別移行にも対応。[移行手順](docs/native-archive-migration.md)
 - 自作テーマ、アプリ名・パッケージ名・アイコン・versionCodeの変更、クラッシュログ保存。[テーマ](docs/custom-theme-import.md)
 
 機能ごとの追加時点は[最近の追加機能](docs/recent-features.md)、全変更は[CHANGELOG](CHANGELOG.md)を参照してください。過去のリリース文書には当時の設定名や未確認事項が含まれます。

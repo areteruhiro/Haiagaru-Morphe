@@ -4652,6 +4652,12 @@ public final class Haiagaru {
                 "local/optional MEGA backup",
                 () -> HaiagaruMegaSync.addSettingsButton(layout, activity)
         );
+        addOptionalSettingsSection("package data migration",()->{
+            try{Class.forName("app.morphe.extension.chmate.PackageDataMigration")
+                    .getDeclaredMethod("addControl",Activity.class,LinearLayout.class).invoke(null,activity,layout);}
+            catch(ClassNotFoundException ignored){}
+            catch(ReflectiveOperationException error){Log.w(LOG_TAG,"Unable to add migration controls",error);}
+        });
         RestoredThreadCache.addSettings(layout, activity);
 
 

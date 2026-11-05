@@ -218,6 +218,71 @@ val changeChMatePackageNamePatch = resourcePatch(
     }
 }
 
+@Suppress("unused")
+val shizukuDataMigrationPatch = resourcePatch(
+    name = "Migrate ChMate data with Shizuku",
+    description = "Shizukuを使い、移行元ChMateの共有データフォルダを個別／全選択して上書き移行します。任意パッチ・Android 7以降・Shizuku v13以降が必要です。アプリ内部の設定領域は対象外です。",
+    default = false,
+) {
+    compatibleWith(chMateCompatibility)
+    dependsOn(changeChMatePackageNamePatch)
+    dependsOn(bytecodePatch {
+        extendWith("extensions/chmate-shizuku.mpe")
+    })
+
+    finalize {
+        document("AndroidManifest.xml").use { document ->
+            val targetPackageName = document.documentElement.getAttribute("package")
+            (document.getElementsByTagName("uses-sdk").item(0) as? Element)
+                ?.setAttribute("android:minSdkVersion", "24")
+
+            document.documentElement.appendChild(
+                document.createElement("uses-permission").apply {
+                    setAttributeNS(
+                        ANDROID_NAMESPACE,
+                        "android:name",
+                        "moe.shizuku.manager.permission.API_V23",
+                    )
+                },
+            )
+
+            val application = document.getElementsByTagName("application").item(0) as Element
+            application.appendChild(
+                document.createElement("meta-data").apply {
+                    setAttributeNS(
+                        ANDROID_NAMESPACE,
+                        "android:name",
+                        "moe.shizuku.client.V3_SUPPORT",
+                    )
+                    setAttributeNS(ANDROID_NAMESPACE, "android:value", "true")
+                },
+            )
+            application.appendChild(
+                document.createElement("provider").apply {
+                    setAttributeNS(
+                        ANDROID_NAMESPACE,
+                        "android:name",
+                        "rikka.shizuku.ShizukuProvider",
+                    )
+                    setAttributeNS(
+                        ANDROID_NAMESPACE,
+                        "android:authorities",
+                        "$targetPackageName.shizuku",
+                    )
+                    setAttributeNS(ANDROID_NAMESPACE, "android:multiprocess", "false")
+                    setAttributeNS(ANDROID_NAMESPACE, "android:enabled", "true")
+                    setAttributeNS(ANDROID_NAMESPACE, "android:exported", "true")
+                    setAttributeNS(
+                        ANDROID_NAMESPACE,
+                        "android:permission",
+                        "android.permission.INTERACT_ACROSS_USERS_FULL",
+                    )
+                },
+            )
+        }
+    }
+}
+
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchSelfNavigationIntents() {
     boundClassForEach("ChangeChMatePackageNamePatch:2") { classDef ->
         if (classDef.type.startsWith("Lapp/morphe/extension/")) return@boundClassForEach

@@ -1045,3 +1045,12 @@ Semantic Release CI41857102039 success。実装5e2787e1、統合7fec8f15、生�
 
 2026-11-05 通常プレリリース1.23.0-dev.15公開確認
 上記queued表示は実際の処理状況と不一致。git fetchで生成commit c3bfda0f/tag1.23.0-dev.15、GitHub Releaseと配布assetの作成を確認。APIはなおqueuedを返すためCI successと断言せず、公開実体を検証。公開MPP SHA256 d2df76115f763ddb99c7b3c86ac317a3e22b69317da5af5d3627aeb36cb619ab、GitHub digest一致・CRC正常・3番目callback用検査文字列同梱・dev両feedのversion/URL一致。prerelease=true/draft=false/通常タイトル。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0-dev.15 。前記の実機/自然発生/最終目視の未確認は維持。
+
+
+2026-11-05 正式版候補: 全版サムネイル保持・アーカイブ選択復元・Shizuku復元
+利用者が242/dev.15で解消を報告。191/226でも自動再取得と通常同URLbindの先行消去を特定し固定クラスへ限定guard/bridgeを追加、各39メソッドの元命令/レジスター保持・242の3guard/完了callback検査成功。標準Instrumentationで191/226各110・242106項目成功。詳細thumbnail-all-versions-20261105.md。
+ローカルbackup/アーカイブ設定へフォルダ/ZIP取り込み追加。DAT/IDXと構造を保持し対象個別/全選択、確認して同名ファイルを上書き。全読込/CRC検査後に反映しIOException時は旧内容をrollback。元/未選択を保持。末尾ZIP階層/コロン付きタイトルの処理はhost36項目で確認。
+任意Shizukuパッチを旧版から復元・minSDK24/API13以上。移行元package選択、共有files/2chMateのroot項目を個別/全選択、AtomicFile上書き。読み取り専用source・canonical境界検査、targetのUID修復も現在アプリ領域に限定。通常構成には含めない。
+API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元8・合成AIDLサービスの選択上書き9項目成功。実Shizuku認証/別アプリ実データ全移行は未確認。191の最初の未初期化theme、226のabstract theme生成失敗は試験側修正後に再成功。過去bootanimation PID570のnative abortをcrash bufferで観測したが、今回ChMateの新規fatalはなし。AVDはデータ保持で停止、実機操作/実ユーザーデータ移行なし。
+利用者がクラッシュ等の最低限確認後の公開を明示したため広い再試験を省略。最終2つの純粋ZIPパス処理と、破棄Activityへの完了Dialog抑止は36host項目/ソース/最終MPP文字列で追加検証し、APK3版の重複再生成を省略。公開説明には実Shizuku未確認を明記。
+最終通常Lint/R8 build/official-migration-release-build.log成功2m57s、91tasks。MPP 21910c46ebd2953347d472b3bc72c2bd9a1fd515098984bc725c3684d772ee5a、CRC/新機能/任意Shizuku/完了guard同梱確認。端末試験MPP 38c864bb5955a1b9569a6c70671feddc7e471a3276bae81506bcab52b00691f8 と区別。既存Semantic Releaseでdev→master正式公開へ進む。

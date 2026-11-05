@@ -8,19 +8,20 @@ import android.view.*;
 import java.lang.reflect.*;
 import java.util.concurrent.*;
 
-/** Isolated 242 regression: exercise real native loading callbacks without ART hooks/network. */
+/** Isolated native thumbnail regression, without ART hooks/network. */
 public final class ThumbnailLoadingInstrumentation extends Instrumentation {
  private boolean baseline; private int checks;
  private Field field(Class<?> c,String name)throws Exception{Field f=c.getDeclaredField(name);f.setAccessible(true);return f;}
  private void check(boolean value,String label){if(!value)throw new AssertionError(label);checks++;}
  @Override public void onCreate(Bundle args){super.onCreate(args);baseline=args!=null&&"true".equals(args.getString("baseline"));start();}
  @Override public void onStart(){Bundle result=new Bundle();try{
-  Context app=getTargetContext();Intent launch=app.getPackageManager().getLaunchIntentForPackage(app.getPackageName());
+  Context app=getTargetContext();Intent launch=new Intent().setClassName(app.getPackageName(),"jp.syoboi.a2chMate.activity.HomeActivity");
   launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);Activity activity=startActivitySync(launch);waitForIdleSync();
   FutureTask<Void> test=new FutureTask<>(()->{runChecks(activity);return null;});runOnMainSync(test);test.get(15,TimeUnit.SECONDS);
   result.putString("result","PASS "+checks+" native thumbnail checks; baseline="+baseline);finish(Activity.RESULT_OK,result);
  }catch(Throwable error){result.putString("error",android.util.Log.getStackTraceString(error));finish(Activity.RESULT_CANCELED,result);}}
  private void runChecks(Activity activity)throws Exception{
+  if(!activity.getPackageName().endsWith("242")){runLegacy(activity);return;}
   ClassLoader loader=activity.getClassLoader();Class<?> image=loader.loadClass("o.zzbes"),bitmap=loader.loadClass("o.VN22"),state=loader.loadClass("o.zzbes$write");
   Object view=image.getConstructor(Context.class).newInstance(activity);
   Bitmap pixels=Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888);pixels.eraseColor(Color.GREEN);
@@ -44,5 +45,52 @@ public final class ThumbnailLoadingInstrumentation extends Instrumentation {
   setState.invoke(view,error);check(held.get(view)==null,"completed error clears old bitmap");
   held.set(view,decoded);image.getMethod("setImageUrl",String.class).invoke(view,url+"?changed");
   check(held.get(view)==null,"changed URL clears old bitmap");
+ }
+ private Object decoded(Class<?> type,String url)throws Exception{
+  Bitmap b=Bitmap.createBitmap(16,16,Bitmap.Config.ARGB_8888);b.eraseColor(Color.GREEN);
+  return type.getConstructor(Bitmap.class,String.class).newInstance(b,url);
+ }
+ private void runLegacy(Activity activity)throws Exception{
+  boolean old=activity.getPackageName().endsWith("191");ClassLoader loader=activity.getClassLoader();
+  Class<?> image=loader.loadClass(old?"o.qaf":"o.TTRewardExpressVideoActivity"),bitmap=loader.loadClass(old?"o.onAdRequestStarted":"o.buildIfSupporteddefault");
+  Context themed=old?new android.view.ContextThemeWrapper(activity.getApplicationContext(),android.R.style.Theme_Material):activity;
+  Object view=image.getConstructor(Context.class).newInstance(themed);Field held=field(image,old?"c":"b");
+  String url="https://example.invalid/thumbnail.png";Object picture=decoded(bitmap,url);held.set(view,picture);
+  Method retry=image.getDeclaredMethod(old?"b":"d",boolean.class);retry.setAccessible(true);retry.invoke(view,false);
+  check(baseline?held.get(view)==null:held.get(view)==picture,"automatic legacy requery bitmap retention");
+  if(baseline){checkLegacyBind(loader,view,image,bitmap,held,url,old);return;}
+  View canvasView=(View)view;canvasView.layout(0,0,120,120);
+  Bitmap firstFrame=Bitmap.createBitmap(120,120,Bitmap.Config.ARGB_8888);canvasView.draw(new Canvas(firstFrame));
+  check(firstFrame.getPixel(60,60)==Color.GREEN,"native thumbnail renders decoded image");
+  for(int i=0;i<100;i++){retry.invoke(view,false);check(held.get(view)==picture,"repeated legacy requery "+i);}
+  Bitmap lastFrame=Bitmap.createBitmap(120,120,Bitmap.Config.ARGB_8888);canvasView.draw(new Canvas(lastFrame));
+  check(firstFrame.sameAs(lastFrame),"native thumbnail pixels unchanged after automatic requery");firstFrame.recycle();lastFrame.recycle();
+  Field pixels=null;for(Field f:bitmap.getDeclaredFields())if(f.getType()==Bitmap[].class)pixels=f;
+  if(pixels==null)throw new AssertionError("native bitmap pixels missing");pixels.setAccessible(true);
+  Bitmap b=((Bitmap[])pixels.get(picture))[0];check(!b.isRecycled()&&b.getPixel(0,0)==Color.GREEN,"legacy decoded pixels retained");
+  retry.invoke(view,true);check(held.get(view)==null,"legacy manual retry clears");
+  retry.invoke(view,false);check(held.get(view)==null,"legacy initial load unchanged");
+  held.set(view,decoded(bitmap,url));image.getMethod("setImageUrl",String.class).invoke(view,(String)null);
+  check(held.get(view)==null,"legacy URL change clears");
+  // Deliver an actual native completed error result; it must replace the old picture.
+  field(image,old?"f":"P").set(view,url);
+  Class<?> result=loader.loadClass(image.getName()+"$read"),meta=loader.loadClass(old?"o.r8lambdaGfBO6rYJt3TE6iaAn62xGRkuUwg":"o.GNkKjv");
+  Object error=result.getConstructor().newInstance();Class<?> uc=Class.forName("sun.misc.Unsafe");Object unsafe=field(uc,"theUnsafe").get(null);
+  Object status=uc.getMethod("allocateInstance",Class.class).invoke(unsafe,meta);field(meta,old?"g":"f").setInt(status,7);field(result,old?"e":"c").set(error,status);
+  held.set(view,decoded(bitmap,url));Method completed=image.getDeclaredMethod(old?"d":"c",result);completed.setAccessible(true);completed.invoke(view,error);
+  check(held.get(view)==null,"legacy completed error clears");
+  checkLegacyBind(loader,view,image,bitmap,held,url,old);
+ }
+ private void checkLegacyBind(ClassLoader loader,Object view,Class<?> image,Class<?> bitmap,Field held,String url,boolean old)throws Exception{
+  Class<?> uc=Class.forName("sun.misc.Unsafe");Object unsafe=field(uc,"theUnsafe").get(null);Method allocate=uc.getMethod("allocateInstance",Class.class);
+  Class<?> row=loader.loadClass(old?"o.qrExternalSyntheticLambda2":"o.setCornerBottomRightRadius");Object holder=allocate.invoke(unsafe,row);
+  Field settings=field(row,old?"G":"D"),density=field(row,old?"q":"H");
+  Object size=allocate.invoke(unsafe,settings.getType()),scale=field(image,old?"S":"R").get(view);field(size.getClass(),"t").setInt(size,40);
+  settings.set(holder,size);density.set(holder,scale);field(row,old?"f":"e").set(holder,new java.util.ArrayList<>(java.util.Collections.singletonList(view)));
+  image.getMethod("setAutoLoad",boolean.class).invoke(view,false);field(image,old?"f":"P").set(view,url);Object picture=decoded(bitmap,url);held.set(view,picture);
+  Method bind=row.getDeclaredMethod(baseline?(old?"b":"setImageLinks2"):"haiagaruBindImageLinks",old?new Class<?>[]{CharSequence[].class,boolean.class}:new Class<?>[]{CharSequence[].class,boolean.class,boolean.class});bind.setAccessible(true);
+  if(old)bind.invoke(holder,new CharSequence[]{url},false);else bind.invoke(holder,new CharSequence[]{url},true,false);
+  check(baseline?held.get(view)==null:held.get(view)==picture,"native same-URL row binding bitmap retention");
+  if(!baseline){Method explicit=row.getDeclaredMethod(old?"b":"setImageLinks2",old?new Class<?>[]{CharSequence[].class,boolean.class}:new Class<?>[]{CharSequence[].class,boolean.class,boolean.class});explicit.setAccessible(true);if(old)explicit.invoke(holder,new CharSequence[]{url},false);else explicit.invoke(holder,new CharSequence[]{url},true,false);check(held.get(view)==null,"explicit native row reload preserved");}
  }
 }
