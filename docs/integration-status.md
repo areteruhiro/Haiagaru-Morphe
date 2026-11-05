@@ -1086,3 +1086,9 @@ showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとp
 2026-11-05 1.24.0公式公開・配布検証完了
 実装7e27850c、公開準備4c03d348、master統合fdc3f506、生成/tag1e6983db/1.24.0。Semantic Release CI42000783380は初回Gradle配布サーバーHTTP504で失敗、同CI再実行success。手動tag/Release/assets作成なし。draft=false/prerelease=false/latest1.24.0。公開MPP SHA256 20b0ad76118fce3b1b52d1aff7bc98e7cf5c170babbafd71d139a5a3298152fd、GitHub digest一致、CRC正常、新OpenTabsRefresh/UA helper/toolbar resource同梱、旧NG自動popup patchとタイトル不在。master/dev/main各両feed計6件が正式1.24.0と同MPP URLを参照。build/official1240-public/{release.json,verification.json,feeds.json}。最初の配信検査は端末文字コードcp932への説明全文printで停止したため、不要なprintを除き全検査を再実行して成功。既存backmergeをff取得しdevへ復帰、実機インストールなし。公開説明に実通信一括取得/実機連続操作の未確認範囲を記載済み。
 URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.24.0 。
+
+
+2026-11-05 確認間隔Cancelの親画面保持・開タブ一括更新のUI反映（公式公開候補）
+ThreadWatchの確認間隔ボタンを非終了操作へ変更し親Dialogを維持。Cancel/Backで元画面へ戻り未保存チェック/期限を保持、間隔保存後は個別監視の間隔説明を更新。OpenTabsRefreshは作成済み/attach済みFragmentへ各版固定の標準action5を直接dispatchしUI更新、成功分をWorkManager対象から除外。直接dispatch中のRefreshTargets.refreshを抑制して追加巡回を防止。未作成/未接続/未受付ページは従来のscope取得へfallback、背景スレのみsubject統合。native method自体は変更せず新bridgeのreceiver/action/sourceとregister4を検査、全クラス走査なし。
+最終Lint/R8 build/interval-live-tabs-final-build.log成功2m43s・91tasks。3版適用成功、VerifyLiveTabsHooks/VerifyOpenTabsHooks各全版成功。API36/emulator-5580でcore各33計99成功（interval-live-tabs{191,226,242}-runtime.log）。242実UIは自動監視/個別通知→確認間隔→Cancelの親復帰・未保存チェック維持・保存値不変の6項目成功（interval-navigation242-runtime-retry.log）。初回UI試験はエミュレータSystem UI ANRダイアログが遮り失敗、Wait後の再試験成功で区別。final-crash.log空。実通信一括取得と実機連続操作は未確認として公開説明に記載。AVDデータ保持正常停止、実機導入なし。
+MPP ba7d5e58004cb6f225d3bd674e2734dceb6665c320ee2ccb65d5ccd55055d55e、CRC正常。既存Semantic Releaseから公式公開する。
