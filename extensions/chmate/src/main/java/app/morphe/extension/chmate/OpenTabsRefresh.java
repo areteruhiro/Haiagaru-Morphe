@@ -15,6 +15,7 @@ public final class OpenTabsRefresh {
     public static final String GESTURE="haiagaruGestureRefreshOpenTabs";
     private static final String SCOPE="haiagaruOpenTabsScope", DOWNLOAD="haiagaruOpenTabsDownload";
     private static final ThreadLocal<Scope> scheduling=new ThreadLocal<>();
+    private static final ThreadLocal<Boolean> dispatching=new ThreadLocal<>();
     private static final Map<Object,Scope> workers=Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<Activity,Long> requested=new WeakHashMap<>();
     static final class Scope {
@@ -45,15 +46,20 @@ public final class OpenTabsRefresh {
             }
             long now=SystemClock.elapsedRealtime();Long last=requested.get(activity);
             if(last!=null&&now-last<3000){Toast.makeText(activity,"一括更新は開始済みです",Toast.LENGTH_SHORT).show();return;}
-            Snapshot snapshot=snapshot(activity,NativeToolTabs.openPages(activity));
+            List<?> pages=NativeToolTabs.openPages(activity);
+            Snapshot snapshot=snapshot(activity,pages,false);
             Set<String> threads=snapshot.threads,boards=snapshot.boards;int boardCount=snapshot.boardCount;
             if(threads.isEmpty()&&boards.isEmpty()){Toast.makeText(activity,"更新するスレ・板のタブがありません",Toast.LENGTH_SHORT).show();return;}
             // WorkManager Data is bounded to 10 KiB. Validate both requests before enqueuing either.
             validate(new Scope(threads,true));validate(new Scope(boards,false));
+            int threadCount=threads.size();
+            refreshLivePages(activity,pages,threads,boards);
+            // Only background thread work fetches subject.txt as well as DAT.
+            for(String thread:threads)boards.remove(thread.substring(0,thread.lastIndexOf('\n')));
             if(!threads.isEmpty())enqueue(activity,new Scope(threads,true));
             if(!boards.isEmpty())enqueue(activity,new Scope(boards,false));
             requested.put(activity,now);
-            Toast.makeText(activity,"開いているスレ"+threads.size()+"件・板"+boardCount+"件の更新を開始しました",Toast.LENGTH_LONG).show();
+            Toast.makeText(activity,"開いているスレ"+threadCount+"件・板"+boardCount+"件の更新を開始しました",Toast.LENGTH_LONG).show();
         }catch(Exception error){android.util.Log.w("Haiagaru","Open-tab refresh unavailable",error);
             Toast.makeText(activity,"一括更新を開始できませんでした："+error.getMessage(),Toast.LENGTH_LONG).show();}
     }
@@ -62,6 +68,9 @@ public final class OpenTabsRefresh {
         Snapshot(Set<String> threads,Set<String> boards,int count){this.threads=threads;this.boards=boards;this.boardCount=count;}
     }
     static Snapshot snapshot(Context context,List<?> pages)throws Exception{
+        return snapshot(context,pages,true);
+    }
+    private static Snapshot snapshot(Context context,List<?> pages,boolean combineBoards)throws Exception{
         String v=version(context);boolean old=v.contains("191"),middle=v.contains("226");
         Set<String> threads=new LinkedHashSet<>(),boards=new LinkedHashSet<>();
         for(Object page:pages){
@@ -86,8 +95,30 @@ public final class OpenTabsRefresh {
             }
         }
         int boardCount=boards.size();
-        for(String thread:threads)boards.remove(thread.substring(0,thread.lastIndexOf('\n')));
+        if(combineBoards)for(String thread:threads)boards.remove(thread.substring(0,thread.lastIndexOf('\n')));
         return new Snapshot(threads,boards,boardCount);
+    }
+    /** Bound to each version's concrete native board/thread command dispatcher by the patch. */
+    private static boolean nativeRefresh(Object fragment){return false;}
+    static boolean dispatching(){return Boolean.TRUE.equals(dispatching.get());}
+    private static void refreshLivePages(Activity activity,List<?> pages,Set<String> threads,Set<String> boards)throws Exception{
+        String v=version(activity);String fragmentField=v.contains("191")?"c":v.contains("226")?"b":"d";
+        Set<Object> refreshed=Collections.newSetFromMap(new IdentityHashMap<>());
+        for(Object page:pages)try{
+            Object fragment=field(page,fragmentField);if(fragment==null||!refreshed.add(fragment))continue;
+            if(fragment.getClass().getMethod("getActivity").invoke(fragment)!=activity)continue;
+            View view=(View)fragment.getClass().getMethod("getView").invoke(fragment);
+            if(view==null||!view.isAttachedToWindow())continue;
+            Snapshot single=snapshot(activity,Collections.singletonList(page),false);
+            if(single.threads.isEmpty()&&single.boards.isEmpty())continue;
+            dispatching.set(true);
+            try{
+                if(nativeRefresh(fragment)){threads.removeAll(single.threads);boards.removeAll(single.boards);}
+            }finally{dispatching.remove();}
+        }catch(Exception error){
+            // Retain this page in the background scope when its live dispatcher is unavailable.
+            android.util.Log.w("Haiagaru","Live tab refresh unavailable; using background work",error);
+        }
     }
     private static void validate(Scope scope){
         int size=512;for(String key:scope.keys)size+=key.getBytes(java.nio.charset.StandardCharsets.UTF_8).length+16;
