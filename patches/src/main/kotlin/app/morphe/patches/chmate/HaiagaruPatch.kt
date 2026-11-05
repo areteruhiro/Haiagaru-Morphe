@@ -3503,6 +3503,7 @@ private fun BytecodePatchContext.patchLargeImageAlignment(version: String) {
 }
 
 private fun app.morphe.patcher.patch.BytecodePatchContext.patchThreadSearchText(version: String) {
+    patchThreadSearchBack(version)
     val markerOwner=when(version){
         "0.8.10.191 dev"->"Lo/MediationServiceImplExternalSyntheticLambda1;"
         "0.8.10.226 dev"->"Lo/BouncyCastleSocketAdapterCompanionfactory1;"

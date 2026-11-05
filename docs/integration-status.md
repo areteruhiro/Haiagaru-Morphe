@@ -1059,3 +1059,6 @@ API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元
 実装a91d8816、master統合6cb72386、Semantic Release CI41941761473 success、生成ef83352c・tag1.23.0。手動tag/Release/assets操作なし。公開MPP SHA256 f5cfd046acb7bf11b6b3a6652f13802313f965124cb1a014549c024b1c76a5e4、GitHub digest一致・CRC正常。新アーカイブ移行3class、任意Shizuku/API setter/完了guard、191/226/242サムネイルフック同梱を検査。draft=false/prerelease=false/latest1.23.0、通常title。bodyに利用者指示の識別子生成方式の記載なし。
 既存backmergeでmaster→dev/mainを確認。GitHub contents APIで3branch×両feed計6件が正式1.23.0と同MPP URLを参照。build/official1230-public/release.json・verification.json・feeds.json。CI生成履歴をff取込、devへ復帰。実機インストールなし、AVDはデータ保持停止。
 正式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.0 。
+
+2026-11-05 検索Backとサムネイル再生マークを修正（未公開）
+191/242の検索入力用Back callback更新を、スレ画面overrideから親へdelegateする1命令を追加。226はprivate updaterのため変更なし。3版の通常bindで保持bitmapのnative GIFマークを消さず、URL変更時は旧GIFマークを消去して別画像へ持ち越さない。動画用nativeマーク・元完了/手動再取得は保持。Lint/R8 build3m37s成功、3版適用/元命令・register保持検査成功。API36/emulator-5580の標準Instrumentationで旧版の欠落を確認後、191123/226121/242121項目成功、crash buffer空。実スレ起動コマンドは自動承認レビューで拒否（詳細理由なし）、合成試験へ限定し実機・キーボード連続操作の目視未確認。詳細search-back-playback-overlay-20261105.md、導入台帳。MPP2a508401850fb4f5ea5c06359637a53cc5c668cc9fe1fbe4986d7217ba1443af。Release/feed変更なし。AVDはデータ保持停止。

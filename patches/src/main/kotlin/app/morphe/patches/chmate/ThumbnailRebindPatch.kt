@@ -16,6 +16,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 
 /** Binding is not an explicit image retry. Leave the retry entry point intact. */
 internal fun BytecodePatchContext.patchThumbnailRebind242(version: String) {
+    patchThumbnailPlaybackOverlay(version)
     if (version == "0.8.10.191 dev" || version == "0.8.10.226 dev") {
         patchLegacyThumbnailRequery(version)
         patchLegacyThumbnailBinding(version)
@@ -116,6 +117,68 @@ internal fun BytecodePatchContext.patchThumbnailRebind242(version: String) {
     beforeDecode.replaceInstruction(beforeSite.index,
         "invoke-virtual {v${beforeCall.registerC}, v${beforeCall.registerD}}, ${image.type}->haiagaruResetForRequery(Lo/zzbes${'$'}write;)V")
     image.methods.add(guarded)
+}
+
+/** A retained GIF bitmap must retain the decoder's play badge as well. */
+private fun BytecodePatchContext.patchThumbnailPlaybackOverlay(version: String) {
+    val config = when (version) {
+        "0.8.10.191 dev" -> listOf("Lo/qrExternalSyntheticLambda2;", "Lo/qaf;", "Lo/onAdRequestStarted;", "c", "f", "I", "2131231093")
+        "0.8.10.226 dev" -> listOf("Lo/setCornerBottomRightRadius;", "Lo/TTRewardExpressVideoActivity;", "Lo/buildIfSupporteddefault;", "b", "P", "H", "2131231171")
+        "0.8.10.242 dev" -> listOf("Lo/zzbhe;", "Lo/zzbes;", "Lo/VN22;", "a", "u", "mOverlayResId", "2131231061")
+        else -> return
+    }
+    val (rowType, imageType, bitmapType, bitmapField, urlField) = config
+    val overlayField = config[5]
+    val gifIcon = config[6]
+    val image = mutableClassDefBy(imageType)
+    val row = mutableClassDefBy(rowType)
+    val bind = row.methods.single { it.name == (if (version == "0.8.10.191 dev") "a" else "setImageLinks") &&
+        it.parameterTypes == listOf("[Ljava/lang/CharSequence;", "Z", "Z") }
+    val site = bind.implementation!!.instructions.withIndex().single { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == imageType && ref.name == "setOverlayDrawable"
+    }
+    val call = site.value as FiveRegisterInstruction
+    check(site.value.opcode == Opcode.INVOKE_VIRTUAL && call.registerCount == 2)
+    val helper = MutableMethod(ImmutableMethod(imageType, "haiagaruBindOverlay",
+        listOf(com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter("Landroid/graphics/drawable/Drawable;", emptySet(), null)),
+        "V", 1, emptySet(), emptySet(), ImmutableMethodImplementation(4, emptyList(), emptyList(), emptyList())))
+    helper.addInstructions(0, """
+        if-nez p1, :native_overlay
+        iget-object v0, p0, $imageType->$bitmapField:$bitmapType
+        if-eqz v0, :native_overlay
+        iget v0, p0, $imageType->$overlayField:I
+        const v1, $gifIcon
+        if-ne v0, v1, :native_overlay
+        return-void
+        :native_overlay
+        invoke-virtual {p0, p1}, $imageType->setOverlayDrawable(Landroid/graphics/drawable/Drawable;)V
+        return-void
+    """.trimIndent())
+    image.methods.add(helper)
+    bind.replaceInstruction(site.index,
+        "invoke-virtual {v${call.registerC}, v${call.registerD}}, $imageType->haiagaruBindOverlay(Landroid/graphics/drawable/Drawable;)V")
+    // Row configuration runs before setImageUrl. Clear a retained GIF badge on
+    // URL changes, but leave the separately configured native video badge alone.
+    val changed = MutableMethod(ImmutableMethod(imageType, "haiagaruOverlayUrl",
+        listOf(com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter("Ljava/lang/String;", emptySet(), null)),
+        "V", 1, emptySet(), emptySet(), ImmutableMethodImplementation(4, emptyList(), emptyList(), emptyList())))
+    changed.addInstructions(0, """
+        iget-object v0, p0, $imageType->$urlField:Ljava/lang/String;
+        invoke-static {v0, p1}, Landroid/text/TextUtils;->equals(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Z
+        move-result v0
+        if-nez v0, :done
+        iget v0, p0, $imageType->$overlayField:I
+        const v1, $gifIcon
+        if-ne v0, v1, :done
+        const/4 v0, 0x0
+        invoke-virtual {p0, v0}, $imageType->setOverlayDrawable(Landroid/graphics/drawable/Drawable;)V
+        :done
+        return-void
+    """.trimIndent())
+    image.methods.add(changed)
+    val url = image.methods.single { it.name == "setImageUrl" && it.parameterTypes == listOf("Ljava/lang/String;", "I", "I") }
+    url.addInstructions(0, "invoke-virtual/range {p0 .. p1}, $imageType->haiagaruOverlayUrl(Ljava/lang/String;)V")
 }
 
 /** Retain the old image until the legacy decoder delivers its replacement/error. */
