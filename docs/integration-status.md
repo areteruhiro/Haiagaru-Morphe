@@ -1065,3 +1065,6 @@ API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元
 
 2026-11-05 外部板の認証メニューを初期ON（未公開）
 showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとpreparePostingMenuの両方でtrueへ変更。他のメニュー設定の初期値と保存済みON/OFFは保持。:extensions:chmate:compileReleaseJavaWithJavac成功55秒、git diff --check成功。既存共通Javaの既定値のみ変更しnative hook/端末データ変更なし。MPP再生成・端末導入・公開なし。なお先の検索/再生マークの利用者報告は発生版不明・実症状未確認との補足あり。合成試験で確認した経路と報告症状の因果は未確定として扱う。
+
+2026-11-05 1.23.1公式公開候補
+利用者が公式公開を明示。検索Back/サムネイルマーク修正と外部板認証メニュー初期ONを含め、既存.releasercの公開説明を今回の差分・確認範囲へ更新。最終通常Lint/R8 :patches:build/:patches:buildAndroid成功2m36s・91 tasks、MPP CRCと新native helper/設定key同梱検査成功。検索/サムネイルは直前の3版native命令・register保持/標準Instrumentation365項目/新規crash空の確認を使用。最後の初期値2行はJavaコンパイルと今回最終buildで検査し端末再導入は省略。実機・実スレでの連続操作と利用者症状との因果は未確認として公開説明に記載。公式CIでdev→master、手動tag/Release/assets/feed編集なし。
