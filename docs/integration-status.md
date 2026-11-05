@@ -1068,3 +1068,6 @@ showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとp
 
 2026-11-05 1.23.1公式公開候補
 利用者が公式公開を明示。検索Back/サムネイルマーク修正と外部板認証メニュー初期ONを含め、既存.releasercの公開説明を今回の差分・確認範囲へ更新。最終通常Lint/R8 :patches:build/:patches:buildAndroid成功2m36s・91 tasks、MPP CRCと新native helper/設定key同梱検査成功。検索/サムネイルは直前の3版native命令・register保持/標準Instrumentation365項目/新規crash空の確認を使用。最後の初期値2行はJavaコンパイルと今回最終buildで検査し端末再導入は省略。実機・実スレでの連続操作と利用者症状との因果は未確認として公開説明に記載。公式CIでdev→master、手動tag/Release/assets/feed編集なし。
+
+2026-11-05 1.23.1正式公開・検証完了
+実装5801a072/1776df81、公開説明f378f146、master統合007e2c0f、Semantic Release CI41965467361 success、生成/tag9637b924/1.23.1。draft=false/prerelease=false/latest1.23.1。公開MPP SHA256 c7ae9f5e948cfed9aa7ccff5702b98bf79dd023a48ae9320ea62ba3a8fe98b5e、GitHub digest一致・CRC正常、検索Back class/再生マークhelpers/認証表示設定同梱と今回公開説明を確認。master/dev/main各両feed計6件が1.23.1と正しいMPP URLを参照。既存CIのbackmergeをff取込しdevへ復帰。詳細build/official1231-public/{release.json,verification.json,feeds.json}。実機導入なし。ユーザー報告の発生版/症状と修正原因の同一性、実機・実スレ連続操作未確認は公開説明に記載済み。URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.23.1 。
