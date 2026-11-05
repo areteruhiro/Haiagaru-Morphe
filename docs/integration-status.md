@@ -1062,3 +1062,6 @@ API36/emulator-5580、226でShizuku選択APKの起動・合成SAFとZIPの復元
 
 2026-11-05 検索Backとサムネイル再生マークを修正（未公開）
 191/242の検索入力用Back callback更新を、スレ画面overrideから親へdelegateする1命令を追加。226はprivate updaterのため変更なし。3版の通常bindで保持bitmapのnative GIFマークを消さず、URL変更時は旧GIFマークを消去して別画像へ持ち越さない。動画用nativeマーク・元完了/手動再取得は保持。Lint/R8 build3m37s成功、3版適用/元命令・register保持検査成功。API36/emulator-5580の標準Instrumentationで旧版の欠落を確認後、191123/226121/242121項目成功、crash buffer空。実スレ起動コマンドは自動承認レビューで拒否（詳細理由なし）、合成試験へ限定し実機・キーボード連続操作の目視未確認。詳細search-back-playback-overlay-20261105.md、導入台帳。MPP2a508401850fb4f5ea5c06359637a53cc5c668cc9fe1fbe4986d7217ba1443af。Release/feed変更なし。AVDはデータ保持停止。
+
+2026-11-05 外部板の認証メニューを初期ON（未公開）
+showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとpreparePostingMenuの両方でtrueへ変更。他のメニュー設定の初期値と保存済みON/OFFは保持。:extensions:chmate:compileReleaseJavaWithJavac成功55秒、git diff --check成功。既存共通Javaの既定値のみ変更しnative hook/端末データ変更なし。MPP再生成・端末導入・公開なし。なお先の検索/再生マークの利用者報告は発生版不明・実症状未確認との補足あり。合成試験で確認した経路と報告症状の因果は未確定として扱う。
