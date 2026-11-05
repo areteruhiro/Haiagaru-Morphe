@@ -12,9 +12,15 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import app.morphe.patcher.util.smali.ExternalLabel
 
 /** Binding is not an explicit image retry. Leave the retry entry point intact. */
 internal fun BytecodePatchContext.patchThumbnailRebind242(version: String) {
+    if (version == "0.8.10.191 dev" || version == "0.8.10.226 dev") {
+        patchLegacyThumbnailRequery(version)
+        patchLegacyThumbnailBinding(version)
+        return
+    }
     if (version != "0.8.10.242 dev") return
     val row = mutableClassDefBy("Lo/zzbhe;")
     val parameters = listOf("[Ljava/lang/CharSequence;", "Z", "Z")
@@ -90,5 +96,99 @@ internal fun BytecodePatchContext.patchThumbnailRebind242(version: String) {
     check(loadingCall.registerCount == 2)
     start.replaceInstruction(loading.index,
         "invoke-virtual {v${loadingCall.registerC}, v${loadingCall.registerD}}, ${image.type}->haiagaruResetForRequery(Lo/zzbes${'$'}write;)V")
+    // AsyncTask's onPreExecute publishes loading once more, after f() queued
+    // the decoder. The two guards above cannot prevent this third bitmap clear.
+    // Limit interception to that loading callback: completed errors/NG/URL
+    // changes must still clear an obsolete thumbnail through the native setter.
+    val callback = mutableClassDefBy("Lo/zzbes\$_init_lambda1;")
+    val beforeDecode = callback.methods.single {
+        it.name == "e" && it.parameterTypes.isEmpty() && it.returnType == "V"
+    }
+    val beforeSite = beforeDecode.implementation!!.instructions.withIndex().single { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == image.type && ref.name == "e" &&
+            ref.parameterTypes == listOf(image.type, "Lo/zzbes\$write;") && ref.returnType == "V"
+    }
+    val beforeCall = beforeSite.value as FiveRegisterInstruction
+    check(beforeSite.value.opcode == Opcode.INVOKE_STATIC && beforeCall.registerCount == 2) {
+        "242 thumbnail decode loading callback changed"
+    }
+    beforeDecode.replaceInstruction(beforeSite.index,
+        "invoke-virtual {v${beforeCall.registerC}, v${beforeCall.registerD}}, ${image.type}->haiagaruResetForRequery(Lo/zzbes${'$'}write;)V")
     image.methods.add(guarded)
+}
+
+/** Retain the old image until the legacy decoder delivers its replacement/error. */
+private fun BytecodePatchContext.patchLegacyThumbnailRequery(version: String) {
+    val old = version == "0.8.10.191 dev"
+    val type = if (old) "Lo/qaf;" else "Lo/TTRewardExpressVideoActivity;"
+    val image = mutableClassDefBy(type)
+    val bitmapType = if (old) "Lo/onAdRequestStarted;" else "Lo/buildIfSupporteddefault;"
+    val bitmapField = if (old) "c" else "b"
+    val urlField = if (old) "f" else "P"
+    val retry = image.methods.single {
+        it.name == (if (old) "b" else "d") && it.parameterTypes == listOf("Z") && it.returnType == "V"
+    }
+    val code = retry.implementation!!.instructions.toList()
+    check(retry.implementation!!.registerCount == 4 && code.size == 28) {
+        "Legacy thumbnail retry layout changed: $version"
+    }
+    val start = (code[4] as? ReferenceInstruction)?.reference as? FieldReference
+    val resume = (code[22] as? ReferenceInstruction)?.reference as? FieldReference
+    check(code[4].opcode == Opcode.IGET_OBJECT && start?.definingClass == type &&
+        start.name == bitmapField && start.type == bitmapType &&
+        code[22].opcode == Opcode.IGET_OBJECT && resume?.definingClass == type &&
+        resume.name == urlField && resume.type == "Ljava/lang/String;") {
+        "Legacy thumbnail clear boundaries changed: $version"
+    }
+    // Stop/cancel and queueing stay native. Only bypass the bitmap release,
+    // mosaic cache release and matrix reset for automatic refresh of a loaded URL.
+    // The native result handler, NG changes and setImageUrl remain untouched.
+    retry.addInstructionsWithLabels(4, """
+        if-nez p1, :native_clear
+        iget-object v0, p0, $type->$bitmapField:$bitmapType
+        if-nez v0, :retain_loaded
+    """.trimIndent(), ExternalLabel("native_clear", code[4]), ExternalLabel("retain_loaded", code[22]))
+}
+
+private fun BytecodePatchContext.patchLegacyThumbnailBinding(version: String) {
+    val old = version == "0.8.10.191 dev"
+    val row = mutableClassDefBy(if (old) "Lo/qrExternalSyntheticLambda2;" else "Lo/setCornerBottomRightRadius;")
+    val bindParameters = listOf("[Ljava/lang/CharSequence;", "Z", "Z")
+    val nativeParameters = if (old) listOf("[Ljava/lang/CharSequence;", "Z") else bindParameters
+    val bind = row.methods.single { it.name == (if (old) "a" else "setImageLinks") && it.parameterTypes == bindParameters }
+    val native = row.methods.single { it.name == (if (old) "b" else "setImageLinks2") && it.parameterTypes == nativeParameters }
+    val bridge = if (old) {
+        // 191 has no requery argument: copy its private link loop for normal
+        // binding and omit only the unconditional setImageUrl(null) invocation.
+        MutableMethod(ImmutableMethod(row.type, "haiagaruBindImageLinks", native.parameters,
+            native.returnType, native.accessFlags, native.annotations, native.hiddenApiRestrictions, native.implementation)).apply {
+            val clear = implementation!!.instructions.withIndex().single { (_, instruction) ->
+                val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                ref?.definingClass == "Lo/qaf;" && ref.name == "setImageUrl" &&
+                    ref.parameterTypes == listOf("Ljava/lang/String;")
+            }
+            check(clear.value.opcode == Opcode.INVOKE_VIRTUAL) { "191 thumbnail binding clear changed" }
+            replaceInstruction(clear.index, "nop")
+        }
+    } else MutableMethod(ImmutableMethod(row.type, "haiagaruBindImageLinks", native.parameters,
+        "V", 0x1, emptySet(), emptySet(), ImmutableMethodImplementation(5, emptyList(), emptyList(), emptyList()))).apply {
+        addInstructions(0, """
+            const/4 v0, 0x0
+            invoke-virtual {p0, p1, v0, p3}, ${row.type}->setImageLinks2([Ljava/lang/CharSequence;ZZ)V
+            return-void
+        """.trimIndent())
+    }
+    val sites = bind.implementation!!.instructions.withIndex().filter { (_, instruction) ->
+        val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == row.type && ref.name == native.name && ref.parameterTypes == nativeParameters
+    }
+    check(sites.size == 1) { "Legacy thumbnail normal binding changed: $version" }
+    val site = sites.single()
+    val call = site.value as FiveRegisterInstruction
+    check(site.value.opcode == (if (old) Opcode.INVOKE_DIRECT else Opcode.INVOKE_VIRTUAL))
+    val registers = listOf(call.registerC, call.registerD, call.registerE, call.registerF).take(nativeParameters.size + 1)
+    bind.replaceInstruction(site.index,
+        "${site.value.opcode.name.lowercase().replace('_', '-')} {${registers.joinToString(", ") { "v$it" }}}, $bridge")
+    row.methods.add(bridge)
 }
