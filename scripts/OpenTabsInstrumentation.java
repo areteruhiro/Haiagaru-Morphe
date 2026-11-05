@@ -20,18 +20,20 @@ public final class OpenTabsInstrumentation extends Instrumentation {
  @Override public void onStart(){Bundle out=new Bundle();try{
   app=getTargetContext();loader=app.getClassLoader();old=app.getPackageName().endsWith("191");mid=app.getPackageName().endsWith("226");
   Intent launch=new Intent().setClassName(app.getPackageName(),"jp.syoboi.a2chMate.activity.HomeActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-  Activity activity=startActivitySync(launch);waitForIdleSync();FutureTask<Void> task=new FutureTask<>(()->{runChecks(activity);return null;});runOnMainSync(task);task.get(20,TimeUnit.SECONDS);
+  FutureTask<Void> task=new FutureTask<>(()->{runChecks(null);return null;});runOnMainSync(task);task.get(20,TimeUnit.SECONDS);
   if(testTablet){
   nativePrefs=android.preference.PreferenceManager.getDefaultSharedPreferences(app);modePresent=nativePrefs.contains("enableTabletHome2");modeValue=nativePrefs.getBoolean("enableTabletHome2",false);
-  runOnMainSync(()->nativePrefs.edit().putBoolean("enableTabletHome2",true).commit());waitForIdleSync();
+  runOnMainSync(()->nativePrefs.edit().putBoolean("enableTabletHome2",true).commit());
   Intent tabletIntent=new Intent().setClassName(app.getPackageName(),"jp.syoboi.a2chMate.activity.TabletHomeActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-  Activity tablet=startActivitySync(tabletIntent);waitForIdleSync();FutureTask<Void> paneTest=new FutureTask<>(()->{
+  app.startActivity(tabletIntent);Thread.sleep(1500);FutureTask<Void> paneTest=new FutureTask<>(()->{
+   Activity live=(Activity)call(loader.loadClass("app.morphe.extension.chmate.Haiagaru"),"toolbarActivity",new Class<?>[]{Object.class},new Object[]{null});
+   check(live!=null&&!live.isFinishing()&&!live.isDestroyed()&&live.getClass().getName().endsWith(".TabletHomeActivity"),"tablet resumed: "+(live==null?"null":live.getClass().getName()));
    Class<?> tabs=loader.loadClass("app.morphe.extension.chmate.NativeToolTabs");
-   List<?> open=(List<?>)call(tabs,"openPages",new Class<?>[]{Activity.class},tablet);
+   List<?> open=(List<?>)call(tabs,"openPages",new Class<?>[]{Activity.class},live);
    check(open!=null,"actual tablet pane snapshot API");
    Object captured=call(api,"snapshot",new Class<?>[]{Context.class,List.class},app,open);
    check(captured!=null,"actual tablet page arguments parsed without navigation or work enqueue");
-   tablet.finish();return null;
+   live.finish();return null;
   });runOnMainSync(paneTest);paneTest.get(20,TimeUnit.SECONDS);
   }
   restoreMode();out.putString("result","PASS "+checks+" native open-tab/UA/NG checks; network requests=0");finish(Activity.RESULT_OK,out);

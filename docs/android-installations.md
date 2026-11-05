@@ -1881,3 +1881,7 @@ API36/emulator-5580、2026-11-05 12:23〜12:25 JST。既存reporter各packageと
 - ChMate226 / Haiagaru NG確認 226 / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/open-tabs-ua-ng-parsefix226.apk / SHA256 00fd972e1d0403fa5ee9f73ca2fba81f388c815c46025e60af4c5339722a04ea / install-r・起動・合成30項目成功。
 - ChMate242 / Haiagaru NG確認 242 / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/open-tabs-ua-ng-parsefix242.apk / SHA256 d6b6139f4c005e4576f9d6f0083a225dd5a06d157d75907f1d407965c2c80c45 / install-r・起動・合成30項目成功。
 同署名試験APK build/open-tabs-inst/test{191,226,242}.apk、試験package app.haiagaru.tests.opentabs{191,226,242}、scripts/OpenTabsInstrumentation.java。最終open-tabs-core-runtime各30で通信requestをenqueueせず、最終crash buffer空。実Tablet activityの追加試験失敗とエミュレータ停止/再起動、失敗した226試験のnative tablet設定復元完了未確認はintegration-status参照。実機導入なし、未公開。
+
+
+2026-11-05 1.24.0公式公開候補・追加タブレット検証完了
+追加試験のActivity終了はテストpackageの初回StartActivity未完了が原因。初期設定を完了し、試験側の同期Activity待機を非同期起動/現在Activity取得へ修正。製品コード変更なし。API36/emulator-5580で191/226/242各33（core30+live tablet3）計99項目成功、実通信0。build/official1240-tablet191-final.log、official1240-tablet226-final.log、official1240-tablet242-async.log。最終official1240-final-crash.log空。AVDはデータ保持で正常停止。前記の失敗を成功件数に含めない。UAホスト19/native hook全版検査/最終ビルドは既記録を使用。実通信一括更新・実機連続操作未確認を公開説明に明記。既存Semantic Release CIからdev→masterの公式公開へ進む。
