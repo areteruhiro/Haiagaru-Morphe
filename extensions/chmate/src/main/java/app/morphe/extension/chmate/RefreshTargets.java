@@ -46,6 +46,7 @@ public final class RefreshTargets {
         return info.getClass().getMethod(version.contains("226")?"e":"b",info.getClass()).invoke(null,info);
     }
     public static void refresh(Object fragment,int action){
+        if(OpenTabsRefresh.dispatching())return;
         // Pull-to-refresh and the native re-fetch command use a resource ID,
         // whereas toolbar/gesture refresh uses action 5.
         if(action!=5&&action!=2131362342&&action!=2131296861&&action!=0x7f090244)return;

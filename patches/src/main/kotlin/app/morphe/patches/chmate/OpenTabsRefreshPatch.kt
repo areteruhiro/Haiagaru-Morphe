@@ -42,6 +42,37 @@ internal fun BytecodePatchContext.patchOpenTabsRefresh(version:String){
     val mapField=if(old)"e" else if(middle)"c" else "a"
     check(mutableClassDefBy(dataType).fields.single{it.name==mapField}.type=="Ljava/util/Map;")
     val bridge=mutableClassDefBy(OPEN_TABS);val input=bridge.methods.single{it.name=="input"}
+    val refresh=bridge.methods.single{it.name=="nativeRefresh"}
+    val thread=mutableClassDefBy(if(old)"Lo/pa;" else "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
+    val board=mutableClassDefBy(if(old)"Lo/r8lambdaGCnF6WpW_bFarRe7yCX2B6KzQ;" else if(middle)"Lo/Yhp5;" else "Ljp/syoboi/a2chMate/ui/threadlist/ThreadListFragment;")
+    fun command(owner:com.android.tools.smali.dexlib2.iface.ClassDef)=owner.methods.single{
+        it.parameterTypes==listOf("I","Ljava/lang/Object;")&&it.returnType=="Z"&&it.implementation!=null
+    }
+    val threadCommand=command(thread);val boardCommand=command(board)
+    bridge.methods.remove(refresh)
+    bridge.methods.add(MutableMethod(ImmutableMethod(bridge.type,refresh.name,refresh.parameters,refresh.returnType,
+        refresh.accessFlags,refresh.annotations,refresh.hiddenApiRestrictions,ImmutableMethodImplementation(4,emptyList(),emptyList(),emptyList()))).apply{
+        addInstructions(0,"""
+            const/4 v0, 0x5
+            const/4 v2, 0x0
+            instance-of v1, p0, ${thread.type}
+            if-eqz v1, :board
+            check-cast p0, ${thread.type}
+            invoke-virtual {p0, v0, v2}, $threadCommand
+            move-result v0
+            return v0
+            :board
+            instance-of v1, p0, ${board.type}
+            if-eqz v1, :unsupported
+            check-cast p0, ${board.type}
+            invoke-virtual {p0, v0, v2}, $boardCommand
+            move-result v0
+            return v0
+            :unsupported
+            const/4 v0, 0x0
+            return v0
+        """.trimIndent())
+    })
     bridge.methods.remove(input)
     bridge.methods.add(MutableMethod(ImmutableMethod(bridge.type,input.name,input.parameters,input.returnType,
         input.accessFlags,input.annotations,input.hiddenApiRestrictions,ImmutableMethodImplementation(1,emptyList(),emptyList(),emptyList()))).apply{

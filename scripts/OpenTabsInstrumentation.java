@@ -69,6 +69,10 @@ public final class OpenTabsInstrumentation extends Instrumentation {
   Object both=snapshot(page(2,thread),page(2,thread),page(1,same),page(1,other),page(1,other),page(0,null),page(4,null));
   check(set(both,"threads").size()==1,"same thread in both panes deduplicated");
   check(set(both,"boards").size()==1&&((Number)value(both,"boardCount")).intValue()==2,"same-board subject merged with thread request");
+  Object livePlan=call(api,"snapshot",new Class<?>[]{Context.class,List.class,boolean.class},app,Arrays.asList(page(2,thread),page(1,same),page(1,other)),false);
+  check(set(livePlan,"boards").size()==2,"live thread refresh does not consume a board's subject request");
+  check(!(Boolean)call(api,"nativeRefresh",new Class<?>[]{Object.class},new Object()),"native UI dispatcher rejects unrelated fragments");
+  check(!(Boolean)call(api,"dispatching",new Class<?>[0]),"ordinary refresh is not marked as batch UI dispatch");
   check(set(snapshot(page(0,null),page(3,null),page(4,null)),"threads").isEmpty(),"home/blank/tool pages excluded");
   Object info=call(api,"parseInfo",new Class<?>[]{Context.class,String.class},app,thread);
   Class<?> targets=loader.loadClass("app.morphe.extension.chmate.RefreshTargets");
