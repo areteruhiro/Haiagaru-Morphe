@@ -1081,3 +1081,8 @@ showExternalBoardAuthMenuの未設定時既定値を、投稿設定のSwitchとp
 
 2026-11-05 1.24.0公式公開候補・追加タブレット検証完了
 追加試験のActivity終了はテストpackageの初回StartActivity未完了が原因。初期設定を完了し、試験側の同期Activity待機を非同期起動/現在Activity取得へ修正。製品コード変更なし。API36/emulator-5580で191/226/242各33（core30+live tablet3）計99項目成功、実通信0。build/official1240-tablet191-final.log、official1240-tablet226-final.log、official1240-tablet242-async.log。最終official1240-final-crash.log空。AVDはデータ保持で正常停止。前記の失敗を成功件数に含めない。UAホスト19/native hook全版検査/最終ビルドは既記録を使用。実通信一括更新・実機連続操作未確認を公開説明に明記。既存Semantic Release CIからdev→masterの公式公開へ進む。
+
+
+2026-11-05 1.24.0公式公開・配布検証完了
+実装7e27850c、公開準備4c03d348、master統合fdc3f506、生成/tag1e6983db/1.24.0。Semantic Release CI42000783380は初回Gradle配布サーバーHTTP504で失敗、同CI再実行success。手動tag/Release/assets作成なし。draft=false/prerelease=false/latest1.24.0。公開MPP SHA256 20b0ad76118fce3b1b52d1aff7bc98e7cf5c170babbafd71d139a5a3298152fd、GitHub digest一致、CRC正常、新OpenTabsRefresh/UA helper/toolbar resource同梱、旧NG自動popup patchとタイトル不在。master/dev/main各両feed計6件が正式1.24.0と同MPP URLを参照。build/official1240-public/{release.json,verification.json,feeds.json}。最初の配信検査は端末文字コードcp932への説明全文printで停止したため、不要なprintを除き全検査を再実行して成功。既存backmergeをff取得しdevへ復帰、実機インストールなし。公開説明に実通信一括取得/実機連続操作の未確認範囲を記載済み。
+URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.24.0 。
