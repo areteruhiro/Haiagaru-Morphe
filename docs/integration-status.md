@@ -1364,3 +1364,9 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 191/226/242の前段最終候補で各34項目成功。12,000並列履歴読込/alias保存/NG解決/旧板の隔離、AndroidのHTML/NCR・itest・報告実レス変換、同サイズの生成PNG2枚をnative previewで3往復。242は同じActivityを保ち、191/226は旧方式を維持する。191の既存Back優先と混ざる試験はBackを一時0へ変更し、最後に元値へ復元して再検証した。hook/register/元dispatchの保持も3版成功。途中の失敗は経過文書に残し成功へ含めない。
 
 最後の旧形式解析スキップだけを加えたhistory-release-build.logも通常Lint/R8成功3m49s。その出力build/history-release.mppから最終APKを生成/検査中。共通の最終制御分岐はhost21で出力不変と1000レスを確認済み。機能の前段3版native確認と区別し、Semantic Release CIの実行中にも最終MPPからの追加native確認を継続する。Sony SOG02/Android12実機の再現確認は未実施。既存の文字欠落DATを自動修復する変更ではない。
+
+
+最終バンドル検証: build/history-release.mpp SHA256 58c154e128026a9113bc7a0c780b4f53cc6d1957ff18234d36f71b329507b98b（history-release-build.log成功3m49s）。最終APK history-release191/226/242.apkを署名照合後emulator-5580へ更新し、各34項目PASS/3版cold Home Completeを再確認。hook/register/元dispatch保持も全3版PASS。各APK/MPPの絶対path/hash/署名はandroid-installations.md。Commit e93a25ffから既存Release CI 42361272985を開始し、同時に最終native検査を完了、通常のnative本文/画像/標準投稿ダイアログ回帰を確認中。前段候補の成功で代用せず最終バンドルでも34項目を再実行済み。
+
+
+1.25.0-dev.4検証用公開完了。CI42361272985 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.4 / prerelease=true,draft=false確認。MPPダウンロードSHA256 03048ffbf65b2248921d52768a2b1680ae274a5e7e06fca041cd602bfe842c59。最終MPPで191/226/242の各34項目とcold Home Completeに加え、通常native本文/画像/投稿dialogの既存回帰269/278/275項目成功。開始時刻以降crash buffer0行。CI配布MPP自体の再導入は未実施。CI生成commit2417d12fをff-only取得、生成ファイル手編集なし。新たな3サイト取得不具合の報告は次の修正として調査する。

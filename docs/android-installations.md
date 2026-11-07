@@ -2077,3 +2077,15 @@ MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/b
 
 - Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-http-exemption242.apk / SHA256 18088386cd9572d609a95221fccc0dfa52a83e0c81fdc5a3ed08b96b1834d80b / install-r Success。HTTPS ONでnative本文/投稿dialog/3サイトmenu取得/停止後解除を確認。INSTRUMENTATION_RESULT: result=PASS 275 gateway/native URL checks; upstream GET=55, isolated POST=14; public posts=0
 
+
+
+## 2026-11-07 履歴OOM・画像プレビュー・過去ログUnicode 最終候補
+
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/history-release.mpp / SHA256 58c154e128026a9113bc7a0c780b4f53cc6d1957ff18234d36f71b329507b98b。emulator-5580 / 各既存reporter packageを署名照合後install-r。鍵C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。通常Lint/R8成功3m49s。実機操作/データ消去なし。
+
+- Haiagaru NG確認 191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/history-release191.apk / SHA256 58d5edc15283db8caa9dcc025be7dff2ad71a3afbb247cd5d60142bd4b9df24d。2026-11-07 18時台JST install-r Success / native回帰34項目成功 / cold Home Complete。
+
+- Haiagaru NG確認 226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/history-release226.apk / SHA256 95d390c51e9ab225fffedf39dfa5249865240b033d1b23eaba19f3308bd608cb。2026-11-07 18時台JST install-r Success / native回帰34項目成功 / cold Home Complete。
+
+- Haiagaru NG確認 242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/history-release242.apk / SHA256 65beedc53f670df26ab9d828acac71662c85131c75ac6f32907a9ad38dc5b7b1。2026-11-07 18時台JST install-r Success / native回帰34項目成功 / cold Home Complete。
+
