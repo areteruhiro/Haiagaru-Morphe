@@ -1348,3 +1348,9 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 初回Gradle/R8とD8試験準備がPC仮想メモリ不足で失敗。製品コンパイル不良とはしない。emulator-5580が応答しなくなりsnapshot保存/emu killも応答しないため、正確なAVD名/port/PIDを照合したqemuだけ停止。データ消去/アンインストールなし。cold boot時のRAMを2048MiBに抑えて再開。通常Lint/R8再ビルドとHTTPS ONのnative再現/修正検証中。
 
 利用者が『先にプレリリースして』と指示。通常Lint/R8ビルド4m17s成功、3版APK生成成功、host62項目成功、191/226の既存固定フック保持成功。修正後の3版native画面再検証の完了前に先行配布する旨を公開説明に明記し、dev Semantic Releaseを進める。公開処理中にもnative検証を継続する。旧候補での起動直後試験はbg ANRで終了しており、成功に含めない。
+
+
+追補: 利用者の先行公開指示により05dee0d3をdevへpushしRelease CI 42355963730を開始。そのCI待機中に、修正候補の全3版固定hook検査/署名照合/同署名更新を完了。HTTPS ONで191=269、226=278、242=275項目成功（build/site-https-final<版>.log）。3サイトのmenuを製品HttpsTransport経由で実HTTP取得し、同設定で標準本文/画像/投稿dialogの成功終了と拒否時本文保持、停止時のHTTP例外解除/再起動時の再登録を検査。外向きPOSTは隔離、公開POST0。UTC08:30以降のcrash buffer0行（site-https-final-crash.log）。ユーザー設定forceHttpsの元値を各試験finallyで復元。RAM2048MiBでcold boot直後の旧候補試験はbg ANRだったが、4096MiBで最終3版は全て成功した。今回の修正候補を既存アプリへ更新した日時/絶対path/SHA/署名はandroid-installations.mdへ記録。
+
+
+公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42355963730 success。1.25.0-dev.3 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.3 を2026-11-07 17:38:41 JSTに検証用公開。APIでprerelease=true/draft=false、MPP+bundle JSON2個+任意ZIP3個を確認。MPPを実ダウンロードし6990788bytes / SHA256 996c222845292876cefbe12a906e49d34472e881611f1cc31d6a909961599afd。pre JSONのversion/download_url一致も確認。CI生成コミット677b9472をff-onlyで取得、生成ファイル手編集なし。公開MPP自身の再パッチ/端末再導入は未実施。同じ製品ソースから生成したローカル候補で前記native 3版の確認が完了した。公開ノートは先行配布開始時点の未完了範囲を保守的に記載したまま。

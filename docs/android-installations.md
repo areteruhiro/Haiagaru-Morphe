@@ -2065,3 +2065,15 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 - 2026-11-07T16:21:50.1103169+09:00 / Haiagaru NG確認226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-final-auth226.apk / SHA256 623fa39504874ac008e18ef5aa09efdcb75f2bab167601f1251882087edba22d。install-r Success / native  / cold Home Complete。
 
 - 2026-11-07T16:20:34.4966335+09:00 / Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-final-auth242.apk / SHA256 7fb191a644adea7e7db23b71cfe5b6de0be0cf7ceef0ea40c31f6cbf870dd5b2。install-r Success / native  / cold Home Complete。
+
+
+## 2026-11-07 HTTPS ONの追加掲示板TLS修正候補
+
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-http-exemption.mpp / SHA256 c0ff81ade51fa6814bbefda9e8aca81d39006df1d804e81af8a80aafa53d09ad。emulator-5580 / 各既存reporter packageを証明書照合後install-r。同じ鍵C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。データ消去/実機操作なし。
+
+- Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-http-exemption191.apk / SHA256 81758a0ec2ad030c2876cbaba62147a2e65bbba9ad94162aa65e288476804851 / install-r Success。HTTPS ONでnative本文/投稿dialog/3サイトmenu取得/停止後解除を確認。INSTRUMENTATION_RESULT: result=PASS 269 gateway/native URL checks; upstream GET=55, isolated POST=14; public posts=0
+
+- Haiagaru NG確認226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-http-exemption226.apk / SHA256 d88cb06ed1880ee7b06fa3a1c59704600cfd42deaa81a1d1d846b12a59a8350e / install-r Success。HTTPS ONでnative本文/投稿dialog/3サイトmenu取得/停止後解除を確認。INSTRUMENTATION_RESULT: result=PASS 278 gateway/native URL checks; upstream GET=55, isolated POST=14; public posts=0
+
+- Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-http-exemption242.apk / SHA256 18088386cd9572d609a95221fccc0dfa52a83e0c81fdc5a3ed08b96b1834d80b / install-r Success。HTTPS ONでnative本文/投稿dialog/3サイトmenu取得/停止後解除を確認。INSTRUMENTATION_RESULT: result=PASS 275 gateway/native URL checks; upstream GET=55, isolated POST=14; public posts=0
+
