@@ -1,3 +1,53 @@
+# Haiagaru 1.25.0-dev.4
+
+履歴のメモリ不足、アップロード済み画像プレビューの切り替え、過去ログのUnicode欠落を修正した検証用プレリリースです。
+
+## 主な変更
+
+- エッヂの履歴タイトルを読むたびに同じ記者情報を保存していた処理を見直しました。変更分を上限付きでまとめ、専用スレッドで保存を直列化します。補助情報の保存がメモリ不足になった場合は保存の再試行を停止し、保存済みのデータは消しません。
+- 242のアップロード済みの通常画像プレビューでは、左右のページ送りをChMate標準の処理に任せます。画像ごとにビューアを起動し直す処理との競合を防ぎます。全レスのメディア移動とGIF・動画の専用ビューアへの切り替えは維持します。
+- 5ch過去ログのHTML・itest JSONからDATへ変換する際、絵文字や𝕏などShift_JISで表せない文字を数値参照で保持するよう修正しました。UTF-8の過去ログHTMLも判別して読み込みます。既に文字が欠落して保存されたログの自動修復は行いません。
+
+## 確認範囲
+
+ホスト試験で履歴の重複書き込み抑止、並行読み込み、保存中の更新、補助保存のメモリ不足、画像ページ送りの振り分け、Unicodeの保持を確認しました。エミュレータでの確認結果は開発記録に残します。報告されたSony SOG02実機での再現・確認は未実施です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** reduce reporter memory pressure and repair image paging and archived Unicode ([e93a25f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e93a25ff95034a30547b598dda5485f6a2a59a79))
+
 # Haiagaru 1.25.0-dev.3
 
 追加掲示板でHTTPS切り替え設定を有効にした際のTLSエラーを修正した検証用プレリリースです。
