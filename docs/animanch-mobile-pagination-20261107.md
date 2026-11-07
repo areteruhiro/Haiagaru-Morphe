@@ -50,3 +50,7 @@ URL-copy191の実copy試験は当初clipboard=null/focus=falseで失敗。dumpsy
 
 通常の本文/画像/模擬投稿dialog/HTTPS ONも成功。公開POST0。readability-test-start以降のcrash buffer0行（final-crash.log）。実機変更/アンインストール/データ消去なし。ユーザーが『終わったらプレリリースして』と明示したため、確認範囲を記載してdev Semantic Releaseで公開する。
 
+
+
+1.25.0-dev.9検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42388373374 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.9 / 2026-11-08 00:56:19 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7007273bytes / SHA256 ec737c477b5bcd27d1367277310be7896468c021bd767642d22e8d5c8401d04d。pre JSONのversion/download_url一致。ソースbea511d3、CI生成9335c79eをff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終候補で191の585項目と実通信329行確認済み。226/242の今回の最終候補未検証と、爆サイ1000返信は合成継続ページによる試験である点をRelease本文に記載。
+
