@@ -78,11 +78,11 @@ final class SiteBoardProtocol {
         }else{
             for(Element link:doc.select("#threadListField a[href*=/thr_res/], .thr_list a[href*=/thr_res/]")){
                 String id=threadIn(board,link.absUrl("href"));if(id==null||unique.containsKey(id))continue;
-                Element heading=link.selectFirst(".imgbody .title");
+                Element heading=link.selectFirst(".imgbody .title, .ttTitle .title");
                 boolean cards=heading!=null;
                 String title=cards?(heading==null?"":heading.text()):link.hasAttr("title")?link.attr("title"):link.text();if(title.trim().isEmpty())continue;
                 Element group=link.closest("table");if(group==null)group=link.closest("li");
-                Element count=cards?link.selectFirst(".thrimg_comment_space + span"):group==null?null:group.selectFirst(".comment_count_area > span:last-child");
+                Element count=cards?link.selectFirst(".thrimg_comment_space + span, .thrlis_comment_space + span"):group==null?null:group.selectFirst(".comment_count_area > span:last-child");
                 if(count==null)continue;String raw=count.text().trim();
                 if(!raw.matches("(?:[0-9]{1,6}|[0-9]{1,3}(?:,[0-9]{3}){1,2})"))continue;
                 int replies=Integer.parseInt(raw.replace(",",""));if(replies>999999)continue;
@@ -115,7 +115,9 @@ final class SiteBoardProtocol {
     static ThreadPage bakusaiSlice(Board board,String id,Document doc,boolean requireOpening)throws IOException{
         Element title=doc.selectFirst("#title_thr"),start=doc.getElementById("threadBody");
         Element identity=doc.selectFirst(".thr_id");
-        boolean mobile=title==null&&start==null;
+        // Normal mobile boards place #threadBody inside #res0_body too.
+        // Its presence must not select the desktop layout without #title_thr.
+        boolean mobile=title==null;
         if(mobile){title=doc.selectFirst("#res0_whole [itemprop=headline]");start=doc.selectFirst("#res0_body .entry-content");if(start==null)start=doc.selectFirst("#res0_body #div_box");if(start==null)start=doc.getElementById("res0_body");identity=doc.selectFirst("#res0_whole .thr_rotundate");}
         if(title==null||requireOpening&&start==null||identity==null||!identity.text().matches(".*\\b"+Pattern.quote(id)+"\\b.*"))throw new IOException("爆サイのスレ本文を取得できません");
         // Older mobile pages omit the opening article. The first page must still supply it.

@@ -17,7 +17,7 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
  private int checks, gets, posts; private ClassLoader loader; private Class<?> gatewayType, transportType, responseType;
  private Object gateway,previousGateway,previousContext;private Field singleton,applicationContext; private SharedPreferences prefs; private final List<String> targets=new ArrayList<>();private final List<String> fetched=Collections.synchronizedList(new ArrayList<>());
  private boolean denyCheck, disableAtCheck, ui, reader, https; private SharedPreferences originalConfig; private boolean hadHttps, wasHttps; private Context app;
- private volatile String expectedEditorBody;private volatile boolean editorBodyReceived,rejectEditorPost;
+ private volatile String expectedEditorBody,editorTransportMismatch;private volatile boolean editorBodyReceived,rejectEditorPost;
  private String probeAlias,probeThread;private boolean checkOnly;
  private String probe()throws Exception{
   app=getTargetContext();loader=app.getClassLoader();Bundle status=new Bundle();status.putString("state","waiting for visible verification HomeActivity");sendStatus(1,status);boolean visible=false;for(int n=0;n<40&&!visible;n++){FutureTask<Boolean> ready=new FutureTask<>(()->resumed!=null&&!resumed.isFinishing()&&!resumed.isDestroyed());runOnMainSync(ready);visible=ready.get(5,TimeUnit.SECONDS);if(!visible)Thread.sleep(500);}if(!visible)throw new IOException("probe needs foreground Activity");Class<?> type=loader.loadClass("app.morphe.extension.chmate.SiteBoardGateway");Object live=method(type,"get",Context.class).invoke(null,app);Map<?,?> boards=(Map<?,?>)field(live,"boards");Object board=boards.get(probeAlias);if(board==null)throw new IllegalArgumentException("unknown probe board");String url=probeThread==null?(String)call(board,"indexUrl",new Class<?>[]{}):(String)call(board,"threadUrl",new Class<?>[]{String.class},probeThread);Object transport=field(live,"transport"),response=call(transport,"get",new Class<?>[]{String.class},url);byte[] bytes=(byte[])field(response,"bytes");File saved=new File(app.getCacheDir(),"haiagaru-site-live-probe.raw");try(FileOutputStream out=new FileOutputStream(saved)){out.write(bytes);}String description="url="+url+" status="+field(response,"status")+" type="+field(response,"type")+" bytes="+bytes.length+" file="+saved;
@@ -58,13 +58,18 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    if(u.equals("https://www.2chan.net/bbsmenu.html"))return response(200,"<B>検証</B>\n<A HREF=\"https://dat.2chan.net/t/\">検証料理</A>\n",null);
    if(u.contains("bakusai.com/")&&u.contains("/tid=13539922/"))return response(200,fixture("bakusaiClosedMobile.html"),null);
    if(u.contains("bakusai.com/"))return response(200,fixture(u.contains("thr_res")?"bakusaiThread.txt":"bakusaiBoard.txt").replaceAll("(name=\"loaded_at\"\\s+value=\")[^\"]*", "$1"+gets+".0"),null);
+   if(u.equals("https://dat.2chan.net/t/futaba.htm"))return response(200,"<div class=thre data-res=380645><span class=csb>カタログ省略ではない完全タイトル</span><blockquote>本文</blockquote></div>",null);
    if(u.contains("2chan.net/"))return response(200,fixture(u.contains("res/")?"futabaCookingReplies.txt":"futabaCookingCat.txt"),null);
    if(u.contains("animanch.com/"))return response(200,fixture(u.contains("/board/")?"animanchThread.html":"animanchIndex.html"),null);
    throw new IOException("unexpected isolated upstream GET: "+u);
   }
   if(m.getName().equals("post")){posts++;Object plan=args[0];String u=(String)args[1];targets.add(u);
    Map<?,?> data=(Map<?,?>)field(plan,"fields");ok(!data.containsKey("bbs")&&!data.containsKey("MESSAGE"),"native-only fields never forwarded");
-   if(expectedEditorBody!=null&&!u.endsWith("?preCheck")){ok(data.containsValue(expectedEditorBody),"standard editor body reaches site-specific POST unchanged");editorBodyReceived=true;}
+   String expected=expectedEditorBody;
+   if(expected!=null&&!u.endsWith("?preCheck")){
+    if(data.containsValue(expected)){checks++;editorBodyReceived=true;}
+    else editorTransportMismatch="expected="+expected+" fixtureFields="+data;
+   }
    if(u.endsWith("?preCheck")){if(disableAtCheck)prefs.edit().putBoolean("enabled",false).commit();return response(denyCheck?403:200,denyCheck?fixture("animanchPrecheckChallenge.html"):"",null);}
    if(rejectEditorPost)return response(403,"投稿を拒否しました",null);
    if(u.contains("animanch.com"))return response(200,"{\"thread\":7589284,\"number\":80,\"jump\":\"/board/7589284/\"}",null);
@@ -118,10 +123,11 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    for(int n=0;n<15&&!found;n++){FutureTask<Boolean> ready=new FutureTask<>(()->target.getWindow().getDecorView().findViewWithTag("haiagaru.site.image")!=null);runOnMainSync(ready);found=ready.get(5,TimeUnit.SECONDS);if(!found)Thread.sleep(500);}
    ok(found,"standard editor binds exact added-board target and image attachment action");
    if(address.contains("/ha")){FutureTask<Boolean> auth=new FutureTask<>(()->{View button=target.getWindow().getDecorView().findViewWithTag("haiagaru.site.auth");return button instanceof TextView&&((TextView)button).getText().toString().equals("あにまんの認証");});runOnMainSync(auth);ok(auth.get(5,TimeUnit.SECONDS),"standard Animanch composer exposes normal authentication entry");}
-   expectedEditorBody="標準画面の模擬投稿 "+checks;editorBodyReceived=false;
+   expectedEditorBody="標準画面の模擬投稿 "+checks;editorBodyReceived=false;editorTransportMismatch=null;
    FutureTask<Void> enter=new FutureTask<>(()->{EditText body=findBody(target.getWindow().getDecorView());ok(body!=null,"standard editor multiline body exists");body.setText(expectedEditorBody);return null;});runOnMainSync(enter);enter.get(5,TimeUnit.SECONDS);waitForIdleSync();
    FutureTask<Void> send=new FutureTask<>(()->{View button=findSend(target.getWindow().getDecorView());ok(button!=null,"standard editor native send button exists");ok(button.performClick(),"native send button accepts click");return null;});runOnMainSync(send);send.get(5,TimeUnit.SECONDS);
-   for(int n=0;n<40&&!editorBodyReceived;n++)Thread.sleep(500);ok(editorBodyReceived,"native composer sent through isolated site transport; public posts=0; UI="+(!editorBodyReceived?screenText(getUiAutomation().getRootInActiveWindow()):""));
+   for(int n=0;n<40&&!editorBodyReceived;n++)Thread.sleep(500);ok(editorBodyReceived,"native composer sent through isolated site transport; public posts=0; mismatch="+editorTransportMismatch+" UI="+(!editorBodyReceived?screenText(getUiAutomation().getRootInActiveWindow()):""));
+   ok(editorTransportMismatch==null,"every observed native fixture POST retained its expected body: "+editorTransportMismatch);
    if(rejected){Thread.sleep(1500);FutureTask<Boolean> retained=new FutureTask<>(()->!target.isFinishing()&&!target.isDestroyed()&&expectedEditorBody.contentEquals(findBody(target.getWindow().getDecorView()).getText()));runOnMainSync(retained);ok(retained.get(5,TimeUnit.SECONDS),"rejected post retains dialog and draft");return;}
    boolean closed=false;for(int n=0;n<40&&!closed;n++){FutureTask<Boolean> done=new FutureTask<>(()->target.isFinishing()||target.isDestroyed());runOnMainSync(done);closed=done.get(5,TimeUnit.SECONDS);if(!closed)Thread.sleep(250);}ok(closed,"confirmed success closes native composer without test cleanup");
   }finally{expectedEditorBody=null;rejectEditorPost=false;removeMonitor(monitor);if(editor!=null){final Activity target=editor;runOnMainSync(target::finish);}}
@@ -158,6 +164,7 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    for(Method producer:info.getClass().getDeclaredMethods())if(producer.getReturnType()==String.class&&producer.getParameterTypes().length==0&&!Modifier.isStatic(producer.getModifiers())&&!producer.getName().startsWith("haiagaru")){producer.setAccessible(true);String value=(String)producer.invoke(info);if(value!=null&&(value.startsWith("http://127.0.0.1:"+URI.create(board).getPort()+"/")||value.startsWith("https://127.0.0.1:"+URI.create(board).getPort()+"/")))ok(value.startsWith("http://"),"native URL producer preserves registered plain loopback transport: "+producer.getName());}
    String settings=request(board+"SETTING.TXT","GET",null,null);ok(settings.contains("BBS_TITLE=試験板"+i),"native board settings "+i);
    String subject=request(board+"subject.txt","GET",null,null);ok(subject.startsWith("HTTP/1.1 200")&&subject.contains(".dat<>"),"subject protocol "+i);
+   if(i==1)ok(subject.contains("カタログ省略ではない完全タイトル"),"native subject receives the full OP title rather than a catalogue label");
    Class<?> nonTime=loader.loadClass(version.contains("242")?"o.TopLayoutDislike2":"jp.syoboi.a2chMate.data.BBSThread");Method noDate=method(nonTime,version.contains("191")?"c":version.contains("226")?"d":"b",long.class);ok((Boolean)noDate.invoke(null,9240000000L+Long.parseLong(ids[i])),"native renderer treats additional-board ID as non-timestamp");ok(!(Boolean)noDate.invoke(null,Long.parseLong(ids[i])),"old source ID would incorrectly be formatted as a timestamp");
    String mapped=request(board+"dat/"+(9240000000L+Long.parseLong(ids[i]))+".dat","GET",null,null);ok(mapped.startsWith("HTTP/1.1 200"),"non-timestamp native DAT key fetches original source thread");
    String dat=request(board+"dat/"+ids[i]+".dat","GET",null,null);ok(dat.startsWith("HTTP/1.1 200"),"DAT fetch "+i);String[] rows=dat.substring(dat.indexOf("\r\n\r\n")+4).split("\n");ok(rows.length==counts[i],"all response records "+i);for(String row:rows)ok(row.split("<>",-1).length==5,"DAT field boundaries");

@@ -1370,3 +1370,21 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 1.25.0-dev.4検証用公開完了。CI42361272985 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.4 / prerelease=true,draft=false確認。MPPダウンロードSHA256 03048ffbf65b2248921d52768a2b1680ae274a5e7e06fca041cd602bfe842c59。最終MPPで191/226/242の各34項目とcold Home Completeに加え、通常native本文/画像/投稿dialogの既存回帰269/278/275項目成功。開始時刻以降crash buffer0行。CI配布MPP自体の再導入は未実施。CI生成commit2417d12fをff-only取得、生成ファイル手編集なし。新たな3サイト取得不具合の報告は次の修正として調査する。
+
+## 2026-11-07 報告板の追加取得不具合（調査・修正中）
+
+利用者の具体例から実URLを登録済み8075板のregistryで特定。爆サイ「栃木災害」は /thr_tl/acode=15/ctgid=148/bid=1532/、事件・事故は /thr_tl/acode=2/ctgid=137/bid=1098/。通常の文字一覧は.ttTitle .title/.thrlis_comment_space、画像付き一覧は.imgbody .title/.thrimg_comment_spaceという違いがあり、前者を追加。本文mobile判定が#threadBodyの存在だけでもdesktop扱いになり、#title_thrがない通常mobileを誤認していた。titleがなければmobileを選ぶよう修正。
+
+実通信のGET/解析で事件・事故13611011は133行/15GET、栃木災害9332038は13行/2GETに成功。通常のDalvik/Android UAで検証。Chrome Mobile UAでは本文先頭/総数が省略された別HTMLになることも観測し、取得成功とは扱わない。認証回避やUA偽装で認証制限を突破する実装は追加していない。
+
+ふたば「ねこ」https://may.2chan.net/27/ のカタログには本文なし、「昭和」https://dec.2chan.net/76/ のカタログは4文字省略ラベルであることを実HTML確認。FutabaCatalogueで通常indexのOPタイトル/本文を取得してカタログの順序/件数を保ったまま置換。読み取りは同一boardの数値.htm/futaba.htmのみ、GET formのページ移動も受理、POST/他hostへ進まない。最大10ページ、タイトルは120文字まで、LRU2048件で次回の追加取得を避ける。未取得タイトルは元カタログ表記を維持する。実通信の各50スレ/6GETを確認。昭和先頭は「ロマンポルノやピンク映画の裏話」、ねこ先頭は実際のOP「本文無し」。HTTP403を認証エラーとして表示し、内部解析エラーも短い既知の診断だけを503本文へ出す。upstream HTMLやCookieは表示しない。
+
+ホスト回帰: 報告形式16、既存の板/list/thread25、15地域menu/desktop分割1290、mobile分割98、あにまん保存HTML228項目成功。最初のbuildはserve内の既存catalogue matcherと新ローカル変数の名前重複で失敗、listingへ修正して再build中。製品ビルド成功とはまだ扱わない。
+
+あにまんの実況カテゴリ /category21/ は調査ホストから403。スレタイトル検索も該当URLは特定できず、ユーザーへ「今更Switch版ダブルクロス買った5」の実URLを照会中。削除/欠番/認証等を推測で修正せず、未解決として区別する。公開済み1.25.0-dev.4にはこの追加修正は含まれていない。
+
+
+追補: 通常Lint/R8の再試行site-reported-layouts-build-retry.logは4m30s成功。修正MPP build/site-reported-layouts.mppから全3版APKを生成し固定hook/register/元命令保持成功。242は276項目、191は274項目/cold Home Complete、226初回は試験のupstreamが投げたAssertionError（本文照合）でプロセス終了。製品由来の自然なクラッシュとは区別し、公開を止めて試験を調整。expectedEditorBodyを複数回volatileで読み直さずローカルsnapshotで照合し、fixture不一致をサーバーworkerからthrowせず試験結果へ保持、本文到達と全POST不一致なしを両方assertするよう修正した。226の先行再試行は279項目PASS。最終試験を3版へ再適用して実行中。
+
+
+最終確認: 最終試験は191=276（site-reported191-final-retry-runtime.log）、226=285、242=282（各site-reported<版>-final-runtime.log）成功。191の一度目は終盤のgateway停止/即再開でEADDRINUSE、直前の191先行274項目は成功済み。新プロセスで同じ最終試験を再実行すると276項目成功した。機能失敗や未取得を成功へ数えず、全試験を再実行した結果を記録。全3版のcold Home Complete、UTC10:39以降新規crash buffer0行。あにまん実実況URL未回答/未解決を公開ノートへ明記して今回の2サイト修正を検証用配布する。MPP 044e173bbd15600aad2f8628666c058e993322e48c20073d95e9b0ff97bcd5a6 と各APK/hash/署名/導入先は導入台帳参照。

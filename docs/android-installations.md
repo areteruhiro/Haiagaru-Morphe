@@ -2089,3 +2089,15 @@ MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/b
 
 - Haiagaru NG確認 242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/history-release242.apk / SHA256 65beedc53f670df26ab9d828acac71662c85131c75ac6f32907a9ad38dc5b7b1。2026-11-07 18時台JST install-r Success / native回帰34項目成功 / cold Home Complete。
 
+
+
+## 2026-11-07 爆サイ文字一覧/通常本文・ふたばタイトル補完
+
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-reported-layouts.mpp / SHA256 044e173bbd15600aad2f8628666c058e993322e48c20073d95e9b0ff97bcd5a6。emulator-5580 / 既存reporter3版を署名照合後install-r。鍵C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。実機操作/データ消去なし。
+
+- Haiagaru NG確認 191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-reported191.apk / SHA256 5c017e7417431f554157ab3bb4260d16077860973f939d33cb4e0c5ea01dbfa2 / 2026-11-07 19時台JST install-r Success / hook保持PASS。
+
+- Haiagaru NG確認 226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-reported226.apk / SHA256 7eab3e3693224b7654ee70920312b9de8cd3b3265b4141e65a0640e7b55d32e0 / 2026-11-07 19時台JST install-r Success / hook保持PASS。
+
+- Haiagaru NG確認 242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-reported242.apk / SHA256 2969021a506c11655179dbb065dae5ee424cb50cdd528542d5bd68e722af86d9 / 2026-11-07 19時台JST install-r Success / hook保持PASS。
+

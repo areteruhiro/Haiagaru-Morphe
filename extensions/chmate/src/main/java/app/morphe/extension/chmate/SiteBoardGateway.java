@@ -218,14 +218,17 @@ final class SiteBoardGateway {
             String key=route.group(1);SiteBoardProtocol.Board board=boards.get(key);byte[] data;
             if(!boardEnabled(key)){send(client,403,"text/plain; charset=UTF-8","この板の「使用する」がオフです".getBytes("UTF-8"));return;}
             if(route.group(2).equals("SETTING.TXT"))data=SiteNativeData.wire("BBS_TITLE="+names.get(key).replace('\n',' ')+"\nBBS_NONAME_NAME=名無しさん\nBBS_UNICODE=pass\n");
-            else if(route.group(2).equals("subject.txt"))data=SiteNativeData.subject(SiteBoardProtocol.topics(board,page(board.indexUrl())));
+            else if(route.group(2).equals("subject.txt")){
+                String listing=page(board.indexUrl());
+                data=SiteNativeData.subject(board.kind.equals("futaba")?FutabaCatalogue.topics(board,listing,url->{if(!boardEnabled(key))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.topics(board,listing));
+            }
             else{
                 String id=sourceThread(route.group(3));SiteBoardProtocol.ThreadPage page=thread(board,id,page(board.threadUrl(id)));
                 data=SiteNativeData.dat(board,page,source->{if(board.kind.equals("animanch"))return origin()+"/m/"+key+URI.create(source).getPath()+".jpg";return source;},
                         source->{String other=SiteBoardProtocol.threadIn(board,source);if(other==null)return source;try{return origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(other)+"/";}catch(IOException invalid){return source;}});
             }
             send(client,200,"text/plain; charset=Shift_JIS",data);
-        }catch(Exception error){android.util.Log.w("Haiagaru","Additional board request failed",error);try{send(client,503,"text/plain; charset=UTF-8",("取得できませんでした。認証・通信・対応形式を確認してください。\n"+safe(error)).getBytes("UTF-8"));}catch(Exception ignored){}}
+        }catch(Exception error){android.util.Log.w("Haiagaru","Additional board request failed",error);try{send(client,503,"text/plain; charset=UTF-8",("取得できませんでした。認証・通信・対応形式を確認してください。\n"+readFailure(error)).getBytes("UTF-8"));}catch(Exception ignored){}}
         finally{clients.remove(client);try{client.close();}catch(IOException ignored){}}
     }
     private String page(String url)throws IOException{Response r=transport.get(url);if(r.status!=200)throw new IOException("HTTP "+r.status);return r.text();}
@@ -316,6 +319,13 @@ final class SiteBoardGateway {
         }catch(Exception failure){postError(client,"投稿結果を確認できません。再送せず板を更新して確認してください");}finally{posting.remove(identity);}
     }
     private static String safe(Exception error){String message=error.getMessage();return message!=null&&message.matches("HTTP [0-9]{3}")?message:"";}
+    private static String readFailure(Exception error){
+        String status=safe(error);if(!status.isEmpty())return status.equals("HTTP 403")?status+"：元サイトがアクセスを拒否しました。追加掲示板の認証を確認してください。":status;
+        String message=error.getMessage();
+        // Only bounded diagnostics from our parsers, never upstream HTML/cookies/URLs.
+        return error instanceof IOException&&message!=null&&message.length()<=160
+                &&message.matches("(?:対応する|爆サイ|ふたば|レス|本文|あにまん|スレ|取得|使用しない)[^<>\\r\\n]*")?message:"";
+    }
     private static void postError(Socket client,String text)throws IOException{send(client,200,"text/html; charset=Shift_JIS",SiteNativeData.wire("<html><head><title>ERROR</title></head><body><!-- 2ch_X:error -->"+org.jsoup.nodes.Entities.escape(text)+"</body></html>"));}
     private static Map<String,String> form(byte[] bytes,String charset)throws IOException{
         LinkedHashMap<String,String> out=new LinkedHashMap<>();for(String part:new String(bytes,"ISO-8859-1").split("&")){
