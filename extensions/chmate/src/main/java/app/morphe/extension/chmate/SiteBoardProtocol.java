@@ -107,7 +107,12 @@ final class SiteBoardProtocol {
         if(bakusaiCount(doc)+1!=result.entries.size())throw new IOException("爆サイのレスが未取得です");return result;
     }
     static int bakusaiCount(Document doc)throws IOException{
-        Element count=doc.selectFirst(".res-count, #res0_whole .thrlis_comment_space + span");if(count==null||!count.text().matches("[0-9]{1,5}"))throw new IOException("爆サイのレス数を確認できません");return Integer.parseInt(count.text());
+        Element count=doc.selectFirst(".res-count, #res0_whole .thrlis_comment_space + span");
+        if(count!=null&&count.text().matches("[0-9]{1,5}"))return Integer.parseInt(count.text());
+        // Mobile continuation/closed pages omit the OP counter, but retain the thread total.
+        Matcher title=Pattern.compile("[｜|]([0-9]{1,5}|[0-9]{1,3}(?:,[0-9]{3})+)[ ]*レス[｜|]").matcher(doc.title());
+        if(title.find())return Integer.parseInt(title.group(1).replace(",",""));
+        throw new IOException("爆サイのレス数を確認できません");
     }
     static ThreadPage bakusaiSlice(Board board,String id,Document doc)throws IOException{
         return bakusaiSlice(board,id,doc,true);

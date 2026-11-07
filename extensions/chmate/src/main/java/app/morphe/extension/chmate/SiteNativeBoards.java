@@ -7,9 +7,23 @@ public final class SiteNativeBoards {
  private static final Map<String,Object> MODELS=new HashMap<>();
  public static String localUrl(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).localUrl(address);}catch(Exception unavailable){return null;}}
  static String copiedText(String text){
-  Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1:"))return text;
-  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1:[0-9]+/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"'）】])").matcher(text);
+  Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1"))return text;
+  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"'）】])").matcher(text);
   StringBuffer out=new StringBuffer();SiteBoardGateway gateway=SiteBoardGateway.get(context);while(matcher.find())matcher.appendReplacement(out,java.util.regex.Matcher.quoteReplacement(gateway.originalUrl(matcher.group())));matcher.appendTail(out);return out.toString();
+ }
+ static android.content.ClipData exportedClip(android.content.ClipData clip){
+  if(clip==null)return null;
+  try{
+   ArrayList<android.content.ClipData.Item> items=new ArrayList<>();boolean changed=false;
+   for(int n=0;n<clip.getItemCount();n++){
+    android.content.ClipData.Item item=clip.getItemAt(n);if(item.getIntent()!=null){items.add(item);continue;}
+    CharSequence original=item.getText();String text=original==null?null:copiedText(original.toString()),html=item.getHtmlText()==null?null:copiedText(item.getHtmlText());android.net.Uri uri=item.getUri();
+    if(uri!=null){String target=copiedText(uri.toString());if(!target.equals(uri.toString()))uri=android.net.Uri.parse(target);}
+    boolean edited=!Objects.equals(original==null?null:original.toString(),text)||!Objects.equals(item.getHtmlText(),html)||!Objects.equals(item.getUri(),uri);changed|=edited;
+    items.add(edited?new android.content.ClipData.Item(text,html,null,uri):item);
+   }
+   if(!changed||items.isEmpty())return clip;android.content.ClipData out=new android.content.ClipData(new android.content.ClipDescription(clip.getDescription()),items.get(0));for(int n=1;n<items.size();n++)out.addItem(items.get(n));return out;
+  }catch(RuntimeException unavailable){return clip;}
  }
  /** Modern ChMate upgrades compatible-board URL producers to HTTPS. */
  public static String rewriteInfoUrl(Object info,String value){

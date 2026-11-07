@@ -24,6 +24,10 @@ final class SiteNativeData {
         for(SiteBoardProtocol.Entry e:page.entries){
             Document doc=Jsoup.parseBodyFragment(e.body);doc.outputSettings().prettyPrint(false);
             for(Element a:doc.select("a[href]")){String target=links.apply(a.attr("href"));if(target!=null)a.attr("href",target);}
+            // ChMate's DAT renderer handles <br>, but discards HTML paragraph boundaries.
+            for(Element block:doc.select("p,blockquote")){
+                block.before(new Element("br"));block.after(new Element("br"));block.unwrap();
+            }
             String body=doc.body().html().replace("\r\n","<br>").replace("\r","<br>").replace("\n","<br>");
             Pattern references=Pattern.compile("&gt;(?:&gt;|No\\.)([0-9]+)(?:-([0-9]+))?");Matcher matches=references.matcher(body);StringBuffer fixed=new StringBuffer();
             while(matches.find()){

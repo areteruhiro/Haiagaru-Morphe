@@ -126,6 +126,14 @@ final class SiteBoardGateway {
     /** Resolve only already registered/enabled boards. Never performs a network request. */
     synchronized String localUrl(String address)throws IOException{
         URI uri;try{uri=URI.create(address);}catch(RuntimeException invalid){return null;}
+        if("127.0.0.1".equals(uri.getHost())&&uri.getUserInfo()==null&&uri.getRawQuery()==null
+                &&("http".equalsIgnoreCase(uri.getScheme())||"https".equalsIgnoreCase(uri.getScheme()))&&(uri.getPort()==-1||uri.getPort()==port)){
+            Matcher thread=Pattern.compile("/test/read\\.cgi/("+KEY_PATTERN+")/([0-9]{1,12})/([0-9ln-]*)").matcher(uri.getRawPath());
+            Matcher board=Pattern.compile("/("+KEY_PATTERN+")/").matcher(uri.getRawPath());
+            if(thread.matches()&&boards.containsKey(thread.group(1)))return nativeUrl(thread.group(1),sourceThread(thread.group(2)))+thread.group(3);
+            if(board.matches()&&boards.containsKey(board.group(1)))return nativeUrl(board.group(1),null);
+            return null;
+        }
         if(uri.getUserInfo()!=null||uri.getPort()!=-1||!("http".equalsIgnoreCase(uri.getScheme())||"https".equalsIgnoreCase(uri.getScheme())))return null;
         String canonical="https://"+uri.getRawAuthority()+uri.getRawPath()+(uri.getRawQuery()==null?"":"?"+uri.getRawQuery());
         final SiteBoardProtocol.Board source;try{source=SiteBoardProtocol.address(canonical);}catch(IOException other){return null;}
@@ -141,7 +149,7 @@ final class SiteBoardGateway {
     }
     /** Copy/share conversion does not activate a disabled board or start the gateway. */
     synchronized String originalUrl(String address){
-        try{URI uri=URI.create(address);if(!"127.0.0.1".equals(uri.getHost())||uri.getPort()!=port||uri.getUserInfo()!=null||uri.getRawQuery()!=null||!("http".equals(uri.getScheme())||"https".equals(uri.getScheme())))return address;
+        try{URI uri=URI.create(address);if(!"127.0.0.1".equals(uri.getHost())||uri.getPort()!=-1&&uri.getPort()!=port||uri.getUserInfo()!=null||uri.getRawQuery()!=null||!("http".equals(uri.getScheme())||"https".equals(uri.getScheme())))return address;
             Matcher thread=Pattern.compile("/test/read\\.cgi/("+KEY_PATTERN+")/([0-9]{1,12})/(?:([1-9][0-9]{0,5})|[ln][0-9]+)?").matcher(uri.getRawPath());
             Matcher board=Pattern.compile("/("+KEY_PATTERN+")/").matcher(uri.getRawPath());
             if(thread.matches()){
@@ -262,6 +270,7 @@ final class SiteBoardGateway {
     }
     private String page(String url)throws IOException{Response r=transport.get(url);if(r.status!=200)throw new IOException("HTTP "+r.status);return r.text();}
     private SiteBoardProtocol.ThreadPage thread(SiteBoardProtocol.Board board,String id,String html)throws IOException{
+        if(board.kind.equals("animanch"))return AnimanchPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);});
         return board.kind.equals("bakusai")?BakusaiPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.thread(board,id,html);
     }
     List<SiteBoardMenuProtocol.Choice> menu(String kind,int region)throws IOException{

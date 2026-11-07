@@ -2140,3 +2140,15 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 
 - Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/site-url-bugs242.apk / SHA256 4c48ef9324d1cb3f451eb31a5112b2b01a1a666b6ce7157a776d0d5df40402bb / install-r Success / 固定hook命令/レジスター保持PASS。INSTRUMENTATION_RESULT: result=PASS 313 gateway/native URL checks; upstream GET=62, isolated POST=14; public posts=0。
 
+
+
+## 2026-11-07 モバイル分割/件数修正の先行候補（試験失敗・最終確認中）
+
+2026-11-07 22:58頃JST / emulator-5580 / Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191。APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/animanch-7596018/fix191.apk / SHA256 c2575134ec7b935f127d5cb96bb96773b3d124c2be081c06a14e65c5326a32ab。MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/animanch-7596018/combined-fix.mpp / SHA256 41596ed8085ea87223af1956d87787aee0739886463d73ad84a400464cf95dae。鍵C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。既存APK署名照合後install-r Success。native試験は合成fixtureのorg.jsoup.Jsoup反射がR8名変更で失敗、1001行表示を成功扱いしない。実機変更/データ消去なし。ユーザーの追加copy要求を含む最終候補はまだ導入前。
+
+
+
+## 2026-11-08 元URLコピー/分割取得/段落保持 最終候補
+
+2026-11-08 00:42頃JST / emulator-5580 / RAM3072 / Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191。APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/animanch-7596018/readability191.apk / SHA256 8526d8e7bac32561da69ee8d39e8554308b5dc9a5a20ad2ff00f20c0c06c744d。MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/animanch-7596018/readability.mpp / SHA256 7369b41dc79a2ba492d906509c2cb2ecd7b851037cb4039da122100e3aef75ea。鍵C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。署名照合install-r Success。固定hook保持PASS、final-reader191.log 585項目PASS、final-live.logの実HTTP200/329 DAT行成功、crash buffer0行。226/242の今回の候補は導入していない。実機変更/データ消去なし。
+

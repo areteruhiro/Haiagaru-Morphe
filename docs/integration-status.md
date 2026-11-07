@@ -1448,3 +1448,21 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 1.25.0-dev.8検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42375411673 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.8 / 2026-11-07 22:11:26 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7005493bytes / SHA256 0378c0d146ef9c5c96d2ef741c0956bac320108c6ca6536680b4a10049c4806b。pre JSONのversion/download_url一致。製品ソースb040af13、公開ノートd23e32ec、CI生成ab2cc9f0をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカルMPPで前記3版を検証。あにまん未再現の取得失敗/爆サイ全失敗未特定/実サイト投稿未確認をRelease本文に記載。
 
+
+
+## 2026-11-07 あにまん7596018の503（修正・検証中）
+
+詳細 docs/animanch-mobile-pagination-20261107.md。Android実通信でOP+最新200だけ返るモバイル分割を確認し、同一スレのpaginationリンクをたどって連番を復元する処理を追加。ホストは新規295/既存228/報告20項目成功。191での最終本文表示/実通信確認中。公開なし。
+
+
+
+## 最終確認と公開指示（2026-11-08）
+
+最終製品ビルドreadability-build.logは通常Lint/R8を含め4m38s成功。build/animanch-7596018/readability.mpp SHA256 7369b41dc79a2ba492d906509c2cb2ecd7b851037cb4039da122100e3aef75ea。191の既存固定hook/native fallbackのレジスター・元命令保持PASS。同署名更新した最終APKでfinal-reader191.logの585項目PASS。ソースの最終ビルド後に変更したのは試験/文書だけ。226/242の最終APK生成/端末試験は未実施、共通extensionの修正を含めて配布するが確認済みとは記載しない。
+
+実copyhelper→ClipboardHistory→ClipboardManager経路で元URLの格納を確認。ポートなし/HTML/URI/複数item/無関係なportの維持も成功。まどドラ82レスは標準rendererのnative本文と元DATを全行照合し、全内容/改行/引用/画像URL/番号/Unicode保持を確認。表示上の横方向スペース連続・行頭末スペースだけを揃えて比較し、改行は比較対象のまま維持した。NG用sharedReportInputsはHtml.fromHtmlでネイティブplain本文の改行を再正規化するため、これを表示本文として比較していた初期試験は不適切であった。native rowの本文そのものへ修正し、空白整形の差を除いて全件一致を検査。先行の失敗は成功へ数えない。
+
+分割あにまん275レス/爆サイ1001行は隔離した実HTML+合成継続ページによる標準本文表示成功。爆サイの全1000レスを実通信取得したという意味ではない。実通信のあにまん報告URL7596018は、最終候補で初期ページ/1ページ目をHTTP200取得し、gatewayからnativeDatRows=329で成功（final-live.log）。初期のレス重複・欠落による503は解消を確認。採取時刻でレス数は増加している。
+
+通常の本文/画像/模擬投稿dialog/HTTPS ONも成功。公開POST0。readability-test-start以降のcrash buffer0行（final-crash.log）。実機変更/アンインストール/データ消去なし。ユーザーが『終わったらプレリリースして』と明示したため、確認範囲を記載してdev Semantic Releaseで公開する。
+

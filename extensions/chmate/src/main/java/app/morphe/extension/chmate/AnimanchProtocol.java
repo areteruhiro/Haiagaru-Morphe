@@ -41,6 +41,10 @@ final class AnimanchProtocol {
         }catch(RuntimeException invalid){return null;}
     }
     static Page thread(String html,String address)throws IOException{
+        Page page=threadSlice(html,address);int expected=1;for(Reply reply:page.replies)if(reply.number!=expected++)throw new IOException("レス番号に重複または欠落があります");return page;
+    }
+    /** Mobile pages deliberately omit older responses; the paginator validates the final sequence. */
+    static Page threadSlice(String html,String address)throws IOException{
         String expected=threadId(address);if(expected==null)throw new IOException("あにまんのスレURLではありません");
         Document doc=Jsoup.parse(html,address);doc.outputSettings().prettyPrint(false);
         Element canonical=doc.selectFirst("link[rel=canonical]");
@@ -50,7 +54,7 @@ final class AnimanchProtocol {
         for(Element item:list.children()){
             if(!item.tagName().equals("li"))continue;
             Matcher number=RESPONSE.matcher(item.id());if(!number.matches())continue;
-            int n=Integer.parseInt(number.group(1));if(!seen.add(n)||n!=rows.size()+1)throw new IOException("レス番号に重複または欠落があります");
+            int n=Integer.parseInt(number.group(1));if(!seen.add(n)||!rows.isEmpty()&&n<=rows.get(rows.size()-1).number)throw new IOException("レス番号に重複または逆転があります");
             Element content=item.selectFirst(".resbody");if(content==null)throw new IOException("レス本文が欠落しています");
             Element clean=content.clone();ArrayList<String> images=new ArrayList<>();
             for(Element link:clean.select("a.thumb[href]")){
