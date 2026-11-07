@@ -1,3 +1,55 @@
+# Haiagaru 1.25.0-dev.6
+
+バックアップ設定XMLの共通化と、共有NGの正規表現による誤検知を修正した検証用プレリリースです。
+
+## 主な変更
+
+- パッケージ名を変更したChMateでも、標準バックアップの設定XML名と参照名を元の jp.co.airfront.android.a2chMate_preferences.xml に統一しました。実際の設定保存先は各アプリのまま維持します。
+- 以前の同一パッケージ名で作成したバックアップも、共通名のXMLが無い場合に復元できます。両方ある場合は共通名を優先します。
+- 特定の1文字が文章中に繰り返し現れるだけで一致する、広すぎる共有NGのkeyword正規表現を自動適用の対象外にしました。対象の条件には理由を表示します。通常のパッケージ名の説明文がNGになる報告を再現して対策しました。
+
+## 確認範囲
+
+191・226・242のパッチ適用と固定フックの命令・レジスター・分岐保持を検査しました。エミュレータで共通XML名・共有NGを確認し、226・242では隔離したテスト設定に対する標準復元処理も確認しました。191では全データを扱う復元処理全体の実行は行っていません。ユーザーデータを使った移行は未確認です。誤検知対策は特定形式の共有NG条件に限り、あらゆる誤検知を防ぐものではありません。配信サーバーの変更はありません。
+
+あにまんの一部実況・安価スレの取得失敗と実サイトの投稿受理は引き続き未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** canonicalize backup XML and avoid broad shared NG regex matches ([a7c2244](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a7c2244993d21167ee48e5bff297e60232e31a61))
+
 # Haiagaru 1.25.0-dev.5
 
 爆サイの通常板・スレ本文と、ふたばの一覧タイトルを修正した検証用プレリリースです。
