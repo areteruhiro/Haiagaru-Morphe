@@ -1391,3 +1391,13 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 1.25.0-dev.5検証用公開済み: CI42365241233 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.5 / 2026-11-07 19:50:08 JST。APIでprerelease=true/draft=false、配布MPP/bundle JSON2個/任意ZIP3個を確認。MPPを実ダウンロードしSHA256 dbed441369e5f27d5f4787a955aeb8150e46d2ee21f68a89900b5d3a6572c839、pre JSONのversionとdownload_urlも一致。CI生成ファイルはff-onlyで取得し手編集なし。あにまんの一部実況/安価スレの本文失敗は該当URL未回答で未解決、公開ノートに明記。配布MPP自体の再導入は未実施、同一製品ソースのローカル候補で全3版確認した。
+
+## 2026-11-07 標準バックアップXML共通化・共有NGの散在文字反復による誤検知
+
+詳細 docs/backup-canonical-shared-ng-20261107.md。元の jp.co.airfront.android.a2chMate_preferences.xml をnativeバックアップの共通名とし、実ストア名はパッケージ固有のまま固定I/Oフックで橋渡し。共通名優先/同一パッケージ旧XML名fallback。ユーザー提示の 左のネ|([チョンパヨ].*){5} が「パッケージ名」反復を隠すことを再現し、この種の広すぎるオンラインkeywordルールを自動適用から除外、確認画面へ理由表示。配信側変更なし。
+
+通常Lint/R8成功4m33s、ホスト25/19/96/10306、全3版固定hook命令/レジスター/分岐保持PASS。emulator-5580で署名照合後install-r、専用試験191=10/226=13/242=13成功（226/242は隔離した実native XML復元、191は全restore worker実行なし）。native回帰を再確認し、ユーザーのプレリリース公開指示によりdev Semantic Releaseで配布する。MPP/各APKの絶対path/hash/署名/導入先はandroid-installations.md。
+
+
+最終native回帰: 191=276（canonical-backup191-reader-retry.log）、226=285、242=282項目成功（canonical-backup<版>-reader.log）。標準本文/画像/模擬投稿dialogを確認、公開POST0、試験finallyで設定復元。3版Home Complete。開始UTC11:17以降crash buffer0行。初回191は試験起動順のforeground待ち失敗だったため開始後Home起動で全項目を再実行し成功。最終MPPの専用復元/NG試験と区別して両方確認済み。
+

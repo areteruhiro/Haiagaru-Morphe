@@ -25,7 +25,8 @@ final class SharedNgExceptions extends LinearLayout {
         disabled = new HashSet<>(excluded);
         for (SharedNgRules.Rule rule : rules) {
             String label = SharedNgRules.boardLabel(rule.board) + " / " + rule.kind + " / " + rule.value
-                    + " / " + rule.votes + "票" + (rule.revoked ? "（配信停止）" : "");
+                    + " / " + rule.votes + "票" + (rule.revoked ? "（配信停止）" : "")
+                    + (rule.overbroadKeyword ? "（広すぎる正規表現：自動適用対象外）" : "");
             labels.add(label);
             searchable.add(normalize(label + " " + kindLabel(rule.kind)));
         }

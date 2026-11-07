@@ -76,25 +76,7 @@ val changeChMatePackageNamePatch = resourcePatch(
     dependsOn(bytecodePatch {
         execute {
             val newPackageName = packageNameOption.value!!
-            // Native backup uses an exact preference-store allowlist. Its
-            // package-derived store name is not an exact package literal.
-            val backupOwner = when (packageMetadata.versionName) {
-                "0.8.10.191 dev" -> "Lo/showFullscreenAd\$RemoteActionCompatParcelizer;"
-                "0.8.10.226 dev" -> "Lo/CloseGuard\$read;"
-                "0.8.10.242 dev" -> "Lo/setBackupListener;"
-                else -> null
-            }
-            backupOwner?.let { owner ->
-                val initializer = mutableClassDefBy(owner).methods.single { it.name == "<clinit>" }
-                val sites = initializer.implementation!!.instructions.mapIndexedNotNull { index, instruction ->
-                    if (instruction.packageNameLiteralOrNull() == ORIGINAL_PACKAGE_NAME + "_preferences")
-                        index to (instruction as OneRegisterInstruction).registerA else null
-                }
-                check(sites.size == 1) { "Native backup preference store changed" }
-                sites.forEach { (index, register) ->
-                    initializer.replaceInstruction(index, "const-string v$register, \"${newPackageName}_preferences\"")
-                }
-            }
+            patchCanonicalNativeBackup(packageMetadata.versionName)
             patchPackageNameDerivedObfuscationInputs()
             patchSelfNavigationIntents()
             boundClassForEach("ChangeChMatePackageNamePatch:1") { classDef ->

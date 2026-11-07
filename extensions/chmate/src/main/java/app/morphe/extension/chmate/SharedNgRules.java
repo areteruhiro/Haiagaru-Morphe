@@ -96,6 +96,7 @@ final class SharedNgRules {
         final List<String> contributors;
         private final Pattern expression;
         private final String requiredLiteral;
+        final boolean overbroadKeyword;
         Rule(String id,String board,String kind,String value,String period,int votes,boolean revoked){
             this(id,board,kind,value,period,votes,revoked,1,0);
         }
@@ -116,6 +117,7 @@ final class SharedNgRules {
             if(minLevel<1||minLevel>5||minVotes<0)throw new IllegalArgumentException("禁止レベルが不正です");
             if(regex&&kind.equals("reporter"))throw new IllegalArgumentException("記者IDは完全一致で指定してください");
             this.regex=regex;this.expression=regex?Pattern.compile(value):null;
+            this.overbroadKeyword=regex&&kind.equals("keyword")&&NgRegexSafety.overbroadKeyword(value);
             this.requiredLiteral=regex?NgRegexLiteralGuard.required(value):"";
             Set<String> unique=new LinkedHashSet<>(contributors);
             if(unique.size()!=contributors.size()||unique.size()>10000||(!unique.isEmpty()&&unique.size()!=votes))throw new IllegalArgumentException("報告者情報が不正です");
@@ -124,7 +126,7 @@ final class SharedNgRules {
             this.minLevel=minLevel;this.minVotes=minVotes;this.id=id;this.board=family(board);this.kind=kind;this.value=!regex&&kind.equals("keyword")?text(value):value;this.period="";this.votes=votes;this.revoked=revoked;
         }
         boolean expressionMatches(String input){
-            if(expression==null||input==null)return false;
+            if(expression==null||input==null||overbroadKeyword)return false;
             if(!requiredLiteral.isEmpty()&&!input.contains(requiredLiteral))return false;
             try{return expression.matcher(new TimedText(input,0,input.length(),System.nanoTime()+2_000_000L)).find();}
             catch(RegexDeadline|StackOverflowError invalid){REGEX_UNCERTAIN.set(Boolean.TRUE);return false;}
