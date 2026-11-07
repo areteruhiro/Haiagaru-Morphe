@@ -36,3 +36,6 @@ live-bakusai191-final.log: 報告URLの実Android通信がHTTP200/166657bytes、
 
 
 公開指示追補: ユーザーが「プレリリースして」と明示。上記の最終検証結果と未確認範囲を公開ノートに記載し、既存dev Semantic Release経路で検証用公開を進める。生成ファイルの手編集なし。
+
+
+1.25.0-dev.10検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42392811838 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.10 / 2026-11-08 01:49:36 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7008320bytes / SHA256 5cadd6acd57aec061ca6ca2c0f3b7853d3c71baec466b3238c115e9a78ff23d9。pre JSONのversion/download_url一致、公開ノートの内容と未確認範囲を確認。最初の公開JSON対ローカルのbyte比較はLF/CRLF差で失敗したため、実際の改行数を確認し、JSONの全内容一致で成功を確認。製品ソースddb95e01、公開ノート96bfaf4e、CI生成fd2f4eeeをff-only取得。生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカル候補で191の595項目と実爆サイ記事1+未取得枠2を確認済み。あにまん実投稿と226/242最終画面未確認、爆サイの元サイトが返さない2レスは未取得であることをRelease本文に記載。
