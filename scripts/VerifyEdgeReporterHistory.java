@@ -8,21 +8,26 @@ import java.util.*;
 public class VerifyEdgeReporterHistory {
     private static final Map<String,String> saved = new HashMap<>();
     private static int checks;
+    private static int edits;
     private static void equal(Object expected, Object actual) {
         checks++;
         if (!Objects.equals(expected, actual)) throw new AssertionError("Expected " + expected + ", got " + actual);
     }
     private static void restart() throws Exception {
+        Field writes = EdgeReporterHistory.class.getDeclaredField("writes");
+        writes.setAccessible(true); Object pending = writes.get(null);
+        if (pending != null) { Method flush = pending.getClass().getDeclaredMethod("flush"); flush.setAccessible(true); flush.invoke(pending); }
         Object editor = Proxy.newProxyInstance(VerifyEdgeReporterHistory.class.getClassLoader(),
                 new Class[]{SharedPreferences.Editor.class}, (p,m,a) -> {
                     if (m.getName().equals("putString")) { saved.put((String)a[0], (String)a[1]); return p; }
                     if (m.getName().equals("apply")) return null;
+                    if (m.getName().equals("commit")) return true;
                     throw new AssertionError(m);
                 });
         Object prefs = Proxy.newProxyInstance(VerifyEdgeReporterHistory.class.getClassLoader(),
                 new Class[]{SharedPreferences.class}, (p,m,a) -> {
                     if (m.getName().equals("getString")) return saved.getOrDefault(a[0], (String)a[1]);
-                    if (m.getName().equals("edit")) return editor;
+                    if (m.getName().equals("edit")) { edits++; return editor; }
                     throw new AssertionError(m);
                 });
         Field cache = EdgeReporterHistory.class.getDeclaredField("cache");
@@ -49,6 +54,9 @@ public class VerifyEdgeReporterHistory {
         restart(); // New preferences instance over persisted data, with no live subject available.
         equal(full, EdgeReporterHistory.title(board, 1234567890L, "スレ"));
         equal(full, EdgeReporterHistory.historyTitle(1234567890L, board, "スレ"));
+        int before = edits;
+        for (int n=0;n<10000;n++) EdgeReporterHistory.historyTitle(1234567890L, board, n%2==0?full:"スレ");
+        equal(before, edits);
         equal(full, EdgeReporterHistory.title(board, 1234567890L, full));
         equal("スレ", EdgeReporterHistory.title("other", 1234567890L, "スレ"));
         equal("スレ", EdgeReporterHistory.title(board, 1234567891L, "スレ"));

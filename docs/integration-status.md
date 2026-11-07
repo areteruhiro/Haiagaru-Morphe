@@ -1354,3 +1354,13 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42355963730 success。1.25.0-dev.3 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.3 を2026-11-07 17:38:41 JSTに検証用公開。APIでprerelease=true/draft=false、MPP+bundle JSON2個+任意ZIP3個を確認。MPPを実ダウンロードし6990788bytes / SHA256 996c222845292876cefbe12a906e49d34472e881611f1cc31d6a909961599afd。pre JSONのversion/download_url一致も確認。CI生成コミット677b9472をff-onlyで取得、生成ファイル手編集なし。公開MPP自身の再パッチ/端末再導入は未実施。同じ製品ソースから生成したローカル候補で前記native 3版の確認が完了した。公開ノートは先行配布開始時点の未完了範囲を保守的に記載したまま。
+
+## 2026-11-07 履歴OOM・アップロード済み画像プレビュー・初見過去ログUnicode
+
+実装と経過はdocs/history-memory-preview-archive-20261107.md。EdgeReporterHistoryの行読込ごとのSharedPreferences.applyを除き、ReporterMetadataWritesへ重複排除/4096保留上限/単一commitワーカー/低ヒープ時退避/補助保存OOM時の停止を追加。既存のNG・履歴やユーザー指定キャッシュ設定は消去/変更しない。242の通常画像プレビューをnative pagerへ委ね、191/226の旧方式とGIF/動画/全レス移動は維持。過去ログはNCR出力、UTF-8 HTML判別、現行div形式fallback、旧sectionがないHTMLでの旧正規表現試行抑止を追加。
+
+ホストはメタデータ14、履歴27、低ヒープ32MiBで5、メディア47、文字コード11、実コンバーター21（旧/現行・UTF-8・報告元実レス・1000レス）成功、既存Talk文字コード試験も成功。元URLをGETしてHTTP200/Shift_JIS/&#120143;を確認。公開投稿は行わない。
+
+191/226/242の前段最終候補で各34項目成功。12,000並列履歴読込/alias保存/NG解決/旧板の隔離、AndroidのHTML/NCR・itest・報告実レス変換、同サイズの生成PNG2枚をnative previewで3往復。242は同じActivityを保ち、191/226は旧方式を維持する。191の既存Back優先と混ざる試験はBackを一時0へ変更し、最後に元値へ復元して再検証した。hook/register/元dispatchの保持も3版成功。途中の失敗は経過文書に残し成功へ含めない。
+
+最後の旧形式解析スキップだけを加えたhistory-release-build.logも通常Lint/R8成功3m49s。その出力build/history-release.mppから最終APKを生成/検査中。共通の最終制御分岐はhost21で出力不変と1000レスを確認済み。機能の前段3版native確認と区別し、Semantic Release CIの実行中にも最終MPPからの追加native確認を継続する。Sony SOG02/Android12実機の再現確認は未実施。既存の文字欠落DATを自動修復する変更ではない。

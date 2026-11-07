@@ -25,6 +25,15 @@ public final class EdgeReporterHistory {
      */
     private static final String TITLE_KEY_PREFIX = "title:";
     private static volatile SharedPreferences cache;
+    private static volatile ReporterMetadataWrites writes;
+    private static ReporterMetadataWrites metadata(SharedPreferences prefs) {
+        ReporterMetadataWrites current = writes;
+        if (current != null && current.prefs == prefs) return current;
+        synchronized (EdgeReporterHistory.class) {
+            if (writes == null || writes.prefs != prefs) writes = new ReporterMetadataWrites(prefs);
+            return writes;
+        }
+    }
     private static final ThreadLocal<Object> SUBJECT = new ThreadLocal<>();
     public static void pending(Object list) { SUBJECT.set(list); }
     public static void capturePending(Object url) {
@@ -37,17 +46,20 @@ public final class EdgeReporterHistory {
     private EdgeReporterHistory() {}
     public static void initialize(Context context) {
         cache = context.getSharedPreferences("haiagaru.edge-reporters", Context.MODE_PRIVATE);
+        metadata(cache);
     }
     public static String historyTitle(long thread, Object board, String title) {
         return title(board, thread, title);
     }
     /** Called only after the display bridge has verified the current board and thread. */
     public static String displayTitle(long thread, String title) {
+        if (!ReporterMetadataWrites.headroom()) return title;
         SharedPreferences prefs = cache;
         if (prefs == null || thread <= 0 || EdgeReporterId.suffix(title) != null) return title;
-        return EdgeReporterId.restore(title, prefs.getString(Long.toString(thread), null));
+        return EdgeReporterId.restore(title, metadata(prefs).get(Long.toString(thread)));
     }
     public static String title(Object board, long thread, String title) {
+        if (!ReporterMetadataWrites.headroom()) return title;
         String resolved=metadataTitle(board,thread,title);
         return EdgeReporterId.isBoard(board)&&!EdgeReporterOptions.menu()?EdgeReporterId.titleForNextThreadMatch(resolved):resolved;
     }
@@ -55,40 +67,41 @@ public final class EdgeReporterHistory {
         SharedPreferences prefs = cache;
         if (prefs == null || thread <= 0 || !EdgeReporterId.isBoard(board)) return title;
         String key = Long.toString(thread);
+        ReporterMetadataWrites metadata = metadata(prefs);
         String suffix = EdgeReporterId.suffix(title);
         if (suffix != null) {
-            SharedPreferences.Editor edit = prefs.edit();
-            edit.putString(key, suffix);
-            edit.putString(titleKey(title), suffix);
-            edit.apply();
+            metadata.put(key, suffix);
+            metadata.put(titleKey(title), suffix);
             return title;
         }
-        String stored = prefs.getString(key, null);
+        String stored = metadata.get(key);
         if (stored != null && title != null) {
             // This is the important path for rows restored from the local
             // history database: the row has no suffix, but its thread key does.
-            prefs.edit().putString(titleKey(title), stored).apply();
+            metadata.put(titleKey(title), stored);
         }
         return EdgeReporterId.restore(title, stored);
     }
 
     /** Restores reporter metadata for a menu title when the thread is already read. */
     public static String resolveTitle(Object board, String title) {
+        if (!ReporterMetadataWrites.headroom()) return title;
         if(EdgeReporterId.isBoard(board)&&!EdgeReporterOptions.menu())return EdgeReporterId.titleForNextThreadMatch(title);
         if (title == null || EdgeReporterId.suffix(title) != null || !EdgeReporterId.isBoard(board)) {
             return title;
         }
         SharedPreferences prefs = cache;
         if (prefs == null) return title;
-        return EdgeReporterId.restore(title, prefs.getString(titleKey(title), null));
+        return EdgeReporterId.restore(title, metadata(prefs).get(titleKey(title)));
     }
 
     /** Keep reporter metadata on screen, but copy the original thread title. */
     public static String copyTitle(String text) {
+        if (!ReporterMetadataWrites.headroom()) return text;
         String suffix = EdgeReporterId.suffix(text);
         if (suffix == null || text.indexOf('\n') >= 0 || text.indexOf('\r') >= 0) return text;
         SharedPreferences prefs = cache;
-        String stored = prefs == null ? null : prefs.getString(titleKey(text), null);
+        String stored = prefs == null ? null : metadata(prefs).get(titleKey(text));
         // A title copied from a freshly fetched subject may not have reached the
         // history cache yet.  Its single-line reporter suffix is still display
         // metadata, so remove it at the clipboard boundary too.
@@ -106,12 +119,12 @@ public final class EdgeReporterHistory {
         return TITLE_KEY_PREFIX + Integer.toHexString(base.hashCode()) + ":" + base.length();
     }
     public static void capture(Object url, Object result) {
+        if (!ReporterMetadataWrites.headroom()) return;
         if (url == null || !(result instanceof List) || cache == null) return;
         // BBSUrlInfo exposes server/name in its diagnostic representation on all supported versions.
         String value = url.toString();
         if (!value.startsWith("{server:bbs.eddibb.cc, name:liveedge, created:")) return;
-        SharedPreferences.Editor edit = cache.edit();
-        boolean changed = false;
+        ReporterMetadataWrites metadata = metadata(cache);
         try {
             for (Object item : (List<?>) result) {
                 long thread = 0;
@@ -123,19 +136,12 @@ public final class EdgeReporterHistory {
                     if (field.getType() == String.class) title = (String) field.get(item);
                 }
                 String suffix = EdgeReporterId.suffix(title);
-                if (thread > 0 && suffix != null && !suffix.equals(cache.getString(Long.toString(thread), null))) {
-                    edit.putString(Long.toString(thread), suffix);
-                    changed = true;
-                }
+                if (thread > 0 && suffix != null) metadata.put(Long.toString(thread), suffix);
                 if (suffix != null && title != null) {
                     String alias = titleKey(title);
-                    if (!suffix.equals(cache.getString(alias, null))) {
-                        edit.putString(alias, suffix);
-                        changed = true;
-                    }
+                    metadata.put(alias, suffix);
                 }
             }
-            if (changed) edit.apply();
         } catch (ReflectiveOperationException error) {
             Log.w("HaiagaruReporter", "Unable to cache subject metadata", error);
         }

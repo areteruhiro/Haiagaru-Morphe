@@ -250,7 +250,27 @@ public final class MediaViewerNavigation {
         if(current<0||next<0||next>=links.size())return false;
         activity.startActivity(destination(activity,links,next));activity.finish();activity.overridePendingTransition(0,0);return true;
     }
-    public static boolean onNativeTouch(Activity activity,MotionEvent event) {return onTouch(activity,event,null);}
+    public static boolean onNativeTouch(Activity activity,MotionEvent event) {
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN
+                && hasNativeStillPager(activity)
+                && !activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)) {
+            Intent intent = activity.getIntent();
+            ArrayList<String> gallery = intent.getStringArrayListExtra(EXTRA);
+            if (gallery == null) gallery = intent.getStringArrayListExtra("links");
+            if (!MediaGallery.needsExternalPaging(gallery,VideoViewerSettings.nativeGif(activity),VideoViewerSettings.nativeVideo(activity))) {
+                // Do not cancel the native drag or replace the Activity for each still image.
+                // Its live pager index can differ from the original launch Intent index.
+                SWIPES.remove(activity); return false;
+            }
+        }
+        return onTouch(activity,event,null);
+    }
+    private static boolean hasNativeStillPager(Activity activity) {
+        try {
+            Class.forName("jp.syoboi.a2chMate.activity.ImagesViewerViewModel",false,activity.getClassLoader());
+            return true;
+        } catch (ClassNotFoundException legacy) { return false; }
+    }
     static boolean onTouch(Activity activity,MotionEvent event,View surface) {
         int action=event.getActionMasked();Swipe swipe=SWIPES.get(activity);
         // Validate installation/version once per gesture, not on every MOVE frame.
