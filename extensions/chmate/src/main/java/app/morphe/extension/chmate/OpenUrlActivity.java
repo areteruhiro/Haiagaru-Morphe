@@ -30,6 +30,11 @@ public final class OpenUrlActivity extends Activity {
                     && uri.getPath()!=null && uri.getPath().startsWith("/read.php/")) {
                 target.setClass(this,HissiMenuActivity.class);
             } else {
+                String local=SiteNativeBoards.localUrl(uri.toString());
+                String host=uri.getHost().toLowerCase(java.util.Locale.ROOT);
+                boolean addedSite=host.equals("bbs.animanch.com")||host.equals("bakusai.com")||host.endsWith(".2chan.net");
+                if(local!=null)uri=Uri.parse(local);
+                else if(addedSite){android.widget.Toast.makeText(this,"対応する板を板一覧へ追加し、「使用する」をオンにしてください。対応していない形式のURLは開けません。",android.widget.Toast.LENGTH_LONG).show();return;}
                 uri=normalizeEdge(uri);
                 target.setData(uri);
                 target.setClassName(this, isThreadUrl(uri) ? THREAD_ACTIVITY : BOARD_ACTIVITY);

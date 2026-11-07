@@ -6,7 +6,7 @@ import java.io.IOException;import java.util.*;import java.util.regex.*;import or
 final class BakusaiPagination {
  interface Fetch {String get(String url)throws IOException;}
  static SiteBoardProtocol.ThreadPage thread(SiteBoardProtocol.Board board,String id,String initial,Fetch fetch)throws IOException{
-  String origin=board.threadUrl(id);Pattern route=Pattern.compile(Pattern.quote(origin)+"p=([1-9][0-9]{0,2})/tp=[0-9]{1,3}/");
+  String origin=board.threadUrl(id);Pattern route=Pattern.compile("https://bakusai\\.com/thr_res/acode=[0-9]{1,3}/"+Pattern.quote(board.path.replaceFirst("^acode=[0-9]+/","")+"tid="+id+"/")+"p=([1-9][0-9]{0,2})/tp=[0-9]{1,3}/");
   TreeMap<Integer,SiteBoardProtocol.Entry> responses=new TreeMap<>();Set<String> visited=new HashSet<>(),unavailableCodes=new TreeSet<>();ArrayDeque<String> pending=new ArrayDeque<>();pending.add(origin);String title=null;int expected=0;
   while(!pending.isEmpty()){
    String url=pending.removeFirst();if(!visited.add(url))continue;if(visited.size()>200)throw new IOException("爆サイのページ数が取得上限を超えました");
@@ -21,7 +21,7 @@ final class BakusaiPagination {
    if(responses.size()==expected+1&&responses.firstKey()==0&&responses.lastKey()==expected)return new SiteBoardProtocol.ThreadPage(title,new ArrayList<>(responses.values()));
    for(Element a:doc.select("a[href]")){String next=SiteBoardProtocol.resolve(url,a.attr("href"));if(next==null)continue;int hash=next.indexOf('#');if(hash>=0)next=next.substring(0,hash);Matcher m=route.matcher(next);if(m.matches()&&!m.group(1).equals("1")&&!visited.contains(next)&&!pending.contains(next))pending.add(next);}
    // The site's page selector can advertise later pages even when one intervening page fails.
-   for(Element select:doc.select("form select[name=p]")){Element form=select.closest("form");if(form==null||!Objects.equals(SiteBoardProtocol.resolve(url,form.attr("action")),origin+"tp=1/"))continue;
+   for(Element select:doc.select("form select[name=p]")){Element form=select.closest("form");String action=form==null?null:SiteBoardProtocol.resolve(url,form.attr("action"));if(action==null||!id.equals(SiteBoardProtocol.threadIn(board,action)))continue;
     for(Element option:select.select("option[value]")){String number=option.attr("value");if(!number.matches("[1-9][0-9]{0,2}")||number.equals("1"))continue;String next=origin+"p="+number+"/tp=1/";if(!visited.contains(next)&&!pending.contains(next))pending.add(next);}
    }
   }

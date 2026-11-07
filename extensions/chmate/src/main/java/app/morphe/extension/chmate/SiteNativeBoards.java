@@ -5,6 +5,12 @@ import android.content.Context;import java.lang.reflect.*;import java.util.*;imp
 /** Adds real native BBS descriptors, so native BbsPreference/dialog/import/grouping remain in use. */
 public final class SiteNativeBoards {
  private static final Map<String,Object> MODELS=new HashMap<>();
+ public static String localUrl(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).localUrl(address);}catch(Exception unavailable){return null;}}
+ static String copiedText(String text){
+  Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1:"))return text;
+  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1:[0-9]+/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"'）】])").matcher(text);
+  StringBuffer out=new StringBuffer();SiteBoardGateway gateway=SiteBoardGateway.get(context);while(matcher.find())matcher.appendReplacement(out,java.util.regex.Matcher.quoteReplacement(gateway.originalUrl(matcher.group())));matcher.appendTail(out);return out.toString();
+ }
  /** Modern ChMate upgrades compatible-board URL producers to HTTPS. */
  public static String rewriteInfoUrl(Object info,String value){
   if(info==null||value==null||!value.startsWith("https://127.0.0.1:"))return value;
@@ -20,7 +26,8 @@ public final class SiteNativeBoards {
  }
  /** Native URL parsing drops ports and assumes timestamp-sized thread numbers. */
  public static Object parse(String address){
-  if(address==null||!address.startsWith("http://127.0.0.1:"))return null;
+  if(address==null)return null;
+  if(!address.startsWith("http://127.0.0.1:")){String converted=localUrl(address);if(converted==null)return null;address=converted;}
   Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;
   try{
    java.net.URI uri=java.net.URI.create(address);SiteBoardGateway gateway=SiteBoardGateway.get(context);

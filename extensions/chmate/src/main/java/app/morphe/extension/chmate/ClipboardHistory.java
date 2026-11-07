@@ -53,6 +53,13 @@ public final class ClipboardHistory {
         } finally { db.endTransaction(); }
     }
     public static void setPrimaryClip(ClipboardManager manager, ClipData clip) {
+        if(clip!=null&&clip.getItemCount()==1){
+            ClipData.Item item=clip.getItemAt(0);
+            if(item.getText()!=null&&item.getUri()==null&&item.getIntent()==null&&item.getHtmlText()==null){
+                String original=item.getText().toString(),rewritten=SiteNativeBoards.copiedText(original);
+                if(!original.equals(rewritten))clip=new ClipData(new android.content.ClipDescription(clip.getDescription()),new ClipData.Item(rewritten));
+            }
+        }
         // Preserve the original copy operation and exceptions; recording failure never breaks copying.
         manager.setPrimaryClip(clip);
         try {

@@ -38,7 +38,7 @@ final class SiteBoardProtocol {
                 return new Board("futaba","https://"+host+"/"+m.group(1)+"/",host,m.group(1),m.group(2));
             }
             if(host.equals("bakusai.com")&&u.getRawQuery()==null){
-                Matcher m=Pattern.compile("/thr_(?:tl|res)/(acode=[0-9]{1,3}/ctgid=[0-9]{1,6}/bid=[0-9]{1,8}/)(?:tid=([1-9][0-9]{0,11})/)?(?:tp=[0-9]+/)?").matcher(path);
+                Matcher m=Pattern.compile("/thr_(?:tl|res)/(acode=[0-9]{1,3}/ctgid=[0-9]{1,6}/bid=[0-9]{1,8}/)(?:tid=([1-9][0-9]{0,11})/)?(?:p=[1-9][0-9]{0,2}/)?(?:tp=[0-9]+/)?").matcher(path);
                 if(!m.matches())throw new IllegalArgumentException();
                 return new Board("bakusai","https://bakusai.com/thr_tl/"+m.group(1),host,m.group(1),m.group(2));
             }
@@ -69,7 +69,7 @@ final class SiteBoardProtocol {
             for(Element cell:doc.select("#cattable td")){
                 Element link=cell.selectFirst("a[href]");if(link==null)continue;
                 String id=threadIn(board,link.absUrl("href"));if(id==null)continue;
-                Element count=cell.selectFirst("font");if(count==null)continue;
+                Element count=null;for(Element candidate:cell.select("font"))if(candidate.text().trim().matches("[0-9]{1,6}")){count=candidate;break;}if(count==null)continue;
                 String raw=count.text().trim();if(!raw.matches("[0-9]{1,6}"))continue;
                 Element text=cell.selectFirst("small");String title=text==null?"No."+id:text.text().trim();
                 if(title.isEmpty())title="No."+id;
@@ -159,8 +159,9 @@ final class SiteBoardProtocol {
         return new Entry(number,name,date,Jsoup.clean(safe.html(),board.url,SAFE,new Document.OutputSettings().prettyPrint(false)),new ArrayList<>(media));
     }
     static String threadIn(Board board,String url){
-        try{Board parsed=address(url);return parsed.url.equals(board.url)||board.kind.equals("animanch")&&parsed.kind.equals("animanch")?parsed.thread:null;}catch(IOException invalid){return null;}
+        try{Board parsed=address(url);return sameBoard(board,parsed)?parsed.thread:null;}catch(IOException invalid){return null;}
     }
+    static boolean sameBoard(Board board,Board other){return board.kind.equals(other.kind)&&(board.url.equals(other.url)||board.kind.equals("animanch")||board.kind.equals("bakusai")&&board.path.replaceFirst("^acode=[0-9]+/","").equals(other.path.replaceFirst("^acode=[0-9]+/","")));}
     static String resolve(String base,String link){
         try{URI u=URI.create(base).resolve(link);return "https".equalsIgnoreCase(u.getScheme())&&u.getHost()!=null&&u.getUserInfo()==null&&u.getPort()==-1?u.toASCIIString():null;}catch(RuntimeException invalid){return null;}
     }

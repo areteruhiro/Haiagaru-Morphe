@@ -33,7 +33,7 @@ final class SiteBoardMenuProtocol {
   return Collections.unmodifiableList(new ArrayList<>(rows.values()));
  }
  private static void add(Map<String,Choice> out,String kind,String name,String url,String group){
-  try{SiteBoardProtocol.Board board=SiteBoardProtocol.address(url);if(!board.kind.equals(kind)||board.thread!=null||name.trim().isEmpty())return;out.putIfAbsent(board.url,new Choice(name.trim(),board.url,group.trim()));}catch(IOException ignored){/* Menus also contain news, advertising and unsupported endpoints. */}
+  try{SiteBoardProtocol.Board board=SiteBoardProtocol.address(url);if(!board.kind.equals(kind)||board.thread!=null||name.trim().isEmpty()||kind.equals("futaba")&&board.host.equals("www.2chan.net")&&board.path.equals("script"))return;out.putIfAbsent(board.url,new Choice(name.trim(),board.url,group.trim()));}catch(IOException ignored){/* Menus also contain news, advertising and unsupported endpoints. */}
  }
  private SiteBoardMenuProtocol(){}
 }

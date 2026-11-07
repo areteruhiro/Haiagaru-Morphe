@@ -2128,3 +2128,15 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 
 追補: 226/191の最終候補も3072MiBのemulator-5580へ署名照合後install-r Success。242=51、226=51、191=48専用試験PASS。絶対APK path/MPP/署名は上記と同一。
 
+
+
+## 2026-11-07 外部板報告URL/元URL連携/Unicode
+
+MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/site-url-bugs.mpp / SHA256 072e884dd948cda807125702bbadfdef4de62d5639c0e5d377492633c376b614。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。対象emulator-5580、3072MiB、2026-11-07 22時台JST、既存reporter packageを署名照合後install-r。実機変更/データ消去なし。未公開ローカル候補。
+
+- Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/site-url-bugs191.apk / SHA256 0767b682bb5a461afac7789a50ebd438e839953457eb29f0b2808fab3497e7d3 / install-r Success / 固定hook命令/レジスター保持PASS。INSTRUMENTATION_RESULT: result=PASS 307 gateway/native URL checks; upstream GET=61, isolated POST=14; public posts=0。
+
+- Haiagaru NG確認226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/site-url-bugs226.apk / SHA256 137144427723343efdcbb0de22a3d4069d64aeece36a2858f8f2a70dc95f6f82 / install-r Success / 固定hook命令/レジスター保持PASS。INSTRUMENTATION_RESULT: result=PASS 316 gateway/native URL checks; upstream GET=60, isolated POST=14; public posts=0。
+
+- Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/site-url-bugs242.apk / SHA256 4c48ef9324d1cb3f451eb31a5112b2b01a1a666b6ce7157a776d0d5df40402bb / install-r Success / 固定hook命令/レジスター保持PASS。INSTRUMENTATION_RESULT: result=PASS 313 gateway/native URL checks; upstream GET=62, isolated POST=14; public posts=0。
+

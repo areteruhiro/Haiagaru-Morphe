@@ -123,6 +123,34 @@ final class SiteBoardGateway {
         if(!boardEnabled(key))throw new IOException("この板の「使用する」をオンにしてください");start();
         return thread==null?origin()+"/"+key+"/":origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(thread)+"/";
     }
+    /** Resolve only already registered/enabled boards. Never performs a network request. */
+    synchronized String localUrl(String address)throws IOException{
+        URI uri;try{uri=URI.create(address);}catch(RuntimeException invalid){return null;}
+        if(uri.getUserInfo()!=null||uri.getPort()!=-1||!("http".equalsIgnoreCase(uri.getScheme())||"https".equalsIgnoreCase(uri.getScheme())))return null;
+        String canonical="https://"+uri.getRawAuthority()+uri.getRawPath()+(uri.getRawQuery()==null?"":"?"+uri.getRawQuery());
+        final SiteBoardProtocol.Board source;try{source=SiteBoardProtocol.address(canonical);}catch(IOException other){return null;}
+        if(source.kind.equals("futaba")&&source.host.equals("www.2chan.net")&&source.path.equals("script"))return null;
+        List<String> keys=new ArrayList<>(boards.keySet());Collections.sort(keys);
+        String selected=null;for(String key:keys)if(boardEnabled(key)&&SiteBoardProtocol.sameBoard(boards.get(key),source)){
+            if(selected==null||boards.get(key).url.equals(source.url))selected=key;
+            if(boards.get(key).url.equals(source.url))break;
+        }
+        if(selected==null)return null;String result=nativeUrl(selected,source.thread);
+        String fragment=uri.getFragment();if(source.thread!=null&&source.kind.equals("animanch")&&fragment!=null&&fragment.matches("res[1-9][0-9]{0,5}"))result+=fragment.substring(3);
+        return result;
+    }
+    /** Copy/share conversion does not activate a disabled board or start the gateway. */
+    synchronized String originalUrl(String address){
+        try{URI uri=URI.create(address);if(!"127.0.0.1".equals(uri.getHost())||uri.getPort()!=port||uri.getUserInfo()!=null||uri.getRawQuery()!=null||!("http".equals(uri.getScheme())||"https".equals(uri.getScheme())))return address;
+            Matcher thread=Pattern.compile("/test/read\\.cgi/("+KEY_PATTERN+")/([0-9]{1,12})/(?:([1-9][0-9]{0,5})|[ln][0-9]+)?").matcher(uri.getRawPath());
+            Matcher board=Pattern.compile("/("+KEY_PATTERN+")/").matcher(uri.getRawPath());
+            if(thread.matches()){
+                SiteBoardProtocol.Board target=boards.get(thread.group(1));if(target==null)return address;String result=target.threadUrl(sourceThread(thread.group(2)));
+                if(target.kind.equals("animanch")&&thread.group(3)!=null)result+="#res"+thread.group(3);return result;
+            }
+            if(board.matches()&&boards.containsKey(board.group(1)))return boards.get(board.group(1)).url;
+        }catch(Exception invalid){/* Leave unrelated/malformed copied text intact. */}return address;
+    }
     private String origin(){return "http://127.0.0.1:"+port;}
     private String savedBoards()throws IOException{JSONArray rows=new JSONArray();try{for(Map.Entry<String,SiteBoardProtocol.Board> e:boards.entrySet())rows.put(new JSONObject().put("key",e.getKey()).put("url",e.getValue().url).put("name",names.get(e.getKey())).put("folder",folders.get(e.getKey())));}catch(JSONException invalid){throw new IOException("板を保存できません",invalid);}return rows.toString();}
     private synchronized void reservePort()throws IOException{
@@ -219,6 +247,7 @@ final class SiteBoardGateway {
             if(!boardEnabled(key)){send(client,403,"text/plain; charset=UTF-8","この板の「使用する」がオフです".getBytes("UTF-8"));return;}
             if(route.group(2).equals("SETTING.TXT"))data=SiteNativeData.wire("BBS_TITLE="+names.get(key).replace('\n',' ')+"\nBBS_NONAME_NAME=名無しさん\nBBS_UNICODE=pass\n");
             else if(route.group(2).equals("subject.txt")){
+                if(board.kind.equals("futaba")&&board.host.equals("www.2chan.net")&&board.path.equals("script"))throw new IOException("ふたばの「配布」はスクリプト配布ページのため、スレ一覧はありません。元のURLをブラウザで開いてください");
                 String listing=page(board.indexUrl());
                 data=SiteNativeData.subject(board.kind.equals("futaba")?FutabaCatalogue.topics(board,listing,url->{if(!boardEnabled(key))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.topics(board,listing));
             }

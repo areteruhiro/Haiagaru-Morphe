@@ -1427,3 +1427,16 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 1.25.0-dev.7検証用公開完了: CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42372305439 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.7 / 2026-11-07 21:29:21 JST。APIでprerelease=true/draft=false、配布MPP/bundle JSON2個/任意ZIP3個を確認。MPPを実ダウンロードし7003901bytes / SHA256 b07953c30763e9024d9a1a303c5e53b43cda50c50933e689cdea964174c73870。pre JSONのversion/download_url一致。ソース6ea80066、CI生成860c596aをff-only取得、生成ファイル手編集なし。公開開始時点の1版先行配布の説明は保守的なまま維持したが、公開待ち中に全3版の専用試験/通常native回帰を完了。配布MPP自体の再パッチ/導入は未実施。
 
+
+
+## 2026-11-07 外部板の報告URLと元URL連携（ローカル候補・未公開）
+
+詳細 docs/site-url-bugs-20261107.md。爆サイ佐賀/長崎/大分のacode10→20転送に対応し、ctgid/bidの板identityを保持して一覧/ページ分割リンクを解析。ふたばニュース表の括弧付きfontと数字fontに対応、配布は非掲示板のため新menu対象外/既存には理由表示。あにまんの星+VS文字化けはAndroid charset.canEncodeのfalse-positiveが原因で再現、roundtrip検査+NCR保持に修正。登録済みでONの板の元URLを標準URLルートで開き、コピー時は元URLへ戻す。サーバー変更/公開POSTなし。通常Lint/R8成功4m23s、ホスト20/16/98/1288項目成功。
+
+
+最終Android検証: emulator-5580の3072MiBで191=307、226=316、242=313項目PASS（site-url-bugs<版>-runtime.log）。実配信された2件のHTMLをfixtureとして読み、元URLからOpenUrlActivity経由で標準本文画面を起動し308/82レス表示を確認。Java/Androidの文字参照を含むtitle roundtrip、元URL→既存登録identityの変換、元URLのコピー用文字列（タイトル＋URL形式含む）、manifestハンドラー、OFF時の有効化なし、既存画像/模擬投稿dialog/HTTPS ON/停止時解除も成功。公開POST0、実サイトの投稿受理は未確認。試験終了時刻まで新規crash buffer0行（site-url-bugs-crash.log）。
+
+固定hook verifierの最初の実行は既存4番目引数の不足で失敗し、dev.7の既存wrapper/fallbackと比較するよう検査を調整。242の検査のみホストXmx192mではDEX3組保持でOOMになったため384mで再実行してPASS。製品APK生成/実行のOOMではない。全3版でnative parser fallbackとregistry/settingsのレジスター・元命令保持を確認。APK/MPP/署名はandroid-installations.md。製品ソースの最終ビルド後に変更したのは試験/文書だけ。
+
+公開は行っていない。あにまんの過去の取得失敗は未再現、爆サイの全失敗を網羅したとは扱わず、具体的な失敗URL/エラー詳細を照会中。今回修正した地域転送・ニュース表・Unicode・元URL連携の検証完了とは区別する。
+

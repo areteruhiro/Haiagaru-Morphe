@@ -5302,6 +5302,15 @@ val haiagaruPatch = resourcePatch(
             // Separate filters keep custom hosts and paths from being combined.
             // External checker apps discover renamed installations by URL handlers.
             // Never encode a distribution package name into this contract.
+            for ((host, path) in listOf(
+                "bbs.animanch.com" to "/board/",
+                "bbs.animanch.com" to "/category",
+                "bakusai.com" to "/thr_res/",
+                "bakusai.com" to "/thr_tl/",
+            )) document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), host,
+                path = path, pathAttribute = "android:pathPrefix")
+            document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), "*.2chan.net",
+                path = "/.*/res/.*", pathAttribute = "android:pathPattern")
             if (!dedicatedViewerEnabled) {
                 document.addOpenUrlFilter(
                     openUrlActivity, listOf("http", "https"), "hissi.org",

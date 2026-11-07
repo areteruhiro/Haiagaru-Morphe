@@ -49,9 +49,10 @@ final class SiteNativeData {
     private static String header(String text){return Entities.escape(text.replace('\r',' ').replace('\n',' '));}
     static byte[] wire(String input){
         Charset charset=Charset.forName("windows-31j");CharsetEncoder encoder=charset.newEncoder();
-        if(encoder.canEncode(input))return input.getBytes(charset);
+        byte[] encoded=input.getBytes(charset);
+        if(encoder.canEncode(input)&&new String(encoded,charset).equals(input))return encoded;
         StringBuilder out=new StringBuilder();for(int pos=0;pos<input.length();){int cp=input.codePointAt(pos);String letter=new String(Character.toChars(cp));
-            if(encoder.canEncode(letter))out.append(letter);else out.append("&#x").append(Integer.toHexString(cp)).append(';');pos+=Character.charCount(cp);}
+            if(encoder.canEncode(letter)&&new String(letter.getBytes(charset),charset).equals(letter))out.append(letter);else out.append("&#x").append(Integer.toHexString(cp)).append(';');pos+=Character.charCount(cp);}
         return out.toString().getBytes(charset);
     }
     private SiteNativeData(){}
