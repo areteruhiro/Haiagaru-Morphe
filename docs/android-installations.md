@@ -2113,3 +2113,15 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 
 - Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/canonical-backup242.apk / SHA256 6474455bec9d5d7778ec83b05c8f588fbacde2574dae286669904cded5c2fbea / install-r Success / 固定hook保持PASS / 専用試験13項目成功。
 
+
+
+## 2026-11-07 共有NG端末内編集/固定ラベル誤検知
+
+MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/shared-ng-local-edits-ui.mpp / SHA256 174469e1419a6cdc345b14a9700a7058a7dcd0d8aac8e32e4ea81bbca9d3b0c3。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。対象emulator-5580、既存reporter packageを同署名install-r、実機変更/データ消去なし。2026-11-07 21時台JST。
+
+- Haiagaru NG確認242 / ChMate0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/shared-ng-local-edits-ui242.apk / SHA256 198ff728c8069fc5322e68277f07c5416e17da825b2fe7f40991407837ce583a。署名照合install-r Success、専用最終試験51項目PASS。
+
+- Haiagaru NG確認226 / ChMate0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/shared-ng-local-edits-ui226.apk / SHA256 6c8250192d5c3d9847469c185f3fa9a18ba98ebe3e38f91fe17dfb13c38c3b85。固定hook検査成功、インストール/試験は継続中（未成功扱い）。
+
+- Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/shared-ng-local-edits-ui191.apk / SHA256 c42bc814e3a4fb428d50fa80f4008e98a16eaf948308c46738ed585e8fc18703。固定hook検査成功、インストール/試験は継続中（未成功扱い）。
+

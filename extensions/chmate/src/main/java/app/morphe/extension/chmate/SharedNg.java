@@ -37,11 +37,12 @@ final class SharedNg {
         try{loadCache();}catch(FileNotFoundException absent){/* First launch has no cache. */}catch(Exception e){status="キャッシュを読み込めません";}
         if(rules.isEmpty())prefs().edit().putLong("cursor",0).apply();flushReports();sync(false);
     });}
-    static void reload(){if(context==null)return;SharedPreferences p=prefs();enabled=p.getBoolean("enabled",false);threshold=p.getInt("threshold",1);if(threshold<1)threshold=1;exceptions=new HashSet<>(p.getStringSet("exceptions",Collections.emptySet()));new android.os.Handler(android.os.Looper.getMainLooper()).post(ProgrammableNgController::sharedNgChanged);}
+    static void reload(){if(context==null)return;SharedPreferences p=prefs();SharedNgLocalEdits.reload(p);enabled=p.getBoolean("enabled",false);threshold=p.getInt("threshold",1);if(threshold<1)threshold=1;exceptions=new HashSet<>(p.getStringSet("exceptions",Collections.emptySet()));new android.os.Handler(android.os.Looper.getMainLooper()).post(ProgrammableNgController::sharedNgChanged);}
+    static SharedNgRules.Rule originalRule(SharedNgRules.Rule fallback){for(SharedNgRules.Rule rule:rules)if(rule.id.equals(fallback.id))return rule;return fallback;}
     static boolean enabled(){return enabled;}
     static void showResponseExclusions(Activity activity, ProgrammableNgScript.Input input) {
         if (!enabled) return;
-        List<SharedNgRules.Rule> source = SharedNgReporterPolicy.apply(rules,ignoredReporters());
+        List<SharedNgRules.Rule> source = SharedNgLocalEdits.apply(SharedNgReporterPolicy.apply(rules,ignoredReporters()),SharedNgLocalEdits.snapshot());
         Set<String> ignored = new HashSet<>(exceptions);
         Set<String> excluded = new HashSet<>(prefs().getStringSet("excludedBoards", Collections.emptySet()));
         int votes = threshold, kinds = 0;
@@ -77,10 +78,12 @@ final class SharedNg {
     }
     private static final class MatchPlan {
         final List<SharedNgRules.Rule> source;final Set<String> ignored,excluded,reporters;final int votes,kinds;final SharedNgIndex index;
+        final Map<String,SharedNgLocalEdits.Edit> edits;
         MatchPlan(List<SharedNgRules.Rule> source,Set<String> ignored,Set<String> excluded,int votes,int kinds,Set<String> reporters){
             this.source=source;this.ignored=ignored;this.excluded=new HashSet<>(excluded);this.votes=votes;this.kinds=kinds;
             this.reporters=new HashSet<>(reporters);
-            index=new SharedNgIndex(SharedNgReporterPolicy.apply(source,reporters),votes,ignored,this.excluded,kinds);
+            this.edits=SharedNgLocalEdits.snapshot();
+            index=new SharedNgIndex(SharedNgLocalEdits.apply(SharedNgReporterPolicy.apply(source,reporters),edits),votes,ignored,this.excluded,kinds);
         }
     }
     private static SharedNgIndex index(){
@@ -89,7 +92,7 @@ final class SharedNg {
         Set<String> excluded=p.getStringSet("excludedBoards",Collections.emptySet());
         Set<String> reporters=ignoredReporters();
         List<SharedNgRules.Rule> source=rules;Set<String> ignored=exceptions;int votes=threshold;MatchPlan plan=matchPlan;
-        if(plan==null||plan.source!=source||plan.ignored!=ignored||plan.votes!=votes||plan.kinds!=kinds||!plan.excluded.equals(excluded)||!plan.reporters.equals(reporters)){
+        if(plan==null||plan.source!=source||plan.ignored!=ignored||plan.edits!=SharedNgLocalEdits.snapshot()||plan.votes!=votes||plan.kinds!=kinds||!plan.excluded.equals(excluded)||!plan.reporters.equals(reporters)){
             plan=new MatchPlan(source,ignored,excluded,votes,kinds,reporters);matchPlan=plan;
         }
         return plan.index;
@@ -291,7 +294,7 @@ final class SharedNg {
         Button reporters=new Button(a);reporters.setText("除外するレポーター（今後の報告にも適用）");box.addView(reporters);reporters.setOnClickListener(v->SharedNgReporterBlocks.show(a,rules));
         Button update=new Button(a);update.setText("共有NGを同期");box.addView(update);update.setOnClickListener(v->{update.setEnabled(false);state.setText("同期中…");IO.execute(()->{sync(true);a.runOnUiThread(()->{state.setText(status);update.setEnabled(true);});});});
         Button report=new Button(a);report.setText("選んだ投稿から共有NGを報告");box.addView(report);report.setOnClickListener(v->report(a));
-        Button list=new Button(a);list.setText("受信した条件・個別解除");box.addView(list);list.setOnClickListener(v->SharedNgExceptions.show(a,rules));
+        Button list=new Button(a);list.setText("受信した条件・端末内編集・個別解除");box.addView(list);list.setOnClickListener(v->SharedNgExceptions.show(a,rules));
         ScrollView scroll=new ScrollView(a);scroll.addView(box);new HaiagaruDialog.Builder(a).setTitle("オンライン共有NG（開発中）").setView(scroll).setPositiveButton("閉じる",null).show();
     }
     static void report(Activity a){

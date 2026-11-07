@@ -1405,3 +1405,13 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 1.25.0-dev.6 検証用公開完了。Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42367834199 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.6 / 2026-11-07 20:25:01 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7001425bytes / SHA256 858ab81a6042227f84c09a592f9603f9f36328c1c570b2bd819eb185a613af5c。pre JSONのversion/download_url一致。ソースa7c22449、CI生成eef240a9はff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースのローカル最終候補で全3版試験済み。
 
+
+
+## 2026-11-07 共有NG固定ラベル誤検知・端末内編集（作業中）
+
+詳細 docs/shared-ng-local-edits-20261107.md。配信済み条件の実式に独立したﾜｯﾁｮｲ等の短いOR分岐を確認、受信側に対策。共有NGの条件文/正規表現指定を端末内だけ編集、同期保持、配信条件へ戻すUIを追加。配信停止/票数/報告者除外維持、サーバー変更なし。ホスト57/96/10306/17/263成功。Lint/R8製品ビルド2回成功、UI最終調整の再build/Android試験中。公開や実機導入は行わない。
+
+
+
+最終ビルドshared-ng-local-edits-ui-build.log成功4m32s。全3版APK生成/固定hook保持PASS。242は最終試験51項目PASS（shared-ng-local-edits-ui242-final-runtime.log）。ユーザーが『一つのバージョンで確認できたらプレリリースしていい』と明示したため確認範囲を公開ノートに記載して先行配布する。226/191の最終画面検証は継続し、未完了を成功として数えない。エミュレータRAM4096で226導入中に応答不能、当該AVD/portのプロセスのみ停止して3072でcold boot、データ消去なし。
+
