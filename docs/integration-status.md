@@ -1330,3 +1330,9 @@ site-final-auth-date-build.log 通常Lint/R8 BUILD SUCCESSFUL in 4m / 91tasks。
 SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各サイトで403拒否時にダイアログと入力本文が残ることを確認し、別本文の成功後は試験側のcleanup前にActivityが終了することを確認。emulator-5580で191=255、226=264、242=261項目成功（build/site-close-final191.log / 226.log / 242.log）。外向きPOSTを隔離した試験であり、公開投稿成功とは扱わない。通常のResEditActivityでも先行242=232項目で終了確認成功。3版の新規crash buffer行0（UTC07:50以降、build/site-close-crash.log）。共有NGの変更済みserver試験3ファイルも全て成功。
 
 検証に用いたMPPはbuild/site-final-auth-date.mpp、SHA256 06dbd33bd88e46d01b2b3d74f9ad9898f376de19b549d76b731a91d1b935660a。製品ビルド/3版フック/起動/本文/画像/導入記録は前節の最終候補と同じ。最新差分は試験・文書・公開ノートのみ。.releasercの検証用説明を今回の追加掲示板対応・226検索・動画エラー修正と実サイト投稿未確認の範囲に更新。既存Semantic Releaseのdev経路で公開する。
+
+### 検証用プレリリース公開済み
+
+既存Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42353763218 がsuccess。Semantic Releaseで1.25.0-dev.2を2026-11-07 08:07:57 UTCに公開。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.2 。draft=false、prerelease=trueをAPIで確認。配布MPP/標準とpreのbundle JSON/任意ZIP3個を確認。MPPを実ダウンロードし6990165bytes、SHA256 416e2546e68f11db3b0a62c724f1d83d4be0b91299c6731beeed991c105f053d。pre JSONのversion/download_url一致を確認。生成されたversion/CHANGELOG/bundle JSONはCIコミットfadfc39aをff-onlyで取得し、手動編集なし。
+
+ソースコミット4e2bc633。公開前の端末試験は前記ローカル最終候補の同一製品ソースに対して実施し、CIでバージョン更新/再ビルドされた配布MPP自体の再パッチ/再導入はしていない。実サイトへの最終POST0、投稿受理未確認の制限をRelease本文にも掲載。関係しない未追跡scripts/frida-thread-open-timing191.jsとscripts/shared-ng-reporter-blocks-runtime.jsは保護しコミットしなかった。
