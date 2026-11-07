@@ -36,3 +36,7 @@ SiteNativeData.wireでcanEncodeだけでなく符号化→復号の完全一致�
 
 公開は行っていない。あにまんの過去の取得失敗は未再現、爆サイの全失敗を網羅したとは扱わず、具体的な失敗URL/エラー詳細を照会中。今回修正した地域転送・ニュース表・Unicode・元URL連携の検証完了とは区別する。
 
+
+
+1.25.0-dev.8検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42375411673 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.8 / 2026-11-07 22:11:26 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7005493bytes / SHA256 0378c0d146ef9c5c96d2ef741c0956bac320108c6ca6536680b4a10049c4806b。pre JSONのversion/download_url一致。製品ソースb040af13、公開ノートd23e32ec、CI生成ab2cc9f0をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカルMPPで前記3版を検証。あにまん未再現の取得失敗/爆サイ全失敗未特定/実サイト投稿未確認をRelease本文に記載。
+

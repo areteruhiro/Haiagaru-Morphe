@@ -1444,3 +1444,7 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 公開指示追補: ユーザーが『プレリリースして』と指示。前記の最終3版検証結果を確認し、未再現/未解決の範囲を公開ノートへ明記したうえで、b040af13の製品変更を既存dev Semantic Release経路で検証用公開する。生成ファイルの手編集なし。
 
+
+
+1.25.0-dev.8検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42375411673 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.8 / 2026-11-07 22:11:26 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7005493bytes / SHA256 0378c0d146ef9c5c96d2ef741c0956bac320108c6ca6536680b4a10049c4806b。pre JSONのversion/download_url一致。製品ソースb040af13、公開ノートd23e32ec、CI生成ab2cc9f0をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカルMPPで前記3版を検証。あにまん未再現の取得失敗/爆サイ全失敗未特定/実サイト投稿未確認をRelease本文に記載。
+
