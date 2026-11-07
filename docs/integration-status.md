@@ -1336,3 +1336,15 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 既存Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42353763218 がsuccess。Semantic Releaseで1.25.0-dev.2を2026-11-07 08:07:57 UTCに公開。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.2 。draft=false、prerelease=trueをAPIで確認。配布MPP/標準とpreのbundle JSON/任意ZIP3個を確認。MPPを実ダウンロードし6990165bytes、SHA256 416e2546e68f11db3b0a62c724f1d83d4be0b91299c6731beeed991c105f053d。pre JSONのversion/download_url一致を確認。生成されたversion/CHANGELOG/bundle JSONはCIコミットfadfc39aをff-onlyで取得し、手動編集なし。
 
 ソースコミット4e2bc633。公開前の端末試験は前記ローカル最終候補の同一製品ソースに対して実施し、CIでバージョン更新/再ビルドされた配布MPP自体の再パッチ/再導入はしていない。実サイトへの最終POST0、投稿受理未確認の制限をRelease本文にも掲載。関係しない未追跡scripts/frida-thread-open-timing191.jsとscripts/shared-ng-reporter-blocks-runtime.jsは保護しコミットしなかった。
+
+## 2026-11-07 HTTPS強制ONでの追加掲示板TLSエラー修正中
+
+利用者報告: Unable to parse TLS packet header (http://127.0.0.1:41093/haiagaru-menu-bakusai/)。HttpsTransportのHTTP→HTTPS変更は、既存thumbnail/VPN/hissiだけを例外にしており、新規SiteBoardGatewayのHTTP待受portを登録していなかった。forceHttps=trueで標準クライアントのOkHttp URL builder/java.net接続がloopbackへTLSを開始し、HTTP応答をTLSヘッダとして解釈する。
+
+修正: Gatewayのbind/prefs保存/worker作成が成功した後で、実際に待受しているportをHttpsTransportへ登録。stopでsocketの実portを解除。厳密な127.0.0.1と登録portの組だけを既存HTTP例外/ローカル直接接続へ追加し、外部host/他port/起動前/停止後のloopbackは例外にしない。複数の独立gateway試験を妨げないようport集合を使う。ネイティブフックやTLS検証には変更なし。
+
+ホストのVerifyHttpsTransportを拡張。forceHttps=trueで3サイトmenuのHTTP取得、明示的な外部proxyを使わずlocal取得、外部host/類似host/停止後の例外なし、既存動画thumbnail/hissi等を含む62項目成功。通信はloopbackだけ。
+
+初回Gradle/R8とD8試験準備がPC仮想メモリ不足で失敗。製品コンパイル不良とはしない。emulator-5580が応答しなくなりsnapshot保存/emu killも応答しないため、正確なAVD名/port/PIDを照合したqemuだけ停止。データ消去/アンインストールなし。cold boot時のRAMを2048MiBに抑えて再開。通常Lint/R8再ビルドとHTTPS ONのnative再現/修正検証中。
+
+利用者が『先にプレリリースして』と指示。通常Lint/R8ビルド4m17s成功、3版APK生成成功、host62項目成功、191/226の既存固定フック保持成功。修正後の3版native画面再検証の完了前に先行配布する旨を公開説明に明記し、dev Semantic Releaseを進める。公開処理中にもnative検証を継続する。旧候補での起動直後試験はbg ANRで終了しており、成功に含めない。

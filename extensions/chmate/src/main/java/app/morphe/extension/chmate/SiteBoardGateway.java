@@ -156,12 +156,13 @@ final class SiteBoardGateway {
         catch(IOException error){next.close();throw new IOException("保存した板の接続先を開始できません。アプリを再起動してください",error);}
         port=next.getLocalPort();if(!prefs.edit().putInt("port",port).commit()){next.close();throw new IOException("接続先を保存できません");}
         socket=next;workers=new ThreadPoolExecutor(2,2,30,TimeUnit.SECONDS,new ArrayBlockingQueue<>(16),r->{Thread t=new Thread(r,"Haiagaru-site-request");t.setDaemon(true);return t;});
+        HttpsTransport.siteBoardServerListening(port,true);
         ExecutorService pool=workers;Thread accept=new Thread(()->{
             while(!next.isClosed())try{Socket client=next.accept();clients.add(client);try{pool.execute(()->serve(client));}catch(RejectedExecutionException busy){clients.remove(client);client.close();}}
             catch(IOException closed){break;}
         },"Haiagaru-site-listener");accept.setDaemon(true);accept.start();
     }
-    synchronized void stop(){if(socket!=null)try{socket.close();}catch(IOException ignored){}socket=null;for(Socket client:clients)try{client.close();}catch(IOException ignored){}clients.clear();if(workers!=null)workers.shutdownNow();workers=null;images.clear();attachments.clear();confirmations.clear();}
+    synchronized void stop(){if(socket!=null){HttpsTransport.siteBoardServerListening(socket.getLocalPort(),false);try{socket.close();}catch(IOException ignored){}}socket=null;for(Socket client:clients)try{client.close();}catch(IOException ignored){}clients.clear();if(workers!=null)workers.shutdownNow();workers=null;images.clear();attachments.clear();confirmations.clear();}
     private static String line(InputStream in,int limit)throws IOException{
         ByteArrayOutputStream out=new ByteArrayOutputStream();for(int n=0;n<limit;n++){
             int b=in.read();if(b<0)throw new EOFException();if(b=='\n')return out.toString("ISO-8859-1").replaceFirst("\\r$","");out.write(b);
