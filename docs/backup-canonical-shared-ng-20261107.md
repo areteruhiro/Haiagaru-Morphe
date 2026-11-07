@@ -12,3 +12,7 @@ emulator-5580に署名照合後install-r、専用instrumentationは191=10、226=
 
 最終native回帰: 191=276（canonical-backup191-reader-retry.log）、226=285、242=282項目成功（canonical-backup<版>-reader.log）。標準本文/画像/模擬投稿dialogを確認、公開POST0、試験finallyで設定復元。3版Home Complete。開始UTC11:17以降crash buffer0行。初回191は試験起動順のforeground待ち失敗だったため開始後Home起動で全項目を再実行し成功。最終MPPの専用復元/NG試験と区別して両方確認済み。
 
+
+
+1.25.0-dev.6 検証用公開完了。Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42367834199 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.6 / 2026-11-07 20:25:01 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7001425bytes / SHA256 858ab81a6042227f84c09a592f9603f9f36328c1c570b2bd819eb185a613af5c。pre JSONのversion/download_url一致。ソースa7c22449、CI生成eef240a9はff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースのローカル最終候補で全3版試験済み。
+
