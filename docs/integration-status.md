@@ -1415,3 +1415,15 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 最終ビルドshared-ng-local-edits-ui-build.log成功4m32s。全3版APK生成/固定hook保持PASS。242は最終試験51項目PASS（shared-ng-local-edits-ui242-final-runtime.log）。ユーザーが『一つのバージョンで確認できたらプレリリースしていい』と明示したため確認範囲を公開ノートに記載して先行配布する。226/191の最終画面検証は継続し、未完了を成功として数えない。エミュレータRAM4096で226導入中に応答不能、当該AVD/portのプロセスのみ停止して3072でcold boot、データ消去なし。
 
+
+
+追加確認完了: 最終MPPから生成した242=51項目（shared-ng-local-edits-ui242-final-runtime.log）、226=51/191=48項目（shared-ng-local-edits-ui<版>-final-runtime-retry.log）成功。3072MiBでの再起動後は226/191も署名照合install-r Success。同期/再読込/元へ戻す/不正regex拒否/編集dialogの実ボタン/キャンセルとチェック保持を検査。試験用SharedPreferencesの専用namespaceで正常save/resetを確認し、実ユーザー設定の編集保存は行わない。UIのvalid saveの状態遷移はストア/overlay/indexの試験と、実dialogのinvalid/cancel試験に分けて確認。画像取得のscreenshotは0bytesで視覚確認に利用できず、スクショ目視成功とは扱わない。
+
+
+
+最終MPPの通常native回帰も全3版成功: 191=276、226=285、242=282項目（shared-ng-local-edits-ui<版>-reader.log）。標準本文/画像/模擬投稿dialogの成功終了/拒否時入力保持、HTTPS ONを確認。公開POST0。RAM3072で開始時刻以降のcrash buffer0行（shared-ng-local-edits-final-crash.log）。今回もCI配布物自身の再導入ではなく同一製品ソースのローカル最終MPPで確認。
+
+
+
+1.25.0-dev.7検証用公開完了: CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42372305439 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.7 / 2026-11-07 21:29:21 JST。APIでprerelease=true/draft=false、配布MPP/bundle JSON2個/任意ZIP3個を確認。MPPを実ダウンロードし7003901bytes / SHA256 b07953c30763e9024d9a1a303c5e53b43cda50c50933e689cdea964174c73870。pre JSONのversion/download_url一致。ソース6ea80066、CI生成860c596aをff-only取得、生成ファイル手編集なし。公開開始時点の1版先行配布の説明は保守的なまま維持したが、公開待ち中に全3版の専用試験/通常native回帰を完了。配布MPP自体の再パッチ/導入は未実施。
+

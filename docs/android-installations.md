@@ -2125,3 +2125,6 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 
 - Haiagaru NG確認191 / ChMate0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/shared-ng-local-edits-ui191.apk / SHA256 c42bc814e3a4fb428d50fa80f4008e98a16eaf948308c46738ed585e8fc18703。固定hook検査成功、インストール/試験は継続中（未成功扱い）。
 
+
+追補: 226/191の最終候補も3072MiBのemulator-5580へ署名照合後install-r Success。242=51、226=51、191=48専用試験PASS。絶対APK path/MPP/署名は上記と同一。
+
