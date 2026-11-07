@@ -104,9 +104,11 @@ final class AnimanchProtocol {
     }
     static int postedReply(String json,String expected)throws IOException{
         try{
+            if(expected==null||!expected.matches("[1-9][0-9]{0,11}"))throw new IOException("投稿先のスレ番号が不正です");
             JSONObject answer=new JSONObject(json);String thread=String.valueOf(answer.get("thread")),number=String.valueOf(answer.get("number"));
             if(!thread.equals(expected)||!number.matches("[1-9][0-9]{0,4}"))throw new IOException("投稿結果のスレ・レス番号が不正です");
-            String jump=answer.getString("jump");if(!expected.equals(threadId(absolute(ORIGIN+"/",jump))))throw new IOException("投稿結果の移動先が不正です");
+            // The site acknowledges the write with thread/number. Its optional browser
+            // navigation hint is not a receipt and is never followed by the native client.
             return Integer.parseInt(number);
         }catch(IOException error){throw error;}catch(Exception error){throw new IOException("投稿の成功を確認できません",error);}
     }

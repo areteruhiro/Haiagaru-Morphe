@@ -155,8 +155,24 @@ final class SitePostProtocol {
         if(status==302||status==303){String target=SiteBoardProtocol.resolve(board.threadUrl(thread),location);return thread.equals(SiteBoardProtocol.threadIn(board,target));}
         if(status!=200)return false;
         Document doc=Jsoup.parse(body);if(doc.selectFirst(".thre,#threadBody,#res0_whole")!=null)return false;
+        if(board.kind.equals("futaba")&&doc.selectFirst("form,blockquote") == null){
+            for(Element meta:doc.select("meta[http-equiv]"))if(meta.attr("http-equiv").equalsIgnoreCase("refresh")){
+                java.util.regex.Matcher redirect=java.util.regex.Pattern.compile("(?i)^[0-9]+;\\s*URL=(.+)$").matcher(meta.attr("content").trim());
+                if(redirect.matches()&&thread.equals(SiteBoardProtocol.threadIn(board,SiteBoardProtocol.resolve(board.url,redirect.group(1))))
+                        &&doc.body().text().matches("スレッド\\s*"+java.util.regex.Pattern.quote(thread)+"\\s*に切り替えます.*"))return true;
+            }
+        }
         String title=doc.title().trim();
         return title.equals("書きこみました。")||title.equals("書き込みました。")||title.equals("投稿完了")||title.equals("レス投稿完了");
+    }
+    static String futabaRejection(String body){
+        if(body==null||body.length()>8192)return "";
+        Document doc=Jsoup.parse(body);
+        if(doc.selectFirst("form,script,blockquote,.thre,meta[http-equiv=refresh]")!=null)return "";
+        String text=doc.body().text().trim();
+        if(text.equals("cookieを有効にしてもう一度送信してください"))return "ふたばの投稿用Cookieを受け取りました。数秒待ってから、もう一度送信してください。今回の本文は投稿されていません。";
+        if(text.matches("操作が早すぎます あと[0-9]{1,3}秒で再送できます"))return text+"。今回の本文は投稿されていません。";
+        return "";
     }
     private SitePostProtocol(){}
 }

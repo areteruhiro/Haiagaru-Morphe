@@ -114,6 +114,12 @@ final class SiteBoardProtocol {
         if(title.find())return Integer.parseInt(title.group(1).replace(",",""));
         throw new IOException("爆サイのレス数を確認できません");
     }
+    static boolean bakusaiEmptyMobile(String html){
+        Document doc=Jsoup.parse(html);
+        return doc.selectFirst("#res0_whole [itemprop=headline]")!=null&&doc.selectFirst("#res0_whole .thr_rotundate")!=null
+                &&doc.selectFirst("#res0_body,#threadBody,#res_list > li.res_block[id]")==null
+                &&doc.selectFirst("#res_list > li.No-write-message")!=null;
+    }
     static ThreadPage bakusaiSlice(Board board,String id,Document doc)throws IOException{
         return bakusaiSlice(board,id,doc,true);
     }

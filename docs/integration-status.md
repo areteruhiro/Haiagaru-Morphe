@@ -1470,3 +1470,13 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 1.25.0-dev.9検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42388373374 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.9 / 2026-11-08 00:56:19 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7007273bytes / SHA256 ec737c477b5bcd27d1367277310be7896468c021bd767642d22e8d5c8401d04d。pre JSONのversion/download_url一致。ソースbea511d3、CI生成9335c79eをff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終候補で191の585項目と実通信329行確認済み。226/242の今回の最終候補未検証と、爆サイ1000返信は合成継続ページによる試験である点をRelease本文に記載。
 
+
+
+## 2026-11-08 外部板の投稿結果/爆サイ空画面（ローカル修正中・未公開）
+
+詳細 docs/site-post-bugs-20261108.md。ふたばoe934731は実フォームのjs=offのままで投稿成功することを確認。初回Cookie拒否とタイトルなしmeta refresh成功に対応し、HTTPセッションCookieをメモリ内で保持、厳密な非投稿拒否時だけ手動再送を許可。公開test投稿1件（以前のユーザー許可範囲）、他の拒否応答は送信成功扱いしない。あにまんはthread/number受領証で成功を判断し、未使用のjumpに依存しない。実送信はpreCheck403により未確認。
+
+爆サイ13585881はモバイル初回OPなし/selectedなしで再現、p=1だけでは実通信503が残ることを確認。空モバイル画面に限り同一URLのPC表示を1回試す。PC版は記事を返すがレス数2に対し一覧は空。明示的な空一覧を確認した場合は記事と番号維持した未取得枠を返し、理由を表示する。取得できない内容を復元済みと扱わない。先行候補191は594項目PASS、最終PCfallback/未取得表示を追加した版は再ビルド/検証中。ユーザーの新しい公開指示はまだなく、push/Releaseは行わない。
+
+
+最終確認完了: build-final.log通常Lint/R8を含め4m13s成功。191固定hook保持PASS、同署名更新、native191-final.logの595項目PASS。live-bakusai191-final.logで報告URLのHTTP200/166657bytes、nativeDatRows=3成功。実応答は記事1/実レス0/空一覧notice1で、DAT3行は記事1+理由付き未取得枠2。レス2件まで取得済みと扱わない。crash191-final.log0行。MPP/署名/APKハッシュはandroid-installations.md。あにまん実送信と226/242最終画面は未確認。未公開、ローカル修正のみ。

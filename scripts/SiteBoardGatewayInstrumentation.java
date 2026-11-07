@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 public final class SiteBoardGatewayInstrumentation extends Instrumentation {
  private int checks, gets, posts; private ClassLoader loader; private Class<?> gatewayType, transportType, responseType;
  private Object gateway,previousGateway,previousContext;private Field singleton,applicationContext; private SharedPreferences prefs; private final List<String> targets=new ArrayList<>();private final List<String> fetched=Collections.synchronizedList(new ArrayList<>());
- private boolean denyCheck, disableAtCheck, ui, reader, https; private SharedPreferences originalConfig; private boolean hadHttps, wasHttps; private Context app;
+ private boolean cookieReject;private boolean denyCheck, disableAtCheck, ui, reader, https; private SharedPreferences originalConfig; private boolean hadHttps, wasHttps; private Context app;
  private volatile String expectedEditorBody,editorTransportMismatch;private volatile boolean editorBodyReceived,rejectEditorPost;
  private String probeAlias,probeThread;private boolean checkOnly;
  private volatile List<?> nativeRows=Collections.emptyList();
@@ -58,6 +58,7 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    // Native board discovery may refresh enabled BBSMENU roots while the reader is open.
    if(u.startsWith("https://bbs-menu.pages.dev/")){String source=u.contains("bakusai_bbsmenu/")?"https://bakusai.com/thr_tl/acode=1/ctgid=137/bid=5071/":"https://bbs.animanch.com/";return response(200,"{\"menu_list\":[{\"category_content\":[{\"board_name\":\"検証板\",\"url\":\""+source+"\",\"category_name\":\"検証\"}]}]}",null);}
    if(u.equals("https://www.2chan.net/bbsmenu.html"))return response(200,"<B>検証</B>\n<A HREF=\"https://dat.2chan.net/t/\">検証料理</A>\n",null);
+   if(u.contains("bakusai.com/")&&u.contains("/tid=13585881/"))return response(200,fixture(u.contains("/p=1/")?"reportedBakusaiOpening.html":"reportedBakusaiMissingOpening.html"),null);
    if(u.contains("bakusai.com/")&&u.contains("/tid=13539922/"))return response(200,fixture("bakusaiClosedMobile.html"),null);
    if(u.contains("bakusai.com/"))return response(200,fixture(u.contains("thr_res")?"bakusaiThread.txt":"bakusaiBoard.txt").replaceAll("(name=\"loaded_at\"\\s+value=\")[^\"]*", "$1"+gets+".0"),null);
    if(u.equals("https://dat.2chan.net/t/futaba.htm"))return response(200,"<div class=thre data-res=380645><span class=csb>カタログ省略ではない完全タイトル</span><blockquote>本文</blockquote></div>",null);
@@ -78,7 +79,8 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    }
    if(u.endsWith("?preCheck")){if(disableAtCheck)prefs.edit().putBoolean("enabled",false).commit();return response(denyCheck?403:200,denyCheck?fixture("animanchPrecheckChallenge.html"):"",null);}
    if(rejectEditorPost)return response(403,"投稿を拒否しました",null);
-   if(u.contains("animanch.com"))return response(200,"{\"thread\":7589284,\"number\":80,\"jump\":\"/board/7589284/\"}",null);
+   if(u.contains("animanch.com"))return response(200,"{\"thread\":7589284,\"number\":80}",null);
+   if(u.contains(".2chan.net/")){if(cookieReject)return response(200,"<body>cookieを有効にしてもう一度送信してください",null);String id=data.get("resto").toString();return response(200,"<meta http-equiv=refresh content=\"1;URL=res/"+id+".htm\"><body>スレッド<font>"+id+"</font>に切り替えます 処理時間0.097秒",null);}
    String referer=(String)field(plan,"referer");return response(303,"",referer);
   }
   if(m.getName().equals("toString"))return "IsolatedSiteTransport";
@@ -153,6 +155,9 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
  }
  private void exercise()throws Exception{
   app=getTargetContext();loader=app.getClassLoader();gatewayType=loader.loadClass("app.morphe.extension.chmate.SiteBoardGateway");transportType=loader.loadClass(gatewayType.getName()+"$Transport");responseType=loader.loadClass(gatewayType.getName()+"$Response");
+  Class<?> session=loader.loadClass("app.morphe.extension.chmate.SiteSessionCookies");Constructor<?> factory=session.getDeclaredConstructor();factory.setAccessible(true);Object cookies=factory.newInstance();URI cookieUri=URI.create("https://jun.2chan.net/oe/futaba.php");
+  call(cookies,"receive",new Class<?>[]{URI.class,Map.class},cookieUri,Collections.singletonMap("Set-Cookie",Arrays.asList("posttime=fixture; Path=/oe/; Secure","ptmt=fixture2; Path=/oe/; Secure")));
+  String cookie=(String)call(cookies,"header",new Class<?>[]{URI.class},cookieUri);ok(cookie.contains("posttime=fixture")&&cookie.contains("ptmt=fixture2"),"Android HTTP session retains Futaba cookies");ok(((String)call(cookies,"header",new Class<?>[]{URI.class},URI.create("https://evil.test/oe/"))).isEmpty(),"Android session cookie host boundary");
   reportedPages();
   if(reader)cleanFixtureTabs();
   if(reader){Bundle status=new Bundle();status.putString("state","waiting for visible verification HomeActivity");sendStatus(1,status);boolean visible=false;for(int n=0;n<40&&!visible;n++){FutureTask<Boolean> task=new FutureTask<>(()->resumed!=null&&!resumed.isFinishing()&&!resumed.isDestroyed());runOnMainSync(task);visible=task.get(5,TimeUnit.SECONDS);if(!visible)Thread.sleep(1000);}ok(visible,"foreground Home before native reader test");}
@@ -191,7 +196,9 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
    String padded=String.format(Locale.ROOT,"%010d",Long.parseLong(ids[i]));String paddedDat=request(board+"dat/"+padded+".dat","GET",null,null);ok(paddedDat.startsWith("HTTP/1.1 200")&&paddedDat.substring(paddedDat.indexOf("\r\n\r\n")+4).equals(dat.substring(dat.indexOf("\r\n\r\n")+4)),"native zero-padded DAT maps to original source ID");Object paddedInfo=parse.invoke(null,app,thread.replace("/"+(9240000000L+Long.parseLong(ids[i]))+"/","/"+padded+"/"));ok(Long.valueOf(9240000000L+Long.parseLong(ids[i])).equals(field(paddedInfo,version.contains("226")?"c":"e")),"padded native thread URL retains numeric ID");
    if(i==2){java.util.regex.Matcher media=java.util.regex.Pattern.compile("http://127\\.0\\.0\\.1:[0-9]+/m/ha[a-f0-9]{32}/img/[0-9]+/[0-9]+\\.jpg").matcher(dat);ok(media.find(),"cached DAT contains durable image coordinates");cachedImage=media.group();String image=request(cachedImage,"GET",null,null);ok(image.startsWith("HTTP/1.1 200")&&image.contains("Content-Type: image/png"),"native image URL serves original image bytes");}
    if(ui||reader)nativeReader(thread,counts[i]);
+   if(i==0){String restored=request(board+"dat/13585881.dat","GET",null,null);ok(restored.startsWith("HTTP/1.1 200")&&restored.substring(restored.indexOf("\r\n\r\n")+4).split("\n").length==3,"actual Android missing-OP page restores article plus two numbered unavailable rows");ok(restored.contains("元サイトがレス数")&&restored.contains("一部のレスが未取得"),"upstream empty replies explicitly disclosed in native DAT");if(reader)nativeReader(board.replaceFirst("/h[^/]+/$","/test/read.cgi/"+keys[i]+"/")+(9240000000L+13585881L)+"/",3,false);}
    int previous=posts;String result=request(board+"test/bbs.cgi","POST",body(keys[i],padded,"isolated reply "+i),null);ok(result.contains("2ch_X:true"),"native posting success response "+i);ok(posts==previous+(i==2?2:1),"site post sequence "+i);
+   if(i==1){cookieReject=true;int before=posts;String rejected=request(board+"test/bbs.cgi","POST",body(keys[i],ids[i],"cookie retry fixture"),null);ok(rejected.contains("2ch_X:error")&&rejected.contains("投稿されていません"),"explicit cookie rejection retains editor and explains retry");ok(posts==before+1,"cookie rejection never retries automatically");cookieReject=false;String retried=request(board+"test/bbs.cgi","POST",body(keys[i],ids[i],"cookie retry fixture"),null);ok(retried.contains("2ch_X:true")&&posts==before+2,"deliberate retry allowed only after explicit non-write rejection");}
    int sent=posts;String duplicate=request(board+"test/bbs.cgi","POST",body(keys[i],ids[i],"isolated reply "+i),null);ok(duplicate.contains("2ch_X:error")&&posts==sent,"duplicate send suppressed "+i);
   }
   if(reader){nativeReader("https://bbs.animanch.com/board/7288634/",308,false);nativeReader("https://bbs.animanch.com/board/7427435/",82,false);verifyRenderedBodies(nativeUrl(keys[2],"7427435"));nativeReader("https://bbs.animanch.com/board/7596018/",275,false);

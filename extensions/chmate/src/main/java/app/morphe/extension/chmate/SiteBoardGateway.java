@@ -338,6 +338,8 @@ final class SiteBoardGateway {
                 String preview=org.jsoup.nodes.Entities.escape(Jsoup.parse(answer).text());if(preview.length()>5000)preview=preview.substring(0,5000);
                 send(client,200,"text/html; charset=Shift_JIS",SiteNativeData.wire("<html><head><title>書き込み確認</title></head><body><!-- 2ch_X:cookie -->"+preview+"<form method=POST action=\"/test/bbs.cgi\">"+hidden+"<input type=submit value=\"内容を確認して投稿する\"></form></body></html>"));return;
             }}
+            String rejection=board.kind.equals("futaba")&&response.status==200?SitePostProtocol.futabaRejection(answer):"";
+            if(!rejection.isEmpty()){sent.remove(signature);if(selected!=null)attachments.putIfAbsent(attachmentKey,selected);postError(client,rejection);return;}
             if(resultId==null||!creating&&!SitePostProtocol.success(board,id,response.status,response.location,answer)){postError(client,"投稿結果を確認できません（HTTP "+response.status+"）。再送せず、板・スレを更新して確認してください。"+(board.kind.equals("animanch")?AnimanchProtocol.postingError(answer):""));return;}
             if(image!=null&&board.kind.equals("animanch")){
                 int number=AnimanchProtocol.postedReply(answer,resultId);if(!boardEnabled(board)){postError(client,"本文は送信済みです。「使用する」がオフになったため画像の送信を中止しました。本文を再送しないでください");return;}
@@ -378,9 +380,18 @@ final class SiteBoardGateway {
     private static String hash(String text){try{byte[] digest=MessageDigest.getInstance("SHA-256").digest(text.getBytes("UTF-8"));StringBuilder out=new StringBuilder();for(byte b:digest)out.append(String.format(Locale.ROOT,"%02x",b&255));return out.toString();}catch(Exception impossible){throw new IllegalStateException(impossible);}}
     private static String hashBytes(byte[] bytes){try{byte[] digest=MessageDigest.getInstance("SHA-256").digest(bytes);StringBuilder out=new StringBuilder();for(byte b:digest)out.append(String.format(Locale.ROOT,"%02x",b&255));return out.toString();}catch(Exception impossible){throw new IllegalStateException(impossible);}}
     private final class HttpTransport implements Transport {
+        private final SiteSessionCookies sessionCookies=new SiteSessionCookies();
         @Override public Response get(String url)throws IOException{
             for(int hop=0;hop<4;hop++){
-                Response r=request(url,null,null,null);if(r.status<300||r.status>=400||r.location==null)return r;
+                Response r=request(url,null,null,null);
+                URI address=URI.create(url);
+                if(r.status==200&&"bakusai.com".equals(address.getHost())&&address.getPath().startsWith("/thr_res/")&&SiteBoardProtocol.bakusaiEmptyMobile(r.text())){
+                    // The public mobile page sometimes omits both article and replies. Try its
+                    // desktop representation once; never change the user's stored browser UA.
+                    Response desktop=request(url,null,null,null,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36");
+                    if(desktop.status==200&&Jsoup.parse(desktop.text()).selectFirst("#title_thr")!=null)r=desktop;
+                }
+                if(r.status<300||r.status>=400||r.location==null)return r;
                 String target=SiteBoardProtocol.resolve(url,r.location);if(target==null||!URI.create(url).getHost().equals(URI.create(target).getHost()))throw new IOException("別サイトでの確認が必要です");url=target;
             }throw new IOException("移動が多すぎます");
         }
@@ -389,14 +400,19 @@ final class SiteBoardGateway {
             return request(target,body,plan.multipart?"multipart/form-data; boundary="+boundary:"application/x-www-form-urlencoded; charset=UTF-8",plan.referer);
         }
         private Response request(String address,byte[] body,String contentType,String referer)throws IOException{
+            return request(address,body,contentType,referer,null);
+        }
+        private Response request(String address,byte[] body,String contentType,String referer,String overrideUa)throws IOException{
             URI uri=URI.create(address);String host=uri.getHost();boolean boardMenu="bbs-menu.pages.dev".equals(host)&&body==null&&uri.getRawQuery()==null&&(uri.getPath().matches("/bakusai_bbsmenu/[a-z]+_bbsmenu\\.json")||uri.getPath().equals("/animanch_bbsmenu/bbsmenu.json"));
             if(!"https".equals(uri.getScheme())||uri.getPort()!=-1||uri.getUserInfo()!=null||!(boardMenu||"bakusai.com".equals(host)||"img2.bakusai.com".equals(host)||"bbs.animanch.com".equals(host)||host!=null&&host.matches("[a-z0-9-]+\\.2chan\\.net")))throw new IOException("未対応の接続先です");
             HttpURLConnection c=(HttpURLConnection)uri.toURL().openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(8000);c.setReadTimeout(15000);
-            String ua=prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru"));c.setRequestProperty("User-Agent",ua);
+            String ua=overrideUa!=null?overrideUa:prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru"));c.setRequestProperty("User-Agent",ua);
             boolean useCookies=prefs.getBoolean("cookies:"+host,false);if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null)c.setRequestProperty("Cookie",cookie);}
+            if(host.endsWith(".2chan.net")&&c.getRequestProperty("Cookie")==null){String cookie=sessionCookies.header(uri);if(!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
             try{
                 if(body!=null){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Referer",referer);c.setRequestProperty("Origin","https://"+host);if("bbs.animanch.com".equals(host))c.setRequestProperty("X-Requested-With","XMLHttpRequest");c.setRequestProperty("Content-Type",contentType);c.setFixedLengthStreamingMode(body.length);try(OutputStream output=c.getOutputStream()){output.write(body);}}
                 int status=c.getResponseCode();String type=c.getContentType();if(type==null)type="application/octet-stream";
+                if(host.endsWith(".2chan.net"))sessionCookies.receive(uri,c.getHeaderFields());
                 if(useCookies)for(Map.Entry<String,List<String>> h:c.getHeaderFields().entrySet())if("Set-Cookie".equalsIgnoreCase(h.getKey()))for(String value:h.getValue())CookieManager.getInstance().setCookie(address,value);
                 InputStream stream=status<400?c.getInputStream():c.getErrorStream();ByteArrayOutputStream data=new ByteArrayOutputStream();
                 if(stream!=null)try(InputStream in=stream){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(data.size()+n>12*1024*1024)throw new IOException("取得上限を超えました");data.write(buffer,0,n);}}
