@@ -1388,3 +1388,6 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 最終確認: 最終試験は191=276（site-reported191-final-retry-runtime.log）、226=285、242=282（各site-reported<版>-final-runtime.log）成功。191の一度目は終盤のgateway停止/即再開でEADDRINUSE、直前の191先行274項目は成功済み。新プロセスで同じ最終試験を再実行すると276項目成功した。機能失敗や未取得を成功へ数えず、全試験を再実行した結果を記録。全3版のcold Home Complete、UTC10:39以降新規crash buffer0行。あにまん実実況URL未回答/未解決を公開ノートへ明記して今回の2サイト修正を検証用配布する。MPP 044e173bbd15600aad2f8628666c058e993322e48c20073d95e9b0ff97bcd5a6 と各APK/hash/署名/導入先は導入台帳参照。
+
+
+1.25.0-dev.5検証用公開済み: CI42365241233 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.5 / 2026-11-07 19:50:08 JST。APIでprerelease=true/draft=false、配布MPP/bundle JSON2個/任意ZIP3個を確認。MPPを実ダウンロードしSHA256 dbed441369e5f27d5f4787a955aeb8150e46d2ee21f68a89900b5d3a6572c839、pre JSONのversionとdownload_urlも一致。CI生成ファイルはff-onlyで取得し手編集なし。あにまんの一部実況/安価スレの本文失敗は該当URL未回答で未解決、公開ノートに明記。配布MPP自体の再導入は未実施、同一製品ソースのローカル候補で全3版確認した。
