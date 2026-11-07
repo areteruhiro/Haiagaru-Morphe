@@ -4829,6 +4829,24 @@ val haiagaruPatch = resourcePatch(
             intent.setAttributeNS(ANDROID_XML_NAMESPACE,"android:targetClass","app.morphe.extension.chmate.ExternalBoardEditorActivity")
             entry.appendChild(intent)
             settings.documentElement.appendChild(entry)
+            val sites = settings.createElement("Preference")
+            sites.setAttributeNS(ANDROID_XML_NAMESPACE,"android:key","haiagaruSiteBoards")
+            sites.setAttributeNS(ANDROID_XML_NAMESPACE,"android:title","追加掲示板の認証・手動登録")
+            sites.setAttributeNS(ANDROID_XML_NAMESPACE,"android:summary","爆サイ・ふたば・あにまんの一覧は上の標準設定から更新できます")
+            sites.appendChild(settings.createElement("intent").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:targetPackage",boardEditorPackage)
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:targetClass","app.morphe.extension.chmate.SiteBoardSettingsActivity")
+            })
+            // Native rebuilds every child of "bbs" as BbsPreference, by index.
+            // A generic child crashes (or is overwritten/removed on refresh).
+            // Keep the row immediately after that category, before BBSMENU.
+            val categories = settings.getElementsByTagName("PreferenceCategory")
+            val bbsCategories = (0 until categories.length).map { categories.item(it) as Element }
+                .filter { it.getAttribute("android:key") == "bbs" ||
+                    it.getAttributeNS(ANDROID_XML_NAMESPACE, "key") == "bbs" }
+            check(bbsCategories.size == 1) { "Native board settings category changed (${bbsCategories.size})" }
+            val bbsCategory = bbsCategories.single()
+            settings.documentElement.insertBefore(sites, bbsCategory.nextSibling)
         }
         val cacheArrayNames = document("res/values/arrays.xml").use {
             ImageCacheSizeOptions.expand(it)
@@ -5409,6 +5427,17 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:exported", "false")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:theme", "@android:style/Theme.Material.Light.NoActionBar")
                 setAttributeNS(ANDROID_XML_NAMESPACE, "android:windowSoftInputMode", "adjustResize")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.SiteBoardSettingsActivity")
+                setAndroidAttribute("exported", "false")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
+                setAndroidAttribute("windowSoftInputMode", "adjustResize")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.SitePostingImageActivity")
+                setAndroidAttribute("exported", "false")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
             })
             application.appendChild(document.createElement("activity").apply {
                 setAndroidAttribute("name", "app.morphe.extension.chmate.SettingLinkActivity")

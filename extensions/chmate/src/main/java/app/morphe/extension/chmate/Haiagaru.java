@@ -967,6 +967,7 @@ public final class Haiagaru {
         ExternalBoardAuth.initialize(appContext);
         BoardCookies.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
+        SiteBoardGateway.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         EdgeReporterOptions.initialize(appContext);
         PopularReplies.initialize(appContext);

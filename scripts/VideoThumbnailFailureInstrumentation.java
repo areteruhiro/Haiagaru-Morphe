@@ -37,7 +37,8 @@ public final class VideoThumbnailFailureInstrumentation extends Instrumentation 
     image[0].getClass().getMethod("setImageUrl",String.class,int.class,int.class).invoke(image[0],poster,0,0);return null;});Thread.sleep(1000);
    addMonitor(monitor);
    main(()->{ok(button(root[0],"再取得")!=null&&button(root[0],"再生")!=null,"actual native thumbnail has retry and play buttons");button(root[0],"再生").performClick();ok(captured!=null&&captured.getStringArrayListExtra("links").get(0).equals(source),"play launches original video after thumbnail failure");button(root[0],"再取得").performClick();return null;});Thread.sleep(1500);
-   main(()->{ok(button(root[0],"再生")!=null&&button(root[0],"再生").isEnabled(),"play remains available during/after failed retry");image[0].getClass().getMethod("setImageUrl",String.class,int.class,int.class).invoke(image[0],null,0,0);ok(button(root[0],"再生")==null,"recycled/ordinary image removes failure controls");return null;});
+   main(()->{ok(button(root[0],"再生")!=null&&button(root[0],"再生").isEnabled(),"play remains available during/after failed retry");image[0].getClass().getMethod("setImageUrl",String.class,int.class,int.class).invoke(image[0],null,0,0);return null;});waitForIdleSync();
+   main(()->{ok(button(root[0],"再生")==null,"recycled/ordinary image removes failure controls after layout-safe cleanup");return null;});
   }finally{removeMonitor(monitor);main(()->{if(dialog[0]!=null)dialog[0].dismiss();return null;});}
  }
 }

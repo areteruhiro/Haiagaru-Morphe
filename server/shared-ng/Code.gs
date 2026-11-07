@@ -108,8 +108,15 @@ function doGet(e){try{
   }finally{lock.releaseLock();}
   const json=JSON.stringify(response);if(json.length<20000)cache.put('feed2:'+response.revision+':'+since+':'+offset,json,900);return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }catch(err){return ngJson_({ok:false,error:String(err.message||err)});}}
+/** Reject old senders before locking or touching sheets; GET reception remains available.
+ * A device key is a compatibility requirement, not proof of an unmodified client.
+ * Explicit false is an administrator-only rollback for older deployments/tests. */
+function ngSubmissionUpgradeRequired_(body){
+  if(PropertiesService.getScriptProperties().getProperty('REQUIRE_DEVICE_KEY')==='false')return false;
+  return !body||body.version!==2||typeof body.deviceKey!=='string'||!/^[a-f0-9]{64}$/.test(body.deviceKey);
+}
 function doPost(e){
-  try{const raw=e&&e.postData?e.postData.contents:'';if(raw.length<=65536&&Utilities.newBlob(raw).getBytes().length<=65536){const personal=JSON.parse(raw);if(personal.version===2)return personal.action==='identity'?ngBindReporterDevice_(personal):ngReceivePersonal_(personal);}}catch(error){return ngJson_({ok:false,error:String(error.message||error)});}
+  try{const raw=e&&e.postData?e.postData.contents:'';if(raw.length<=65536&&Utilities.newBlob(raw).getBytes().length<=65536){const personal=JSON.parse(raw);if(ngSubmissionUpgradeRequired_(personal))return ngJson_({ok:false,code:'client_update_required',error:'共有NGを送信するにはHaiagaruを更新してください'});if(personal.version===2)return personal.action==='identity'?ngBindReporterDevice_(personal):ngReceivePersonal_(personal);}}catch(error){return ngJson_({ok:false,error:String(error.message||error)});}
   const lock=LockService.getScriptLock();try{
   const raw=e&&e.postData?e.postData.contents:'';if(raw.length>65536||Utilities.newBlob(raw).getBytes().length>65536)throw Error('Request too large');const body=JSON.parse(raw);
   if(body.version!==1||typeof body.device!=='string'||!/^[a-f0-9]{64}$/.test(body.device)||!Array.isArray(body.reports)||body.reports.length===0||body.reports.length>NG_CONFIG.maxBatch)throw Error('Invalid batch');

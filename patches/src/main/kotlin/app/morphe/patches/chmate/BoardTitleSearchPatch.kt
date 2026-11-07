@@ -6,16 +6,18 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 
-/** 226 omits the board search menu item. Native prepare-menu already hides toolbar actions. */
+/** 226 title menus omit Search. Keep native per-page toolbar visibility and dispatch. */
 internal fun BytecodePatchContext.patchBoardTitleSearch(version: String) {
     if (version != "0.8.10.226 dev") return
-    val type = "Lo/Yhp5;"
+    val types = listOf("Lo/Yhp5;", "Ljp/syoboi/a2chMate/fragment/HomeFragment;",
+        "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
+    types.forEach { type ->
     val owner = mutableClassDefBy(type)
     val original = owner.methods.single {
         it.name == "b" && it.parameterTypes == listOf("Landroid/view/Menu;", "Landroid/view/MenuInflater;") && it.returnType == "V"
     }
     owner.methods.remove(original)
-    val retained = MutableMethod(ImmutableMethod(type, "haiagaruBoardMenu", original.parameters,
+    val retained = MutableMethod(ImmutableMethod(type, "haiagaruTitleSearchMenu", original.parameters,
         original.returnType, original.accessFlags, original.annotations, original.hiddenApiRestrictions, original.implementation))
     owner.methods.add(retained)
     owner.methods.add(MutableMethod(ImmutableMethod(type, original.name, original.parameters, "V",
@@ -37,5 +39,6 @@ internal fun BytecodePatchContext.patchBoardTitleSearch(version: String) {
             return-void
         """.trimIndent())
     })
-    println("226 board title menu: native Search action; toolbar visibility/dispatch retained")
+    }
+    println("226 board/HOME/thread title menus: native Search action; per-page toolbar visibility/dispatch retained")
 }

@@ -10,6 +10,8 @@ class Sheet{
 }
 const book={getId:()=> '1mKo9ogD2ePwu16hgya8pu2-fF7g-I3ERPgm18PCO_oc',getActiveSheet:()=>activeSheet,getSheetByName:n=>sheets.get(n),insertSheet:n=>{const s=new Sheet(n);sheets.set(n,s);return s;}};
 const props={getProperty:k=>properties.get(k)||null,setProperty:(k,v)=>properties.set(k,String(v)),deleteProperty:k=>properties.delete(k)};
+// Exercise historical protocol behavior explicitly; the production default rejects it.
+properties.set('REQUIRE_DEVICE_KEY','false');
 let locked=false;
 const context=vm.createContext({console,Date,Map,Set,JSON,Number,String,Object,Array,Error,
  SpreadsheetApp:{openById:()=>book,getActiveSpreadsheet:()=>activeBook,flush(){}},PropertiesService:{getScriptProperties:()=>props},

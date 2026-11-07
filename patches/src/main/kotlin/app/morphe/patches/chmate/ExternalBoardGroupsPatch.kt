@@ -13,6 +13,7 @@ private const val HTML="Lapp/morphe/extension/chmate/BbsMenuHtml;"
 internal fun BytecodePatchContext.patchExternalBoardGroups(version:String){
     val old=version.contains("191");val middle=version.contains("226")
     if(!old&&!middle&&!version.contains("242"))return
+    patchSiteNativeBoards(version)
     val worker=mutableClassDefBy("Ljp/syoboi/a2chMate/bbs/BBSMenuUpdateWork;")
     val parse=worker.methods.single{it.parameterTypes.size==3&&it.parameterTypes.take(2)==listOf("Ljava/lang/String;","Ljava/lang/String;")&&it.implementation!=null}
     val code=parse.implementation!!.instructions.toList()
