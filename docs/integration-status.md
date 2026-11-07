@@ -1480,3 +1480,6 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 最終確認完了: build-final.log通常Lint/R8を含め4m13s成功。191固定hook保持PASS、同署名更新、native191-final.logの595項目PASS。live-bakusai191-final.logで報告URLのHTTP200/166657bytes、nativeDatRows=3成功。実応答は記事1/実レス0/空一覧notice1で、DAT3行は記事1+理由付き未取得枠2。レス2件まで取得済みと扱わない。crash191-final.log0行。MPP/署名/APKハッシュはandroid-installations.md。あにまん実送信と226/242最終画面は未確認。未公開、ローカル修正のみ。
+
+
+公開指示追補: ユーザーが「プレリリースして」と明示。上記の最終検証結果と未確認範囲を公開ノートに記載し、既存dev Semantic Release経路で検証用公開を進める。生成ファイルの手編集なし。
