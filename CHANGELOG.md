@@ -1,3 +1,60 @@
+# Haiagaru 1.25.0-dev.17 (2026-11-08)
+
+エッヂの板一覧、kenmo.orgの記者ID、IP表示スレへの投稿前確認を更新した検証用プレリリースです。
+
+## 主な変更
+
+- エッヂの新しいトップページを板一覧として登録・更新した際、スレ見出しを板名として取り込む問題を修正しました。既に不正な板名が保存されている場合は、板一覧を更新してください。
+- kenmo.orgでもNG Threadsから「記者だけをNG」を選べます。subject.txtの記者IDを保存し、スレを読んだ後も表示できるようにしました。板ごとの情報を分離し、従来のエッヂ設定リンクも引き続き利用できます。
+- IP表示スレへの書き込み前に警告する設定を追加しました。Wi-Fi・モバイル回線を個別に選べ、初期値は両方OFFです。確認できない場合も、その旨を表示します。
+- 警告画面の「送信元IPを確認」で、選択した回線から外部サービスipify.orgへ問い合わせられます。取得するIPは参考値です。IPv4／IPv6・VPN・プロキシ・回線変更などにより、投稿先に記録されるIPと異なる場合があります。確認操作をするまで問い合わせません。
+- 新しい警告設定も、書き込み内の設定リンクから確認して変更できます。[設定リンク一覧](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/settings-links-list.md)を更新しました。
+
+## 確認範囲
+
+191・226・242のエミュレータで投稿前警告・キャンセル・確認、記者ID、板一覧、標準スレ本文・画像・書き込み画面の基本操作を検証しました。固定フックの元命令・レジスター・例外処理の保持も確認しています。191候補は実機の既存検証用アプリへ署名一致で更新し、起動を確認しました。公開掲示板への投稿・実IP確認サービスへの問い合わせは行っていません。
+
+爆サイは、レス数が変わらず本文だけ変わる隔離データを、通常更新で再取得・再表示できることを191で確認しました。報告スレ8520877では元サイトが返さない51レスが残っており、全件取得の解消を意味しません。実機での各新機能の通し操作・長時間利用・実回線切替・実投稿は未確認です。
+
+- [記者ID・板名・爆サイの検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/kenmo-edge-bakusai-20261109.md)
+- [IP表示スレへの投稿前警告](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/ip-post-warning-20261108.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add scoped kenmo reporters and network-aware IP posting confirmation ([d73afd8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d73afd860fabbd7dcaf7df49f25e8d0c2178d7f0))
+
 # Haiagaru 1.25.0-dev.16 (2026-11-08)
 
 返信ポップアップのサムネイルエラー表示、自動再生OFF時の音声、絵文字の表示・投稿を修正した検証用プレリリースです。
