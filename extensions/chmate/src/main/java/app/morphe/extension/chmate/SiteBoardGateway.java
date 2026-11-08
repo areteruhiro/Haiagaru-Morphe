@@ -406,8 +406,9 @@ final class SiteBoardGateway {
             URI uri=URI.create(address);String host=uri.getHost();boolean boardMenu="bbs-menu.pages.dev".equals(host)&&body==null&&uri.getRawQuery()==null&&(uri.getPath().matches("/bakusai_bbsmenu/[a-z]+_bbsmenu\\.json")||uri.getPath().equals("/animanch_bbsmenu/bbsmenu.json"));
             if(!"https".equals(uri.getScheme())||uri.getPort()!=-1||uri.getUserInfo()!=null||!(boardMenu||"bakusai.com".equals(host)||"img2.bakusai.com".equals(host)||"bbs.animanch.com".equals(host)||host!=null&&host.matches("[a-z0-9-]+\\.2chan\\.net")))throw new IOException("未対応の接続先です");
             HttpURLConnection c=(HttpURLConnection)uri.toURL().openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(8000);c.setReadTimeout(15000);
-            String ua=overrideUa!=null?overrideUa:prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru"));c.setRequestProperty("User-Agent",ua);
-            boolean useCookies=prefs.getBoolean("cookies:"+host,false);if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null)c.setRequestProperty("Cookie",cookie);}
+            boolean useCookies=prefs.getBoolean("cookies:"+host,false);
+            String ua=overrideUa!=null?overrideUa:SiteAuthenticationPolicy.userAgent(host,useCookies,prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru")));c.setRequestProperty("User-Agent",ua);
+            if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null)c.setRequestProperty("Cookie",cookie);}
             if(host.endsWith(".2chan.net")&&c.getRequestProperty("Cookie")==null){String cookie=sessionCookies.header(uri);if(!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
             try{
                 if(body!=null){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Referer",referer);c.setRequestProperty("Origin","https://"+host);if("bbs.animanch.com".equals(host))c.setRequestProperty("X-Requested-With","XMLHttpRequest");c.setRequestProperty("Content-Type",contentType);c.setFixedLengthStreamingMode(body.length);try(OutputStream output=c.getOutputStream()){output.write(body);}}
