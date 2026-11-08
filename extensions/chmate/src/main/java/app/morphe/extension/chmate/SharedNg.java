@@ -33,7 +33,7 @@ final class SharedNg {
     private static long sourceGeneration;
     static SharedPreferences prefs(){return context.getSharedPreferences(PREFS,0);}
     static Set<String> ignoredReporters(){return new HashSet<>(context.getSharedPreferences(SharedNgReporterBlocks.PREFS,0).getStringSet("ignored",Collections.emptySet()));}
-    static void initialize(Context c){if(context!=null)return;context=c.getApplicationContext();if(prefs().contains("githubFeed")||prefs().contains("feedEndpoint"))prefs().edit().remove("githubFeed").remove("feedEndpoint").putLong("cursor",0).apply();prefs().edit().remove("filterLevel").apply();reload();PersonalNgSubmissions.initialize(context);IO.execute(()->{
+    static void initialize(Context c){if(context!=null)return;context=c.getApplicationContext();if(prefs().contains("githubFeed")||prefs().contains("feedEndpoint"))prefs().edit().remove("githubFeed").remove("feedEndpoint").putLong("cursor",0).apply();prefs().edit().remove("filterLevel").apply();reload();PersonalNgSubmissions.initialize(context);SharedNgReporterFeedback.initialize(context);IO.execute(()->{
         try{loadCache();}catch(FileNotFoundException absent){/* First launch has no cache. */}catch(Exception e){status="キャッシュを読み込めません";}
         if(rules.isEmpty())prefs().edit().putLong("cursor",0).apply();flushReports();sync(false);
     });}
