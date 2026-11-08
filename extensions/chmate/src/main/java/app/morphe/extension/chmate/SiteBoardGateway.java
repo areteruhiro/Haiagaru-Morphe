@@ -22,6 +22,7 @@ final class SiteBoardGateway {
     final Map<String,SiteBoardProtocol.Board> boards=new ConcurrentHashMap<>();
     final Map<String,String> names=new ConcurrentHashMap<>();
     final Map<String,String> folders=new ConcurrentHashMap<>();
+    private final Map<String,String> newsSources=Collections.synchronizedMap(new LinkedHashMap<>());
     private final Map<String,Pattern> sitePatterns=new HashMap<>();
     private final Map<String,String> images=Collections.synchronizedMap(new LinkedHashMap<String,String>(64,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,String> e){return size()>2048;}
@@ -70,6 +71,7 @@ final class SiteBoardGateway {
     static synchronized SiteBoardGateway get(Context context){initialize(context);return instance;}
     SiteBoardGateway(SharedPreferences prefs,Transport supplied){
         this.prefs=prefs;transport=supplied==null?new HttpTransport():supplied;
+        try{JSONObject saved=new JSONObject(prefs.getString("yamiSources","{}"));Iterator<String> ids=saved.keys();while(ids.hasNext()&&newsSources.size()<256){String id=ids.next(),url=saved.getString(id);if(id.equals(SiteBoardProtocol.address(url).thread))newsSources.put(id,url);}}catch(Exception invalid){android.util.Log.w("Haiagaru","Saved news sources unavailable");}
         try{JSONArray saved=new JSONArray(prefs.getString("boards","[]"));for(int n=0;n<saved.length();n++){
             JSONObject row=saved.getJSONObject(n);String key=row.getString("key");if(!key.matches(KEY_PATTERN))continue;
             boards.put(key,SiteBoardProtocol.address(row.getString("url")));names.put(key,row.optString("name","追加掲示板"));folders.put(key,row.optString("folder",SiteBoardMenuProtocol.title(boards.get(key).kind)));
@@ -100,7 +102,8 @@ final class SiteBoardGateway {
         else{clearPending(key);String kind=boards.get(key).kind;if(!kindHasEnabled(kind))prefs.edit().putBoolean(siteFlag(kind),false).commit();boolean any=false;for(String other:boards.keySet())any|=effectiveFlag(other);if(!any)enabled(false);}
     }
     private boolean boardEnabled(SiteBoardProtocol.Board board){
-        for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().url.equals(board.url))return boardEnabled(row.getKey());return false;
+        for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().url.equals(board.url)&&boardEnabled(row.getKey()))return true;
+        if(board.thread!=null&&board.threadUrl(board.thread).equals(newsSources.get(board.thread)))for(String key:boards.keySet())if(newsBoard(key)&&boardEnabled(key))return true;return false;
     }
     synchronized void enabled(boolean value)throws IOException{
         SharedPreferences.Editor edit=prefs.edit().putBoolean("enabled",value);for(String key:boards.keySet())edit.putBoolean(nativeFlag(key),value&&prefs.getBoolean("boardEnabled:"+key,true));
@@ -143,6 +146,8 @@ final class SiteBoardGateway {
             if(selected==null||boards.get(key).url.equals(source.url))selected=key;
             if(boards.get(key).url.equals(source.url))break;
         }
+        if(selected==null&&source.thread!=null&&source.threadUrl(source.thread).equals(newsSources.get(source.thread)))for(String key:keys)if(newsBoard(key)&&boardEnabled(key)){selected=key;break;}
+        if(selected==null&&source.path.equals("yamibaito/"))for(String key:keys)if(newsBoard(key)&&boardEnabled(key)){selected=key;break;}
         if(selected==null)return null;String result=nativeUrl(selected,source.thread);
         String fragment=uri.getFragment();if(source.thread!=null&&source.kind.equals("animanch")&&fragment!=null&&fragment.matches("res[1-9][0-9]{0,5}"))result+=fragment.substring(3);
         return result;
@@ -153,7 +158,7 @@ final class SiteBoardGateway {
             Matcher thread=Pattern.compile("/test/read\\.cgi/("+KEY_PATTERN+")/([0-9]{1,12})/(?:([1-9][0-9]{0,5})|[ln][0-9]+)?").matcher(uri.getRawPath());
             Matcher board=Pattern.compile("/("+KEY_PATTERN+")/").matcher(uri.getRawPath());
             if(thread.matches()){
-                SiteBoardProtocol.Board target=boards.get(thread.group(1));if(target==null)return address;String result=target.threadUrl(sourceThread(thread.group(2)));
+                SiteBoardProtocol.Board target=boards.get(thread.group(1));if(target==null)return address;String id=sourceThread(thread.group(2));if(newsBoard(thread.group(1)))return newsSources.containsKey(id)?newsSources.get(id):address;String result=target.threadUrl(id);
                 if(target.kind.equals("animanch")&&thread.group(3)!=null)result+="#res"+thread.group(3);return result;
             }
             if(board.matches()&&boards.containsKey(board.group(1)))return boards.get(board.group(1)).url;
@@ -257,20 +262,27 @@ final class SiteBoardGateway {
             else if(route.group(2).equals("subject.txt")){
                 if(board.kind.equals("futaba")&&board.host.equals("www.2chan.net")&&board.path.equals("script"))throw new IOException("ふたばの「配布」はスクリプト配布ページのため、スレ一覧はありません。元のURLをブラウザで開いてください");
                 String listing=page(board.indexUrl());
-                data=SiteNativeData.subject(board.kind.equals("futaba")?FutabaCatalogue.topics(board,listing,url->{if(!boardEnabled(key))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.topics(board,listing));
+                if(board.path.equals("yamibaito/")||SiteBoardProtocol.webDestination(board,listing)!=null){prefs.edit().putBoolean("yamiBoard:"+key,true).apply();data=SiteNativeData.subject(newsTopics(),true);}
+                else{prefs.edit().remove("yamiBoard:"+key).apply();data=SiteNativeData.subject(board.kind.equals("futaba")?FutabaCatalogue.topics(board,listing,url->{if(!boardEnabled(key))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.topics(board,listing));}
             }
             else{
-                String id=sourceThread(route.group(3));SiteBoardProtocol.ThreadPage page=thread(board,id,page(board.threadUrl(id)));
+                String id=sourceThread(route.group(3));SiteBoardProtocol.Board resolved=newsSource(key,id,board);String html=page(resolved.threadUrl(id));if(newsBoard(key)){resolved=BakusaiNews.canonical(resolved.threadUrl(id),id,html);saveNews(id,resolved.threadUrl(id));prefs.edit().putInt("yamiCount:"+id,SiteBoardProtocol.bakusaiCount(Jsoup.parse(html))+1).apply();}SiteBoardProtocol.Board sourceBoard=resolved;SiteBoardProtocol.ThreadPage page=thread(sourceBoard,id,html);
                 if(!page.entries.isEmpty())SiteThreadMetadata.remember(key,id,SiteThreadDates.parse(page.entries.get(0).date));
                 data=SiteNativeData.dat(board,page,source->{if(board.kind.equals("animanch"))return origin()+"/m/"+key+URI.create(source).getPath()+".jpg";return source;},
-                        source->{String other=SiteBoardProtocol.threadIn(board,source);if(other==null)return source;try{return origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(other)+"/";}catch(IOException invalid){return source;}});
+                        source->{String other=SiteBoardProtocol.threadIn(sourceBoard,source);if(other==null)return source;try{return origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(other)+"/";}catch(IOException invalid){return source;}});
             }
             send(client,200,"text/plain; charset=Shift_JIS",data);
         }catch(Exception error){android.util.Log.w("Haiagaru","Additional board request failed",error);try{send(client,503,"text/plain; charset=UTF-8",("取得できませんでした。認証・通信・対応形式を確認してください。\n"+readFailure(error)).getBytes("UTF-8"));}catch(Exception ignored){}}
         finally{clients.remove(client);try{client.close();}catch(IOException ignored){}}
     }
     private String page(String url)throws IOException{Response r=transport.get(url);if(r.status!=200)throw new IOException("HTTP "+r.status);return r.text();}
-    long creationTime(String key,String id)throws IOException{SiteBoardProtocol.Board board=boards.get(key);if(board==null||!boardEnabled(key))throw new IOException("使用しない板です");return SiteThreadDates.opening(board,id,page(board.threadUrl(id)));}
+    long creationTime(String key,String id)throws IOException{SiteBoardProtocol.Board board=boards.get(key);if(board==null||!boardEnabled(key))throw new IOException("使用しない板です");board=newsSource(key,id,board);return SiteThreadDates.opening(board,id,page(board.threadUrl(id)));}
+    String sourceUrl(String key,String id)throws IOException{SiteBoardProtocol.Board board=boards.get(key);if(board==null||!boardEnabled(key))throw new IOException("使用しない板です");return newsSource(key,id,board).threadUrl(id);}
+    private boolean newsBoard(String key){SiteBoardProtocol.Board board=boards.get(key);return board!=null&&(board.path.equals("yamibaito/")||prefs.getBoolean("yamiBoard:"+key,false));}
+    private SiteBoardProtocol.Board newsSource(String key,String id,SiteBoardProtocol.Board original)throws IOException{if(!newsBoard(key))return original;String source=newsSources.get(id);if(source==null){newsTopics();source=newsSources.get(id);}if(source==null)throw new IOException("関連ニュースの元スレが見つかりません。一覧を更新してください");return SiteBoardProtocol.address(source);}
+    private synchronized void saveNews(String id,String url)throws IOException{if(url.equals(newsSources.get(id)))return;newsSources.put(id,url);while(newsSources.size()>256)newsSources.remove(newsSources.keySet().iterator().next());try{if(!prefs.edit().putString("yamiSources",new JSONObject(newsSources).toString()).commit())throw new IOException("ニュースの元URLを保存できません");}catch(RuntimeException invalid){throw new IOException("ニュースの元URLを保存できません",invalid);}}
+    private synchronized void mergeNews(List<BakusaiNews.Item> items)throws IOException{boolean changed=false;for(BakusaiNews.Item item:items)if(!newsSources.containsKey(item.id)){newsSources.put(item.id,item.url);changed=true;}SharedPreferences.Editor edit=prefs.edit();while(newsSources.size()>256){String oldest=newsSources.keySet().iterator().next();newsSources.remove(oldest);edit.remove("yamiCount:"+oldest);}if(changed&&!edit.putString("yamiSources",new JSONObject(newsSources).toString()).commit())throw new IOException("ニュースの元URLを保存できません");}
+    private List<SiteBoardProtocol.Topic> newsTopics()throws IOException{SitePostProtocol.Plan plan=BakusaiNews.request();Response response=transport.post(plan,plan.url);if(response.status!=200)throw new IOException("関連ニュースの取得エラー（HTTP "+response.status+"）");List<BakusaiNews.Item> items=BakusaiNews.catalogue(response.text());mergeNews(items);List<SiteBoardProtocol.Topic> topics=new ArrayList<>();for(BakusaiNews.Item item:items)topics.add(new SiteBoardProtocol.Topic(item.id,item.title,prefs.getInt("yamiCount:"+item.id,0)));return topics;}
     private SiteBoardProtocol.ThreadPage thread(SiteBoardProtocol.Board board,String id,String html)throws IOException{
         if(board.kind.equals("animanch"))return AnimanchPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);});
         return board.kind.equals("bakusai")?BakusaiPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.thread(board,id,html);
@@ -302,11 +314,13 @@ final class SiteBoardGateway {
         String token=form.get("haiagaruConfirm");if(token!=null){confirm(client,board,form,token);return;}
         String id=form.get("key");boolean creating=id==null||id.isEmpty()||id.equals("0");if(!creating){try{id=sourceThread(id);}catch(IOException invalid){postError(client,"投稿先が不正です");return;}}
         String alias=form.get("bbs"),attachmentKey=alias+":"+(creating?"new":id);PendingImage selected=attachments.get(attachmentKey);if(selected!=null&&android.os.SystemClock.elapsedRealtime()-selected.created>600000){attachments.remove(attachmentKey,selected);postError(client,"添付画像の選択から10分経過しました。画像を選び直してください");return;}
+        if(newsBoard(alias)){if(creating){postError(client,"関連ニュース一覧からの新規スレ作成には対応していません。元の板を開いてください");return;}board=newsSource(alias,id,board);}
         SitePostProtocol.Image image=selected==null?null:selected.image;
         String identity=board.url+":"+(creating?"new":id);if(!posting.add(identity)){postError(client,"この投稿先への送信を処理中です");return;}
         try{
             String source=creating?board.kind.equals("bakusai")?"https://bakusai.com/thr_tc0/"+board.path+"tp=1/":board.kind.equals("futaba")?board.url+"futaba.htm":board.url:board.threadUrl(id);
             String html=page(source),body=form.getOrDefault("MESSAGE","");
+            if(newsBoard(alias)){board=BakusaiNews.canonical(source,id,html);saveNews(id,board.threadUrl(id));}
             String name=form.getOrDefault("FROM",""),email=form.getOrDefault("mail",""),password=prefs.getString("password:"+board.url,"");
             SitePostProtocol.Plan plan;
             try{

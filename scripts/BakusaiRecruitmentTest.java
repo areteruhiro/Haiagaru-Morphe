@@ -27,6 +27,12 @@ public final class BakusaiRecruitmentTest {
         var filtered=SiteBoardProtocol.topics(board,bad);ok(filtered.size()==1&&filtered.get(0).id.equals("2")&&filtered.get(0).count==4,"no borrowing next row, foreign board, promotion or excessive count");
         try {SiteBoardProtocol.topics(board,"<div class=header>"+row("1","header","(2件)")+"</div>");throw new AssertionError("header accepted");}catch(IOException expected){checks++;}
         for(String[] item:new String[][]{{"1","注意喚起ページ"},{"2","外部求人サイト"}}){try{SiteBoardProtocol.topics(board,Files.readString(Path.of("build/bakusai-fukuoka829/prefectures/board-"+item[0]+".html")));throw new AssertionError("non-thread listing accepted");}catch(IOException expected){ok(expected.getMessage().contains(item[1]),"actual non-thread source gets precise explanation");}}
+        String warning=Files.readString(Path.of("build/bakusai-fukuoka829/hokkaido-general-current.html"));
+        ok("https://bakusai.com/yamibaito/".equals(SiteBoardProtocol.webDestination(board,warning)),"actual warning listing has exact browser destination");
+        ok(SiteBoardProtocol.webDestination(board,html)==null,"ordinary recruitment threads retain native reader");
+        ok(SiteBoardProtocol.webDestination(board,warning.replace("</div>",row("99","real thread","(1件)")+"</div>"))==null,"real thread mixed into listing prevents automatic web fallback");
+        ok(SiteBoardProtocol.webDestination(board,warning.replace("/yamibaito/","https://elsewhere.invalid/yamibaito/"))==null,"foreign warning destinations rejected");
+        ok(SiteBoardProtocol.webDestination(board,Files.readString(Path.of("build/bakusai-fukuoka829/prefectures/board-2.html")))==null,"external recruitment pages not redirected to unrelated warning site");
         System.out.println("PASS "+checks+" recruitment list/body/form/counter boundary checks; public posts=0");
     }
 }

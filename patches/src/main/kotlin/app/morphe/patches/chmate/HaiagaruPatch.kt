@@ -5307,6 +5307,7 @@ val haiagaruPatch = resourcePatch(
                 "bbs.animanch.com" to "/category",
                 "bakusai.com" to "/thr_res/",
                 "bakusai.com" to "/thr_tl/",
+                "bakusai.com" to "/yamibaito/",
             )) document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), host,
                 path = path, pathAttribute = "android:pathPrefix")
             document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), "*.2chan.net",

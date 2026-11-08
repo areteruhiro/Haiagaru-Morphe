@@ -1525,3 +1525,9 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 公開指示追補: ユーザーが『プレリリースして、テストしたURLを教えて』と明示。前記の検証済み候補を既存dev Semantic Release経路で公開する。既存.releasercの公開説明を求人板対応と確認範囲へ更新し、全141板/54スレの検証記録へのURLを掲載。生成ファイル手編集なし。
 
 1.25.0-dev.13検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42441644813 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.13 / 2026-11-08 12:15:41 JST。APIでprerelease=true/draft=false、MPP/JSON2個/任意ZIP3個を確認。配布MPP実ダウンロード7023639bytes / SHA256 2044fe17e9eac79357958c897770ef673090b7719af4022ab3ad1891cf7f7a53、GitHub asset digest一致。pre JSONのversion/download_url、公開JSON2個とローカル内容一致。検証URL一覧と226/242の今回未確認範囲がRelease本文に掲載されていることも確認。製品ソースb24e2de5、CI生成ff2f47b4をff-only取得。生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカルMPPで前記191615項目・実一覧25/本文2件を確認済み。
+
+## 2026-11-08 闇バイト関連ニュース（検証済み・公開準備）
+
+詳細 docs/bakusai-yamibaito-news-20261108.md。静的HTMLにない関連ニュースAPI（newsFlg=true,key=YamiNewsTidList）の実59スレを標準一覧へ接続。北海道一般求人等の注意喚起リンクしかない一覧も同じ実ニュースへ接続し、自動ブラウザ起動案は撤回。元スレの正式URLをスレID/板ID一致で検証し、本文/コピー/返信先に使用。APIに件数がないので明示した経路に限り未確認0件、本文取得後は実件数へ。通常板の件数チェックは維持。対応情報上限256、一覧時まとめて保存。
+
+ホスト71/求人18/旧URL等25/既報レイアウト16項目成功。初回の製品subject変換が0を拒否した503を修正して再ビルド。最終count-build.log5m7s成功、以後の製品ソース変更なし。reader.mpp SHA2569b7339bcdc50e3c4cf41b3ddced83e17cb130e7a37b094506144ebf591178940。全3版固定hook保持PASS、641/647/644項目成功。ニュース一覧59件/代表本文3件、元URL/設定無効/元板なしの新規作成拒否、通常本文/画像/模擬投稿/HTTPS ONを検査。試験の画面外日時・古いActivity参照・操作順の不備は試験側を直して同じ製品APKで再検査、初回不合格は成功へ数えない。191実通信でニュースAPI200/subject59行と代表13607621実HTTP200/163435bytes/DAT3行/標準画面3件。公開投稿0、crash0、実機変更/データ消去なし。全59スレ本文網羅/実機/長時間/実投稿は未確認。ユーザーのプレリリース指示に従い既存CIで公開する。

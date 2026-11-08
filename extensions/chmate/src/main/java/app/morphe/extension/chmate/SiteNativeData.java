@@ -11,8 +11,11 @@ import org.jsoup.nodes.*;
 /** Converts site records into the existing native subject/DAT protocol. */
 final class SiteNativeData {
     static byte[] subject(List<SiteBoardProtocol.Topic> topics){
+        return subject(topics,false);
+    }
+    static byte[] subject(List<SiteBoardProtocol.Topic> topics,boolean unknownCounts){
         StringBuilder out=new StringBuilder();for(SiteBoardProtocol.Topic t:topics){
-            if(!t.id.matches("[1-9][0-9]{0,11}")||t.count<1||t.count>1000000)throw new IllegalArgumentException("Invalid topic");
+            if(!t.id.matches("[1-9][0-9]{0,11}")||t.count<(unknownCounts?0:1)||t.count>1000000)throw new IllegalArgumentException("Invalid topic");
             try{out.append(SiteThreadIds.nativeId(t.id));}catch(java.io.IOException invalid){throw new IllegalArgumentException(invalid);}
             out.append(".dat<>").append(header(t.title)).append(" (").append(t.count).append(")\n");
         }return wire(out.toString());

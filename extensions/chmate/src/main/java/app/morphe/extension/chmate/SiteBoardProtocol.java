@@ -38,6 +38,7 @@ final class SiteBoardProtocol {
                 return new Board("futaba","https://"+host+"/"+m.group(1)+"/",host,m.group(1),m.group(2));
             }
             if(host.equals("bakusai.com")&&u.getRawQuery()==null){
+                if(path.equals("/yamibaito/"))return new Board("bakusai","https://bakusai.com/yamibaito/",host,"yamibaito/",null);
                 Matcher m=Pattern.compile("/thr_(?:tl|res)/(acode=[0-9]{1,3}/ctgid=[0-9]{1,6}/bid=[0-9]{1,8}/)(?:tid=([1-9][0-9]{0,11})/)?(?:p=[1-9][0-9]{0,2}/)?(?:tp=[0-9]+/)?").matcher(path);
                 if(!m.matches())throw new IllegalArgumentException();
                 return new Board("bakusai","https://bakusai.com/thr_tl/"+m.group(1),host,m.group(1),m.group(2));
@@ -100,6 +101,18 @@ final class SiteBoardProtocol {
         out.addAll(unique.values());return out;
     }
     private static final Pattern OFFER_COUNT=Pattern.compile("^(?:(?:(?:[0-9]{4}/)?[0-9]{1,2}/[0-9]{1,2}\\s+[0-9]{1,2}:[0-9]{2}|[0-9]{1,4}(?:秒|分|時間|日)前|たった今)\\s*)?[（(]\\s*([0-9]{1,6}|[0-9]{1,3}(?:,[0-9]{3}){1,2})\\s*件\\s*[）)]$");
+    static String webDestination(Board board,String html){
+        if(!board.kind.equals("bakusai"))return null;
+        Element listing=Jsoup.parse(html,board.url).selectFirst(".thr_list #thr_list3");
+        if(listing==null)return null;
+        boolean warning=false;
+        for(Element link:listing.select("a[href]")){
+            String target=resolve(board.url,link.attr("href"));
+            if(target!=null&&threadIn(board,target)!=null)return null;
+            if("https://bakusai.com/yamibaito/".equals(target)&&link.hasClass("yamibaito-link"))warning=true;
+        }
+        return warning?"https://bakusai.com/yamibaito/":null;
+    }
     /** Recruitment lists delimit each plain-text count with BR, rather than a table/LI row. */
     private static String offerCount(Element link){
         if(link.parent()==null||!link.parent().id().equals("thr_list3"))return null;
