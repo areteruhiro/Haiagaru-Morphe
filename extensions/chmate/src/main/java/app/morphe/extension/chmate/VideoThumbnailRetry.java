@@ -5,6 +5,7 @@ import android.view.*;import android.widget.*;import android.content.*;
 /** Retry is confined to failed previews; ordinary thumbnail binding has no posted work. */
 public final class VideoThumbnailRetry {
     private static final int TAG=0x7e0b0022;
+    private static final int ACTIONS_TAG=0x7e0b0023;
     private static final android.os.Handler MAIN=new android.os.Handler(android.os.Looper.getMainLooper());
     public static void bind(Object object,String poster){
         if(!(object instanceof View))return;
@@ -29,6 +30,7 @@ public final class VideoThumbnailRetry {
             if(closed||view.getTag(TAG)!=this||actions!=null||!view.isAttachedToWindow()||!(view.getRootView() instanceof FrameLayout))return;
             host=(FrameLayout)view.getRootView();
             actions=new LinearLayout(host.getContext());actions.setOrientation(LinearLayout.HORIZONTAL);
+            actions.setTag(ACTIONS_TAG,Boolean.TRUE);
             button=button("再取得","サムネイルを再取得");
             Button play=button("再生","サムネイルを使わずに動画を再生");
             actions.addView(button,new LinearLayout.LayoutParams(0,-1,1));actions.addView(play,new LinearLayout.LayoutParams(0,-1,1));
@@ -43,7 +45,7 @@ public final class VideoThumbnailRetry {
         void poll(){if(closed||view.getTag(TAG)!=this)return;update();if(VideoFrameThumbnail.running(source)&&view.isAttachedToWindow())MAIN.postDelayed(polling,500);}
         void position(){
             if(closed||host==null||actions==null)return;
-            if(!view.isAttachedToWindow()||!view.isShown()||view.getWidth()<=0||!view.getGlobalVisibleRect(visible)){actions.setVisibility(View.GONE);return;}
+            if(!view.isAttachedToWindow()||!view.isShown()||view.getWidth()<=0||!view.getGlobalVisibleRect(visible)||covered(view,host,visible)){actions.setVisibility(View.GONE);return;}
             view.getLocationOnScreen(location);host.getLocationOnScreen(origin);int height=actions.getLayoutParams().height;
             int top=location[1]+view.getHeight()-height;
             if(top<visible.top||top+height>visible.bottom){actions.setVisibility(View.GONE);return;}
@@ -64,6 +66,31 @@ public final class VideoThumbnailRetry {
         }
         void detach(){if(host!=null){if(host.getViewTreeObserver().isAlive())host.getViewTreeObserver().removeOnPreDrawListener(this);if(actions!=null)host.removeView(actions);}actions=null;button=null;host=null;}
         void close(){if(closed)return;closed=true;view.removeOnAttachStateChangeListener(this);if(view.getTag(TAG)==this)view.setTag(TAG,null);if(actions!=null){actions.setVisibility(View.GONE);button.setEnabled(false);}scheduleDetach();}
+    }
+    /** Root overlays must not float over a later native reply popup or another image.
+     * Inspect only this thumbnail's ancestor path and later siblings, never other windows. */
+    static boolean covered(View source,ViewGroup root,android.graphics.Rect area){
+        View branch=source;android.graphics.Rect bounds=new android.graphics.Rect();
+        while(branch!=root&&branch.getParent() instanceof ViewGroup){
+            ViewGroup parent=(ViewGroup)branch.getParent();int index=parent.indexOfChild(branch);
+            for(int n=index+1;n<parent.getChildCount();n++){
+                View sibling=parent.getChildAt(n);
+                if(Boolean.TRUE.equals(sibling.getTag(ACTIONS_TAG))||!sibling.isShown()||sibling.getAlpha()<=0)continue;
+                if(sibling.getGlobalVisibleRect(bounds)&&android.graphics.Rect.intersects(area,bounds)&&drawsOver(sibling,area,bounds))return true;
+            }
+            branch=parent;
+        }
+        return false;
+    }
+    private static boolean drawsOver(View sibling,android.graphics.Rect area,android.graphics.Rect bounds){
+        if(!sibling.isShown()||sibling.getAlpha()<=0||Boolean.TRUE.equals(sibling.getTag(ACTIONS_TAG)))return false;
+        if(!sibling.getGlobalVisibleRect(bounds)||!android.graphics.Rect.intersects(area,bounds))return false;
+        if(!(sibling instanceof ViewGroup))return true;
+        android.graphics.drawable.Drawable background=sibling.getBackground();
+        if(background!=null&&background.getOpacity()!=android.graphics.PixelFormat.TRANSPARENT&&background.getAlpha()>0)return true;
+        ViewGroup group=(ViewGroup)sibling;
+        for(int n=0;n<group.getChildCount();n++)if(drawsOver(group.getChildAt(n),area,bounds))return true;
+        return false;
     }
     static Intent playbackIntent(android.content.Context context,String source){
         java.util.ArrayList<String> links=new java.util.ArrayList<>();links.add(source);

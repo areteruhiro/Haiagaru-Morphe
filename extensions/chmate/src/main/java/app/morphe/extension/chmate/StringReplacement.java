@@ -24,6 +24,8 @@ public final class StringReplacement {
     private static final AtomicBoolean loading = new AtomicBoolean();
     private static volatile ReplacementRules rules = ReplacementRules.empty();
     private static volatile boolean enabled;
+    private static volatile boolean hideReplacementCharacter=true;
+    private static final java.util.regex.Pattern REPLACEMENT_CHARACTER=java.util.regex.Pattern.compile("(?i)&#(?:65533|x0*fffd);");
     private static volatile long lastReload;
     static volatile String status = "ファイルを作成または選択してください";
 
@@ -35,7 +37,15 @@ public final class StringReplacement {
                     || "0.8.10.241".equals(v) || "0.8.10.242 dev".equals(v);
         } catch (Exception ignored) { return false; }
     }
-    public static String apply(String input) { return enabled ? rules.apply(input) : input; }
+    public static String apply(String input) {
+        input=EmojiTextCleanup.apply(input);
+        if(hideReplacementCharacter&&input!=null){input=input.replace("\ufffd","");if(input.indexOf("&#")>=0)input=REPLACEMENT_CHARACTER.matcher(input).replaceAll("");}
+        return enabled ? rules.apply(input) : input;
+    }
+    static void cleanupOptions(Context c){
+        EmojiTextCleanup.enabled=prefs(c).getBoolean("removeEmojiSelectors",true);
+        hideReplacementCharacter=prefs(c).getBoolean("hideReplacementCharacter",true);
+    }
 
     static void setEnabled(Context c, boolean value) {
         prefs(c).edit().putBoolean("enabled", value).apply();
@@ -52,6 +62,7 @@ public final class StringReplacement {
 
     public static void reload(Context context, boolean force, Runnable complete) {
         Context c = context.getApplicationContext();
+        cleanupOptions(c);
         if (!supported(c)) return;
         enabled = prefs(c).getBoolean("enabled", false);
         if (!force && System.currentTimeMillis() - lastReload < 2000) return;

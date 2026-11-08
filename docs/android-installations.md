@@ -2245,3 +2245,27 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 2026-11-08 19:26:36 JST / emulator-5580 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / package jp.co.airfront.android.a2chMate.haiagaru.reporter242。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/home-refresh-scroll/final242.apk / SHA256 21d38db2b1a4ba43f51e83b54f5c14ff7f720fc9aa3244d85d9807088da4663d。MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/home-refresh-scroll/final.mpp / SHA256 29992532c912383f529804538e7e02740065f942b518f1a38371177c58d2666d。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。InstallVerifiedApk.ps1で既存署名一致/install-r Success。実機変更・データ消去なし。
 
 同鍵で署名した試験APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests242.apk / SHA256 34a68ecad42708b8a3134f9d93e5e738d9d01912c6b40354feb228aa18ef5dc1 / package app.haiagaru.tests.sitegateway242 / 表示名 Haiagaru isolated site tests / version1.0、targetは上記reporter242、install-r Success。回帰結果は公開記録へ追記。
+
+## 2026-11-08 サムネイル遮蔽・音声focus・絵文字の未公開候補
+
+対象 emulator-5580 / Haiagaru_Root_API36。全て既存reporterへInstallVerifiedApk.ps1で署名一致install-r Success。表示名 Haiagaru NG確認191/226/242、ChMate 0.8.10.191/226/242 dev。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。実機変更・アンインストール・データ消去なし。
+
+- 2026-11-08 21:00:36 JST / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate191.apk / SHA256 516c38a24ef9558a074fa21ad0ba81943a412d8f716c7fd3345c2bfa5338af59 / MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate.mpp / SHA256 19d445a07e9b76274aecc352ad560b4587f154fa1839ea706784f4984f0410b7 / install-r Success。
+
+- 2026-11-08 21:08:17 JST / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate226.apk / SHA256 eee8f5990a6c7b0d3c79cb5ef8e3fe193e2bf5bf460866a0d357318267e016d6 / MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate.mpp / SHA256 19d445a07e9b76274aecc352ad560b4587f154fa1839ea706784f4984f0410b7 / install-r Success。
+
+- 2026-11-08 21:08:48 JST / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate242.apk / SHA256 e7c2beed071f6a6f20ca4990d1e10199dd4c535d7fd11e7ddb99e9b97eb5da9e / MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/candidate.mpp / SHA256 19d445a07e9b76274aecc352ad560b4587f154fa1839ea706784f4984f0410b7 / install-r Success。
+
+- 2026-11-08 21:16:29 JST / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/final242.apk / SHA256 561a02a443428e8974c8d466465800050220e01b5f6e08feb223fa6502458752 / MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/final.mpp / SHA256 a586f64df94ee690dbccfd8ecf54e96857b174b95e05677b2c072a2b90f97e45 / install-r Success。
+
+先行候補はビルド開始時dev.14表記のローカル候補で、公開dev.15と区別する。最終242は透明コンテナ改善・242投稿フィールド修正を含む。検証の詳細/失敗経緯はthumbnail-focus-emoji-20261108.md。
+
+追加instrumentationは同じMorphe鍵/cert、表示名 Board adapter regression tests、versionNameなし、targetは各reporter。インストール済みAPKを端末から取得して保全（手元で後に上書きした試験APKとは区別）。導入は2026-11-08、正確な時刻は未保存。最終実行ログと結果を併記。
+
+- app.haiagaru.tests.mediacleanup191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/installed-media191.apk / SHA256 2b1b00cc3cccc761150c344ee7c141cc14f6f06d9b8fd6765f54a9abc4ff9e0c / install-r Success / 191=12、226=15、最終242=15項目成功。
+
+- app.haiagaru.tests.mediacleanup226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/installed-media226.apk / SHA256 8a428a7b260ad959820c93e00804fcadd0685452c34d83d44d3df4e03ae34fea / install-r Success / 191=12、226=15、最終242=15項目成功。
+
+- app.haiagaru.tests.mediacleanup242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/installed-media242.apk / SHA256 0f6a500440ddb3835efa03eca68454b149363b47823d54aff04a04ddf8533dcf / install-r Success / 191=12、226=15、最終242=15項目成功。
+
+2026-11-08 21:07頃 JST、app.haiagaru.tests.layoutmutation / Haiagaru layout regression / emulator-5580。独立テストでChMateデータアクセスなし。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thumbnail-layout-regression/test.apk / SHA256 c150b9c6814f4d2315814fb1d5b42bd1f073ddb19d2b33af75468defc35d7510。Android debug鍵 C:/Users/narum/.android/debug.keystore / alias androiddebugkey / cert SHA256 85e29bfe0ecf3e8553fd628c4731de911bc29f38f66beb37fefa3029c9fc50a3。install-r Success、layout-container.logで41項目成功。

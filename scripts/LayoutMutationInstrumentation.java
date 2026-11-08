@@ -26,6 +26,20 @@ public final class LayoutMutationInstrumentation extends Instrumentation {
    if(baseline)break;
   }
   if(!baseline){
+   main(()->{
+    Thumbnail thumb=images.get(images.size()-1);android.graphics.Rect area=new android.graphics.Rect();ok(thumb.getGlobalVisibleRect(area),"thumbnail visible for overlap check");
+    View popup=new View(a);root.addView(popup,new FrameLayout.LayoutParams(100,100));
+    root.measure(View.MeasureSpec.makeMeasureSpec(600,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(800,View.MeasureSpec.EXACTLY));root.layout(0,0,600,800);
+    ok(VideoThumbnailRetry.covered(thumb,root,area),"later native reply popup hides background retry overlay");
+    popup.setVisibility(View.GONE);ok(!VideoThumbnailRetry.covered(thumb,root,area),"dismissed popup restores actions");
+    popup.setVisibility(View.VISIBLE);popup.setX(300);ok(!VideoThumbnailRetry.covered(thumb,root,area),"non-overlapping popup does not hide actions");
+    popup.setX(0);popup.setAlpha(0);ok(!VideoThumbnailRetry.covered(thumb,root,area),"transparent sibling does not cover thumbnail");root.removeView(popup);
+    FrameLayout emptyOverlay=new FrameLayout(a);root.addView(emptyOverlay,new FrameLayout.LayoutParams(600,800));
+    root.measure(View.MeasureSpec.makeMeasureSpec(600,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(800,View.MeasureSpec.EXACTLY));root.layout(0,0,600,800);
+    ok(!VideoThumbnailRetry.covered(thumb,root,area),"full-screen transparent toolbar container does not hide actions");
+    View panel=new View(a);emptyOverlay.addView(panel,new FrameLayout.LayoutParams(100,100));emptyOverlay.measure(View.MeasureSpec.makeMeasureSpec(600,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(800,View.MeasureSpec.EXACTLY));emptyOverlay.layout(0,0,600,800);
+    ok(VideoThumbnailRetry.covered(thumb,root,area),"actual child popup inside transparent container hides actions");root.removeView(emptyOverlay);return null;
+   });
    main(()->{for(Thumbnail v:images){VideoThumbnailRetry.bind(v,"http://127.0.0.1/video-error-old.png");VideoThumbnailRetry.bind(v,null);VideoThumbnailRetry.bind(v,"http://127.0.0.1/video-error-new.png");}return null;});waitForIdleSync();
    main(()->{ok(root.getChildCount()==256,"rapid rebind does not resurrect old overlays");for(Thumbnail v:images)root.removeView(v);return null;});waitForIdleSync();
    main(()->{ok(root.getChildCount()==0,"detach cleans every overlay");return null;});

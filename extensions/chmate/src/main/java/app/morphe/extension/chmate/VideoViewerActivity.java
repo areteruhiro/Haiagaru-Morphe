@@ -18,6 +18,7 @@ import android.widget.*;
 /** User-visible streaming player. No WebView, login cookies or automatic retries. */
 public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private VideoView video;
+    private PlaybackAudioFocus playbackFocus;
     private MediaController controls;
     private ViewerCornerControls toolbar;
     private FrameLayout mediaFrame;
@@ -113,7 +114,12 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         more.setOnClickListener(this::showMenu);
         toolbar = new ViewerCornerControls(this, back, more);
         FrameLayout frame = new FrameLayout(this);mediaFrame=frame;
-        video = new VideoView(this);
+        playbackFocus=new PlaybackAudioFocus(this,()->{if(video!=null)video.pause();playWhenReady=false;});
+        video = new VideoView(this){
+            @Override public void start(){if(playbackFocus.play())super.start();}
+            @Override public void pause(){super.pause();playbackFocus.release();}
+        };
+        if(android.os.Build.VERSION.SDK_INT>=26)video.setAudioFocusRequest(android.media.AudioManager.AUDIOFOCUS_NONE);
         setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
         touchControls = new VideoTouchControls(this);
         // Confirmed taps are handled by the detector, so a double tap cannot toggle controls twice.
@@ -208,11 +214,13 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             controls.show(0);
         });
         video.setOnCompletionListener(player -> {
+            playbackFocus.release();
             seeks.reset();
             playWhenReady = false; position = 0;
             setStatus("再生が終了しました。再生ボタンで最初から再生できます"); controls.show(0);
         });
         video.setOnErrorListener((player, what, extra) -> {
+            playbackFocus.release();
             seeks.reset();
             endHoldSpeed();
             prepared = false; mediaPlayer = null;
@@ -585,6 +593,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         if (gestures != null) gestures.close();
         if (controls != null) controls.hide();
         if (video != null) video.stopPlayback();
+        if (playbackFocus != null) playbackFocus.release();
         mediaPlayer = null;
         super.onDestroy();
     }

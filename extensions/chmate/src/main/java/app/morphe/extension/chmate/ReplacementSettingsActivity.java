@@ -37,6 +37,13 @@ public final class ReplacementSettingsActivity extends HaiagaruComposeActivity {
         });
         TextView title = new TextView(this);
         title.setText("本文の文字列置換"); title.setTextSize(22); layout.addView(title);
+        Switch selectors=new Switch(this);selectors.setText("投稿・表示時に絵文字の異体字セレクタを除く");
+        selectors.setChecked(StringReplacement.prefs(this).getBoolean("removeEmojiSelectors",true));
+        selectors.setOnCheckedChangeListener((button,checked)->{StringReplacement.prefs(this).edit().putBoolean("removeEmojiSelectors",checked).apply();StringReplacement.cleanupOptions(this);});layout.addView(selectors);
+        Switch replacement=new Switch(this);replacement.setText("表示時に文字化け記号（�）を非表示にする");
+        replacement.setChecked(StringReplacement.prefs(this).getBoolean("hideReplacementCharacter",true));
+        replacement.setOnCheckedChangeListener((button,checked)->{StringReplacement.prefs(this).edit().putBoolean("hideReplacementCharacter",checked).apply();StringReplacement.cleanupOptions(this);});layout.addView(replacement);
+        TextView cleanupHelp=new TextView(this);cleanupHelp.setText("初期ON。異体字セレクタはFE0E・FE0Fが対象です。文字化け記号の非表示は <ex2>�［タブ］［タブ］msg と同じ置換です。TXTの選択は不要です。保存済みDAT・入力中の下書きは変更しません。変更後はスレを開き直してください。");layout.addView(cleanupHelp);
         Switch enabled = new Switch(this);
         enabled.setText("表示する本文を置換する");
         enabled.setChecked(StringReplacement.prefs(this).getBoolean("enabled", false));
