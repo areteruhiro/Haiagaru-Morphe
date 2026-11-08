@@ -1,3 +1,63 @@
+# Haiagaru 1.25.0-dev.15
+
+HOME更新時の表示位置、板一覧のクラッシュ、爆サイの複数ページ取得を修正し、共有NGのダウンロード済みデータを削除できるようにした検証用プレリリースです。
+
+## 主な変更
+
+- **191：HOME更新時の表示位置を維持** — 更新完了時に一覧が先頭へ戻る処理を修正しました。手動の先頭移動は引き続き使えます。
+- **191・226：板一覧のクラッシュを修正** — 一覧の更新通知と表示件数の計算順序を修正し、スクロール中の件数不一致を防ぎます。
+- **爆サイの複数ページ取得を改善** — ページ指定のないURLがエラーになる場合は、最初のページを指定して取得します。途中ページの「前スレ」リンクをスレ本文の変更と誤認していた処理も修正しました。
+- **爆サイのエラーを読みやすく** — `BKS-759` などの番号と「しばらくしてアクセスし直してください」を表示します。前面では全文を確認できるダイアログも表示し、元サイトのエラー番号も残します。
+- **共有NGの受信データを削除** — オンライン共有NGの設定に「共有NGのダウンロード済みデータを削除」を追加しました。保存容量を確認してから削除でき、自動で再取得しないよう共有NGをオフにします。再びオンにすると再取得します。個人NG・レポーター除外・個別解除・端末内編集は保持します。
+
+## 爆サイの取得状況
+
+[報告スレ：つくばの美味しいラーメン店②](https://bakusai.com/thr_res/acode=15/ctgid=111/bid=4437/tid=8520877/)で、実通信による12ページの解析と、スレ本文・500レスの取得を確認しました。残る古い51レスは元サイトが759／778を返すため未取得です。番号を詰めず、該当位置に取得できない理由を表示します。全551レスが取得できた状態ではありません。
+
+## 確認範囲
+
+191・226・242のエミュレータで起動、本文・画像、設定、模擬投稿などの回帰試験を実施しました。191ではHOME更新位置の保持と手動の先頭移動、共有NGの実ファイル削除・容量・設定保持・エラー全文表示も確認しました。実機・長時間利用・実掲示板への投稿は今回未確認で、公開投稿は0件です。
+
+- [板一覧クラッシュの調査と検証](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/board-list-notification-crash-20261108.md)
+- [共有NGの容量削除・爆サイのページ取得と確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/shared-ng-cache-bakusai-pages-20261108.md)
+- [HOME更新時の位置保持](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/home-refresh-scroll-20261108.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** preserve HOME refresh position and repair board loading ([d883b39](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d883b393b44bfb762c70505f5f211925f7149c7f))
+
 # Haiagaru 1.25.0-dev.14
 
 爆サイの「闇バイトからの転落」ページ内にある関連ニュースを、ChMate標準画面で閲覧できるようにした検証用プレリリースです。
