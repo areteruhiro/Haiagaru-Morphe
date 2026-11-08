@@ -1576,3 +1576,9 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 爆サイ実機8520877は保存DATとgateway新規DATが一致、552行うち51は元サイト759/778。隔離same-count本文A→B試験は実スレID確認後の通常更新でnative表示変更成功。旧試験のcomposer画面取り違えを修正し、無根拠な製品DAT削除・更新hookは追加しない。51件取得成功とはしない。
 
 実機730eae72の既存reporter191へ署名一致install-r成功、ResListActivity focus/起動と導入後crash空を確認。日常用アプリ変更/データ消去なし。実機の各機能通し操作/長時間/実回線切替/実投稿は未確認。導入詳細はandroid-installations.md。利用者がプレ公開を指示したため既存Semantic Release CIへ進む。無関係な未追跡frida-thread-open-timing191.js/shared-ng-reporter-blocks-runtime.jsは保持し公開commitへ含めない。
+
+## 2026-11-09 1.25.0-dev.17プレリリース公開完了
+
+ソースd73afd86をdevへpush、既存Semantic Release CI42502027935 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.17 / prerelease=true,draft=false。CI生成7774bdaaをff-only取得。生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRC、JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致を確認。日付付き見出しと今回の修正内容・確認範囲・未取得51件が公開本文へ含まれることも検査。配布MPP7040706bytes / SHA2568fb8e0ed01f62d60aea38c8287142969b551647fb075c2fab45e0da20d6655ce。証跡build/release-1.25.0-dev.17-verify/verification.json。
+
+配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補を前記3版で検証し、実機191へ導入済み。正式master版1.24.1は変更なし。
