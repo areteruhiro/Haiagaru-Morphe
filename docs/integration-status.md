@@ -1547,3 +1547,7 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 最終MPP build/home-refresh-scroll/final.mpp SHA256 29992532c912383f529804538e7e02740065f942b518f1a38371177c58d2666d、191APK final191.apk SHA256 e065e8da5659025283131c799ed6fa906bde23d5d55117f14338ac34c9f3a901。emulator-5580/reporter191署名一致更新、台帳記載。試験fixture/アクセス権/反射修正での失敗はdocsに記録し成功と区別。ADB VIEW起動を含むコマンド1件automatic approval review拒否（blocked by policy）後は許可される隔離native試験を使用。実機変更・データ消去・push/Releaseなし。
 
 公開前242追加検証: 同じ最終MPPを242へ適用し署名一致install-r、gateway/native本文/画像/composer/設定644項目成功、公開POST0、crash buffer空。191=641/226=647/242=644、共通削除/エラー全文22・HOME191位置12・板一覧191/226各141は前記通過。利用者のプレ公開指示で既存Semantic Release CIへ進む。
+
+## 2026-11-08 1.25.0-dev.15プレリリース公開完了
+利用者のプレ公開指示でd883b393をpush。初回CI42473158784/再実行はGradle9.8.1配布zipの10秒timeoutで失敗、未公開。既存release.ymlだけでCI作業コピーのwrapper download待機120秒/retries2へ調整（21ab7b48）、Semantic Release CI42477370058 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.15 / 2026-11-08 20:54:40 JST / draft=false/prerelease=true。CI生成2f48147eをff-only取得。配布6assetの実download/size/SHA256/GitHub digest/ZIP CRC、JSON2個のversion/download_url/生成ファイルとの意味一致、公開説明のHOME/容量削除/爆サイ未取得51件を確認。Windowsの改行差で初回JSON byte比較だけ不一致、parsed JSON一致で確認。MPP7031545bytes SHA256 a51f9c812d812a500f0602cfd7cbc2b0fc1ebc735960bd498d20fb1ce9f30d8b。build/release-1.25.0-dev.15-verify/verification.json参照。masterの正式版1.24.1は変更なし。配布MPP再適用/実機更新なし。
+その後のサムネイル重なり/音声focus/異体字selector初期ONは未公開の作業中差分であり、このdev.15には含まれない。
