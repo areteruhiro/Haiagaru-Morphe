@@ -1494,3 +1494,6 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 最終確認完了: build.log通常Lint/R8を含め4m1s成功。191固定hook保持PASS/同署名更新/native191-final.log598項目PASS。after-live.logで実HTTP200/184505bytes、16 DAT行/標準スレ画面16件表示成功。gateway-source.rawにOP+res1〜res15の実在を確認、未取得枠ではない。既報ニュースURLもHTTP200/3行、crash191.log0行。最初のnative試験は追加fixture板の期待数未更新による試験側の失敗で、期待を5件へ更新後、同じ製品APKで全件成功。226/242/実機最終画面/実投稿/認証利用ON実通信は未確認。ユーザーが完了後プレリリースを明示したため既存CIで公開する。
+
+
+1.25.0-dev.11検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42431357383 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.11 / 2026-11-08 09:52:55 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7008656bytes / SHA256 627e169012156f08195051055003982e81da0fe04da34944216e18dfde98fdd5、GitHub asset digestも一致。pre JSONのversion/download_urlとローカルJSON内容一致。ソース5db4526a、CI生成ea455787をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカル候補で191の598項目と報告URLの実HTTP200/本文+15レス/標準画面16件を確認済み。226/242/実機/認証Cookie利用ON実通信/実投稿の今回の未確認範囲をRelease本文に記載。

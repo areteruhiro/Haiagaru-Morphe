@@ -32,3 +32,6 @@
 after-live.logはAndroid実通信で報告URLのHTTP200/184505bytes、nativeDatRows=16、nativeRenderedRows=16成功。実gatewayが利用したsourceをgateway-source.rawとして採取し、OPとres1〜res15の全15レスが実在することを確認。未取得枠で埋めた16行ではない。標準スレ画面の実行時adapterで16件表示まで確認。以前のニュースURL13585881もprevious-news-live.logでHTTP200/3 DAT行成功。crash191.logは最終試験開始以降0行。
 
 226/242と実機での最終画面確認、実サイト投稿、認証Cookie利用ONでの実通信は未確認。認証ONのUA維持はホスト/Androidのポリシー試験で確認した。ユーザーの公開指示により既存dev Semantic Releaseでプレリリースを公開する。生成ファイルの手編集なし。
+
+
+1.25.0-dev.11検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42431357383 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.11 / 2026-11-08 09:52:55 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7008656bytes / SHA256 627e169012156f08195051055003982e81da0fe04da34944216e18dfde98fdd5、GitHub asset digestも一致。pre JSONのversion/download_urlとローカルJSON内容一致。ソース5db4526a、CI生成ea455787をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカル候補で191の598項目と報告URLの実HTTP200/本文+15レス/標準画面16件を確認済み。226/242/実機/認証Cookie利用ON実通信/実投稿の今回の未確認範囲をRelease本文に記載。
