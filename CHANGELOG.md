@@ -1,3 +1,62 @@
+# Haiagaru 1.25.0-dev.14
+
+爆サイの「闇バイトからの転落」ページ内にある関連ニュースを、ChMate標準画面で閲覧できるようにした検証用プレリリースです。
+
+## 主な変更
+
+- 北海道一般求人など、一覧のリンク先が「闇バイトからの転落」になっている板では、そのページ内の関連ニュースを標準のスレ一覧へ表示します。
+- ページ表示後に取得されるニュース一覧へ対応しました。今回の取得時点では59スレありました。以前は静的HTMLだけを調べ、この動的なスレ一覧を見落としていました。
+- ニュースを選ぶと元の掲示板から本文・レスを取得します。APIの古い板番号は元ページの正式URLで確認し、本文・URLコピー・返信フォームの接続先を合わせます。
+- 自動で外部ブラウザを起動する変更ではありません。
+- 元APIにレス数がないため、本文取得前の件数は0として表示し、取得後に実際の件数へ更新します。集約一覧から新規スレを作成する場合は、元の板を開くよう案内します。
+
+## テストしたURL
+
+- [闇バイトからの転落](https://bakusai.com/yamibaito/)
+- [北海道一般求人](https://bakusai.com/thr_tl/acode=1/ctgid=106/bid=326/)
+- [代表スレ：医薬品卸売会社強盗](https://bakusai.com/thr_res/acode=3/ctgid=137/bid=1098/tid=13607621/)
+- [取得方式と確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/bakusai-yamibaito-news-20261108.md)
+
+## 確認範囲
+
+実API59件の解析と、代表スレの本文・2レスを確認しました。191・226・242のエミュレータで641・647・644項目が成功し、標準一覧59件・代表本文3件・元URL・通常本文／画像／模擬投稿／HTTPS ONを確認しました。191の実通信でも一覧59件と代表本文3件を取得・表示でき、新規クラッシュログはありません。59スレ全ての本文・全返信を網羅した検査ではありません。実機・長時間利用・実掲示板への投稿は今回は未確認で、公開投稿は0件です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** display Bakusai related news in native thread lists ([1917d92](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1917d9203e07f875c45b4722be91575899c390f0))
+
 # Haiagaru 1.25.0-dev.13
 
 爆サイの求人板でスレ一覧が読み込めない問題を修正した検証用プレリリースです。
