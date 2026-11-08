@@ -3282,6 +3282,7 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentP
  * start with bottom-only automatic scrolling. Never emit a tailing state, so
  * neither the forced sort nor the forced jump-to-bottom collector runs. */
 private fun BytecodePatchContext.patchPostEditorTextSize(version: String) {
+    patchPostingIpWarning(version)
     val fragment = mutableClassDefBy(if (version == "0.8.10.191 dev")
         "Lo/p9ExternalSyntheticLambda6;" else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
     val created = fragment.methods.single { it.name == "onViewCreated" && it.parameterTypes == listOf("Landroid/view/View;", "Landroid/os/Bundle;") }
@@ -3300,6 +3301,45 @@ private fun BytecodePatchContext.patchPostEditorTextSize(version: String) {
             "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/PostEditorTextSize;->apply(Landroid/app/Activity;)V")
     }
     println("Posting editor configurable text size: ${returns.size} resume exits")
+}
+
+/** Keep the exact submit body/registers in a delegate; guard every native caller. */
+private fun BytecodePatchContext.patchPostingIpWarning(version: String) {
+    val old = version == "0.8.10.191 dev"
+    val middle = version == "0.8.10.226 dev"
+    if (!old && !middle && version != "0.8.10.242 dev") return
+    val type = if (old) "Lo/p9ExternalSyntheticLambda6;" else if (middle)
+        "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;" else
+        "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragmentViewModel;"
+    val owner = mutableClassDefBy(type)
+    val submit = owner.methods.single {
+        it.name == (if (old) "b" else if (middle) "n" else "h") && it.returnType == "V" &&
+            it.parameterTypes == (if (middle) listOf(type) else emptyList<String>()) &&
+            (it.accessFlags and 8 != 0) == middle
+    }
+    check(submit.implementation!!.instructions.count() > 8) { "Native submit body changed: $type" }
+    val delegate = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(type,
+        "haiagaruIpOriginal", submit.parameters, submit.returnType, (submit.accessFlags and 6.inv()) or 1,
+        submit.annotations, submit.hiddenApiRestrictions, submit.implementation))
+    val wrapper = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(type,
+        submit.name, submit.parameters, submit.returnType, submit.accessFlags, submit.annotations,
+        submit.hiddenApiRestrictions, com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(
+            2, emptyList(), emptyList(), emptyList())))
+    val invoke = if (middle) "invoke-static" else "invoke-virtual"
+    wrapper.addInstructions(0, """
+        invoke-static {p0}, Lapp/morphe/extension/chmate/PostingIpWarning;->intercept(Ljava/lang/Object;)Z
+        move-result v0
+        if-nez v0, :ip_warning_wait
+        $invoke {p0}, $delegate
+        :ip_warning_wait
+        return-void
+    """.trimIndent())
+    val bridge = MutableMethod(com.android.tools.smali.dexlib2.immutable.ImmutableMethod(type,
+        "haiagaruIpConfirmed", emptyList(), "V", 1, emptySet(), emptySet(),
+        com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation(1, emptyList(), emptyList(), emptyList())))
+    bridge.addInstructions(0, "$invoke {p0}, $delegate\nreturn-void")
+    owner.methods.remove(submit);owner.methods.add(delegate);owner.methods.add(wrapper);owner.methods.add(bridge)
+    println("IP posting confirmation: $type -> ${submit.name}; native body preserved")
 }
 
 /** Only tint the two native auto-scroll icons; preserve click/hold callbacks and timing. */

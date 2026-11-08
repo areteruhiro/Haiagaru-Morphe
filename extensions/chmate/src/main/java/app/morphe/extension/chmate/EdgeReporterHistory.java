@@ -53,10 +53,13 @@ public final class EdgeReporterHistory {
     }
     /** Called only after the display bridge has verified the current board and thread. */
     public static String displayTitle(long thread, String title) {
+        return displayTitle("edge:liveedge",thread,title);
+    }
+    public static String displayTitle(String scope,long thread,String title){
         if (!ReporterMetadataWrites.headroom()) return title;
         SharedPreferences prefs = cache;
         if (prefs == null || thread <= 0 || EdgeReporterId.suffix(title) != null) return title;
-        return EdgeReporterId.restore(title, metadata(prefs).get(Long.toString(thread)));
+        return EdgeReporterId.restore(title, metadata(prefs).get(threadKey(scope,thread)));
     }
     public static String title(Object board, long thread, String title) {
         if (!ReporterMetadataWrites.headroom()) return title;
@@ -66,19 +69,19 @@ public final class EdgeReporterHistory {
     private static String metadataTitle(Object board,long thread,String title){
         SharedPreferences prefs = cache;
         if (prefs == null || thread <= 0 || !EdgeReporterId.isBoard(board)) return title;
-        String key = Long.toString(thread);
+        String key = threadKey(EdgeReporterId.scope(board),thread);
         ReporterMetadataWrites metadata = metadata(prefs);
         String suffix = EdgeReporterId.suffix(title);
         if (suffix != null) {
             metadata.put(key, suffix);
-            metadata.put(titleKey(title), suffix);
+            metadata.put(aliasKey(board,title), suffix);
             return title;
         }
         String stored = metadata.get(key);
         if (stored != null && title != null) {
             // This is the important path for rows restored from the local
             // history database: the row has no suffix, but its thread key does.
-            metadata.put(titleKey(title), stored);
+            metadata.put(aliasKey(board,title), stored);
         }
         return EdgeReporterId.restore(title, stored);
     }
@@ -92,7 +95,7 @@ public final class EdgeReporterHistory {
         }
         SharedPreferences prefs = cache;
         if (prefs == null) return title;
-        return EdgeReporterId.restore(title, metadata(prefs).get(titleKey(title)));
+        return EdgeReporterId.restore(title, metadata(prefs).get(aliasKey(board,title)));
     }
 
     /** Keep reporter metadata on screen, but copy the original thread title. */
@@ -118,12 +121,14 @@ public final class EdgeReporterHistory {
         // reduces accidental collisions without storing a full subject in XML.
         return TITLE_KEY_PREFIX + Integer.toHexString(base.hashCode()) + ":" + base.length();
     }
+    private static String threadKey(String scope,long thread){return "edge:liveedge".equals(scope)?Long.toString(thread):scope+":"+thread;}
+    private static String aliasKey(Object board,String title){String scope=EdgeReporterId.scope(board);return "edge:liveedge".equals(scope)?titleKey(title):scope+":"+titleKey(title);}
     public static void capture(Object url, Object result) {
         if (!ReporterMetadataWrites.headroom()) return;
         if (url == null || !(result instanceof List) || cache == null) return;
         // BBSUrlInfo exposes server/name in its diagnostic representation on all supported versions.
-        String value = url.toString();
-        if (!value.startsWith("{server:bbs.eddibb.cc, name:liveedge, created:")) return;
+        String scope=EdgeReporterId.scope(url);
+        if(scope==null)return;
         ReporterMetadataWrites metadata = metadata(cache);
         try {
             for (Object item : (List<?>) result) {
@@ -136,9 +141,9 @@ public final class EdgeReporterHistory {
                     if (field.getType() == String.class) title = (String) field.get(item);
                 }
                 String suffix = EdgeReporterId.suffix(title);
-                if (thread > 0 && suffix != null) metadata.put(Long.toString(thread), suffix);
+                if (thread > 0 && suffix != null) metadata.put(threadKey(scope,thread), suffix);
                 if (suffix != null && title != null) {
-                    String alias = titleKey(title);
+                    String alias = aliasKey(url,title);
                     metadata.put(alias, suffix);
                 }
             }
@@ -164,7 +169,7 @@ public final class EdgeReporterHistory {
             return false;
         }
         new HaiagaruDialog.Builder(activity).setTitle("NGThreadに追加")
-                .setItems(new String[]{"記者IDだけをNG  " + suffix, "スレタイでNG"}, (dialog, which) -> {
+                .setItems(new String[]{reporterButton(board)+"  " + suffix, "スレタイでNG"}, (dialog, which) -> {
                     try {
                         OPENING.set(true);
                         entry.invoke(null, activity, which == 0 ? suffix : resolvedTitle, type, board);
@@ -201,7 +206,7 @@ public final class EdgeReporterHistory {
                     || !(input.getParent() instanceof ViewGroup)) return;
             ViewGroup parent = (ViewGroup) input.getParent();
             Button button = new Button(root.getContext());
-            button.setText("記者IDだけをNG");
+            button.setText(reporterButton(board));
             button.setOnClickListener(view -> {
                 String suffix = EdgeReporterId.suffix(resolveTitle(board, input.getText().toString()));
                 if (suffix != null) { literal.setChecked(true); input.setText(suffix); input.setSelection(suffix.length()); }
@@ -222,4 +227,5 @@ public final class EdgeReporterHistory {
         }
         return null;
     }
+    private static String reporterButton(Object board){String scope=EdgeReporterId.scope(board);return scope!=null&&scope.startsWith("kenmo:")?"記者だけをNG":"記者IDだけをNG";}
 }

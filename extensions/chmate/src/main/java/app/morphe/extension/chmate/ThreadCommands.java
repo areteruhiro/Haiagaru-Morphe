@@ -74,6 +74,7 @@ public final class ThreadCommands {
             attachSiteImage(root,body,url);
             ExternalBoardAuth.target(fragment, url, body);
             BeAutoLogout.editor(fragment, target, thread, url);
+            PostingIpWarning.editor(fragment, model);
             // Commands belong only to thread creation, not ordinary replies.
             // Keep target registration above for external-board authentication.
             if (!thread||!FeatureSwitches.enabled("threadCommandsEnabled",true)) return;

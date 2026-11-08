@@ -3782,6 +3782,21 @@ public final class Haiagaru {
         });
 
 
+        int ipWarningNetworks=preferences.getInt(PostingIpWarning.KEY,0)&3;
+        Switch ipWifiWarning=addSwitch(layout,activity,
+                text("IP表示スレへの書き込み前に警告（Wi-Fi）", "Warn before posting in IP-visible threads (Wi-Fi)"),(ipWarningNetworks&1)!=0);
+        Switch ipMobileWarning=addSwitch(layout,activity,
+                text("IP表示スレへの書き込み前に警告（モバイル回線）", "Warn before posting in IP-visible threads (mobile)"),(ipWarningNetworks&2)!=0);
+        Runnable saveIpWarnings=()->preferences.edit().putInt(PostingIpWarning.KEY,(ipWifiWarning.isChecked()?1:0)|(ipMobileWarning.isChecked()?2:0)).apply();
+        ipWifiWarning.setOnCheckedChangeListener((button,checked)->saveIpWarnings.run());
+        ipMobileWarning.setOnCheckedChangeListener((button,checked)->saveIpWarnings.run());
+        ipWifiWarning.setEnabled(PostingIpWarning.supported(activity));
+        ipMobileWarning.setEnabled(PostingIpWarning.supported(activity));
+        TextView ipPostHelp = new TextView(activity);
+        ipPostHelp.setText(text("IP表示のあるスレへ送信する前に、戻る／書き込むを選べます。初期は警告なしです。モバイル回線での書き込み指定を優先します。保存済みレスやVPNなどでIP表示・回線を判定できない場合も確認します。",
+                "Confirm or cancel before submitting to an IP-visible thread. Initially off. The editor's mobile routing choice takes priority. Also confirms when cached posts or VPN routing cannot establish IP visibility or the network."));
+        ipPostHelp.setTextSize(13);layout.addView(ipPostHelp,rowParams(activity));
+        if(!PostingIpWarning.supported(activity))ipPostHelp.setText(text("IP表示の投稿確認は191・226・242に対応しています。", "IP-visible posting confirmation supports 191, 226 and 242."));
         Switch refreshCellularNetwork = addSwitch(
                 layout,
                 activity,

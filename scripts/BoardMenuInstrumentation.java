@@ -45,6 +45,8 @@ public final class BoardMenuInstrumentation extends Instrumentation {
   List<Object> legacy=new ArrayList<>(source);call(groups,"regroupLegacy",new Class<?>[]{List.class},legacy);ok(legacy.size()==4,"constructor hook API updates legacy list");
   Class<?> html=loader.loadClass("app.morphe.extension.chmate.BbsMenuHtml");String prepared=(String)call(html,"prepare",new Class<?>[]{String.class,String.class},"https://bbs.eddibb.cc/liveedge","<html><title>エッヂ</title><script>return text.toLowerCase();</script><a href='/test/read.cgi/liveedge/1234567890/'>thread</a></html>");
   ok(prepared.contains("https://bbs.eddibb.cc/liveedge/")&&!prepared.contains("return text")&&!prepared.contains("read.cgi"),"native runtime sanitizer yields a board-only menu");
+  String root=(String)call(html,"prepare",new Class<?>[]{String.class,String.class},"https://bbs.eddibb.cc/","<html><title>エッヂ</title><a href='/test/read.cgi/liveedge/1234567890/'>wrong thread headline</a></html>");
+  ok(root.contains("https://bbs.eddibb.cc/liveedge/")&&!root.contains("wrong thread")&&!root.contains("read.cgi"),"modern Edge root never registers thread headlines as board names");
   }finally{if(present)prefs.edit().putBoolean(option,previous).commit();else prefs.edit().remove(option).commit();}
  }
 }

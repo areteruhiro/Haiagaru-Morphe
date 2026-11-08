@@ -40,21 +40,30 @@ public final class BbsMenuHtml {
    return new URI(u.getScheme(),null,u.getHost(),u.getPort(),"/"+path+"/",null,null);
   }catch(Exception invalid){return null;}
  }
+ private static URI menuBoard(String url){
+  try{URI uri=URI.create(url);String path=uri.getRawPath();
+   if("bbs.eddibb.cc".equalsIgnoreCase(uri.getHost())&&uri.getUserInfo()==null&&uri.getQuery()==null&&uri.getFragment()==null
+    &&("http".equalsIgnoreCase(uri.getScheme())||"https".equalsIgnoreCase(uri.getScheme()))
+    &&(uri.getPort()==-1||uri.getPort()==("https".equalsIgnoreCase(uri.getScheme())?443:80))
+    &&(path==null||path.isEmpty()||path.equals("/")))return new URI(uri.getScheme(),null,uri.getHost(),uri.getPort(),"/liveedge/",null,null);
+  }catch(Exception invalid){}return boardAddress(url);
+ }
  public static String prepare(String url,String html){
   if(html==null||!html.trim().startsWith("<"))return html;
-  String clean=RAW.matcher(html).replaceAll("");URI board=boardAddress(url);
+  String clean=RAW.matcher(html).replaceAll("");URI board=menuBoard(url);
   if(board==null)return clean;
   String path=board.getPath().replaceAll("^/+|/+$","");
   boolean boardPage=clean.contains("/test/read.cgi/"+path+"/")||clean.contains("/bbs/read.cgi/"+path+"/")
     ||clean.contains("subject.txt");
-  if(!boardPage)return clean;
+  boolean edge="bbs.eddibb.cc".equalsIgnoreCase(board.getHost())&&path.equals("liveedge");
+  if(!boardPage&&!edge)return clean;
   String title=null;Matcher matcher=TITLE.matcher(clean);
   if(matcher.find())title=decode(matcher.group(1).replaceAll("(?is)<[^>]+>","").trim());
   if(siteTitle(board.getHost()).equals("エッヂ")&&path.equals("liveedge"))title="エッヂ";
   if(title==null||title.isEmpty()||scriptCategory(title))title=path;
   return "<html><body><B>"+escape(siteTitle(board.getHost()))+"</B><BR><A HREF=\""+escape(board.toASCIIString())+"\">"+escape(title)+"</A><BR></body></html>";
  }
- public static int countForValidation(int count,String url){return count==1&&boardAddress(url)!=null?2:count;}
+ public static int countForValidation(int count,String url){return count==1&&menuBoard(url)!=null?2:count;}
  private static String decode(String text){
   Matcher m=Pattern.compile("&(#(?:[xX][0-9a-fA-F]+|[0-9]+)|amp|lt|gt|quot|apos|nbsp);").matcher(text);StringBuffer out=new StringBuffer();
   while(m.find()){String token=m.group(1),value=m.group();

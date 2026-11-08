@@ -75,6 +75,29 @@ public class VerifyEdgeReporterHistory {
         equal(null, EdgeReporterHistory.displayTitle(1234567890L,null));
         equal("", EdgeReporterHistory.displayTitle(1234567890L,""));
         equal("スレ", EdgeReporterHistory.displayTitle(0,"スレ"));
+        String kenmo="kenmo.org%2Fpoverty",operate="kenmo.org%2Foperate";
+        equal(true,EdgeReporterId.isBoard(kenmo));equal("kenmo:poverty",EdgeReporterId.scope("https://kenmo.org/poverty/"));
+        equal(false,EdgeReporterId.isBoard("https://kenmo.org.evil/poverty/"));equal(false,EdgeReporterId.isBoard("https://kenmo.org@evil/poverty/"));
+        equal(false,EdgeReporterId.isBoard("https://kenmo.org:999/poverty/"));
+        equal("スレ",EdgeReporterHistory.title(kenmo,1234567890L,"スレ"));
+        Object kenmoUrl=new Object(){public String toString(){return "{server:kenmo.org, name:poverty, created:null, type:0 }";}};
+        EdgeReporterHistory.capture(kenmoUrl,List.of(new Subject(1234567890L,"スレ [KenmoId★]")));
+        equal("スレ [KenmoId★]",EdgeReporterHistory.title(kenmo,1234567890L,"スレ"));
+        equal(full,EdgeReporterHistory.title(board,1234567890L,"スレ"));
+        equal("スレ",EdgeReporterHistory.title(operate,1234567890L,"スレ"));
+        equal("スレ [KenmoId★]",EdgeReporterHistory.resolveTitle(kenmo,"スレ"));
+        equal("スレ [KenmoId★]",EdgeReporterHistory.displayTitle("kenmo:poverty",1234567890L,"スレ"));
+        equal(full,EdgeReporterHistory.displayTitle(1234567890L,"スレ"));
+        restart();equal("スレ [KenmoId★]",EdgeReporterHistory.historyTitle(1234567890L,kenmo,"スレ"));
+        equal("スレ",EdgeReporterHistory.historyTitle(1234567890L,operate,"スレ"));
+        if(args.length==2){
+            List<Subject> topics=new ArrayList<>();java.util.regex.Pattern line=java.util.regex.Pattern.compile("^([0-9]+)\\.dat<>(.*) \\([0-9]+\\)$");
+            for(String text:java.nio.file.Files.readAllLines(java.nio.file.Path.of(args[0]),java.nio.charset.Charset.forName("MS932"))){java.util.regex.Matcher m=line.matcher(text);if(m.matches())topics.add(new Subject(Long.parseLong(m.group(1)),m.group(2)));}
+            equal(true,topics.size()>100);EdgeReporterHistory.capture(kenmoUrl,topics);
+            String dat=java.nio.file.Files.readAllLines(java.nio.file.Path.of(args[1]),java.nio.charset.Charset.forName("MS932")).get(0).split("<>",5)[4];
+            equal(null,EdgeReporterId.suffix(dat));
+            equal(EdgeReporterId.suffix(topics.get(0).title),EdgeReporterId.suffix(EdgeReporterHistory.historyTitle(topics.get(0).key,kenmo,dat)));
+        }
         System.out.println("PASS: " + checks + " reporter persistence and isolation checks");
     }
 }

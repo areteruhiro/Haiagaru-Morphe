@@ -2269,3 +2269,32 @@ MPP C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/b
 - app.haiagaru.tests.mediacleanup242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/emoji-cleanup-tests/installed-media242.apk / SHA256 0f6a500440ddb3835efa03eca68454b149363b47823d54aff04a04ddf8533dcf / install-r Success / 191=12、226=15、最終242=15項目成功。
 
 2026-11-08 21:07頃 JST、app.haiagaru.tests.layoutmutation / Haiagaru layout regression / emulator-5580。独立テストでChMateデータアクセスなし。APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thumbnail-layout-regression/test.apk / SHA256 c150b9c6814f4d2315814fb1d5b42bd1f073ddb19d2b33af75468defc35d7510。Android debug鍵 C:/Users/narum/.android/debug.keystore / alias androiddebugkey / cert SHA256 85e29bfe0ecf3e8553fd628c4731de911bc29f38f66beb37fefa3029c9fc50a3。install-r Success、layout-container.logで41項目成功。
+
+## 2026-11-09 kenmo記者ID・板名・IP警告の候補
+
+全製品APKはInstallVerifiedApk.ps1で既存署名一致を確認しinstall-r Success。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。アンインストール・データ消去なし。日常用パッケージは更新していない。時刻は導入ログの最終更新時刻（JST、処理終了の近似）。
+
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/kenmo-reporter-20261109/candidate.mpp / SHA256 7eb16e33d30ebbf4adb539f5f1ccb52881fb72ecef2a7a37dd5325205af3f09a。ローカルdev.16表記の次版候補であり公開dev.16とは異なる。
+
+- 2026-11-09T01:39:11+09:00 / emulator-5580 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/kenmo-reporter-20261109/candidate191.apk / SHA256 c04445cdcee59f16c4ef7e015755a3c0069e09ea60f33a4d59203d4f57eba82a / install-r Success。
+
+- 2026-11-09T01:45:03+09:00 / 730eae72 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/kenmo-reporter-20261109/candidate191.apk / SHA256 c04445cdcee59f16c4ef7e015755a3c0069e09ea60f33a4d59203d4f57eba82a / install-r Success。
+
+- 2026-11-09T01:45:45+09:00 / emulator-5580 / Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/kenmo-reporter-20261109/candidate226.apk / SHA256 a960b3a598ce19b5a435b8e27f4b4013df668d897db1accf6464fdb81c16263a / install-r Success。
+
+- 2026-11-09T01:48:41+09:00 / emulator-5580 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/kenmo-reporter-20261109/candidate242.apk / SHA256 fc54b996022a165db723db00530351063d115a721dbc90aa8654ec5b17ef25ca / install-r Success。
+
+
+実機730eae72の検証用191はam start -WのStatus:ok、当該パッケージのResListActivityがfocusを持つことを確認。スクリーンショットphysical-installed.png保存。導入後01:43以降のcrash bufferは空。全新機能の実機通し操作は未実施。
+
+
+追加テストAPKは同じMorphe鍵/cert、表示名Board adapter regression tests、versionNameなし。次の3つをemulator-5580へinstall-r Success。各同番号reporterを対象とする。
+
+- app.haiagaru.tests.ipwarning191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests191.apk / SHA256 352e63235746c1e004abc9a452c54970f03e763707a5b9fae786814d82e74f14。
+
+- app.haiagaru.tests.ipwarning226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests226.apk / SHA256 a068ca91982ed10f2a3d30ae2a46f52fcbb26469d208be166a7fbd8307022844。
+
+- app.haiagaru.tests.ipwarning242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests242.apk / SHA256 0eded614f1a08e290ddf838a9ee20e4d092d5b0c9f0f33d90af58f80d3f6027e。
+
+
+sitegateway191試験APKも同じ鍵/cert、表示名Haiagaru isolated site tests、version1.0。build/site-boards-inst/tests191.apk / SHA256 d846fafdfc37c56ae21c46545de7e2b7ad8c8499b77361a213867b9a2b5fc175 / emulator-5580へinstall-r Success、191のsame-count refetch試験を追加。226/242のsitegateway試験APKは既存導入済みを継続使用。

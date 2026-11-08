@@ -1566,3 +1566,13 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 利用者がCHANGELOGの直接修正を明示したため、日付なし見出しを公開日付きへ修正。dev104/master87/main87箇所、本文/既存日付は保持。GitHub公開日を優先し、公開記録がない19箇所は既存リリースタグのcommit日付（UTC）で補完。今後の.releaserc headerPartialは「# Haiagaru {{version}} ({{date}})」。JSON/MPP/バージョン/Releaseは変更せず、docs [skip ci]でdev e32dd51b/master614a350d/main11052a7eへ反映。master/mainは別indexで最新remote親から2ファイルだけのcommitを作り、他作業のソース差分を含めない。初回atomic pushは古いremote追跡refにより拒否され、3branchとも未更新。明示fetchで最新README等を保持して再作成後、atomic push成功。公開raw3branchのCHANGELOG/.releasercが準備ファイルと完全一致、見出し・本文保持・将来テンプレートを確認。証跡build/changelog-manager-20261109。実機はADB接続0件のためManager内再表示は未確認。
 
 継続差分: IP投稿警告/参考IP確認/設定リンク対応はローカルのみ。build/ip-post-warning/build-verified.logは通常Lint/R8込み5m10s成功。まだ候補APK適用・エミュレータ試験・設定リンク一覧の再取得は未完了で、実装済みと端末確認済みを区別。利用者の次の優先依頼はkenmo.orgのスレ一覧「記者だけをNG」と爆サイ8520877再取得後のDAT/本文更新。実機接続待ちでもコード/隔離試験は進める。
+
+## 2026-11-09 kenmo記者ID・エッヂ板名・IP警告（検証完了、プレ公開指示あり）
+
+詳細kenmo-edge-bakusai-20261109.mdとip-post-warning-20261108.md。kenmoの記者IDをsubjectから保存しDAT読了後に復元、板ごとに分離して「記者だけをNG」を利用可能にする。エッヂ現行トップページのスレリンクを板名へ誤解析する経路を単一正規板メニューへ変換。実ページを含むホスト履歴44/表示42/板一覧40/IP判定34項目成功。
+
+最終通常Lint/R8 build5m2s成功。MPP7eb16e33d30ebbf4adb539f5f1ccb52881fb72ecef2a7a37dd5325205af3f09a。全3版で固定submit元命令/register/try保持と表示hooks確認、各版IP68/板一覧21/reporter-preview38成功、native gateway191583/226647/242644成功。191最初のIP画面試験3回はLauncher ANR/Bluetoothエラーダイアログに遮られ失敗、保存UIを確認してシステムダイアログを閉じ、製品を変えず再成功。公開投稿0/実IPサービス問合せ0、最終crash buffer空。設定リンク実取得を統合し190設定400操作、曖昧名なし/全command clickable。
+
+爆サイ実機8520877は保存DATとgateway新規DATが一致、552行うち51は元サイト759/778。隔離same-count本文A→B試験は実スレID確認後の通常更新でnative表示変更成功。旧試験のcomposer画面取り違えを修正し、無根拠な製品DAT削除・更新hookは追加しない。51件取得成功とはしない。
+
+実機730eae72の既存reporter191へ署名一致install-r成功、ResListActivity focus/起動と導入後crash空を確認。日常用アプリ変更/データ消去なし。実機の各機能通し操作/長時間/実回線切替/実投稿は未確認。導入詳細はandroid-installations.md。利用者がプレ公開を指示したため既存Semantic Release CIへ進む。無関係な未追跡frida-thread-open-timing191.js/shared-ng-reporter-blocks-runtime.jsは保持し公開commitへ含めない。

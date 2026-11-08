@@ -1,12 +1,19 @@
 package app.morphe.extension.chmate;
 public final class BbsMenuHtmlTest {
  static int checks;static void ok(boolean b,String s){if(!b)throw new AssertionError(s);checks++;}
- public static void main(String[]args){
+ public static void main(String[]args)throws Exception{
   String bad="<!DOCTYPE html><title>エッヂ</title><script>gtag('config','UA-test');\nreturn text.toLowerCase().includes(rule.pattern.toLowerCase());\n</script><a href='/test/read.cgi/liveedge/1790000000/'>スレ名 (42)</a>";
   String fixed=BbsMenuHtml.prepare("https://bbs.eddibb.cc/liveedge",bad);
   ok(fixed.contains("HREF=\"https://bbs.eddibb.cc/liveedge/\">エッヂ</A>"),"board URL becomes one board entry");
   ok(!fixed.contains("gtag")&&!fixed.contains("return text")&&!fixed.contains("スレ名")&&!fixed.contains("read.cgi"),"no script or thread title is imported");
   ok(fixed.equals(BbsMenuHtml.prepare("https://bbs.eddibb.cc/liveedge/",bad)),"trailing slash variants agree");
+  for(String url:new String[]{"https://bbs.eddibb.cc/","https://bbs.eddibb.cc","https://bbs.eddibb.cc/liveedge/"}){
+   String modern="<!DOCTYPE html><title>【画像】同じスレ名</title><a href='/other/'>【画像】同じスレ名</a>";
+   ok(BbsMenuHtml.prepare(url,modern).contains(">エッヂ</A>"),"modern root/redirect page becomes canonical board");
+   ok(!BbsMenuHtml.prepare(url,modern).contains("同じスレ名"),"thread headline cannot become repeated board names");
+   ok(BbsMenuHtml.countForValidation(1,url)==2,"canonical singleton accepted after root redirect");
+  }
+  if(args.length>0){String live=java.nio.file.Files.readString(java.nio.file.Path.of(args[0]));String result=BbsMenuHtml.prepare("https://bbs.eddibb.cc/",live);ok(result.equals(fixed),"reported live homepage yields exactly one canonical Edge board");}
   String menu="<html><script><B>gtag('config');</B><a href='https://bad.invalid/fake/'>bad</a></script><style><b>bad</b></style><!--<B>bad</B>--><B>ニュース</B><a href='https://kenmo.org/poverty/'>嫌儲</a></html>";
   String clean=BbsMenuHtml.prepare("https://kenmo.org/bbsmenu.html",menu);
   ok(clean.contains("<B>ニュース</B>")&&clean.contains("https://kenmo.org/poverty/"),"real menu categories and URLs preserved");

@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class EdgeReporterDisplay {
     private static final ThreadLocal<Long> THREAD = new ThreadLocal<>();
     private static final ThreadLocal<Boolean> EDGE = new ThreadLocal<>();
+    private static final ThreadLocal<String> SCOPE = new ThreadLocal<>();
     private static final ConcurrentHashMap<Class<?>, Field> FIELDS = new ConcurrentHashMap<>();
     private EdgeReporterDisplay() {}
 
@@ -30,9 +31,9 @@ public final class EdgeReporterDisplay {
         if (boardField == null) return;
         try {
             Object url = field(adapter, boardField).get(adapter);
-            if (url != null && (EdgeReporterId.isBoard(url)
-                    || url.toString().startsWith("{server:bbs.eddibb.cc, name:liveedge, created:"))) {
-                EDGE.set(true);
+            String scope=EdgeReporterId.scope(url);
+            if(scope!=null){
+                EDGE.set(true);SCOPE.set(scope);
             }
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             // Unknown native state must leave the original text unchanged.
@@ -61,8 +62,8 @@ public final class EdgeReporterDisplay {
         THREAD.remove();
         if (!Boolean.TRUE.equals(EDGE.get()) || thread == null) return original;
         if(!EdgeReporterOptions.board())return EdgeReporterId.titleForNextThreadMatch(original);
-        return EdgeReporterHistory.displayTitle(thread, original);
+        return EdgeReporterHistory.displayTitle(SCOPE.get(),thread, original);
     }
 
-    public static void end() { SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); }
+    public static void end() { SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); SCOPE.remove(); }
 }

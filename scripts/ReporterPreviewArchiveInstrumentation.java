@@ -27,6 +27,12 @@ public final class ReporterPreviewArchiveInstrumentation extends Instrumentation
   String alias=(String)method(history,"titleKey",String.class).invoke(null,plain);for(int n=0;n<100&&!"[old★]".equals(temp.getString(alias,null));n++)Thread.sleep(20);
   ok("[old★]".equals(temp.getString(alias,null)),"new title alias is eventually persisted");ok(full.equals(resolve.invoke(null,board,plain)),"NG menu resolves queued/persisted alias");
   ok("履歴テスト".equals(title.invoke(null,1234567890L,"other",plain)),"unrelated boards stay unchanged");
+  String kenmo="kenmo.org%2Fpoverty";String kenmoTitle=plain+" [KenmoFixture★]";
+  ok(kenmoTitle.equals(title.invoke(null,1234567890L,kenmo,kenmoTitle)),"kenmo reporter metadata acquired");
+  ok(kenmoTitle.equals(title.invoke(null,1234567890L,kenmo,plain)),"plain DAT title restores kenmo reporter");
+  ok(kenmoTitle.equals(resolve.invoke(null,kenmo,plain)),"kenmo NG menu restores reporter metadata");
+  ok(full.equals(title.invoke(null,1234567890L,board,plain)),"same numeric thread remains isolated from Edge");
+  ok(plain.equals(title.invoke(null,1234567890L,"kenmo.org%2Foperate",plain)),"same numeric thread remains isolated across kenmo boards");
  }
  private void archive()throws Exception{
   Class<?> importer=loader.loadClass("app.morphe.extension.chmate.ArchivedThreadImporter"),info=loader.loadClass(importer.getName()+"$ThreadInfo");
