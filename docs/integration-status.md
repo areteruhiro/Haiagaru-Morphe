@@ -1515,3 +1515,11 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 1.25.0-dev.12検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42437817930 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.12 / 公開2026-11-08 11:21:17 JST。APIでprerelease=true/draft=false、MPP/JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7023433bytes / SHA256 ecbbe4a14469c63e1aede7eabb7f05ca02ee12c69f5b58eb29face64d415164a、GitHub asset digestと一致。pre JSONのversion/download_url、両公開JSONとローカル全内容、公開devメタデータのversion/download_url一致。公開説明に非公開の運用条件・内部管理仕様が含まれていないことも確認。
 
 製品ソース9872beef/b624f64d、CI生成0822ab33をff-only取得。生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施。同じ製品ソースの最終ローカルMPPで前記3版の615/621/618項目と実通信2件を確認した。代表スレ検証であり、全スレ網羅・長時間使用・今回の実掲示板投稿・勢いソートは確認済み扱いにしない。
+
+## 2026-11-08 爆サイ求人一覧（ローカル修正済み・未公開）
+
+詳細 docs/bakusai-recruitment-20261108.md。福岡829の#thr_list3直下リンク+日時+(n件)形式を共通パーサーへ追加。タイトル/他行/広告/他板の数字を拾わず、0返信もOPを含む。通常スレのない求人一覧では注意喚起リンク/外部求人掲載情報であることを表示。新規のクラス走査/ネイティブhookなし。47都道府県×求人3カテゴリ=141板の1ページ目を実通信検査し、通常スレがあった54板（お水46、風俗8）は各1スレの本文・返信全件取得成功。残87板は通常スレなし。2ページ目以降の全件確認ではない。
+
+ホスト13/既存25/既報16項目成功。通常Lint/R8込み3m55sビルド成功、191固定hook保持PASS、最終候補のエミュレータ615項目成功。実福岡一覧25行、代表5262240は2DAT行/標準画面2件、新規crash0行。MPP SHA256 40ea375157908c8a37f25585cda387410995fbec14cfbdc6b4220b5cfccb6b10、APK/署名はandroid-installations.md。226/242の今回の最終画面は未確認。公開投稿0、実機変更/アンインストール/データ消去なし。今回の追加修正は未公開、dev.12配布物には含まれない。
+
+公開指示追補: ユーザーが『プレリリースして、テストしたURLを教えて』と明示。前記の検証済み候補を既存dev Semantic Release経路で公開する。既存.releasercの公開説明を求人板対応と確認範囲へ更新し、全141板/54スレの検証記録へのURLを掲載。生成ファイル手編集なし。

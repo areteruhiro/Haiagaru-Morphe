@@ -83,14 +83,33 @@ final class SiteBoardProtocol {
                 String title=cards?(heading==null?"":heading.text()):link.hasAttr("title")?link.attr("title"):link.text();if(title.trim().isEmpty())continue;
                 Element group=link.closest("li");if(group==null)group=link.closest("table");
                 Element count=cards?link.selectFirst(".thrimg_comment_space + span, .thrlis_comment_space + span"):group==null?null:group.selectFirst(".comment_count_area > span:last-child");
-                if(count==null)continue;String raw=count.text().trim();
+                String raw=count==null?offerCount(link):count.text().trim();if(raw==null)continue;
                 if(!raw.matches("(?:[0-9]{1,6}|[0-9]{1,3}(?:,[0-9]{3}){1,2})"))continue;
                 int replies=Integer.parseInt(raw.replace(",",""));if(replies>999999)continue;
                 unique.put(id,new Topic(id,title.trim(),replies+1));
             }
         }
-        if(unique.isEmpty())throw new IOException("対応するスレ一覧がありません（認証・一覧形式を確認してください）");
+        if(unique.isEmpty()){
+            Element offers=doc.selectFirst(".thr_list #thr_list3");
+            if(offers!=null&&offers.select("a[href*=/thr_res/]").isEmpty()){
+                if(!offers.select("a.yamibaito-link[href=/yamibaito/]").isEmpty())throw new IOException("元サイトの一覧は注意喚起ページへのリンクです。閲覧できる掲示板スレのリンクがありません");
+                if(!offers.select("a[href^='https://recruit.bakusai.com/view/']").isEmpty())throw new IOException("元サイトの一覧は外部求人サイトの掲載情報です。閲覧できる掲示板スレのリンクがありません");
+            }
+            throw new IOException("対応するスレ一覧がありません（認証・一覧形式を確認してください）");
+        }
         out.addAll(unique.values());return out;
+    }
+    private static final Pattern OFFER_COUNT=Pattern.compile("^(?:(?:(?:[0-9]{4}/)?[0-9]{1,2}/[0-9]{1,2}\\s+[0-9]{1,2}:[0-9]{2}|[0-9]{1,4}(?:秒|分|時間|日)前|たった今)\\s*)?[（(]\\s*([0-9]{1,6}|[0-9]{1,3}(?:,[0-9]{3}){1,2})\\s*件\\s*[）)]$");
+    /** Recruitment lists delimit each plain-text count with BR, rather than a table/LI row. */
+    private static String offerCount(Element link){
+        if(link.parent()==null||!link.parent().id().equals("thr_list3"))return null;
+        StringBuilder tail=new StringBuilder();
+        for(Node node=link.nextSibling();node!=null;node=node.nextSibling()){
+            if(node instanceof Element){Element element=(Element)node;if(element.normalName().equals("br")||element.normalName().equals("a")||element.isBlock()||!element.select("a,br").isEmpty())break;tail.append(element.text());}
+            else if(node instanceof TextNode)tail.append(((TextNode)node).getWholeText());
+            if(tail.length()>160)return null;
+        }
+        Matcher match=OFFER_COUNT.matcher(tail.toString().replace('\u00a0',' ').trim());return match.matches()?match.group(1):null;
     }
     static ThreadPage thread(Board board,String id,String html)throws IOException{
         if(board.kind.equals("animanch")){
