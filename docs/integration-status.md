@@ -1557,3 +1557,7 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 詳細 docs/thumbnail-focus-emoji-20261108.md。失敗サムネイルの操作がnative返信popupへ重ならないよう祖先経路の後続描画を検査、透明toolbarコンテナは子の描画位置で判断。実Androidレイアウト41項目成功。Haiagaru専用プレイヤーはAPI26以降でprepare時のfocus要求を停止し、実再生時だけ要求。投稿コピー/表示のFE0E/FE0F除去と表示U+FFFD除去を初期ONの独立設定に追加、TXT選択不要。ZWJ/漢字IVS/保存DAT/下書き保持。242の実constructorコピー検証で既存の投稿bodyフィールド対応誤りも検出し修正。
 
 ホスト文字処理12、先行191実文字処理/focus12・画面回帰641、226実nativeコピー/focus15成功。最終buildはPCメモリ不足からエミュレータを停止して再試行し通常Lint/R8込み3m46s成功。最終MPP a586f64df94ee690dbccfd8ecf54e96857b174b95e05677b2c072a2b90f97e45で242を同署名更新しnativeコピー/focus15・画面回帰644成功。公開投稿0、crash-final.log空。最終MPPの191/226再導入、YouTubeアプリそのもの、標準プレイヤー、API25以前、実機、長時間利用は未確認。実機変更・新規リリースなし。公開dev.15にこの3点は含まれない。
+
+## 2026-11-08 1.25.0-dev.16プレリリース公開完了
+
+利用者の公開指示で19b984ddをdevへpush、既存Semantic Release CI42483021247 success。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.16 / 2026-11-08 22:07:48 JST / prerelease=true,draft=false。CI生成143a7704をff-only取得。6asset実download/size/SHA256/GitHub digest、ZIP/MPP CRCとJSON2個のversion/download_url/ローカル生成ファイルとの意味一致を確認。MPP7034834bytes SHA2567b2bc4e33b168247dd198ce8aedb996e616e5d20ba09365e3bef5e18b4bd5e9d、build/release-1.25.0-dev.16-verify/verification.json参照。公開説明に3点修正/242投稿コピー/確認範囲/未確認範囲あり。配布MPPの再導入/実機変更なし。次のIP表示スレ回線別警告は本リリースに未包含。
