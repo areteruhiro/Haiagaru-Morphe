@@ -1561,3 +1561,8 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 ## 2026-11-08 1.25.0-dev.16プレリリース公開完了
 
 利用者の公開指示で19b984ddをdevへpush、既存Semantic Release CI42483021247 success。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.16 / 2026-11-08 22:07:48 JST / prerelease=true,draft=false。CI生成143a7704をff-only取得。6asset実download/size/SHA256/GitHub digest、ZIP/MPP CRCとJSON2個のversion/download_url/ローカル生成ファイルとの意味一致を確認。MPP7034834bytes SHA2567b2bc4e33b168247dd198ce8aedb996e616e5d20ba09365e3bef5e18b4bd5e9d、build/release-1.25.0-dev.16-verify/verification.json参照。公開説明に3点修正/242投稿コピー/確認範囲/未確認範囲あり。配布MPPの再導入/実機変更なし。次のIP表示スレ回線別警告は本リリースに未包含。
+
+## 2026-11-09 Morphe ManagerのCHANGELOG見出し日付（公開反映済み）
+利用者がCHANGELOGの直接修正を明示したため、日付なし見出しを公開日付きへ修正。dev104/master87/main87箇所、本文/既存日付は保持。GitHub公開日を優先し、公開記録がない19箇所は既存リリースタグのcommit日付（UTC）で補完。今後の.releaserc headerPartialは「# Haiagaru {{version}} ({{date}})」。JSON/MPP/バージョン/Releaseは変更せず、docs [skip ci]でdev e32dd51b/master614a350d/main11052a7eへ反映。master/mainは別indexで最新remote親から2ファイルだけのcommitを作り、他作業のソース差分を含めない。初回atomic pushは古いremote追跡refにより拒否され、3branchとも未更新。明示fetchで最新README等を保持して再作成後、atomic push成功。公開raw3branchのCHANGELOG/.releasercが準備ファイルと完全一致、見出し・本文保持・将来テンプレートを確認。証跡build/changelog-manager-20261109。実機はADB接続0件のためManager内再表示は未確認。
+
+継続差分: IP投稿警告/参考IP確認/設定リンク対応はローカルのみ。build/ip-post-warning/build-verified.logは通常Lint/R8込み5m10s成功。まだ候補APK適用・エミュレータ試験・設定リンク一覧の再取得は未完了で、実装済みと端末確認済みを区別。利用者の次の優先依頼はkenmo.orgのスレ一覧「記者だけをNG」と爆サイ8520877再取得後のDAT/本文更新。実機接続待ちでもコード/隔離試験は進める。
