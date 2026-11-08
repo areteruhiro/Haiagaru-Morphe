@@ -12,6 +12,7 @@ import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 /** Fixed native provider collections only; typed BbsPreference/dialog/menu import stay native. */
 internal fun BytecodePatchContext.patchSiteNativeBoards(version: String) {
+    patchSiteThreadMetadata(version)
     val old=version.contains("191");val middle=version.contains("226")
     val url=mutableClassDefBy("Ljp/syoboi/a2chMate/client/BBSUrlInfo;")
     val parse=url.methods.single{it.name==(if(old)"b" else if(middle)"c" else "d")&&it.parameterTypes==listOf("Ljava/lang/String;")&&it.returnType==url.type}

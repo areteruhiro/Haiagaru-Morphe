@@ -76,12 +76,12 @@ final class SiteBoardProtocol {
                 unique.putIfAbsent(id,new Topic(id,title,Integer.parseInt(raw)+1));
             }
         }else{
-            for(Element link:doc.select("#threadListField a[href*=/thr_res/], .thr_list a[href*=/thr_res/]")){
+            for(Element link:doc.select("#threadListField a[href*=/thr_res/], .thr_list a[href*=/thr_res/], #thrListInner a[href*='/thr_res/']")){
                 String id=threadIn(board,link.absUrl("href"));if(id==null||unique.containsKey(id))continue;
                 Element heading=link.selectFirst(".imgbody .title, .ttTitle .title");
                 boolean cards=heading!=null;
                 String title=cards?(heading==null?"":heading.text()):link.hasAttr("title")?link.attr("title"):link.text();if(title.trim().isEmpty())continue;
-                Element group=link.closest("table");if(group==null)group=link.closest("li");
+                Element group=link.closest("li");if(group==null)group=link.closest("table");
                 Element count=cards?link.selectFirst(".thrimg_comment_space + span, .thrlis_comment_space + span"):group==null?null:group.selectFirst(".comment_count_area > span:last-child");
                 if(count==null)continue;String raw=count.text().trim();
                 if(!raw.matches("(?:[0-9]{1,6}|[0-9]{1,3}(?:,[0-9]{3}){1,2})"))continue;

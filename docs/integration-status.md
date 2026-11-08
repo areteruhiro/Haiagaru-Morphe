@@ -1497,3 +1497,17 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 
 
 1.25.0-dev.11検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42431357383 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.11 / 2026-11-08 09:52:55 JST。APIでprerelease=true/draft=false、MPP/bundle JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7008656bytes / SHA256 627e169012156f08195051055003982e81da0fe04da34944216e18dfde98fdd5、GitHub asset digestも一致。pre JSONのversion/download_urlとローカルJSON内容一致。ソース5db4526a、CI生成ea455787をff-only取得、生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカル候補で191の598項目と報告URLの実HTTP200/本文+15レス/標準画面16件を確認済み。226/242/実機/認証Cookie利用ON実通信/実投稿の今回の未確認範囲をRelease本文に記載。
+
+## 2026-11-08 外部板のスレ日時・勢い／地域別本文取得
+
+詳細 docs/site-thread-dates-20261108.md、docs/bakusai-menu-thread-audit-20261108.md。固定191/226/242の表示・計算読み出しへ真のOP日時を接続し、仮想ID/URL/履歴は保持。最大同時2、待機200、RAM2000、SQLite20000のメタデータキャッシュ。日時不明をIDから推測しない。勢いによるソート順序は今回未変更・未検証。
+
+既報の15メニュー全てから実板・実スレを確認。47都道府県雑談+15地域運輸+災害4+サッカー1の計67板各1スレで、66スレ全件取得。山梨の1スレは元HTMLに#6がなく、取得できたOP+7レスと理由付き未取得枠を表示する修正を追加。全板/全スレの網羅とは区別。初回は元サイト200エラーが多く、Cookie保持と2秒以上の間隔で再検証。BBS新形式#thrListInnerも対応。
+
+製品最終build-release.logは通常Lint/R8込み3m28s成功。MPP build/external-board-dates/release.mpp SHA256 70f692c5331f16379ba2b77bfae30e699f0f8bb389758f797a551169c8e4c1f3。以後の製品ソース変更なし。3版とも固定hooksとwideレジスター/元命令保持PASS。同署名更新、最終191615/226621/242618項目PASS、3サイトの日時表示と標準本文/画像/模擬投稿/元URL/HTTPS ON成功。191最初の不合格はタブレット別ペインを検査していた試験側の不備で、板キー/ホスト/ポート一致へ修正後、同じ製品APKで全件再成功。
+
+191実通信の栃木運輸・交通12167020はHTTP200/199481bytes、31 DAT行/標準画面31件。サッカー国内13031645はHTTP200/183618bytes、20 DAT行/標準画面20件。公開投稿0、crash-final.log0行、実機変更/アンインストール/データ消去なし。実機・長時間利用・今回の実投稿・認証Cookie利用ONの実通信は未確認。APK/署名/MPPはandroid-installations.md。
+
+共有NGの保存・同期・管理者復元処理も更新。GASは既存URLのversion17へ反映済み。サーバーの隔離モック65項目と既存スイート全件、Androidの永続状態17項目、3版での隔離Senderによる送信待ち/再試行/ACK/取消を確認。試験票は本番へ送信していない。運用基準はユーザー指示によりRelease説明へ記載しない。管理者向け手順・デプロイ画像・書換前バックアップはbuild/shared-ng-feedback-live内に保存。
+
+ユーザーの完了後プレリリース指示に従い、確認範囲を既存.releasercのheaderPartialへ記載してdev Semantic Releaseで公開する。生成ファイルは手編集しない。

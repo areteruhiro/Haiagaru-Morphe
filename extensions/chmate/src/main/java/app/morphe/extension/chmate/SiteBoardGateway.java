@@ -261,6 +261,7 @@ final class SiteBoardGateway {
             }
             else{
                 String id=sourceThread(route.group(3));SiteBoardProtocol.ThreadPage page=thread(board,id,page(board.threadUrl(id)));
+                if(!page.entries.isEmpty())SiteThreadMetadata.remember(key,id,SiteThreadDates.parse(page.entries.get(0).date));
                 data=SiteNativeData.dat(board,page,source->{if(board.kind.equals("animanch"))return origin()+"/m/"+key+URI.create(source).getPath()+".jpg";return source;},
                         source->{String other=SiteBoardProtocol.threadIn(board,source);if(other==null)return source;try{return origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(other)+"/";}catch(IOException invalid){return source;}});
             }
@@ -269,6 +270,7 @@ final class SiteBoardGateway {
         finally{clients.remove(client);try{client.close();}catch(IOException ignored){}}
     }
     private String page(String url)throws IOException{Response r=transport.get(url);if(r.status!=200)throw new IOException("HTTP "+r.status);return r.text();}
+    long creationTime(String key,String id)throws IOException{SiteBoardProtocol.Board board=boards.get(key);if(board==null||!boardEnabled(key))throw new IOException("使用しない板です");return SiteThreadDates.opening(board,id,page(board.threadUrl(id)));}
     private SiteBoardProtocol.ThreadPage thread(SiteBoardProtocol.Board board,String id,String html)throws IOException{
         if(board.kind.equals("animanch"))return AnimanchPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);});
         return board.kind.equals("bakusai")?BakusaiPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.thread(board,id,html);
@@ -408,12 +410,12 @@ final class SiteBoardGateway {
             HttpURLConnection c=(HttpURLConnection)uri.toURL().openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(8000);c.setReadTimeout(15000);
             boolean useCookies=prefs.getBoolean("cookies:"+host,false);
             String ua=overrideUa!=null?overrideUa:SiteAuthenticationPolicy.userAgent(host,useCookies,prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru")));c.setRequestProperty("User-Agent",ua);
-            if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null)c.setRequestProperty("Cookie",cookie);}
-            if(host.endsWith(".2chan.net")&&c.getRequestProperty("Cookie")==null){String cookie=sessionCookies.header(uri);if(!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
+            if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null&&!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
+            if((host.endsWith(".2chan.net")||host.equals("bakusai.com"))&&c.getRequestProperty("Cookie")==null){String cookie=sessionCookies.header(uri);if(!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
             try{
                 if(body!=null){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Referer",referer);c.setRequestProperty("Origin","https://"+host);if("bbs.animanch.com".equals(host))c.setRequestProperty("X-Requested-With","XMLHttpRequest");c.setRequestProperty("Content-Type",contentType);c.setFixedLengthStreamingMode(body.length);try(OutputStream output=c.getOutputStream()){output.write(body);}}
                 int status=c.getResponseCode();String type=c.getContentType();if(type==null)type="application/octet-stream";
-                if(host.endsWith(".2chan.net"))sessionCookies.receive(uri,c.getHeaderFields());
+                if(host.endsWith(".2chan.net")||host.equals("bakusai.com"))sessionCookies.receive(uri,c.getHeaderFields());
                 if(useCookies)for(Map.Entry<String,List<String>> h:c.getHeaderFields().entrySet())if("Set-Cookie".equalsIgnoreCase(h.getKey()))for(String value:h.getValue())CookieManager.getInstance().setCookie(address,value);
                 InputStream stream=status<400?c.getInputStream():c.getErrorStream();ByteArrayOutputStream data=new ByteArrayOutputStream();
                 if(stream!=null)try(InputStream in=stream){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(data.size()+n>12*1024*1024)throw new IOException("取得上限を超えました");data.write(buffer,0,n);}}
