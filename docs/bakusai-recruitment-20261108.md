@@ -163,3 +163,5 @@
 BakusaiRecruitmentTest13項目、既存アドレス/一覧/本文25項目、既報レイアウト16項目成功。福岡の実HTMLは25スレ（外部求人広告5件は除外）、0返信を含む件数・OP+返信2件・標準返信フォームの板/スレ一致を確認した。実POSTは送らない。製品ビルドは通常Lint/R8込み3m55s成功。変更は共通Javaパーサーのみで、新しいネイティブフックやクラス探索を追加していない。
 
 191最終候補で615項目成功。実通信の福岡829はHTTP200/114587bytes、topics=25/nativeSubjectRows=25。代表スレ5262240はHTTP200/144614bytes、nativeDatRows=2/nativeRenderedRows=2。新規crash buffer0行。既存検証用191を同署名更新し、実機・データ消去なし。226/242は同じ共通パーサーの対象だが今回の最終APK画面は未確認。公開はまだ行っていない。
+
+公開済み: [1.25.0-dev.13](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.13)。CI成功、配布MPPのダウンロード/ハッシュ、メタデータの一致を確認。上記の『未公開』は公開前の候補検証時点の記録。

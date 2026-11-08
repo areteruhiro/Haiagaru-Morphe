@@ -1523,3 +1523,5 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 ホスト13/既存25/既報16項目成功。通常Lint/R8込み3m55sビルド成功、191固定hook保持PASS、最終候補のエミュレータ615項目成功。実福岡一覧25行、代表5262240は2DAT行/標準画面2件、新規crash0行。MPP SHA256 40ea375157908c8a37f25585cda387410995fbec14cfbdc6b4220b5cfccb6b10、APK/署名はandroid-installations.md。226/242の今回の最終画面は未確認。公開投稿0、実機変更/アンインストール/データ消去なし。今回の追加修正は未公開、dev.12配布物には含まれない。
 
 公開指示追補: ユーザーが『プレリリースして、テストしたURLを教えて』と明示。前記の検証済み候補を既存dev Semantic Release経路で公開する。既存.releasercの公開説明を求人板対応と確認範囲へ更新し、全141板/54スレの検証記録へのURLを掲載。生成ファイル手編集なし。
+
+1.25.0-dev.13検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42441644813 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.13 / 2026-11-08 12:15:41 JST。APIでprerelease=true/draft=false、MPP/JSON2個/任意ZIP3個を確認。配布MPP実ダウンロード7023639bytes / SHA256 2044fe17e9eac79357958c897770ef673090b7719af4022ab3ad1891cf7f7a53、GitHub asset digest一致。pre JSONのversion/download_url、公開JSON2個とローカル内容一致。検証URL一覧と226/242の今回未確認範囲がRelease本文に掲載されていることも確認。製品ソースb24e2de5、CI生成ff2f47b4をff-only取得。生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施、同一製品ソースの最終ローカルMPPで前記191615項目・実一覧25/本文2件を確認済み。
