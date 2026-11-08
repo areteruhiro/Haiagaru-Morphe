@@ -1511,3 +1511,7 @@ SiteBoardGatewayInstrumentationを実際のResEditActivity$Dialogへ変更。各
 共有NGの保存・同期・管理者復元処理も更新。GASは既存URLのversion17へ反映済み。サーバーの隔離モック65項目と既存スイート全件、Androidの永続状態17項目、3版での隔離Senderによる送信待ち/再試行/ACK/取消を確認。試験票は本番へ送信していない。運用基準はユーザー指示によりRelease説明へ記載しない。管理者向け手順・デプロイ画像・書換前バックアップはbuild/shared-ng-feedback-live内に保存。
 
 ユーザーの完了後プレリリース指示に従い、確認範囲を既存.releasercのheaderPartialへ記載してdev Semantic Releaseで公開する。生成ファイルは手編集しない。
+
+1.25.0-dev.12検証用公開完了: Semantic Release CI https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/42437817930 success / https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.12 / 公開2026-11-08 11:21:17 JST。APIでprerelease=true/draft=false、MPP/JSON2個/任意ZIP3個を確認。配布MPPを実ダウンロードし7023433bytes / SHA256 ecbbe4a14469c63e1aede7eabb7f05ca02ee12c69f5b58eb29face64d415164a、GitHub asset digestと一致。pre JSONのversion/download_url、両公開JSONとローカル全内容、公開devメタデータのversion/download_url一致。公開説明に非公開の運用条件・内部管理仕様が含まれていないことも確認。
+
+製品ソース9872beef/b624f64d、CI生成0822ab33をff-only取得。生成ファイル手編集なし。配布MPP自体の再パッチ/導入は未実施。同じ製品ソースの最終ローカルMPPで前記3版の615/621/618項目と実通信2件を確認した。代表スレ検証であり、全スレ網羅・長時間使用・今回の実掲示板投稿・勢いソートは確認済み扱いにしない。

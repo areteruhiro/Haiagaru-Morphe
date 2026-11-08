@@ -86,3 +86,5 @@
 生データとJSONはbuild/external-board-dates/regions、prefectures、menu-threads-verified。Cookieファイルは非公開・Git対象外。再現用scripts/VerifyBakusaiMenuThreads.javaは板ごとの結果、転送先、採取日時、実URL、本文・返信の有無、未取得枠数を保存する。最初の追加20板の試験は試験ツール側のCRLFステータス判定誤りで停止したため、結果には数えず修正後の全20板再実行を採用した。
 
 追補: 最終候補の191/226/242でそれぞれ615/621/618項目が成功し、検証中の新規crash bufferは0行。栃木運輸・交通12167020は191の実HTTP200/199481bytes/実DAT31行/標準画面31件、サッカー国内13031645も実HTTP200/183618bytes/実DAT20行/標準画面20件で成功。実通信ログはlive-tochigi.log、live-football.log。全67件のAndroid画面確認をしたという意味ではない。詳細はsite-thread-dates-20261108.md。公開は既存dev CI経路で行う。
+
+公開済み: [1.25.0-dev.12](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.12)。配布MPP/JSON/公開devメタデータの整合性を確認。
