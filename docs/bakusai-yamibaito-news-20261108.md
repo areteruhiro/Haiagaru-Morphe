@@ -31,3 +31,5 @@ APIの元URLには`ctrid=0`と古い`ctgid=104`が入るケースがある。取
 191の実通信は live-list.log で北海道一般求人HTMLと読み取り専用ニュースAPIがHTTP200、nativeSubjectRows=59。live-thread.logは代表13607621をHTTP200/163435bytesで取得、nativeDatRows=3/nativeRenderedRows=3。元APIの古いctgid104から実ページのctgid137への対応も実データで確認できた。
 
 59スレ全件の本文・返信を取得したという意味ではない。実機・長時間利用・実掲示板への投稿は未確認。公開は既存dev Semantic Release経路で行う。
+
+公開済み: [1.25.0-dev.14](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.14)。CI成功、配布MPPの実ダウンロード/ハッシュ、公開JSON2個の整合性を確認。
