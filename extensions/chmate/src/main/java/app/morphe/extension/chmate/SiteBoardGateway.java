@@ -272,7 +272,12 @@ final class SiteBoardGateway {
                         source->{String other=SiteBoardProtocol.threadIn(sourceBoard,source);if(other==null)return source;try{return origin()+"/test/read.cgi/"+key+"/"+SiteThreadIds.nativeId(other)+"/";}catch(IOException invalid){return source;}});
             }
             send(client,200,"text/plain; charset=Shift_JIS",data);
-        }catch(Exception error){android.util.Log.w("Haiagaru","Additional board request failed",error);try{send(client,503,"text/plain; charset=UTF-8",("取得できませんでした。認証・通信・対応形式を確認してください。\n"+readFailure(error)).getBytes("UTF-8"));}catch(Exception ignored){}}
+        }catch(Exception error){android.util.Log.w("Haiagaru","Additional board request failed",error);try{
+            String detail=readFailure(error);
+            String message=error instanceof BakusaiAccessError?detail:detail.isEmpty()?"取得できませんでした。認証・通信・対応形式を確認してください。":detail+"\n取得できませんでした。認証・通信・対応形式を確認してください。";
+            send(client,503,"text/plain; charset=UTF-8",message.getBytes("UTF-8"));
+            SiteReadFailureUi.show(error);
+        }catch(Exception ignored){}}
         finally{clients.remove(client);try{client.close();}catch(IOException ignored){}}
     }
     private String page(String url)throws IOException{Response r=transport.get(url);if(r.status!=200)throw new IOException("HTTP "+r.status);return r.text();}

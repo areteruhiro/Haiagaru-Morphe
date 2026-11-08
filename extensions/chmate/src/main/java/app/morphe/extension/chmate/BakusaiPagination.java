@@ -7,19 +7,30 @@ final class BakusaiPagination {
  interface Fetch {String get(String url)throws IOException;}
  static SiteBoardProtocol.ThreadPage thread(SiteBoardProtocol.Board board,String id,String initial,Fetch fetch)throws IOException{
   String origin=board.threadUrl(id);Pattern route=Pattern.compile("https://bakusai\\.com/thr_res/acode=[0-9]{1,3}/"+Pattern.quote(board.path.replaceFirst("^acode=[0-9]+/","")+"tid="+id+"/")+"p=([1-9][0-9]{0,2})/tp=[0-9]{1,3}/");
-  TreeMap<Integer,SiteBoardProtocol.Entry> responses=new TreeMap<>();Set<String> visited=new HashSet<>(),unavailableCodes=new TreeSet<>();ArrayDeque<String> pending=new ArrayDeque<>();pending.add(origin);String title=null;int expected=0;boolean initialLatest=true,emptySource=false,repeatedPage=false;
+  TreeMap<Integer,SiteBoardProtocol.Entry> responses=new TreeMap<>();Set<String> visited=new HashSet<>(),unavailableCodes=new TreeSet<>();ArrayDeque<String> pending=new ArrayDeque<>();pending.add(origin);String title=null;int expected=0;boolean initialLatest=true,emptySource=false,repeatedPage=false;BakusaiAccessError initialError=null;
   while(!pending.isEmpty()){
    String url=pending.removeFirst();if(!visited.add(url))continue;if(visited.size()>200)throw new IOException("爆サイのページ数が取得上限を超えました");
    Document doc=Jsoup.parse(url.equals(origin)?initial:fetch.get(url),url);doc.outputSettings().prettyPrint(false);
    if(url.equals(origin)){Element selected=doc.selectFirst("form select[name=p] option[selected]");if(selected!=null&&selected.attr("value").matches("[1-9][0-9]{0,2}")){initialLatest=selected.attr("value").equals("1");visited.add(origin+"p="+selected.attr("value")+"/tp=1/");}}
-   Element error=doc.selectFirst(".error_code_text");
-   Matcher errorCode=Pattern.compile("\\[ERROR_CODE:(thr_res:[0-9]{3})\\]").matcher(error==null?"":error.text());
-   if(doc.title().trim().matches("(?:アクセス)?エラー[｜|]爆サイ\\.com")&&errorCode.matches()){if(url.equals(origin))throw new IOException("爆サイがアクセスエラーを返しました（"+errorCode.group(1)+"）。時間を空けて再取得してください");unavailableCodes.add(errorCode.group(1));continue;}
+   String errorCode=BakusaiAccessError.code(doc);
+   if(errorCode!=null){
+    if(url.equals(origin)){
+     // Some valid threads reject only the unpaged URL. Try the explicit first
+     // page once, then follow the site's actual pagination in the normal reader.
+     initialError=new BakusaiAccessError(errorCode);pending.add(origin+"p=1/tp=1/");continue;
+    }
+    unavailableCodes.add(errorCode);continue;
+   }
    SiteBoardProtocol.ThreadPage page=SiteBoardProtocol.bakusaiSlice(board,id,doc,false);if(title==null)title=page.title;else if(!title.equals(page.title))throw new IOException("取得中にスレのタイトルが変わりました。再取得してください");
    // The unpaged URL can itself be an older page without an OP or selected option.
    if(url.equals(origin)&&page.entries.stream().noneMatch(row->row.original.equals("0"))){initialLatest=false;String first=origin+"p=1/tp=1/";if(!visited.contains(first))pending.add(first);}
    // Mobile continuation pages omit the OP and its total counter together.
-   if(url.equals(origin)||doc.selectFirst(".res-count, #res0_whole .thrlis_comment_space + span")!=null)expected=Math.max(expected,SiteBoardProtocol.bakusaiCount(doc));if(expected>10000)throw new IOException("爆サイのレス数が取得上限を超えました");
+   if(expected==0||url.equals(origin)||doc.selectFirst(".res-count, #res0_whole .thrlis_comment_space + span")!=null)expected=Math.max(expected,SiteBoardProtocol.bakusaiCount(doc));if(expected>10000)throw new IOException("爆サイのレス数が取得上限を超えました");
+   // Desktop pages can include the OP while returning an older page, without a
+   // selected-page control. Infer latest-page coverage from actual response IDs.
+   if(url.equals(origin)&&expected>0&&page.entries.stream().mapToInt(row->Integer.parseInt(row.original)).max().orElse(0)<expected){
+    initialLatest=false;String first=origin+"p=1/tp=1/";visited.remove(first);if(!pending.contains(first))pending.add(first);
+   }
    if(expected>0&&doc.selectFirst("#No-write-message, #res_list > li.No-write-message")!=null&&page.entries.stream().noneMatch(row->!row.original.equals("0")))emptySource=true;
    int before=responses.size();for(SiteBoardProtocol.Entry row:page.entries){int number=Integer.parseInt(row.original);SiteBoardProtocol.Entry old=responses.putIfAbsent(number,row);if(old!=null&&(!old.body.equals(row.body)||!old.media.equals(row.media)))throw new IOException("取得中にレスが変更されました。再取得してください");}
    if(!url.equals(origin)&&responses.size()==before&&!page.entries.isEmpty())repeatedPage=true;
@@ -30,6 +41,7 @@ final class BakusaiPagination {
     for(Element option:select.select("option[value]")){String number=option.attr("value");if(!number.matches("[1-9][0-9]{0,2}")||number.equals("1")&&initialLatest)continue;String next=origin+"p="+number+"/tp=1/";if(!visited.contains(next)&&!pending.contains(next))pending.add(next);}
    }
   }
+  if(title==null&&initialError!=null)throw initialError;
   // After every advertised page was read, a source can still omit individual numbers.
   // Preserve their slots without inventing content or declaring the posts deleted.
   boolean omittedNumbers=!repeatedPage&&expected>0&&responses.containsKey(0)&&responses.lastKey()==expected;

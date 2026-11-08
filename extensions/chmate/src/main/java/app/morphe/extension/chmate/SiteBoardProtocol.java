@@ -162,9 +162,16 @@ final class SiteBoardProtocol {
         // Its presence must not select the desktop layout without #title_thr.
         boolean mobile=title==null;
         if(mobile){title=doc.selectFirst("#res0_whole [itemprop=headline]");start=doc.selectFirst("#res0_body .entry-content");if(start==null)start=doc.selectFirst("#res0_body #div_box");if(start==null)start=doc.getElementById("res0_body");identity=doc.selectFirst("#res0_whole .thr_rotundate");}
-        if(title==null||requireOpening&&start==null||identity==null||!identity.text().matches(".*\\b"+Pattern.quote(id)+"\\b.*"))throw new IOException("爆サイのスレ本文を取得できません");
+        // Continuation pages can keep #threadBody but fill it only with the
+        // previous-thread navigation. It is not a changed opening article.
+        boolean navigationOnly=false;
+        if(start!=null&&start.selectFirst("#thr_pager")!=null){
+            start=start.clone();start.select("#thr_pager").remove();
+            navigationOnly=start.text().trim().isEmpty()&&start.selectFirst("img")==null;
+        }
+        if(title==null||requireOpening&&(start==null||navigationOnly)||identity==null||!identity.text().matches(".*\\b"+Pattern.quote(id)+"\\b.*"))throw new IOException("爆サイのスレ本文を取得できません");
         // Older mobile pages omit the opening article. The first page must still supply it.
-        ArrayList<Entry> out=new ArrayList<>();if(start!=null)out.add(entry(board,"0","スレ本文",text(doc,mobile?"#res0_whole .posts":".titleheader .posts"),start));
+        ArrayList<Entry> out=new ArrayList<>();if(start!=null&&!navigationOnly)out.add(entry(board,"0","スレ本文",text(doc,mobile?"#res0_whole .posts":".titleheader .posts"),start));
         for(Element row:doc.select("#res_list > .res_list_article[id], #res_list > li.res_block[id]")){
             Matcher m=Pattern.compile(mobile?"res([1-9][0-9]{0,5})_block":"res([1-9][0-9]{0,5})").matcher(row.id());if(!m.matches())continue;
             Element body=row.selectFirst(mobile?".res_body":".resbody");if(body==null)throw new IOException("レス本文が欠落しています");

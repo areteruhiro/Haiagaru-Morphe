@@ -27,7 +27,8 @@ public final class SiteMobilePaginationTest {
   ok(!partial.entries.get(1).name.equals("未取得")&&!partial.entries.get(71).name.equals("未取得"),"available pages before and after an error remain readable");
   String lastError=Files.readString(dir.resolve("site-last-page11.raw"));var twoErrors=BakusaiPagination.thread(board,board.thread,initial,url->url.contains("/p=10/")?unavailable:url.contains("/p=11/")?lastError:fetch.get(url));
   ok(twoErrors.entries.size()==72&&twoErrors.entries.get(1).name.equals("未取得"),"second real upstream error still preserves fetched body and numbering");ok(twoErrors.entries.get(1).body.contains("thr_res:759")&&twoErrors.entries.get(1).body.contains("thr_res:778"),"actual upstream error codes disclosed");
-  bad(()->BakusaiPagination.thread(board,board.thread,unavailable,fetch));
+  List<String> failedRetry=new ArrayList<>();bad(()->BakusaiPagination.thread(board,board.thread,unavailable,url->{failedRetry.add(url);return unavailable;}));
+  ok(failedRetry.size()==1&&failedRetry.get(0).endsWith("/p=1/tp=1/"),"source error retries explicit first page once, then reports the real failure");
   System.out.println("PASS "+checks+" real mobile pagination/OP/target/completeness checks; 72 native DAT rows; public posts=0");
  }
 }

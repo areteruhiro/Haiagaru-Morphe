@@ -176,7 +176,7 @@ final class SharedNg {
             prefs().edit().putLong("cursor",revision).putLong("lastSync",System.currentTimeMillis()).putInt("failures",0).apply();
             nextSync=System.currentTimeMillis()+15*60*1000;status="同期済み："+rules.size()+"条件";
             }
-        }catch(Exception e){synchronized(SOURCE_LOCK){if(generation>=0&&generation!=sourceGeneration){nextSync=0;status="接続先を変更しました。再同期します";}else{int n=Math.min(6,prefs().getInt("failures",0)+1);prefs().edit().putInt("failures",n).apply();nextSync=System.currentTimeMillis()+Math.min(6*60*60*1000L,(15*60*1000L)<<n);status="同期失敗（保存済みの条件を使用）："+e.getMessage();}}}
+        }catch(Exception e){synchronized(SOURCE_LOCK){if(generation>=0&&generation!=sourceGeneration){nextSync=0;if(enabled)status="接続先を変更しました。再同期します";}else{int n=Math.min(6,prefs().getInt("failures",0)+1);prefs().edit().putInt("failures",n).apply();nextSync=System.currentTimeMillis()+Math.min(6*60*60*1000L,(15*60*1000L)<<n);status="同期失敗（保存済みの条件を使用）："+e.getMessage();}}}
         finally{busy=false;}
     }
     static List<SharedNgRules.Rule> decode(JSONArray rows)throws JSONException{if(rows.length()>10000)throw new JSONException("条件が多すぎます");List<SharedNgRules.Rule> out=new ArrayList<>();Set<String> seen=new HashSet<>();
@@ -188,8 +188,29 @@ final class SharedNg {
         }return Collections.unmodifiableList(out);}
     static JSONObject encode(SharedNgRules.Rule r)throws JSONException{return new JSONObject().put("id",r.id).put("board",r.board).put("kind",r.kind).put("value",r.value).put("period",r.period).put("votes",r.votes).put("revoked",r.revoked).put("regex",r.regex).put("minLevel",r.minLevel).put("minVotes",r.minVotes).put("contributors",new JSONArray(r.contributors));}
     static android.util.AtomicFile cacheFile(){return new android.util.AtomicFile(new File(context.getFilesDir(),"shared-ng-cache-v2.json.gz"));}
+    static long downloadedBytes(){
+        File base=cacheFile().getBaseFile();long bytes=0;
+        for(String suffix:new String[]{"",".bak",".new"})bytes+=new File(base.getPath()+suffix).length();
+        return bytes;
+    }
+    /** Run on IO. Invalidate in-flight reads/syncs before deleting only our downloaded cache. */
+    static long deleteDownloadedData()throws IOException{
+        synchronized(SOURCE_LOCK){
+            boolean saved=prefs().edit().putBoolean("enabled",false).putLong("cursor",0).remove("lastSync").putInt("failures",0).commit();
+            enabled=false;
+            if(!saved)throw new IOException("共有NGをオフにできませんでした");
+            sourceGeneration++;long bytes=downloadedBytes();cacheFile().delete();
+            File base=cacheFile().getBaseFile();for(String suffix:new String[]{"",".bak",".new"})
+                if(new File(base.getPath()+suffix).exists())throw new IOException("ダウンロード済みデータを削除できませんでした");
+            rules=Collections.emptyList();matchPlan=null;nextSync=0;
+            status="ダウンロード済みデータを削除しました（共有NGはオフ）";
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(ProgrammableNgController::sharedNgChanged);
+            return bytes;
+        }
+    }
     /** Stream cached conditions so a large rule set is never duplicated as one JSON string. */
     static void loadCache()throws Exception{
+        final long generation;synchronized(SOURCE_LOCK){generation=sourceGeneration;}
         String source="";int format=0;List<SharedNgRules.Rule> loaded=new ArrayList<>();Set<String> ids=new HashSet<>();
         try(InputStream file=cacheFile().openRead();java.util.zip.GZIPInputStream zipped=new java.util.zip.GZIPInputStream(file);android.util.JsonReader reader=new android.util.JsonReader(new InputStreamReader(zipped,StandardCharsets.UTF_8))){
             reader.beginObject();while(reader.hasNext()){String key=reader.nextName();
@@ -208,7 +229,7 @@ final class SharedNg {
             }reader.endObject();
         }
         if(format!=2)throw new IOException("共有NGキャッシュの形式が不正です");
-        synchronized(SOURCE_LOCK){if(source.equals(feedEndpoint())||source.equals(feedEndpoint().replace("&contributors=1",""))||source.equals(endpoint()+"?action=reviewed&reporter=1&globalIdentity=1"))rules=Collections.unmodifiableList(loaded);}
+        synchronized(SOURCE_LOCK){if(generation==sourceGeneration&&(source.equals(feedEndpoint())||source.equals(feedEndpoint().replace("&contributors=1",""))||source.equals(endpoint()+"?action=reviewed&reporter=1&globalIdentity=1")))rules=Collections.unmodifiableList(loaded);}
     }
     static void saveCache(List<SharedNgRules.Rule> data,String endpoint)throws Exception{
         android.util.AtomicFile file=cacheFile();FileOutputStream stream=file.startWrite();
@@ -292,7 +313,16 @@ final class SharedNg {
         TextView state=new TextView(a);state.setText(status);box.addView(state);
         NgPlainTextCacheSettings.add(box,a);
         Button reporters=new Button(a);reporters.setText("除外するレポーター（今後の報告にも適用）");box.addView(reporters);reporters.setOnClickListener(v->SharedNgReporterBlocks.show(a,rules));
-        Button update=new Button(a);update.setText("共有NGを同期");box.addView(update);update.setOnClickListener(v->{update.setEnabled(false);state.setText("同期中…");IO.execute(()->{sync(true);a.runOnUiThread(()->{state.setText(status);update.setEnabled(true);});});});
+        final boolean[] clearing={false};
+        Button update=new Button(a);update.setText("共有NGを同期");box.addView(update);update.setOnClickListener(v->{update.setEnabled(false);state.setText("同期中…");IO.execute(()->{sync(true);a.runOnUiThread(()->{if(!clearing[0]){state.setText(status);update.setEnabled(true);}});});});
+        Button clear=new Button(a);clear.setText("共有NGのダウンロード済みデータを削除");box.addView(clear);
+        clear.setOnClickListener(v->new HaiagaruDialog.Builder(a).setTitle("ダウンロード済みデータを削除")
+                .setMessage("受信済みの共有NG条件を端末から削除し、オンライン共有NGをオフにします。再びオンにすると再取得します。\n\n個人NG・レポーター除外・個別解除・端末内編集の設定は残ります。\n\n保存容量："+android.text.format.Formatter.formatFileSize(a,downloadedBytes()))
+                .setNegativeButton("キャンセル",null).setPositiveButton("削除してオフにする",(d,w)->{
+                    clearing[0]=true;on.setChecked(false);on.setEnabled(false);clear.setEnabled(false);update.setEnabled(false);state.setText("削除中…");
+                    IO.execute(()->{String result;try{long bytes=deleteDownloadedData();result=android.text.format.Formatter.formatFileSize(a,bytes)+"の受信データを削除しました";}catch(IOException error){result=error.getMessage();}final String message=result;
+                        a.runOnUiThread(()->{if(a.isFinishing()||a.isDestroyed())return;clearing[0]=false;on.setChecked(false);on.setEnabled(true);state.setText(status);clear.setEnabled(true);update.setEnabled(true);Toast.makeText(a,message,Toast.LENGTH_LONG).show();});});
+                }).show());
         Button report=new Button(a);report.setText("選んだ投稿から共有NGを報告");box.addView(report);report.setOnClickListener(v->report(a));
         Button list=new Button(a);list.setText("受信した条件・端末内編集・個別解除");box.addView(list);list.setOnClickListener(v->SharedNgExceptions.show(a,rules));
         ScrollView scroll=new ScrollView(a);scroll.addView(box);new HaiagaruDialog.Builder(a).setTitle("オンライン共有NG（開発中）").setView(scroll).setPositiveButton("閉じる",null).show();

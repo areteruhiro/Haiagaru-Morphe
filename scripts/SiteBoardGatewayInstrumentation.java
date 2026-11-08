@@ -310,7 +310,11 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
  private String bakusaiClosedPage(String address)throws Exception{
   String initial=fixture("reportedBakusaiPageTwo.html");java.util.regex.Matcher match=java.util.regex.Pattern.compile("/p=([1-9][0-9]*)/tp=1/$").matcher(address);if(!match.find())return initial;
   int page=Integer.parseInt(match.group(1));String title=android.text.TextUtils.htmlEncode(fixture("reportedBakusaiTitle.txt"));
-  StringBuilder html=new StringBuilder("<title>件数試験｜1000レス｜爆サイ</title><div id=res0_whole><div itemprop=headline>"+title+"</div><span class=thr_rotundate>NO.8142054</span></div><ul id=res_list>");
+  StringBuilder html=new StringBuilder("<title>件数試験｜1000レス｜爆サイ</title><div id=res0_whole><div itemprop=headline>"+title+"</div><span class=thr_rotundate>NO.8142054</span></div>");
+  // A real first page has the OP. The original page-two fixture only has a
+  // navigation placeholder; it must never stand in for opening article data.
+  if(page==1)html.append("<div id=res0_body><div class=entry-content>検証用の先頭ページ本文</div></div>");
+  html.append("<ul id=res_list>");
   for(int n=Math.max(1,1000-page*7+1);n<=1000-(page-1)*7;n++)html.append("<li class=res_block id=res").append(n).append("_block><div class=res_body>検証レス").append(n).append("</div></li>");
   html.append("</ul><form action='/thr_res/acode=18/ctgid=148/bid=1548/tid=8142054/tp=1/'><select name=p>");for(int n=1;n<=143;n++)html.append("<option value=").append(n).append(n==page?" selected":"").append(">ページ</option>");return html+"</select></form>";
  }
