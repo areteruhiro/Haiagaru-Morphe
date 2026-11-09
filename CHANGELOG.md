@@ -1,3 +1,58 @@
+# Haiagaru 1.25.0-dev.18 (2026-11-09)
+
+閲覧済みレスの再通知と、ミュート中の音声フォーカスを修正した検証用プレリリースです。
+
+## 主な変更
+
+- **読んだレスが後から通知される問題を修正** — 書き込み後の自動監視などで、通知を開いて追加分を読んだ後、その内容を再び新着として通知する問題を修正しました。ChMate標準の既読レス数を参照し、通信待ちの間に既読が進んだ場合も通知件数・本文を絞り直します。
+- **未読の新着通知を維持** — 巡回でダウンロードしただけのレスを既読扱いにはしません。自分への返信のみの通知、通知済みレスの重複排除、初回確認時の無通知、監視期限・停止設定も維持します。標準の既読位置・DATは書き換えません。
+- **ミュート中の音声フォーカスを停止** — Android 8以降のHaiagaru専用動画プレーヤーでは、ミュート中は音声フォーカスを取得せず、保持中なら解放します。再生中のミュート解除は音を戻す前に取得し、一時停止中の解除では取得しません。ミュート中の一時停止・再開や、遅れて届くフォーカス喪失でも背景音声を維持します。
+
+## 確認範囲
+
+191・226・242のエミュレータで、既読レス・一部既読・通信中の既読進行・返信限定などの通知試験を各40項目確認しました。実ローカルMP4と独立した背景音声フォーカスによる試験は191で20項目、226・242で各23項目です。本文・画像・書き込み画面などの回帰試験は191で641項目、226で647項目、242で644項目を確認し、最終の新規クラッシュログは空でした。公開掲示板への投稿は行っていません。
+
+Android 7以前のVideoView内部の自動フォーカス要求、ChMate標準プレーヤー、YouTubeアプリそのものとの同時利用、実機・長時間利用は今回の確認対象に含みません。
+
+- [変更内容と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thread-watch-read-mute-20261109.md)
+- [スレの新着通知の説明](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thread-notifications.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** suppress read-response notifications and muted playback focus ([128de6a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/128de6af293c56eac3c26e84f90b707877a03e23))
+
 # Haiagaru 1.25.0-dev.17 (2026-11-08)
 
 エッヂの板一覧、kenmo.orgの記者ID、IP表示スレへの投稿前確認を更新した検証用プレリリースです。
