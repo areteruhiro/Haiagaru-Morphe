@@ -1582,3 +1582,13 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 ソースd73afd86をdevへpush、既存Semantic Release CI42502027935 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.17 / prerelease=true,draft=false。CI生成7774bdaaをff-only取得。生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRC、JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致を確認。日付付き見出しと今回の修正内容・確認範囲・未取得51件が公開本文へ含まれることも検査。配布MPP7040706bytes / SHA2568fb8e0ed01f62d60aea38c8287142969b551647fb075c2fab45e0da20d6655ce。証跡build/release-1.25.0-dev.17-verify/verification.json。
 
 配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補を前記3版で検証し、実機191へ導入済み。正式master版1.24.1は変更なし。
+
+## 2026-11-09 閲覧済みレスの再通知・ミュート中フォーカス（修正・検証済み、未公開）
+
+詳細thread-watch-read-mute-20261109.md。未修正242で監視count12/native read_count20/subject20の再通知を再現。標準既読数を監視前と本文取得後に読み取り、確認済みより前の本文候補を除外。巡回取得数は既読判定へ使わず、初回無通知・真の未読通知・返信限定・重複排除を維持。標準DBへ製品処理で書き込まず、新規native hookなし。
+
+専用VideoViewのPlaybackAudioFocusへミュート状態を接続。ミュート中の要求停止/保持済みの解放、再生中の解除時だけ再取得、停止中解除は要求なし、遅延喪失で無音再生を止めない。VideoView側の自動要求が無効なAndroid8以降が対象。Android7以前/標準プレーヤー/YouTubeアプリそのものは未確認・対象保証外。
+
+最終通常Lint/R8 build4m1s、MPP06c27e804edcc04e5dee39d54090c44e387a4d0635fa6e67744b0ef787f3082b。3版で通知各40・音声等19120/22623/24223、基本画面gateway191641/226647/242644成功、公開POST0・最終crash空。191初回通知試験失敗後、診断追加のみで同じ製品が成功し、試験の非同期反映待ちを追加後3版再確認。226gatewayは一度port EADDRINUSE、同じ製品の再試行で成功。失敗の詳細と未断定の点も詳細docへ記録。
+
+emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権限を元の3版OFFへ復元、fixture行・登録・通知を削除。実機は未接続で今回変更なし。コード・検証記録はローカルのみ、commit/push/Releaseなし、公開dev.17に含まれない。無関係な未追跡2スクリプトは保持。

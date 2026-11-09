@@ -2298,3 +2298,30 @@ MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/b
 
 
 sitegateway191試験APKも同じ鍵/cert、表示名Haiagaru isolated site tests、version1.0。build/site-boards-inst/tests191.apk / SHA256 d846fafdfc37c56ae21c46545de7e2b7ad8c8499b77361a213867b9a2b5fc175 / emulator-5580へinstall-r Success、191のsame-count refetch試験を追加。226/242のsitegateway試験APKは既存導入済みを継続使用。
+
+## 2026-11-09 既読後の再通知・ミュート中フォーカス修正候補
+
+emulator-5580 / Haiagaru_Root_API36。製品は全て既存reporterをInstallVerifiedApk.ps1で署名一致確認後install-r Success。鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。実機は未接続、実機変更・アンインストール・データ消去なし。
+
+MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/candidate.mpp / SHA256 06c27e804edcc04e5dee39d54090c44e387a4d0635fa6e67744b0ef787f3082b。ローカルdev.17表記の次版候補であり公開dev.17には未包含。導入時刻はログ更新時刻（JST、終了の近似）。
+
+- 2026-11-09T19:51:42+09:00 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/candidate242.apk / SHA256 3a0f0c4335f3ce04320e36d73c95665f43d4b2c4da568d5fb62b058fd808c53e / install-r Success。
+
+- 2026-11-09T19:55:41+09:00 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/candidate191.apk / SHA256 79c6cfa9fbeea1fe6a5a4f55a14eca8271337957e3ef2f9c98fbc0d4e6dd6d34 / install-r Success。
+
+- 2026-11-09T20:02:45+09:00 / Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/candidate226.apk / SHA256 abbc86415482d488f9ccb460df299131270b65a72070c804b9c28fc78f3392f0 / install-r Success。
+
+
+追加テストAPKは全て同じMorphe鍵/cert、表示名Board adapter regression tests、versionNameなし。最終試験APKは以下。各同番号reporterを対象に、emulator-5580へinstall-r Success。
+
+- app.haiagaru.tests.watchread191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/tests191.apk / SHA256 ff146b5a9fc5dd1db6e1996624a40fa66ea16a0794ec8d6a19b68956d752519f。
+
+- app.haiagaru.tests.watchread226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/tests226.apk / SHA256 3a2017e98bc2c1bbd2d174d8e717c111b8865705f0552ca7052edcbea8d123b5。
+
+- app.haiagaru.tests.watchread242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/tests242.apk / SHA256 7180aebb7819793f34b47b0f853245189cf33ff314146bbb32a23cede0cb029a。
+
+
+修正前の再現時に導入したwatchread242の実APKを端末から取得して保全: C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/thread-watch-read-20261109/baseline-tests242.apk / SHA256 55639a4c23e773fa4a2e6fb32bb885357e02941683df9180c8dbb6d3c0b73c5b。先行191の同期待ちなし・診断追加のみの試験APKは後に上書きし、正確なハッシュを保全していないため、上記最終APKと同一扱いにしない。
+
+
+試験のため3版のPOST_NOTIFICATIONSを一時許可し、元の全てOFFへ復元。架空板・架空スレのnative DB行を削除し、試験監視登録・通知を解除。製品の既読反映はDB読み取りのみであり、試験fixtureのDB書き込みとは区別する。既存sitegateway試験APKは前回導入済みを継続使用。結果と途中失敗はthread-watch-read-mute-20261109.md参照。

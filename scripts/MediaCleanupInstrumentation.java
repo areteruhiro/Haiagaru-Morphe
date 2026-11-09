@@ -45,8 +45,21 @@ public final class MediaCleanupInstrumentation extends Instrumentation {
    ActivityMonitor monitor=addMonitor("app.morphe.extension.chmate.VideoViewerActivity",null,false);try{main(()->{Activity a=(Activity)stat("Haiagaru","toolbarActivity",new Class<?>[]{Object.class},new Object[]{null});a.startActivity(intent);return null;});viewer=waitForMonitorWithTimeout(monitor,15000);}finally{removeMonitor(monitor);}ok(viewer!=null,"production video viewer started");
    boolean prepared=false;for(int n=0;n<100;n++){prepared=main(()->field(viewer.getClass(),"prepared").getBoolean(viewer));if(prepared)break;Thread.sleep(200);}String diagnostic=main(()->{VideoView v=(VideoView)field(viewer.getClass(),"video").get(viewer);return "requests="+requests+" size="+v.getWidth()+"x"+v.getHeight()+" shown="+v.isShown()+" attached="+v.isAttachedToWindow()+" status="+((TextView)field(viewer.getClass(),"status").get(viewer)).getText();});ok(prepared,"real local MP4 prepared; "+diagnostic);
    ok(lost.get()==0,"opening/preparing autoplay-OFF video does not interrupt background focus");
+   main(()->{((Button)field(viewer.getClass(),"muteButton").get(viewer)).performClick();((VideoView)field(viewer.getClass(),"video").get(viewer)).start();return null;});Thread.sleep(300);
+   ok(main(()->((VideoView)field(viewer.getClass(),"video").get(viewer)).isPlaying()),"muted playback starts without focus");
+   ok(lost.get()==0,"muted start does not interrupt background audio");
+   main(()->{((Button)field(viewer.getClass(),"muteButton").get(viewer)).performClick();return null;});Thread.sleep(300);
+   ok(lost.get()>0,"unmuting a playing video requests focus before audible playback");
+   main(()->{((Button)field(viewer.getClass(),"muteButton").get(viewer)).performClick();Object focus=field(viewer.getClass(),"playbackFocus").get(viewer);ok(!field(focus.getClass(),"held").getBoolean(focus),"muting releases held focus immediately");((AudioManager.OnAudioFocusChangeListener)field(focus.getClass(),"listener").get(focus)).onAudioFocusChange(AudioManager.AUDIOFOCUS_LOSS);return null;});
+   ok(main(()->((VideoView)field(viewer.getClass(),"video").get(viewer)).isPlaying()),"late focus loss does not pause muted video");
+   ok(main(()->audio.requestAudioFocus(background,AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN))==AudioManager.AUDIOFOCUS_REQUEST_GRANTED,"background focus can resume during muted video");
+   int mutedLoss=lost.get();
+   main(()->{VideoView v=(VideoView)field(viewer.getClass(),"video").get(viewer);v.pause();v.start();return null;});Thread.sleep(300);
+   ok(lost.get()==mutedLoss&&main(()->((VideoView)field(viewer.getClass(),"video").get(viewer)).isPlaying()),"muted pause/resume retains background audio focus");
+   main(()->{((VideoView)field(viewer.getClass(),"video").get(viewer)).pause();((Button)field(viewer.getClass(),"muteButton").get(viewer)).performClick();return null;});Thread.sleep(100);
+   ok(lost.get()==mutedLoss,"unmuting while paused does not request focus");
    main(()->{VideoView v=(VideoView)field(viewer.getClass(),"video").get(viewer);ok(!v.isPlaying(),"autoplay OFF remains paused");v.start();return null;});Thread.sleep(300);
-   ok(lost.get()>0,"manual play requests focus");main(()->{((VideoView)field(viewer.getClass(),"video").get(viewer)).pause();return null;});
+   ok(lost.get()>mutedLoss,"manual audible play requests focus");main(()->{((VideoView)field(viewer.getClass(),"video").get(viewer)).pause();return null;});
   }finally{audio.abandonAudioFocus(background);}
  }
  @Override public void onCreate(Bundle args){super.onCreate(args);start();}

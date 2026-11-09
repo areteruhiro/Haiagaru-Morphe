@@ -223,6 +223,7 @@ public final class ThreadWatch {
                     synchronized(LOCK){captured=new JSONObject(prefs(c).getString(key,"{}"));}
                     if(!ThreadWatchManagement.active(captured,System.currentTimeMillis()))continue;
                     int known=captured.optInt("count",-1),matching=0,firstMatch=0;boolean replySeen=false;
+                    if(known>=0)known=Math.max(known,ThreadWatchRead.count(c,t));
                     boolean repliesOnly=captured.optBoolean("repliesOnly",false),stopAfter=captured.optBoolean("stopAfterReply",false);
                     String preview="";
                     Map<Integer,String> candidates=new LinkedHashMap<>();
@@ -253,16 +254,20 @@ public final class ThreadWatch {
                             if(repliesOnly||stopAfter)continue;
                         }
                     }
+                    // Reading may have advanced while subject/DAT I/O was in flight.
+                    int readNow=ThreadWatchRead.count(c,t);
                     synchronized(LOCK){
                         if(stopped.get())return;
                         JSONObject item=new JSONObject(prefs(c).getString(key,"{}"));
                         if(!tokens.containsKey(key)||!tokens.get(key).equals(item.optString("token"))||!prefs(c).contains(key)||!ThreadWatchManagement.active(item,System.currentTimeMillis()))continue;
                         item.put("missingChecks",0).put("missingSince",0);
                         String title=titles.get(t.id);if(title!=null)item.put("title",title.substring(0,Math.min(title.length(),4096)));
-                        int before=item.optInt("count",-1),delta=ThreadWatchRules.increase(before,count);
+                        int current=item.optInt("count",-1);
+                        int before=current<0&&known<0?-1:Math.max(Math.max(current,known),readNow),delta=ThreadWatchRules.increase(before,count);
                         if(delta>0&&(!repliesOnly||matching>0)){
                             Set<Integer> seen=ThreadWatchNative.seen(c,key,candidates.keySet());
                             if(!candidates.isEmpty()){
+                                candidates.keySet().removeIf(number->number<=before);
                                 candidates.keySet().removeAll(seen);matching=candidates.size();
                                 if(matching==0){item.put("count",Math.max(before,count));prefs(c).edit().putString(key,item.toString()).commit();continue;}
                                 firstMatch=candidates.keySet().iterator().next();List<String> uniqueLines=new ArrayList<>();

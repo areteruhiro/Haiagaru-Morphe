@@ -115,6 +115,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         toolbar = new ViewerCornerControls(this, back, more);
         FrameLayout frame = new FrameLayout(this);mediaFrame=frame;
         playbackFocus=new PlaybackAudioFocus(this,()->{if(video!=null)video.pause();playWhenReady=false;});
+        playbackFocus.muted(muted);
         video = new VideoView(this){
             @Override public void start(){if(playbackFocus.play())super.start();}
             @Override public void pause(){super.pause();playbackFocus.release();}
@@ -333,8 +334,14 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private void refreshPlaybackActions(){if(controls instanceof HaiagaruMediaController)((HaiagaruMediaController)controls).refreshPlaybackActions();}
     private void applyMute(){
         float volume=muted?0f:1f;
+        // Silence before releasing focus; acquire it before making a playing video audible.
+        if(!muted){
+            playbackFocus.muted(false);
+            if(video!=null&&video.isPlaying()&&!playbackFocus.play())video.pause();
+        }
         if(mediaPlayer!=null)try{mediaPlayer.setVolume(volume,volume);}catch(IllegalStateException ignored){}
         if(gifFallback!=null)gifFallback.setVolume(volume);
+        if(muted)playbackFocus.muted(true);
         if(muteButton!=null){muteButton.setText(muted?"音声ON":"ミュート");muteButton.setContentDescription(muted?"ミュートを解除":"ミュートする");}
         refreshPlaybackActions();
     }
