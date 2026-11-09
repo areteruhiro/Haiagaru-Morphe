@@ -2325,3 +2325,43 @@ MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/b
 
 
 試験のため3版のPOST_NOTIFICATIONSを一時許可し、元の全てOFFへ復元。架空板・架空スレのnative DB行を削除し、試験監視登録・通知を解除。製品の既読反映はDB読み取りのみであり、試験fixtureのDB書き込みとは区別する。既存sitegateway試験APKは前回導入済みを継続使用。結果と途中失敗はthread-watch-read-mute-20261109.md参照。
+
+## 2026-11-09 ツールバー画像・投稿U+FFFD除去の候補
+
+emulator-5580 / Haiagaru_Root_API36。製品は全てInstallVerifiedApk.ps1で既存証明書一致を確認してinstall-r Success。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。実機未接続、実機変更・アンインストール・データ消去なし。
+
+最終MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/candidate.mpp / SHA256 4fece41a4b0a1cad5f50d1bc84567fcb7cea823b32aaa2dc5ab757075ad2b1b0。ローカルdev.18表記の次版候補であり、公開dev.18とは異なる。時刻は導入ログ終了時刻の近似（JST）。
+
+- 2026-11-09T22:01:39+09:00 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/candidate191.apk / SHA256 6b1d7458db9c6a2f2f4c15552c524e5448c1188bff209c23582f56d7d0e4307a / install-r Success。
+
+- 2026-11-09T22:19:14+09:00 / Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/candidate226.apk / SHA256 b0f0a255ef5e3f0ba62a183b07882e3b8eac0d90ddf46a5131caf32d8ba595b4 / install-r Success。
+
+- 2026-11-09T22:20:37+09:00 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/candidate242.apk / SHA256 1e3456879647684552f61a435b9c39a8e07c85b766b89add4f5cd535fe5f8acf / install-r Success。
+
+
+先行アイコンのみMPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-icon-size-20261109/candidate.mpp / SHA256 478123a12d8ef04e1ba46b2c85c373702cc4b38c555368112f1d25f8295a812d。
+
+- Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-icon-size-20261109/candidate191.apk / SHA256 84436eecde96291cc2333d73fa2595f36aab3f341bb4bd872da8bb6cacaff81b / 既存reporter191へ署名一致install-r Success、42/641項目成功。
+
+- Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-icon-size-20261109/candidate226.apk / SHA256 2292f60cb838c945f3515b769a8d0d26096dca50ab472d8f089d84d9301672aa / 生成のみ・導入なし。
+
+
+試験APKは全て同じMorphe鍵/cert。最終postcleanupの表示名Haiagaru icon/post regressions、versionNameなし。sitegatewayは表示名Haiagaru isolated site tests、version1.0。全てemulator-5580へinstall-r Success、各同番号reporterが対象。
+
+- app.haiagaru.tests.postcleanup191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/tests191.apk / SHA256 0ae01820953bdbcf034760b00ad33d9161ca4b4befcdadca8332948884015b1b。
+
+- app.haiagaru.tests.sitegateway191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests191.apk / SHA256 61a9b46082b5fbe0d84b5a47e874f2b9d05b7a2bc71ad11fb7cd6905e86cd710。
+
+- app.haiagaru.tests.postcleanup226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/tests226.apk / SHA256 582af114c48b5eef60a86d1f294e01111c26ceea49db76b7b7d93653bc14c9e7。
+
+- app.haiagaru.tests.sitegateway226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests226.apk / SHA256 06a7f7b5420fa327e8af02b053f1bb809be38ba689b6d1867ee61ec4455e45ff。
+
+- app.haiagaru.tests.postcleanup242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/post-replacement-20261109/tests242.apk / SHA256 d8bd85f90544e82c163bfa62f3ebde468ed648037e78a6777b0bbbb6eb1227cd。
+
+- app.haiagaru.tests.sitegateway242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests242.apk / SHA256 a37c7c8601b09d12fbb384b4eae3d0844de3497b95b3de730c6fe447f492b440。
+
+
+未修正191の再現に用いたテストAPKを端末から保全: app.haiagaru.tests.toolbaricons191 / 表示名Board adapter regression tests / versionNameなし / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-icon-size-20261109/baseline-tests191.apk / SHA256 bf1a3c514f5fd05885d3c4db98a1032e5ba1993afb654fb8bbc821dc57d58a3d。先行42項目のtoolbaricons191試験APKは C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/toolbar-icon-size-20261109/tests191.apk / SHA256 5eb5eb9dc63647e36530a5a1e90e7fb6a1e3a7c8f587111dab15ac3987d06c94 / 同じ鍵でinstall-r Success。
+
+
+191回帰の初回・再試行は古いローカル接続先の画面エラーで停止。退避したtabletHome2の診断では左77タブ。コールド起動とFixtureTabSandboxによる未登録loopback板タブの一時分離後、同じ製品で641項目成功。sandboxは試験開始時の5キーを退避してfinallyで復元する。保存済みの実登録・画像・通常タブを削除しない。診断のためemulator-5580のadbdを一時rootへ変更してprefsを読み取り、製品設定のraw書き換えは行っていない。

@@ -60,7 +60,7 @@ final class ExternalEmojiPost {
     }
 
     static String prepareBody(String url, String body) {
-        body=EmojiTextCleanup.apply(body);
+        body=EmojiTextCleanup.apply(OutgoingPostCleanup.apply(body));
         return isExternalUrl(url) ? encodeMarkers(body) : body;
     }
 

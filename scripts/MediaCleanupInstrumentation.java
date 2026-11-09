@@ -14,15 +14,19 @@ public final class MediaCleanupInstrumentation extends Instrumentation {
   ok("⚓".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},"https://bbs.eddibb.cc/liveedge/","⚓\ufe0f")),"external outgoing post strips selector");
   ok("⚓".equals(stat("StringReplacement","apply",new Class<?>[]{String.class},"⚓\ufe0f�")),"display selector/replacement defaults work with no TXT");
   ok("👩\u200d💻".equals(stat("StringReplacement","apply",new Class<?>[]{String.class},"👩\u200d💻")),"display retains ZWJ sequence");
+  for(String url:new String[]{"https://egg.5ch.io/android/","https://bbs.eddibb.cc/liveedge/","https://jbbs.shitaraba.net/computer/45040/","https://kenmo.org/poverty/"})
+   ok("前 後\n末尾 ".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},url,"前� 後\n末尾� ")),"outgoing replacement glyph removed without trimming spaces/newlines");
+  ok("前後".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},"https://egg.5ch.io/android/","前&#65533;&#xFFFD;後")),"numeric replacement entities removed from outgoing body");
+  ok("前 後".equals(stat("Haiagaru","prepareExternalEmojiBodyFromPostFields",new Class<?>[]{String.class,String.class,String.class,String.class,String.class,String.class,String.class,String.class,String.class},"https://egg.5ch.io/android/","name","mail","title","前� 後","x","y","z","last")),"legacy constructor-field bridge cleans only outgoing body");
   Class<?> cleanup=loader.loadClass("app.morphe.extension.chmate.EmojiTextCleanup");Field enabled=field(cleanup,"enabled");boolean before=enabled.getBoolean(null);
-  try{enabled.setBoolean(null,false);ok("⚓\ufe0f".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},"https://egg.5ch.io/android/","⚓\ufe0f")),"OFF retains original 5ch posting");}finally{enabled.setBoolean(null,before);}
+  try{enabled.setBoolean(null,false);ok("⚓\ufe0f".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},"https://egg.5ch.io/android/","⚓\ufe0f")),"OFF retains original 5ch posting");ok("⚓\ufe0f ".equals(stat("ExternalEmojiPost","prepareBody",new Class<?>[]{String.class,String.class},"https://egg.5ch.io/android/","⚓\ufe0f� ")),"replacement removal is independent of selector/display setting");}finally{enabled.setBoolean(null,before);}
   String version=getTargetContext().getPackageManager().getPackageInfo(getTargetContext().getPackageName(),0).versionName;
   if(!version.contains("191")){
    Class<?> post=loader.loadClass(version.contains("226")?"o.setBorderWidth":"jp.syoboi.a2chMate.postdata.PostData");
    Constructor<?> ctor=post.getDeclaredConstructor(String.class,String.class,String.class,String.class,String.class,String.class,long.class,long.class,String.class,String.class,String.class);ctor.setAccessible(true);
-   Object original=ctor.newInstance("https://egg.5ch.io/android/","name","mail","title","⚓\ufe0f","extra",123L,456L,"a","b","c");
+   Object original=ctor.newInstance("https://egg.5ch.io/android/","name�","mail","title�","前� ⚓\ufe0f\n後�","extra",123L,456L,"a","b","c");
    Object copy=stat("ExternalEmojiPost","prepare",new Class<?>[]{Object.class},original);ok(copy!=original,"outgoing native 5ch post is a separate copy");int changed=0;
-   for(Field f:post.getDeclaredFields()){if(Modifier.isStatic(f.getModifiers())||!f.getType().isPrimitive()&&f.getType()!=String.class)continue;f.setAccessible(true);Object a=f.get(original),b=f.get(copy);if(Objects.equals(a,b))continue;ok("⚓\ufe0f".equals(a)&&"⚓".equals(b),"only native outgoing body changes");changed++;}ok(changed==1,"native constructor retains all non-body values and editor source");
+   for(Field f:post.getDeclaredFields()){if(Modifier.isStatic(f.getModifiers())||!f.getType().isPrimitive()&&f.getType()!=String.class)continue;f.setAccessible(true);Object a=f.get(original),b=f.get(copy);if(Objects.equals(a,b))continue;ok("前� ⚓\ufe0f\n後�".equals(a)&&"前 ⚓\n後".equals(b),"only native outgoing body changes");changed++;}ok(changed==1,"native constructor retains all non-body values and editor source");
   }
  }
  private void serve(ServerSocket server,byte[] video){new Thread(()->{while(!server.isClosed())try(Socket client=server.accept()){

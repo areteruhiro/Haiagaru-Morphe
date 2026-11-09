@@ -1598,3 +1598,13 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 利用者のプレ公開指示でソース128de6afをdevへpush、既存Semantic Release CI42609141906 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.18 / prerelease=true,draft=false。CI生成86754f73をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、日付付き見出し・既読再通知とミュートの説明・Android8以降の対象範囲・実機等の未確認範囲も確認。配布MPP7041382bytes / SHA256fe5a3b7666bf9ed9f49a6f6a7a15edd651b8ac06795b0c17e263b67942572271。証跡build/release-1.25.0-dev.18-verify/verification.json。
 
 配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補で前記3版の通知/音声/基本画面回帰を確認済み。今回の実機導入・正式master版の変更なし。無関係な未追跡2スクリプトは公開commitへ含めない。
+
+## 2026-11-09 カスタムアイコンの拡大・投稿前U+FFFD除去（検証済み、プレ公開指示あり）
+
+詳細toolbar-icons-post-cleanup-20261109.md。アプリ内画像設定の191でBitmapDrawable subclassの24dp上書きがConstantState複製に引き継がれず、63px→256pxとなることを再現。表示用bitmapの実サイズ/密度を24dpへ固定して別cacheとし、保存画像256PNG・色・透明・配置・キーは保持。推奨256×256透過PNG/最大16MiBを案内。Morpheパッチ時画像オプションは未変更。
+
+送信用本文だけからU+FFFDとdecimal/hex NCRを除去。空白・改行・名前・タイトル・入力中の下書き・保存DATは保持。既存の191body bridge/226/242送信copy経路へ接続、表示設定とは独立・追加設定なし・native hook変更なし。純粋文字処理12項目成功。
+
+先行アイコンのみ19142/641成功。最終通常Lint/R8 build3m50s、MPP4fece41a4b0a1cad5f50d1bc84567fcb7cea823b32aaa2dc5ab757075ad2b1b0、3版でnative画像各42/投稿前等19127・226/242各30/native基本画面191641・226647・242644成功、crash空、公開投稿0。
+
+191の最終基本画面試験2回はローカル80/443接続エラーで停止。左ペイン77タブに古い未登録loopback板タブが残ることを確認し、コールド起動とFixtureTabSandboxによる一時分離（原本5キー退避・finally復元）後、製品を変えず成功。226/242も同じsandboxで成功。失敗を成功扱いにしない。実機・報告画像そのもの・長時間は未確認。導入詳細はandroid-installations.md。利用者がプレ公開を指示したため既存CIへ進む。無関係な未追跡2スクリプトは保持し公開対象外。
