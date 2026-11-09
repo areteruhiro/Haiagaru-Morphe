@@ -1592,3 +1592,9 @@ HOME191の更新完了e(me)はevent.d=true/e=b=0の時n_で先頭へ移動。実
 最終通常Lint/R8 build4m1s、MPP06c27e804edcc04e5dee39d54090c44e387a4d0635fa6e67744b0ef787f3082b。3版で通知各40・音声等19120/22623/24223、基本画面gateway191641/226647/242644成功、公開POST0・最終crash空。191初回通知試験失敗後、診断追加のみで同じ製品が成功し、試験の非同期反映待ちを追加後3版再確認。226gatewayは一度port EADDRINUSE、同じ製品の再試行で成功。失敗の詳細と未断定の点も詳細docへ記録。
 
 emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権限を元の3版OFFへ復元、fixture行・登録・通知を削除。実機は未接続で今回変更なし。コード・検証記録はローカルのみ、commit/push/Releaseなし、公開dev.17に含まれない。無関係な未追跡2スクリプトは保持。
+
+## 2026-11-09 1.25.0-dev.18プレリリース公開完了
+
+利用者のプレ公開指示でソース128de6afをdevへpush、既存Semantic Release CI42609141906 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.18 / prerelease=true,draft=false。CI生成86754f73をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、日付付き見出し・既読再通知とミュートの説明・Android8以降の対象範囲・実機等の未確認範囲も確認。配布MPP7041382bytes / SHA256fe5a3b7666bf9ed9f49a6f6a7a15edd651b8ac06795b0c17e263b67942572271。証跡build/release-1.25.0-dev.18-verify/verification.json。
+
+配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補で前記3版の通知/音声/基本画面回帰を確認済み。今回の実機導入・正式master版の変更なし。無関係な未追跡2スクリプトは公開commitへ含めない。
