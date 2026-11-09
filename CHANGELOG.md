@@ -1,3 +1,58 @@
+# Haiagaru 1.25.0-dev.19 (2026-11-09)
+
+ツールバーのカスタム画像と、投稿本文の文字化け記号を修正した検証用プレリリースです。
+
+## 主な変更
+
+- **カスタム画像の表示サイズを修正** — アプリ内「ツールバーのアイコン画像」で変更した画像が、Android側の複製処理で大きくなり、ツールバーの領域へ影響する問題を修正しました。複製後も24dpの表示サイズを維持し、色・透明部分・縦横比を保持します。保存済みの画像を選び直す必要はありません。
+- **画像の推奨サイズを案内** — 推奨は256×256pxの正方形・背景透過PNGです。別のサイズも縦横比を保って調整し、最大16MiBまで取り込めます。Morpheのパッチ設定で指定する画像は今回の変更対象に含みません。
+- **投稿前に「�」を除去** — 送信直前の本文から文字化け記号U+FFFDと、その数値文字参照を除去します。通常の空白・改行は残します。入力中の下書き・名前・タイトル・保存済みDATは変更せず、送信用本文だけを処理します。表示用の文字置換・異体字セレクタ設定とは独立して適用され、追加の設定は不要です。
+
+## 確認範囲
+
+191・226・242のエミュレータで、実際のネイティブアイコン描画・ConstantState複製・密度変更・ImageViewの配置・隣のボタンへの影響を各42項目確認しました。投稿本文・ネイティブ送信データの保持・音声などは191で27項目、226・242で各30項目、文字処理の単体試験は12項目です。本文・画像・書き込み画面などの回帰試験は191で641項目、226で647項目、242で644項目を確認しました。最終の新規クラッシュログは空です。
+
+アイコンは合成画像で確認しており、報告元の実画像・実機画面そのもの、長時間利用、実掲示板への投稿は今回未確認です。
+
+- [変更内容と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/toolbar-icons-post-cleanup-20261109.md)
+- [ツールバー画像の案内](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/toolbar-icons.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** bound custom toolbar icons and strip outgoing replacement glyphs ([45ba85f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/45ba85f301907c02f29e4309f66ec6a02f0ac38a))
+
 # Haiagaru 1.25.0-dev.18 (2026-11-09)
 
 閲覧済みレスの再通知と、ミュート中の音声フォーカスを修正した検証用プレリリースです。
