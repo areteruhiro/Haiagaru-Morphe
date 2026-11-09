@@ -25,3 +25,5 @@
 191の最終候補の初回と再試行は、ふたば板一覧の日時表示を確認する箇所で古いloopback接続先80/443のエラー画面になり停止した。診断時の左ペインには77タブが保存され、以前の試験の未登録loopback板タブも残っていた。前のcleanupがthread URLだけを対象にし、板のbid/_dataタブを対象にしていなかったため、FixtureTabSandboxで未登録loopback板タブを試験中だけ分離する。5つの対象キーをAtomicFileへ退避し、finallyで試験開始時の値へ復元。実登録は保持し、試験で増えた板タブも残さない。コールド起動とこの分離後、同じ製品APKで191の641項目成功。226/242も同じsandboxで成功した。原因を製品変更と断定せず、初回失敗は成功件数へ含めない。
 
 導入APK/MPP/署名/試験APKの記録はandroid-installations.md。実機変更・アンインストール・データ消去なし。ユーザーのプレリリース指示に従い、既存Semantic Release CIで公開する。
+
+公開追記: 1.25.0-dev.19を既存Semantic Release CI42625301021で公開済み。配布6assetの実download/size/SHA256/digest/ZIP CRCと公開更新フィードを確認。配布MPPの再導入はしておらず、上記端末検証は同じ製品ソースの最終ローカル候補によるもの。公開・配布検証の詳細はintegration-status.mdを参照。

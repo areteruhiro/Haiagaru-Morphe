@@ -1608,3 +1608,9 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 先行アイコンのみ19142/641成功。最終通常Lint/R8 build3m50s、MPP4fece41a4b0a1cad5f50d1bc84567fcb7cea823b32aaa2dc5ab757075ad2b1b0、3版でnative画像各42/投稿前等19127・226/242各30/native基本画面191641・226647・242644成功、crash空、公開投稿0。
 
 191の最終基本画面試験2回はローカル80/443接続エラーで停止。左ペイン77タブに古い未登録loopback板タブが残ることを確認し、コールド起動とFixtureTabSandboxによる一時分離（原本5キー退避・finally復元）後、製品を変えず成功。226/242も同じsandboxで成功。失敗を成功扱いにしない。実機・報告画像そのもの・長時間は未確認。導入詳細はandroid-installations.md。利用者がプレ公開を指示したため既存CIへ進む。無関係な未追跡2スクリプトは保持し公開対象外。
+
+## 2026-11-09 1.25.0-dev.19プレリリース公開完了
+
+ソース45ba85f3をdevへpush、既存Semantic Release CI42625301021 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.19 / prerelease=true,draft=false。CI生成79098f90をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、日付付き見出し・画像とU+FFFDの説明・推奨サイズ・実機等の未確認範囲も確認。配布MPP7041439bytes / SHA2568448c29e32df3070a5aa0f6ac231200132e4554bdb59bf176e87cd8c6aac221c。証跡build/release-1.25.0-dev.19-verify/verification.json。
+
+配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースの最終ローカル候補で前記3版のアイコン/投稿前処理/基本画面回帰を確認済み。実機導入・正式master版の変更なし。無関係な未追跡2スクリプトは公開commitへ含めない。
