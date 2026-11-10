@@ -1624,3 +1624,9 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 最終通常Lint/R8 build3m37s、3APK適用成功、MPP b25c84455b84da61f49f3d55cd4f806a03650f350ac553d7f7bda771e4e7c161。emulator-5580で標準画面/本文/画像/隔離送信191678・226684・242681、設定リンク各30、投稿前/再生等28/31/31成功。CSV対応文字列392/383/383が実出力と集合一致し全件リンク化。cleanup/tabRestoreエラーなし・公開投稿0・最終crash空。検索host266、あにまん新整形14/保存実ページ228成功。報告7585502は調査環境HTTP403、実機/公開POST/公開動画の保存完了/長時間は未確認。失敗候補と検証環境の不具合は詳細docへ記録、成功と混同しない。
 
 既存reporter191/226/242へ署名一致install-r、実機変更/アンインストール/データ消去なし。導入台帳更新済み。利用者の指示で既存Semantic Release CIからプレ公開へ進む。無関係な未追跡frida-thread-open-timing191.js/shared-ng-reporter-blocks-runtime.jsは保持し公開対象外。
+
+## 2026-11-10 1.25.0-dev.20プレリリース公開完了
+
+ソース7d4e866fをdevへpush、既存Semantic Release CI42791081698 success（5m40s）。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.20 / prerelease=true,draft=false。CI生成8f99b2d3をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、CHANGELOGと公開本文の日付付き見出し・今回修正・確認範囲・HTTP403制限も確認。配布MPP 7042831 bytes / SHA256 c0441c570384f52357a75eda541676f62bfc8b1f710b3cf8a9c5069df6a1f1a1。証跡build/release-1.25.0-dev.20-verify/verification.json。
+
+配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補を前記3版で検証済み。今回の実機導入・正式master版の変更なし。検証エミュレータは終了。無関係な未追跡2スクリプトは保持し公開commitへ含めない。
