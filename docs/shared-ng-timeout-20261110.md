@@ -46,3 +46,7 @@ HTTPSと許可ホスト、4MiB応答上限、最大3接続の転送制限、JSON
 試験APKの初回パッケージにはホスト試験のクラスが入りD8がJDK用HttpServerの警告を出しました。Android試験クラスだけの別出力先に変更して、導入前に再生成しました。エミュレータの冷間起動ではSystem UI応答停止があり、XMLでSystem UIとWaitボタンを確認して復帰。製品クラッシュとは区別します。
 
 利用者のプレ公開指示に従い、検証した共通修正を既存Semantic Release CIへ送ります。GASの審査・配信ルールとデプロイは変更しません。
+
+## 公開
+
+[1.25.0-dev.21](https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.21) を既存Semantic Release CI42805025284で公開（success）。配布6ファイルのハッシュ・ZIP/MPP CRC・更新JSONとdevフィードを確認。配布MPPのSHA256は `e65dd1506b42b727fec607c7df2641da4eedef7e0e00468efa06aaa0f0ac0ccd`。同じ製品ソースの候補APKを3版で検証し、配布MPPそのものの再パッチ/再導入は行っていません。
