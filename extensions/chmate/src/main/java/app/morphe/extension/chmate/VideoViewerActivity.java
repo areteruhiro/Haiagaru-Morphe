@@ -540,7 +540,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
                     setRequestedOrientation(rotated ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                             : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED); return true;
                 case 5: VideoViewerSettings.show(this); return true;
-                case 6: VideoDownloads.confirm(this, url, this::saveVideo); return true;
+                case 6: VideoDownloads.request(this, url, this::saveVideo); return true;
                 default: return false;
             }
         });

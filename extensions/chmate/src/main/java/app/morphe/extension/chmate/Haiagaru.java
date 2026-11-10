@@ -931,6 +931,10 @@ public final class Haiagaru {
         return SettingsOptionLinks.apply(EmojiFontFallback.processText(source));
     }
 
+    public static String cleanOutgoingBody(String body) {
+        return OutgoingPostCleanup.apply(body);
+    }
+
     public static CharSequence processEmojiTextForView(Object view,CharSequence source){
         if(view instanceof android.widget.EditText)return source;
         return processEmojiText(source);

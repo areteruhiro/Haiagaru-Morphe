@@ -1614,3 +1614,13 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 ソース45ba85f3をdevへpush、既存Semantic Release CI42625301021 success。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.19 / prerelease=true,draft=false。CI生成79098f90をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、日付付き見出し・画像とU+FFFDの説明・推奨サイズ・実機等の未確認範囲も確認。配布MPP7041439bytes / SHA2568448c29e32df3070a5aa0f6ac231200132e4554bdb59bf176e87cd8c6aac221c。証跡build/release-1.25.0-dev.19-verify/verification.json。
 
 配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースの最終ローカル候補で前記3版のアイコン/投稿前処理/基本画面回帰を確認済み。実機導入・正式master版の変更なし。無関係な未追跡2スクリプトは公開commitへ含めない。
+
+## 2026-11-10 設定文字列・投稿本文・検索・あにまん表示・保存操作（検証完了、プレ公開指示あり）
+
+詳細settings-links-191-post-cleanup-20261109.md / thread-search-animanch-save-20261110.md。191の本文bindingへ設定リンクを接続、3版の固定送信用getterでU+FFFD/NCRを除去。元命令・レジスター・分岐を保持。導入時edgeArchiveToolbarIconPathを削除し内蔵24dpを使用、アプリ内画像設定は維持。ﾜｯﾁｮｲの閉じ括弧検索、あにまんのリンクカード/元画像URL/段落/被返信ナビゲーションを修正。元画像の表示ラベルと標準添付経路を両立。専用動画/GIF保存で通信容量確認を省略、権限・保存処理は継続。
+
+11月7日191のmetadataTitle OOMは既存e93a25ffの対象。現行60項目（低heap5含む）再確認、最終3APKで履歴3入口に同期applyが残らないことを検査。新たな無条件履歴削除なし。
+
+最終通常Lint/R8 build3m37s、3APK適用成功、MPP b25c84455b84da61f49f3d55cd4f806a03650f350ac553d7f7bda771e4e7c161。emulator-5580で標準画面/本文/画像/隔離送信191678・226684・242681、設定リンク各30、投稿前/再生等28/31/31成功。CSV対応文字列392/383/383が実出力と集合一致し全件リンク化。cleanup/tabRestoreエラーなし・公開投稿0・最終crash空。検索host266、あにまん新整形14/保存実ページ228成功。報告7585502は調査環境HTTP403、実機/公開POST/公開動画の保存完了/長時間は未確認。失敗候補と検証環境の不具合は詳細docへ記録、成功と混同しない。
+
+既存reporter191/226/242へ署名一致install-r、実機変更/アンインストール/データ消去なし。導入台帳更新済み。利用者の指示で既存Semantic Release CIからプレ公開へ進む。無関係な未追跡frida-thread-open-timing191.js/shared-ng-reporter-blocks-runtime.jsは保持し公開対象外。

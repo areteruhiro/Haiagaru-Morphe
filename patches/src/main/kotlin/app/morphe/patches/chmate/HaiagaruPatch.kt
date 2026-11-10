@@ -1633,6 +1633,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         // post can be rejected as "device information only".  Let the posting
         // endpoint perform the authoritative body validation instead.
         patchPostPreflightValidation(packageMetadata.versionName)
+        patchOutgoingReplacementBody(packageMetadata.versionName)
         if (packageMetadata.versionName == "0.8.10.191 dev") {
             patchLegacyExternalEmojiPostBody()
         } else {
@@ -2302,6 +2303,33 @@ private fun BytecodePatchContext.patchExternalEmojiPostCopy(version: String) {
         }
     }
     check(patched == 1) { "Expected one external post-copy boundary for $version, found $patched" }
+}
+
+/** Pinned send-only getters shared by ordinary replies and new-thread posting. */
+private fun BytecodePatchContext.patchOutgoingReplacementBody(version: String) {
+    val (owner, getter) = when (version) {
+        "0.8.10.191 dev" -> "Lo/p9ExternalSyntheticLambda6;" to "i"
+        "0.8.10.226 dev" -> "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;" to "j"
+        "0.8.10.242 dev" -> "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;" to "f"
+        else -> return
+    }
+    val body = mutableClassDefBy(owner).methods.single { it.name == getter && it.parameterTypes.isEmpty()
+        && it.returnType == "Ljava/lang/String;" }
+    val returns = body.implementation!!.instructions.toList().mapIndexedNotNull { index, instruction ->
+        if (instruction.opcode == Opcode.RETURN_OBJECT)
+            index to (instruction as OneRegisterInstruction).registerA else null
+    }
+    check(returns.isNotEmpty()) { "$version outgoing body has no return" }
+    returns.asReversed().forEach { (index, register) ->
+        // Retarget existing branches to the cleanup, rather than leaving their
+        // label on the old return and skipping cleanup when trimming is OFF.
+        body.replaceInstruction(index,
+            "invoke-static/range {v$register .. v$register}, $EXTENSION->cleanOutgoingBody(Ljava/lang/String;)Ljava/lang/String;")
+        body.addInstructions(index + 1, """
+            move-result-object v$register
+            return-object v$register
+        """.trimIndent())
+    }
 }
 
 /** 191 passes the URL and body as the first and fifth n7a constructor values. */
@@ -4808,14 +4836,6 @@ val haiagaruPatch = resourcePatch(
         description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
     )
 
-    val edgeArchiveToolbarIconPath = filePathOption(
-        key = "edgeArchiveToolbarIconPath",
-        default = "",
-        title = "エッジ過去ログのツールバー画像（任意）",
-        description = "PNG/WebP画像ファイルの絶対パス（file path）。フォルダではなくファイルを選択してください。空欄なら内蔵アイコンを使用します。",
-        allowedExtensions = listOf("png", "webp"),
-    )
-
     val imageNgTfliteFix = stringOption(
         key = "imageNgTfliteFix",
         default = "true",
@@ -5118,7 +5138,6 @@ val haiagaruPatch = resourcePatch(
                 <path android:fillColor="#FFFFFFFF" android:pathData="M16,1H4c-1.1,0 -2,0.9 -2,2v14h2V3h12V1zM19,5H8c-1.1,0 -2,0.9 -2,2v14c0,1.1 0.9,2 2,2h11c1.1,0 2,-0.9 2,-2V7c0,-1.1 -0.9,-2 -2,-2zM19,21H8V7h11v14z"/>
             </vector>
         """.trimIndent())
-        val iconSourcePath = edgeArchiveToolbarIconPath.value.orEmpty().trim()
         for ((name, label) in listOf(
             "haiagaru_wacchoi_search" to "ﾜｯﾁｮｲで検索",
             "haiagaru_wacchoi_lower" to "ﾜｯﾁｮｲ下4桁で検索",
@@ -5168,25 +5187,12 @@ val haiagaruPatch = resourcePatch(
             checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream("/chmate/material-icons/$name"))
                 .use { source -> notice.outputStream().use(source::copyTo) }
         }
-        if (iconSourcePath.isEmpty()) {
-            val iconTarget = get("res").resolve("drawable/haiagaru_edge_archive.xml")
-            iconTarget.parentFile.mkdirs()
-            checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
-                "/chmate/drawable/haiagaru_edge_archive.xml",
-            )) { "Bundled Edge archive toolbar icon is missing" }.use { source ->
-                iconTarget.outputStream().use(source::copyTo)
-            }
-        } else {
-            val iconSource = File(iconSourcePath)
-            if (!iconSource.isFile || !iconSource.canRead() ||
-                iconSource.extension.lowercase(Locale.ROOT) !in setOf("png", "webp")) {
-                throw PatchException("edgeArchiveToolbarIconPathは読み込み可能なPNG/WebP画像を指定してください")
-            }
-            val iconTarget = get("res").resolve(
-                "drawable-nodpi/haiagaru_edge_archive.${iconSource.extension.lowercase(Locale.ROOT)}",
-            )
-            iconTarget.parentFile.mkdirs()
-            iconSource.copyTo(iconTarget, overwrite = true)
+        val iconTarget = get("res").resolve("drawable/haiagaru_edge_archive.xml")
+        iconTarget.parentFile.mkdirs()
+        checkNotNull(EmojiFontResourceMarker::class.java.getResourceAsStream(
+            "/chmate/drawable/haiagaru_edge_archive.xml",
+        )) { "Bundled Edge archive toolbar icon is missing" }.use { source ->
+            iconTarget.outputStream().use(source::copyTo)
         }
         // Mega constructs Ktor's default client before we can replace it.
         // Preserve the ServiceLoader entry in the host APK so initialization

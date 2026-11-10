@@ -9,10 +9,10 @@ import java.util.*;
 import org.json.*;
 
 /** Hide stale unregistered loopback fixture tabs during tests and restore the exact original keys. */
-final class FixtureTabSandbox {
+public final class FixtureTabSandbox {
     private static final String[] KEYS={"lefttabs","righttabs","closed","leftselection","rightselection"};
     private final SharedPreferences prefs;private final Map<String,?> saved;private final File backup;
-    FixtureTabSandbox(Context context)throws Exception{
+    public FixtureTabSandbox(Context context)throws Exception{
         prefs=context.getSharedPreferences("tabletHome2",0);saved=prefs.getAll();
         backup=new File(context.getCacheDir(),"site-fixture-tabs-backup-"+System.nanoTime()+".json");
         JSONObject copy=new JSONObject();for(String key:KEYS)if(saved.containsKey(key))copy.put(key,saved.get(key));
@@ -32,7 +32,7 @@ final class FixtureTabSandbox {
         }
         if(changed&&!editor.commit())throw new IOException("Cannot isolate fixture tabs");
     }
-    void restore()throws IOException{
+    public void restore()throws IOException{
         SharedPreferences.Editor editor=prefs.edit();for(String key:KEYS){Object value=saved.get(key);if(value instanceof String)editor.putString(key,(String)value);else if(value instanceof Integer)editor.putInt(key,(Integer)value);else if(value==null)editor.remove(key);else throw new IOException("Unexpected saved tab key type");}
         if(!editor.commit())throw new IOException("Cannot restore original tab state; backup: "+backup);
         backup.delete();

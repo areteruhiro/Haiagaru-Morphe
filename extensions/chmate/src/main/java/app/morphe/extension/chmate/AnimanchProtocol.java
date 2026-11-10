@@ -57,6 +57,8 @@ final class AnimanchProtocol {
             int n=Integer.parseInt(number.group(1));if(!seen.add(n)||!rows.isEmpty()&&n<=rows.get(rows.size()-1).number)throw new IOException("レス番号に重複または逆転があります");
             Element content=item.selectFirst(".resbody");if(content==null)throw new IOException("レス本文が欠落しています");
             Element clean=content.clone();ArrayList<String> images=new ArrayList<>();
+            // The site's inbound-reply badge is navigation, not text written by this author.
+            clean.select(".reply").remove();
             for(Element link:clean.select("a.thumb[href]")){
                 String source=absolute(address,link.attr("href"));
                 if(source!=null&&imageOfThread(source,expected))images.add(source);
@@ -70,8 +72,13 @@ final class AnimanchProtocol {
                 if(ref.find()&&localReply(target,expected))link.replaceWith(new TextNode(">>"+ref.group(1)));
             }
             for(Element link:clean.select("a[href]")){
-                String href=absolute(address,link.attr("href"));
-                if(href==null)link.removeAttr("href");else link.attr("href",href);
+                String href=absolute(address,link.attr("href"),false);
+                if(href==null)link.removeAttr("href");else {
+                    link.attr("href",href);
+                    if(link.hasClass("row")&&link.selectFirst("div")!=null
+                            &&link.selectFirst("strong")!=null&&link.selectFirst("small")!=null)
+                        link.empty().text(href);
+                }
             }
             String body=Jsoup.clean(clean.html(),address,BODY,new Document.OutputSettings().prettyPrint(false));
             rows.add(new Reply(n,text(item,".resname"),text(item,".resposted"),body,images));
@@ -124,7 +131,10 @@ final class AnimanchProtocol {
     private static String encode(String s)throws IOException{return URLEncoder.encode(s,"UTF-8");}
     private static String text(Element parent,String selector){Element child=parent.selectFirst(selector);return child==null?"":child.text();}
     private static String absolute(String base,String link){
-        try{URI u=URI.create(base).resolve(link);return "https".equalsIgnoreCase(u.getScheme())&&u.getHost()!=null&&u.getUserInfo()==null?u.toASCIIString():null;}
+        return absolute(base,link,true);
+    }
+    private static String absolute(String base,String link,boolean httpsOnly){
+        try{URI u=URI.create(base).resolve(link);return ("https".equalsIgnoreCase(u.getScheme())||!httpsOnly&&"http".equalsIgnoreCase(u.getScheme()))&&u.getHost()!=null&&u.getUserInfo()==null?u.toASCIIString():null;}
         catch(RuntimeException invalid){return null;}
     }
     private static boolean imageOfThread(String url,String id){

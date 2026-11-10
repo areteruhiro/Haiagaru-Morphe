@@ -36,6 +36,7 @@ final class SiteBoardGateway {
     private static final class Confirmation {final SitePostProtocol.Plan plan;final String alias;final long created;Confirmation(SitePostProtocol.Plan plan,String alias){this.plan=plan;this.alias=alias;created=android.os.SystemClock.elapsedRealtime();}}
     private ServerSocket socket;private ExecutorService workers;private volatile int port;
     private boolean settingNativeFlags;
+    private String imageBoardKey;
     private final SharedPreferences.OnSharedPreferenceChangeListener nativeFlags=this::nativeFlagChanged;
     private void nativeFlagChanged(SharedPreferences preferences,String key){
         // Android delivers background commits on the main thread after the write guard ends.
@@ -152,11 +153,30 @@ final class SiteBoardGateway {
         String fragment=uri.getFragment();if(source.thread!=null&&source.kind.equals("animanch")&&fragment!=null&&fragment.matches("res[1-9][0-9]{0,5}"))result+=fragment.substring(3);
         return result;
     }
+    /** Image getters keep the source label in the response and receive an existing native image route. */
+    synchronized String nativeImageUrl(String address)throws IOException{
+        final URI uri;try{uri=URI.create(address);}catch(RuntimeException invalid){return null;}
+        if(!"https".equals(uri.getScheme())||!"bbs.animanch.com".equals(uri.getHost())||uri.getUserInfo()!=null
+                ||uri.getPort()!=-1||uri.getRawQuery()!=null||uri.getRawFragment()!=null
+                ||!uri.getRawPath().matches("/img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}"))return null;
+        String key=imageBoardKey;SiteBoardProtocol.Board selected=key==null?null:boards.get(key);
+        if(selected==null||!selected.kind.equals("animanch")||!boardEnabled(key)){
+            key=null;for(Map.Entry<String,SiteBoardProtocol.Board> entry:boards.entrySet())
+                if(entry.getValue().kind.equals("animanch")&&boardEnabled(entry.getKey())){key=entry.getKey();break;}
+            imageBoardKey=key;
+        }
+        if(key==null)return null;start();return origin()+"/m/"+key+uri.getRawPath()+".jpg";
+    }
     /** Copy/share conversion does not activate a disabled board or start the gateway. */
     synchronized String originalUrl(String address){
         try{URI uri=URI.create(address);if(!"127.0.0.1".equals(uri.getHost())||uri.getPort()!=-1&&uri.getPort()!=port||uri.getUserInfo()!=null||uri.getRawQuery()!=null||!("http".equals(uri.getScheme())||"https".equals(uri.getScheme())))return address;
             Matcher thread=Pattern.compile("/test/read\\.cgi/("+KEY_PATTERN+")/([0-9]{1,12})/(?:([1-9][0-9]{0,5})|[ln][0-9]+)?").matcher(uri.getRawPath());
             Matcher board=Pattern.compile("/("+KEY_PATTERN+")/").matcher(uri.getRawPath());
+            Matcher image=Pattern.compile("/m/("+KEY_PATTERN+")/img/([1-9][0-9]{0,11})/([1-9][0-9]{0,11})\\.jpg").matcher(uri.getRawPath());
+            if(image.matches()){
+                SiteBoardProtocol.Board source=boards.get(image.group(1));
+                if(source!=null&&source.kind.equals("animanch"))return AnimanchProtocol.ORIGIN+"/img/"+image.group(2)+"/"+image.group(3);
+            }
             if(thread.matches()){
                 SiteBoardProtocol.Board target=boards.get(thread.group(1));if(target==null)return address;String id=sourceThread(thread.group(2));if(newsBoard(thread.group(1)))return newsSources.containsKey(id)?newsSources.get(id):address;String result=target.threadUrl(id);
                 if(target.kind.equals("animanch")&&thread.group(3)!=null)result+="#res"+thread.group(3);return result;

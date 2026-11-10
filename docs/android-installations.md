@@ -2365,3 +2365,40 @@ emulator-5580 / Haiagaru_Root_API36。製品は全てInstallVerifiedApk.ps1で�
 
 
 191回帰の初回・再試行は古いローカル接続先の画面エラーで停止。退避したtabletHome2の診断では左77タブ。コールド起動とFixtureTabSandboxによる未登録loopback板タブの一時分離後、同じ製品で641項目成功。sandboxは試験開始時の5キーを退避してfinallyで復元する。保存済みの実登録・画像・通常タブを削除しない。診断のためemulator-5580のadbdを一時rootへ変更してprefsを読み取り、製品設定のraw書き換えは行っていない。
+
+## 2026-11-10 設定文字列・送信本文・検索・あにまん表示・保存操作の統合候補
+
+emulator-5580 / Haiagaru_Root_API36 / Android API36。製品3版はInstallVerifiedApk.ps1で既存署名一致を確認しinstall-r Success。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/final.mpp / SHA256 b25c84455b84da61f49f3d55cd4f806a03650f350ac553d7f7bda771e4e7c161。ローカルdev.19表記の次版候補であり公開dev.19とは別。実機変更・アンインストール・データ消去なし。
+
+- 2026-11-10T18:20:06+09:00 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/final191.apk / SHA256 bfde231b9a524697dc4d7db74254d8849cf6c595219de434f4b76ee6e10b99d9 / install-r Success。
+
+  試験APK app.haiagaru.tests.sitegateway191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests191.apk / SHA256 4f761bce5bdbfdd718f4490d7fcb1982c55621c4d2cc15608f42593c0f8d9c86 / 同じMorphe鍵・署名でinstall-r Success、対象reporter191。
+
+  試験APK app.haiagaru.tests.postcleanup191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/tests191.apk / SHA256 979015619230723b9b0a59480679c5dce9373dea8d2fdebeef5875ca7b71be60 / 同じMorphe鍵・署名でinstall-r Success、対象reporter191。
+
+  試験APK app.haiagaru.tests.ipwarning191 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests191.apk / SHA256 6d38051cda7fd59064877bbc40ae0ac9ae5fa93ea8a5ec25d1851dd16053f4bb / 同じMorphe鍵・署名でinstall-r Success、対象reporter191。
+
+  検証: {'gateway': 'PASS 678 gateway/native URL checks; upstream GET=292, isolated POST=16; public posts=0', 'links': 'PASS 30 settings link checks; ui=true', 'media': 'PASS 28 production emoji/post/render/autoplay/audio-focus checks; public network/posts=0', 'export': 'PASS exported 186 Japanese setting entries / 392 actions'} / CSV対象 392文字列の集合一致・全てclickable。
+
+- 2026-11-10T18:20:46+09:00 / Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/final226.apk / SHA256 c3528f0e7c8f6107d015105c1f781f0becf2f791d464a727eb4e132777966da6 / install-r Success。
+
+  試験APK app.haiagaru.tests.sitegateway226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests226.apk / SHA256 1770397b0e1753839571190c2df8477191535f5cf043a159e5453ba821c30378 / 同じMorphe鍵・署名でinstall-r Success、対象reporter226。
+
+  試験APK app.haiagaru.tests.postcleanup226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/tests226.apk / SHA256 33714aa70d29016a879ee00627a881708944fb0ade042d531e20e6da51cb183c / 同じMorphe鍵・署名でinstall-r Success、対象reporter226。
+
+  試験APK app.haiagaru.tests.ipwarning226 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests226.apk / SHA256 5c6acb120140e5515ce5cd31a26f80c75dd44f41e767ca9910b8b0082642bafd / 同じMorphe鍵・署名でinstall-r Success、対象reporter226。
+
+  検証: {'gateway': 'PASS 684 gateway/native URL checks; upstream GET=292, isolated POST=16; public posts=0', 'links': 'PASS 30 settings link checks; ui=true', 'media': 'PASS 31 production emoji/post/render/autoplay/audio-focus checks; public network/posts=0', 'export': 'PASS exported 183 Japanese setting entries / 383 actions'} / CSV対象 383文字列の集合一致・全てclickable。
+
+- 2026-11-10T18:21:06+09:00 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/final242.apk / SHA256 d69b4a67aea56f88eed38e4cad6bba1ce668014b6b1e16f44517cf6e1be75659 / install-r Success。
+
+  試験APK app.haiagaru.tests.sitegateway242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-boards-inst/tests242.apk / SHA256 d489792e115ca7fe94e5cdb1b0c55d11aa00a64ab0fd8337e344617e2ea46c61 / 同じMorphe鍵・署名でinstall-r Success、対象reporter242。
+
+  試験APK app.haiagaru.tests.postcleanup242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/nov10-followups/tests242.apk / SHA256 dba38e918f4a25f490d1612fdaf6c138eea6b37abb1643df3be02e6aeecefbe5 / 同じMorphe鍵・署名でinstall-r Success、対象reporter242。
+
+  試験APK app.haiagaru.tests.ipwarning242 / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ip-post-warning/inst/tests242.apk / SHA256 fb9d8bcd29a98d1943d6c71593bd33bbe6505318f8c762fc6c0442b7f48d9518 / 同じMorphe鍵・署名でinstall-r Success、対象reporter242。
+
+  検証: {'gateway': 'PASS 681 gateway/native URL checks; upstream GET=291, isolated POST=16; public posts=0', 'links': 'PASS 30 settings link checks; ui=true', 'media': 'PASS 31 production emoji/post/render/autoplay/audio-focus checks; public network/posts=0', 'export': 'PASS exported 183 Japanese setting entries / 383 actions'} / CSV対象 383文字列の集合一致・全てclickable。
+
+
+起動直後のSystem UI応答停止はUI XMLでSystem UIのダイアログとWaitボタンを確認して復帰。製品のクラッシュとは区別。最終候補の通し確認はcleanup/tabRestoreエラーなし・公開投稿0・crash-final.log空。FixtureTabSandboxは元タブ5キーをfinallyで復元。先行候補の失敗と修正経過はsettings-links-191-post-cleanup-20261109.md / thread-search-animanch-save-20261110.md。実機・公開POST・実際の公開動画の保存完了・長時間は今回未確認。

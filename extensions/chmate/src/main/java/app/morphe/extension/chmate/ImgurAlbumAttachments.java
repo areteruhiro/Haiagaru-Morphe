@@ -129,6 +129,7 @@ public final class ImgurAlbumAttachments {
 
     /** Called after native extraction, so a fast metadata response cannot replace its results. */
     public static String[] complete(Object model, String[] original) {
+        original = SiteNativeBoards.nativeImageAttachments(original);
         if (model == null || original == null) return original;
         String body;
         switch (model.getClass().getName()) {
