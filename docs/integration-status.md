@@ -1644,3 +1644,11 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 ソース5f133c4bをdevへpush、既存Semantic Release CI42805025284 success（4m36s）。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.21 / prerelease=true,draft=false。CI生成e13f8b53をff-only取得、生成ファイル手編集なし。配布6assetのsize/SHA256/GitHub digest/ZIP・MPP CRC、JSON2個のversion/download_urlと公開devフィードの意味一致、CHANGELOG/公開本文の日付付き見出し・共有NGの待機/GET再試行/POST再送禁止・検証と未再現範囲を確認。配布MPP 7043887 bytes / SHA256 e65dd1506b42b727fec607c7df2641da4eedef7e0e00468efa06aaa0f0ac0ccd。証跡build/release-1.25.0-dev.21-verify/verification.json。
 
 配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補を前記3版で検証済み。実機・GASデプロイ・正式master版の変更なし。検証エミュレータは終了済み。無関係な未追跡2スクリプトは公開commitへ含めない。
+
+## 2026-11-10 GASのロック競合対策（サーバー反映済み）
+
+詳細shared-ng-lock-20261110.md。HTTP待機延長では直らないロックタイムアウトを受け、配信キャッシュ生成をdouble-check付き単一ロック化、分割キャッシュRPCを集約。毎分の審査が数十秒〜数分ロックを占有する実行履歴を確認し、重複起動を短時間でスキップし、審査完了後に同じ行から配信キャッシュを更新。キャッシュのハッシュ・完全性・審査/票数/除外の回帰を含むNode516項目成功。
+
+修正前のサーバーソースとの一致を確認後にPublish.gs/PersonalInbox.gsだけを保存、既存URL/権限を維持しGAS v19（2026-11-10 22:21 JST）へ更新。最初のv18とv19直後のGETは更新中エラー、既存実行の終了後の確認でHTTP200/ok=true/revision422/3,873条件/7.515秒を確認。失敗を成功扱いせず証跡と経緯を詳細docへ記録。GASだけの修正でMPPリリース不要。利用者の指示でエミュレータは実施しない。
+
+引き続き191の投稿後自動リロードと、記者ID直接NG/上下4桁NG/期間限定の記者ID・スレ名検索を実装する。未追跡2スクリプトは保護。

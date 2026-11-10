@@ -56,9 +56,10 @@ function ngReceivePersonal_(body){
  }finally{lock.releaseLock();}
 }
 function reviewPersonalNg(){
- const lock=LockService.getScriptLock();lock.waitLock(15000);try{return ngReviewPersonalLocked_();}finally{lock.releaseLock();}
+ const lock=LockService.getScriptLock();if(!lock.tryLock(1000))return 'busy';
+ try{const snapshot={},count=ngReviewPersonalLocked_(snapshot);ngReviewedCachePut_(ngExportReviewedLocked_(snapshot.rows));return count;}finally{lock.releaseLock();}
 }
-function ngReviewPersonalLocked_(){
+function ngReviewPersonalLocked_(snapshot){
  ngInboxSetup_();const b=SpreadsheetApp.openById(NG_CONFIG.spreadsheetId);ngRecoverPersonalTransfer_(b);const props=PropertiesService.getScriptProperties();ngRecoverReporterRestores_(b,props);ngApplyReporterExclusions_(b,props);ngRecoverReporterExclusions_(b,props);const s=b.getSheetByName('Inbox'),rows=ngAllPersonalRows_(b),before=JSON.stringify(rows);
  const config=ngReviewConfig_(b),overrides=JSON.parse(props.getProperty('REVIEW_OVERRIDES')||'{}');let policyVersion=Number(config.policyVersion||props.getProperty('REVIEW_POLICY_VERSION')||1);
  const active=new Map();for(const row of rows){
@@ -78,7 +79,7 @@ function ngReviewPersonalLocked_(){
  const latest=new Set(Array.from(active.values()).map(x=>x.row));
  for(const row of rows)if(row[5]==='pending'&&!latest.has(row)){row[5]='withdrawn';row[6]='reporter_superseded';}
  if(before!==JSON.stringify(rows)||ngRows_(b.getSheetByName('Inbox')).some(row=>!ngEmptyInboxRow_(row)&&row[6]!=='awaiting_policy')||(b.getSheetByName('Reviewed')&&ngRows_(b.getSheetByName('Reviewed')).length))ngStorePersonalRows_(b,rows);
- return rows.length;
+ if(snapshot)snapshot.rows=rows;return rows.length;
 }
 function ngReviewConfig_(book){
  let config=JSON.parse(PropertiesService.getScriptProperties().getProperty('REVIEW_POLICY_JSON')||'{}');
@@ -185,9 +186,10 @@ function ngApplyReporterExclusions_(book,props){
  const limit=Number(props.getProperty('REPORTER_EXCLUSION_THRESHOLD')||0),sheet=book.getSheetByName('ReporterExclusions');if(!Number.isSafeInteger(limit)||limit<2||limit>100||!sheet)return;
  const ignored=new Set(ngIgnoredReporters_()),votes=new Map();
  for(const row of ngRows_(sheet))if(row[2]===true&&!ignored.has(row[0])){if(!votes.has(row[1]))votes.set(row[1],new Set());votes.get(row[1]).add(row[0]);}
+ const restored=new Set(props.getKeys().filter(key=>key.startsWith('MANUAL_REPORTER_RESTORE_')).map(key=>key.slice('MANUAL_REPORTER_RESTORE_'.length)));
  const reporters=new Set(ignored);for(const row of ngAllPersonalRows_(book))reporters.add(row[1]);
  for(const [name,column] of [['ReporterDevices',1],['Votes',1],['Pending',0]]){const source=book.getSheetByName(name);if(source)for(const row of ngRows_(source))reporters.add(row[column]);}
- for(const reporter of reporters)if(typeof reporter==='string'&&/^[a-f0-9]{64}$/.test(reporter)&&!ignored.has(reporter)&&!props.getProperty('MANUAL_REPORTER_RESTORE_'+reporter)){
+ for(const reporter of reporters)if(typeof reporter==='string'&&/^[a-f0-9]{64}$/.test(reporter)&&!ignored.has(reporter)&&!restored.has(reporter)){
   const independent=new Set(votes.get(ngPublicReporter_(reporter))||[]);independent.delete(reporter);for(const voter of ignored)independent.delete(voter);
   if(independent.size>=limit){props.setProperty('AUTO_IGNORED_REPORTER_'+reporter,JSON.stringify({phase:'pending',cycle:Utilities.getUuid(),at:new Date().toISOString()}));ignored.add(reporter);}
  }

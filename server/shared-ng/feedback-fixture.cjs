@@ -16,7 +16,7 @@ let locked=false;
 const context=vm.createContext({console,Date,Map,Set,JSON,Number,String,Object,Array,Error,
  SpreadsheetApp:{openById:()=>book,getActiveSpreadsheet:()=>activeBook,flush(){}},PropertiesService:{getScriptProperties:()=>props},
  CacheService:{getScriptCache:()=>({get:k=>cache.get(k),put:(k,v)=>cache.set(k,v),remove:k=>cache.delete(k)})},
- LockService:{getScriptLock:()=>({waitLock(){assert.ok(!locked);locked=true;},releaseLock(){locked=false;},hasLock(){return locked;}})},
+ LockService:{getScriptLock:()=>({waitLock(){assert.ok(!locked);locked=true;},tryLock(){if(locked)return false;locked=true;return true;},releaseLock(){locked=false;},hasLock(){return locked;}})},
  Utilities:{newBlob:v=>({getBytes:()=>Array.from(Buffer.from(v,'utf8'))}),getUuid:()=>crypto.randomUUID(),DigestAlgorithm:{SHA_256:1},Charset:{UTF_8:1},computeDigest:(_,v)=>Array.from(crypto.createHash('sha256').update(v).digest())},
  ContentService:{MimeType:{JSON:'json'},createTextOutput:text=>({text,setMimeType(){return this;}})}
 });
