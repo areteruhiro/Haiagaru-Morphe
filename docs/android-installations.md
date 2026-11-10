@@ -2402,3 +2402,28 @@ emulator-5580 / Haiagaru_Root_API36 / Android API36。製品3版はInstallVerifi
 
 
 起動直後のSystem UI応答停止はUI XMLでSystem UIのダイアログとWaitボタンを確認して復帰。製品のクラッシュとは区別。最終候補の通し確認はcleanup/tabRestoreエラーなし・公開投稿0・crash-final.log空。FixtureTabSandboxは元タブ5キーをfinallyで復元。先行候補の失敗と修正経過はsettings-links-191-post-cleanup-20261109.md / thread-search-animanch-save-20261110.md。実機・公開POST・実際の公開動画の保存完了・長時間は今回未確認。
+
+## 2026-11-10 共有NGタイムアウト対策の検証
+
+emulator-5580 / Haiagaru_Root_API36 / API36。署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / cert SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/final.mpp / SHA256 a15d940aa3c55ae6facc2cbad537dec9da9103c0ee84603996f306fb745ada74。ローカルdev.20表記の次版候補であり公開dev.20とは別。既存reporter3版へ署名一致install-r成功。実機変更・アンインストール・データ消去なし。
+
+- 2026-11-10T19:57:35+09:00 / Haiagaru NG確認 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter191 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/final191.apk / SHA256 426cfa6239f56fd1ddfb15fce6ee26867a959372d6497fd18b9d6039f7ebdddd / install-r Success。
+
+  試験APK app.haiagaru.tests.sharedsync191 / Shared NG synchronization tests / versionNameなし / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/tests191.apk / SHA256 c76ad7e08b2e519078c004849285cb257b29160f145b86479b2ad1317960a708 / 同じMorphe鍵で署名・導入、最終インストール済みAPKをpullしてSHA256一致を確認。
+
+  結果 {'sync': 'PASS 15 live receive and isolated shared NG sync checks; public POSTs=0; user cache/settings unchanged', 'live': 'HTTP GET only; conditions=3853; elapsedMs=5962', 'gateway': 'PASS 648 gateway/native URL checks; upstream GET=287, isolated POST=16; public posts=0'}。既存sitegateway試験APKの版と署名は前項の台帳どおり、今回更新なし。
+
+- 2026-11-10T19:57:53+09:00 / Haiagaru NG確認 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter226 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/final226.apk / SHA256 ed6dd8941d0bf2d2d55a33a68e7b08bcbc07d3ca357a6b6aa1320f7aa35d08b6 / install-r Success。
+
+  試験APK app.haiagaru.tests.sharedsync226 / Shared NG synchronization tests / versionNameなし / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/tests226.apk / SHA256 d188f1c8fb60c613d2937edbffa38db0625fc001c40beba09c0b67531c58083f / 同じMorphe鍵で署名・導入、最終インストール済みAPKをpullしてSHA256一致を確認。
+
+  結果 {'sync': 'PASS 15 live receive and isolated shared NG sync checks; public POSTs=0; user cache/settings unchanged', 'live': 'HTTP GET only; conditions=3853; elapsedMs=4805', 'gateway': 'PASS 653 gateway/native URL checks; upstream GET=286, isolated POST=16; public posts=0'}。既存sitegateway試験APKの版と署名は前項の台帳どおり、今回更新なし。
+
+- 2026-11-10T19:58:18+09:00 / Haiagaru NG確認 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/final242.apk / SHA256 7a924372e16d2ea57c1e094111fa3cf53bebdbb53b4a1f59ffbd02bc610850d6 / install-r Success。
+
+  試験APK app.haiagaru.tests.sharedsync242 / Shared NG synchronization tests / versionNameなし / C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/shared-ng-timeout-20261110/tests242.apk / SHA256 65be2fdba15a1032b9eb3bce88f4643331cd861ee2198716dc85b1699dd2c1b4 / 同じMorphe鍵で署名・導入、最終インストール済みAPKをpullしてSHA256一致を確認。
+
+  結果 {'sync': 'PASS 15 live receive and isolated shared NG sync checks; public POSTs=0; user cache/settings unchanged', 'live': 'HTTP GET only; conditions=3853; elapsedMs=6219', 'gateway': 'PASS 651 gateway/native URL checks; upstream GET=288, isolated POST=16; public posts=0'}。既存sitegateway試験APKの版と署名は前項の台帳どおり、今回更新なし。
+
+
+同期試験のHTTPS転送fixtureは試験プロセスだけに設定し、終了後に各reporterをforce-stopして解除。試験用prefs/ディレクトリは削除、製品の元context/rules/状態をfinally復元。公開POST0・最終crash空。初回のDNS/応答判定失敗と再確認はshared-ng-timeout-20261110.mdへ記録。

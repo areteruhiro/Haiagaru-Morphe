@@ -286,14 +286,7 @@ final class SharedNg {
         JSONArray remaining=new JSONArray();for(int i=0;i<current.length();i++)if(!acknowledged.contains(current.getJSONObject(i).toString()))remaining.put(current.get(i));return remaining;
     }
     static JSONObject request(String verb,String url,JSONObject body)throws Exception{
-        for(int redirects=0;redirects<3;redirects++){
-            URL target=new URL(url);String host=target.getHost();if(!target.getProtocol().equals("https")||!(host.equals("script.google.com")||host.equals("script.googleusercontent.com")||host.equals("raw.githubusercontent.com")))throw new IOException("不正な転送先");
-            HttpURLConnection c=(HttpURLConnection)target.openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(10000);c.setReadTimeout(15000);c.setRequestMethod(verb);
-            try{if(body!=null){byte[] bytes=body.toString().getBytes(StandardCharsets.UTF_8);c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json; charset=utf-8");c.setFixedLengthStreamingMode(bytes.length);try(OutputStream out=c.getOutputStream()){out.write(bytes);}}
-                int code=c.getResponseCode();if(code==302||code==303){url=new URL(target,c.getHeaderField("Location")).toString();verb="GET";body=null;continue;}
-                if(code!=200)throw new IOException("HTTP "+code);try(InputStream in=c.getInputStream()){return new JSONObject(read(in,4*1024*1024));}
-            }finally{c.disconnect();}
-        }throw new IOException("転送回数が多すぎます");
+        return new JSONObject(SharedNgHttp.request(verb,url,body==null?null:body.toString()));
     }
     static String read(InputStream in,int max)throws IOException{ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] buf=new byte[8192];int n;while((n=in.read(buf))!=-1){if(out.size()+n>max)throw new IOException("応答が大きすぎます");out.write(buf,0,n);}return out.toString("UTF-8");}
     static void settings(Activity a){LinearLayout box=new LinearLayout(a);box.setOrientation(1);int pad=(int)(16*a.getResources().getDisplayMetrics().density);box.setPadding(pad,0,pad,0);

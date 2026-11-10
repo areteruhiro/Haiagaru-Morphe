@@ -1630,3 +1630,11 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 ソース7d4e866fをdevへpush、既存Semantic Release CI42791081698 success（5m40s）。公開 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.25.0-dev.20 / prerelease=true,draft=false。CI生成8f99b2d3をff-only取得、生成ファイル手編集なし。配布6assetを実downloadしsize/SHA256/GitHub digest/ZIP・MPP CRCを確認。JSON2個のversion/download_url/ローカル生成内容と公開devフィードの意味一致、CHANGELOGと公開本文の日付付き見出し・今回修正・確認範囲・HTTP403制限も確認。配布MPP 7042831 bytes / SHA256 c0441c570384f52357a75eda541676f62bfc8b1f710b3cf8a9c5069df6a1f1a1。証跡build/release-1.25.0-dev.20-verify/verification.json。
 
 配布MPP自体の再パッチ/再導入は未実施。同じ製品ソースのローカル候補を前記3版で検証済み。今回の実機導入・正式master版の変更なし。検証エミュレータは終了。無関係な未追跡2スクリプトは保持し公開commitへ含めない。
+
+## 2026-11-10 共有NGタイムアウト対策（検証済み、プレ公開指示あり）
+
+詳細shared-ng-timeout-20261110.md。旧接続10秒/応答15秒に対しGASのロック待機自体が最大15秒、応答は約1.7MB。SharedNgHttpへ共通通信を分離し接続15秒/応答60秒、90秒の共通予算を確認、SocketTimeoutのGETのみ1回再試行。POSTは転送後を含め再送せず、既存queue/operationId維持。許可ホスト/HTTPS/転送制限/4MiB上限維持、タイムアウト案内を日本語化。審査・条件適用・GASソース/デプロイは変更なし。ネイティブフック変更なし。
+
+実際の16秒遅延応答で旧設定失敗/修正後成功、host39項目成功。通常Lint/R8 build4m18s、3APK適用成功、MPP a15d940aa3c55ae6facc2cbad537dec9da9103c0ee84603996f306fb745ada74。emulator-5580の3版で実GAS3,853条件を1915962ms/2264805ms/2426219msで受信・解析、同期/保存/タイムアウトと不正JSON時の保持/POST再送禁止が各15項目成功。基本画面/本文/画像/URL648/653/651成功、公開POST0・最終crash空、復元エラーなし。実機/長時間/報告端末での同一症状は未確認。途中のDNS/ok-full判定失敗・試験診断追加の経緯は詳細docへ記録し、成功扱いしない。
+
+既存reporter3版へ署名一致更新、導入台帳更新済み。実機変更/アンインストール/データ消去なし。利用者から明示的なプレ公開指示あり。無関係な未追跡frida-thread-open-timing191.js/shared-ng-reporter-blocks-runtime.jsは保護し公開対象外。
