@@ -14,6 +14,8 @@ final class ThreadListThumbnailRules {
         final String host, name;
         Board(String host,String name){this.host=host;this.name=name;}
         String threadUrl(String id){return "https://"+host+"/test/read.cgi/"+name+"/"+id+"/";}
+        String settingsKey(){return "5ch:"+host+"/"+name;}
+        String legacySettingsKey(){return "5ch:"+name;}
     }
     private static final Pattern DIAGNOSTIC=Pattern.compile("^\\{server:([^,]+), name:([^,]+), created:");
     private static final Pattern NAME=Pattern.compile("[a-zA-Z0-9_-]{1,80}");
@@ -30,10 +32,12 @@ final class ThreadListThumbnailRules {
             if(!("https".equalsIgnoreCase(uri.getScheme())||"http".equalsIgnoreCase(uri.getScheme()))
                     ||host==null||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getRawQuery()!=null||uri.getRawFragment()!=null||path==null)return null;
             host=host.toLowerCase(Locale.ROOT);
-            if(!(host.endsWith(".5ch.io")||host.endsWith(".5ch.net")))return null;
+            boolean edge=host.equals("bbs.eddibb.cc");
+            if(!(host.endsWith(".5ch.io")||host.endsWith(".5ch.net")||edge))return null;
             Matcher thread=Pattern.compile("^/test/read\\.cgi/([a-zA-Z0-9_-]{1,80})/[0-9]{9,11}/?$",Pattern.CASE_INSENSITIVE).matcher(path);
             String name=thread.matches()?thread.group(1):path.replaceFirst("^/","").replaceFirst("/$","");
             if(!NAME.matcher(name).matches())return null;
+            if(edge&&!"liveedge".equalsIgnoreCase(name))return null;
             return new Board(host,name.toLowerCase(Locale.ROOT));
         }catch(IllegalArgumentException invalid){return null;}
     }

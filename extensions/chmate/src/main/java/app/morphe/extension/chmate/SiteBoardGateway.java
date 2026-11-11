@@ -148,8 +148,7 @@ final class SiteBoardGateway {
         if(source.kind.equals("futaba")&&source.host.equals("www.2chan.net")&&source.path.equals("script"))return null;
         List<String> keys=new ArrayList<>(boards.keySet());Collections.sort(keys);
         String category=source.kind.equals("animanch")&&source.thread!=null?animanchCategories.get(source.thread):null;
-        String selected=null;for(String key:keys)if(boardEnabled(key)&&SiteBoardProtocol.sameBoard(boards.get(key),source)
-                &&(!source.kind.equals("animanch")||source.thread==null||category!=null&&boards.get(key).path.equals(category))){
+        String selected=null;for(String key:keys)if(boardEnabled(key)&&SiteBoardProtocol.matchesRegisteredBoard(boards.get(key),source,category)){
             if(selected==null||boards.get(key).url.equals(source.url))selected=key;
             if(boards.get(key).url.equals(source.url))break;
         }
@@ -343,6 +342,13 @@ final class SiteBoardGateway {
     }
     /** Site transport enforces the same origin and authentication rules as native DAT images. */
     byte[] openingImageBytes(String url)throws IOException{
+        if(ImageVpnController.protectedPreview(url)){
+            app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=ImageVpnController.fetchPreview(url);
+            byte[] body=result.getBody();String type=result.getContentType();
+            if(body==null||body.length>3*1024*1024||type==null||!type.toLowerCase(Locale.ROOT).startsWith("image/"))
+                throw new IOException("VPN経由でサムネイルを取得できません");
+            return body;
+        }
         Response image=transport.get(url);
         if(image.status!=200||image.bytes.length>3*1024*1024||!image.type.toLowerCase(Locale.ROOT).startsWith("image/"))throw new IOException("サムネイル画像を取得できません");
         return image.bytes;

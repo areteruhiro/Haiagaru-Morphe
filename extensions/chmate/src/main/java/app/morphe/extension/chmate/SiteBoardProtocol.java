@@ -209,16 +209,36 @@ final class SiteBoardProtocol {
         return new Entry(number,name,date,Jsoup.clean(safe.html(),board.url,SAFE,new Document.OutputSettings().prettyPrint(false)),new ArrayList<>(media));
     }
     static String threadIn(Board board,String url){
-        try{Board parsed=address(url);return sameBoard(board,parsed)?parsed.thread:null;}catch(IOException invalid){return null;}
+        try{
+            Board parsed=address(url);
+            if(parsed.thread==null)return null;
+            // Animanch thread URLs do not encode their category. Catalogue callers
+            // already know the board; external navigation resolves it separately.
+            if(board.kind.equals("animanch")&&parsed.kind.equals("animanch"))return parsed.thread;
+            return sameBoard(board,parsed)?parsed.thread:null;
+        }catch(IOException invalid){return null;}
     }
-    static boolean sameBoard(Board board,Board other){return board.kind.equals(other.kind)&&(board.url.equals(other.url)||board.kind.equals("animanch")||board.kind.equals("bakusai")&&board.path.replaceFirst("^acode=[0-9]+/","").equals(other.path.replaceFirst("^acode=[0-9]+/","")));}
+    static boolean sameBoard(Board board,Board other){
+        if(!board.kind.equals(other.kind))return false;
+        if(board.url.equals(other.url))return true;
+        // Bakusai regional paths can refer to the same ctgid/bid board.
+        return board.kind.equals("bakusai")&&board.path.replaceFirst("^acode=[0-9]+/","")
+                .equals(other.path.replaceFirst("^acode=[0-9]+/",""));
+    }
+    static boolean matchesRegisteredBoard(Board registered,Board source,String animanchCategory){
+        if(!registered.kind.equals(source.kind))return false;
+        // Never map an unclassified thread to whichever Animanch board comes first.
+        if(source.kind.equals("animanch")&&source.thread!=null)
+            return animanchCategory!=null&&registered.path.equals(animanchCategory);
+        return sameBoard(registered,source);
+    }
     static String resolve(String base,String link){
         try{URI u=URI.create(base).resolve(link);return "https".equalsIgnoreCase(u.getScheme())&&u.getHost()!=null&&u.getUserInfo()==null&&u.getPort()==-1?u.toASCIIString():null;}catch(RuntimeException invalid){return null;}
     }
     private static boolean media(Board board,String url){
         try{URI u=URI.create(url);String host=u.getHost(),path=u.getPath();if(host==null||!"https".equals(u.getScheme())||u.getPort()!=-1)return false;
             return board.kind.equals("bakusai")?host.equals("img2.bakusai.com")&&!path.endsWith("dummyM.gif")
-                    :host.endsWith(".2chan.net")&&path.startsWith("/"+board.path+"/src/");
+                    :host.equals(board.host)&&path.startsWith("/"+board.path+"/src/");
         }catch(RuntimeException invalid){return false;}
     }
     private static String text(Element parent,String selector){Element e=parent.selectFirst(selector);return e==null?"":e.text();}

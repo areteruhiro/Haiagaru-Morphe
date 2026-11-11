@@ -1,6 +1,8 @@
 package app.morphe.extension.chmate;
 
 import java.io.*;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -8,6 +10,27 @@ import java.util.regex.Pattern;
 final class ReporterSearch {
     static final long DAY = 86400000L, WEEK = 7 * DAY, JST = 9 * 3600000L;
     static final String SOURCE = "https://docs.google.com/spreadsheets/d/1KK6880IjRAwt0jB44oA1bS5a3r36p_3XoNNMDNG4kOk/export?format=csv&gid=1962854723";
+    /** Inclusive Japanese calendar days, returned as a half-open millisecond interval. */
+    static long[] dateRange(String first, String last) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT);
+        format.setTimeZone(TimeZone.getTimeZone("Asia/Tokyo"));
+        format.setLenient(false);
+        Date start = parseDay(format, first), finish = parseDay(format, last);
+        if (start.after(finish)) throw new IllegalArgumentException("開始日は終了日以前にしてください");
+        Calendar end = Calendar.getInstance(format.getTimeZone(), Locale.ROOT);
+        end.setTime(finish);
+        end.add(Calendar.DAY_OF_MONTH, 1);
+        return new long[]{start.getTime(), end.getTimeInMillis()};
+    }
+    private static Date parseDay(SimpleDateFormat format, String value) {
+        if (value == null || !value.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))
+            throw new IllegalArgumentException("日付を選んでください");
+        ParsePosition position = new ParsePosition(0);
+        Date result = format.parse(value, position);
+        if (result == null || position.getIndex() != value.length())
+            throw new IllegalArgumentException("日付を確認してください");
+        return result;
+    }
     static long[] period(int mode, long anchor) {
         long daily = Math.floorDiv(anchor + JST, DAY) * DAY - JST;
         long weekly = Math.floorDiv(anchor, WEEK) * WEEK; // Epoch = Thursday 09:00 JST.

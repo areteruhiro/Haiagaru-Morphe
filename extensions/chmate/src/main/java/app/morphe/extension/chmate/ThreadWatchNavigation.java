@@ -9,7 +9,7 @@ import android.view.View;
 import java.lang.ref.WeakReference;
 
 /** Resolve a notification's response after native DAT download and adapter binding. */
-final class ThreadWatchNavigation {
+public final class ThreadWatchNavigation {
     private static final String PREFS="haiagaru-watch-navigation";
     private static final Handler MAIN=new Handler(Looper.getMainLooper());
     private static final long TIMEOUT=40000L;
@@ -51,7 +51,7 @@ final class ThreadWatchNavigation {
         poll(target,fragment,list,0);
     }
 
-    static void onResume(Object fragment){
+    public static void onResume(Object fragment){
         try {
             View root=(View)fragment.getClass().getMethod("getView").invoke(fragment);
             register(fragment,FilterPosition.findListForBinding(root));

@@ -7,6 +7,14 @@ public final class ReporterSearchTest {
     static void check(boolean value){checks++;if(!value)throw new AssertionError("check "+checks);}
     static long time(String value){return OffsetDateTime.parse(value+"+09:00").toInstant().toEpochMilli();}
     public static void main(String[] args)throws Exception{
+        long[] days=ReporterSearch.dateRange("2026-11-10", "2026-11-12");
+        check(days[0]==time("2026-11-10T00:00:00"));
+        check(days[1]==time("2026-11-13T00:00:00"));
+        check(ReporterSearch.dateRange("2024-02-29","2024-02-29")[1]==time("2024-03-01T00:00:00"));
+        try { ReporterSearch.dateRange("2026-11-12","2026-11-10");throw new AssertionError(); }
+        catch(IllegalArgumentException expected){checks++;}
+        try { ReporterSearch.dateRange("2026-02-29","2026-03-01");throw new AssertionError(); }
+        catch(IllegalArgumentException expected){checks++;}
         long before=time("2026-11-12T08:59:00"),after=time("2026-11-12T09:00:00");
         check(ReporterSearch.period(1,before)[1]==after);
         check(ReporterSearch.period(1,after)[0]==after);

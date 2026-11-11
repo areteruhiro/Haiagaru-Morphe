@@ -23,14 +23,19 @@ final class ReporterSearchUi {
         mode.setAdapter(adapter); content.addView(mode);
         EditText query = new EditText(activity); query.setSingleLine(true); query.setHint("記者ID／スレ名");
         if (initialId != null) query.setText(initialId); content.addView(query);
+        TimeZone zone=TimeZone.getTimeZone("Asia/Tokyo");
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT);
-        format.setTimeZone(TimeZone.getTimeZone("Asia/Tokyo")); format.setLenient(false);
+        format.setTimeZone(zone); format.setLenient(false);
+        SimpleDateFormat dateFormat=new SimpleDateFormat("yyyy-MM-dd",Locale.ROOT);dateFormat.setTimeZone(zone);
         TextView help = new TextView(activity);
-        help.setText("日本時間。ID検索は基準日時を含む更新周期内のみ検索します（前半: 木曜9時、後半: 毎日0時）。全文は両期間の共通部分です。スレ名検索は開始以上・終了未満。部分IDの一致だけでは同一人物とは限りません。"); content.addView(help);
-        EditText start = new EditText(activity); start.setSingleLine(true); start.setHint("基準日時／スレ名の開始日時 yyyy-MM-dd HH:mm");
-        start.setText(format.format(new Date())); content.addView(start);
-        EditText end = new EditText(activity); end.setSingleLine(true); end.setHint("スレ名検索の終了日時 yyyy-MM-dd HH:mm");
-        end.setText(format.format(new Date(System.currentTimeMillis()+3600000))); content.addView(end);
+        help.setText("日本時間。開始日Aから終了日Bまで両日を含めて検索します。記者IDは木曜9時／毎日0時に更新されるため期間をまたぐと異なるIDになります。部分IDの一致だけでは同一人物とは限りません。"); content.addView(help);
+        Calendar endDay=Calendar.getInstance(zone,Locale.JAPAN);
+        Calendar startDay=(Calendar)endDay.clone();startDay.add(Calendar.DAY_OF_MONTH,-6);
+        Button start=new Button(activity);start.setAllCaps(false);content.addView(start);
+        Button end=new Button(activity);end.setAllCaps(false);content.addView(end);
+        updateDate(start,"開始日 A",startDay,dateFormat);updateDate(end,"終了日 B",endDay,dateFormat);
+        start.setOnClickListener(v->pickDate(activity,start,"開始日 A",startDay,dateFormat));
+        end.setOnClickListener(v->pickDate(activity,end,"終了日 B",endDay,dateFormat));
         Button search = new Button(activity); search.setText("検索"); content.addView(search);
         TextView status = new TextView(activity); content.addView(status);
         LinearLayout results = new LinearLayout(activity); results.setOrientation(LinearLayout.VERTICAL); content.addView(results);
@@ -42,13 +47,12 @@ final class ReporterSearchUi {
             final int selected = mode.getSelectedItemPosition(); final String text = query.getText().toString();
             final long from, until;
             try {
-                long anchor = parse(format,start.getText().toString());
-                if(selected==3){from=anchor;until=parse(format,end.getText().toString());}
-                else {long[] period=ReporterSearch.period(selected,anchor);from=period[0];until=period[1];}
-                if(from>=until)throw new IllegalArgumentException();
-            } catch(Exception error){status.setText("日時を yyyy-MM-dd HH:mm で入力してください。終了は開始より後にしてください。");return;}
+                long[] range=ReporterSearch.dateRange(dateFormat.format(startDay.getTime()),dateFormat.format(endDay.getTime()));
+                from=range[0];until=range[1];
+            } catch(Exception error){status.setText("終了日 B は開始日 A 以降にしてください。");return;}
             search.setEnabled(false); results.removeAllViews();
-            status.setText(format.format(new Date(from))+" ～ "+format.format(new Date(until))+" 未満を検索中…");
+            final String rangeText=dateFormat.format(startDay.getTime())+" ～ "+dateFormat.format(endDay.getTime())+"（両日含む）";
+            status.setText(rangeText+" を検索中…");
             pending[0]=WORKER.submit(() -> {
                 ReporterSearch.Result found=null; String failure=null;
                 HttpURLConnection connection=null;
@@ -65,7 +69,7 @@ final class ReporterSearchUi {
                     if(closed[0]||activity.isFinishing())return;
                     search.setEnabled(true);
                     if(answer==null){status.setText("検索できませんでした: "+error);return;}
-                    status.setText(format.format(new Date(from))+" ～ "+format.format(new Date(until))+" 未満\n"+answer.matches+"件（表示最大200件）。収集済みログのみが対象です。");
+                    status.setText(rangeText+"\n"+answer.matches+"件（表示最大200件）。収集済みログのみが対象です。");
                     for(ReporterSearch.Row row:answer.rows){
                         Button item=new Button(activity);item.setAllCaps(false);
                         item.setText(row.title+"\n["+row.id+"★] "+format.format(new Date(row.created)));
@@ -79,9 +83,14 @@ final class ReporterSearchUi {
         });
         dialog.show();
     }
-    private static long parse(SimpleDateFormat format,String value){
-        java.text.ParsePosition position=new java.text.ParsePosition(0);Date date=format.parse(value,position);
-        if(date==null||position.getIndex()!=value.length())throw new IllegalArgumentException();return date.getTime();
+    private static void updateDate(Button button,String label,Calendar date,SimpleDateFormat format){
+        button.setText(label+"："+format.format(date.getTime()));
+    }
+    private static void pickDate(Activity activity,Button button,String label,Calendar date,SimpleDateFormat format){
+        new android.app.DatePickerDialog(activity,(picker,year,month,day)->{
+            date.set(Calendar.YEAR,year);date.set(Calendar.MONTH,month);date.set(Calendar.DAY_OF_MONTH,day);
+            updateDate(button,label,date,format);
+        },date.get(Calendar.YEAR),date.get(Calendar.MONTH),date.get(Calendar.DAY_OF_MONTH)).show();
     }
     private ReporterSearchUi(){}
 }

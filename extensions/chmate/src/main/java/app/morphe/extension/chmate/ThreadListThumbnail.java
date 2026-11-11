@@ -76,7 +76,9 @@ public final class ThreadListThumbnail {
             Field field=adapter.getClass().getDeclaredField(member);field.setAccessible(true);
             Object board=field.get(adapter);
             ThreadListThumbnailRules.Board five=ThreadListThumbnailRules.board(board==null?null:board.toString());
-            if(five==null||!ThreadListThumbnailSettings.selected(context,"5ch:"+five.name))return;
+            if(five==null)return;
+            ThreadListThumbnailSettings.rememberFiveCh(context,five);
+            if(!ThreadListThumbnailSettings.selected(context,five.settingsKey()))return;
             CURRENT.set(new Selection(context,null,five));ADAPTERS.put(adapter,true);
         }catch(ReflectiveOperationException | RuntimeException ignored){/* Unknown native adapters remain untouched. */}
     }
@@ -167,6 +169,13 @@ public final class ThreadListThumbnail {
     /** No redirect or non-HTTPS fallback: only explicitly selected public sources. */
     private static byte[] fetch(String address,int limit,boolean image)throws IOException{
         if(!ThreadListThumbnailRules.publicImage(address))throw new IOException("取得先が対応範囲外です");
+        if(image&&ImageVpnController.protectedPreview(address)){
+            app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=ImageVpnController.fetchPreview(address);
+            byte[] body=result.getBody();String contentType=result.getContentType();
+            if(body==null||body.length>limit||contentType==null||!contentType.toLowerCase(java.util.Locale.ROOT).startsWith("image/"))
+                throw new IOException("VPN経由でサムネイルを取得できません");
+            return body;
+        }
         HttpURLConnection c=(HttpURLConnection)URI.create(address).toURL().openConnection();
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(6000);c.setReadTimeout(10000);
         c.setRequestProperty("User-Agent","Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36");
