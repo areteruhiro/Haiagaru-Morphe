@@ -1,5 +1,8 @@
 # 主開発先と統合状況
 
+2026-11-11 検証用プレ候補: あにまんのYouTube／XカードURL・arc画像・URL／履歴経由板判定、ふたば／爆サイ件数・「ねこ」板、記者ID／スレ名の期間検索とNG、監視通知DAT／対象レス・2／3時間／任意期限、191書込後更新、板別のスレ一覧画像表示（実験）と24〜96dpバーを統合。Lint／R8 buildAndroid、191／226／242パッチ・命令保持検査、検索32／画像ルール15件の試験成功。候補MPP SHA256 f8709515e3d5e5e978fe4978e1d165f2f9330485a65f1dab68552117a356f0a3。Mi Note 10実機（d5497008）で3隔離APK導入Success、191設定画面／切替、226／242 launcher起動、crashログ空。実レス画像、サイズバー実操作、通知DATと対象レス遷移、全経路の通し操作は未確認。即時プレ公開要望に従い未確認範囲を公開文へ明記。既存アプリ／データは維持。配布は既存Semantic Release CIで行う。詳細 docs/android-installations.md と非公開 build/local-development-records/thumbnail-20261111-installations.json。
+
+
 2026-11-04 共有NG再利用/SAF候補を実機191更新: 利用者の導入指定、730eae72/XIG05の既存jp.co.airfrt.android.chMate.haiagartuへ同一署名install-r Success（22:02:24 JST）。台帳と端末旧APK署名一致、native NG hook検査PASS、導入後APK hash一致、HomeActivity cold起動ok、新規対象fatalなし。APK SHA256 11a058d42ef655e4f21a1977db8b45c8de7b8b70478867562172538f08fefe2b、MPP d4428ce794f1b1ef457038ba9f52b13417ce4cbd070cec26de2e636b38729000。firstInstallTime保持/アンインストール・データ消去なし。SAF実選択/共有NG表示・速度未確認、公開なし。台帳とdocs/incremental-shared-ng-saf-20261104.md。
 
 2026-11-04 再表示共有NGの入力/判定再利用・SAF保存先再選択（未公開）: 利用者の新着だけ判定と任意フォルダ変更要望。shared-only経路で191/226/242 raw入力をimmutable index専用のcontent cacheへ、同条件/同内容のHTML/Input作成を省略。最大4096件/キー400万文字、条件/除外更新でindex置換、本文変更/追加分は再評価、regex非一致はtimeout可能性のため再評価。標準/プログラムNG連鎖は維持し必要時preview準備。host追加3017/index10306/regex17/除外263成功、通常Lint最終build3m4s、MPP CRC/cache/SAF extra同梱成功。自動backupは固定先なし、前回URIを渡さない再選択ボタン・無効grantのhint除外・primary直下ラベル・tree確認を追加。候補build/haiagaru-incremental-ng-saf.mpp。Android判定/SAF保存取消/速度未確認、APK生成/導入/公開なし。docs/incremental-shared-ng-saf-20261104.md。

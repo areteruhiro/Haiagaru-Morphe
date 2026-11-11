@@ -151,7 +151,7 @@ public final class EdgeReporterHistory {
             Log.w("HaiagaruReporter", "Unable to cache subject metadata", error);
         }
     }
-    /** Intercepts the stock NGThread entry point; both choices continue into the stock editor. */
+    /** Reporter shortcuts register directly; title editing retains the stock editor. */
     public static boolean choose(Activity activity, String title, Object type, Object board) {
         if (!EdgeReporterOptions.menu()||Boolean.TRUE.equals(OPENING.get()) || !(type instanceof Enum)
                 || !"THREAD".equals(((Enum<?>) type).name()) || !EdgeReporterId.isBoard(board)) return false;
@@ -168,17 +168,22 @@ public final class EdgeReporterHistory {
             Log.w("HaiagaruReporter", "NG editor unavailable", error);
             return false;
         }
+        boolean partial = "edge:liveedge".equals(EdgeReporterId.scope(board)) && suffix.matches("\\[[A-Za-z0-9+/.]{8}★\\]");
+        String[] choices = partial ? new String[]{reporterButton(board)+"  "+suffix,"前半4桁NG","後半4桁NG","記者ID・スレ名で過去スレ検索","スレタイでNG"}
+                : new String[]{reporterButton(board)+"  "+suffix,"スレタイでNG"};
         new HaiagaruDialog.Builder(activity).setTitle("NGThreadに追加")
-                .setItems(new String[]{reporterButton(board)+"  " + suffix, "スレタイでNG"}, (dialog, which) -> {
+                .setItems(choices, (dialog, which) -> {
+                    if (which == 0 || partial && (which == 1 || which == 2)) {
+                        register(activity, suffix, board.toString(), which); return;
+                    }
+                    if (partial && which == 3) { ReporterSearchUi.show(activity,suffix.substring(1,suffix.length()-2)); return; }
                     try {
                         OPENING.set(true);
-                        entry.invoke(null, activity, which == 0 ? suffix : resolvedTitle, type, board);
+                        entry.invoke(null, activity, resolvedTitle, type, board);
                     } catch (ReflectiveOperationException error) {
                         Log.e("HaiagaruReporter", "Unable to open NG editor", error);
                         Toast.makeText(activity, "NG追加画面を開けませんでした", Toast.LENGTH_LONG).show();
-                    } finally {
-                        OPENING.remove();
-                    }
+                    } finally { OPENING.remove(); }
                 }).setNegativeButton(android.R.string.cancel, null).show();
         return true;
     }
@@ -198,23 +203,45 @@ public final class EdgeReporterHistory {
             if (!(type instanceof Enum) || !"THREAD".equals(((Enum<?>) type).name())) return;
             Object board = fragment.getClass().getField("a").get(fragment);
             if (!EdgeReporterId.isBoard(board)) return;
-            Object holder = fragment.getClass().getField("d").get(fragment);
-            Object binding = holder.getClass().getField("b").get(holder);
-            RadioButton literal = (RadioButton) binding.getClass().getField("l").get(binding);
             EditText input = findInput(root);
             if (input == null || EdgeReporterId.suffix(resolveTitle(board, input.getText().toString())) == null
                     || !(input.getParent() instanceof ViewGroup)) return;
             ViewGroup parent = (ViewGroup) input.getParent();
-            Button button = new Button(root.getContext());
-            button.setText(reporterButton(board));
-            button.setOnClickListener(view -> {
-                String suffix = EdgeReporterId.suffix(resolveTitle(board, input.getText().toString()));
-                if (suffix != null) { literal.setChecked(true); input.setText(suffix); input.setSelection(suffix.length()); }
-            });
-            parent.addView(button, parent.indexOfChild(input) + 1);
+            String suffix = EdgeReporterId.suffix(resolveTitle(board,input.getText().toString()));
+            Activity activity = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
+            boolean partial = "edge:liveedge".equals(EdgeReporterId.scope(board)) && suffix.matches("\\[[A-Za-z0-9+/.]{8}★\\]");
+            String[] labels = partial ? new String[]{reporterButton(board),"前半4桁NG","後半4桁NG","記者ID・スレ名で過去スレ検索"} : new String[]{reporterButton(board)};
+            for(int i=0;i<labels.length;i++) {
+                final int action=i;
+                Button button=new Button(root.getContext());button.setText(labels[i]);
+                button.setOnClickListener(view -> {
+                    if(action==3){ReporterSearchUi.show(activity,suffix.substring(1,suffix.length()-2));return;}
+                    if(register(activity,suffix,(String)board,action)) {
+                        try{fragment.getClass().getMethod("dismiss").invoke(fragment);}catch(ReflectiveOperationException ignored){}
+                    }
+                });
+                parent.addView(button,parent.indexOfChild(input)+1+i);
+            }
         } catch (ReflectiveOperationException error) {
             Log.w("HaiagaruReporter", "Unable to add reporter shortcut", error);
         }
+    }
+    private static boolean register(Activity activity,String suffix,String board,int mode){
+        try {
+            String pattern = mode==0 ? suffix : ReporterSearch.pattern(suffix,mode);
+            short flags=(short)(mode==0?0x10:0x20);
+            NativeNgStore store=new NativeNgStore(activity,"THREAD");
+            List<NativeNgStore.Entry> entries=store.entries();
+            NativeNgStore.Entry existing=ExistingNgActions.find(entries,pattern,board,flags);
+            if(existing!=null){
+                if((existing.flags&4)!=0)ExistingNgActions.change(store,existing,1);
+                Toast.makeText(activity,"登録済みの記者NGを有効にしました",Toast.LENGTH_SHORT).show();return true;
+            }
+            if(entries.size()>=Haiagaru.getNgRegistrationLimit())throw new IllegalStateException("NG登録上限を超えます");
+            store.update(null,store.item(pattern,flags,System.currentTimeMillis(),board));
+            PersonalNgSubmissions.changed();
+            Toast.makeText(activity,"記者NGを登録しました",Toast.LENGTH_SHORT).show();return true;
+        } catch(Exception error){Log.w("HaiagaruReporter","Unable to register reporter NG",error);Toast.makeText(activity,"NGを登録できませんでした",Toast.LENGTH_LONG).show();return false;}
     }
     private static EditText findInput(View view) {
         if (view instanceof EditText) return (EditText) view;

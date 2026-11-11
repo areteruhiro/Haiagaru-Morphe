@@ -11,19 +11,21 @@ final class FutabaCatalogue {
     static List<SiteBoardProtocol.Topic> topics(SiteBoardProtocol.Board board,String catalogue,Fetch fetch)throws IOException {
         List<SiteBoardProtocol.Topic> topics=SiteBoardProtocol.topics(board,catalogue);
         Map<String,String> titles=new HashMap<>();Set<String> visited=new HashSet<>();
+        LinkedHashMap<String,SiteBoardProtocol.Topic> discovered=new LinkedHashMap<>();
         ArrayDeque<String> pending=new ArrayDeque<>();pending.add(board.url+"futaba.htm");
         Set<String> wanted=new HashSet<>();for(SiteBoardProtocol.Topic topic:topics){wanted.add(topic.id);String cached=TITLES.get(board.url+topic.id);if(cached!=null)titles.put(topic.id,cached);}
-        while(!pending.isEmpty()&&visited.size()<10&&!titles.keySet().containsAll(wanted)) {
+        while(!pending.isEmpty()&&visited.size()<10) {
             String url=pending.removeFirst();if(!visited.add(url))continue;
             final String html;try{html=fetch.get(url);}catch(IOException unavailable){continue;}
             Document doc=Jsoup.parse(html,url);
             for(Element thread:doc.select(".thre[data-res]")) {
-                String id=thread.attr("data-res");if(!wanted.contains(id))continue;
+                String id=thread.attr("data-res");if(!id.matches("[1-9][0-9]{0,11}"))continue;
                 Element opening=thread.clone();opening.select("table").remove();
                 Element subject=opening.selectFirst(".csb"),body=opening.selectFirst("blockquote");
                 String title=subject==null?"":subject.text().trim();
                 if(title.isEmpty()||title.equals("無題"))title=body==null?"":body.text().trim();
                 if(!title.isEmpty()){title=title.length()>120?title.substring(0,120):title;titles.put(id,title);TITLES.put(board.url+id,title);}
+                if(!wanted.contains(id))discovered.putIfAbsent(id,new SiteBoardProtocol.Topic(id,title.isEmpty()?"No."+id:title,Math.min(999999,thread.select("td.rtd").size()+1)));
             }
             for(Element link:doc.select("a[href], form[action]")) {
                 if(link.tagName().equals("form")&&!link.attr("method").equalsIgnoreCase("get"))continue;
@@ -35,6 +37,8 @@ final class FutabaCatalogue {
         }
         ArrayList<SiteBoardProtocol.Topic> resolved=new ArrayList<>();
         for(SiteBoardProtocol.Topic topic:topics)resolved.add(new SiteBoardProtocol.Topic(topic.id,titles.getOrDefault(topic.id,topic.title),topic.count));
+        // Catalogue views can truncate the active list to 50. Index pages expose more OPs.
+        resolved.addAll(discovered.values());
         return resolved;
     }
     private FutabaCatalogue(){}

@@ -3469,6 +3469,7 @@ public final class Haiagaru {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         ThreadWatch.addSettingsButton(layout, activity);
+        ThreadListThumbnailSettings.addSettings(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
@@ -3685,6 +3686,10 @@ public final class Haiagaru {
         );
         Switch edgeReporterBoardList=addSwitch(layout,activity,
                 text(EdgeReporterOptions.BOARD_LABEL,"Edge reporter IDs: board thread list"),EdgeReporterOptions.board());
+        Button reporterSearch = new Button(activity);
+        reporterSearch.setText("記者ID・スレ名から過去スレを検索");
+        reporterSearch.setOnClickListener(v -> ReporterSearchUi.show(activity, null));
+        layout.addView(reporterSearch);
         TextView reporterHelp=new TextView(activity);
         reporterHelp.setText("長押し・NG追加・Threadsと、板を開いたスレ一覧への表示を別々に設定できます。既存の設定は両方へ引き継ぎます。表示を変えた後は一覧を開き直してください。未取得の記者IDは板を更新すると反映されます。");layout.addView(reporterHelp);
 

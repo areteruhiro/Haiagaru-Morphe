@@ -7,20 +7,23 @@ public final class SiteNativeBoards {
  private static final Map<String,Object> MODELS=new HashMap<>();
  static String[] nativeImageAttachments(String[] original){
   if(original==null||original.length==0)return original;
-  boolean candidate=false;for(String url:original)if(url!=null&&url.startsWith("https://bbs.animanch.com/img/")){candidate=true;break;}
+  boolean candidate=false;for(String url:original)if(animanchImage(url)){candidate=true;break;}
   if(!candidate)return original;
   Runtime runtime=Runtime.getRuntime();if(runtime.maxMemory()-runtime.totalMemory()+runtime.freeMemory()<=Math.max(4L*1024*1024,runtime.maxMemory()/100))return original;
   Context context=Haiagaru.applicationContextForExtension();if(context==null)return original;
   try{SiteBoardGateway gateway=SiteBoardGateway.get(context);String[] result=original;
-   for(int i=0;i<original.length;i++){String url=original[i];if(url==null||!url.startsWith("https://bbs.animanch.com/img/"))continue;
+   for(int i=0;i<original.length;i++){String url=original[i];if(!animanchImage(url))continue;
     String local=gateway.nativeImageUrl(url);if(local!=null&&!local.equals(url)){if(result==original)result=original.clone();result[i]=local;}
    }return result;
   }catch(Exception|OutOfMemoryError unavailable){return original;}
  }
+ private static boolean animanchImage(String url){return url!=null&&(url.startsWith("https://bbs.animanch.com/img/")||url.startsWith("https://bbs.animanch.com/arc/img/"));}
  public static String localUrl(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).localUrl(address);}catch(Exception unavailable){return null;}}
+ /** Resolve unknown Animanch thread categories on a background thread only. */
+ static String resolveUnclassifiedAnimanch(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).resolveUnclassifiedAnimanch(address);}catch(Exception unavailable){android.util.Log.w("Haiagaru","Animanch category lookup unavailable",unavailable);return null;}}
  static String copiedText(String text){
   Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1"))return text;
-  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|m/"+SiteBoardGateway.KEY_PATTERN+"/img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}\\.jpg|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"')）】])").matcher(text);
+  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|m/"+SiteBoardGateway.KEY_PATTERN+"/(?:arc/)?img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}\\.jpg|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"')）】])").matcher(text);
   StringBuffer out=new StringBuffer();SiteBoardGateway gateway=SiteBoardGateway.get(context);while(matcher.find())matcher.appendReplacement(out,java.util.regex.Matcher.quoteReplacement(gateway.originalUrl(matcher.group())));matcher.appendTail(out);return out.toString();
  }
  static android.content.ClipData exportedClip(android.content.ClipData clip){

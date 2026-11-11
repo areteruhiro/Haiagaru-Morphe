@@ -2,6 +2,17 @@
 
 # Android導入・署名台帳
 
+## 2026-11-11 スレ一覧画像表示（実験）ほか・実機隔離APK
+
+Mi Note 10 Android 11、serial d5497008、既存アプリとは別の検証用APKを署名一致で導入（install Success）。
+
+- 191 / Haiagaru thumbnail test 191 / ChMate 0.8.10.191 dev / jp.co.airfront.android.a2chMate.haiagaru.thumbnailtest191 / <workspace>/build/thread-list-thumbnail-smoke/test191.apk / SHA256 1a3965ced05e7872f11e79edbc5a68a72ac754016cbb23a133fb9d63ce13ef90 / 更新 2026-11-11 12:53:13 JST。
+- 226 / Haiagaru thumbnail test 226 / ChMate 0.8.10.226 dev / jp.co.airfront.android.a2chMate.haiagaru.thumbnailtest226 / <workspace>/build/thread-list-thumbnail-smoke/test226.apk / SHA256 8641addaa0aee63bee01dfda92ce306e98f2c6e99f242a7af03ca1b3ac24dbb / 更新 2026-11-11 12:53:21 JST。
+- 242 / Haiagaru thumbnail test 242 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.thumbnailtest242 / <workspace>/build/thread-list-thumbnail-smoke/test242.apk / SHA256 7a42431c5f0bd609a3fc5c31ce98ae6f687c52933f47c25c62d5a74145c57c56 / 更新 2026-11-11 12:53:29 JST。
+
+MPP <workspace>/build/thread-list-thumbnail-smoke/candidate.mpp / SHA256 f8709515e3d5e5e978fe4978e1d165f2f9330485a65f1dab68552117a356f0a3。証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed、署名alias Morphe。鍵のローカル絶対パス・APK絶対パス・導入結果は非公開台帳 build/local-development-records/thumbnail-20261111-installations.json。191設定表示と切替、226／242の起動を確認。実レス画像・サイズバー・通知遷移は未検証。
+
+
 ## 2026-11-04 検索結果・更新対象履歴・タイトル操作背景（プレ版候補）
 
 serial `emulator-5580`、版別隔離packageへ署名一致install-r Success、既存データ保持。実機未更新。

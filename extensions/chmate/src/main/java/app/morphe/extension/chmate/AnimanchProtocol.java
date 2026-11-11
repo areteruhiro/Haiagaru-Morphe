@@ -59,6 +59,21 @@ final class AnimanchProtocol {
             Element clean=content.clone();ArrayList<String> images=new ArrayList<>();
             // The site's inbound-reply badge is navigation, not text written by this author.
             clean.select(".reply").remove();
+            // The site renders YouTube embeds as an anchor with a video id but no href.
+            for(Element link:clean.select("a.youtube.mvthumb[data]")){
+                String video=link.attr("data");
+                if(video.matches("[A-Za-z0-9_-]{11}"))link.attr("href","https://www.youtube.com/watch?v="+video).text("YouTube: https://www.youtube.com/watch?v="+video);
+            }
+            // Embedded X posts use a date-only link with a protocol-relative URL.
+            for(Element quote:clean.select("blockquote.twitter-tweet"))for(Element link:quote.select("a[href]")){
+                String source=absolute(address,link.attr("href"));
+                if(source==null)continue;
+                Matcher tweet=Pattern.compile("https://(?:twitter\\.com|x\\.com)/([A-Za-z0-9_]{1,15})/status/([0-9]{1,24})(?:[?#].*)?").matcher(source);
+                if(tweet.matches()){
+                    String url="https://x.com/"+tweet.group(1)+"/status/"+tweet.group(2);
+                    link.attr("href",url).text(url);
+                }
+            }
             for(Element link:clean.select("a.thumb[href]")){
                 String source=absolute(address,link.attr("href"));
                 if(source!=null&&imageOfThread(source,expected))images.add(source);
@@ -138,7 +153,7 @@ final class AnimanchProtocol {
         catch(RuntimeException invalid){return null;}
     }
     private static boolean imageOfThread(String url,String id){
-        try{URI u=URI.create(url);return "bbs.animanch.com".equals(u.getHost())&&u.getPort()==-1&&u.getPath().matches("/img/"+id+"/[1-9][0-9]*");}
+        try{URI u=URI.create(url);return "https".equalsIgnoreCase(u.getScheme())&&"bbs.animanch.com".equals(u.getHost())&&u.getPort()==-1&&u.getPath().matches("/(?:arc/)?img/"+id+"/[1-9][0-9]*");}
         catch(RuntimeException invalid){return false;}
     }
     private static boolean localReply(String url,String id){

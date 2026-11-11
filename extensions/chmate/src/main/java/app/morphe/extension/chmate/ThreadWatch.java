@@ -197,6 +197,7 @@ public final class ThreadWatch {
     }
     static void check(Context c,AtomicBoolean stopped){
         Map<String,List<String>> groups=new LinkedHashMap<>();
+        Set<String> notified=new LinkedHashSet<>();
         for(String key:prefs(c).getAll().keySet()){
             ThreadWatchRules.Target t=ThreadWatchRules.target(key);
             try{if(t!=null&&ThreadWatchManagement.active(new JSONObject(prefs(c).getString(key,"{}")),System.currentTimeMillis()))groups.computeIfAbsent(t.subject,k->new ArrayList<>()).add(key);}catch(Exception ignored){}
@@ -280,6 +281,7 @@ public final class ThreadWatch {
                             int delivered=repliesOnly?matching:Math.max(0,delta-unique);
                             if(delivered==0){item.put("count",Math.max(before,count));prefs(c).edit().putString(key,item.toString()).commit();continue;}
                             if(!notify(c,t,delivered,count,titles.get(t.id),preview,firstMatch>0?firstMatch:Math.max(1,count-delta+1),repliesOnly))continue;
+                            notified.add(t.url);
                             if(candidates.isEmpty())ThreadWatchNative.recordRange(item,before+1,count);else ThreadWatchNative.record(item,candidates.keySet());
                             if(stopAfter&&!Collections.disjoint(candidates.keySet(),directReplies))item.put("paused",true).put("pauseReason","reply");
                         }
@@ -288,6 +290,9 @@ public final class ThreadWatch {
                 }
             }catch(Exception error){android.util.Log.w("Haiagaru","Thread notification check unavailable ("+error.getClass().getSimpleName()+")");}
         }
+        // The polling DAT is only a preview. Ask the host's worker to persist
+        // the notified threads so tapping a notification can find the reply.
+        if(!stopped.get())OpenTabsRefresh.downloadWatched(c,notified);
     }
     private static void missing(Context c,ThreadWatchRules.Target t,String token,AtomicBoolean stopped)throws Exception{
         JSONObject snapshot;
@@ -341,8 +346,9 @@ public final class ThreadWatch {
         if(Build.VERSION.SDK_INT>=24&&!manager.areNotificationsEnabled())return false;
         if(Build.VERSION.SDK_INT>=26){manager.createNotificationChannel(new NotificationChannel(CHANNEL,"登録スレの新着",NotificationManager.IMPORTANCE_DEFAULT));if(manager.getNotificationChannel(CHANNEL).getImportance()==0)return false;}
         Intent open=new Intent(Intent.ACTION_VIEW,Uri.parse(t.url+first))
-            .setClassName(c,"jp.syoboi.a2chMate.activity.ResListActivity");
-        PendingIntent tap=PendingIntent.getActivity(c,0,open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+            .setClass(c,ThreadWatchOpenActivity.class);
+        // Different watched threads must not overwrite each other's pending intent.
+        PendingIntent tap=PendingIntent.getActivity(c,t.url.hashCode(),open,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder b=Build.VERSION.SDK_INT>=26?new Notification.Builder(c,CHANNEL):new Notification.Builder(c);
         String name=notificationText(title,160);if(name.isEmpty())name=Uri.parse(t.url).getHost()+" / "+t.id;
         String summary=(repliesOnly?"自分への返信 ":"新着 ")+delta+"件",body=preview.isEmpty()?summary+"（本文を取得できませんでした）":preview;

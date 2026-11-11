@@ -3311,6 +3311,13 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentP
  * neither the forced sort nor the forced jump-to-bottom collector runs. */
 private fun BytecodePatchContext.patchPostEditorTextSize(version: String) {
     patchPostingIpWarning(version)
+    if (version == "0.8.10.191 dev") {
+        val command = mutableClassDefBy("Lo/pa;").methods.single {
+            it.name == "e" && it.parameterTypes == listOf("I", "Ljava/lang/Object;") && it.returnType == "Z"
+        }
+        command.addInstructionsWithLabels(0,
+            "invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/PostAutoReload191;->command(Ljava/lang/Object;I)V")
+    }
     val fragment = mutableClassDefBy(if (version == "0.8.10.191 dev")
         "Lo/p9ExternalSyntheticLambda6;" else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
     val created = fragment.methods.single { it.name == "onViewCreated" && it.parameterTypes == listOf("Landroid/view/View;", "Landroid/os/Bundle;") }
@@ -5550,6 +5557,11 @@ val haiagaruPatch = resourcePatch(
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ThreadWatchService")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:permission","android.permission.BIND_JOB_SERVICE")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ThreadWatchOpenActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Translucent.NoTitleBar")
             })
             application.appendChild(document.createElement("service").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.VideoFrameDecodeService")

@@ -42,6 +42,7 @@ public final class SiteThreadMetadata {
         String type=row.getClass().getName(),id=type.equals("o.MaxAdViewImplExternalSyntheticLambda1")?"e":type.equals("o.CertificateChainCleaner")?"b":type.equals("o.setSkipText")?"d":null,count=type.equals("o.MaxAdViewImplExternalSyntheticLambda1")?"a":type.equals("o.CertificateChainCleaner")?"e":type.equals("o.setSkipText")?"b":null;
         if(id==null)return;try{state.thread=field(row,id).getLong(row);state.count=field(row,count).getInt(row);String source=SiteThreadIds.source(Long.toString(state.thread));String key=state.board+":"+source;if(!CACHE.containsKey(key))acquire(state.gateway,state.board,source);}catch(Exception ignored){state.thread=0;state.count=0;}
     }
+    static String currentBoard(){Binding binding=CURRENT.get();return binding==null?null:binding.board;}
     public static long epoch(long original){Binding state=CURRENT.get();if(state==null)return original;try{Long created=CACHE.get(state.board+":"+SiteThreadIds.source(Long.toString(original)));return created==null?original:created;}catch(Exception unknown){return original;}}
     public static long momentum(long original){Binding state=CURRENT.get();if(state==null||state.thread<SiteThreadIds.BASE)return original;long created=epoch(state.thread);return created==state.thread?original:SiteThreadDates.momentum(state.count,created,System.currentTimeMillis()/1000);}
     public static void end(){CURRENT.remove();}

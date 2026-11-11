@@ -70,6 +70,8 @@ public final class ThreadCommands {
             // A new thread has no thread ID: the native thread URL is null.
             // Use the board URL for commands, per-board settings and authentication.
             String url = postingUrl(target, thread, urlMethod, boardUrlMethod);
+            if(fragment.getClass().getName().equals("o.p9ExternalSyntheticLambda6")&&!thread)
+                PostAutoReload191.editor(root,url);
             EditText body = (EditText) field(binding, bodyName);
             attachSiteImage(root,body,url);
             ExternalBoardAuth.target(fragment, url, body);

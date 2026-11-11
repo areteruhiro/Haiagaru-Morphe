@@ -23,6 +23,7 @@ public final class EdgeReporterDisplay {
     public static void begin(Object adapter) {
         end();
         SiteThreadMetadata.begin(adapter);
+        ThreadListThumbnail.begin(adapter);
         if (adapter == null) return;
         String name = adapter.getClass().getName();
         String boardField = name.equals("o.m8a") ? "r"
@@ -42,6 +43,7 @@ public final class EdgeReporterDisplay {
 
     public static void subject(Object subject) {
         SiteThreadMetadata.subject(subject);
+        ThreadListThumbnail.subject(subject);
         THREAD.remove();
         if (!Boolean.TRUE.equals(EDGE.get()) || subject == null) return;
         String name = subject.getClass().getName();
@@ -65,5 +67,5 @@ public final class EdgeReporterDisplay {
         return EdgeReporterHistory.displayTitle(SCOPE.get(),thread, original);
     }
 
-    public static void end() { SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); SCOPE.remove(); }
+    public static void end() { ThreadListThumbnail.end(); SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); SCOPE.remove(); }
 }
