@@ -106,7 +106,9 @@ final class AnimanchProtocol {
     static List<Topic> catalogue(String html)throws IOException{
         Document doc=Jsoup.parse(html,ORIGIN+"/");LinkedHashMap<String,Topic> rows=new LinkedHashMap<>();
         for(Element card:doc.select(".card")){
-            Element link=card.selectFirst("a[href*=/board/]");if(link==null)continue;
+            // Current categories use <a class="card" href="/board/...">;
+            // older catalogues can place an <a> inside .card instead.
+            Element link=card.normalName().equals("a")&&card.hasAttr("href")?card:card.selectFirst("a[href*=/board/]");if(link==null)continue;
             String id=threadId(absolute(ORIGIN+"/",link.attr("href")));if(id==null)continue;
             Element count=card.selectFirst(".threadCount");String raw=count==null?"":count.text().trim();
             if(!raw.matches("[0-9]{1,6}"))continue;

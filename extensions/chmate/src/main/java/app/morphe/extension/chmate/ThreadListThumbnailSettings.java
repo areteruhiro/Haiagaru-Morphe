@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.text.InputType;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.ViewGroup;
@@ -16,7 +15,6 @@ import android.widget.SeekBar;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -36,18 +34,16 @@ final class ThreadListThumbnailSettings {
         migrate(context);
         return !prefs(context).getStringSet(EXCLUDED,Collections.emptySet()).contains(board);
     }
-    /** Convert former opt-in site boards to exclusions once, without losing their selections. */
+    /** New exclusion settings start empty, even when the old opt-in list exists. */
     private static synchronized void migrate(Context context){
         SharedPreferences saved=prefs(context);
         if(saved.contains(EXCLUDED))return;
-        Set<String> excluded=new LinkedHashSet<>(),known=new LinkedHashSet<>();
+        Set<String> known=new LinkedHashSet<>(saved.getStringSet(KNOWN_5CH,Collections.emptySet()));
         if(saved.contains(BOARDS)){
             Set<String> selected=saved.getStringSet(BOARDS,Collections.emptySet());
-            for(String key:SiteBoardGateway.get(context).boards.keySet())
-                if(!selected.contains("site:"+key))excluded.add("site:"+key);
             for(String key:selected)if(key.startsWith("5ch:"))known.add(key);
         }
-        saved.edit().putStringSet(EXCLUDED,excluded).putStringSet(KNOWN_5CH,known).commit();
+        saved.edit().putStringSet(EXCLUDED,Collections.emptySet()).putStringSet(KNOWN_5CH,known).commit();
     }
     static synchronized void rememberFiveCh(Context context,ThreadListThumbnailRules.Board board){
         migrate(context);
@@ -78,6 +74,7 @@ final class ThreadListThumbnailSettings {
         sizeLabel.setText("画像の大きさ："+sizeDp(activity)+"dp");
         layout.addView(sizeLabel);
         SeekBar size=new SeekBar(activity);
+        size.setContentDescription("スレ一覧画像の大きさ");
         size.setMax((MAX_SIZE_DP-MIN_SIZE_DP)/STEP_SIZE_DP);
         size.setProgress((sizeDp(activity)-MIN_SIZE_DP)/STEP_SIZE_DP);
         layout.addView(size,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -92,33 +89,11 @@ final class ThreadListThumbnailSettings {
                 ThreadListThumbnail.refresh();
             }
         });
-        LinearLayout controls=new LinearLayout(activity);controls.setOrientation(LinearLayout.HORIZONTAL);
-        Button minus=new Button(activity);minus.setText("－");controls.addView(minus,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1));
-        Button plus=new Button(activity);plus.setText("＋");controls.addView(plus,new LinearLayout.LayoutParams(0,ViewGroup.LayoutParams.WRAP_CONTENT,1));
-        layout.addView(controls);
-        minus.setOnClickListener(v->changeSize(activity,size,-1));plus.setOnClickListener(v->changeSize(activity,size,1));
-        Button boards=new Button(activity);boards.setText("画像を追加しない板を選択（検索可）");layout.addView(boards);
+        Button boards=new Button(activity);boards.setText("画像を表示しない板を選択（検索可）");layout.addView(boards);
         boards.setOnClickListener(v->showTargets(activity));
-        Button five=new Button(activity);five.setText("5ch・エッヂの板をURLで登録");layout.addView(five);
-        five.setOnClickListener(v->addFiveCh(activity));
-        Button futaba=new Button(activity);futaba.setText("ふたば二次元裏（img / may）を登録");layout.addView(futaba);
-        futaba.setOnClickListener(v->new AlertDialog.Builder(activity).setTitle("二次元裏の板を登録")
-                .setItems(new String[]{"二次元裏（img）","二次元裏（may）"},(d,choice)->{
-                    String address=choice==0?"https://img.2chan.net/b/":"https://may.2chan.net/b/";
-                    try{SiteBoardGateway.get(activity).register(address,choice==0?"二次元裏（img）":"二次元裏（may）");
-                        Toast.makeText(activity,"板を登録しました。『使用する』の設定をご確認ください",Toast.LENGTH_LONG).show();}
-                    catch(java.io.IOException error){new AlertDialog.Builder(activity).setMessage(error.getMessage()).setPositiveButton("閉じる",null).show();}
-                }).setNegativeButton("キャンセル",null).show());
         TextView help=new TextView(activity);
-        help.setText("初期OFF。有効にすると使用中の板の1レス目の画像を表示します。不要な板は除外できます。画像の大きさは24〜96dp、バーと±ボタンで変更できます。ふたば・あにまんは登録済みの板に対応し、5ch・エッヂは閲覧した板も除外候補になります。画像取得には通信が発生します。画像がないスレや取得に失敗したスレは通常表示です。");
+        help.setText("機能は初期OFF。有効にすると使用中の板の1レス目の画像を表示します。板は初期状態ですべて表示対象です。画像を表示しない板だけチェックして除外できます。画像の大きさは24〜96dpのバーで変更できます。ふたば・あにまんは通常の掲示板設定で登録した板が対象です。5ch・エッヂは閲覧すると自動で対象・除外候補に追加されます。画像取得には通信が発生します。画像がないスレや取得に失敗したスレは通常表示です。");
         layout.addView(help);
-    }
-
-    private static void changeSize(Activity activity,SeekBar bar,int delta){
-        int progress=Math.max(0,Math.min(bar.getMax(),bar.getProgress()+delta));
-        bar.setProgress(progress);
-        prefs(activity).edit().putInt(SIZE,MIN_SIZE_DP+progress*STEP_SIZE_DP).apply();
-        ThreadListThumbnail.refresh();
     }
 
     private static void showTargets(Activity activity){
@@ -136,7 +111,7 @@ final class ThreadListThumbnailSettings {
         Collections.sort(five);
         for(String value:five){keys.add(value);labels.add("5ch・エッヂ："+value.substring(4));}
         if(keys.isEmpty()){
-            new AlertDialog.Builder(activity).setMessage("登録済みの板がありません。ふたば・あにまんの板を登録するか、5ch・エッヂの板を開いてください。").setPositiveButton("閉じる",null).show();return;
+            new AlertDialog.Builder(activity).setMessage("対象の板がまだありません。ふたば・あにまんは通常の掲示板設定で登録し、5ch・エッヂは板を閲覧すると自動で候補に追加されます。").setPositiveButton("閉じる",null).show();return;
         }
         LinearLayout content=new LinearLayout(activity);content.setOrientation(LinearLayout.VERTICAL);
         EditText query=new EditText(activity);query.setSingleLine(true);query.setHint("板名・URLで検索");content.addView(query);
@@ -155,25 +130,11 @@ final class ThreadListThumbnailSettings {
             public void onTextChanged(CharSequence s,int start,int before,int count){render.run();}
             public void afterTextChanged(Editable text){}
         });render.run();
-        new AlertDialog.Builder(activity).setTitle("画像を追加しない板（チェックで除外）").setView(content)
+        new AlertDialog.Builder(activity).setTitle("画像を表示しない板（チェックで除外）").setView(content)
                 .setNegativeButton("キャンセル",null).setPositiveButton("保存",(d,w)->{
                     prefs(activity).edit().putStringSet(EXCLUDED,excluded).apply();ThreadListThumbnail.refresh();
                 }).show();
     }
 
-    private static void addFiveCh(Activity activity){
-        EditText url=new EditText(activity);url.setSingleLine(true);url.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);
-        url.setHint("https://bbs.eddibb.cc/liveedge/");
-        AlertDialog dialog=new AlertDialog.Builder(activity).setTitle("5ch・エッヂの板を登録").setMessage("板URLまたはスレURLを入力してください。閲覧した板も自動的に除外候補へ追加されます。")
-                .setView(url).setNegativeButton("キャンセル",null).setPositiveButton("追加",null).create();
-        dialog.setOnShowListener(v->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button->{
-            ThreadListThumbnailRules.Board board=ThreadListThumbnailRules.board(url.getText().toString());
-            if(board==null){url.setError("対応する5ch・エッヂの板URLを指定してください");return;}
-            String key=board.settingsKey();rememberFiveCh(activity,board);
-            Set<String> excluded=new LinkedHashSet<>(prefs(activity).getStringSet(EXCLUDED,Collections.emptySet()));
-            excluded.remove(key);prefs(activity).edit().putStringSet(EXCLUDED,excluded).apply();ThreadListThumbnail.refresh();
-            Toast.makeText(activity,"画像表示の対象に追加しました："+board.name,Toast.LENGTH_SHORT).show();dialog.dismiss();
-        }));dialog.show();
-    }
     private ThreadListThumbnailSettings(){}
 }

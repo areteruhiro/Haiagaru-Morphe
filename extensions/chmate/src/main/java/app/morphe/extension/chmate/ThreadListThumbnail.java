@@ -64,7 +64,7 @@ public final class ThreadListThumbnail {
         CURRENT.remove();
         if(adapter==null)return;
         Context context=Haiagaru.applicationContextForExtension();
-        if(context==null||!ThreadListThumbnailSettings.enabled(context))return;
+        if(context==null)return;
         String site=SiteThreadMetadata.currentBoard();
         if(site!=null){
             if(!ThreadListThumbnailSettings.selected(context,"site:"+site))return;

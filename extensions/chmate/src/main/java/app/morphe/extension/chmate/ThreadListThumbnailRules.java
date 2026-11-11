@@ -13,13 +13,19 @@ final class ThreadListThumbnailRules {
     static final class Board {
         final String host, name;
         Board(String host,String name){this.host=host;this.name=name;}
-        String threadUrl(String id){return "https://"+host+"/test/read.cgi/"+name+"/"+id+"/";}
+        String threadUrl(String id){
+            // The current Edge site redirects legacy read.cgi URLs; the image fetcher
+            // intentionally does not follow redirects.
+            if(host.equals("bbs.eddibb.cc"))return "https://"+host+"/"+name+"/"+id;
+            return "https://"+host+"/test/read.cgi/"+name+"/"+id+"/";
+        }
         String settingsKey(){return "5ch:"+host+"/"+name;}
         String legacySettingsKey(){return "5ch:"+name;}
     }
     private static final Pattern DIAGNOSTIC=Pattern.compile("^\\{server:([^,]+), name:([^,]+), created:");
     private static final Pattern NAME=Pattern.compile("[a-zA-Z0-9_-]{1,80}");
     private static final Pattern IMAGE=Pattern.compile("(?i)\\.(?:jpe?g|png|webp|gif|avif)$");
+    private static final Pattern TEXT_URL=Pattern.compile("https://[^\\s<>\"'\\u3000\\u3001\\u3002]+",Pattern.CASE_INSENSITIVE);
 
     static Board board(String address){
         if(address==null)return null;
@@ -35,7 +41,8 @@ final class ThreadListThumbnailRules {
             boolean edge=host.equals("bbs.eddibb.cc");
             if(!(host.endsWith(".5ch.io")||host.endsWith(".5ch.net")||edge))return null;
             Matcher thread=Pattern.compile("^/test/read\\.cgi/([a-zA-Z0-9_-]{1,80})/[0-9]{9,11}/?$",Pattern.CASE_INSENSITIVE).matcher(path);
-            String name=thread.matches()?thread.group(1):path.replaceFirst("^/","").replaceFirst("/$","");
+            Matcher edgeThread=Pattern.compile("^/liveedge/[0-9]{9,11}/?$",Pattern.CASE_INSENSITIVE).matcher(path);
+            String name=thread.matches()?thread.group(1):edge&&edgeThread.matches()?"liveedge":path.replaceFirst("^/","").replaceFirst("/$","");
             if(!NAME.matcher(name).matches())return null;
             if(edge&&!"liveedge".equalsIgnoreCase(name))return null;
             return new Board(host,name.toLowerCase(Locale.ROOT));
@@ -56,16 +63,33 @@ final class ThreadListThumbnailRules {
 
     static String firstFiveChImage(String html,String threadUrl){
         Document doc=Jsoup.parse(html,threadUrl);
-        Element opening=doc.selectFirst(".thread .post:first-child .message, .post:first-child .message, .post:first-of-type .message, .post:first-child .post-content, dl.thread dd:first-of-type, .postMessage, .message, dd");
+        boolean edge="bbs.eddibb.cc".equalsIgnoreCase(URI.create(threadUrl).getHost());
+        Element opening=edge?doc.selectFirst("[data-ng-target=body][data-ng-response-id=1]"):
+                doc.selectFirst(".thread .post:first-child .message, .post:first-child .message, .post:first-of-type .message, .post:first-child .post-content, dl.thread dd:first-of-type, .postMessage, .message, dd");
         if(opening==null)return null;
         for(Element link:opening.select("a[href], img[src]")){
             String url=link.hasAttr("href")?link.absUrl("href"):link.absUrl("src");
-            if(!publicImage(url))continue;
-            URI uri=URI.create(url);
-            if(IMAGE.matcher(uri.getPath()).find()||"pbs.twimg.com".equalsIgnoreCase(uri.getHost())
-                    &&uri.getRawQuery()!=null&&uri.getRawQuery().matches("(?i).*(?:format|name)=(?:jpe?g|png|webp|gif)(?:&.*)?"))return url;
+            if(imageUrl(url))return url;
+        }
+        // Edge renders bare image URLs inside nested spans, without <a> or <img>.
+        if(edge){
+            Matcher urls=TEXT_URL.matcher(opening.text());
+            while(urls.find()){
+                String url=urls.group();
+                while(url.endsWith(")")||url.endsWith("]")||url.endsWith(",")||url.endsWith(".")||url.endsWith(";"))
+                    url=url.substring(0,url.length()-1);
+                if(imageUrl(url))return url;
+            }
         }
         return null;
+    }
+    private static boolean imageUrl(String url){
+        if(!publicImage(url))return false;
+        try{
+            URI uri=URI.create(url);
+            return IMAGE.matcher(uri.getPath()).find()||"pbs.twimg.com".equalsIgnoreCase(uri.getHost())
+                    &&uri.getRawQuery()!=null&&uri.getRawQuery().matches("(?i).*(?:format|name)=(?:jpe?g|png|webp|gif)(?:&.*)?");
+        }catch(IllegalArgumentException invalid){return false;}
     }
     private ThreadListThumbnailRules(){}
 }

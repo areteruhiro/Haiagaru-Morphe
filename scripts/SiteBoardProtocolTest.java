@@ -36,6 +36,18 @@ public class SiteBoardProtocolTest {
   ok(!SiteBoardCatalog.key(SiteBoardProtocol.address("https://img.2chan.net/b/")).equals(SiteBoardCatalog.key(SiteBoardProtocol.address("https://may.2chan.net/b/"))),"img/may keys remain distinct");
   ok(!SiteBoardProtocol.sameBoard(SiteBoardProtocol.address("https://img.2chan.net/b/"),SiteBoardProtocol.address("https://may.2chan.net/b/")),"futaba hosts remain distinct");
   ok(!SiteBoardProtocol.sameBoard(SiteBoardProtocol.address("https://img.2chan.net/b/"),SiteBoardProtocol.address("https://img.2chan.net/dec/")),"futaba paths remain distinct");
+  if(a.length>6){
+    String[] hosts={"img","may"},ids={"1486065756","1447081005"},media={"1794378856807.jpg","1794367201737.jpg"};
+    for(int i=0;i<hosts.length;i++){
+      final String expectedId=ids[i];
+      var board=SiteBoardProtocol.address("https://"+hosts[i]+".2chan.net/b/");
+      var page=SiteBoardProtocol.thread(board,ids[i],Files.readString(Path.of(a[5+i]),java.nio.charset.Charset.forName("Windows-31J")));
+      ok(page.entries.size()>1&&page.entries.get(0).original.equals(ids[i]),hosts[i]+" actual opening post first");
+      ok(page.entries.get(0).media.contains(board.url+"src/"+media[i]),hosts[i]+" actual full-size opening image");
+      ok(page.entries.get(0).media.stream().noneMatch(m->m.contains("/thumb/")),hosts[i]+" actual thumbnail not selected as original");
+      ok(page.entries.stream().skip(1).noneMatch(e->e.original.equals(expectedId)),hosts[i]+" actual replies are distinct from opening post");
+    }
+  }
   for(String x:new String[]{"http://bakusai.com/thr_tl/acode=1/ctgid=137/bid=5071/","https://evil.test/t/","https://dat.2chan.net.evil.test/t/","https://user@dat.2chan.net/t/","https://dat.2chan.net/t/../t/","https://dat.2chan.net/t/?x=y","https://bakusai.com/img_nl/acode=1/ctgid=137/"})bad(()->SiteBoardProtocol.address(x));
   bad(()->SiteBoardProtocol.thread(fb,"380645","<html>Forbidden</html>"));bad(()->SiteBoardProtocol.thread(bk,"99999",Files.readString(Path.of(a[0]))));bad(()->SiteBoardProtocol.topics(fb,"<html>認証が必要です</html>"));
   System.out.println("PASS "+checks+" independent site-address/list/thread/media checks; bakusai="+bp.entries.size()+" futaba="+fr.entries.size()+" catalogue="+ft.size());

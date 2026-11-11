@@ -28,8 +28,10 @@ public final class ThreadListThumbnailRulesTest {
         check(ThreadListThumbnailRules.board("https://egg.5ch.io/test/read.cgi/android/not-a-thread/") == null);
         var edge = ThreadListThumbnailRules.board("https://bbs.eddibb.cc/liveedge/");
         check(edge != null && edge.host.equals("bbs.eddibb.cc") && edge.name.equals("liveedge"));
-        check(edge.threadUrl("1790000000").equals("https://bbs.eddibb.cc/test/read.cgi/liveedge/1790000000/"));
+        check(edge.threadUrl("1790000000").equals("https://bbs.eddibb.cc/liveedge/1790000000"));
         check(ThreadListThumbnailRules.board("https://bbs.eddibb.cc/test/read.cgi/liveedge/1790000000/") != null);
+        check(ThreadListThumbnailRules.board("http://bbs.eddibb.cc/liveedge/") != null);
+        check(ThreadListThumbnailRules.board("https://bbs.eddibb.cc/liveedge/1790000000") != null);
         check(ThreadListThumbnailRules.board("https://bbs.eddibb.cc/test/read.cgi/other/1790000000/") == null);
         check(ThreadListThumbnailRules.board("https://bbs.eddibb.cc.evil.test/liveedge/") == null);
         check(ThreadListThumbnailRules.board("https://bbs.eddibb.cc/liveedge/?foo=1") == null);
@@ -49,6 +51,18 @@ public final class ThreadListThumbnailRulesTest {
         check("https://cdn.example.org/relative.webp".equals(
             ThreadListThumbnailRules.firstFiveChImage("<div class='post'><div class='message'>"
                 + "<a href='https://cdn.example.org/relative.webp'>image</a></div></div>",board.threadUrl("1790000000"))));
+        String edgeHtml="<div data-ng-target='body' data-ng-response-id='1'>"
+                + "<span><span> https://i.imgur.com/IMje0I0.jpeg </span></span></div>"
+                + "<div data-ng-target='body' data-ng-response-id='2'>https://cdn.example.org/second.png</div>";
+        check("https://i.imgur.com/IMje0I0.jpeg".equals(
+                ThreadListThumbnailRules.firstFiveChImage(edgeHtml,edge.threadUrl("1790000000"))));
+        check(ThreadListThumbnailRules.firstFiveChImage(
+                "<div data-ng-target='body' data-ng-response-id='1'>No image</div>"
+                + "<div data-ng-target='body' data-ng-response-id='2'>https://cdn.example.org/second.png</div>",
+                edge.threadUrl("1790000000"))==null);
+        check("https://cdn.example.org/opening.webp".equals(ThreadListThumbnailRules.firstFiveChImage(
+                "<div data-ng-target='body' data-ng-response-id='1'>"
+                + "<a href='https://cdn.example.org/opening.webp'>image</a></div>",edge.threadUrl("1790000000"))));
         System.out.println("PASS " + checks + " thumbnail source checks");
     }
 }

@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-11 プレ候補追加検証: ローカル dev 差分で :patches:buildAndroid の Lint/R8/MPP ビルドが成功。ホストは画像抽出30、あにまん234、外部板51項目PASS。実サイトのあにまん category32/category9・ふたば img/may レスおよびエッヂ1レス目画像を検証。Mi Note 10 実機の隔離191 APKで Frida read-only 計測を実施し、img/may の画像取得・実描画、エッヂの画像URL取得21件の試行とサムネイル装飾10件を確認。画像のないスレは通常表示。あにまん例示レス、監視通知DAT／遷移、サイズバー実操作、226/242の最終差分は未検証。エミュレータ未使用。ログ・画面はローカルの build/thumbnail-diagnostics/ に保存。
+
 2026-11-11 検証用プレ候補: あにまんのYouTube／XカードURL・arc画像・URL／履歴経由板判定、ふたば／爆サイ件数・「ねこ」板、記者ID／スレ名の期間検索とNG、監視通知DAT／対象レス・2／3時間／任意期限、191書込後更新、板別のスレ一覧画像表示（実験）と24〜96dpバーを統合。Lint／R8 buildAndroid、191／226／242パッチ・命令保持検査、検索32／画像ルール15件の試験成功。候補MPP SHA256 f8709515e3d5e5e978fe4978e1d165f2f9330485a65f1dab68552117a356f0a3。Mi Note 10実機（d5497008）で3隔離APK導入Success、191設定画面／切替、226／242 launcher起動、crashログ空。実レス画像、サイズバー実操作、通知DATと対象レス遷移、全経路の通し操作は未確認。即時プレ公開要望に従い未確認範囲を公開文へ明記。既存アプリ／データは維持。配布は既存Semantic Release CIで行う。詳細 docs/android-installations.md と非公開 build/local-development-records/thumbnail-20261111-installations.json。
 
 

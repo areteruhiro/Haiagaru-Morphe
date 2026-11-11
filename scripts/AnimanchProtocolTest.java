@@ -18,6 +18,18 @@ public class AnimanchProtocolTest {
   var safe=AnimanchProtocol.thread(sample,url).replies.get(0);ok(!safe.html.contains("script")&&!safe.html.contains("javascript:")&&!safe.html.contains("file:"),"strip executable/local media");ok(safe.html.contains("&gt;&gt;2"),"native anchor text preserved");
   rejected(()->AnimanchProtocol.thread(sample.replace("id=res1","id=res2"),url));rejected(()->AnimanchProtocol.thread(sample.replace("class=resbody","class=unknown"),url));
   var numbered=AnimanchProtocol.catalogue("<div class=card><a href='/board/123/'>level79</a><span class=threadCount>79</span></div>");ok(numbered.get(0).title.equals("level79"),"count must not truncate matching digits in the title");
+  var anchorCards=AnimanchProtocol.catalogue("<a class=card href='/board/321/'><div class=card-body>ゲーム32 <p class=threadCount>24</p></div></a>"
+      +"<a class=card href='https://evil.example/board/999/'><span class=threadCount>99</span>evil</a>"
+      +"<a class=card href='https://bbs.animanch.com/board/321/'><span class=threadCount>30</span>duplicate</a>");
+  ok(anchorCards.size()==1&&anchorCards.get(0).id.equals("321")&&anchorCards.get(0).title.equals("ゲーム32")&&anchorCards.get(0).replies==24,"anchor-card catalogue and strict URL/dedup");
+  if(args.length>4){
+   var games=AnimanchProtocol.catalogue(Files.readString(Path.of(args[3])));
+   var fate=AnimanchProtocol.catalogue(Files.readString(Path.of(args[4])));
+   ok(games.size()>10&&fate.size()>10,"real category32 and category9 contain visible topics");
+   ok(games.stream().allMatch(t->t.replies>=1&&t.replies<=1000000&&!t.title.isEmpty())
+       &&fate.stream().allMatch(t->t.replies>=1&&t.replies<=1000000&&!t.title.isEmpty()),"real category topics have usable counts and titles");
+   ok(!games.get(0).id.equals(fate.get(0).id),"category32 does not reuse category9 catalogue");
+  }
   var other=AnimanchProtocol.thread(sample.replace("href='#res2'","href='https://evil.test/#res2'"),url);ok(other.replies.get(0).html.contains("https://evil.test/#res2"),"foreign link never becomes a local reply anchor");
   ok(AnimanchProtocol.postingError("<p class='alert bg-danger'>Error: posting is closed</p><script>secret()</script><form><input value=private></form>").equals("\nError: posting is closed"),"only the explicit server error is surfaced, not scripts/forms");
   ok(AnimanchProtocol.postingError("{\"error\":\"本文が長すぎます\"}").contains("本文が長すぎます"),"JSON rejection text remains visible");ok(AnimanchProtocol.postingError("<html>arbitrary thread page</html>").isEmpty(),"ordinary page is not treated as an error message");ok(AnimanchProtocol.postingError("x".repeat(32769)).isEmpty(),"large error body never dumped into native dialog");
