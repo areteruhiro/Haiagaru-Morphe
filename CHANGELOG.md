@@ -1,3 +1,64 @@
+# Haiagaru 1.25.0-dev.22 (2026-11-11)
+
+外部板・検索・監視・スレ一覧画像表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- あにまん掲示板: YouTube／X（Twitter）のサイトカードURL、/arc/img画像、URL・履歴経由で開いたスレの板判定を改善。
+- ふたば／爆サイ: スレ一覧件数制限の解消と、ふたば「ねこ」板（may.2chan.net/27/）を追加。
+- 検索: 記者IDの全文・前半・後半、スレ名の部分一致、対象期間の指定と記者NG登録に対応。
+- 監視通知: 該当レスへの移動／DAT取得を修正し、監視期限に2時間・3時間・任意指定を追加。
+- スレ一覧画像表示（実験）: 5ch・ふたば・あにまんの1レス目画像の小型表示。対象板を選択でき、サイズはバーで24〜96dpに変更可能。
+- 191版の書き込み後の本文更新を改善。
+
+## 検証範囲・未確認事項
+
+191／226／242向けMPPのLint・R8ビルドとパッチ適用・元命令保持の確認が成功。検索32項目・画像ルール15項目のホスト試験が成功。3版の隔離APKを実機に導入し、191の「スレ一覧画像表示（実験）」画面表示・切替と、226／242の起動を確認。直近のクラッシュログは空です。
+
+例示レスの実画像表示、サムネイルサイズバーの実操作、監視通知タップ時のDAT取得と該当レスへの移動、3版全経路の通し操作は未確認です。これらの実機検証用プレ版です。エミュレータは使っていません。
+
+[検証・導入記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/integration-status.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **server:** prevent overlapping reviews and reuse committed feed snapshots [skip ci] ([ad86dc4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ad86dc482bc033d41eb5739e40b13655ede80539))
+
+### ✨ New Features
+
+* **chmate:** expand board support, reporter search, monitoring and thumbnails ([47afce1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/47afce1cf0b48b0a61b7ff6600f93f23a1a7c81a))
+
 # Haiagaru 1.25.0-dev.21 (2026-11-10)
 
 共有NGの通信タイムアウト対策を修正した検証用プレリリースです。
