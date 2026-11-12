@@ -1,3 +1,52 @@
+# Haiagaru 1.25.0-dev.28 (2026-11-12)
+
+## 主な変更
+
+- NG設定: ChMateがコピペ省略と判定したレスを透明あぼーんにするスイッチを追加。初期OFFです。
+- スレ一覧画像: レート制限対象サイトをドメイン単位で追加・削除できます。初期対象は bbs.animanch.com です。対象への取得を2秒以上空け、HTTP 429ではRetry-Afterに従い最低60秒休止します。
+- 登録画像NG: 一致したレスは通常のあぼーんとして表示し、スレの後方にあるレスまで判定に回します。
+- あにまん: category32の表示名を「家庭用ゲーム」に修正。登録済みの既定名も更新します。
+
+## 検証範囲
+
+Androidビルド、191 devへのパッチ適用、NG判定・取得間隔・429の待機・外部板の回帰テストを実施しました。この版の実機操作と、実サイトのレート制限が解除されることは未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add copy-paste NG and pace thumbnail requests ([3b4be2b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/3b4be2b20f7451ed2c9b3aca4b18f4633bfaa4d8))
+
 # Haiagaru 1.25.0-dev.27 (2026-11-12)
 
 ## 主な変更
