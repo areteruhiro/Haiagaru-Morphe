@@ -44,8 +44,20 @@ public final class RegisteredImageNgSettingsActivity extends Activity {
         layout.setOrientation(LinearLayout.VERTICAL);
         int pad = Math.round(getResources().getDisplayMetrics().density * 16);
         layout.setPadding(pad, pad, pad, pad);
+        scroll.setOnApplyWindowInsetsListener((view, insets) -> {
+            layout.setPadding(pad + insets.getSystemWindowInsetLeft(),
+                    pad + insets.getSystemWindowInsetTop(),
+                    pad + insets.getSystemWindowInsetRight(),
+                    pad + insets.getSystemWindowInsetBottom());
+            return insets;
+        });
         scroll.addView(layout);
         setContentView(scroll);
+        scroll.requestApplyInsets();
+        TextView heading = new TextView(this);
+        heading.setText("登録画像によるあぼーん");
+        heading.setTextSize(20);
+        layout.addView(heading);
         setTitle("登録画像によるあぼーん");
         SharedPreferences settings = RegisteredImageNg.prefs(this);
 
@@ -104,7 +116,7 @@ public final class RegisteredImageNgSettingsActivity extends Activity {
         layout.addView(folder);
         folder.setOnClickListener(view -> pickFolder(0));
         TextView folderHelp = new TextView(this);
-        folderHelp.setText("選択したフォルダ内に「" + RegisteredImageSafStore.DIRECTORY_NAME
+        folderHelp.setText("URL登録は保存先の選択なしでアプリ内に保存できます。選択したフォルダ内に「" + RegisteredImageSafStore.DIRECTORY_NAME
                 + "」を作成します。選んだ画像をここにコピーし、このフォルダ内の画像を判定します。"
                 + "ファイル管理アプリから直接入れた画像も「再スキャン」で反映されます。最大"
                 + RegisteredImageNg.MAX_REFERENCE_IMAGES + "枚まで判定します。"
@@ -122,10 +134,7 @@ public final class RegisteredImageNgSettingsActivity extends Activity {
         Button url = new Button(this);
         url.setText("画像URLから登録");
         layout.addView(url);
-        url.setOnClickListener(view -> {
-            if (RegisteredImageNg.hasSafFolder(this)) showUrlInput();
-            else pickFolder(2);
-        });
+        url.setOnClickListener(view -> showUrlInput());
 
         Button refresh = new Button(this);
         refresh.setText("専用フォルダ内の画像を再スキャン");

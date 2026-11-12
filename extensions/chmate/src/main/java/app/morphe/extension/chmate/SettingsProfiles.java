@@ -24,6 +24,9 @@ public final class SettingsProfiles {
         // Expert is a projection of these same controls, not a second catalog.
         for(SettingsSections.Category c:SettingsSections.Category.values())if(c!=SettingsSections.Category.EXPERT)Haiagaru.settingsCategory(activity,c.name());
         booleanKey(ExpertSettings.KEY);
+        for(String key:new String[]{"settingsOptionLinksEnabled","reporterSearchEnabled","videoLandscapeImmersive"}){
+            booleanKey(key);defaultValue(key,true);
+        }
         booleanKey(ExternalBoardGroups.KEY);defaultValue(ExternalBoardGroups.KEY,false);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);

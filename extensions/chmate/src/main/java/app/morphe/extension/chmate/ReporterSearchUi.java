@@ -15,6 +15,10 @@ import java.util.concurrent.*;
 final class ReporterSearchUi {
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
     static void show(Activity activity, String initialId) {
+        if (!FeatureSwitches.enabled("reporterSearchEnabled", true)) {
+            Toast.makeText(activity, "追加機能一覧で記者ID・スレ名検索をオンにしてください", Toast.LENGTH_LONG).show();
+            return;
+        }
         LinearLayout content = new LinearLayout(activity); content.setOrientation(LinearLayout.VERTICAL);
         int pad = (int)(16 * activity.getResources().getDisplayMetrics().density); content.setPadding(pad,pad,pad,pad);
         Spinner mode = new Spinner(activity);

@@ -93,6 +93,21 @@ public final class RefreshTargetHistory {
             root.addView(content,new LinearLayout.LayoutParams(-1,0,1));
             root.addView(row,new LinearLayout.LayoutParams(-1,-2));
             nativeTabs.setVisibility(View.GONE);
+            root.getViewTreeObserver().addOnPreDrawListener(() -> {
+                if (selected != 1 && nativeContent.getVisibility() == View.VISIBLE) {
+                    try {
+                        int nativeTab = ((Number)read.invoke(flow)).intValue();
+                        int tab = nativeTab == 0 ? 0 : Math.max(2, Math.min(4, nativeTab + 1));
+                        if (selected != tab) {
+                            selected = tab;
+                            updateSelection();
+                        }
+                    } catch (Exception unavailable) {
+                        android.util.Log.w("Haiagaru", "History tab selection unavailable", unavailable);
+                    }
+                }
+                return true;
+            });
             int nativeSelected=((Number)read.invoke(flow)).intValue();
             selected=nativeSelected==0?0:Math.max(2,Math.min(4,nativeSelected+1));
             list.setOnItemClickListener((parent,view,index,id)->{
@@ -109,16 +124,19 @@ public final class RefreshTargetHistory {
             ((View)buttons[1].getParent()).setVisibility(enabled(root.getContext())?View.VISIBLE:View.GONE);
             select(selected);
         }
+        void updateSelection(){
+            for(int i=0;i<buttons.length;i++){
+                buttons[i].setSelected(i==selected);
+                buttons[i].setTypeface(null,i==selected?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);
+                buttons[i].setTextColor(i==selected?android.content.res.ColorStateList.valueOf(accent):textColors[i]);
+                indicators[i].setBackgroundColor(i==selected?accent:android.graphics.Color.TRANSPARENT);
+                buttons[i].setContentDescription(buttons[i].getText()+(i==1?" 更新対象のスレ（"+RefreshTargets.selected(root.getContext()).size()+"）":"")+(i==selected?" 選択中":""));
+            }
+        }
         void select(int tab){
             if(tab==1&&!enabled(root.getContext()))tab=0;
             selected=tab;int request=++generation;
-            for(int i=0;i<buttons.length;i++){
-                buttons[i].setSelected(i==tab);
-                buttons[i].setTypeface(null,i==tab?android.graphics.Typeface.BOLD:android.graphics.Typeface.NORMAL);
-                buttons[i].setTextColor(i==tab?android.content.res.ColorStateList.valueOf(accent):textColors[i]);
-                indicators[i].setBackgroundColor(i==tab?accent:android.graphics.Color.TRANSPARENT);
-                buttons[i].setContentDescription(buttons[i].getText()+(i==1?" 更新対象のスレ（"+RefreshTargets.selected(root.getContext()).size()+"）":"")+(i==tab?" 選択中":""));
-            }
+            updateSelection();
             nativeContent.setVisibility(tab==1?View.GONE:View.VISIBLE);
             list.setVisibility(View.GONE);status.setVisibility(View.GONE);
             if(tab!=1){
@@ -151,15 +169,17 @@ public final class RefreshTargetHistory {
                 String[] parts=key.split("\\n",-1);if(parts.length!=2)continue;
                 long id;try{id=Long.parseLong(parts[1]);if(id<=0)continue;}catch(NumberFormatException invalid){continue;}
                 String title=parts[1],boardTitle=parts[0],server=null;
-                try(Cursor row=db.rawQuery("SELECT bookmarks.title, boards.title, boards.server FROM bookmarks LEFT JOIN boards ON boards.name=bookmarks.name WHERE bookmarks.name=? AND bookmarks.created=? LIMIT 1",new String[]{parts[0],parts[1]})){
+                int unread=0;
+                try(Cursor row=db.rawQuery("SELECT bookmarks.title, boards.title, boards.server, MAX(0, MAX(bookmarks.res_count, bookmarks.server_res_count) - bookmarks.read_count) FROM bookmarks LEFT JOIN boards ON boards.name=bookmarks.name WHERE bookmarks.name=? AND bookmarks.created=? LIMIT 1",new String[]{parts[0],parts[1]})){
                     if(row.moveToFirst()){
                         if(!row.isNull(0)&&!row.getString(0).isEmpty())title=row.getString(0);
                         if(!row.isNull(1)&&!row.getString(1).isEmpty())boardTitle=row.getString(1);
                         server=row.getString(2);
+                        unread=row.getInt(3);
                     }
                 }
                 String url=null;try{url=url(context,version,parts[0],id,server);}catch(Exception unavailable){/* Keep registration visible. */}
-                result.add(new Entry(key,title+"\n"+boardTitle+(url==null?"（保存情報を確認できません）":""),url));
+                result.add(new Entry(key,title+"（新着"+unread+"件）"+"\n"+boardTitle+(url==null?"（保存情報を確認できません）":""),url));
             }
         }
         java.text.Collator order=java.text.Collator.getInstance(Locale.JAPANESE);

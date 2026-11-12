@@ -20,6 +20,7 @@ public final class SettingsOptionLinks {
   @Override public void onClick(View view){Intent open=new Intent(view.getContext(),SettingLinkActivity.class).setAction(Intent.ACTION_VIEW).setData(Uri.parse(getURL()));if(!(view.getContext() instanceof android.app.Activity))open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);view.getContext().startActivity(open);}
  }
  public static CharSequence apply(CharSequence source){
+  if(!FeatureSwitches.enabled("settingsOptionLinksEnabled",true))return source;
   if(source==null)return null;if(TextUtils.indexOf(source,"Haiagaru.設定.")<0&&TextUtils.indexOf(source,"haiagaru://settings?")<0)return source;
   String text=source.toString();
   Matcher m=LINKS.matcher(text);SpannableStringBuilder result=null;

@@ -98,7 +98,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         playerRoot = root;
         root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.BLACK);
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            boolean landscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+            boolean landscape = FeatureSwitches.enabled("videoLandscapeImmersive", true) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
             view.setPadding(insets.getSystemWindowInsetLeft(), landscape ? 0 : insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), landscape ? 0 : insets.getSystemWindowInsetBottom());
             return insets;
