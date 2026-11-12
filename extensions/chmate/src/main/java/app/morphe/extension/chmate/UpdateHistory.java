@@ -5,12 +5,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.graphics.Typeface;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
+import android.text.style.URLSpan;
+import android.text.method.LinkMovementMethod;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Release notes generated from CHANGELOG.md as part of every release build. */
 final class UpdateHistory {
@@ -18,22 +29,31 @@ final class UpdateHistory {
         Context context = SettingsTabUi.context(activity);
         LinearLayout content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
+        int padding = Math.round(16 * context.getResources().getDisplayMetrics().density);
+        content.setPadding(padding, padding, padding, padding);
 
         TextView version = new TextView(context);
         version.setText("Haiagaru " + BuildConfig.HAIAGARU_VERSION);
+        version.setTextSize(18);
+        version.setTypeface(null, Typeface.BOLD);
         content.addView(version);
 
         TextView settingsHeading = new TextView(context);
         settingsHeading.setText("機能のオン・オフ");
+        styleHeading(settingsHeading, context);
         content.addView(settingsHeading);
         addFeatureSettings(content, activity);
 
         TextView historyHeading = new TextView(context);
         historyHeading.setText("リリース履歴");
+        styleHeading(historyHeading, context);
         content.addView(historyHeading);
         TextView history = new TextView(context);
-        history.setText(readBundledHistory(context));
+        history.setText(formatHistory(context, readBundledHistory(context)));
         history.setTextIsSelectable(true);
+        history.setTextSize(14);
+        history.setLineSpacing(Math.round(2 * context.getResources().getDisplayMetrics().density), 1f);
+        history.setMovementMethod(LinkMovementMethod.getInstance());
         content.addView(history);
 
         Button releases = new Button(context);
@@ -42,13 +62,84 @@ final class UpdateHistory {
                 Uri.parse("https://github.com/areteruhiro/Haiagaru-Morphe/releases"))));
         content.addView(releases);
 
+        ScrollView scroll = new ScrollView(context);
+        scroll.setFillViewport(true);
+        scroll.addView(content);
         new HaiagaruDialog.Builder(activity).setTitle("更新履歴")
-                .setView(content).setPositiveButton("閉じる", null).show();
+                .setView(scroll).setPositiveButton("閉じる", null).show();
+    }
+
+    private static void styleHeading(TextView heading, Context context) {
+        heading.setTextSize(17);
+        heading.setTypeface(null, Typeface.BOLD);
+        heading.setPadding(0, Math.round(16 * context.getResources().getDisplayMetrics().density), 0,
+                Math.round(6 * context.getResources().getDisplayMetrics().density));
+    }
+
+    /** Render the release-note Markdown structure without depending on remote content. */
+    static CharSequence formatHistory(Context context, String markdown) {
+        SpannableStringBuilder output = new SpannableStringBuilder();
+        int density = Math.round(context.getResources().getDisplayMetrics().density);
+        for (String raw : markdown.split("\\r?\\n")) {
+            String line = raw.trim();
+            if (line.isEmpty()) {
+                if (output.length() > 0 && output.charAt(output.length() - 1) != '\n') output.append('\n');
+                continue;
+            }
+            int start = output.length();
+            int heading = 0;
+            while (heading < line.length() && line.charAt(heading) == '#') heading++;
+            if (heading > 0 && heading < line.length() && line.charAt(heading) == ' ') {
+                line = line.substring(heading).trim();
+                start = output.length();
+                output.append(line).append('\n');
+                int end = output.length() - 1;
+                output.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                output.setSpan(new RelativeSizeSpan(heading == 1 ? 1.35f : 1.12f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                output.setSpan(new ForegroundColorSpan(heading == 1 ? 0xff263b65 : 0xff405577), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                boolean bullet = line.startsWith("* ") || line.startsWith("- ");
+                if (bullet) output.append("• ");
+                SpannableStringBuilder body = formatInline(bullet ? line.substring(2) : line);
+                int bodyStart = output.length();
+                output.append(body);
+                for (Object span : body.getSpans(0, body.length(), Object.class)) {
+                    int from = body.getSpanStart(span), to = body.getSpanEnd(span);
+                    output.setSpan(span, bodyStart + from, bodyStart + to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                output.append('\n');
+                int end = output.length() - 1;
+                if (bullet) output.setSpan(new android.text.style.LeadingMarginSpan.Standard(0, 2 * density), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        }
+        while (output.length() > 0 && output.charAt(output.length() - 1) == '\n') output.delete(output.length() - 1, output.length());
+        return output;
+    }
+
+    private static SpannableStringBuilder formatInline(String line) {
+        SpannableStringBuilder result = new SpannableStringBuilder();
+        Matcher inline = Pattern.compile("\\*\\*(.+?)\\*\\*|\\[([^\\]]+)\\]\\((https?://[^)]+)\\)|`([^`]+)`").matcher(line);
+        int cursor = 0;
+        while (inline.find()) {
+            result.append(line, cursor, inline.start());
+            int start = result.length();
+            if (inline.group(1) != null) {
+                result.append(inline.group(1));
+                result.setSpan(new StyleSpan(Typeface.BOLD), start, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else if (inline.group(2) != null) {
+                result.append(inline.group(2));
+                result.setSpan(new URLSpan(inline.group(3)), start, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else result.append(inline.group(4));
+            cursor = inline.end();
+        }
+        result.append(line, cursor, line.length());
+        return result;
     }
 
     private static void addFeatureSettings(LinearLayout content, Activity activity) {
         SharedPreferences main = SettingsProfiles.prefs(activity);
-        toggle(content, activity, main, "設定文字列をタップして設定を開く",
+        section(content, activity, "アプリ・通信");
+        toggle(content, activity, FeatureSwitches.prefs(activity), "設定文字列をタップして設定を開く",
                 "settingsOptionLinksEnabled", true, null);
         toggle(content, activity, main, "外部板をサイト別にまとめる",
                 ExternalBoardGroups.KEY, false, null);
@@ -61,15 +152,25 @@ final class UpdateHistory {
                     gateway.prefs.edit().putBoolean(SiteBoardGateway.siteFlag(kind), on).apply());
             content.addView(site);
         }
+
+        section(content, activity, "表示・検索");
+        toggle(content, activity, FeatureSwitches.prefs(activity), "記者ID・スレ名の期間指定検索",
+                "reporterSearchEnabled", true, null);
+        toggle(content, activity, FeatureSwitches.prefs(activity), "エッヂ・kenmo.orgの記者IDをレスメニューに表示",
+                EdgeReporterOptions.MENU, true, null);
+        toggle(content, activity, FeatureSwitches.prefs(activity), "エッヂ・kenmo.orgの記者IDをスレ一覧に表示",
+                EdgeReporterOptions.BOARD, true, null);
+
+        section(content, activity, "画像・動画");
         toggle(content, activity, ThreadListThumbnailSettings.prefs(activity),
                 "スレ一覧に画像・動画サムネイルを表示", ThreadListThumbnailSettings.ENABLE,
                 false, ThreadListThumbnail::refresh);
-        toggle(content, activity, main, "記者ID・スレ名の期間指定検索",
-                "reporterSearchEnabled", true, null);
-        toggle(content, activity, main, "エッヂ・kenmo.orgの記者IDをレスメニューに表示",
-                EdgeReporterOptions.MENU, true, null);
-        toggle(content, activity, main, "エッヂ・kenmo.orgの記者IDをスレ一覧に表示",
-                EdgeReporterOptions.BOARD, true, null);
+        toggle(content, activity, FeatureSwitches.prefs(activity), "動画からサムネイルを生成",
+                "videoFrameThumbnailsEnabled", true, null);
+        toggle(content, activity, FeatureSwitches.prefs(activity), "専用動画ビューアの横画面で没入表示",
+                "videoLandscapeImmersive", true, null);
+
+        section(content, activity, "NG・文字列置換");
         toggle(content, activity, RegisteredImageNg.prefs(activity),
                 "登録画像に一致するレスをあぼーん", RegisteredImageNg.ENABLE, false,
                 RegisteredImageNg::settingsChanged);
@@ -79,14 +180,12 @@ final class UpdateHistory {
                 "ReplaceTxtによる文字列置換（正規表現対応）", "enabled", false,
                 () -> StringReplacement.setEnabled(activity,
                         StringReplacement.prefs(activity).getBoolean("enabled", false)));
+
+        section(content, activity, "履歴・投稿");
         toggle(content, activity, RefreshTargets.prefs(activity),
                 "履歴ポップアップの対象タブ", RefreshTargetHistory.VISIBLE_KEY, false, null);
         toggle(content, activity, RefreshTargets.prefs(activity),
                 "投稿後の自動監視", "watchAfterPosting", false, null);
-        toggle(content, activity, main, "動画からサムネイルを生成",
-                "videoFrameThumbnailsEnabled", true, null);
-        toggle(content, activity, main, "専用動画ビューアの横画面で没入表示",
-                "videoLandscapeImmersive", true, null);
         toggle(content, activity, main, "既読スレ削除を更新ボタン長押しで開く",
                 DeleteReadThreads.LONG_PRESS_KEY, true, null);
         addIpNetwork(content, activity, main, "IP表示スレへの投稿前確認（Wi-Fi）", 1);
@@ -97,6 +196,16 @@ final class UpdateHistory {
         images.setOnClickListener(view -> activity.startActivity(
                 new Intent(activity, RegisteredImageNgSettingsActivity.class)));
         content.addView(images);
+    }
+
+    private static void section(LinearLayout content, Activity activity, String title) {
+        TextView heading = new TextView(activity);
+        heading.setText(title);
+        heading.setTextSize(14);
+        heading.setTypeface(null, Typeface.BOLD);
+        heading.setPadding(0, Math.round(12 * activity.getResources().getDisplayMetrics().density), 0,
+                Math.round(3 * activity.getResources().getDisplayMetrics().density));
+        content.addView(heading);
     }
 
     private static void toggle(LinearLayout content, Activity activity, SharedPreferences prefs,

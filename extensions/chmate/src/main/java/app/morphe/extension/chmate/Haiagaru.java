@@ -3474,7 +3474,6 @@ public final class Haiagaru {
         addedFeatures.setOnClickListener(view -> UpdateHistory.show(activity));
         layout.addView(addedFeatures);
         ThreadWatch.addSettingsButton(layout, activity);
-        ThreadListThumbnailSettings.addSettings(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
@@ -3484,6 +3483,17 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch settingOptionLinks = addSwitch(layout, activity,
+                "設定内の機能名をタップして設定を開く", FeatureSwitches.enabled("settingsOptionLinksEnabled", true));
+        new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(settingOptionLinks, "settingsOptionLinksEnabled");
+        SiteBoardGateway siteGateway = SiteBoardGateway.get(activity);
+        for (String kind : SiteBoardMenuProtocol.KINDS) {
+            Switch site = addSwitch(layout, activity,
+                    "使用する：" + SiteBoardMenuProtocol.title(kind) + "の閲覧・板一覧",
+                    siteGateway.siteEnabled(kind));
+            site.setOnCheckedChangeListener((button, checked) ->
+                    siteGateway.prefs.edit().putBoolean(SiteBoardGateway.siteFlag(kind), checked).apply());
+        }
         Switch siteGroups=addSwitch(layout,activity,text("外部板をサイト別に板一覧の最上位へ表示","Show external boards by site at the top level"),preferences.getBoolean(ExternalBoardGroups.KEY,false));
         live.toggle(siteGroups,ExternalBoardGroups.KEY);
         TextView siteGroupsHelp=new TextView(activity);siteGroupsHelp.setText("初期OFF。オンではエッヂ・けんも板・したらばなどをサイト別に表示します。板一覧のキャッシュへ反映するため、変更後はChMateを再起動してください。");layout.addView(siteGroupsHelp);
@@ -3687,10 +3697,16 @@ public final class Haiagaru {
                 layout,
                 activity,
                 text(EdgeReporterOptions.MENU_LABEL, "Edge reporter IDs: long press / NG Threads"),
-                preferences.getBoolean("edgeReporterId", true)
+                EdgeReporterOptions.menu()
         );
         Switch edgeReporterBoardList=addSwitch(layout,activity,
                 text(EdgeReporterOptions.BOARD_LABEL,"Edge reporter IDs: board thread list"),EdgeReporterOptions.board());
+        Switch reporterSearchEnabled = addSwitch(layout, activity,
+                "記者ID・スレ名の期間指定検索を有効にする",
+                FeatureSwitches.enabled("reporterSearchEnabled", true));
+        new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(reporterSearchEnabled, "reporterSearchEnabled");
+        new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(edgeReporterId, EdgeReporterOptions.MENU);
+        new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(edgeReporterBoardList, EdgeReporterOptions.BOARD);
         Button reporterSearch = new Button(activity);
         reporterSearch.setText("記者ID・スレ名から過去スレを検索");
         reporterSearch.setOnClickListener(v -> ReporterSearchUi.show(activity, null));
@@ -3700,6 +3716,12 @@ public final class Haiagaru {
 
         PosterHighlight.addSettingsButton(layout, activity);
         if (StringReplacement.supported(activity)) {
+            Switch replacementEnabled = addSwitch(layout, activity, "本文の文字列置換を有効にする",
+                    StringReplacement.prefs(activity).getBoolean("enabled", false));
+            replacementEnabled.setOnCheckedChangeListener((button, checked) -> {
+                StringReplacement.prefs(activity).edit().putBoolean("enabled", checked).apply();
+                StringReplacement.setEnabled(activity, checked);
+            });
             Button replaceStrings = new Button(activity);
             replaceStrings.setText("本文の文字列置換（外部TXT）");
             replaceStrings.setOnClickListener(v -> activity.startActivity(
@@ -4159,6 +4181,7 @@ public final class Haiagaru {
     private static LinearLayout settingsMEDIA(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        ThreadListThumbnailSettings.addSettings(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
@@ -4242,6 +4265,10 @@ public final class Haiagaru {
         videoFrameThumbnails.setOnCheckedChangeListener((button, checked) ->
                 activity.getSharedPreferences(WacchoiSearchOptions.PREFS, 0).edit()
                         .putBoolean("videoFrameThumbnailsEnabled", checked).apply());
+        Switch videoLandscapeImmersive = addSwitch(layout, activity,
+                "専用動画ビューアを横画面で没入表示する",
+                FeatureSwitches.enabled("videoLandscapeImmersive", true));
+        new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(videoLandscapeImmersive, "videoLandscapeImmersive");
 
         Spinner mediaAutoFetch = addSpinner(layout, activity,
                 text("動画リンクから自動で読み込むもの", "What to load from video links"),
@@ -4420,6 +4447,12 @@ public final class Haiagaru {
         imageNg.setText("登録画像によるあぼーん（判定レベル・一致枚数）");
         imageNg.setOnClickListener(view -> activity.startActivity(new Intent(activity, RegisteredImageNgSettingsActivity.class)));
         layout.addView(imageNg, rowParams(activity));
+        Switch registeredImageNg = addSwitch(layout, activity, "登録画像に一致するレスをあぼーん",
+                RegisteredImageNg.prefs(activity).getBoolean(RegisteredImageNg.ENABLE, false));
+        registeredImageNg.setOnCheckedChangeListener((button, checked) -> {
+            RegisteredImageNg.prefs(activity).edit().putBoolean(RegisteredImageNg.ENABLE, checked).apply();
+            RegisteredImageNg.settingsChanged();
+        });
         Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動で非表示にする",
                 preferences.getBoolean(RedIdAutoNg.KEY, false));
         TextView autoNgRedIdsDescription = new TextView(activity);
