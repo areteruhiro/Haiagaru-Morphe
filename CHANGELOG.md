@@ -1,3 +1,79 @@
+# Haiagaru 1.25.0 (2026-11-12)
+
+## 主な変更
+
+今回の変更内容は、以下のカテゴリ別リリース項目をご覧ください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** bound custom toolbar icons and strip outgoing replacement glyphs ([45ba85f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/45ba85f301907c02f29e4309f66ec6a02f0ac38a))
+* **chmate:** canonicalize backup XML and avoid broad shared NG regex matches ([a7c2244](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a7c2244993d21167ee48e5bff297e60232e31a61))
+* **chmate:** correct external board dates and disabled providers ([c61ed4b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c61ed4b7081d5d5ea2d74203f74b0447a8a519f1))
+* **chmate:** correct watch navigation access and board thumbnail preferences ([9f17747](https://github.com/areteruhiro/Haiagaru-Morphe/commit/9f1774717f64f7bb58e1a24abbd402360c0b26ab))
+* **ChMate:** handle site posting receipts and empty Bakusai mobile pages ([ddb95e0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ddb95e014c310441b8e525dd37b52d8e9a347cd6))
+* **chmate:** merge mobile pages and preserve source URLs and paragraphs ([bea511d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/bea511d35a01a3142acf0ae3e573ba49f31e4fc4))
+* **chmate:** parse Bakusai board layouts and restore full Futaba titles ([7bd726b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7bd726bd66d7cf4e51e6d915dd8044157eedbd45))
+* **chmate:** parse Bakusai recruitment thread lists ([b24e2de](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b24e2de5328a9039969d49a9980e893c1a1a5896))
+* **chmate:** preserve HOME refresh position and repair board loading ([d883b39](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d883b393b44bfb762c70505f5f211925f7149c7f))
+* **chmate:** preserve HTTP for active local board gateways ([05dee0d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/05dee0d3fecce6a54860d1e9110c9c002a372bd2))
+* **chmate:** prevent thumbnail overlap and preserve background audio ([19b984d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/19b984dd454985d7335a18b1f4264e06eea2d451))
+* **chmate:** reduce reporter memory pressure and repair image paging and archived Unicode ([e93a25f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e93a25ff95034a30547b598dda5485f6a2a59a79))
+* **chmate:** repair DAT sharing after package rename ([35c8961](https://github.com/areteruhiro/Haiagaru-Morphe/commit/35c8961d0bfe5cd06c5c2f9421a7410674250bfc))
+* **chmate:** restore category and list thumbnail previews ([1455bbf](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1455bbf3c3e9dc63ff3e25becb0aeb8c01eecaab))
+* **chmate:** restore setting links and improve native search and board rendering ([7d4e866](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7d4e866f1983303e8657cc47f607efc8aa7ec2c7))
+* **chmate:** suppress read-response notifications and muted playback focus ([128de6a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/128de6af293c56eac3c26e84f90b707877a03e23))
+* **chmate:** use native client identity for public Bakusai requests ([5db4526](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5db4526aef93a3290166e039298c50b78e3f91ca))
+* **chmate:** use native refresh history rows and restore thumbnail sliders ([57e3577](https://github.com/areteruhiro/Haiagaru-Morphe/commit/57e357766ca94556e2947b4db87ad066dcd12141))
+* **server:** prevent overlapping reviews and reuse committed feed snapshots [skip ci] ([ad86dc4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ad86dc482bc033d41eb5739e40b13655ede80539))
+* **shared-ng:** tolerate slow GAS responses and retry receive timeouts ([5f133c4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5f133c4bd98b562d04c4aab45a048f5a56b66bc3))
+
+### ✨ New Features
+
+* **chmate:** add confirmed settings links and resilient media previews ([a2bcc53](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a2bcc5311d2a906b6d9ce800fad764768dace23e))
+* **chmate:** add copy-paste NG and pace thumbnail requests ([3b4be2b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/3b4be2b20f7451ed2c9b3aca4b18f4633bfaa4d8))
+* **chmate:** add native external boards and verify posting dialog completion ([4e2bc63](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4e2bc633853245c9cce6acfb4280374bdf608082))
+* **chmate:** add recent feature controls and fix history and image settings ([f558a8f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f558a8f895428292930715fa699b6456195de92d))
+* **chmate:** add registered image NG and refine board and reporter search ([e6a72c3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e6a72c36d4ec19ad8bdea7e948ce6d923fae093c))
+* **chmate:** add scoped kenmo reporters and network-aware IP posting confirmation ([d73afd8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d73afd860fabbd7dcaf7df49f25e8d0c2178d7f0))
+* **chmate:** display Bakusai related news in native thread lists ([1917d92](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1917d9203e07f875c45b4722be91575899c390f0))
+* **chmate:** edit shared NG locally and guard fixed-label matches ([6ea8006](https://github.com/areteruhiro/Haiagaru-Morphe/commit/6ea8006696f998336c15db93138b1e89038539f4))
+* **chmate:** expand board support, reporter search, monitoring and thumbnails ([47afce1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/47afce1cf0b48b0a61b7ff6600f93f23a1a7c81a))
+* **chmate:** open and copy source site URLs and fix reported formats ([b040af1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b040af13044f1b8bbb0fe081650a111c2ea74bb2))
+* **chmate:** show external-board creation dates and momentum ([b624f64](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b624f64d0a1aacea11b04329ad2122d38d38ec74))
+* **chmate:** support regex replacements and improve media viewing ([8f01d72](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8f01d724830a5da1783a9c5a5b9bf323a200eb89))
+
 # Haiagaru 1.25.0-dev.31 (2026-11-12)
 
 ## 主な変更
