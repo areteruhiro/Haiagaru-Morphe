@@ -54,10 +54,25 @@ final class SiteBoardGateway {
         }
     }
     private void clearPending(String key){attachments.keySet().removeIf(k->k.startsWith(key+":"));confirmations.entrySet().removeIf(e->e.getValue().alias.equals(key));}
-    interface Transport { Response get(String url)throws IOException;Response post(SitePostProtocol.Plan plan,String target)throws IOException; }
+    interface Transport {
+        Response get(String url)throws IOException;
+        Response post(SitePostProtocol.Plan plan,String target)throws IOException;
+        default Response getThumbnail(Context context,String address)throws IOException{
+            return ThumbnailRequestPacing.fetch(context,address,gate->{
+                Response response=get(address);
+                if(gate!=null)gate.check(response.status,response.retryAfter);
+                return response;
+            });
+        }
+    }
     static final class Response {
-        final int status;final byte[] bytes;final String type,location;
-        Response(int status,byte[] bytes,String type,String location){this.status=status;this.bytes=bytes;this.type=type;this.location=location;}
+        final int status;final byte[] bytes;final String type,location,retryAfter;
+        Response(int status,byte[] bytes,String type,String location){
+            this(status,bytes,type,location,null);
+        }
+        Response(int status,byte[] bytes,String type,String location,String retryAfter){
+            this.status=status;this.bytes=bytes;this.type=type;this.location=location;this.retryAfter=retryAfter;
+        }
         String text()throws IOException{
             String charset="UTF-8";Matcher header=Pattern.compile("(?i)charset\\s*=\\s*[\"']?([A-Za-z0-9_-]+)").matcher(type);
             if(header.find())charset=header.group(1);else{
@@ -70,6 +85,7 @@ final class SiteBoardGateway {
     }
     static synchronized void initialize(Context context){
         if(instance!=null)return;instance=new SiteBoardGateway(context.getSharedPreferences(PREFS,0),null);
+        instance.repairNativeGamesBoardTitle(context);
         if(instance.enabled())try{instance.start();}catch(IOException failure){android.util.Log.w("Haiagaru","Site board gateway unavailable");}
     }
     static synchronized SiteBoardGateway get(Context context){initialize(context);return instance;}
@@ -79,7 +95,8 @@ final class SiteBoardGateway {
         try{JSONObject saved=new JSONObject(prefs.getString("yamiSources","{}"));Iterator<String> ids=saved.keys();while(ids.hasNext()&&newsSources.size()<256){String id=ids.next(),url=saved.getString(id);if(id.equals(SiteBoardProtocol.address(url).thread))newsSources.put(id,url);}}catch(Exception invalid){android.util.Log.w("Haiagaru","Saved news sources unavailable");}
         try{JSONArray saved=new JSONArray(prefs.getString("boards","[]"));for(int n=0;n<saved.length();n++){
             JSONObject row=saved.getJSONObject(n);String key=row.getString("key");if(!key.matches(KEY_PATTERN))continue;
-            boards.put(key,SiteBoardProtocol.address(row.getString("url")));names.put(key,row.optString("name","追加掲示板"));folders.put(key,row.optString("folder",SiteBoardMenuProtocol.title(boards.get(key).kind)));
+            SiteBoardProtocol.Board board=SiteBoardProtocol.address(row.getString("url"));
+            boards.put(key,board);names.put(key,boardName(board,row.optString("name","追加掲示板")));folders.put(key,row.optString("folder",SiteBoardMenuProtocol.title(board.kind)));
         }}catch(Exception invalid){android.util.Log.w("Haiagaru","Saved site board list unavailable");}
         SharedPreferences.Editor migration=prefs.edit();boolean changed=false;
         for(String key:boards.keySet())if(!prefs.contains(nativeFlag(key))&&(key.length()==33||prefs.contains("boardEnabled:"+key))){migration.putBoolean(nativeFlag(key),enabled()&&prefs.getBoolean("boardEnabled:"+key,true));changed=true;}
@@ -87,6 +104,39 @@ final class SiteBoardGateway {
         if(changed)migration.commit();
         port=prefs.getInt("port",0);prefs.registerOnSharedPreferenceChangeListener(nativeFlags);
     }
+    private static boolean isAnimanchGamesBoard(SiteBoardProtocol.Board board) {
+        return board.kind.equals("animanch") && board.path.equals("/category32/");
+    }
+
+    private static String boardName(SiteBoardProtocol.Board board, String name) {
+        if (isAnimanchGamesBoard(board) && (name.isEmpty() || name.equals(board.host)
+                || name.equals("追加掲示板"))) return "家庭用ゲーム";
+        return name.isEmpty() ? board.host : name;
+    }
+
+    private void repairNativeGamesBoardTitle(Context context) {
+        if (port == 0) return;
+        java.io.File file = context.getDatabasePath("roidon.sqlite");
+        if (!file.isFile()) return;
+        String server = "127.0.0.1:" + port;
+        for (Map.Entry<String, SiteBoardProtocol.Board> entry : boards.entrySet()) {
+            if (!isAnimanchGamesBoard(entry.getValue())) continue;
+            String key = entry.getKey();
+            String title = names.get(key);
+            if (title == null) continue;
+            android.content.ContentValues values = new android.content.ContentValues();
+            values.put("title", title);
+            try (android.database.sqlite.SQLiteDatabase db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                    file.getPath(), null, android.database.sqlite.SQLiteDatabase.OPEN_READWRITE)) {
+                db.update("boards", values, "server=? AND name IN (?,?) AND title IN (?,?,?)",
+                        new String[]{server, android.net.Uri.encode(server + "/" + key), key,
+                                entry.getValue().host, "", "追加掲示板"});
+            } catch (RuntimeException unavailable) {
+                android.util.Log.w("Haiagaru", "Saved Animanch board title repair unavailable", unavailable);
+            }
+        }
+    }
+
     boolean enabled(){return prefs.getBoolean("enabled",false);}
     static String providerId(String key){return "haiagaru_"+key;}
     static String nativeFlag(String key){return "bbs."+providerId(key)+".enable";}
@@ -132,7 +182,7 @@ final class SiteBoardGateway {
         SiteBoardProtocol.Board board=SiteBoardProtocol.address(address);String key=null;
         for(Map.Entry<String,SiteBoardProtocol.Board> e:boards.entrySet())if(e.getValue().url.equals(board.url)){key=e.getKey();break;}
         boolean fresh=key==null;if(fresh)key=SiteBoardCatalog.prefix(board.kind)+UUID.randomUUID().toString().replace("-","");
-        boards.put(key,SiteBoardProtocol.address(board.url));names.put(key,name.trim().isEmpty()?board.host:name.trim());
+        boards.put(key,SiteBoardProtocol.address(board.url));names.put(key,boardName(board,name.trim()));
         folders.putIfAbsent(key,SiteBoardMenuProtocol.title(board.kind));
         SharedPreferences.Editor save=prefs.edit().putString("boards",savedBoards());if(fresh)save.putBoolean("boardEnabled:"+key,true).putBoolean(nativeFlag(key),true);
         settingNativeFlags=true;try{if(!save.commit())throw new IOException("板を保存できません");}finally{settingNativeFlags=false;}
@@ -366,14 +416,16 @@ final class SiteBoardGateway {
     long creationTime(String key,String id)throws IOException{SiteBoardProtocol.Board board=boards.get(key);if(board==null||!boardEnabled(key))throw new IOException("使用しない板です");board=newsSource(key,id,board);return SiteThreadDates.opening(board,id,page(board.threadUrl(id)));}
     /** Retrieve opening attachments on an I/O worker. */
     String openingImage(String key,String id)throws IOException{
-        List<String> urls=openingImages(key,id,1);
+        List<String> urls=openingImages(key,id,1,null);
         return urls.isEmpty()?null:urls.get(0);
     }
-    List<String> openingImages(String key,String id,int limit)throws IOException{
+    List<String> openingImages(String key,String id,int limit,Context thumbnailContext)throws IOException{
         if(limit<=0)return Collections.emptyList();
         SiteBoardProtocol.Board board=boards.get(key);
         if(board==null||!boardEnabled(key)||!(board.kind.equals("futaba")||board.kind.equals("animanch")))return Collections.emptyList();
-        SiteBoardProtocol.ThreadPage thread=SiteBoardProtocol.thread(board,id,page(board.threadUrl(id)));
+        Response response=transport.getThumbnail(thumbnailContext,board.threadUrl(id));
+        if(response.status!=200)throw new IOException("HTTP "+response.status);
+        SiteBoardProtocol.ThreadPage thread=SiteBoardProtocol.thread(board,id,response.text());
         if(thread.entries.isEmpty())return Collections.emptyList();
         LinkedHashSet<String> found=new LinkedHashSet<>();
         collectOpeningMedia(found,thread.entries.get(0),board.threadUrl(id),limit);
@@ -391,15 +443,16 @@ final class SiteBoardGateway {
         }
     }
     /** Site transport enforces the same origin and authentication rules as native DAT images. */
-    byte[] openingImageBytes(String url)throws IOException{
+    byte[] openingImageBytes(Context context,String url)throws IOException{
         if(ImageVpnController.protectedPreview(url)){
-            app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=ImageVpnController.fetchPreview(url);
+            app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=
+                    ThumbnailRequestPacing.fetch(context,url,gate->ImageVpnController.fetchPreview(url));
             byte[] body=result.getBody();String type=result.getContentType();
             if(body==null||body.length>3*1024*1024||type==null||!type.toLowerCase(Locale.ROOT).startsWith("image/"))
                 throw new IOException("VPN経由でサムネイルを取得できません");
             return body;
         }
-        Response image=transport.get(url);
+        Response image=transport.getThumbnail(context,url);
         if(image.status!=200||image.bytes.length>3*1024*1024||!image.type.toLowerCase(Locale.ROOT).startsWith("image/"))throw new IOException("サムネイル画像を取得できません");
         return image.bytes;
     }
@@ -524,8 +577,16 @@ final class SiteBoardGateway {
     private final class HttpTransport implements Transport {
         private final SiteSessionCookies sessionCookies=new SiteSessionCookies();
         @Override public Response get(String url)throws IOException{
+            return getThumbnail(null,url);
+        }
+        @Override public Response getThumbnail(Context context,String url)throws IOException{
             for(int hop=0;hop<4;hop++){
-                Response r=request(url,null,null,null);
+                String addressForHop=url;
+                Response r=ThumbnailRequestPacing.fetch(context,addressForHop,gate->{
+                    Response response=request(addressForHop,null,null,null);
+                    if(gate!=null)gate.check(response.status,response.retryAfter);
+                    return response;
+                });
                 URI address=URI.create(url);
                 if(r.status==200&&"bakusai.com".equals(address.getHost())&&address.getPath().startsWith("/thr_res/")&&SiteBoardProtocol.bakusaiEmptyMobile(r.text())){
                     // The public mobile page sometimes omits both article and replies. Try its
@@ -559,7 +620,7 @@ final class SiteBoardGateway {
                 if(useCookies)for(Map.Entry<String,List<String>> h:c.getHeaderFields().entrySet())if("Set-Cookie".equalsIgnoreCase(h.getKey()))for(String value:h.getValue())CookieManager.getInstance().setCookie(address,value);
                 InputStream stream=status<400?c.getInputStream():c.getErrorStream();ByteArrayOutputStream data=new ByteArrayOutputStream();
                 if(stream!=null)try(InputStream in=stream){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(data.size()+n>12*1024*1024)throw new IOException("取得上限を超えました");data.write(buffer,0,n);}}
-                return new Response(status,data.toByteArray(),type,c.getHeaderField("Location"));
+                return new Response(status,data.toByteArray(),type,c.getHeaderField("Location"),c.getHeaderField("Retry-After"));
             }finally{c.disconnect();}
         }
     }

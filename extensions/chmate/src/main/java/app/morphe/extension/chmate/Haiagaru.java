@@ -4413,7 +4413,7 @@ public final class Haiagaru {
         });
         HiddenIdNg.addSettingsButton(layout, activity);
         Button imageNg = new Button(activity);
-        imageNg.setText("登録画像による透明あぼーん（判定レベル・一致枚数）");
+        imageNg.setText("登録画像によるあぼーん（判定レベル・一致枚数）");
         imageNg.setOnClickListener(view -> activity.startActivity(new Intent(activity, RegisteredImageNgSettingsActivity.class)));
         layout.addView(imageNg, rowParams(activity));
         Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動で非表示にする",
@@ -4435,6 +4435,10 @@ public final class Haiagaru {
         chainAboneDescription.setTextSize(13);
         layout.addView(chainAboneDescription, rowParams(activity));
         live.toggle(hideChainedAbone, ChainAboneVisibility.KEY);
+        Switch hideCopyPasteAbone = addSwitch(layout, activity,
+                text("コピペ省略されたレスを透明あぼーん", "Hide copy-paste abbreviated replies"),
+                preferences.getBoolean(ChainAboneVisibility.COPY_PASTE_KEY, false));
+        live.toggle(hideCopyPasteAbone, ChainAboneVisibility.COPY_PASTE_KEY);
         Switch hideNgWordIdReplies = addSwitch(layout, activity,
                 text("NGWord-IDへの返信も非表示", "Hide replies to NGWord-ID responses"),
                 preferences.getBoolean("hideNgWordIdReplies", false));
@@ -5517,6 +5521,11 @@ public final class Haiagaru {
     public static boolean hideChainedAbone() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean(ChainAboneVisibility.KEY, false);
+    }
+
+    static boolean hideCopyPasteAbone() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs != null && prefs.getBoolean(ChainAboneVisibility.COPY_PASTE_KEY, false);
     }
 
     public static boolean hideNgWordIdReplies() {

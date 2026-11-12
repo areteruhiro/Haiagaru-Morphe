@@ -25,11 +25,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Opt-in transparent NG: the ChMate UI thread only inspects already computed matches. */
+/** Opt-in registered image NG: the ChMate UI thread only inspects already computed matches. */
 public final class RegisteredImageNg {
     static final String PREFS = "haiagaru.registered-image-ng";
     static final String ENABLE = "enabled", COUNT = "min_matches", LEVEL = "level";
     static final int DEFAULT_COUNT = 2, MAX_REFERENCE_IMAGES = 80;
+    // The native NG reason renders an aboon row. The separate 0x1000 bit hides it.
+    private static final int IMAGE_NG_REASON = 0x8;
     private static final int MAX_BYTES = 8 * 1024 * 1024;
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r, "Haiagaru-registered-images");
@@ -90,10 +92,14 @@ public final class RegisteredImageNg {
             if (rows.isEmpty()) return;
             String[] bindings = PatrolImages.bindings().split(";", -1);
             if (bindings.length != 10) return;
-            int required = count(context), matchingLevel = level(context), newJobs = 0;
+            int required = count(context), matchingLevel = level(context);
             long version = revision;
             Object map = ResponseArchiveEntry.field(owner, mapField);
-            for (Object row : rows) {
+            Map<String, Map<String, String>> jobs = new LinkedHashMap<>();
+            // Start with recent replies while still visiting every eligible reply in this pass.
+            List<?> newestFirst = new ArrayList<>(rows);
+            Collections.reverse(newestFirst);
+            for (Object row : newestFirst) {
                 int number = ((Number) ResponseArchiveEntry.field(row, numberField)).intValue();
                 if (number < 1) continue;
                 Method method = row.getClass().getDeclaredMethod(bindings[1]);
@@ -112,16 +118,19 @@ public final class RegisteredImageNg {
                 if (Boolean.TRUE.equals(hide)) {
                     if (map instanceof SparseIntArray) {
                         SparseIntArray target = (SparseIntArray) map;
-                        target.put(number, target.get(number, 0) | 0x1008);
+                        target.put(number, target.get(number, 0) | IMAGE_NG_REASON);
                     } else if (map instanceof Map) {
                         @SuppressWarnings("unchecked") Map<Integer, Integer> target = (Map<Integer, Integer>) map;
-                        target.put(number, target.getOrDefault(number, 0) | 0x1008);
+                        target.put(number, target.getOrDefault(number, 0) | IMAGE_NG_REASON);
                     }
-                } else if (hide == null && newJobs < 8 && PENDING.size() < 32 && PENDING.add(key)) {
-                    newJobs++;
-                    Map<String, String> images = new LinkedHashMap<>(urls);
-                    WORKER.execute(() -> evaluate(key, images, version, matchingLevel, required));
+                } else if (hide == null) {
+                    jobs.putIfAbsent(key, urls);
                 }
+            }
+            jobs.keySet().removeIf(key -> !PENDING.add(key));
+            if (!jobs.isEmpty()) {
+                WORKER.execute(() -> jobs.forEach(
+                        (key, images) -> evaluate(key, images, version, matchingLevel, required)));
             }
         } catch (Exception error) {
             status = "画像NG判定の準備に失敗: " + error.getClass().getSimpleName();
@@ -180,7 +189,8 @@ public final class RegisteredImageNg {
             Map<String, RegisteredImageHash.Stamp> resolved = new LinkedHashMap<>();
             int attempted = 0;
             for (Map.Entry<String, String> entry : urls.entrySet()) {
-                if (version != revision || Thread.currentThread().isInterrupted() || attempted++ >= 20) return;
+                if (version != revision || Thread.currentThread().isInterrupted()) return;
+                if (attempted++ >= 20) break;
                 String identity = entry.getKey();
                 RegisteredImageHash.Stamp stamp = CACHED.get(identity);
                 if (stamp == null) {

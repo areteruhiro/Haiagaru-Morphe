@@ -23,6 +23,14 @@ public final class SiteBoardCatalogTest {
    ok(gateway.boards.values().stream().anyMatch(b->b.url.equals(games.url)),"games board is registered");
    ok(an.select("a[href]").stream().anyMatch(e->e.text().equals("家庭用ゲーム")),"games board has correct menu label");
    ok(!SiteBoardCatalog.key(games).equals(SiteBoardCatalog.key(fate)),"games and Fate remain separate boards");
+   String gamesKey=gateway.register(games.url,"");
+   ok(gateway.names.get(gamesKey).equals("家庭用ゲーム"),"manual games registration defaults to its category title");
+   var legacy=SiteBoardEnableTest.memory();
+   legacy.edit().putString("boards",new org.json.JSONArray().put(new org.json.JSONObject()
+       .put("key",gamesKey).put("url",games.url).put("name",games.host)).toString()).commit();
+   ok(new SiteBoardGateway(legacy,transport).names.get(gamesKey).equals("家庭用ゲーム"),"saved host placeholder is repaired");
+   gateway.register(games.url,"カスタム板名");
+   ok(gateway.names.get(gamesKey).equals("カスタム板名"),"explicit games board name is preserved");
    var newer=SiteBoardMenuProtocol.parse("animanch","{\"menu_list\":[{\"category_content\":[{\"board_name\":\"家庭用ゲーム・新名称\",\"url\":\"https://bbs.animanch.com/category32/\",\"category_name\":\"新カテゴリ\"}]}]}");
    ok(newer.size()==1&&newer.get(0).name.equals("家庭用ゲーム・新名称")&&newer.get(0).group.equals("新カテゴリ"),"updated upstream metadata overrides fallback");
    prefs.edit().putBoolean(SiteBoardGateway.siteFlag("futaba"),false).commit();ok(gateway.enabled()&&!gateway.boardEnabled(custom),"OFF Futaba cannot read while other site ON");String saved=prefs.getString("boards","");fail.set(true);ok(get(gateway.siteMenuUrl("bakusai")).startsWith("HTTP/1.1 503"),"failed region rejects partial catalogue");ok(saved.equals(prefs.getString("boards","")),"failure preserves saved catalogue");fail.set(false);

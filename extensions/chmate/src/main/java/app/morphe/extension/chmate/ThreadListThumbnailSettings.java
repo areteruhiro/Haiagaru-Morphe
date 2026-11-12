@@ -68,6 +68,41 @@ final class ThreadListThumbnailSettings {
         return Math.max(MIN_COUNT,Math.min(MAX_COUNT,stored));
     }
 
+    private static final String PACED_HOSTS="paced_hosts";
+
+    static Set<String> pacedHosts(Context context){
+        return prefs(context).getStringSet(PACED_HOSTS,
+                Collections.singleton(ThumbnailRequestPacing.DEFAULT_HOST));
+    }
+
+    private static void editPacedHosts(Activity activity){
+        EditText input=new EditText(activity);
+        input.setHint("bbs.animanch.com");
+        input.setMinLines(3);
+        input.setText(String.join("\n",new java.util.TreeSet<>(pacedHosts(activity))));
+        AlertDialog dialog=new AlertDialog.Builder(activity)
+                .setTitle("画像取得のレート制限対象サイト")
+                .setMessage("ドメインを1行に1つ入力してください。対象サイトへのサムネイル取得を2秒以上空け、HTTP 429が返った場合は一時停止します。")
+                .setView(input).setNegativeButton("キャンセル",null).setPositiveButton("保存",null).create();
+        dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            Set<String> hosts=new LinkedHashSet<>();
+            for(String line:input.getText().toString().split("\\R")){
+                String domain=line.trim();
+                if(domain.isEmpty())continue;
+                String host=ThumbnailRequestPacing.host("https://"+domain);
+                if(!host.equalsIgnoreCase(domain)||!host.contains(".")){
+                    input.setError("URLではなくドメイン名を入力してください");
+                    return;
+                }
+                hosts.add(host);
+            }
+            prefs(activity).edit().putStringSet(PACED_HOSTS,hosts).apply();
+            dialog.dismiss();
+            ThreadListThumbnail.refresh();
+        }));
+        dialog.show();
+    }
+
     static void addSettings(LinearLayout layout,Activity activity){
         migrate(activity);
         Switch enabled=new Switch(activity);
@@ -75,6 +110,10 @@ final class ThreadListThumbnailSettings {
         enabled.setChecked(enabled(activity));
         layout.addView(enabled,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));
         enabled.setOnCheckedChangeListener((v,checked)->{prefs(activity).edit().putBoolean(ENABLE,checked).apply();ThreadListThumbnail.refresh();});
+        Button pacing=new Button(activity);
+        pacing.setText("画像取得のレート制限対象サイト");
+        pacing.setOnClickListener(v->editPacedHosts(activity));
+        layout.addView(pacing);
         TextView sizeLabel=new TextView(activity);
         sizeLabel.setText("画像の大きさ："+sizeDp(activity)+"dp");
         layout.addView(sizeLabel);

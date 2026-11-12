@@ -46,11 +46,11 @@ public final class RegisteredImageNgSettingsActivity extends Activity {
         layout.setPadding(pad, pad, pad, pad);
         scroll.addView(layout);
         setContentView(scroll);
-        setTitle("登録画像による透明あぼーん");
+        setTitle("登録画像によるあぼーん");
         SharedPreferences settings = RegisteredImageNg.prefs(this);
 
         Switch enabled = new Switch(this);
-        enabled.setText("登録画像に一致するレスを透明あぼーん");
+        enabled.setText("登録画像に一致するレスをあぼーん");
         enabled.setChecked(settings.getBoolean(RegisteredImageNg.ENABLE, false));
         layout.addView(enabled);
         enabled.setOnCheckedChangeListener((button, value) -> {
@@ -64,7 +64,7 @@ public final class RegisteredImageNgSettingsActivity extends Activity {
         SeekBar count = new SeekBar(this);
         count.setMax(9);
         count.setProgress(RegisteredImageNg.count(this) - 1);
-        count.setContentDescription("透明あぼーんにする一致画像の枚数（1〜10）");
+        count.setContentDescription("あぼーんにする一致画像の枚数（1〜10）");
         layout.addView(count);
         count.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {

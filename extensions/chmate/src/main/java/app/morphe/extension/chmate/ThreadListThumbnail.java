@@ -35,6 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Native title-only thumbnail decoration. Works for both ListView and RecyclerView. */
 public final class ThreadListThumbnail {
     private static final ExecutorService IO=Executors.newFixedThreadPool(2,r->{Thread t=new Thread(r,"Haiagaru-thread-thumbnail");t.setDaemon(true);return t;});
+    private static final ExecutorService ANIMANCH_IO=Executors.newSingleThreadExecutor(r->{
+        Thread thread=new Thread(r,"Haiagaru-animanch-thumbnail");
+        thread.setDaemon(true);
+        return thread;
+    });
     private static final Map<String,List<Bitmap>> IMAGES=Collections.synchronizedMap(new LinkedHashMap<String,List<Bitmap>>(64,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,List<Bitmap>> entry){return size()>64;}
     });
@@ -45,6 +50,7 @@ public final class ThreadListThumbnail {
         @Override protected boolean removeEldestEntry(Map.Entry<String,Long> entry){return size()>1200;}
     });
     private static final Set<String> PENDING=ConcurrentHashMap.newKeySet();
+    private static final Set<String> ANIMANCH_PENDING=ConcurrentHashMap.newKeySet();
     private static final Map<Object,Boolean> ADAPTERS=Collections.synchronizedMap(new WeakHashMap<>());
     private static final ThreadLocal<Selection> CURRENT=new ThreadLocal<>();
     private static final AtomicBoolean REFRESH=new AtomicBoolean();
@@ -123,14 +129,18 @@ public final class ThreadListThumbnail {
         String key=state.cacheKey(maxImages);List<Bitmap> bitmaps=IMAGES.get(key);
         if(bitmaps!=null){decorate(state.title,bitmaps);return;}
         long now=SystemClock.elapsedRealtime();Long retry=FAILED.get(key);
-        if(retry!=null&&retry>now||PENDING.size()>=40||!PENDING.add(key))return;
-        IO.execute(()->{
+        SiteBoardProtocol.Board board=state.site==null?null:state.gateway.boards.get(state.site);
+        boolean animanch=board!=null&&board.kind.equals("animanch");
+        Set<String> pending=animanch?ANIMANCH_PENDING:PENDING;
+        if((retry!=null&&retry>now)||pending.size()>=(animanch?12:40)||!pending.add(key))return;
+        ExecutorService executor=animanch?ANIMANCH_IO:IO;
+        executor.execute(()->{
             try{
                 List<String> sources=SOURCES.get(key);
                 if(sources==null){
                     // Collect spare candidates so an unavailable video does not hide later images.
                     int candidateLimit=Math.min(16,Math.max(4,maxImages*4));
-                    sources=state.site==null?fiveChOpeningImages(state.five,state.id,candidateLimit):state.gateway.openingImages(state.site,state.id,candidateLimit);
+                    sources=state.site==null?fiveChOpeningImages(state.context,state.five,state.id,candidateLimit):state.gateway.openingImages(state.site,state.id,candidateLimit,state.context);
                     sources=Collections.unmodifiableList(new ArrayList<>(sources));
                     SOURCES.put(key,sources);
                 }
@@ -152,32 +162,32 @@ public final class ThreadListThumbnail {
                             }
                             bytes=poster.startsWith("http://127.0.0.1:")
                                     ?VideoThumbnailServer.registeredBytes(poster,3*1024*1024)
-                                    :fetch(poster,3*1024*1024,true);
+                                    :fetch(state.context,poster,3*1024*1024,true);
                         }else{
                             bytes=openingImageBytes(state,source);
                         }
                         Bitmap bitmap=decode(bytes);
                         if(bitmap!=null)decoded.add(bitmap);
-                    }catch(IOException unavailable){/* Keep the other valid opening images. */}
+                    }catch(ThumbnailRequestPacing.Deferred limited){throw limited;}
+                    catch(IOException unavailable){/* Keep the other valid opening images. */}
                 }
                 if(decoded.isEmpty()){
                     FAILED.put(key,SystemClock.elapsedRealtime()+(awaitingVideo?30:15)*60_000L);
                     return;
                 }
                 IMAGES.put(key,Collections.unmodifiableList(decoded));FAILED.remove(key);refresh();
+            }catch(ThumbnailRequestPacing.Deferred limited){
+                FAILED.put(key,limited.retryAt);
             }catch(Exception unavailable){FAILED.put(key,SystemClock.elapsedRealtime()+15*60_000L);}
-            finally{PENDING.remove(key);}
+            finally{pending.remove(key);}
         });
     }
 
     private static byte[] openingImageBytes(Selection state,String url)throws IOException{
-        if(state.site==null)return fetch(url,3*1024*1024,true);
-        try{return state.gateway.openingImageBytes(url);}
-        catch(IOException unsupported){
-            // Site transport accepts only its own origins. Public external previews
-            // (such as YouTube) use the same bounded image fetch as 5ch.
-            return fetch(url,3*1024*1024,true);
-        }
+        String host=ThumbnailRequestPacing.host(url);
+        if(state.site!=null&&(host.equals(ThumbnailRequestPacing.DEFAULT_HOST)||host.endsWith(".2chan.net")))
+            return state.gateway.openingImageBytes(state.context,url);
+        return fetch(state.context,url,3*1024*1024,true);
     }
 
     /** Called by the video decoder after a real frame poster is registered. */
@@ -250,14 +260,18 @@ public final class ThreadListThumbnail {
         return BitmapFactory.decodeByteArray(bytes,0,bytes.length,options);
     }
 
-    private static List<String> fiveChOpeningImages(ThreadListThumbnailRules.Board board,String id,int limit)throws IOException{
+    private static List<String> fiveChOpeningImages(Context context,ThreadListThumbnailRules.Board board,String id,int limit)throws IOException{
         String address=board.threadUrl(id);
-        byte[] html=fetch(address,2*1024*1024,false);
+        byte[] html=fetch(context,address,2*1024*1024,false);
         return ThreadListThumbnailRules.firstFiveChImages(new String(html,java.nio.charset.StandardCharsets.UTF_8),address,limit);
     }
 
     /** No redirect or non-HTTPS fallback: only explicitly selected public sources. */
-    private static byte[] fetch(String address,int limit,boolean image)throws IOException{
+    private static byte[] fetch(Context context,String address,int limit,boolean image)throws IOException{
+        return ThumbnailRequestPacing.fetch(context,address,gate->fetch(address,limit,image,gate));
+    }
+
+    private static byte[] fetch(String address,int limit,boolean image,ThumbnailRequestPacing.Gate gate)throws IOException{
         if(!ThreadListThumbnailRules.publicImage(address))throw new IOException("取得先が対応範囲外です");
         if(image&&ImageVpnController.protectedPreview(address)){
             app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=ImageVpnController.fetchPreview(address);
@@ -270,7 +284,9 @@ public final class ThreadListThumbnail {
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(6000);c.setReadTimeout(10000);
         c.setRequestProperty("User-Agent","Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36");
         try{
-            if(c.getResponseCode()!=200)throw new IOException("HTTP "+c.getResponseCode());
+            int status=c.getResponseCode();
+            if(gate!=null)gate.check(status,c.getHeaderField("Retry-After"));
+            if(status!=200)throw new IOException("HTTP "+status);
             String type=c.getContentType();
             if(image&&(type==null||!type.toLowerCase(java.util.Locale.ROOT).startsWith("image/")))throw new IOException("画像ではありません");
             if(c.getContentLengthLong()>limit)throw new IOException("取得上限を超えました");
