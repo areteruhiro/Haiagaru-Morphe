@@ -1,3 +1,55 @@
+# Haiagaru 1.25.0-dev.27 (2026-11-12)
+
+## 主な変更
+
+- 登録画像NG: Androidのファイル選択で複数画像を選ぶ方法と、画像URLからの登録に対応。判定レベルは4段階、一致枚数は1〜10枚で設定できます。初期設定はOFF、標準レベル・2枚以上です。
+- 検索: 記者IDを全文・前半4文字・後半4文字で切り替える際に元のIDを保持。期間指定のスレ名検索も回帰確認しました。
+- 外部板: あにまんのレス指定URL、過去ログ画像、家庭用ゲーム板の登録を改善。ふたば・爆サイは板ごとにスレ一覧の件数を設定できます。
+- スレ一覧: 先頭レスの画像・動画サムネイルの取得と表示を改善。
+- Imgur: `/a/` アルバムURLの末尾に画像・動画の拡張子が付いている場合も、アルバムとして認識してサムネイルを取得。
+- 文字列置換: ReplaceTxtの `<rx>`／`<rx2>` で正規表現とキャプチャの参照に対応。
+- 専用動画ビューア: 横画面でシステムバーを隠す没入表示を追加。
+
+## 検証範囲
+
+ローカルAndroidビルドと検索・サムネイル・外部板・画像NG・Imgur・文字列置換のホスト試験を実施しました。実機での画像選択・透明あぼーん描画・動画の横画面操作は未検証です。画像照合は知覚ハッシュとSSIMを使用し、ORB/AKAZE・RANSACは未搭載です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** support regex replacements and improve media viewing ([8f01d72](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8f01d724830a5da1783a9c5a5b9bf323a200eb89))
+
 # Haiagaru 1.25.0-dev.26 (2026-11-12)
 
 ## 主な変更
