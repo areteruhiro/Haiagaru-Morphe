@@ -61,6 +61,46 @@ configure<ApplicationExtension> {
     }
 }
 
+// Semantic Release updates CHANGELOG.md and the Gradle version before invoking the
+// Android build. Generate the in-app history from that source so dev and official
+// releases always contain the notes for the exact bundle being built.
+val updateHistoryResources = layout.buildDirectory.dir("generated/update-history/res")
+extensions.getByType<ApplicationExtension>().sourceSets.getByName("main").res
+    .srcDir(updateHistoryResources.get().asFile)
+val generateUpdateHistory = tasks.register("generateUpdateHistory") {
+    val changelog = rootProject.layout.projectDirectory.file("CHANGELOG.md")
+    val output = updateHistoryResources.map { it.file("raw/haiagaru_update_history.txt") }
+    inputs.file(changelog)
+    outputs.file(output)
+    doLast {
+        val source = changelog.asFile.readText(Charsets.UTF_8)
+        val release = Regex("(?m)^# Haiagaru ").findAll(source).toList()
+        val rendered = buildString {
+            release.takeWhile { match ->
+                !source.substring(match.range.first).lineSequence().first()
+                    .startsWith("# Haiagaru 1.24.1 ")
+            }.forEachIndexed { index, match ->
+                val end = release.getOrNull(index + 1)?.range?.first ?: source.length
+                val section = source.substring(match.range.first, end)
+                val title = section.lineSequence().first().removePrefix("# ").trim()
+                if (index > 0) appendLine()
+                appendLine(title)
+                val lines = section.lines()
+                val main = lines.indexOfFirst { it.trim() == "## 主な変更" }
+                val bodyStart = if (main >= 0) main + 1 else 1
+                val body = lines.drop(bodyStart).takeWhile { !it.startsWith("## ") }
+                    .map { it.trimEnd() }.dropWhile { it.isBlank() }.dropLastWhile { it.isBlank() }
+                body.forEach { appendLine(it) }
+            }
+        }.trim()
+        require(rendered.isNotBlank()) { "No release history found after 1.24.1" }
+        val target = output.get().asFile
+        target.parentFile.mkdirs()
+        target.writeText(rendered + "\n", Charsets.UTF_8)
+    }
+}
+tasks.named("preBuild") { dependsOn(generateUpdateHistory) }
+
 // The upstream plugin renames every DEX to chmate.mpe. Preserve all R8 shards
 // with distinct names instead of dropping classes when the extension grows.
 tasks.named<Sync>("syncExtension") {

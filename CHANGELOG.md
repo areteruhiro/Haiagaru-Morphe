@@ -2,6 +2,63 @@
 
 ## 主な変更
 
+- **更新履歴ダイアログの追加:** 従来の静的な「追加機能」一覧を廃止し、`CHANGELOG.md`からビルド時に生成される動的な「更新履歴」ダイアログに置き換えました。
+- **Edge掲示板への対応:** Edge（bbs.eddibb.cc）画像掲示板の閲覧・管理機能を追加しました。SiteBoard設定とゲートウェイに対応し、外部掲示板の有効化状態も正しく反映されるようにしました。
+- **ReporterSearchUiの改善:** 設定の参照先表記を「Haiagaru設定」に変更し、日付選択ラベルを簡素化しました。
+- **更新履歴の自動生成:** Gradleタスク`generateUpdateHistory`を追加しました。`CHANGELOG.md`から最近のリリースノートを抽出し、アプリ内表示用のrawリソースをビルド時に自動生成します。
+- **ドキュメントの更新:** DAT共有およびSAF画像NG機能の最新の検証結果を反映し、インストール手順と連携関連のドキュメントを更新しました。
+
+## 検証範囲
+
+更新履歴ダイアログの実装、`CHANGELOG.md`からのリリースノート抽出処理、Edge掲示板のSiteBoard設定・ゲートウェイ対応、外部掲示板の有効化状態の処理、ReporterSearchUiの表示文言、および関連ドキュメントの変更を対象としています。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの`haiagaru-image-ng.zip`／`haiagaru-image-vpn-v2.zip`を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** 静的な「追加機能」一覧を、`CHANGELOG.md`から生成される動的な更新履歴ダイアログに変更。
+* **chmate:** Edge（bbs.eddibb.cc）画像掲示板の閲覧・管理機能を追加し、SiteBoard設定とゲートウェイに対応。
+
+### 🛠 Improvements & Fixes
+
+* **chmate:** Edge掲示板の有効化状態が正しく反映されるよう修正。
+* **chmate:** ReporterSearchUiの設定参照表記と日付選択ラベルを改善。
+* **build:** 更新履歴をrawリソースとして自動生成するGradleタスク`generateUpdateHistory`を追加。
+* **docs:** DAT共有およびSAF画像NG機能の検証結果を反映し、関連ドキュメントを更新。
+# Haiagaru 1.25.0-dev.30 (2026-11-12)
+
+## 主な変更
+
 - 履歴ポップアップの「対象」タブ: ChMate標準のスレ履歴用アダプターを利用。星ランクの色・小さな板名・新着表示・長押しメニューを標準の「スレ」と揃えました。
 - 履歴タブの左右フリック: 「スレ → 対象 → 板 → 書き込み → 画像」の順に切り替え。「対象」を非表示にした場合は4タブで切り替えます。
 - スレ一覧サムネイル設定: 画像の大きさ（24〜96dp）と枚数（1〜4枚）のスライダーが操作できない問題を修正。操作終了時に値を保存します。

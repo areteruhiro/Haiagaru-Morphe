@@ -2438,3 +2438,10 @@ emulator-5580 / Haiagaru_Root_API36 / API36。署名鍵 C:/Users/narum/morphe-ch
 
 
 同期試験のHTTPS転送fixtureは試験プロセスだけに設定し、終了後に各reporterをforce-stopして解除。試験用prefs/ディレクトリは削除、製品の元context/rules/状態をfinally復元。公開POST0・最終crash空。初回のDNS/応答判定失敗と再確認はshared-ng-timeout-20261110.mdへ記録。
+
+## 2026-11-12 DAT共有の検証用APK
+
+- 19:12 JST / Haiagaru DAT検証 / ChMate 0.8.10.242 dev / jp.co.airfront.android.a2chMate.haiagaru.datshare242 / Mi Note 10 (d5497008) に新規インストール成功。初回起動で使用許諾画面を確認。
+- APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/dat-share-check/device242.apk / SHA256 b851090bed53355fa79c69322e55ce0beeaf782374bad6f63650581ac747be1d。
+- MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.25.0-dev.24.mpp / SHA256 714a7eff81591eca5b874be535e8c02e726d888a4fc880f53f7b7671fabcf84f。ローカル作業ツリーのビルド。
+- 署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。

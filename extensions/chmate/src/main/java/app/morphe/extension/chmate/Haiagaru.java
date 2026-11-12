@@ -3470,8 +3470,8 @@ public final class Haiagaru {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         Button addedFeatures = new Button(activity);
-        addedFeatures.setText("1.24.1以降の追加機能（オン・オフ）");
-        addedFeatures.setOnClickListener(view -> AddedFeatures.show(activity));
+        addedFeatures.setText("更新履歴");
+        addedFeatures.setOnClickListener(view -> UpdateHistory.show(activity));
         layout.addView(addedFeatures);
         ThreadWatch.addSettingsButton(layout, activity);
         ThreadListThumbnailSettings.addSettings(layout, activity);

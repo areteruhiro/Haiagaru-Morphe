@@ -43,7 +43,7 @@ final class SiteBoardGateway {
     private final SharedPreferences.OnSharedPreferenceChangeListener nativeFlags=this::nativeFlagChanged;
     private void nativeFlagChanged(SharedPreferences preferences,String key){
         // Android delivers background commits on the main thread after the write guard ends.
-        // Only the three visible site switches are activation events. Legacy board flags are
+        // Only the visible site switches are activation events. Legacy board flags are
         // retained as data, but registration/migration must never activate a different site.
         if(key==null||settingNativeFlags||!key.startsWith("bbs.haiagaru_site_")||!key.endsWith(".enable"))return;
         synchronized(this){String kind=key.substring("bbs.haiagaru_site_".length(),key.length()-".enable".length());boolean value=prefs.getBoolean(key,false);
@@ -165,7 +165,7 @@ final class SiteBoardGateway {
         edit.putBoolean("boardEnabled:"+key,value).putBoolean(nativeFlag(key),value);if(value)edit.putBoolean(siteFlag(boards.get(key).kind),true).putBoolean("enabled",true);
         settingNativeFlags=true;try{if(!edit.commit())throw new IOException("設定を保存できません");}finally{settingNativeFlags=false;}
         if(value)try{start();}catch(IOException failure){prefs.edit().putBoolean("boardEnabled:"+key,false).commit();throw failure;}
-        else{clearPending(key);String kind=boards.get(key).kind;if(!kindHasEnabled(kind))prefs.edit().putBoolean(siteFlag(kind),false).commit();boolean any=false;for(String other:boards.keySet())any|=effectiveFlag(other);if(!any)enabled(false);}
+        else{clearPending(key);String kind=boards.get(key).kind;if(!kindHasEnabled(kind))prefs.edit().putBoolean(siteFlag(kind),false).commit();boolean any=siteEnabled("edge");for(String other:boards.keySet())any|=effectiveFlag(other);if(!any)enabled(false);}
     }
     private boolean boardEnabled(SiteBoardProtocol.Board board){
         for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().url.equals(board.url)&&boardEnabled(row.getKey()))return true;
@@ -286,7 +286,7 @@ final class SiteBoardGateway {
         if(port==0){try(ServerSocket reserve=new ServerSocket()){reserve.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),0));port=reserve.getLocalPort();}if(!prefs.edit().putInt("port",port).commit())throw new IOException("接続先を保存できません");}
     }
     synchronized String siteMenuUrl(String kind)throws IOException{if(!Arrays.asList(SiteBoardMenuProtocol.KINDS).contains(kind))throw new IOException("未対応の掲示板です");reservePort();return origin()+"/haiagaru-menu-"+kind+"/";}
-    synchronized Pattern sitePattern(String kind)throws IOException{reservePort();Pattern cached=sitePatterns.get(kind);if(cached!=null)return cached;StringBuilder aliases=new StringBuilder(SiteBoardCatalog.prefix(kind)+"[a-f0-9]{32}");for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getKey().length()==33&&row.getValue().kind.equals(kind))aliases.append('|').append(Pattern.quote(row.getKey()));Pattern result=Pattern.compile(Pattern.quote(origin())+"/(?:"+aliases+")/");sitePatterns.put(kind,result);return result;}
+    synchronized Pattern sitePattern(String kind)throws IOException{reservePort();Pattern cached=sitePatterns.get(kind);if(cached!=null)return cached;if(kind.equals("edge")){Pattern result=Pattern.compile("https://bbs\\.eddibb\\.cc/liveedge/");sitePatterns.put(kind,result);return result;}StringBuilder aliases=new StringBuilder(SiteBoardCatalog.prefix(kind)+"[a-f0-9]{32}");for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getKey().length()==33&&row.getValue().kind.equals(kind))aliases.append('|').append(Pattern.quote(row.getKey()));Pattern result=Pattern.compile(Pattern.quote(origin())+"/(?:"+aliases+")/");sitePatterns.put(kind,result);return result;}
     synchronized String registrationUrl(String key)throws IOException{
         if(!boards.containsKey(key))throw new IOException("未登録の板です");
         reservePort();
@@ -338,11 +338,12 @@ final class SiteBoardGateway {
                     ||headers.containsKey("origin")&&!origin().equals(headers.get("origin"))){send(client,403,"text/plain",new byte[0]);return;}
             if(!enabled()){send(client,503,"text/plain; charset=UTF-8","追加掲示板の「使用する」がオフです".getBytes("UTF-8"));return;}
             String path=target.getRawPath();
-            Matcher catalogue=Pattern.compile("/haiagaru-menu-(bakusai|futaba|animanch)/").matcher(path);
+            Matcher catalogue=Pattern.compile("/haiagaru-menu-(edge|bakusai|futaba|animanch)/").matcher(path);
             if(request[0].equals("GET")&&catalogue.matches()){
                 String kind=catalogue.group(1);if(!siteEnabled(kind)){send(client,403,"text/plain",new byte[0]);return;}
                 List<SiteBoardMenuProtocol.Choice> entries=SiteBoardCatalog.load(kind,(service,region)->{if(!enabled()||!siteEnabled(kind))throw new IOException("掲示板の使用がオフです");return menu(service,region);});
-                send(client,200,"text/html; charset=Shift_JIS",SiteNativeData.wire(importCatalogue(kind,entries)));return;
+                String html=kind.equals("edge")?directCatalogue(entries):importCatalogue(kind,entries);
+                send(client,200,"text/html; charset=Shift_JIS",SiteNativeData.wire(html));return;
             }
             Matcher menu=Pattern.compile("/("+KEY_PATTERN+")/").matcher(path);
             if(request[0].equals("GET")&&menu.matches()&&boardEnabled(menu.group(1))){
@@ -467,7 +468,13 @@ final class SiteBoardGateway {
         return board.kind.equals("bakusai")?BakusaiPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.thread(board,id,html);
     }
     List<SiteBoardMenuProtocol.Choice> menu(String kind,int region)throws IOException{
+        if(kind.equals("edge"))return SiteBoardMenuProtocol.parse(kind,"");
         return SiteBoardMenuProtocol.parse(kind,page(SiteBoardMenuProtocol.source(kind,region)));
+    }
+    private String directCatalogue(List<SiteBoardMenuProtocol.Choice> entries)throws IOException{
+        if(entries.size()!=1||!"https://bbs.eddibb.cc/liveedge/".equals(entries.get(0).url))
+            throw new IOException("エッヂの板一覧を確認できません");
+        return "<html><body>\n<B>エッヂ</B><BR>\n<A HREF=\"https://bbs.eddibb.cc/liveedge/\">エッヂ</A><BR>\n</body></html>";
     }
     synchronized String importCatalogue(String kind,List<SiteBoardMenuProtocol.Choice> entries)throws IOException{
         if(!enabled()||!siteEnabled(kind))throw new IOException("掲示板の使用がオフです");

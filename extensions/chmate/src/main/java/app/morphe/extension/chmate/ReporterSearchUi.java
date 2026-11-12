@@ -16,7 +16,7 @@ final class ReporterSearchUi {
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor();
     static void show(Activity activity, String initialId) {
         if (!FeatureSwitches.enabled("reporterSearchEnabled", true)) {
-            Toast.makeText(activity, "追加機能一覧で記者ID・スレ名検索をオンにしてください", Toast.LENGTH_LONG).show();
+            Toast.makeText(activity, "Haiagaru設定で記者ID・スレ名検索をオンにしてください", Toast.LENGTH_LONG).show();
             return;
         }
         LinearLayout content = new LinearLayout(activity); content.setOrientation(LinearLayout.VERTICAL);
@@ -53,14 +53,14 @@ final class ReporterSearchUi {
         format.setTimeZone(zone); format.setLenient(false);
         SimpleDateFormat dateFormat=new SimpleDateFormat("yyyy-MM-dd",Locale.ROOT);dateFormat.setTimeZone(zone);
         TextView help = new TextView(activity);
-        help.setText("日本時間。開始日Aから終了日Bまで両日を含めて検索します。記者IDは木曜9時／毎日0時に更新されるため期間をまたぐと異なるIDになります。部分IDの一致だけでは同一人物とは限りません。"); content.addView(help);
+        help.setText("日本時間。開始日から終了日まで両日を含めて検索します。記者IDは木曜9時／毎日0時に更新されるため期間をまたぐと異なるIDになります。部分IDの一致だけでは同一人物とは限りません。"); content.addView(help);
         Calendar endDay=Calendar.getInstance(zone,Locale.JAPAN);
         Calendar startDay=(Calendar)endDay.clone();startDay.add(Calendar.DAY_OF_MONTH,-6);
         Button start=new Button(activity);start.setAllCaps(false);content.addView(start);
         Button end=new Button(activity);end.setAllCaps(false);content.addView(end);
-        updateDate(start,"開始日 A",startDay,dateFormat);updateDate(end,"終了日 B",endDay,dateFormat);
-        start.setOnClickListener(v->pickDate(activity,start,"開始日 A",startDay,dateFormat));
-        end.setOnClickListener(v->pickDate(activity,end,"終了日 B",endDay,dateFormat));
+        updateDate(start,"開始日",startDay,dateFormat);updateDate(end,"終了日",endDay,dateFormat);
+        start.setOnClickListener(v->pickDate(activity,start,"開始日",startDay,dateFormat));
+        end.setOnClickListener(v->pickDate(activity,end,"終了日",endDay,dateFormat));
         Button search = new Button(activity); search.setText("検索"); content.addView(search);
         TextView status = new TextView(activity); content.addView(status);
         LinearLayout results = new LinearLayout(activity); results.setOrientation(LinearLayout.VERTICAL); content.addView(results);
@@ -74,7 +74,7 @@ final class ReporterSearchUi {
             try {
                 long[] range=ReporterSearch.dateRange(dateFormat.format(startDay.getTime()),dateFormat.format(endDay.getTime()));
                 from=range[0];until=range[1];
-            } catch(Exception error){status.setText("終了日 B は開始日 A 以降にしてください。");return;}
+            } catch(Exception error){status.setText("終了日は開始日以降にしてください。");return;}
             search.setEnabled(false); results.removeAllViews();
             final String rangeText=dateFormat.format(startDay.getTime())+" ～ "+dateFormat.format(endDay.getTime())+"（両日含む）";
             status.setText(rangeText+" を検索中…");
