@@ -21,6 +21,45 @@ final class LiveSettings {
         }
         @Override public void setOnCheckedChangeListener(android.widget.CompoundButton.OnCheckedChangeListener l){external=l;}
     }
+    static final class Range extends android.widget.SeekBar {
+        private OnSeekBarChangeListener listener;
+        private boolean userChange, tracking;
+        private java.util.function.IntFunction<String> valueLabel = String::valueOf;
+        Range(Context context) {
+            super(context);
+            super.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+                public void onProgressChanged(android.widget.SeekBar bar, int progress, boolean fromUser) {
+                    if (listener != null) listener.onProgressChanged(bar, progress, fromUser || userChange);
+                }
+                public void onStartTrackingTouch(android.widget.SeekBar bar) {
+                    if (listener != null) listener.onStartTrackingTouch(bar);
+                }
+                public void onStopTrackingTouch(android.widget.SeekBar bar) {
+                    if (listener != null) listener.onStopTrackingTouch(bar);
+                }
+            });
+        }
+        @Override public void setOnSeekBarChangeListener(OnSeekBarChangeListener listener) {
+            this.listener = listener;
+        }
+        void setValueLabel(java.util.function.IntFunction<String> valueLabel) { this.valueLabel = valueLabel; }
+        String valueText() { return valueLabel.apply(getProgress()); }
+        void userProgress(int value) {
+            if (!tracking) {
+                tracking = true;
+                if (listener != null) listener.onStartTrackingTouch(this);
+            }
+            userChange = true;
+            try { setProgress(value); }
+            finally { userChange = false; }
+        }
+        void finishUserChange() {
+            if (!tracking) return;
+            tracking = false;
+            if (listener != null) listener.onStopTrackingTouch(this);
+        }
+    }
+
     static final class Choice extends Spinner {
         private AdapterView.OnItemSelectedListener external;
         Runnable changed;

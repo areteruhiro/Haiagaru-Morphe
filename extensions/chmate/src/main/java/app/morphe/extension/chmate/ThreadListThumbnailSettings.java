@@ -117,7 +117,8 @@ final class ThreadListThumbnailSettings {
         TextView sizeLabel=new TextView(activity);
         sizeLabel.setText("画像の大きさ："+sizeDp(activity)+"dp");
         layout.addView(sizeLabel);
-        SeekBar size=new SeekBar(activity);
+        LiveSettings.Range size=new LiveSettings.Range(activity);
+        size.setValueLabel(progress -> (MIN_SIZE_DP+progress*STEP_SIZE_DP)+"dp");
         size.setContentDescription("スレ一覧画像の大きさ");
         size.setMax((MAX_SIZE_DP-MIN_SIZE_DP)/STEP_SIZE_DP);
         size.setProgress((sizeDp(activity)-MIN_SIZE_DP)/STEP_SIZE_DP);
@@ -136,7 +137,8 @@ final class ThreadListThumbnailSettings {
         TextView countLabel=new TextView(activity);
         countLabel.setText("1スレに表示するサムネイル：最大"+imageCount(activity)+"枚");
         layout.addView(countLabel);
-        SeekBar count=new SeekBar(activity);
+        LiveSettings.Range count=new LiveSettings.Range(activity);
+        count.setValueLabel(progress -> (MIN_COUNT+progress)+"枚");
         count.setContentDescription("スレ一覧の1スレあたりのサムネイル枚数");
         count.setMax(MAX_COUNT-MIN_COUNT);
         count.setProgress(imageCount(activity)-MIN_COUNT);
