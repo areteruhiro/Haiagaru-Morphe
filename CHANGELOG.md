@@ -1,3 +1,53 @@
+# Haiagaru 1.25.0-dev.29 (2026-11-12)
+
+## 主な変更
+
+- 履歴ポップアップ: 左右ジェスチャーによる切替にタブ色を追従。「対象」一覧の各スレに新着レス数を表示。
+- 登録画像NG: ステータスバーとの重なりを補正。SAF未設定でもURLからアプリ内へ画像を登録可能。
+- 追加機能一覧: 基本設定に「1.24.1以降の追加機能（オン・オフ）」を追加。個別設定と同じ値で切り替え。
+- 画像取得: UA変更時のCatbox画像リクエストにブラウザ形式のUAを使用。
+- 既読スレ削除: 多数の候補があるダイアログで操作ボタンの表示領域を確保。
+
+## 検証範囲
+
+ローカルAndroidビルド、UAルール45件・ネイティブidentity19件、ヘッダー書き換え3経路、新着件数の計算を確認。指定Catbox画像はブラウザUAでHTTP200・JPEGを取得しました。この版の実機での画面・タップ・ジェスチャー操作は未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add recent feature controls and fix history and image settings ([f558a8f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f558a8f895428292930715fa699b6456195de92d))
+
 # Haiagaru 1.25.0-dev.28 (2026-11-12)
 
 ## 主な変更
