@@ -1,8 +1,13 @@
 package app.morphe.patches.chmate
 
 import app.morphe.patcher.patch.BytecodePatchContext
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
+import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
+import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
@@ -15,6 +20,29 @@ internal fun BytecodePatchContext.patchSiteThreadMetadata(version:String){
     val subject=if(old)"Lo/MaxAdViewImplExternalSyntheticLambda1;" else if(middle)"Lo/CertificateChainCleaner;" else "Lo/setSkipText;"
     val id=if(old)"e" else if(middle)"b" else "d"
     val formatter=if(old)"Lo/ocd;->e(J)Ljava/lang/String;" else if(middle)"Lo/getMaxLine;->d(J)Ljava/lang/String;" else "Lo/singleRefIterator;->b(J)Ljava/lang/String;"
+    val formatterMatch=Regex("^(L[^;]+;)->([^()]+)\\(J\\)Ljava/lang/String;$").matchEntire(formatter)
+        ?: error("Native site date formatter reference changed: $version")
+    val formatterClass=mutableClassDefBy(formatterMatch.groupValues[1])
+    val formatterName=formatterMatch.groupValues[2]
+    val formatterMethod=formatterClass.methods.single{it.name==formatterName&&it.parameterTypes==listOf("J")&&it.returnType=="Ljava/lang/String;"}
+    check(formatterMethod.accessFlags and 0x8!=0){"Native site date formatter is no longer static: $version"}
+    val nativeFormatterName="haiagaruNativeSiteDate"
+    check(formatterClass.methods.none{it.name==nativeFormatterName&&it.parameterTypes==listOf("J")})
+    val nativeFormatter=MutableMethod(ImmutableMethod(formatterClass.type,nativeFormatterName,formatterMethod.parameters,
+        formatterMethod.returnType,formatterMethod.accessFlags,formatterMethod.annotations,formatterMethod.hiddenApiRestrictions,formatterMethod.implementation))
+    val formatterWrapper=MutableMethod(ImmutableMethod(formatterClass.type,formatterName,
+        listOf(ImmutableMethodParameter("J",emptySet(),null)),"Ljava/lang/String;",formatterMethod.accessFlags,
+        formatterMethod.annotations,formatterMethod.hiddenApiRestrictions,ImmutableMethodImplementation(3,emptyList(),emptyList(),emptyList())))
+    formatterWrapper.addInstructions(0,"""
+        invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/SiteThreadMetadata;->epoch(J)J
+        move-result-wide p0
+        invoke-static/range {p0 .. p1}, $nativeFormatter
+        move-result-object v0
+        return-object v0
+    """.trimIndent())
+    formatterClass.methods.remove(formatterMethod)
+    formatterClass.methods.add(nativeFormatter)
+    formatterClass.methods.add(formatterWrapper)
     val checkCall=if(old)"Ljp/syoboi/a2chMate/data/BBSThread;->c(J)Z" else if(middle)"Ljp/syoboi/a2chMate/data/BBSThread;->d(J)Z" else "Lo/TopLayoutDislike2;->b(J)Z"
     val runtime="Lapp/morphe/extension/chmate/SiteThreadMetadata;"
     val bind=owner.methods.single{it.name==if(old||middle)"getView" else "onBindViewHolder"}

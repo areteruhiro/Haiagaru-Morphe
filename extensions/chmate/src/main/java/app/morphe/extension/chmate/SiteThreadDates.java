@@ -1,6 +1,7 @@
 package app.morphe.extension.chmate;
 
 import java.time.*;
+import java.util.Map;
 import java.util.regex.*;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
@@ -22,5 +23,13 @@ final class SiteThreadDates {
     }
     /** Same thousandths-of-responses/day unit as ChMate's list renderer. */
     static long momentum(int count,long created,long now){if(count<1||created<1||created>now)return 0;long elapsed=Math.max(1,now-created);return count*86400000L/elapsed;}
+    /** Resolve a site ID only when every cached board association agrees. */
+    static long uniqueCachedDate(Map<String,Long> cache,String source,long fallback){
+        String suffix=":"+source;Long match=null;
+        for(Map.Entry<String,Long> entry:cache.entrySet())if(entry.getKey().endsWith(suffix)){
+            long candidate=entry.getValue();if(match!=null&&match.longValue()!=candidate)return fallback;match=candidate;
+        }
+        return match==null?fallback:match;
+    }
     private SiteThreadDates(){}
 }

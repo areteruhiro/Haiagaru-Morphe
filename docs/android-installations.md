@@ -2445,3 +2445,10 @@ emulator-5580 / Haiagaru_Root_API36 / API36。署名鍵 C:/Users/narum/morphe-ch
 - APK C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/dat-share-check/device242.apk / SHA256 b851090bed53355fa79c69322e55ce0beeaf782374bad6f63650581ac747be1d。
 - MPP C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.25.0-dev.24.mpp / SHA256 714a7eff81591eca5b874be535e8c02e726d888a4fc880f53f7b7671fabcf84f。ローカル作業ツリーのビルド。
 - 署名鍵 C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore / alias Morphe / 証明書SHA256 0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed。
+
+## 2026-11-13 外部板日時・provider設定の検証APK
+
+- 01:51 JST / Mi Note 10、Android 11、serial `d5497008`。既存 `jp.co.airfront.android.a2chMate.haiagaru.reporter242`（表示名「Haiagaru NG確認 242」、ChMate `0.8.10.242 dev`）へ同一パッケージ・同一署名で `adb install -r` 成功。アンインストール・データ消去なし。更新前の端末APK SHA256 `0B6E84DC76259557885E9DD75BFF485BB505FC057EA8E05FDACE89E2A5E8696A`、`firstInstallTime=2026-11-06 00:30:25`。更新後 `lastUpdateTime=2026-11-13 01:51:33`。
+- 候補APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-date-device/reporter242.apk` / SHA256 `EFFEFC1F1F3D2CF3CBF6E5D002972DF90A4D7CA59B54F715DEAA6D272CC021B3`。端末からpullした導入APKも同じSHA256。
+- MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.25.0-dev.31.mpp` / SHA256 `5E4D2DAB01D35FF6C71D9D7E58FDC19F2B5374C3A5B65B510C362371F17DF2BE`。
+- 署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe` / 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。更新後のHomeActivity表示とcrash buffer確認まで実施。

@@ -2,6 +2,7 @@ package app.morphe.extension.chmate;
 
 import java.nio.file.*;
 import java.time.*;
+import java.util.Map;
 import java.io.IOException;
 
 public final class SiteThreadDatesTest {
@@ -18,6 +19,10 @@ public final class SiteThreadDatesTest {
         ok(SiteThreadDates.momentum(1,now,now)==86400000,"zero elapsed time remains finite");
         ok(SiteThreadDates.momentum(10,now+1,now)==0,"future date is not a negative momentum");
         ok(SiteThreadDates.momentum(0,day,now)==0,"no responses");
+        Map<String,Long> cached=Map.of("hboard-one:7596018",day,"hboard-two:7596018",day);
+        ok(SiteThreadDates.uniqueCachedDate(cached,"7596018",9247596018L)==day,"same synthetic thread ID resolves consistently across boards");
+        ok(SiteThreadDates.uniqueCachedDate(Map.of("hboard-one:7596018",day,"hboard-two:7596018",day+60),"7596018",9247596018L)==9247596018L,"ambiguous synthetic thread ID is not assigned the wrong date");
+        ok(SiteThreadDates.uniqueCachedDate(Map.of("hboard-one:17596018",day),"7596018",9247596018L)==9247596018L,"thread ID suffix must match exactly");
         var bak=SiteBoardProtocol.address("https://bakusai.com/thr_tl/acode=1/ctgid=123/bid=1122/");
         String bakHtml=Files.readString(Path.of("build/external-board-dates/bakusai-football-thread.raw"));
         long actual=SiteThreadDates.opening(bak,"13031645",bakHtml);

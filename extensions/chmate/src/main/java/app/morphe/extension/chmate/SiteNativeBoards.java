@@ -83,6 +83,9 @@ public final class SiteNativeBoards {
    for(Constructor<?> c:type.getDeclaredConstructors()){Class<?>[] p=c.getParameterTypes();if(p.length==14&&p[0]==android.content.SharedPreferences.class&&p[6]==Pattern.class&&p[7]==Pattern.class){ctor=c;break;}}
    if(ctor==null)throw new ReflectiveOperationException("Native BBS constructor changed");ctor.setAccessible(true);Class<?>[] params=ctor.getParameterTypes();
    for(String kind:SiteBoardMenuProtocol.KINDS){
+    // The native menu updater consumes this same registry. Keep unchecked
+    // providers out of its board catalogue; Haiagaru settings can re-enable them.
+    if(!gateway.siteEnabled(kind))continue;
     String address=gateway.siteMenuUrl(kind),name=SiteBoardMenuProtocol.title(kind),home=SiteBoardMenuProtocol.home(kind);Pattern pattern=gateway.sitePattern(kind);String signature=type.getName()+":"+kind+":"+address+":"+pattern.pattern();
     Object model=MODELS.get(signature);if(model==null){
      Object options=params[11].getDeclaredConstructor().newInstance();Object decoder=java.lang.reflect.Proxy.newProxyInstance(type.getClassLoader(),new Class<?>[]{params[12]},(proxy,method,args)->{

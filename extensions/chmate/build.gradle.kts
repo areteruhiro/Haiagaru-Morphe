@@ -87,10 +87,28 @@ val generateUpdateHistory = tasks.register("generateUpdateHistory") {
                 appendLine(title)
                 val lines = section.lines()
                 val main = lines.indexOfFirst { it.trim() == "## 主な変更" }
-                val bodyStart = if (main >= 0) main + 1 else 1
-                val body = lines.drop(bodyStart).takeWhile { !it.startsWith("## ") }
-                    .map { it.trimEnd() }.dropWhile { it.isBlank() }.dropLastWhile { it.isBlank() }
-                body.forEach { appendLine(it) }
+                val mainItems = if (main < 0) emptyList() else lines.drop(main + 1)
+                    .takeWhile { !it.startsWith("## ") }
+                    .map { it.trim() }
+                    .filter { it.startsWith("- ") || it.startsWith("* ") }
+                if (mainItems.isNotEmpty()) {
+                    mainItems.forEach { appendLine(it) }
+                } else {
+                    val categories = setOf(
+                        "### ✨ New Features", "### 🛠 Improvements & Fixes",
+                        "### 🐛 Bug Fixes", "### 🔧 Improvements", "### 🚀 Updated App Support"
+                    )
+                    var category: String? = null
+                    lines.forEach { raw ->
+                        val line = raw.trim()
+                        if (line.startsWith("### ")) {
+                            category = line.takeIf { it in categories }
+                            if (category != null) appendLine(category)
+                        } else if (category != null && (line.startsWith("* ") || line.startsWith("- "))) {
+                            appendLine(line)
+                        }
+                    }
+                }
             }
         }.trim()
         require(rendered.isNotBlank()) { "No release history found after 1.24.1" }
