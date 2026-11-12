@@ -6,6 +6,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,6 +45,9 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     private float playbackSpeed = 1f;
     private float speedBeforeHold = 1f;
     private boolean holdSpeedActive;
+    private View playerRoot;
+    private static final int LANDSCAPE_IMMERSIVE_FLAGS = View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
     private static final float[] PLAYBACK_SPEEDS = {0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
 
     private static volatile Boolean installationStatus;
@@ -91,12 +95,15 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             muted = state.getBoolean("muted", false);
         }
         LinearLayout root = new LinearLayout(this);
+        playerRoot = root;
         root.setOrientation(LinearLayout.VERTICAL); root.setBackgroundColor(Color.BLACK);
         root.setOnApplyWindowInsetsListener((view, insets) -> {
-            view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
-                    insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            boolean landscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+            view.setPadding(insets.getSystemWindowInsetLeft(), landscape ? 0 : insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(), landscape ? 0 : insets.getSystemWindowInsetBottom());
             return insets;
         });
+        updateImmersiveMode();
         Button back = overlayButton("戻る"); back.setOnClickListener(v -> finish());
         Button more = overlayButton("︙"); more.setContentDescription("動画メニュー");
         speedButton = overlayButton(speedLabel(playbackSpeed));
@@ -569,8 +576,25 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             video.pause();
         }
     }
+    private void updateImmersiveMode() {
+        View decor = getWindow().getDecorView();
+        int flags = decor.getSystemUiVisibility();
+        boolean landscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+        int next = landscape ? flags | LANDSCAPE_IMMERSIVE_FLAGS : flags & ~LANDSCAPE_IMMERSIVE_FLAGS;
+        if (next != flags) decor.setSystemUiVisibility(next);
+        if (playerRoot != null) playerRoot.requestApplyInsets();
+    }
+    @Override public void onConfigurationChanged(Configuration configuration) {
+        super.onConfigurationChanged(configuration);
+        updateImmersiveMode();
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) updateImmersiveMode();
+    }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        updateImmersiveMode();
         if (video != null) gestures = new VideoViewerGestures(this);
         if (prepared && playWhenReady) video.start();
         if (gifFallback != null && playWhenReady) gifFallback.play();

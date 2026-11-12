@@ -17,7 +17,8 @@ public final class StringReplacement {
     static final String PREFS = "haiagaru_replace_str";
     static final String SAMPLE = "; Haiagaru: UTF-8、タブ区切り。投稿本文・保存DATは変更しません。\n"
             + "; 検索文字<TAB>置換文字。<ex>は大小区別なし、<ex2>は区別あり。\n"
-            + "; 空の置換文字は削除。本文(msg)のみ対応。正規表現・URL条件は未対応。\n"
+            + "; <rx>は正規表現（大小区別なし）、<rx2>は大小区別あり。$1や${name}でグループ参照可。\n"
+            + "; 空の置換文字は削除。本文(msg)のみ対応。URL条件には未対応。\n"
             + "; 次はサンプルです。先頭の ; を外すと有効になります。\n"
             + "; <ex2>https://example■.com/\thttps://example.com/\tmsg\n";
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
