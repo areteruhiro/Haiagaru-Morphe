@@ -38,6 +38,15 @@ final class ReporterSearch {
         if (mode == 2) return new long[]{daily, daily + DAY};
         return new long[]{Math.max(daily, weekly), Math.min(daily + DAY, weekly + WEEK)};
     }
+    /** Switch the displayed query to the requested part of a complete reporter ID. */
+    static String queryForMode(String id, int mode) {
+        if (id == null || !id.matches("[A-Za-z0-9+/.]{8}"))
+            throw new IllegalArgumentException("8文字の記者IDが必要です");
+        if (mode == 0) return id;
+        if (mode == 1) return id.substring(0, 4);
+        if (mode == 2) return id.substring(4);
+        throw new IllegalArgumentException("記者IDの検索モードが不正です");
+    }
     static String pattern(String suffix, int mode) {
         String id = suffix.substring(1, suffix.length() - 2);
         if (!id.matches("[A-Za-z0-9+/.]{8}")) throw new IllegalArgumentException("8文字の記者IDが必要です");

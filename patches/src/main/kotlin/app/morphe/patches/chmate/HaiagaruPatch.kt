@@ -5503,6 +5503,11 @@ val haiagaruPatch = resourcePatch(
                 setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
             })
             application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.RegisteredImageNgSettingsActivity")
+                setAndroidAttribute("exported", "false")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
+            })
+            application.appendChild(document.createElement("activity").apply {
                 setAndroidAttribute("name", "app.morphe.extension.chmate.SettingLinkActivity")
                 setAndroidAttribute("exported", "true")
                 setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")

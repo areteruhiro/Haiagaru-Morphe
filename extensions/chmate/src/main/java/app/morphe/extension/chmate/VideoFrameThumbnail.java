@@ -141,6 +141,7 @@ final class VideoFrameThumbnail {
             XMediaAttachments.setFramePoster(url, variant, poster);
             android.util.Log.i("HaiagaruMedia", "Video frame ready: " + poster);
             ImgurAlbumAttachments.refreshVideoModels();
+            ThreadListThumbnail.frameReady(url);
         } catch (Exception error) {
             failed(url,variant,error);
             android.util.Log.w("HaiagaruMedia", "Video frame generation failed", error);

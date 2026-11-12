@@ -23,6 +23,27 @@ final class ReporterSearchUi {
         mode.setAdapter(adapter); content.addView(mode);
         EditText query = new EditText(activity); query.setSingleLine(true); query.setHint("記者ID／スレ名");
         if (initialId != null) query.setText(initialId); content.addView(query);
+        // Preserve the full ID while the spinner displays a four-character search term.
+        // If the user edits the field, never overwrite their new search text with stale data.
+        final String[] fullId = {initialId != null && initialId.matches("[A-Za-z0-9+/.]{8}") ? initialId : null};
+        final String[] autoQuery = {fullId[0]};
+        mode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long rowId) {
+                if (position == 3) return;
+                String current = query.getText().toString();
+                String source = current.matches("[A-Za-z0-9+/.]{8}") ? current
+                        : fullId[0] != null && current.equals(autoQuery[0]) ? fullId[0] : null;
+                if (source == null) return;
+                fullId[0] = source;
+                String shown = ReporterSearch.queryForMode(source, position);
+                if (!shown.equals(current)) {
+                    query.setText(shown);
+                    query.setSelection(shown.length());
+                }
+                autoQuery[0] = shown;
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
         TimeZone zone=TimeZone.getTimeZone("Asia/Tokyo");
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT);
         format.setTimeZone(zone); format.setLenient(false);

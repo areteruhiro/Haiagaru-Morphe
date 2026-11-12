@@ -967,6 +967,7 @@ public final class Haiagaru {
         MediaUploadHosts.init(appContext);
         ImageVpnController.initialize(appContext);
         PatrolImages.initialize(appContext);
+        RegisteredImageNg.initialize(appContext);
         PatrolErrorHistory.initialize(appContext);
         ExternalBoardAuth.initialize(appContext);
         BoardCookies.initialize(appContext);
@@ -4411,6 +4412,10 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         HiddenIdNg.addSettingsButton(layout, activity);
+        Button imageNg = new Button(activity);
+        imageNg.setText("登録画像による透明あぼーん（判定レベル・一致枚数）");
+        imageNg.setOnClickListener(view -> activity.startActivity(new Intent(activity, RegisteredImageNgSettingsActivity.class)));
+        layout.addView(imageNg, rowParams(activity));
         Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動で非表示にする",
                 preferences.getBoolean(RedIdAutoNg.KEY, false));
         TextView autoNgRedIdsDescription = new TextView(activity);

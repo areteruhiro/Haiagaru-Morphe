@@ -24,9 +24,10 @@ import java.util.Set;
 
 /** Independent, initially disabled thumbnail experiment with board exclusions. */
 final class ThreadListThumbnailSettings {
-    static final String PREFS="haiagaru.thread-list-thumbnail",ENABLE="enabled",BOARDS="boards",SIZE="size_dp";
+    static final String PREFS="haiagaru.thread-list-thumbnail",ENABLE="enabled",BOARDS="boards",SIZE="size_dp",COUNT="max_images";
     static final String EXCLUDED="excluded_boards_v2",KNOWN_5CH="known_5ch_boards";
     static final int MIN_SIZE_DP=24,MAX_SIZE_DP=96,STEP_SIZE_DP=4,DEFAULT_SIZE_DP=44;
+    static final int MIN_COUNT=1,MAX_COUNT=4,DEFAULT_COUNT=1;
     static SharedPreferences prefs(Context context){return context.getSharedPreferences(PREFS,0);}
     static boolean enabled(Context context){return prefs(context).getBoolean(ENABLE,false);}
     static boolean selected(Context context,String board){
@@ -62,6 +63,10 @@ final class ThreadListThumbnailSettings {
         int stored=prefs(context).getInt(SIZE,DEFAULT_SIZE_DP);
         return Math.max(MIN_SIZE_DP,Math.min(MAX_SIZE_DP,stored));
     }
+    static int imageCount(Context context){
+        int stored=prefs(context).getInt(COUNT,DEFAULT_COUNT);
+        return Math.max(MIN_COUNT,Math.min(MAX_COUNT,stored));
+    }
 
     static void addSettings(LinearLayout layout,Activity activity){
         migrate(activity);
@@ -89,10 +94,28 @@ final class ThreadListThumbnailSettings {
                 ThreadListThumbnail.refresh();
             }
         });
+        TextView countLabel=new TextView(activity);
+        countLabel.setText("1スレに表示するサムネイル：最大"+imageCount(activity)+"枚");
+        layout.addView(countLabel);
+        SeekBar count=new SeekBar(activity);
+        count.setContentDescription("スレ一覧の1スレあたりのサムネイル枚数");
+        count.setMax(MAX_COUNT-MIN_COUNT);
+        count.setProgress(imageCount(activity)-MIN_COUNT);
+        layout.addView(count,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));
+        count.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            @Override public void onProgressChanged(SeekBar bar,int progress,boolean fromUser){
+                countLabel.setText("1スレに表示するサムネイル：最大"+(MIN_COUNT+progress)+"枚");
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar){}
+            @Override public void onStopTrackingTouch(SeekBar bar){
+                prefs(activity).edit().putInt(COUNT,MIN_COUNT+bar.getProgress()).apply();
+                ThreadListThumbnail.refresh();
+            }
+        });
         Button boards=new Button(activity);boards.setText("画像を表示しない板を選択（検索可）");layout.addView(boards);
         boards.setOnClickListener(v->showTargets(activity));
         TextView help=new TextView(activity);
-        help.setText("機能は初期OFF。有効にすると使用中の板の1レス目の画像を表示します。板は初期状態ですべて表示対象です。画像を表示しない板だけチェックして除外できます。画像の大きさは24〜96dpのバーで変更できます。ふたば・あにまんは通常の掲示板設定で登録した板が対象です。5ch・エッヂは閲覧すると自動で対象・除外候補に追加されます。画像取得には通信が発生します。画像がないスレや取得に失敗したスレは通常表示です。");
+        help.setText("機能は初期OFF。有効にすると使用中の板のスレ冒頭の画像・動画サムネイルを表示します。直接動画リンクは動画サムネイル生成設定に従い、YouTubeは公開画像を利用します。1スレあたり最大1〜4枚、大きさは24〜96dpのバーで変更できます。複数枚でもスレタイの文字領域を確保します。板は初期状態ですべて表示対象です。表示しない板だけチェックして除外できます。ふたば・あにまんは通常の掲示板設定で登録した板が対象です。5ch・エッヂは閲覧すると自動で対象・除外候補に追加されます。取得には通信が発生します。取得に失敗したスレは通常表示です。");
         layout.addView(help);
     }
 

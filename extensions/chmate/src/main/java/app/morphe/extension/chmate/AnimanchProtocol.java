@@ -14,7 +14,7 @@ import org.jsoup.safety.Safelist;
 final class AnimanchProtocol {
     static final String ORIGIN="https://bbs.animanch.com";
     static final String CHECK=ORIGIN+"/inc/comment.php?preCheck", POST=ORIGIN+"/inc/comment.php";
-    private static final Pattern THREAD=Pattern.compile("/board/([1-9][0-9]{0,11})/");
+    private static final Pattern THREAD=Pattern.compile("/board/([1-9][0-9]{0,11})/(?:([1-9][0-9]{0,5})/?)?");
     private static final Pattern RESPONSE=Pattern.compile("res([1-9][0-9]{0,4})");
     private static final Safelist BODY=new Safelist().addTags("a","br","b","strong","i","em","s","del","blockquote","p","span")
             .addAttributes("a","href").addProtocols("a","href","http","https");
@@ -34,10 +34,17 @@ final class AnimanchProtocol {
         Topic(String id,String title,int replies){this.id=id;this.title=title;this.replies=replies;}
     }
     static String threadId(String url){
+        Matcher match=threadMatch(url);return match==null?null:match.group(1);
+    }
+    /** A direct /board/id/res link has priority over a #resN fragment. */
+    static String replyNumber(String url){
+        Matcher match=threadMatch(url);return match==null?null:match.group(2);
+    }
+    private static Matcher threadMatch(String url){
         try{
             URI uri=URI.create(url);if(!"https".equalsIgnoreCase(uri.getScheme())||!"bbs.animanch.com".equalsIgnoreCase(uri.getHost())
                     ||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getRawQuery()!=null)return null;
-            Matcher match=THREAD.matcher(uri.getRawPath());return match.matches()?match.group(1):null;
+            Matcher match=THREAD.matcher(uri.getRawPath());return match.matches()?match:null;
         }catch(RuntimeException invalid){return null;}
     }
     static Page thread(String html,String address)throws IOException{

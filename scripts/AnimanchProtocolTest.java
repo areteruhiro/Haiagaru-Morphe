@@ -11,6 +11,13 @@ public class AnimanchProtocolTest {
   var topics=AnimanchProtocol.catalogue(index);ok(topics.size()>100,"saved catalogue");ok(topics.stream().map(t->t.id).distinct().count()==topics.size(),"deduplicate popular/recent tabs");ok(topics.stream().allMatch(t->t.replies>=0&&!t.title.isEmpty()),"titles and counts");
   rejected(()->AnimanchProtocol.thread(html,"https://bbs.animanch.com/board/7591383/"));rejected(()->AnimanchProtocol.thread("<html>認証が必要です</html>",url));rejected(()->AnimanchProtocol.catalogue("<html>Forbidden</html>"));
   for(String bad:new String[]{"https://bbs.animanch.com.evil.test/board/7589284/","https://u@bbs.animanch.com/board/7589284/","http://bbs.animanch.com/board/7589284/","https://bbs.animanch.com:443/board/7589284/","https://bbs.animanch.com/board/../7589284/","https://bbs.animanch.com/board/7589284/?x=y"})ok(AnimanchProtocol.threadId(bad)==null,"strict URL boundary");
+  for(String reply:new String[]{"https://bbs.animanch.com/board/7589284/98","https://bbs.animanch.com/board/7589284/98/"}){
+   ok("7589284".equals(AnimanchProtocol.threadId(reply)),"reply URL keeps thread id");
+   ok("98".equals(AnimanchProtocol.replyNumber(reply)),"reply URL keeps response number");
+  }
+  ok(AnimanchProtocol.replyNumber(url)==null,"thread URL has no reply selection");
+  for(String bad:new String[]{"https://bbs.animanch.com/board/7589284/0","https://bbs.animanch.com/board/7589284/98/extra","https://bbs.animanch.com/board/7589284/%39%38","https://bbs.animanch.com/board/7589284/9999999"})
+   ok(AnimanchProtocol.threadId(bad)==null,"reject ambiguous or out-of-range reply URLs");
   String form=AnimanchProtocol.replyForm("7589284","名前&=","a\r\nb\rc+&=");ok(form.contains("thread=7589284")&&form.contains("a%0Ab%0Ac%2B%26%3D"),"encoded text, normalized line endings");ok(form.contains("%26%3D"),"no extra fields from user text");rejected(()->AnimanchProtocol.replyForm("../2","","a"));rejected(()->AnimanchProtocol.replyForm("7589284","","  "));rejected(()->AnimanchProtocol.replyForm("7589284","あ".repeat(16),"a"));
   for(String number:new String[]{"80","\"80\""})ok(AnimanchProtocol.postedReply("{\"thread\":7589284,\"number\":"+number+",\"jump\":\"/board/7589284/#res80\"}","7589284")==80,"numeric or string server fields");
   rejected(()->AnimanchProtocol.postedReply("<html>Forbidden</html>","7589284"));rejected(()->AnimanchProtocol.postedReply("{\"error\":\"failed\"}","7589284"));ok(AnimanchProtocol.postedReply("{\"thread\":7589284,\"number\":80,\"jump\":\"https://evil.test/board/7589284/\"}","7589284")==80,"navigation hint is never followed and does not invalidate a receipt");

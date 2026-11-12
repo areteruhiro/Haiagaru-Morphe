@@ -29,6 +29,11 @@ final class SiteBoardMenuProtocol {
     add(rows,kind,a.text(),target,section);
    }
   }else throw new IOException("未対応の板一覧です");
+  // The third-party Animanch BBSMENU can lag behind newly created categories.
+  // Keep the reported home-console games board available until its source catches up.
+  // putIfAbsent preserves the upstream label and folder once the menu is updated.
+  if(kind.equals("animanch")&&!rows.isEmpty())
+   add(rows,kind,"家庭用ゲーム",AnimanchProtocol.ORIGIN+"/category32/","単発スレ");
   if(rows.isEmpty())throw new IOException("板一覧がありません。認証・通信・サイトの形式を確認してください");
   return Collections.unmodifiableList(new ArrayList<>(rows.values()));
  }

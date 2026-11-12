@@ -45,6 +45,21 @@ public final class ThreadListThumbnailRulesTest {
             + "<a href='https://cdn.example.org/second.png'>second</a></div></div></div>";
         check("https://cdn.example.org/first.jpg".equals(
             ThreadListThumbnailRules.firstFiveChImage(html, board.threadUrl("1790000000"))));
+        String multiple = "<div class='thread'><div class='post'><div class='message'>"
+            + "<a href='https://cdn.example.org/a.jpg'>one</a>"
+            + "<a href='https://cdn.example.org/a.jpg'>repeat</a>"
+            + "<img src='https://cdn.example.org/b.png'>"
+            + "<a href='https://cdn.example.org/c.webp'>three</a></div></div>"
+            + "<div class='post'><div class='message'><a href='https://cdn.example.org/d.jpg'>four</a></div></div></div>";
+        check(ThreadListThumbnailRules.firstFiveChImages(multiple,board.threadUrl("1790000000"),2)
+            .equals(java.util.List.of("https://cdn.example.org/a.jpg","https://cdn.example.org/b.png")));
+        check(ThreadListThumbnailRules.firstFiveChImages(multiple,board.threadUrl("1790000000"),4).size()==3);
+        check(ThreadListThumbnailRules.firstFiveChImages(multiple,board.threadUrl("1790000000"),0).isEmpty());
+        String linkedPreview = "<div class='post'><div class='message'>"
+            + "<a href='https://cdn.example.org/full.jpg'><img src='https://cdn.example.org/preview.jpg'></a>"
+            + "<a href='https://cdn.example.org/other.png'>other</a></div></div>";
+        check(ThreadListThumbnailRules.firstFiveChImages(linkedPreview,board.threadUrl("1790000000"),3)
+            .equals(java.util.List.of("https://cdn.example.org/full.jpg","https://cdn.example.org/other.png")));
         String secondOnly = "<div class='thread'><div class='post'><div class='message'>text</div></div>"
             + "<div class='post'><div class='message'><a href='https://cdn.example.org/second.png'>2</a></div></div></div>";
         check(ThreadListThumbnailRules.firstFiveChImage(secondOnly, board.threadUrl("1790000000")) == null);
@@ -56,6 +71,11 @@ public final class ThreadListThumbnailRulesTest {
                 + "<div data-ng-target='body' data-ng-response-id='2'>https://cdn.example.org/second.png</div>";
         check("https://i.imgur.com/IMje0I0.jpeg".equals(
                 ThreadListThumbnailRules.firstFiveChImage(edgeHtml,edge.threadUrl("1790000000"))));
+        String edgeMultiple="<div data-ng-target='body' data-ng-response-id='1'>"
+                + "https://i.imgur.com/IMje0I0.jpeg https://cdn.example.org/second.png</div>"
+                + "<div data-ng-target='body' data-ng-response-id='2'>https://cdn.example.org/ignored.png</div>";
+        check(ThreadListThumbnailRules.firstFiveChImages(edgeMultiple,edge.threadUrl("1790000000"),3)
+                .equals(java.util.List.of("https://i.imgur.com/IMje0I0.jpeg","https://cdn.example.org/second.png")));
         check(ThreadListThumbnailRules.firstFiveChImage(
                 "<div data-ng-target='body' data-ng-response-id='1'>No image</div>"
                 + "<div data-ng-target='body' data-ng-response-id='2'>https://cdn.example.org/second.png</div>",
@@ -63,6 +83,37 @@ public final class ThreadListThumbnailRulesTest {
         check("https://cdn.example.org/opening.webp".equals(ThreadListThumbnailRules.firstFiveChImage(
                 "<div data-ng-target='body' data-ng-response-id='1'>"
                 + "<a href='https://cdn.example.org/opening.webp'>image</a></div>",edge.threadUrl("1790000000"))));
+        String videoHtml="<div class='post'><div class='message'>"
+                + "<a href='https://cdn.example.org/clip.mp4?token=123'>video</a>"
+                + "<a href='https://youtu.be/AbC123xYz_9?t=30'>YouTube</a>"
+                + "<a href='https://cdn.example.org/still.webp'>image</a>"
+                + "<a href='http://localhost/blocked.mp4'>private</a></div></div>";
+        check(ThreadListThumbnailRules.firstFiveChImages(videoHtml,board.threadUrl("1790000000"),2)
+                .equals(java.util.List.of("https://cdn.example.org/clip.mp4?token=123",
+                        "https://i.ytimg.com/vi/AbC123xYz_9/hqdefault.jpg")));
+        check(ThreadListThumbnailRules.firstFiveChImages(videoHtml,board.threadUrl("1790000000"),4).size()==3);
+        check(ThreadListThumbnailRules.openingTextMedia(
+                "<iframe src='https://www.youtube.com/embed/AbC123xYz_9'></iframe>",
+                "https://example.org/post/",1).equals(java.util.List.of(
+                    "https://i.ytimg.com/vi/AbC123xYz_9/hqdefault.jpg")));
+        check(ThreadListThumbnailRules.openingTextMedia(
+                "<iframe data-src='https://www.youtube.com/embed/AbC123xYz_9'></iframe>",
+                "https://example.org/post/",1).size()==1);
+        check(ThreadListThumbnailRules.videoUrl("https://cdn.example.org/clip.webm"));
+        check(!ThreadListThumbnailRules.videoUrl("https://cdn.example.org/playlist.m3u8"));
+        check(!ThreadListThumbnailRules.videoUrl("https://127.0.0.1/private.mp4"));
+        String poster="<video poster='https://cdn.example.org/poster.jpg'>"
+                + "<source src='https://cdn.example.org/clip.webm' type='video/webm'></video>";
+        check(ThreadListThumbnailRules.openingTextMedia(poster,"https://cdn.example.org/",4)
+                .equals(java.util.List.of("https://cdn.example.org/poster.jpg")));
+        check(ThreadListThumbnailRules.openingTextMedia("<video><source src='/clip.webm'></video>",
+                "https://cdn.example.org/board/",2).equals(java.util.List.of("https://cdn.example.org/clip.webm")));
+        check(ThreadListThumbnailRules.openingTextMedia("https://www.youtube.com/watch?v=AbC123xYz_9&amp;t=30 "
+                +"https://cdn.example.org/clip.mov", "https://cdn.example.org/board/",2)
+                .equals(java.util.List.of("https://i.ytimg.com/vi/AbC123xYz_9/hqdefault.jpg",
+                        "https://cdn.example.org/clip.mov")));
+        check(ThreadListThumbnailRules.openingTextMedia("https://www.youtube.com.evil.example/watch?v=AbC123xYz_9",
+                "https://cdn.example.org/",1).isEmpty());
         System.out.println("PASS " + checks + " thumbnail source checks");
     }
 }

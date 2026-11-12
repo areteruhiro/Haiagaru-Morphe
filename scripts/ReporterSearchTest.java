@@ -24,6 +24,13 @@ public final class ReporterSearchTest {
         check(ReporterSearch.period(2,before)[0]==time("2026-11-12T00:00:00"));
         check(ReporterSearch.period(2,time("2026-11-13T00:00:00"))[0]==time("2026-11-13T00:00:00"));
         String id="a./+BCdE", suffix="["+id+"★]";
+        check(ReporterSearch.queryForMode(id,0).equals(id));
+        check(ReporterSearch.queryForMode(id,1).equals("a./+"));
+        check(ReporterSearch.queryForMode(id,2).equals("BCdE"));
+        try { ReporterSearch.queryForMode("a./+",1); throw new AssertionError(); }
+        catch(IllegalArgumentException expected) { checks++; }
+        try { ReporterSearch.queryForMode(id,3); throw new AssertionError(); }
+        catch(IllegalArgumentException expected) { checks++; }
         check(Pattern.compile(ReporterSearch.pattern(suffix,1)).matcher("title "+suffix).find());
         check(!Pattern.compile(ReporterSearch.pattern(suffix,1)).matcher("title [ax/+BCdE★]").find());
         check(Pattern.compile(ReporterSearch.pattern(suffix,2)).matcher("title [ZZZZBCdE★]").find());

@@ -9,12 +9,16 @@ final class FutabaCatalogue {
     });
     interface Fetch { String get(String url)throws IOException; }
     static List<SiteBoardProtocol.Topic> topics(SiteBoardProtocol.Board board,String catalogue,Fetch fetch)throws IOException {
+        return topics(board,catalogue,fetch,150);
+    }
+    static List<SiteBoardProtocol.Topic> topics(SiteBoardProtocol.Board board,String catalogue,Fetch fetch,int limit)throws IOException {
+        limit=Math.max(1,Math.min(500,limit));
         List<SiteBoardProtocol.Topic> topics=SiteBoardProtocol.topics(board,catalogue);
         Map<String,String> titles=new HashMap<>();Set<String> visited=new HashSet<>();
         LinkedHashMap<String,SiteBoardProtocol.Topic> discovered=new LinkedHashMap<>();
         ArrayDeque<String> pending=new ArrayDeque<>();pending.add(board.url+"futaba.htm");
-        Set<String> wanted=new HashSet<>();for(SiteBoardProtocol.Topic topic:topics){wanted.add(topic.id);String cached=TITLES.get(board.url+topic.id);if(cached!=null)titles.put(topic.id,cached);}
-        while(!pending.isEmpty()&&visited.size()<10) {
+        Set<String> wanted=new HashSet<>();for(int i=0;i<Math.min(limit,topics.size());i++){SiteBoardProtocol.Topic topic=topics.get(i);wanted.add(topic.id);String cached=TITLES.get(board.url+topic.id);if(cached!=null)titles.put(topic.id,cached);}
+        while(!pending.isEmpty()&&visited.size()<10&&(titles.size()<wanted.size()||topics.size()+discovered.size()<limit)) {
             String url=pending.removeFirst();if(!visited.add(url))continue;
             final String html;try{html=fetch.get(url);}catch(IOException unavailable){continue;}
             Document doc=Jsoup.parse(html,url);
@@ -25,7 +29,7 @@ final class FutabaCatalogue {
                 String title=subject==null?"":subject.text().trim();
                 if(title.isEmpty()||title.equals("無題"))title=body==null?"":body.text().trim();
                 if(!title.isEmpty()){title=title.length()>120?title.substring(0,120):title;titles.put(id,title);TITLES.put(board.url+id,title);}
-                if(!wanted.contains(id))discovered.putIfAbsent(id,new SiteBoardProtocol.Topic(id,title.isEmpty()?"No."+id:title,Math.min(999999,thread.select("td.rtd").size()+1)));
+                if(!wanted.contains(id)&&topics.size()+discovered.size()<limit)discovered.putIfAbsent(id,new SiteBoardProtocol.Topic(id,title.isEmpty()?"No."+id:title,Math.min(999999,thread.select("td.rtd").size()+1)));
             }
             for(Element link:doc.select("a[href], form[action]")) {
                 if(link.tagName().equals("form")&&!link.attr("method").equalsIgnoreCase("get"))continue;
@@ -36,7 +40,7 @@ final class FutabaCatalogue {
             }
         }
         ArrayList<SiteBoardProtocol.Topic> resolved=new ArrayList<>();
-        for(SiteBoardProtocol.Topic topic:topics)resolved.add(new SiteBoardProtocol.Topic(topic.id,titles.getOrDefault(topic.id,topic.title),topic.count));
+        for(int i=0;i<Math.min(limit,topics.size());i++){SiteBoardProtocol.Topic topic=topics.get(i);resolved.add(new SiteBoardProtocol.Topic(topic.id,titles.getOrDefault(topic.id,topic.title),topic.count));}
         // Catalogue views can truncate the active list to 50. Index pages expose more OPs.
         resolved.addAll(discovered.values());
         return resolved;

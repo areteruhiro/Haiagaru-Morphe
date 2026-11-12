@@ -3,14 +3,15 @@ package app.morphe.extension.chmate;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.style.ImageSpan;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 import java.io.ByteArrayOutputStream;
@@ -34,8 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Native title-only thumbnail decoration. Works for both ListView and RecyclerView. */
 public final class ThreadListThumbnail {
     private static final ExecutorService IO=Executors.newFixedThreadPool(2,r->{Thread t=new Thread(r,"Haiagaru-thread-thumbnail");t.setDaemon(true);return t;});
-    private static final Map<String,Bitmap> IMAGES=Collections.synchronizedMap(new LinkedHashMap<String,Bitmap>(64,.75f,true){
-        @Override protected boolean removeEldestEntry(Map.Entry<String,Bitmap> entry){return size()>64;}
+    private static final Map<String,List<Bitmap>> IMAGES=Collections.synchronizedMap(new LinkedHashMap<String,List<Bitmap>>(64,.75f,true){
+        @Override protected boolean removeEldestEntry(Map.Entry<String,List<Bitmap>> entry){return size()>64;}
+    });
+    private static final Map<String,List<String>> SOURCES=Collections.synchronizedMap(new LinkedHashMap<String,List<String>>(64,.75f,true){
+        @Override protected boolean removeEldestEntry(Map.Entry<String,List<String>> entry){return size()>128;}
     });
     private static final Map<String,Long> FAILED=Collections.synchronizedMap(new LinkedHashMap<String,Long>(128,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,Long> entry){return size()>1200;}
@@ -56,7 +60,7 @@ public final class ThreadListThumbnail {
             this.context=context;this.site=site;this.five=five;
             this.gateway=site==null?null:SiteBoardGateway.get(context);
         }
-        String cacheKey(){return site==null?"5ch:"+five.host+":"+five.name+":"+id:"site:"+site+":"+id;}
+        String cacheKey(int count){return (site==null?"5ch:"+five.host+":"+five.name+":"+id:"site:"+site+":"+id)+":"+count;}
     }
 
     /** Called at native adapter entry, before any title or subject is bound. */
@@ -84,7 +88,18 @@ public final class ThreadListThumbnail {
     }
 
     /** The subject can be read after setText on some ChMate builds. */
-    public static void title(TextView title){Selection state=CURRENT.get();if(state!=null)state.title=title;}
+    public static void title(TextView title){
+        if(title==null)return;
+        // Native adapters recycle title views, including rows without an opening image.
+        // Restore the original native thumbnail before this recycled row is decorated.
+        Drawable[] current=title.getCompoundDrawablesRelative();
+        if(current[0] instanceof ThumbnailDrawable){
+            ThumbnailDrawable previous=(ThumbnailDrawable)current[0];
+            title.setCompoundDrawablesRelative(previous.nativeStart,current[1],current[2],current[3]);
+            title.setCompoundDrawablePadding(previous.nativePadding);
+        }
+        Selection state=CURRENT.get();if(state!=null)state.title=title;
+    }
 
     public static void subject(Object row){
         Selection state=CURRENT.get();if(state==null||row==null)return;
@@ -104,50 +119,125 @@ public final class ThreadListThumbnail {
     public static void end(){
         Selection state=CURRENT.get();CURRENT.remove();
         if(state==null||state.id==null||state.title==null||!ThreadListThumbnailSettings.enabled(state.context))return;
-        String key=state.cacheKey();Bitmap bitmap=IMAGES.get(key);
-        if(bitmap!=null){decorate(state.title,bitmap);return;}
+        int maxImages=ThreadListThumbnailSettings.imageCount(state.context);
+        String key=state.cacheKey(maxImages);List<Bitmap> bitmaps=IMAGES.get(key);
+        if(bitmaps!=null){decorate(state.title,bitmaps);return;}
         long now=SystemClock.elapsedRealtime();Long retry=FAILED.get(key);
         if(retry!=null&&retry>now||PENDING.size()>=40||!PENDING.add(key))return;
         IO.execute(()->{
             try{
-                String source=state.site==null?fiveChOpeningImage(state.five,state.id):state.gateway.openingImage(state.site,state.id);
-                if(source==null){FAILED.put(key,SystemClock.elapsedRealtime()+30*60_000L);return;}
-                byte[] bytes=state.site==null?fetch(source,3*1024*1024,true):state.gateway.openingImageBytes(source);
-                Bitmap decoded=decode(bytes);
-                if(decoded==null)throw new IOException("サムネイルをデコードできません");
-                IMAGES.put(key,decoded);FAILED.remove(key);refresh();
+                List<String> sources=SOURCES.get(key);
+                if(sources==null){
+                    // Collect spare candidates so an unavailable video does not hide later images.
+                    int candidateLimit=Math.min(16,Math.max(4,maxImages*4));
+                    sources=state.site==null?fiveChOpeningImages(state.five,state.id,candidateLimit):state.gateway.openingImages(state.site,state.id,candidateLimit);
+                    sources=Collections.unmodifiableList(new ArrayList<>(sources));
+                    SOURCES.put(key,sources);
+                }
+                if(sources.isEmpty()){FAILED.put(key,SystemClock.elapsedRealtime()+30*60_000L);return;}
+                List<Bitmap> decoded=new ArrayList<>();
+                boolean awaitingVideo=false;
+                for(String source:sources){
+                    if(decoded.size()>=maxImages)break;
+                    try{
+                        byte[] bytes;
+                        if(ThreadListThumbnailRules.videoUrl(source)){
+                            String poster=XMediaAttachments.readyThumbnailPoster(source);
+                            if(poster==null){
+                                if(FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true)&&Haiagaru.mediaAutoFetchMode()!=3){
+                                    VideoFrameThumbnail.request(source);
+                                    awaitingVideo=true;
+                                }
+                                continue;
+                            }
+                            bytes=poster.startsWith("http://127.0.0.1:")
+                                    ?VideoThumbnailServer.registeredBytes(poster,3*1024*1024)
+                                    :fetch(poster,3*1024*1024,true);
+                        }else{
+                            bytes=openingImageBytes(state,source);
+                        }
+                        Bitmap bitmap=decode(bytes);
+                        if(bitmap!=null)decoded.add(bitmap);
+                    }catch(IOException unavailable){/* Keep the other valid opening images. */}
+                }
+                if(decoded.isEmpty()){
+                    FAILED.put(key,SystemClock.elapsedRealtime()+(awaitingVideo?30:15)*60_000L);
+                    return;
+                }
+                IMAGES.put(key,Collections.unmodifiableList(decoded));FAILED.remove(key);refresh();
             }catch(Exception unavailable){FAILED.put(key,SystemClock.elapsedRealtime()+15*60_000L);}
             finally{PENDING.remove(key);}
         });
     }
 
-    private static void decorate(TextView title,Bitmap bitmap){
-        CharSequence original=title.getText();
-        if(original==null||original.length()==0)return;
-        // Native adapters may reuse a title TextView on notifyDataSetChanged().
-        // Replace the old span so a changed size is applied to cached images too.
-        if(original instanceof Spanned){
-            Spanned spanned=(Spanned)original;
-            ThumbnailSpan[] thumbnails=spanned.getSpans(0,original.length(),ThumbnailSpan.class);
-            if(thumbnails.length>0){
-                SpannableStringBuilder cleaned=new SpannableStringBuilder(original);
-                for(ThumbnailSpan thumbnail:thumbnails)cleaned.removeSpan(thumbnail);
-                if(cleaned.length()>=3&&cleaned.charAt(0)=='\uFFFC'&&cleaned.charAt(1)==' '&&cleaned.charAt(2)==' ')
-                    cleaned.delete(0,3);
-                original=cleaned;
+    private static byte[] openingImageBytes(Selection state,String url)throws IOException{
+        if(state.site==null)return fetch(url,3*1024*1024,true);
+        try{return state.gateway.openingImageBytes(url);}
+        catch(IOException unsupported){
+            // Site transport accepts only its own origins. Public external previews
+            // (such as YouTube) use the same bounded image fetch as 5ch.
+            return fetch(url,3*1024*1024,true);
+        }
+    }
+
+    /** Called by the video decoder after a real frame poster is registered. */
+    static void frameReady(String videoUrl){
+        boolean changed=false;
+        synchronized(SOURCES){
+            for(Map.Entry<String,List<String>> entry:SOURCES.entrySet())if(entry.getValue().contains(videoUrl)){
+                IMAGES.remove(entry.getKey());FAILED.remove(entry.getKey());changed=true;
             }
         }
-        if(original.length()==0)return;
-        int limit=Math.round(ThreadListThumbnailSettings.sizeDp(title.getContext())*title.getResources().getDisplayMetrics().density);
-        int width=Math.max(1,Math.round(limit*Math.min(1f,(float)bitmap.getWidth()/Math.max(1,bitmap.getHeight()))));
-        int height=Math.max(1,Math.round(limit*Math.min(1f,(float)bitmap.getHeight()/Math.max(1,bitmap.getWidth()))));
-        Drawable drawable=new BitmapDrawable(title.getResources(),bitmap);drawable.setBounds(0,0,width,height);
-        SpannableStringBuilder text=new SpannableStringBuilder("\uFFFC  ").append(original);
-        text.setSpan(new ThumbnailSpan(drawable),0,1,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        title.setText(text);
+        if(changed)refresh();
     }
-    private static final class ThumbnailSpan extends ImageSpan {
-        ThumbnailSpan(Drawable image){super(image,ImageSpan.ALIGN_BOTTOM);}
+
+    private static void decorate(TextView title,List<Bitmap> bitmaps){
+        CharSequence original=title.getText();
+        if(original==null||original.length()==0||bitmaps.isEmpty())return;
+        // A single compound drawable holds all thumbnails and reserves its whole width
+        // on every title line, including when ChMate wraps the title to 2+ lines.
+        Drawable[] nativeDrawables=title.getCompoundDrawablesRelative();
+        int originalPadding=title.getCompoundDrawablePadding();
+        ThumbnailDrawable drawable=new ThumbnailDrawable(title,bitmaps,nativeDrawables[0],originalPadding);
+        title.setCompoundDrawablePadding(Math.round(8*title.getResources().getDisplayMetrics().density));
+        title.setCompoundDrawablesRelative(drawable,nativeDrawables[1],nativeDrawables[2],nativeDrawables[3]);
+    }
+    private static final class ThumbnailDrawable extends Drawable {
+        final Drawable nativeStart;
+        final int nativePadding;
+        final List<Bitmap> images;
+        final RectF[] targets;
+        final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
+        ThumbnailDrawable(TextView title,List<Bitmap> bitmaps,Drawable original,int padding){
+            nativeStart=original;nativePadding=padding;images=bitmaps;
+            float density=title.getResources().getDisplayMetrics().density;
+            int requested=Math.round(ThreadListThumbnailSettings.sizeDp(title.getContext())*density);
+            int viewWidth=title.getWidth()>0?title.getWidth():title.getResources().getDisplayMetrics().widthPixels;
+            int maxWidth=Math.max(Math.round(24*density),Math.round(viewWidth*.45f));
+            int gap=Math.round(3*density);
+            int available=Math.max(1,(maxWidth-gap*(bitmaps.size()-1))/bitmaps.size());
+            int box=Math.max(1,Math.min(requested,available));
+            targets=new RectF[bitmaps.size()];
+            float x=0,height=0;
+            for(int i=0;i<bitmaps.size();i++){
+                Bitmap bitmap=bitmaps.get(i);
+                float scale=Math.min((float)box/bitmap.getWidth(),(float)box/bitmap.getHeight());
+                float w=Math.max(1,bitmap.getWidth()*scale),h=Math.max(1,bitmap.getHeight()*scale);
+                targets[i]=new RectF(x,0,x+w,h);
+                x+=w+(i==bitmaps.size()-1?0:gap);
+                height=Math.max(height,h);
+            }
+            for(RectF target:targets)target.offset(0,(height-target.height())/2f);
+            setBounds(0,0,(int)Math.ceil(x),(int)Math.ceil(height));
+        }
+        @Override public void draw(Canvas canvas){
+            for(int i=0;i<images.size();i++)canvas.drawBitmap(images.get(i),null,targets[i],paint);
+        }
+        @Override public void setAlpha(int alpha){paint.setAlpha(alpha);invalidateSelf();}
+        @Override public void setColorFilter(ColorFilter filter){paint.setColorFilter(filter);invalidateSelf();}
+        @Override public int getOpacity(){return PixelFormat.TRANSLUCENT;}
+        @Override public int getIntrinsicWidth(){return getBounds().width();}
+        @Override public int getIntrinsicHeight(){return getBounds().height();}
     }
 
     private static Bitmap decode(byte[] bytes){
@@ -160,10 +250,10 @@ public final class ThreadListThumbnail {
         return BitmapFactory.decodeByteArray(bytes,0,bytes.length,options);
     }
 
-    private static String fiveChOpeningImage(ThreadListThumbnailRules.Board board,String id)throws IOException{
+    private static List<String> fiveChOpeningImages(ThreadListThumbnailRules.Board board,String id,int limit)throws IOException{
         String address=board.threadUrl(id);
         byte[] html=fetch(address,2*1024*1024,false);
-        return ThreadListThumbnailRules.firstFiveChImage(new String(html,java.nio.charset.StandardCharsets.UTF_8),address);
+        return ThreadListThumbnailRules.firstFiveChImages(new String(html,java.nio.charset.StandardCharsets.UTF_8),address,limit);
     }
 
     /** No redirect or non-HTTPS fallback: only explicitly selected public sources. */

@@ -75,6 +75,11 @@ public final class XMediaAttachments {
         if(frame!=null)return frame;String poster=POSTERS.get(url);
         return poster!=null?poster:FAILURE_POSTERS.get(VideoFrameThumbnail.currentVariant()+":"+url);
     }
+    /** Only usable images: never project video failure cards into thread-list rows. */
+    static String readyThumbnailPoster(String url) {
+        String frame=FRAME_POSTERS.get(VideoFrameThumbnail.currentVariant()+":"+url);
+        return frame!=null?frame:POSTERS.get(url);
+    }
     public static boolean isVideo(String url) { return DirectVideoUrls.supported(url); }
 
     public static String[] postIds(String body) {

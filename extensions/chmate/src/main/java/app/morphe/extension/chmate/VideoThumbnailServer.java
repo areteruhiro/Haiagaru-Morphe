@@ -63,6 +63,30 @@ final class VideoThumbnailServer {
         FILES.put("/" + key + ".jpg", file);
         return "http://127.0.0.1:" + server.getLocalPort() + "/" + key + ".jpg";
     }
+    /** Read only posters registered in this process, without making a loopback HTTP request. */
+    static byte[] registeredBytes(String poster,int limit) throws IOException {
+        URI uri;
+        try { uri=URI.create(poster); }
+        catch (IllegalArgumentException invalid) { throw new IOException("Invalid registered poster",invalid); }
+        File file;
+        synchronized(VideoThumbnailServer.class){
+            if(server==null||server.isClosed()||!"http".equals(uri.getScheme())
+                    ||!"127.0.0.1".equals(uri.getHost())||uri.getPort()!=server.getLocalPort()
+                    ||uri.getRawQuery()!=null||uri.getRawFragment()!=null||uri.getUserInfo()!=null)
+                throw new IOException("Poster is not registered locally");
+            file=FILES.get(uri.getRawPath());
+        }
+        if(file==null||!file.isFile()||file.length()<=0||file.length()>limit)
+            throw new IOException("Poster file is unavailable or exceeds the limit");
+        try(InputStream in=new FileInputStream(file);ByteArrayOutputStream out=new ByteArrayOutputStream()){
+            byte[] buffer=new byte[8192];int count;
+            while((count=in.read(buffer))!=-1){
+                if(out.size()+count>limit)throw new IOException("Poster exceeds the limit");
+                out.write(buffer,0,count);
+            }
+            return out.toByteArray();
+        }
+    }
     private static void serve(Socket client) throws IOException {
         client.setSoTimeout(3000);
         BufferedReader reader = new BufferedReader(new InputStreamReader(client.getInputStream(), "US-ASCII"));
