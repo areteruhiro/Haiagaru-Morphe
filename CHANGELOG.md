@@ -1,4 +1,1838 @@
-# Haiagaru 1.24.1
+# Haiagaru 1.25.0-dev.31 (2026-11-12)
+
+## 主な変更
+
+今回の変更内容は、以下のカテゴリ別リリース項目をご覧ください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** correct external board dates and disabled providers ([c61ed4b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c61ed4b7081d5d5ea2d74203f74b0447a8a519f1))
+
+# Haiagaru 1.25.0-dev.30 (2026-11-12)
+
+## 主な変更
+
+- **更新履歴ダイアログの追加:** 従来の静的な「追加機能」一覧を廃止し、`CHANGELOG.md`からビルド時に生成される動的な「更新履歴」ダイアログに置き換えました。
+- **Edge掲示板への対応:** Edge（bbs.eddibb.cc）画像掲示板の閲覧・管理機能を追加しました。SiteBoard設定とゲートウェイに対応し、外部掲示板の有効化状態も正しく反映されるようにしました。
+- **ReporterSearchUiの改善:** 設定の参照先表記を「Haiagaru設定」に変更し、日付選択ラベルを簡素化しました。
+- **更新履歴の自動生成:** Gradleタスク`generateUpdateHistory`を追加しました。`CHANGELOG.md`から最近のリリースノートを抽出し、アプリ内表示用のrawリソースをビルド時に自動生成します。
+- **ドキュメントの更新:** DAT共有およびSAF画像NG機能の最新の検証結果を反映し、インストール手順と連携関連のドキュメントを更新しました。
+
+## 検証範囲
+
+更新履歴ダイアログの実装、`CHANGELOG.md`からのリリースノート抽出処理、Edge掲示板のSiteBoard設定・ゲートウェイ対応、外部掲示板の有効化状態の処理、ReporterSearchUiの表示文言、および関連ドキュメントの変更を対象としています。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの`haiagaru-image-ng.zip`／`haiagaru-image-vpn-v2.zip`を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** 静的な「追加機能」一覧を、`CHANGELOG.md`から生成される動的な更新履歴ダイアログに変更。
+* **chmate:** Edge（bbs.eddibb.cc）画像掲示板の閲覧・管理機能を追加し、SiteBoard設定とゲートウェイに対応。
+
+### 🛠 Improvements & Fixes
+
+* **chmate:** Edge掲示板の有効化状態が正しく反映されるよう修正。
+* **chmate:** ReporterSearchUiの設定参照表記と日付選択ラベルを改善。
+* **build:** 更新履歴をrawリソースとして自動生成するGradleタスク`generateUpdateHistory`を追加。
+* **docs:** DAT共有およびSAF画像NG機能の検証結果を反映し、関連ドキュメントを更新。
+# Haiagaru 1.25.0-dev.30 (2026-11-12)
+
+## 主な変更
+
+- 履歴ポップアップの「対象」タブ: ChMate標準のスレ履歴用アダプターを利用。星ランクの色・小さな板名・新着表示・長押しメニューを標準の「スレ」と揃えました。
+- 履歴タブの左右フリック: 「スレ → 対象 → 板 → 書き込み → 画像」の順に切り替え。「対象」を非表示にした場合は4タブで切り替えます。
+- スレ一覧サムネイル設定: 画像の大きさ（24〜96dp）と枚数（1〜4枚）のスライダーが操作できない問題を修正。操作終了時に値を保存します。
+
+## 検証範囲
+
+Androidビルド、191・226・242の標準履歴アダプター・行モデル・コールバックの参照先28項目、タブの両方向切替と折り返し、スライダーの入力・保存コールバックを確認しました。この版の実機での描画・長押し・スライダー操作は未検証です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** use native refresh history rows and restore thumbnail sliders ([57e3577](https://github.com/areteruhiro/Haiagaru-Morphe/commit/57e357766ca94556e2947b4db87ad066dcd12141))
+
+# Haiagaru 1.25.0-dev.29 (2026-11-12)
+
+## 主な変更
+
+- 履歴ポップアップ: 左右ジェスチャーによる切替にタブ色を追従。「対象」一覧の各スレに新着レス数を表示。
+- 登録画像NG: ステータスバーとの重なりを補正。SAF未設定でもURLからアプリ内へ画像を登録可能。
+- 追加機能一覧: 基本設定に「1.24.1以降の追加機能（オン・オフ）」を追加。個別設定と同じ値で切り替え。
+- 画像取得: UA変更時のCatbox画像リクエストにブラウザ形式のUAを使用。
+- 既読スレ削除: 多数の候補があるダイアログで操作ボタンの表示領域を確保。
+
+## 検証範囲
+
+ローカルAndroidビルド、UAルール45件・ネイティブidentity19件、ヘッダー書き換え3経路、新着件数の計算を確認。指定Catbox画像はブラウザUAでHTTP200・JPEGを取得しました。この版の実機での画面・タップ・ジェスチャー操作は未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add recent feature controls and fix history and image settings ([f558a8f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f558a8f895428292930715fa699b6456195de92d))
+
+# Haiagaru 1.25.0-dev.28 (2026-11-12)
+
+## 主な変更
+
+- NG設定: ChMateがコピペ省略と判定したレスを透明あぼーんにするスイッチを追加。初期OFFです。
+- スレ一覧画像: レート制限対象サイトをドメイン単位で追加・削除できます。初期対象は bbs.animanch.com です。対象への取得を2秒以上空け、HTTP 429ではRetry-Afterに従い最低60秒休止します。
+- 登録画像NG: 一致したレスは通常のあぼーんとして表示し、スレの後方にあるレスまで判定に回します。
+- あにまん: category32の表示名を「家庭用ゲーム」に修正。登録済みの既定名も更新します。
+
+## 検証範囲
+
+Androidビルド、191 devへのパッチ適用、NG判定・取得間隔・429の待機・外部板の回帰テストを実施しました。この版の実機操作と、実サイトのレート制限が解除されることは未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add copy-paste NG and pace thumbnail requests ([3b4be2b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/3b4be2b20f7451ed2c9b3aca4b18f4633bfaa4d8))
+
+# Haiagaru 1.25.0-dev.27 (2026-11-12)
+
+## 主な変更
+
+- 登録画像NG: Androidのファイル選択で複数画像を選ぶ方法と、画像URLからの登録に対応。判定レベルは4段階、一致枚数は1〜10枚で設定できます。初期設定はOFF、標準レベル・2枚以上です。
+- 検索: 記者IDを全文・前半4文字・後半4文字で切り替える際に元のIDを保持。期間指定のスレ名検索も回帰確認しました。
+- 外部板: あにまんのレス指定URL、過去ログ画像、家庭用ゲーム板の登録を改善。ふたば・爆サイは板ごとにスレ一覧の件数を設定できます。
+- スレ一覧: 先頭レスの画像・動画サムネイルの取得と表示を改善。
+- Imgur: `/a/` アルバムURLの末尾に画像・動画の拡張子が付いている場合も、アルバムとして認識してサムネイルを取得。
+- 文字列置換: ReplaceTxtの `<rx>`／`<rx2>` で正規表現とキャプチャの参照に対応。
+- 専用動画ビューア: 横画面でシステムバーを隠す没入表示を追加。
+
+## 検証範囲
+
+ローカルAndroidビルドと検索・サムネイル・外部板・画像NG・Imgur・文字列置換のホスト試験を実施しました。実機での画像選択・透明あぼーん描画・動画の横画面操作は未検証です。画像照合は知覚ハッシュとSSIMを使用し、ORB/AKAZE・RANSACは未搭載です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** support regex replacements and improve media viewing ([8f01d72](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8f01d724830a5da1783a9c5a5b9bf323a200eb89))
+
+# Haiagaru 1.25.0-dev.26 (2026-11-12)
+
+## 主な変更
+
+- 登録画像NG: Androidのファイル選択で複数画像を選ぶ方法と、画像URLからの登録に対応。判定レベルは4段階、一致枚数は1〜10枚で設定できます。初期設定はOFF、標準レベル・2枚以上です。
+- 検索: 記者IDを全文・前半4文字・後半4文字で切り替える際に元のIDを保持。期間指定のスレ名検索も回帰確認しました。
+- 外部板: あにまんのレス指定URL、過去ログ画像、家庭用ゲーム板の登録を改善。ふたば・爆サイは板ごとにスレ一覧の件数を設定できます。
+- スレ一覧: 先頭レスの画像・動画サムネイルの取得と表示を改善。
+
+## 検証範囲
+
+ローカルAndroidビルドと検索・サムネイル・外部板・画像NGのホスト試験を実施しました。実機での画像選択・透明あぼーん描画は未検証です。画像照合は知覚ハッシュとSSIMを使用し、ORB/AKAZE・RANSACは未搭載です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add registered image NG and refine board and reporter search ([e6a72c3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e6a72c36d4ec19ad8bdea7e948ce6d923fae093c))
+
+# Haiagaru 1.25.0-dev.25 (2026-11-12)
+
+これはDAT共有の修正を含む検証用プレリリースです。
+
+- ChMate 0.8.10.242 dev／226 dev: パッケージ名変更後に「datで共有」でクラッシュする問題を修正。
+- ローカルビルドとAPKの静的検証で、共有処理とManifestのFileProvider authorityが一致することを確認。実機での共有操作は未検証です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** repair DAT sharing after package rename ([35c8961](https://github.com/areteruhiro/Haiagaru-Morphe/commit/35c8961d0bfe5cd06c5c2f9421a7410674250bfc))
+
+# Haiagaru 1.25.0-dev.24 (2026-11-12)
+
+これはDAT共有の修正を含む検証用プレリリースです。
+
+- ChMate 0.8.10.242 dev／226 dev: パッケージ名変更後に「datで共有」でクラッシュする問題を修正。
+- ローカルビルドとAPKの静的検証で、共有処理とManifestのFileProvider authorityが一致することを確認。実機での共有操作は未検証です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** repair DAT sharing after package rename ([35c8961](https://github.com/areteruhiro/Haiagaru-Morphe/commit/35c8961d0bfe5cd06c5c2f9421a7410674250bfc))
+* **chmate:** restore category and list thumbnail previews ([1455bbf](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1455bbf3c3e9dc63ff3e25becb0aeb8c01eecaab))
+
+# Haiagaru 1.25.0-dev.24 (2026-11-11)
+
+外部板・検索・監視・スレ一覧画像表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- あにまん掲示板: YouTube／X（Twitter）のサイトカードURL、/arc/img画像、URL・履歴経由の板判定を改善。家庭用ゲーム（category32）と型月（category9）の取り違えを修正。
+- ふたば／爆サイ: スレ一覧件数制限の解消と、ふたば「ねこ」板（may.2chan.net/27/）を追加。
+- 検索: 記者IDの全文・前半・後半、スレ名の部分一致、カレンダーでA日〜B日（両日含む）の指定、記者NG登録に対応。
+- 監視通知: 該当レスへの移動／DAT取得を修正し、監視期限に2時間・3時間・任意指定を追加。
+- スレ一覧画像表示（実験）: 5ch・エッヂ・ふたば（img／may含む）・あにまんの1レス目画像の小型表示。板は初期状態ですべて表示対象、5ch・エッヂは閲覧で自動的に対象へ追加。検索付きの除外リストを設定可能。サイズは24〜96dpのバーで変更でき、対応画像はVPN経由でも取得。
+- エッヂのスレ一覧画像表示: 現行の /liveedge/ スレURLに対応し、1レス目に直接書かれた画像URLも取得。
+- 191版の書き込み後の本文更新を改善し、監視ナビゲーションのonResume公開範囲を修正（IllegalAccessError対策）。
+
+## 検証範囲・未確認事項
+
+今回のMPPのLint・R8ビルド、検索37項目・画像ルール30項目・外部板51項目のホスト試験が成功。191／226／242の先行候補でパッチ適用・元命令保持、実機への隔離導入を確認。現行191の隔離APKではFridaを用いてimg／mayの画像取得・一覧描画、エッヂのURL解析・サムネイル描画を確認。226／242は先行候補の起動を確認。
+
+あにまん例示レスの実画像表示、サムネイルサイズバーの実操作、監視通知タップ時のDAT取得と該当レスへの移動、226／242の最終差分の実機操作は未確認です。これらの実機検証用プレ版です。エミュレータは使っていません。
+
+[検証・導入記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/integration-status.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** restore category and list thumbnail previews ([1455bbf](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1455bbf3c3e9dc63ff3e25becb0aeb8c01eecaab))
+
+# Haiagaru 1.25.0-dev.23 (2026-11-11)
+
+外部板・検索・監視・スレ一覧画像表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- あにまん掲示板: YouTube／X（Twitter）のサイトカードURL、/arc/img画像、URL・履歴経由の板判定を改善。家庭用ゲーム（category32）と型月（category9）の取り違えを修正。
+- ふたば／爆サイ: スレ一覧件数制限の解消と、ふたば「ねこ」板（may.2chan.net/27/）を追加。
+- 検索: 記者IDの全文・前半・後半、スレ名の部分一致、カレンダーでA日〜B日（両日含む）の指定、記者NG登録に対応。
+- 監視通知: 該当レスへの移動／DAT取得を修正し、監視期限に2時間・3時間・任意指定を追加。
+- スレ一覧画像表示（実験）: 5ch・エッヂ・ふたば（img／may含む）・あにまんの1レス目画像の小型表示。使用中の板を対象とし、検索付きの除外リストを設定可能。サイズは24〜96dpのバーと±ボタンで変更でき、対応画像はVPN経由でも取得。
+- 191版の書き込み後の本文更新を改善し、監視ナビゲーションのonResume公開範囲を修正（IllegalAccessError対策）。
+
+## 検証範囲・未確認事項
+
+今回のMPPのLint・R8ビルド、検索37項目・画像ルール25項目・外部板43項目のホスト試験が成功。先行候補は191／226／242のパッチ適用・元命令保持を確認し、3版の隔離APKを実機に導入。191の「スレ一覧画像表示（実験）」画面表示・切替と、226／242の起動を確認。先行候補のクラッシュログは空です。今回の差分を反映したAPKの実機操作は未確認です。
+
+例示レスの実画像表示、サムネイルサイズバーの実操作、監視通知タップ時のDAT取得と該当レスへの移動、3版全経路の通し操作は未確認です。これらの実機検証用プレ版です。エミュレータは使っていません。
+
+[検証・導入記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/integration-status.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** correct watch navigation access and board thumbnail preferences ([9f17747](https://github.com/areteruhiro/Haiagaru-Morphe/commit/9f1774717f64f7bb58e1a24abbd402360c0b26ab))
+
+# Haiagaru 1.25.0-dev.22 (2026-11-11)
+
+外部板・検索・監視・スレ一覧画像表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- あにまん掲示板: YouTube／X（Twitter）のサイトカードURL、/arc/img画像、URL・履歴経由で開いたスレの板判定を改善。
+- ふたば／爆サイ: スレ一覧件数制限の解消と、ふたば「ねこ」板（may.2chan.net/27/）を追加。
+- 検索: 記者IDの全文・前半・後半、スレ名の部分一致、対象期間の指定と記者NG登録に対応。
+- 監視通知: 該当レスへの移動／DAT取得を修正し、監視期限に2時間・3時間・任意指定を追加。
+- スレ一覧画像表示（実験）: 5ch・ふたば・あにまんの1レス目画像の小型表示。対象板を選択でき、サイズはバーで24〜96dpに変更可能。
+- 191版の書き込み後の本文更新を改善。
+
+## 検証範囲・未確認事項
+
+191／226／242向けMPPのLint・R8ビルドとパッチ適用・元命令保持の確認が成功。検索32項目・画像ルール15項目のホスト試験が成功。3版の隔離APKを実機に導入し、191の「スレ一覧画像表示（実験）」画面表示・切替と、226／242の起動を確認。直近のクラッシュログは空です。
+
+例示レスの実画像表示、サムネイルサイズバーの実操作、監視通知タップ時のDAT取得と該当レスへの移動、3版全経路の通し操作は未確認です。これらの実機検証用プレ版です。エミュレータは使っていません。
+
+[検証・導入記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/integration-status.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **server:** prevent overlapping reviews and reuse committed feed snapshots [skip ci] ([ad86dc4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ad86dc482bc033d41eb5739e40b13655ede80539))
+
+### ✨ New Features
+
+* **chmate:** expand board support, reporter search, monitoring and thumbnails ([47afce1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/47afce1cf0b48b0a61b7ff6600f93f23a1a7c81a))
+
+# Haiagaru 1.25.0-dev.21 (2026-11-10)
+
+共有NGの通信タイムアウト対策を修正した検証用プレリリースです。
+
+## 主な変更
+
+- **共有NGの応答待ち時間を延長** — GASの処理待ちと回線遅延を考慮し、接続15秒・応答待ち60秒へ変更しました。
+- **受信のタイムアウトを1回だけ再試行** — GETのみ再試行し、転送と再試行を含む90秒の通信予算を確認します。報告送信POSTは、応答を失っても受理済みの可能性があるため自動再送しません。従来の送信待ちキューとoperationIdは維持します。
+- **失敗時の案内を日本語へ** — 保存済み条件を保持していることと、しばらくしてから再同期する案内を表示します。受信の失敗や不正な応答で、保存済みの条件・更新番号を置き換えません。
+
+## 確認範囲
+
+通常Lint/R8ビルドと191・226・242へのパッチ適用が成功。実際に16秒遅延するサーバーで旧15秒設定の失敗と修正後の取得成功を確認し、通信試験39項目が通っています。API36エミュレータの3版で実サーバーの3,853条件を約4.8〜6.2秒で受信・解析し、各15項目の同期・条件保持・送信重複防止を確認。基本画面・本文・画像・URL等の648／653／651項目も成功し、最終クラッシュログは空です。公開POSTは行っていません。
+
+調査時の配信は約3,850条件・約1.7MBで、PCからは約5秒で取得できました。報告者の端末でのタイムアウトそのものは未再現です。実機・長時間・混雑時の実サーバー処理は未確認です。GASコードとデプロイは変更していません。
+
+[変更と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/shared-ng-timeout-20261110.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **shared-ng:** tolerate slow GAS responses and retry receive timeouts ([5f133c4](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5f133c4bd98b562d04c4aab45a048f5a56b66bc3))
+
+# Haiagaru 1.25.0-dev.20 (2026-11-10)
+
+設定リンク、投稿前の文字処理、スレ内検索、追加掲示板の表示を修正した検証用プレリリースです。
+
+## 主な変更
+
+- **191でも書き込み用の設定文字列を利用可能に** — `docs/settings-links-list.csv` の文字列を本文でタップして設定を開けます。X投稿プレビューのオン・オフに依存しません。オン・オフの変更は内容を確認して「適用」を押した場合だけ反映します。
+- **3版の投稿前に「�」を除去** — 191・226・242の通常返信と新規スレ作成で、送信本文からU+FFFDとその数値文字参照を除去します。入力中の下書き・名前・メール・タイトルは保持し、元の末尾空白設定も維持します。
+- **導入時のエッヂ画像変更を廃止** — Morpheの「エッジ過去ログのツールバー画像」オプションを削除しました。内蔵24dpアイコンを使い、アプリ内の「ツールバーのアイコン画像」からの変更は引き続き利用できます。
+- **ﾜｯﾁｮｲの閉じ括弧を検索対象へ追加** — `(ﾜｯﾁｮｲ XXXX-XXXX)` や `-XXXX)` も、スレ内検索のワッチョイ対象がオンなら検索できます。ヘッダーのIPや日時を追加で対象へ含める変更はしていません。
+- **あにまんの本文表示を修正** — サイト側リンクカードの見出し・説明を本文へ複製せず、元URLを表示します。添付画像も元URLで表示・コピーでき、画像取得用リンクを保持します。先頭や返信アンカー後の余分な空行、被返信側へサイトが付ける「>>番号」を除去し、投稿者自身の返信アンカー・空行は残します。
+- **専用ビューアの保存操作を変更** — 動画/GIFの保存時に通信量・保存容量の注意確認を挟まず保存要求へ進みます。必要なAndroidの保存権限要求と、進捗・完了通知は従来の処理を使用します。
+
+## 確認範囲
+
+通常のLint/R8ビルドと3版へのパッチ適用が成功。API36エミュレータで191／226／242の標準画面・本文・画像・URL・隔離送信を678／684／681項目、設定リンク操作を各30項目、投稿本文・表示・再生等を28／31／31項目で確認しました。CSVの対応する書き込み文字列392／383／383件は実アプリの出力と集合一致し、全件リンク化を確認。元命令・レジスター・分岐保持、導入時画像オプションの削除、内蔵24dpアイコンも検査し、最終クラッシュログは空です。
+
+11月7日の `EdgeReporterHistory.metadataTitle` のOOMログは、既存の保存まとめ・重複排除・低メモリ時退避の修正と対応しています。現行処理を60項目で再確認し、候補APKの履歴タイトル処理に同期 `Editor.apply()` がないことも3版で検査しました。
+
+報告されたあにまん `7585502` の現行ページは調査環境からHTTP403のため、同サイトの保存済み実HTMLと再現用データで確認しています。実機、公開掲示板への投稿、実際の公開動画の保存完了、長時間利用は今回未確認です。
+
+- [検索・あにまん表示・保存操作の変更と検証](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thread-search-animanch-save-20261110.md)
+- [設定リンク・投稿本文の変更と検証](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/settings-links-191-post-cleanup-20261109.md)
+- [設定リンク一覧CSV](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/settings-links-list.csv)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** restore setting links and improve native search and board rendering ([7d4e866](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7d4e866f1983303e8657cc47f607efc8aa7ec2c7))
+
+# Haiagaru 1.25.0-dev.19 (2026-11-09)
+
+ツールバーのカスタム画像と、投稿本文の文字化け記号を修正した検証用プレリリースです。
+
+## 主な変更
+
+- **カスタム画像の表示サイズを修正** — アプリ内「ツールバーのアイコン画像」で変更した画像が、Android側の複製処理で大きくなり、ツールバーの領域へ影響する問題を修正しました。複製後も24dpの表示サイズを維持し、色・透明部分・縦横比を保持します。保存済みの画像を選び直す必要はありません。
+- **画像の推奨サイズを案内** — 推奨は256×256pxの正方形・背景透過PNGです。別のサイズも縦横比を保って調整し、最大16MiBまで取り込めます。Morpheのパッチ設定で指定する画像は今回の変更対象に含みません。
+- **投稿前に「�」を除去** — 送信直前の本文から文字化け記号U+FFFDと、その数値文字参照を除去します。通常の空白・改行は残します。入力中の下書き・名前・タイトル・保存済みDATは変更せず、送信用本文だけを処理します。表示用の文字置換・異体字セレクタ設定とは独立して適用され、追加の設定は不要です。
+
+## 確認範囲
+
+191・226・242のエミュレータで、実際のネイティブアイコン描画・ConstantState複製・密度変更・ImageViewの配置・隣のボタンへの影響を各42項目確認しました。投稿本文・ネイティブ送信データの保持・音声などは191で27項目、226・242で各30項目、文字処理の単体試験は12項目です。本文・画像・書き込み画面などの回帰試験は191で641項目、226で647項目、242で644項目を確認しました。最終の新規クラッシュログは空です。
+
+アイコンは合成画像で確認しており、報告元の実画像・実機画面そのもの、長時間利用、実掲示板への投稿は今回未確認です。
+
+- [変更内容と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/toolbar-icons-post-cleanup-20261109.md)
+- [ツールバー画像の案内](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/toolbar-icons.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** bound custom toolbar icons and strip outgoing replacement glyphs ([45ba85f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/45ba85f301907c02f29e4309f66ec6a02f0ac38a))
+
+# Haiagaru 1.25.0-dev.18 (2026-11-09)
+
+閲覧済みレスの再通知と、ミュート中の音声フォーカスを修正した検証用プレリリースです。
+
+## 主な変更
+
+- **読んだレスが後から通知される問題を修正** — 書き込み後の自動監視などで、通知を開いて追加分を読んだ後、その内容を再び新着として通知する問題を修正しました。ChMate標準の既読レス数を参照し、通信待ちの間に既読が進んだ場合も通知件数・本文を絞り直します。
+- **未読の新着通知を維持** — 巡回でダウンロードしただけのレスを既読扱いにはしません。自分への返信のみの通知、通知済みレスの重複排除、初回確認時の無通知、監視期限・停止設定も維持します。標準の既読位置・DATは書き換えません。
+- **ミュート中の音声フォーカスを停止** — Android 8以降のHaiagaru専用動画プレーヤーでは、ミュート中は音声フォーカスを取得せず、保持中なら解放します。再生中のミュート解除は音を戻す前に取得し、一時停止中の解除では取得しません。ミュート中の一時停止・再開や、遅れて届くフォーカス喪失でも背景音声を維持します。
+
+## 確認範囲
+
+191・226・242のエミュレータで、既読レス・一部既読・通信中の既読進行・返信限定などの通知試験を各40項目確認しました。実ローカルMP4と独立した背景音声フォーカスによる試験は191で20項目、226・242で各23項目です。本文・画像・書き込み画面などの回帰試験は191で641項目、226で647項目、242で644項目を確認し、最終の新規クラッシュログは空でした。公開掲示板への投稿は行っていません。
+
+Android 7以前のVideoView内部の自動フォーカス要求、ChMate標準プレーヤー、YouTubeアプリそのものとの同時利用、実機・長時間利用は今回の確認対象に含みません。
+
+- [変更内容と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thread-watch-read-mute-20261109.md)
+- [スレの新着通知の説明](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thread-notifications.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** suppress read-response notifications and muted playback focus ([128de6a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/128de6af293c56eac3c26e84f90b707877a03e23))
+
+# Haiagaru 1.25.0-dev.17 (2026-11-08)
+
+エッヂの板一覧、kenmo.orgの記者ID、IP表示スレへの投稿前確認を更新した検証用プレリリースです。
+
+## 主な変更
+
+- エッヂの新しいトップページを板一覧として登録・更新した際、スレ見出しを板名として取り込む問題を修正しました。既に不正な板名が保存されている場合は、板一覧を更新してください。
+- kenmo.orgでもNG Threadsから「記者だけをNG」を選べます。subject.txtの記者IDを保存し、スレを読んだ後も表示できるようにしました。板ごとの情報を分離し、従来のエッヂ設定リンクも引き続き利用できます。
+- IP表示スレへの書き込み前に警告する設定を追加しました。Wi-Fi・モバイル回線を個別に選べ、初期値は両方OFFです。確認できない場合も、その旨を表示します。
+- 警告画面の「送信元IPを確認」で、選択した回線から外部サービスipify.orgへ問い合わせられます。取得するIPは参考値です。IPv4／IPv6・VPN・プロキシ・回線変更などにより、投稿先に記録されるIPと異なる場合があります。確認操作をするまで問い合わせません。
+- 新しい警告設定も、書き込み内の設定リンクから確認して変更できます。[設定リンク一覧](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/settings-links-list.md)を更新しました。
+
+## 確認範囲
+
+191・226・242のエミュレータで投稿前警告・キャンセル・確認、記者ID、板一覧、標準スレ本文・画像・書き込み画面の基本操作を検証しました。固定フックの元命令・レジスター・例外処理の保持も確認しています。191候補は実機の既存検証用アプリへ署名一致で更新し、起動を確認しました。公開掲示板への投稿・実IP確認サービスへの問い合わせは行っていません。
+
+爆サイは、レス数が変わらず本文だけ変わる隔離データを、通常更新で再取得・再表示できることを191で確認しました。報告スレ8520877では元サイトが返さない51レスが残っており、全件取得の解消を意味しません。実機での各新機能の通し操作・長時間利用・実回線切替・実投稿は未確認です。
+
+- [記者ID・板名・爆サイの検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/kenmo-edge-bakusai-20261109.md)
+- [IP表示スレへの投稿前警告](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/ip-post-warning-20261108.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add scoped kenmo reporters and network-aware IP posting confirmation ([d73afd8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d73afd860fabbd7dcaf7df49f25e8d0c2178d7f0))
+
+# Haiagaru 1.25.0-dev.16 (2026-11-08)
+
+返信ポップアップのサムネイルエラー表示、自動再生OFF時の音声、絵文字の表示・投稿を修正した検証用プレリリースです。
+
+## 主な変更
+
+- **返信ポップアップへの重なりを修正** — 背面のサムネイル取得失敗表示や再取得・再生ボタンが、返信先の本文・画像に重ならないよう調整しました。
+- **自動再生OFF時の背景音声を維持** — Haiagaru動画プレイヤーを開いただけでは音声フォーカスを要求せず、再生を開始したときに要求します（Android 8以降）。
+- **絵文字の異体字セレクタ除去を初期ON** — 投稿時・本文表示時にFE0E／FE0Fを除去します。ZWJや漢字の異体字セレクタは保持します。
+- **文字化け記号の非表示を初期ON** — 本文の「�」を非表示にします。「本文の文字列置換」で各機能をOFFにできます。TXTファイルの選択は不要です。保存済みDAT・入力中の下書きは変更しません。
+- **242の投稿用コピーを修正** — 投稿本文のフィールド対応を修正し、本文以外の入力値を保持します。
+
+## 確認範囲
+
+エミュレータで191・226の先行候補を検証し、最終242候補では投稿データの保持、本文・画像・書き込み画面など644項目の回帰試験、文字処理と音声フォーカス15項目を確認しました。返信ポップアップの遮蔽は実Androidレイアウト41項目で確認しました。新規クラッシュログはなく、公開投稿は0件です。
+
+音声は独立した背景音声フォーカスと実MP4で確認しています。YouTubeアプリそのものとの同時再生、ChMate標準プレイヤー、Android 7以前、実機・長時間利用は今回未確認です。最終候補の191・226への再導入は行っていません。
+
+- [変更内容と検証記録](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/thumbnail-focus-emoji-20261108.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** prevent thumbnail overlap and preserve background audio ([19b984d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/19b984dd454985d7335a18b1f4264e06eea2d451))
+
+# Haiagaru 1.25.0-dev.15 (2026-11-08)
+
+HOME更新時の表示位置、板一覧のクラッシュ、爆サイの複数ページ取得を修正し、共有NGのダウンロード済みデータを削除できるようにした検証用プレリリースです。
+
+## 主な変更
+
+- **191：HOME更新時の表示位置を維持** — 更新完了時に一覧が先頭へ戻る処理を修正しました。手動の先頭移動は引き続き使えます。
+- **191・226：板一覧のクラッシュを修正** — 一覧の更新通知と表示件数の計算順序を修正し、スクロール中の件数不一致を防ぎます。
+- **爆サイの複数ページ取得を改善** — ページ指定のないURLがエラーになる場合は、最初のページを指定して取得します。途中ページの「前スレ」リンクをスレ本文の変更と誤認していた処理も修正しました。
+- **爆サイのエラーを読みやすく** — `BKS-759` などの番号と「しばらくしてアクセスし直してください」を表示します。前面では全文を確認できるダイアログも表示し、元サイトのエラー番号も残します。
+- **共有NGの受信データを削除** — オンライン共有NGの設定に「共有NGのダウンロード済みデータを削除」を追加しました。保存容量を確認してから削除でき、自動で再取得しないよう共有NGをオフにします。再びオンにすると再取得します。個人NG・レポーター除外・個別解除・端末内編集は保持します。
+
+## 爆サイの取得状況
+
+[報告スレ：つくばの美味しいラーメン店②](https://bakusai.com/thr_res/acode=15/ctgid=111/bid=4437/tid=8520877/)で、実通信による12ページの解析と、スレ本文・500レスの取得を確認しました。残る古い51レスは元サイトが759／778を返すため未取得です。番号を詰めず、該当位置に取得できない理由を表示します。全551レスが取得できた状態ではありません。
+
+## 確認範囲
+
+191・226・242のエミュレータで起動、本文・画像、設定、模擬投稿などの回帰試験を実施しました。191ではHOME更新位置の保持と手動の先頭移動、共有NGの実ファイル削除・容量・設定保持・エラー全文表示も確認しました。実機・長時間利用・実掲示板への投稿は今回未確認で、公開投稿は0件です。
+
+- [板一覧クラッシュの調査と検証](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/board-list-notification-crash-20261108.md)
+- [共有NGの容量削除・爆サイのページ取得と確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/shared-ng-cache-bakusai-pages-20261108.md)
+- [HOME更新時の位置保持](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/home-refresh-scroll-20261108.md)
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** preserve HOME refresh position and repair board loading ([d883b39](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d883b393b44bfb762c70505f5f211925f7149c7f))
+
+# Haiagaru 1.25.0-dev.14 (2026-11-08)
+
+爆サイの「闇バイトからの転落」ページ内にある関連ニュースを、ChMate標準画面で閲覧できるようにした検証用プレリリースです。
+
+## 主な変更
+
+- 北海道一般求人など、一覧のリンク先が「闇バイトからの転落」になっている板では、そのページ内の関連ニュースを標準のスレ一覧へ表示します。
+- ページ表示後に取得されるニュース一覧へ対応しました。今回の取得時点では59スレありました。以前は静的HTMLだけを調べ、この動的なスレ一覧を見落としていました。
+- ニュースを選ぶと元の掲示板から本文・レスを取得します。APIの古い板番号は元ページの正式URLで確認し、本文・URLコピー・返信フォームの接続先を合わせます。
+- 自動で外部ブラウザを起動する変更ではありません。
+- 元APIにレス数がないため、本文取得前の件数は0として表示し、取得後に実際の件数へ更新します。集約一覧から新規スレを作成する場合は、元の板を開くよう案内します。
+
+## テストしたURL
+
+- [闇バイトからの転落](https://bakusai.com/yamibaito/)
+- [北海道一般求人](https://bakusai.com/thr_tl/acode=1/ctgid=106/bid=326/)
+- [代表スレ：医薬品卸売会社強盗](https://bakusai.com/thr_res/acode=3/ctgid=137/bid=1098/tid=13607621/)
+- [取得方式と確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/bakusai-yamibaito-news-20261108.md)
+
+## 確認範囲
+
+実API59件の解析と、代表スレの本文・2レスを確認しました。191・226・242のエミュレータで641・647・644項目が成功し、標準一覧59件・代表本文3件・元URL・通常本文／画像／模擬投稿／HTTPS ONを確認しました。191の実通信でも一覧59件と代表本文3件を取得・表示でき、新規クラッシュログはありません。59スレ全ての本文・全返信を網羅した検査ではありません。実機・長時間利用・実掲示板への投稿は今回は未確認で、公開投稿は0件です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** display Bakusai related news in native thread lists ([1917d92](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1917d9203e07f875c45b4722be91575899c390f0))
+
+# Haiagaru 1.25.0-dev.13 (2026-11-08)
+
+爆サイの求人板でスレ一覧が読み込めない問題を修正した検証用プレリリースです。
+
+## 主な変更
+
+- 福岡お水・ホスト求人など、リンク直後に「(n件)」を表示する求人板の一覧形式へ対応しました。タイトル・レス数を分けて読み取り、ChMate標準のスレ一覧へ表示します。
+- 同じ形式の他県のお水・ホスト求人・風俗求人にも共通対応します。
+- 一覧が外部求人情報や注意喚起ページへのリンクのみの場合は、通常の掲示板スレがないことを説明します。外部ページをスレとして扱いません。
+
+## 確認範囲とテストURL
+
+47都道府県×求人3種、計141板の1ページ目を実通信で確認しました。通常スレがあった54板（お水・ホスト求人46県、風俗求人8県）では各1スレの本文・返信取得に成功しました。残る87板の1ページ目は外部求人情報または注意喚起リンクのみでした。全ページ・全スレの網羅検査ではありません。
+
+福岡は一覧25スレ、代表スレの本文・返信2件をAndroid実通信で取得し、標準の本文画面で2件表示できました。
+
+- [福岡お水・ホスト求人の板](https://bakusai.com/thr_tl/acode=10/ctgid=135/bid=829/)
+- [福岡の代表スレ「小倉」](https://bakusai.com/thr_res/acode=10/ctgid=135/bid=829/tid=5262240/)
+- [全141板と取得を確認した54スレのURL・結果](https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/bakusai-recruitment-20261108.md)
+
+191のエミュレータで615項目が成功しました。標準本文・画像・模擬投稿画面・元URL・HTTPS有効時の回帰と固定フックの保持を確認し、新規クラッシュログはありません。製品ビルドは通常のLint/R8を含め成功しています。
+
+共通パーサーの修正を含むバンドルですが、今回の最終候補で226・242の画面検証は行っていません。実機・長時間利用・実掲示板への投稿も今回は未確認です。公開投稿は0件です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** parse Bakusai recruitment thread lists ([b24e2de](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b24e2de5328a9039969d49a9980e893c1a1a5896))
+
+# Haiagaru 1.25.0-dev.12 (2026-11-08)
+
+爆サイ・ふたば・あにまんのスレ一覧表示と、爆サイの取得互換性を改善した検証用プレリリースです。
+
+## 主な変更
+
+- 爆サイ・ふたば・あにまんの標準スレ一覧に、スレ作成日時と勢いを表示します。元ページの最初の投稿日時を使用し、バックグラウンドで取得・キャッシュします。日時を確認できない場合はスレ番号から推測しません。
+- 爆サイの新しいテキスト形式のスレ一覧に対応しました。通常のHTTPセッションで受け取ったCookieを保持します。
+- 爆サイの全ページ取得後も元サイトに番号の抜けがある場合、取得済みのレスを表示し、抜けた番号には理由付きの「未取得」を表示します。取得できない内容を復元済み・削除済みとは扱いません。
+- 爆サイがHTTP 200でアクセスエラーを返した場合も、取得成功にせず、元のエラー番号を表示します。
+
+## 確認範囲
+
+以前案内された15地域のBBSメニューそれぞれから、内部の板のスレ一覧・スレ本文まで確認しました。47都道府県の雑談総合、各地域の運輸・交通15板、災害4板・サッカー国内1板の計67板から各1スレを選び、66スレで本文・レスの全件取得に成功しました。残る1スレは元サイトのレス番号6が欠けており、理由付きの未取得枠を表示します。全板・全スレを網羅した検証ではありません。
+
+栃木運輸・交通の代表スレは、191のAndroid実通信でも本文・レス計31件を取得し、標準画面に31件表示できました。サッカー国内も実通信で20件取得・20件表示を確認しています。
+
+191・226・242のエミュレータで、それぞれ615・621・618項目が成功しました。3サイトの作成日時表示、標準本文・画像・元URLコピー・模擬投稿画面・HTTPS有効時を確認しています。製品ビルドと固定フックの命令・レジスター保持検査が成功し、検証中の新規クラッシュログはありません。
+
+今回の勢い追加は表示処理の対応で、勢いによる並べ替えの順序は未検証です。実機・長時間利用・実掲示板への投稿・認証Cookie利用ONでの実通信は今回は未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** show external-board creation dates and momentum ([b624f64](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b624f64d0a1aacea11b04329ad2122d38d38ec74))
+
+# Haiagaru 1.25.0-dev.11 (2026-11-08)
+
+爆サイの一部スレで、ページ番号を変えても同じページが返り503になる問題を修正した検証用プレリリースです。
+
+## 主な変更
+
+- 通常の爆サイ取得にはHaiagaruのクライアント識別情報を使います。他の掲示板の認証画面で保存されたブラウザ用の識別情報が流用され、本文やレスが揃わなくなる問題を修正しました。
+- 爆サイ自身の認証Cookieを利用する設定がオンの場合は、認証時のブラウザ識別情報を維持します。
+
+## 確認範囲
+
+報告された「ワカサギ釣り」（ https://bakusai.com/thr_res/acode=1/ctgid=132/bid=2434/tid=3099994/ ）で、修正前は1ページ目・3ページ目を指定しても同じ2ページ目（レス2〜8）だけが返る問題を再現しました。修正版ではAndroidの実通信から本文とレス1〜15を取得し、ChMate標準のスレ画面に16件すべて表示できました。取得できないレスを未取得枠で埋めた結果ではありません。
+
+191のエミュレータで598項目が成功しました。標準の本文・画像・元URLコピー・模擬投稿画面・HTTPS有効時の回帰と、以前報告された爆サイ13585881の取得も確認しています。通常の製品ビルドと固定フック検査が成功し、確認中の新規クラッシュログはありません。
+
+今回の最終候補を使った226・242および実機での画面検証は行っていません。実サイトへの投稿と、爆サイの認証Cookie利用がオンの場合の実通信も今回は未確認です。認証オン時にブラウザ識別情報を維持する処理はテストで確認しています。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** use native client identity for public Bakusai requests ([5db4526](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5db4526aef93a3290166e039298c50b78e3f91ca))
+
+# Haiagaru 1.25.0-dev.10 (2026-11-07)
+
+ふたば・あにまんの投稿結果判定と、爆サイの空のモバイル画面への対応を修正した検証用プレリリースです。
+
+## 主な変更
+
+- ふたばの投稿手続きで発行されるCookieをメモリ内で保持します。Cookieの発行や投稿間隔による明確な拒否には理由を表示し、数秒後の手動再送を受け付けます。投稿できたか不明な結果は自動再送しません。
+- ふたばで投稿完了後に返る、タイトルのないスレ移動画面を成功として判定し、標準の書き込み画面を閉じます。同じ板・スレへの移動と完了文を確認します。
+- あにまんは、返されたスレ番号・レス番号で投稿成功を判定します。ブラウザ用の移動先URLの形式だけでエラーになり、投稿画面が残る問題を修正しました。
+- 爆サイで記事本文・レスが空のモバイル画面になる場合、同じURLのPC表示を一度取得します。最初に本文のない継続ページが返る場合は、1ページ目も確認します。
+- 爆サイがレス数を表示しながら一覧を空で返す場合、取得できた記事は表示し、返されないレスには「未取得」と理由を表示します。取得できないレスを復元済みとは扱いません。
+
+## 確認範囲と残る制限
+
+191のエミュレータで595項目が成功しました。標準の本文・画像・元URLコピー、ふたばとあにまんの成功応答で書き込み画面が閉じること、拒否時の本文保持、手動再送と二重送信防止を確認しました。製品ビルドと固定フック検査が成功し、確認中の新規クラッシュログはありません。
+
+実通信では、報告された爆サイ13585881の記事をHTTP 200で取得できました。元サイトは「2レス」と表示しながら一覧を空で返しているため、表示は記事1件と理由付きの未取得枠2件です。2レスの内容まで取得できたものではありません。
+
+ふたばの実投稿成功はPC上のHTTPセッションで1件確認しました。エミュレータでは模擬応答を使った標準書き込み画面の動作を確認しています。あにまんの実投稿は調査環境の投稿前認証がHTTP 403となるため未確認で、実際の成功JSONも未採取です。今回の最終候補を使った226・242および実機での画面検証は行っていません。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **ChMate:** handle site posting receipts and empty Bakusai mobile pages ([ddb95e0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ddb95e014c310441b8e525dd37b52d8e9a347cd6))
+
+# Haiagaru 1.25.0-dev.9 (2026-11-07)
+
+あにまんの分割ページによる503、爆サイのレス数取得、元URLコピーと本文の段落表示を修正した検証用プレリリースです。
+
+## 主な変更
+
+- あにまんのモバイルページが「1レス目＋最新200レス」だけを返す場合、同じスレのページを取得して番号順に結合します。欠落と誤認して503になる問題を修正しました。ページ内の重複・逆順や全体の欠番は引き続き検査します。
+- 爆サイでレス数カウンターのない継続ページが最初に返る場合、スレタイトルの件数を参照します。最初の応答が2ページ目でも1ページ目を読み飛ばさず、地域番号が異なる同じページの二重取得を避けます。
+- ポート番号が抜けた登録済みの127.0.0.1のURLも、コピー時は元の掲示板URLへ戻し、開く時は現在の接続先へ復元します。通常URLから標準のスレ画面へ開けます。未登録の板の自動追加や、オフの板の自動有効化は行いません。
+- 元URLコピーは通常のテキストに加え、HTMLのリンク、URI形式、複数項目のコピーにも対応します。コピー履歴がオフでも利用できます。
+- 外部板のHTML段落・引用ブロックを標準DATで扱える改行に変換し、本文が詰まる問題を修正しました。
+
+## 確認範囲
+
+191のエミュレータで585項目が成功しました。標準のコピー処理が実際のクリップボードへ元URLを格納すること、元URLからの起動、「まどドラ」スレの全82レスについて本文・改行・引用・画像URL・番号・Unicodeが元データと一致することを確認しました（横方向の空白幅の差は除きます）。分割されたあにまん275レスと、爆サイ1000返信＋1レス目の表示も確認しました。
+
+実通信では、報告されたあにまん7596018をHTTP 200で取得し、分割ページの結合後に329行のDATを取得できました。レス数は確認時点の値です。爆サイの1000返信確認は実際の初期HTMLと合成した継続ページによる試験であり、全1000返信を実通信取得したものではありません。
+
+製品ビルドと191の固定フック検査、本文・画像・模擬投稿ダイアログ・HTTPS有効時の回帰確認が完了し、新規クラッシュログはありません。今回の最終候補を使った226・242および実機での検証は行っていません。実サイトへの投稿受理も未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** merge mobile pages and preserve source URLs and paragraphs ([bea511d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/bea511d35a01a3142acf0ae3e573ba49f31e4fc4))
+
+# Haiagaru 1.25.0-dev.8 (2026-11-07)
+
+外部板の取得形式・文字化けを修正し、通常URLから開く／本来のURLをコピーする機能を追加した検証用プレリリースです。
+
+## 主な変更
+
+- 爆サイの佐賀・長崎・大分など、登録URLから地域番号が変わる転送に対応しました。同じカテゴリ・板番号を維持して、スレ一覧とページ分割された本文のリンクを読み込みます。
+- ふたば「ニュース表」のスレ一覧で、レス数の表記形式が違うため取得できない問題を修正しました。
+- ふたばの「配布」は掲示板ではなくスクリプトの配布ページのため、新規の板一覧への追加対象から外しました。既存の登録を開いた場合は、スレ一覧がない理由を表示します。
+- あにまんのスレタイトルなどで、星記号に続く異体字セレクタが文字化けする問題を修正しました。Androidの文字コード判定だけに頼らず、元の文字へ復元できない場合は文字参照で保持します。
+- 爆サイ・ふたば・あにまんの通常のスレURLをChMateへ渡して開けるようにしました。対象の板を登録し「使用する」をオンにしてください。未登録の板の自動追加や、オフの板の自動有効化は行いません。
+- アプリ内でURLをコピーした際、端末内の127.0.0.1のURLを本来の掲示板URLへ戻します。スレタイトルとURLをまとめてコピーする形式にも対応します。
+
+## 確認範囲と残る課題
+
+191・226・242でパッチ適用・既存フックの保持・起動・本文・画像・模擬投稿ダイアログ・HTTPS有効時の動作を確認し、各307・316・313項目が成功しました。報告されたあにまんの2スレは、取得済みの実HTMLを使い、通常URLから標準画面へ開いて308レス・82レスを表示できました。元URLの変換、コピー用文字列、Android上での文字保持も確認しています。実機での検証は行っていません。
+
+あにまんで以前発生した取得エラーは今回再現できていません。また、爆サイの「ほとんどのスレが開けない」という報告すべての原因を特定したものではありません。引き続き、取得に失敗する元スレURLとエラー詳細の確認が必要です。実サイトへの投稿受理も未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** open and copy source site URLs and fix reported formats ([b040af1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b040af13044f1b8bbb0fe081650a111c2ea74bb2))
+
+# Haiagaru 1.25.0-dev.7 (2026-11-07)
+
+共有NGの端末内編集と、固定ラベル・短い単語の正規表現による誤検知対策を追加した検証用プレリリースです。
+
+## 主な変更
+
+- オンライン共有NGの「受信した条件・端末内編集・個別解除」から、条件文と正規表現のオン／オフをこの端末だけで編集できます。条件の長押しからも開けます。
+- 編集内容は同じ配信条件の同期後も保持します。「配信条件に戻す」で元へ戻せます。編集内容はサーバーへ送信しません。別の条件ハッシュには自動的に引き継ぎません。
+- 編集後も最新の報告数・配信停止・レポーター除外・個別除外を反映します。不正な正規表現は保存せず、入力欄にエラーを表示します。明示的に編集した条件は入力内容どおりに適用します。
+- 「ﾜｯﾁｮｲ」「ワッチョイ」「IP」などの固定ラベルや括弧・ハイフン等だけの一致を、共有NGの識別根拠にしないようにしました。実際のﾜｯﾁｮｲ・IP値を含む条件は引き続き判定します。
+- 共有NGのkeyword正規表現で、短い単語をORで連結して共有条件の文字数制限をすり抜ける条件を自動適用から外します。報告された「ﾜｯﾁｮｲやIPのNGも…」の文章が固定ラベルだけでNGになる問題を、実配信条件から再現して対策しました。すべての正規表現や誤検知を網羅するものではありません。
+
+## 確認範囲
+
+191・226・242のパッチ生成と固定フック検査が成功しました。242のAndroidエミュレータで、共有NG・バックアップ・端末内編集の保存と再読込・同期保持・元へ戻す・票数と配信停止と除外の維持・編集画面と保存エラーとキャンセルを含む51項目が成功しました。ユーザーの指示により1版の確認後に先行配布し、公開開始時点では226・191の最終画面検証は継続中です。実機では未確認です。配信サーバーへの変更はありません。
+
+あにまんの一部実況・安価スレの取得失敗と実サイトの投稿受理は引き続き未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** edit shared NG locally and guard fixed-label matches ([6ea8006](https://github.com/areteruhiro/Haiagaru-Morphe/commit/6ea8006696f998336c15db93138b1e89038539f4))
+
+# Haiagaru 1.25.0-dev.6 (2026-11-07)
+
+バックアップ設定XMLの共通化と、共有NGの正規表現による誤検知を修正した検証用プレリリースです。
+
+## 主な変更
+
+- パッケージ名を変更したChMateでも、標準バックアップの設定XML名と参照名を元の jp.co.airfront.android.a2chMate_preferences.xml に統一しました。実際の設定保存先は各アプリのまま維持します。
+- 以前の同一パッケージ名で作成したバックアップも、共通名のXMLが無い場合に復元できます。両方ある場合は共通名を優先します。
+- 特定の1文字が文章中に繰り返し現れるだけで一致する、広すぎる共有NGのkeyword正規表現を自動適用の対象外にしました。対象の条件には理由を表示します。通常のパッケージ名の説明文がNGになる報告を再現して対策しました。
+
+## 確認範囲
+
+191・226・242のパッチ適用と固定フックの命令・レジスター・分岐保持を検査しました。エミュレータで共通XML名・共有NGを確認し、226・242では隔離したテスト設定に対する標準復元処理も確認しました。191では全データを扱う復元処理全体の実行は行っていません。ユーザーデータを使った移行は未確認です。誤検知対策は特定形式の共有NG条件に限り、あらゆる誤検知を防ぐものではありません。配信サーバーの変更はありません。
+
+あにまんの一部実況・安価スレの取得失敗と実サイトの投稿受理は引き続き未確認です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** canonicalize backup XML and avoid broad shared NG regex matches ([a7c2244](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a7c2244993d21167ee48e5bff297e60232e31a61))
+
+# Haiagaru 1.25.0-dev.5 (2026-11-07)
+
+爆サイの通常板・スレ本文と、ふたばの一覧タイトルを修正した検証用プレリリースです。
+
+## 主な変更
+
+- 爆サイの文字形式のスレ一覧（栃木災害など）を読み込めるようにしました。画像付きニュース一覧も引き続き利用できます。
+- 爆サイの通常モバイル本文をデスクトップ形式と誤認し、スレが開けなくなる問題を修正しました。
+- ふたばのカタログにタイトルが無い、または4文字に省略されている場合、通常の板ページから元のタイトル・本文冒頭を取得します。読み取りは同じ板の最大10ページに限定し、取得済みタイトルは上限付きで再利用します。取得できない項目は元のカタログ表記を維持します。
+- 取得失敗時に、元サイトのHTTP403や本文解析エラーの短い理由を表示します。
+
+## 確認範囲と未解決事項
+
+191・226・242でパッチ適用、固定フックの保持、起動、標準スレ一覧・本文・画像・模擬投稿を確認し、各276・285・282項目が成功しました。実通信の読み取りで爆サイの事件・事故ニュース133レスと栃木災害13レス、ふたばのねこ・昭和それぞれ50スレの一覧を確認しました。あにまんの一部実況・安価スレで本文を取得できない報告は調査中です。調査環境では実況カテゴリがHTTP403となるため、該当スレURLの確認が必要です。この問題を解決済みとはしていません。
+
+実サイトの投稿受理は引き続き未確認です。サイトの認証や制限に従ってご利用ください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** parse Bakusai board layouts and restore full Futaba titles ([7bd726b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7bd726bd66d7cf4e51e6d915dd8044157eedbd45))
+
+# Haiagaru 1.25.0-dev.4 (2026-11-07)
+
+履歴のメモリ不足、アップロード済み画像プレビューの切り替え、過去ログのUnicode欠落を修正した検証用プレリリースです。
+
+## 主な変更
+
+- エッヂの履歴タイトルを読むたびに同じ記者情報を保存していた処理を見直しました。変更分を上限付きでまとめ、専用スレッドで保存を直列化します。補助情報の保存がメモリ不足になった場合は保存の再試行を停止し、保存済みのデータは消しません。
+- 242のアップロード済みの通常画像プレビューでは、左右のページ送りをChMate標準の処理に任せます。画像ごとにビューアを起動し直す処理との競合を防ぎます。全レスのメディア移動とGIF・動画の専用ビューアへの切り替えは維持します。
+- 5ch過去ログのHTML・itest JSONからDATへ変換する際、絵文字や𝕏などShift_JISで表せない文字を数値参照で保持するよう修正しました。UTF-8の過去ログHTMLも判別して読み込みます。既に文字が欠落して保存されたログの自動修復は行いません。
+
+## 確認範囲
+
+ホスト試験で履歴の重複書き込み抑止、並行読み込み、保存中の更新、補助保存のメモリ不足、画像ページ送りの振り分け、Unicodeの保持を確認しました。エミュレータでの確認結果は開発記録に残します。報告されたSony SOG02実機での再現・確認は未実施です。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** reduce reporter memory pressure and repair image paging and archived Unicode ([e93a25f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e93a25ff95034a30547b598dda5485f6a2a59a79))
+
+# Haiagaru 1.25.0-dev.3 (2026-11-07)
+
+追加掲示板でHTTPS切り替え設定を有効にした際のTLSエラーを修正した検証用プレリリースです。
+
+## 主な変更
+
+- 「HTTP通信をHTTPSへ切り替える」をONにすると、爆サイ・ふたば・あにまんのローカル板一覧でTLSヘッダエラーになる問題を修正しました。端末内で起動中の追加掲示板サーバーだけHTTPを維持します。
+- 標準の掲示板設定から3サイトを追加し、板一覧・スレ一覧・本文・書き込み画面を利用できます。使用する設定は初期OFFです。爆サイは地域・カテゴリ、ふたば・あにまんはカテゴリで板をまとめます。
+- 追加掲示板のスレ番号を日時として誤表示しないよう修正しました。爆サイのモバイル表示とページ分割にも対応しました。
+- 投稿成功を確認できた場合は標準の投稿ダイアログを閉じます。失敗・認証待ち・結果不明の場合は本文を残します。あにまんの認証画面を開くボタンも追加しました。
+- 226のHOME・板・スレの上部検索メニューを補い、下部ツールバーに検索を表示する場合は上部で重複させないようにしました。
+- 動画サムネイルのエラー表示を大量に更新した際のレイアウト処理を修正しました。
+
+## 確認範囲と制限
+
+今回のTLS修正は通常ビルドとHTTPS通信方針のホスト試験62項目を確認済みです。3サイトのローカルメニュー取得、外部ホストのHTTPS維持、停止後の例外解除を検証しました。先行配布のため、修正後の191・226・242の標準画面での再検証は公開時点では未完了です。
+
+前版では191・226・242の標準画面と、模擬通信による投稿成功時のダイアログ終了・拒否時の本文保持を確認しています。実サイトでの投稿受理は未確認です。認証・投稿制限は引き続き適用されます。
+
+実サイトのHTML変更やサイト固有の必須項目により、取得・新規スレ・画像添付・投稿が利用できない場合があります。投稿結果が不明な場合は連続送信せず、元スレで確認してください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### 🐛 Bug Fixes
+
+* **chmate:** preserve HTTP for active local board gateways ([05dee0d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/05dee0d3fecce6a54860d1e9110c9c002a372bd2))
+
+# Haiagaru 1.25.0-dev.2 (2026-11-07)
+
+爆サイ・ふたば・あにまんのChMate標準画面への対応を追加した検証用プレリリースです。
+
+## 主な変更
+
+- 標準の掲示板設定から3サイトを追加し、板一覧・スレ一覧・本文・書き込み画面を利用できます。使用する設定は初期OFFです。爆サイは地域・カテゴリ、ふたば・あにまんはカテゴリで板をまとめます。
+- 追加掲示板のスレ番号を日時として誤表示しないよう修正しました。爆サイのモバイル表示とページ分割にも対応しました。
+- 投稿成功を確認できた場合は標準の投稿ダイアログを閉じます。失敗・認証待ち・結果不明の場合は本文を残します。あにまんの認証画面を開くボタンも追加しました。
+- 226のHOME・板・スレの上部検索メニューを補い、下部ツールバーに検索を表示する場合は上部で重複させないようにしました。
+- 動画サムネイルのエラー表示を大量に更新した際のレイアウト処理を修正しました。
+
+## 確認範囲と制限
+
+191・226・242でパッチ適用、フックのレジスターと元命令保持、起動、標準の本文・書き込み画面を確認しました。送信処理は隔離した模擬通信で検証し、3サイトの投稿ダイアログの成功時終了・拒否時の本文保持を含め191は255項目、226は264項目、242は261項目が成功しました。実サイトでの投稿受理は未確認です。サイトの認証・投稿制限は引き続き適用され、認証が必要な場合は利用者による操作が必要です。
+
+実サイトのHTML変更やサイト固有の必須項目により、取得・新規スレ・画像添付・投稿が利用できない場合があります。投稿結果が不明な場合は連続送信せず、元スレで確認してください。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add native external boards and verify posting dialog completion ([4e2bc63](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4e2bc633853245c9cce6acfb4280374bdf608082))
+
+# Haiagaru 1.25.0-dev.1 (2026-11-05)
+
+外部板の板一覧、設定リンク、226の検索メニュー、動画サムネイルと全レスのメディア表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- 191で外部板の板一覧にJavaScriptの文字列が混ざる問題を修正しました。登録した外部板をサイト別に板一覧の最上位へ表示するオプションも追加しました（初期OFF、変更後は再起動）。
+- 書き込みからHaiagaru設定を開く・オン／オフする設定リンクと、日本語のリンク作成画面を追加しました。タップ時に現在値と変更内容を表示し、「適用」を押すまで変更しません。
+- 226のタブレット表示で、ツールバーから検索を隠した際にも、板名をタップして開くメニューから検索できるようにしました。
+- 大きな `video.twimg.com` のMP4では、動画全体のサイズが取得上限を超えていても、容量・時間の上限内で必要な範囲を取得してサムネイル生成を試みます。サーバー応答や動画の構造により生成できない場合は従来の表示を維持します。サムネイルの取得設定もご確認ください。
+- サムネイル生成に失敗した場合は、通信・DNS・容量上限・時間切れ・解析失敗などの理由を表示します。「再取得」でサムネイルを再試行でき、「再生」からは取得結果に左右されず元の動画を開けます。解析用プロセスのメモリ不足などによる終了後も、待機後または明示的な再取得で再試行します。
+- 「サムネイルから全レスの画像・GIF・動画へ移動」に名称を統一し、ChMate標準の「複数あるときは連続表示ビューア」「常に1枚目から表示」の指定にも対応しました。対象は読み込み済みで表示対象になっているレスのメディアです。検証版で191の連続表示切り替え時に起きたクラッシュも修正し、226・242にも同じ保護を適用しました。
+
+## 確認範囲
+
+191・226・242へのパッチ適用と、変更フックの呼び出し先・レジスター・元命令の保持を検査しました。エミュレータで各80項目と226の検索メニュー5項目（計245項目）が成功しました。実際のサムネイルViewで再取得・再生・画面終了時の後片付け、連続表示の開始位置、設定リンクの確認・適用・キャンセル、外部板表示を確認しています。合成MP4では48MiB超の仮想ファイルから約266KBの範囲取得でフレームを生成でき、解析中断後の復帰も確認しました。最終確認で新規クラッシュログはありませんでした。
+
+報告された実動画でのサムネイル改善、実機での連続操作、実スレ本文の追加スモーク確認は完了していません。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add confirmed settings links and resilient media previews ([a2bcc53](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a2bcc5311d2a906b6d9ce800fad764768dace23e))
+
+# Haiagaru 1.25.0-dev.1 (2026-11-05)
+
+外部板の板一覧、設定リンク、226の検索メニュー、動画サムネイルと全レスのメディア表示を更新した検証用プレリリースです。
+
+## 主な変更
+
+- 191で外部板の板一覧にJavaScriptの文字列が混ざる問題を修正しました。登録した外部板をサイト別に板一覧の最上位へ表示するオプションも追加しました（初期OFF、変更後は再起動）。
+- 書き込みからHaiagaru設定を開く・オン／オフする設定リンクと、日本語のリンク作成画面を追加しました。タップ時に現在値と変更内容を表示し、「適用」を押すまで変更しません。
+- 226のタブレット表示で、ツールバーから検索を隠した際にも、板名をタップして開くメニューから検索できるようにしました。
+- 大きな `video.twimg.com` のMP4では、動画全体のサイズが取得上限を超えていても、容量・時間の上限内で必要な範囲を取得してサムネイル生成を試みます。サーバー応答や動画の構造により生成できない場合は従来の表示を維持します。サムネイルの取得設定もご確認ください。
+- サムネイル生成に失敗した場合は、通信・DNS・容量上限・時間切れ・解析失敗などの理由を表示します。「再取得」でサムネイルを再試行でき、「再生」からは取得結果に左右されず元の動画を開けます。解析用プロセスのメモリ不足などによる終了後も、待機後または明示的な再取得で再試行します。
+- 「サムネイルから全レスの画像・GIF・動画へ移動」に名称を統一し、ChMate標準の「複数あるときは連続表示ビューア」「常に1枚目から表示」の指定にも対応しました。対象は読み込み済みで表示対象になっているレスのメディアです。検証版で191の連続表示切り替え時に起きたクラッシュも修正し、226・242にも同じ保護を適用しました。
+
+## 確認範囲
+
+191・226・242へのパッチ適用と、変更フックの呼び出し先・レジスター・元命令の保持を検査しました。エミュレータで各80項目と226の検索メニュー5項目（計245項目）が成功しました。実際のサムネイルViewで再取得・再生・画面終了時の後片付け、連続表示の開始位置、設定リンクの確認・適用・キャンセル、外部板表示を確認しています。合成MP4では48MiB超の仮想ファイルから約266KBの範囲取得でフレームを生成でき、解析中断後の復帰も確認しました。最終確認で新規クラッシュログはありませんでした。
+
+報告された実動画でのサムネイル改善、実機での連続操作、実スレ本文の追加スモーク確認は完了していません。
+
+## 追加ファイル
+
+Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `haiagaru-image-ng.zip` ／ `haiagaru-image-vpn-v2.zip` を展開せず指定してください。これらのパッチを使わない場合、追加ファイルは不要です。
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
+### ✨ New Features
+
+* **chmate:** add confirmed settings links and resilient media previews ([a2bcc53](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a2bcc5311d2a906b6d9ce800fad764768dace23e))
+
+# Haiagaru 1.24.1 (2026-11-05)
 
 通知の確認間隔画面からの戻り操作と、開いているスレ・板の一括更新の画面反映を修正しました。
 
@@ -47,7 +1881,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * retain notification settings on cancel and refresh live tablet pages ([c051d15](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c051d1566513e3138a6f12e41043bf6dae34c163))
 
-# Haiagaru 1.24.0
+# Haiagaru 1.24.0 (2026-11-05)
 
 開いているスレ・板の一括更新を追加し、UAの選択表示とNG登録画面を整理しました。
 
@@ -97,7 +1931,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * add open tablet tab refresh and clarify UA selection ([7e27850](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7e27850cc55eb4f71d679307bfe800c8657edd03))
 
-# Haiagaru 1.23.1
+# Haiagaru 1.23.1 (2026-11-05)
 
 スレ内検索の戻る操作とサムネイルの再生マークを修正し、外部板の認証メニューを初期ONにしました。
 
@@ -148,7 +1982,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 * restore thread search back handling and thumbnail playback badges ([5801a07](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5801a072b3424cb383d55226cbe43008c772b36b))
 * show external board authentication menu by default ([1776df8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1776df81f862613e8a722947c959e8c4303615bb))
 
-# Haiagaru 1.23.0
+# Haiagaru 1.23.0 (2026-11-05)
 
 サムネイル表示のちらつき対策を191・226・242へそろえ、通常のChMateからのアーカイブ取り込みと、Shizukuによる選択式の上書き移行を追加しました。
 
@@ -227,7 +2061,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 * reduce optional unread thread preparation and native AA scans ([2cfe5d3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2cfe5d3f844d033302113d7f06abbfa1234175b5))
 * reuse NG plain text with configurable memory limits ([d6c5f61](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d6c5f61bc38d2878889c55cb99482f7603f70e8b))
 
-# Haiagaru 1.23.0-dev.15
+# Haiagaru 1.23.0-dev.15 (2026-11-04)
 
 242のスレ本文で、取得済みサムネイルが再読み込み通知によって一瞬消える経路を修正しました。
 
@@ -276,7 +2110,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * retain 242 thumbnails during asynchronous loading notifications ([0f6e214](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0f6e2140c1c1fe572fd4977245dde75d0453f02b))
 
-# Haiagaru 1.23.0-dev.14
+# Haiagaru 1.23.0-dev.14 (2026-11-04)
 
 共有NGが多いスレの初回判定と再表示を軽量化し、レポーター単位の除外とけんも板のスレ立てコマンドを追加しました。
 
@@ -333,7 +2167,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * use toolbar toggles for saved response actions ([5e2787e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5e2787e196a8a5fb266b1c79a43de888b472e05b))
 
-# Haiagaru 1.23.0-dev.13
+# Haiagaru 1.23.0-dev.13 (2026-11-04)
 
 共有NGが多いスレの初回判定と再表示を軽量化し、レポーター単位の除外とけんも板のスレ立てコマンドを追加しました。
 
@@ -389,7 +2223,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * add persistent shared NG reporter exclusions and Kenmo commands ([0fd4d23](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0fd4d23872894a42e6dc80a6812947a981a59e1d))
 
-# Haiagaru 1.23.0-dev.12（検証用）
+# Haiagaru 1.23.0-dev.12 (2026-11-04)（検証用）
 
 オンライン共有NG有効時の入力準備を見直し、テキスト再利用の上限設定を追加した検証用プレリリースです。**端末での起動・本文／画像表示・設定画面操作・速度改善は未確認です。** 静的修正・検証用公開として配布します。
 
@@ -452,7 +2286,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * reuse NG plain text with configurable memory limits ([d6c5f61](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d6c5f61bc38d2878889c55cb99482f7603f70e8b))
 
-# Haiagaru 1.23.0-dev.11（検証用）
+# Haiagaru 1.23.0-dev.11 (2026-11-04)（検証用）
 
 共有NGが多いスレの検索処理と、古い5chスレURLの画面遷移を見直す検証用プレリリースです。**端末での起動・本文／画像表示・設定切替・リンクタップと速度改善は未確認です。** 静的修正・検証用公開として配布します。
 
@@ -521,7 +2355,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * index shared NG literals for threads with many conditions ([f28f244](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f28f244f6d0932963d3cc787ce78eaceb4ede057))
 
-# Haiagaru 1.23.0-dev.11（検証用）
+# Haiagaru 1.23.0-dev.11 (2026-11-04)（検証用）
 
 スレ本文中の古い5chスレURLをタップしてから画面が開くまでの待ちを見直す検証用プレリリースです。**端末でのリンクタップ・本文取得・表示と速度改善は未確認です。** 静的修正・検証用公開として配布します。
 
@@ -583,7 +2417,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * open older current-server thread links before fetching DAT ([432052b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/432052bfbd730c3de96e89dba85f1f7c10ee11eb))
 
-# Haiagaru 1.23.0-dev.11（検証用）
+# Haiagaru 1.23.0-dev.11 (2026-11-04)（検証用）
 
 スレ本文中の古い5chスレURLをタップしてから画面が開くまでの待ちを見直す検証用プレリリースです。**端末でのリンクタップ・本文取得・表示と速度改善は未確認です。** 静的修正・検証用公開として配布します。
 
@@ -645,7 +2479,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * open older current-server thread links before fetching DAT ([432052b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/432052bfbd730c3de96e89dba85f1f7c10ee11eb))
 
-# Haiagaru 1.23.0-dev.10（検証用）
+# Haiagaru 1.23.0-dev.10 (2026-11-04)（検証用）
 
 未読が多いスレの表示処理を見直すための検証用プレリリースです。**端末での起動・本文／画像表示・設定切替の動作と速度改善は未確認です。遅延の解消を保証するものではありません。** 利用者指定の静的修正・検証用公開として配布します。
 
@@ -707,7 +2541,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * reduce optional unread thread preparation and native AA scans ([2cfe5d3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2cfe5d3f844d033302113d7f06abbfa1234175b5))
 
-# Haiagaru 1.23.0-dev.9（検証用）
+# Haiagaru 1.23.0-dev.9 (2026-11-04)（検証用）
 
 バックアップ・下部フィルター・共有NG除外の修正を試すためのプレリリースです。**板お気に入りの実移行・標準バックアップZIPの往復・フィルターの不定期消失・本文キャッシュ修復の端末動作は未確認です。**
 
@@ -770,7 +2604,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * preserve board backups and recover pinned filters and shared NG choices ([966f66e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/966f66e2a98a777d3baa5a1e77dcb375027fdefc))
 
-# Haiagaru 1.23.0-dev.8（検証用）
+# Haiagaru 1.23.0-dev.8 (2026-11-04)（検証用）
 
 スレを開く際の遅延・復元後の本文不足について、静的修正を試すためのプレリリースです。**端末での復元動作と速度改善は未確認です。改善確認済みの正式版ではありません。**
 
@@ -829,7 +2663,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * reconcile restored DAT counts and reduce attachment URL overhead ([7c78146](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7c781464f5e8600284abdb1ee0f6a6b82581d42c))
 
-# Haiagaru 1.23.0-dev.7
+# Haiagaru 1.23.0-dev.7 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -884,7 +2718,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * update standard connection template and migrate legacy settings ([ca057c7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ca057c71ec3d9f9446e3e610fac2f52cb9564231))
 
-# Haiagaru 1.23.0-dev.6
+# Haiagaru 1.23.0-dev.6 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -946,7 +2780,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * redraw shared NG choices and manage thread watch lifetimes ([2560d34](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2560d3436f31fc2e3303db68e074eafb1c9e2742))
 
-# Haiagaru 1.23.0-dev.5
+# Haiagaru 1.23.0-dev.5 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -1002,7 +2836,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * enable direct shared NG checkbox actions and default history targets off ([10e18d9](https://github.com/areteruhiro/Haiagaru-Morphe/commit/10e18d92a9550652e347558d90aa750d06d159ca))
 
-# Haiagaru 1.23.0-dev.4
+# Haiagaru 1.23.0-dev.4 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -1059,7 +2893,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * make refresh targets in history popup optional ([0b0704c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0b0704c04adf6901163fbd4ab415e1c6abb5266e))
 
-# Haiagaru 1.23.0-dev.3
+# Haiagaru 1.23.0-dev.3 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -1117,7 +2951,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * add HOME refresh-target tab and bottom history selection ([6dbc55f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/6dbc55f7ad6fa7bd238bbf8d8adafa6fa1cb81fe))
 
-# Haiagaru 1.23.0-dev.2
+# Haiagaru 1.23.0-dev.2 (2026-11-04)
 
 ## 今回の追加・修正
 
@@ -1175,7 +3009,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * refresh selected threads from gestures and add history target tab ([a0624fc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a0624fc2f9d7fb852f3eaa5232a6023e456e6274))
 
-# Haiagaru 1.23.0-dev.1
+# Haiagaru 1.23.0-dev.1 (2026-11-03)
 
 ## 今回の追加・修正
 
@@ -1232,7 +3066,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * add refresh-target history and exclude header search hits ([8d6d209](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8d6d2099a4b856d72bc57a87acacf096ff04ed2f))
 
-# Haiagaru 1.22.1
+# Haiagaru 1.22.1 (2026-11-03)
 
 ## 今回の修正
 
@@ -1287,7 +3121,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * restore shared NG choices and native trip highlighting [skip ci] ([38dd511](https://github.com/areteruhiro/Haiagaru-Morphe/commit/38dd511d4ac51b21df34f868d090a66e44b85a3e))
 
-# Haiagaru 1.22.0
+# Haiagaru 1.22.0 (2026-11-03)
 
 ## 今回の追加・修正
 
@@ -1353,7 +3187,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * exclude matching shared NG conditions from response menus [skip ci] ([b37b4c7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/b37b4c74ebe0ecfc4a259294b13b4dc7ad30712b))
 * search received shared NG exception conditions [skip ci] ([4e05d85](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4e05d85f11ad01b1bef4fea928c0756fee46b454))
 
-# Haiagaru 1.21.1
+# Haiagaru 1.21.1 (2026-11-03)
 
 ## 今回の修正
 
@@ -1408,7 +3242,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * only add NG action button for registered conditions [skip ci] ([34e6fcd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/34e6fcd855d264c2c26121f949226404becec79b))
 
-# Haiagaru 1.21.0
+# Haiagaru 1.21.0 (2026-11-03)
 
 ## 今回の変更
 
@@ -1475,7 +3309,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * manage existing NG rules from both registration dialogs [skip ci] ([6b013b0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/6b013b0ac09462c2bb54a50a19fa0d3bee4a4b26))
 
-# Haiagaru 1.20.2
+# Haiagaru 1.20.2 (2026-11-03)
 
 ## 今回の修正
 
@@ -1533,7 +3367,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * complete publication with requested public release wording ([dd2de5a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/dd2de5a715786133876a992f4a58d151fd92dd0c))
 
-# Haiagaru 1.20.1
+# Haiagaru 1.20.1 (2026-11-03)
 
 ## 今回の修正
 
@@ -1592,7 +3426,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * release notification preview and native settings stability fixes ([df69825](https://github.com/areteruhiro/Haiagaru-Morphe/commit/df69825b05b1ab212f624892fb6813c3fbf81d70))
 * restore 5ch notification bodies and stabilize native settings entry and S2M startup [skip ci] ([60a18db](https://github.com/areteruhiro/Haiagaru-Morphe/commit/60a18db46ef492c8156119328a2dfc5c897e4b39))
 
-# Haiagaru 1.20.0
+# Haiagaru 1.20.0 (2026-11-03)
 
 ## 今回の更新
 
@@ -1654,7 +3488,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * enrich thread notifications and embed settings entry [skip ci] ([767e693](https://github.com/areteruhiro/Haiagaru-Morphe/commit/767e69374a960b33315a63f7805c84ade1482a94))
 
-# Haiagaru 1.19.0
+# Haiagaru 1.19.0 (2026-11-02)
 
 ## 今回の更新
 
@@ -1719,7 +3553,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * **chmate:** avoid repeated ad class lookups during thread startup [skip ci] ([f2b2b45](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f2b2b458b7b83713f1ff863d6791371b9bd3fdcb))
 
-# Haiagaru 1.18.3
+# Haiagaru 1.18.3 (2026-11-02)
 
 ## 今回の更新
 
@@ -1780,7 +3614,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * **chmate:** preserve backup settings across presets and stabilize archive lists [skip ci] ([f20d8d7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f20d8d7df7d0e278e1da85f89cccfaf6284b7960))
 * **chmate:** synchronize dialog toggles and archive navigation ([703d5cd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/703d5cd3db6e8c80a1ea401efc0a543d7459429a))
 
-# Haiagaru 1.18.3-dev.1
+# Haiagaru 1.18.3-dev.1 (2026-11-02)
 
 ## 今回の更新
 
@@ -1840,7 +3674,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * **chmate:** synchronize dialog toggles and archive navigation ([703d5cd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/703d5cd3db6e8c80a1ea401efc0a543d7459429a))
 
-# Haiagaru 1.18.2
+# Haiagaru 1.18.2 (2026-11-01)
 
 ## 今回の更新
 
@@ -1900,7 +3734,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * **chmate:** preserve backup response marks and schedule settings ([67579dd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/67579ddaf432d6bdd73e69680880ba0c6af0d3da))
 
-# Haiagaru 1.18.1
+# Haiagaru 1.18.1 (2026-11-01)
 
 ## 今回の更新
 
@@ -1959,7 +3793,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * **chmate:** align native thread context and zoom navigation ([2ce2680](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2ce26804c19daaeae66f8fbd2f6b18f3cd460a3e))
 * **chmate:** unify whole-thread media navigation across versions ([1eb6181](https://github.com/areteruhiro/Haiagaru-Morphe/commit/1eb6181825ddfc99206d613c00f2e0817c1f6824))
 
-# Haiagaru 1.18.0
+# Haiagaru 1.18.0 (2026-11-01)
 
 ## 今回の更新
 
@@ -2028,7 +3862,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * improve 191 networking, archive links and adjustable filters ([968d107](https://github.com/areteruhiro/Haiagaru-Morphe/commit/968d10767a5c2fc79edbf7efc2610dd0c2521944))
 * **settings:** expose read-first controls across supported versions ([ce67f10](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ce67f101cca3104e4af95cd4f0de469ff7aa2dbf))
 
-# Haiagaru 1.17.0
+# Haiagaru 1.17.0 (2026-10-31)
 
 ## 今回の更新
 
@@ -2093,7 +3927,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * add Edge level visibility and selectable thread search fields ([0c0d5c1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0c0d5c1bfd1877b64673537f0c896a52eeb1bdb7))
 
-# Haiagaru 1.16.0
+# Haiagaru 1.16.0 (2026-10-31)
 
 ## 今回の更新
 
@@ -2191,7 +4025,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * reduce extension DEX decoding and unread hook scan overhead ([94fe1be](https://github.com/areteruhiro/Haiagaru-Morphe/commit/94fe1be066e0349a024935c06d74a64665eb2605))
 
-# Haiagaru 1.16.0-dev.8
+# Haiagaru 1.16.0-dev.8 (2026-10-30)
 
 ## 今回の更新
 
@@ -2267,7 +4101,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * reduce extension DEX decoding and unread hook scan overhead ([94fe1be](https://github.com/areteruhiro/Haiagaru-Morphe/commit/94fe1be066e0349a024935c06d74a64665eb2605))
 
-# Haiagaru 1.16.0-dev.7
+# Haiagaru 1.16.0-dev.7 (2026-10-30)
 
 ## 今回の更新
 
@@ -2342,7 +4176,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * allow thread gallery gestures on automatically fitted 191 images ([bb0ca0d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/bb0ca0d8e9b81fea7ddb084b7916da9ffb0d4152))
 
-# Haiagaru 1.16.0-dev.6
+# Haiagaru 1.16.0-dev.6 (2026-10-30)
 
 ## 今回の更新
 
@@ -2416,7 +4250,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * refresh settings home and fix thread media thumbnail navigation ([e5341b3](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e5341b35afed45a4acd61e37fccb7ee3b4fc257e))
 
-# Haiagaru 1.16.0-dev.5
+# Haiagaru 1.16.0-dev.5 (2026-10-30)
 
 メディア操作の修正とNG機能の追加を含むプレリリースです。
 
@@ -2481,7 +4315,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * improve experimental shared NG consent and board coverage ([088d645](https://github.com/areteruhiro/Haiagaru-Morphe/commit/088d64534b7f0fa9919cae516dcaed9efe3c6cab))
 
-# Haiagaru 1.16.0-dev.4
+# Haiagaru 1.16.0-dev.4 (2026-10-30)
 
 メディア操作の修正とNG機能の追加を含むプレリリースです。
 
@@ -2547,7 +4381,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * add editable F9 rule template and optional feed updates ([e49d1cc](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e49d1cc1196df5f4e4baa3306d80234c34223ca7))
 * improve media handling and add experimental shared NG ([edc217b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/edc217b59a66c7326f3783661631eba45bf3a266))
 
-# Haiagaru 1.16.0-dev.3
+# Haiagaru 1.16.0-dev.3 (2026-10-28)
 
 投稿者の検索とメディア表示を改善したプレリリースです。
 
@@ -2611,7 +4445,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * improve poster search and media layout controls ([18c1d4c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/18c1d4c95f33bd924246792e296bdf1ce636aea8))
 
-# Haiagaru 1.16.0-dev.2
+# Haiagaru 1.16.0-dev.2 (2026-10-27)
 
 XのGIFと通常GIFの自動再生を、使い方に合わせて設定できるようにしました。
 
@@ -2669,7 +4503,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * sort thread archives by creation time ([5ed4b92](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5ed4b92209a6d0a216981e20dde56902667773fe))
 
-# Haiagaru 1.16.0-dev.1
+# Haiagaru 1.16.0-dev.1 (2026-10-27)
 
 XのGIFと通常GIFの自動再生を、使い方に合わせて設定できるようにしました。
 
@@ -2727,7 +4561,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * add date range to direct ID search ([1802872](https://github.com/areteruhiro/Haiagaru-Morphe/commit/180287267b5b5e5aaed2e5ab200c79696bc784f3))
 
-# Haiagaru 1.15.0
+# Haiagaru 1.15.0 (2026-10-27)
 
 XのGIFと通常GIFの自動再生を、使い方に合わせて設定できるようにしました。
 
@@ -2785,7 +4619,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * add independent X GIF autoplay and configurable inline animation limits ([d010a24](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d010a2431a82110b8c76e7abc38b2887484428c1))
 
-# Haiagaru 1.14.3
+# Haiagaru 1.14.3 (2026-10-27)
 
 画像の回転操作を︙メニューにまとめた場合、メニューを選んでも回転しないことがある問題を修正しました。
 
@@ -2833,7 +4667,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * execute image rotation directly from native overflow menu ([7875f97](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7875f9709c07ebcf3aee97b54b32771dea50639c))
 
-# Haiagaru 1.14.2
+# Haiagaru 1.14.2 (2026-10-27)
 
 スレ内のメディア移動と、動画・GIFビューアの操作を改善しました。
 
@@ -2891,7 +4725,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * configure viewer control corners and preserve native back gestures ([641f6da](https://github.com/areteruhiro/Haiagaru-Morphe/commit/641f6da6652ec380c3d5be8d605b74e24e0748c6))
 * preserve full thread gallery from thumbnails and refine video controls ([f0398be](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f0398be882e8a89c09b9f6b428b2f92dae4986a9))
 
-# Haiagaru 1.14.2-dev.1
+# Haiagaru 1.14.2-dev.1 (2026-10-27)
 
 サムネイルからスレ全体のメディアへ移動する修正と、動画ビューアの操作まわりをまとめたプレリリースです。
 
@@ -2946,7 +4780,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * preserve full thread gallery from thumbnails and refine video controls ([f0398be](https://github.com/areteruhiro/Haiagaru-Morphe/commit/f0398be882e8a89c09b9f6b428b2f92dae4986a9))
 
-# Haiagaru 1.14.1
+# Haiagaru 1.14.1 (2026-10-27)
 
 スレ全体の画像・GIF・動画を左右に移動するとき、ビューアの件数が「1/1」「1/2」のように小さく表示される問題を修正しました。
 
@@ -2998,7 +4832,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * show full thread gallery position in native media counters ([2723f20](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2723f200e03a0fbe4b46ec89c0b22a0207eb7f0c))
 
-# Haiagaru 1.14.0
+# Haiagaru 1.14.0 (2026-10-27)
 
 全板検索の対象板を選べるようにし、ワッチョイ検索の板選択やビューアの動作を修正しました。広告だけの超軽量構成にも、基本操作でのクラッシュ対策を追加しています。
 
@@ -3056,7 +4890,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * search selected external boards and fix viewer and board selection state ([557cc6c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/557cc6c57a88e472d7c7e2bffa1ec63772e40608))
 * sort cached thread search results by creation date ([4dc452b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4dc452b7658eb244f9f503715ba3d1e1b76bade2))
 
-# Haiagaru 1.14.0-dev.1
+# Haiagaru 1.14.0-dev.1 (2026-10-27)
 
 「取得済みのスレから検索」の結果を、スレの作成日時で並べ替えられるようにしました。
 
@@ -3109,7 +4943,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 
 * sort cached thread search results by creation date ([4dc452b](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4dc452b7658eb244f9f503715ba3d1e1b76bade2))
 
-# Haiagaru 1.13.0
+# Haiagaru 1.13.0 (2026-10-27)
 
 正式版1.12.2からの更新です。メディアの表示・移動、板別Cookie、認証画面、追加画面のタブ操作を改善しました。
 
@@ -3196,7 +5030,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、**追加フ�
 * optionally hide replies chained from NGWord poster IDs ([ff3cf94](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ff3cf94b77e3ac2506e43f237c74d7c5ed78c91d))
 * **video:** show 2x indicator only during hold-speed playback ([abf1cbd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/abf1cbd9b9627fc482c14bd96c611ccacfba6a3c))
 
-# Haiagaru 1.13.0-dev.5
+# Haiagaru 1.13.0-dev.5 (2026-10-27)
 
 191 devの通信の待ち時間対策を追加しました。あわせて、同じレスの画像・GIF・動画を左右スワイプで移動できるようにし、専用ビューアの操作設定とGIFの読み込みを改善しました。
 
@@ -3245,7 +5079,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * reduce 191 patrol stalls and improve mixed media viewers ([73cb2e6](https://github.com/areteruhiro/Haiagaru-Morphe/commit/73cb2e65cbd9de252a8a405219461f09f52c4430))
 
-# Haiagaru 1.13.0-dev.4
+# Haiagaru 1.13.0-dev.4 (2026-10-26)
 
 板別Cookieを有効にした際、「Cookie分離の対象板を特定できません」と表示され、書き込めなくなる問題を修正しました。
 
@@ -3292,7 +5126,7 @@ Image NG・画像取得専用VPNをパッチ時に選ぶ場合は、Assetsの `h
 
 * retain legacy cookies when the posting board cannot be identified ([2e7952f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2e7952fa6c6de089b17faaee8959247a5c92b5ea))
 
-# Haiagaru 1.13.0-dev.3
+# Haiagaru 1.13.0-dev.3 (2026-10-26)
 
 X・URLカードの位置ずれ修正と、追加画面・認証まわりの改善をまとめたプレリリースです。
 
@@ -3355,7 +5189,7 @@ X・URLカードの位置ずれ修正と、追加画面・認証まわりの改�
 
 * preserve preview layout and integrate viewer and authentication improvements ([e400882](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e400882a632f43b4316e142be97b401703e125f6))
 
-# Haiagaru 1.13.0-dev.2
+# Haiagaru 1.13.0-dev.2 (2026-10-26)
 
 net→io対応と投稿確認フォームの修正を含むプレリリースです。
 
@@ -3408,7 +5242,7 @@ NGWord-IDオプションは本番フック・モデル検査を実施してい�
 
 * **video:** show 2x indicator only during hold-speed playback ([abf1cbd](https://github.com/areteruhiro/Haiagaru-Morphe/commit/abf1cbd9b9627fc482c14bd96c611ccacfba6a3c))
 
-# Haiagaru 1.13.0-dev.1
+# Haiagaru 1.13.0-dev.1 (2026-10-26)
 
 net→io対応と投稿確認フォームの修正を含むプレリリースです。
 
@@ -3468,7 +5302,7 @@ NGWord-IDオプションは本番フック・モデル検査を実施してい�
 * **chmate-lite:** migrate 5ch menus and legacy URLs to io ([e707aa8](https://github.com/areteruhiro/Haiagaru-Morphe/commit/e707aa826f5bc511ef11cea8a939c6d6c3467526))
 * optionally hide replies chained from NGWord poster IDs ([ff3cf94](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ff3cf94b77e3ac2506e43f237c74d7c5ed78c91d))
 
-# Haiagaru 1.12.3-dev.2
+# Haiagaru 1.12.3-dev.2 (2026-10-25)
 
 1.12.2を基にしたプレリリースです。
 
@@ -3514,7 +5348,7 @@ Android向けビルドは既存のCIで実施します。端末のDroid＋パッ
 
 * expose Hissi Droid Plus toolbar action on ChMate 226 and 242 ([5bb9494](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5bb9494c61dc1f6eed5ca8e75c49e4ffb5448f74))
 
-# Haiagaru 1.12.3-dev.1
+# Haiagaru 1.12.3-dev.1 (2026-10-25)
 
 1.12.2を基にしたプレリリースです。
 
@@ -3560,7 +5394,7 @@ Android向けビルドは既存のCIで実施します。端末のDroid＋パッ
 
 * add Hissi Droid Plus launcher to ChMate 191 toolbar ([84db386](https://github.com/areteruhiro/Haiagaru-Morphe/commit/84db3863c9c6fed9302fa932e1c195dfc679f8e8))
 
-# Haiagaru 1.12.2
+# Haiagaru 1.12.2 (2026-10-25)
 
 1.12.1からの更新です。検索画面・動画操作・復帰時の表示・バックアップを改善し、任意の軽量構成を追加しました。
 
@@ -3647,7 +5481,7 @@ Samsung SC-56F／Android 16で報告された広告枠の現象そのもの、�
 * improve archive navigation video controls and resumed ad visibility ([a0fca4a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a0fca4acd15abb4f9e702bcf53b1fefeed86f0a9))
 * improve checker search controls and tablet screen restoration ([42cfd45](https://github.com/areteruhiro/Haiagaru-Morphe/commit/42cfd458d77381ba44475b3fc8ae898574b772ca))
 
-# Haiagaru 1.12.2-dev.3
+# Haiagaru 1.12.2-dev.3 (2026-10-25)
 
 検索・バックアップ・外部チェッカー連携を改善しました。広告だけの軽量構成も任意で選べます。
 
@@ -3695,7 +5529,7 @@ Samsung SC-56F／Android 16で報告された広告枠の現象そのもの、�
 
 * improve archive navigation video controls and resumed ad visibility ([a0fca4a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/a0fca4acd15abb4f9e702bcf53b1fefeed86f0a9))
 
-# Haiagaru 1.12.2-dev.2
+# Haiagaru 1.12.2-dev.2 (2026-10-25)
 
 広告だけの軽量構成と、検索・バックアップの修正を追加したプレリリースです。
 
@@ -3738,7 +5572,7 @@ Samsung SC-56F／Android 16で報告された広告枠の現象そのもの、�
 
 * add ads-only configuration and improve checker handoff and backup retention ([210fd3d](https://github.com/areteruhiro/Haiagaru-Morphe/commit/210fd3d5358f1ff6df8c5f8f8dbd1250a6fce739))
 
-# Haiagaru 1.12.2-dev.1
+# Haiagaru 1.12.2-dev.1 (2026-10-25)
 
 検索画面と必死チェッカーの使い勝手を見直したプレリリースです。広告だけの超軽量構成は次回に向けて準備中で、今回は含めていません。
 
@@ -3775,7 +5609,7 @@ Image NG修正と画像取得VPNを使う場合は、パッチとは別にライ
 
 * improve checker search controls and tablet screen restoration ([42cfd45](https://github.com/areteruhiro/Haiagaru-Morphe/commit/42cfd458d77381ba44475b3fc8ae898574b772ca))
 
-# Haiagaru 1.12.1
+# Haiagaru 1.12.1 (2026-10-23)
 
 1.12.0からの不具合修正です。ご報告いただいたサムネイルのちらつきと、常時下部フィルター、ワッチョイ長押しの設定を見直しました。
 
@@ -3813,7 +5647,7 @@ ZIPは展開せず、Morpheの対応する追加ファイル欄で選択して�
 
 * preserve thumbnails and separate long-press NG settings [skip ci] ([7da6ae7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7da6ae75671fe710c79cdd5269ac263c2fdaa73e))
 
-# Haiagaru 1.12.0
+# Haiagaru 1.12.0 (2026-10-23)
 
 1.11.3からの正式版更新です。プレ版で確認してきた修正と、今回のGIF取得設定・ポップアップの見切れ対策をまとめました。
 
@@ -3896,7 +5730,7 @@ ZIPは展開せず、Morpheの対応する追加ファイル欄で選択して�
 * integrate search tabs and harden dialog navigation ([c1316a0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c1316a03e4eea80baf547732c66e236cf66c9e69))
 * keep bottom filters visible and fix response menu navigation ([10b4deb](https://github.com/areteruhiro/Haiagaru-Morphe/commit/10b4deb52169ebd8745ffb1ac85183fd2babf1f2))
 
-# Haiagaru 1.12.0-dev.13
+# Haiagaru 1.12.0-dev.13 (2026-10-23)
 
 今回は、下部フィルターをいつも表示しておける設定を追加しました。242のNG登録が開かない不具合も修正しています。
 
@@ -3914,7 +5748,7 @@ ZIPは展開せず、Morpheの対応する追加ファイル欄で選択して�
 
 * keep bottom filters visible and fix response menu navigation ([40b8d29](https://github.com/areteruhiro/Haiagaru-Morphe/commit/40b8d297b0dc42fffb154dbf08e2a71d741f2da7))
 
-# Haiagaru 1.12.0-dev.12
+# Haiagaru 1.12.0-dev.12 (2026-10-23)
 
 いつもご報告ありがとうございます。今回はタブレットでのタブ追加先を見直し、NG未読補正の軽量化とビューアの調整をまとめました。
 
@@ -3938,7 +5772,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 * defer checker swipe navigation and stabilize archive form scrolling ([4b7b405](https://github.com/areteruhiro/Haiagaru-Morphe/commit/4b7b4050f7fc8abb6edb0bd104c16e710774ed6c))
 * route tablet tools to selected pane and streamline viewer controls ([5ed5283](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5ed5283041ae71d46f854053a9ed33e8f0528836))
 
-# Haiagaru 1.12.0-dev.12
+# Haiagaru 1.12.0-dev.12 (2026-10-23)
 
 いつもご報告ありがとうございます。今回はタブレットでのタブ追加先を見直し、NG未読補正の軽量化とビューアの調整をまとめました。
 
@@ -3959,7 +5793,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * route tablet tools to selected pane and streamline viewer controls ([5ed5283](https://github.com/areteruhiro/Haiagaru-Morphe/commit/5ed5283041ae71d46f854053a9ed33e8f0528836))
 
-# Haiagaru 1.12.0-dev.11
+# Haiagaru 1.12.0-dev.11 (2026-10-23)
 
 いつもご報告ありがとうございます。今回は、ワッチョイ検索の設定が別のメニューにも反映される問題と、高度なNGの説明が入力欄にはみ出す問題を修正しました。これまで確認を進めていた改善も含めています。
 
@@ -3982,7 +5816,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * separate Wacchoi menus and repair NG editor layout ([c21d00c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c21d00cc60a8f792aae74096fa0ab6d3e478f31f))
 
-# Haiagaru 1.12.0-dev.10
+# Haiagaru 1.12.0-dev.10 (2026-10-23)
 
 いつもご報告ありがとうございます。人気レスがあるのに表示されない問題を中心に、タブや長押しメニューの動作を見直しました。
 
@@ -4007,7 +5841,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * reduce dense anchor text decoration cost ([267150e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/267150e96704a358fdc840cd9f4d93847057ff41))
 
-# Haiagaru 1.12.0-dev.9
+# Haiagaru 1.12.0-dev.9 (2026-10-23)
 
 いつもご報告ありがとうございます。人気レスがあるのに表示されない問題を中心に、タブや長押しメニューの動作を見直しました。
 
@@ -4031,7 +5865,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * restore popular filters and reduce unread count overhead ([12d3d95](https://github.com/areteruhiro/Haiagaru-Morphe/commit/12d3d95e6fa55bec58a6585b79832c69b3613d4a))
 
-# Haiagaru 1.12.0-dev.8
+# Haiagaru 1.12.0-dev.8 (2026-10-23)
 
 いつもご報告ありがとうございます。今回はテーマの反映やフィルター、タブ操作を中心に改善しました。
 
@@ -4059,7 +5893,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * improve theme, filters and native tool tabs ([0259df7](https://github.com/areteruhiro/Haiagaru-Morphe/commit/0259df7b444e9f2f8301344540004c98003584ec))
 
-# Haiagaru 1.12.0-dev.7
+# Haiagaru 1.12.0-dev.7 (2026-10-22)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.7/docs/release-next-prerelease.md)
 
@@ -4070,7 +5904,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * reduce hidden NG unread count overhead ([533ebb2](https://github.com/areteruhiro/Haiagaru-Morphe/commit/533ebb209b5c92eba41ae045cc6a10eba14d9f75))
 
-# Haiagaru 1.12.0-dev.6
+# Haiagaru 1.12.0-dev.6 (2026-10-22)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.6/docs/release-next-prerelease.md)
 
@@ -4081,7 +5915,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * restore popular filters and validate thread refresh ([cadf2f1](https://github.com/areteruhiro/Haiagaru-Morphe/commit/cadf2f11f9540a68dfd6455bde6f59fbec538cc4))
 
-# Haiagaru 1.12.0-dev.5
+# Haiagaru 1.12.0-dev.5 (2026-10-22)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.5/docs/release-next-prerelease.md)
 
@@ -4092,7 +5926,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * link VPN v2 to published prerelease asset ([d08ce69](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d08ce69d0d9838d8cb626786201b7dd4f7668df2))
 
-# Haiagaru 1.12.0-dev.4
+# Haiagaru 1.12.0-dev.4 (2026-10-22)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.4/docs/release-next-prerelease.md)
 
@@ -4103,7 +5937,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * improve Hissi and popular replies ([9d199da](https://github.com/areteruhiro/Haiagaru-Morphe/commit/9d199da0c599f62b7b7b8d3f0816b956cfce584f))
 
-# Haiagaru 1.12.0-dev.3
+# Haiagaru 1.12.0-dev.3 (2026-10-22)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.3/docs/release-next-prerelease.md)
 
@@ -4112,7 +5946,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * improve history filtering, GIF controls and archive search ([7d8720a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/7d8720a6b65a26e8a8f421e22aa968ddb0c2f801))
 
-# Haiagaru 1.12.0-dev.2
+# Haiagaru 1.12.0-dev.2 (2026-10-21)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.2/docs/release-next-prerelease.md)
 
@@ -4121,7 +5955,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * integrate search tabs and harden dialog navigation ([d85251f](https://github.com/areteruhiro/Haiagaru-Morphe/commit/d85251f4a4cb1f4383999db17d6f356a3940144f))
 
-# Haiagaru 1.12.0-dev.1
+# Haiagaru 1.12.0-dev.1 (2026-10-21)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.12.0-dev.1/docs/release-next-prerelease.md)
 
@@ -4130,7 +5964,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * improve search resume, settings sharing and accessible controls ([fd9def0](https://github.com/areteruhiro/Haiagaru-Morphe/commit/fd9def0b930cc226b4a1bfe27cd085c459c1effa))
 
-# Haiagaru 1.11.2
+# Haiagaru 1.11.2 (2026-10-20)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.2/docs/release-1.11.2.md)
 
@@ -4140,7 +5974,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 * distribute a separate VPN library ZIP and clarify optional file selection ([8eabe51](https://github.com/areteruhiro/Haiagaru-Morphe/commit/8eabe51bbc052d7486144210cdc19ab9a37bf053))
 * release Haiagaru 1.11.2 optional asset selection hotfix ([ea548fb](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ea548fb7997b96ace1cd58247787d25170972cea))
 
-# Haiagaru 1.11.1
+# Haiagaru 1.11.1 (2026-10-20)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.1/docs/release-1.11.1.md)
 
@@ -4150,7 +5984,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 * prevent thread and image crashes and restore archive search scrolling ([ad7d50c](https://github.com/areteruhiro/Haiagaru-Morphe/commit/ad7d50c51621805d31050e768f478b5ab23586ee))
 * release Haiagaru 1.11.1 crash and archive search hotfix ([17e9a21](https://github.com/areteruhiro/Haiagaru-Morphe/commit/17e9a21edc77185d6bb723ebbab65c33eb4e74c0))
 
-# Haiagaru 1.11.0
+# Haiagaru 1.11.0 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.11.0/docs/release-1.11.0.md)
 
@@ -4160,7 +5994,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 * release Haiagaru 1.11.0 with advanced NG chain actions ([c069ead](https://github.com/areteruhiro/Haiagaru-Morphe/commit/c069eadbdd8b0c842f9b0b40e1f2b12b82ebde0e))
 * support author and reply chains in advanced NG rules ([405533e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/405533ee009e358d35520243a6e63df6c5a41153))
 
-# Haiagaru 1.10.0
+# Haiagaru 1.10.0 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0/docs/release-1.10.0.md)
 
@@ -4182,7 +6016,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 * integrate Compose dialogs, site cards and optional assets ([52c0f2e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/52c0f2e9d54adebdec088fdee4a3ebf703da07cb))
 * release Haiagaru 1.10.0 with verified resume crash fixes ([82209b9](https://github.com/areteruhiro/Haiagaru-Morphe/commit/82209b9720050b21f5bbcd69724cc22775baec8d))
 
-# Haiagaru 1.10.0-dev.3
+# Haiagaru 1.10.0-dev.3 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.3/docs/release-1.10.0-dev.3.md)
 
@@ -4197,7 +6031,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * integrate Compose dialogs, site cards and optional assets ([52c0f2e](https://github.com/areteruhiro/Haiagaru-Morphe/commit/52c0f2e9d54adebdec088fdee4a3ebf703da07cb))
 
-# Haiagaru 1.10.0-dev.2
+# Haiagaru 1.10.0-dev.2 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.2/docs/release-1.10.0-dev.2.md)
 
@@ -4206,7 +6040,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * Composeの起動時クラッシュと本体ライブラリとの衝突を修正 ([2f98772](https://github.com/areteruhiro/Haiagaru-Morphe/commit/2f98772a21f9c46601095b11fb64af8282b6fc28))
 
-# Haiagaru 1.10.0-dev.1
+# Haiagaru 1.10.0-dev.1 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/1.10.0-dev.1/docs/release-1.10.0-dev.1.md)
 
@@ -4221,7 +6055,7 @@ GIF操作バーの改善案をご提供いただいた ﾜｯﾁｮｲ 3f3c-gNc7
 
 * ComposeとMaterial 3 Expressiveで設定と投稿検索を再構成 ([176b76a](https://github.com/areteruhiro/Haiagaru-Morphe/commit/176b76a0a1b2c52e80c0618dfb035702a20ce447))
 
-# Haiagaru 1.9.3
+# Haiagaru 1.9.3 (2026-10-19)
 
 [修正内容・操作案内・確認範囲](https://github.com/areteruhiro/Haiagaru-Morphe/blob/master/docs/release-1.9.3.md)
 
