@@ -100,7 +100,13 @@ final class SiteBoardGateway {
         }}catch(Exception invalid){android.util.Log.w("Haiagaru","Saved site board list unavailable");}
         SharedPreferences.Editor migration=prefs.edit();boolean changed=false;
         for(String key:boards.keySet())if(!prefs.contains(nativeFlag(key))&&(key.length()==33||prefs.contains("boardEnabled:"+key))){migration.putBoolean(nativeFlag(key),enabled()&&prefs.getBoolean("boardEnabled:"+key,true));changed=true;}
-        for(String kind:SiteBoardMenuProtocol.KINDS)if(!prefs.contains(siteFlag(kind))){boolean active=false;for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().kind.equals(kind)&&enabled()&&effectiveFlag(row.getKey()))active=true;migration.putBoolean(siteFlag(kind),active);changed=true;}
+        boolean enableNewSites=false;
+        for(String kind:SiteBoardMenuProtocol.KINDS)if(!prefs.contains(siteFlag(kind))){
+            migration.putBoolean(siteFlag(kind),true);enableNewSites=true;changed=true;
+        }
+        // The per-site options are the new opt-in boundary. Seed the transport too
+        // when introducing their initial-on defaults; preserve all saved site OFFs.
+        if(enableNewSites&&!enabled()){migration.putBoolean("enabled",true);changed=true;}
         if(changed)migration.commit();
         port=prefs.getInt("port",0);prefs.registerOnSharedPreferenceChangeListener(nativeFlags);
     }
@@ -165,7 +171,7 @@ final class SiteBoardGateway {
         edit.putBoolean("boardEnabled:"+key,value).putBoolean(nativeFlag(key),value);if(value)edit.putBoolean(siteFlag(boards.get(key).kind),true).putBoolean("enabled",true);
         settingNativeFlags=true;try{if(!edit.commit())throw new IOException("設定を保存できません");}finally{settingNativeFlags=false;}
         if(value)try{start();}catch(IOException failure){prefs.edit().putBoolean("boardEnabled:"+key,false).commit();throw failure;}
-        else{clearPending(key);String kind=boards.get(key).kind;if(!kindHasEnabled(kind))prefs.edit().putBoolean(siteFlag(kind),false).commit();boolean any=siteEnabled("edge");for(String other:boards.keySet())any|=effectiveFlag(other);if(!any)enabled(false);}
+        else{clearPending(key);String kind=boards.get(key).kind;if(!kindHasEnabled(kind))prefs.edit().putBoolean(siteFlag(kind),false).commit();boolean any=siteEnabled("edge")||siteEnabled("kenmo");for(String other:boards.keySet())any|=effectiveFlag(other);if(!any)enabled(false);}
     }
     private boolean boardEnabled(SiteBoardProtocol.Board board){
         for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().url.equals(board.url)&&boardEnabled(row.getKey()))return true;
@@ -173,7 +179,7 @@ final class SiteBoardGateway {
     }
     synchronized void enabled(boolean value)throws IOException{
         SharedPreferences.Editor edit=prefs.edit().putBoolean("enabled",value);for(String key:boards.keySet())edit.putBoolean(nativeFlag(key),value&&prefs.getBoolean("boardEnabled:"+key,true));
-        for(String kind:SiteBoardMenuProtocol.KINDS){boolean active=false;if(value)for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().kind.equals(kind)&&prefs.getBoolean("boardEnabled:"+row.getKey(),true))active=true;edit.putBoolean(siteFlag(kind),active);}
+        for(String kind:SiteBoardMenuProtocol.KINDS){boolean active=value&&(kind.equals("edge")||kind.equals("kenmo"))&&siteEnabled(kind);if(value)for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getValue().kind.equals(kind)&&prefs.getBoolean("boardEnabled:"+row.getKey(),true))active=true;edit.putBoolean(siteFlag(kind),active);}
         settingNativeFlags=true;try{if(!edit.commit())throw new IOException("設定を保存できません");}finally{settingNativeFlags=false;}
         if(value)try{start();}catch(IOException failed){prefs.edit().putBoolean("enabled",false).commit();throw failed;}
         else stop();
@@ -285,8 +291,20 @@ final class SiteBoardGateway {
     private synchronized void reservePort()throws IOException{
         if(port==0){try(ServerSocket reserve=new ServerSocket()){reserve.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"),0));port=reserve.getLocalPort();}if(!prefs.edit().putInt("port",port).commit())throw new IOException("接続先を保存できません");}
     }
-    synchronized String siteMenuUrl(String kind)throws IOException{if(!Arrays.asList(SiteBoardMenuProtocol.KINDS).contains(kind))throw new IOException("未対応の掲示板です");reservePort();return origin()+"/haiagaru-menu-"+kind+"/";}
-    synchronized Pattern sitePattern(String kind)throws IOException{reservePort();Pattern cached=sitePatterns.get(kind);if(cached!=null)return cached;if(kind.equals("edge")){Pattern result=Pattern.compile("https://bbs\\.eddibb\\.cc/liveedge/");sitePatterns.put(kind,result);return result;}StringBuilder aliases=new StringBuilder(SiteBoardCatalog.prefix(kind)+"[a-f0-9]{32}");for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getKey().length()==33&&row.getValue().kind.equals(kind))aliases.append('|').append(Pattern.quote(row.getKey()));Pattern result=Pattern.compile(Pattern.quote(origin())+"/(?:"+aliases+")/");sitePatterns.put(kind,result);return result;}
+    synchronized String siteMenuUrl(String kind)throws IOException{
+        if(!Arrays.asList(SiteBoardMenuProtocol.KINDS).contains(kind))throw new IOException("未対応の掲示板です");
+        // These sites expose native 2ch-compatible BBS menus and DAT endpoints.
+        // Fetch their published menus directly so the native parser sees the same
+        // board count and URLs as a regular user-added BBSMENU.
+        if(kind.equals("edge")||kind.equals("kenmo"))return SiteBoardMenuProtocol.source(kind,0);
+        reservePort();return origin()+"/haiagaru-menu-"+kind+"/";
+    }
+    synchronized Pattern sitePattern(String kind)throws IOException{
+        Pattern cached=sitePatterns.get(kind);if(cached!=null)return cached;
+        if(kind.equals("edge")){Pattern result=Pattern.compile("https://bbs\\.eddibb\\.cc/liveedge/");sitePatterns.put(kind,result);return result;}
+        if(kind.equals("kenmo")){Pattern result=Pattern.compile("https://(?:kenmo\\.org|00c\\.org)/[A-Za-z0-9_-]+/");sitePatterns.put(kind,result);return result;}
+        reservePort();StringBuilder aliases=new StringBuilder(SiteBoardCatalog.prefix(kind)+"[a-f0-9]{32}");for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getKey().length()==33&&row.getValue().kind.equals(kind))aliases.append('|').append(Pattern.quote(row.getKey()));Pattern result=Pattern.compile(Pattern.quote(origin())+"/(?:"+aliases+")/");sitePatterns.put(kind,result);return result;
+    }
     synchronized String registrationUrl(String key)throws IOException{
         if(!boards.containsKey(key))throw new IOException("未登録の板です");
         reservePort();

@@ -11,6 +11,7 @@ public final class BbsMenuHtml {
  static String siteKey(String server){
   String host=server.toLowerCase(Locale.ROOT);
   if(host.equals("jbbs.livedoor.jp"))return "shitaraba.net";
+  if(host.equals("00c.org")||host.endsWith(".00c.org"))return "kenmo.org";
   for(String domain:new String[]{"eddibb.cc","eddibb.org","kenmo.org","shitaraba.net","open2ch.net","2ch.sc","talk.jp"})
    if(host.equals(domain)||host.endsWith("."+domain))return domain;
   return host;
@@ -18,6 +19,7 @@ public final class BbsMenuHtml {
  static String siteTitle(String server){
   String key=siteKey(server);
   if(key.equals("eddibb.cc")||key.equals("eddibb.org"))return "エッヂ";
+  if(key.equals("kenmo.org"))return "けんも板";
   if(key.equals("kenmo.org"))return "けんも板";
   if(key.equals("shitaraba.net"))return "したらば";
   return key;
