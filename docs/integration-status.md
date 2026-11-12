@@ -1,6 +1,6 @@
 # 主開発先と統合状況
 
-2026-11-13 更新履歴の読みやすさ・設定カテゴリ切替・外部板追加（公式Release候補）: 更新履歴内のMarkdownを版／節／箇条書き／リンクとして表示し、機能設定をアプリ・表示・画像／動画・NG・履歴／投稿に分類。同じ設定値を各Haiagaruカテゴリへ置き、設定履歴側の保存先も機能本来のSharedPreferencesへ統一。未設定のエッヂ・けんも板・爆サイ・ふたば・あにまんを初期ON、既存のサイト別OFFは保持。エッヂ板一覧は公開ページを直接BBSMENUとして読み、けんも板はkenmo.org/00c.orgのBBSMENUを標準providerへ追加。動作確認・実機導入は利用者指示により省略。公開は既存Semantic Release CIを使用。
+2026-11-13 Haiagaru 1.26.0公式Release公開完了: 更新履歴内のMarkdownを版／節／箇条書き／リンクとして表示し、機能設定をアプリ・表示・画像／動画・NG・履歴／投稿に分類。同じ設定値を各Haiagaruカテゴリへ置き、設定履歴側の保存先も機能本来のSharedPreferencesへ統一。未設定のエッヂ・けんも板・爆サイ・ふたば・あにまんを初期ON、既存のサイト別OFFは保持。エッヂ板一覧は公開ページを直接BBSMENUとして読み、けんも板はkenmo.org/00c.orgのBBSMENUを標準providerへ追加。動作確認・実機導入は利用者指示により省略。既存Semantic Release CI 43280808286がRelease／Attest成功。1.26.0: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.26.0
 
 2026-11-13 外部板のスレ情報ポップアップ日時・無効サイトの一覧除外（公式Release候補）: スレ一覧の板スコープ外で呼ばれるChMate標準日時formatterにも作成日時を渡すフックを追加。キャッシュ上に同一スレIDの板が複数あり作成日時が異なる場合は、誤った値を割り当てず元の値を維持。標準掲示板providerから「使用する」がOFFのサイトを除外。Edgeは現行 `SiteBoardMenuProtocol.KINDS` と標準メニュー経路に含まれる。通常Lint/R8を含む `:patches:buildAndroid` 成功（2分40秒）、作成日時21項目、191/226/242のパッチ適用とnative hook/register保持検査成功。Mi Note 10/Android 11 (`d5497008`) の `reporter242` へ既存署名一致で `install -r` 成功。端末からpullしたAPKのSHA256は候補と一致、`firstInstallTime`保持、HomeActivity表示、新規crash bufferに該当fatalなし。詳細は `docs/android-installations.md`。
 
