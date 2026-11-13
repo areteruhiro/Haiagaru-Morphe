@@ -56,6 +56,31 @@ internal fun BytecodePatchContext.patchExternalBoardAuth(version: String) {
         """.trimIndent())
     })
     val extension = mutableClassDefBy(AUTH)
+    // User-confirmed transfer must retain captured session cookies across app restarts too.
+    // Use the native serializer directly; never invent an Expires date from a Cookie header.
+    val persist = persistor.methods.single { method ->
+        method.returnType == "V" && method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/util/Collection;") &&
+            method.implementation?.instructions?.any { insn ->
+                val ref = (insn as? ReferenceInstruction)?.reference as? MethodReference
+                ref?.definingClass == "Landroid/content/SharedPreferences\$Editor;" && ref.name == "putString"
+            } == true
+    }
+    val transfer = extension.methods.single { it.name == "persistTransferredCookies" }
+    extension.methods.remove(transfer)
+    extension.methods.add(MutableMethod(ImmutableMethod(transfer.definingClass,transfer.name,transfer.parameters,
+        transfer.returnType,transfer.accessFlags,transfer.annotations,transfer.hiddenApiRestrictions,
+        ImmutableMethodImplementation(4,emptyList(),emptyList(),emptyList()))).apply {
+        addInstructions(0,"""
+            const-string v0, "client_cookies"
+            const/4 v1, 0x0
+            invoke-virtual {p0, v0, v1}, Landroid/content/Context;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;
+            move-result-object p0
+            new-instance v0, ${persistor.type}
+            invoke-direct {v0, p0}, ${persistor.type}-><init>(Landroid/content/SharedPreferences;)V
+            invoke-virtual {v0, p1}, $persist
+            return-void
+        """.trimIndent())
+    })
     val urlParse=mutableClassDefBy(url).methods.single {
         it.accessFlags and 0x8 != 0 && it.returnType==url && it.parameterTypes.map(CharSequence::toString)==listOf("Ljava/lang/String;")
     }

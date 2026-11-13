@@ -1,0 +1,36 @@
+name: Verify Edge cookie transfer
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/edge-cookie-transfer]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Test local receiver with synthetic cookies
+        run: |
+          mkdir -p build/edge-cookie-host-test
+          javac -encoding UTF-8 -d build/edge-cookie-host-test extensions/chmate/src/main/java/app/morphe/extension/chmate/EdgeCookieReceiver.java scripts/EdgeCookieReceiverTest.java
+          java -cp build/edge-cookie-host-test app.morphe.extension.chmate.EdgeCookieReceiverTest
+      - name: Build test bundle
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :patches:buildAndroid --no-daemon --max-workers=2
+      - name: Save test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-cookie-transfer-test-bundle
+          path: patches/build/libs/*.mpp
+          if-no-files-found: error
+          retention-days: 14
