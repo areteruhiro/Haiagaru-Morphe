@@ -3312,6 +3312,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchXVideoAttachmentP
  * neither the forced sort nor the forced jump-to-bottom collector runs. */
 private fun BytecodePatchContext.patchPostEditorTextSize(version: String) {
     patchPostingIpWarning(version)
+    if(version=="0.8.10.242 dev"){
+        val dialog=mutableClassDefBy("Lo/zzbgc;")
+        check(dialog.superclass=="Landroid/widget/RelativeLayout;")
+        val layout=dialog.methods.single{it.name=="onLayout"&&it.parameterTypes==listOf("Z","I","I","I","I")&&it.returnType=="V"}
+        layout.implementation!!.instructions.withIndex().filter{it.value.opcode==Opcode.RETURN_VOID}.map{it.index}.asReversed().forEach{
+            layout.addInstructionsWithLabels(it,"invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/PostEditorDialogLayout;->fit(Landroid/view/ViewGroup;)V")
+        }
+    }
     if (version == "0.8.10.191 dev") {
         val command = mutableClassDefBy("Lo/pa;").methods.single {
             it.name == "e" && it.parameterTypes == listOf("I", "Ljava/lang/Object;") && it.returnType == "Z"
@@ -5500,6 +5508,11 @@ val haiagaruPatch = resourcePatch(
             })
             application.appendChild(document.createElement("activity").apply {
                 setAndroidAttribute("name", "app.morphe.extension.chmate.SitePostingImageActivity")
+                setAndroidAttribute("exported", "false")
+                setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAndroidAttribute("name", "app.morphe.extension.chmate.LocalImageArchiveActivity")
                 setAndroidAttribute("exported", "false")
                 setAndroidAttribute("theme", "@android:style/Theme.Material.Light.NoActionBar")
             })

@@ -2452,3 +2452,36 @@ emulator-5580 / Haiagaru_Root_API36 / API36。署名鍵 C:/Users/narum/morphe-ch
 - 候補APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-date-device/reporter242.apk` / SHA256 `EFFEFC1F1F3D2CF3CBF6E5D002972DF90A4D7CA59B54F715DEAA6D272CC021B3`。端末からpullした導入APKも同じSHA256。
 - MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.25.0-dev.31.mpp` / SHA256 `5E4D2DAB01D35FF6C71D9D7E58FDC19F2B5374C3A5B65B510C362371F17DF2BE`。
 - 署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe` / 証明書SHA256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。更新後のHomeActivity表示とcrash buffer確認まで実施。
+
+## 2026-11-13 ローカル画像復元・外部板修正の隔離候補
+
+- 端末: Mi Note 10 / Android 11 / serial `d5497008`。
+- package: `jp.co.airfront.android.a2chMate.haiagaru.sitefix242`、表示名 `Haiagaru 外部板修正242`、原本 ChMate 0.8.10.242 dev。
+- APK: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-regressions-1275/sitefix242.apk`
+- APK SHA-256: `37255a69d57250fab301f950ad7278ad7a7b1285c95320a73eb3143c85d85f05`
+- MPP: `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.27.5.mpp`、SHA-256 `e2154f4a18d811747373be825bfdeaa262297109aa944e827d021253f5046c74`。
+- 署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- ADB新規install成功（17:14 JST以前）。既存の利用アプリの置換・データ消去なし。検証APK `build/local-image-inst/tests.apk`も同じ署名で導入。最初のテストは検証用DocumentsProviderのMANAGE_DOCUMENTS宣言不足で停止。製品の動作成功とは扱わず、検証プロバイダーを修正して継続する。
+- この候補は後から依頼されたﾜｯﾁｮｲコピーと設定ボタン整理をまだ含まない。未コミット・未公開。
+
+### 同日 17:26 JST 更新候補
+
+同じ `sitefix242` へ署名照合後install-r成功。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/site-regressions-1275/sitefix242-followups.apk`、SHA-256 `d70fa19324050aa1dab19515b490c911f163d5fc9771e4d57c778030b4b775d0`。使用MPP SHA-256 `4285b1fa0f81fd7504219e9642c3550d274155015ca63e90ebd568319fbc4ac1`。署名鍵/証明書/原本/serialは上記と同じ。新しいコピー機能・設定トップ重複ボタン削除を含む。最終機能試験33項目成功 `build/local-image-inst/result9.log`。途中の検証用provider/ロック/fixture残存/テストassertionの失敗を修正して再実行した経緯はintegration-status.md。ユーザー本体は変更なし。以降の追加機能一覧への新項目表示だけを調整した最終MPPは別ビルドとして扱う。
+
+191/226の新規候補APKも生成したが実機には未導入。パッケージは `jp.co.airfront.android.a2chMate.haiagaru.sitefix191` / `.sitefix226`。APK絶対パスは上記buildディレクトリの `sitefix191.apk` / `sitefix226.apk`、SHA-256はそれぞれ `72eaeaf036df5160823be8cbb0616b2e5690d88fa390fcce52765ff811d5dddb` / `c82afd1d0d8dc69e66c13f40948e3ec2f7c00f4a93474aa09b94564104e1c7f3`。表示名の末尾は各版番号、原本191/226dev、使用MPP/署名は同日のfollowups候補と同一。静的フック検査のみで実機成功とは扱わない。
+
+## 2026-11-13 242書き込みダイアログ・板一覧/検索の切り分け
+
+対象serialは引き続きMi Note 10 `d5497008`。既存のユーザー本体は変更せず、以下はいずれも隔離候補。署名鍵は `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。原本は242dev。
+
+- 比較用 `jp.co.airfront.android.a2chMate.haiagaru.nativeeditor242` / 表示名 `ChMate 242 本体比較` を新規install成功。`Change ChMate package name`のみ適用。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/editor-dialog-242/native242.apk`、SHA256 `8cc5f6da7c3258b8fdc0970699031ff480e0e3e45aff767a06961c0d2e20ac74`、利用MPPは最終feature-list候補 `4563f1f3d69d8e7a76332bec9cdb84fbb063fa54fd8cdfe073b62408fea7e631`。実行はnative providerの改変検知によるdivide-by-zeroで起動前に停止。原本のダイアログ成功/失敗を比較した結果として扱わない。
+- `sitefix242` / `Haiagaru 外部板修正242` に `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/editor-dialog-242/dialog-fix242.apk` をinstall-r成功。APK SHA256 `ebf46f00478238e74238c1f094cba748a88596ee61ef22e91e6bcfc93e453281`、使用MPP `build/editor-dialog-242/dialog-fix.mpp` SHA256 `b03a712c140fcbb3ee1c2f2cb450b09644577e7189795f7f9e777e68c67192b6`。本文の実ID/可視矩形で、横向きの非表示を再現後に8項目成功（縦・横・TabletHomeActivityからのnativeコマンド）。公開送信なし。
+- 同じ `sitefix242` に `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/board-followups/followups242.apk` を署名照合後install-r成功。APK SHA256 `ec20cc010b283eb943690ac8ebaa8fd756b0a5c7f722c356b176c81e0142d690`、使用MPP `build/board-followups/modes.mpp` SHA256 `a53d8a6438297d8418f75800bb998b55b68a02b1f5d7eb2c5465d4b6b5f500a1`。8,000板のOFF除外/保持と復元、対象タブのItemAnimator切替/復元、検索のHTTP接続先、高速キャッシュのみ/永続化、最新モードのloopback一覧取得を16項目確認。実サイトへの投稿なし。結果 `build/board-followups/result.log`。
+
+比較/検証用instrumentation APKも同じ署名で導入。EULA同意・ユーザー本体の置換/データ消去なし。Pixel11での成功とは扱わない。上記後に保存索引の境界条件・無効サイトの事前除外・共有設定の検索方式登録を追加した最終候補を別途ビルド中。
+
+### 同日 最終候補の確認完了（未公開）
+
+`build/board-followups/final242.apk` を署名照合後、同じ隔離 `sitefix242` へinstall-r成功。APK SHA256 `ef3a180014231d79dc1e61f950241cf64702ddd3802310e9a9a4b74c27db7e84`、使用MPP `build/board-followups/final.mpp` SHA256 `2e51775317b5a5da25e8f61782332039df75606e29234bb75c88e91464a2fe0c`。絶対パスの共通prefixは `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/`、表示名/版/署名鍵/証明書/serialは上記のsitefix242候補と同じ。
+
+最終APKでEditorDialogInstrumentation 8項目、ExternalBoardFollowupsInstrumentation 16項目（高速キャッシュ検索35ms・高速時追加上流0・最新時の模擬上流2）、LocalImageArchiveInstrumentation 33項目成功。ログは `build/editor-dialog-242/result-final.log`、`build/board-followups/result-final2.log`、`build/local-image-inst/result-final.log`。新規クラッシュログなし（最終試験の時刻範囲、crash-final.log）。実サイトへの公開送信・EULA同意なし。
