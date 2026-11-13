@@ -119,6 +119,18 @@ internal fun BytecodePatchContext.patchExternalBoardAuth(version: String) {
     }
     val editor = mutableClassDefBy(if(version=="0.8.10.191 dev")
         "Lo/p9ExternalSyntheticLambda6;" else "Ljp/syoboi/a2chMate/feature/resedit/ResEditFragment;")
+    // The posting screen's inline error uses TextView.setText, bypassing the
+    // generic exception/AlertDialog/WebView observers above. Observe this exact
+    // native presentation entry and retain every original instruction/register.
+    val inlineError = editor.methods.single { method ->
+        method.returnType == "V" && method.accessFlags and 0x8 == 0 &&
+            method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/lang/String;", "Z") &&
+            method.implementation?.instructions?.any { instruction ->
+                val ref = (instruction as? ReferenceInstruction)?.reference as? MethodReference
+                ref?.definingClass == "Landroid/widget/TextView;" && ref.name == "setText"
+            } == true
+    }
+    inlineError.addInstructions(0,"invoke-static/range {p0 .. p1}, $AUTH->postingError(Ljava/lang/Object;Ljava/lang/CharSequence;)V")
     val pause = editor.methods.single { it.name=="onPause" && it.parameterTypes.isEmpty() }
     val saveDraft = pause.implementation!!.instructions.mapNotNull {
         (it as? ReferenceInstruction)?.reference as? MethodReference
