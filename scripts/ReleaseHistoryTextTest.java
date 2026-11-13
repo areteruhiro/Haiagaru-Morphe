@@ -17,6 +17,23 @@ public final class ReleaseHistoryTextTest {
         check(actual.stream().anyMatch(r->r.version.equals("1.26.0")),"real stable release parsed");
         check(actual.stream().anyMatch(r->r.version.equals("1.25.0")),"previous stable parsed");
         check(actual.stream().noneMatch(r->r.version.equals("1.24.1")),"actual baseline cutoff");
+        String old="* **chmate:** repair DAT sharing after package rename ([abc1234](https://github.com/areteruhiro/Haiagaru-Morphe/commit/abc1234))";
+        String japanese=ReleaseNoteJapanese.line(old);
+        check(japanese.contains("DAT共有でクラッシュする問題を修正"),"historical description translated");
+        check(japanese.contains("([abc1234](https://github.com/areteruhiro/Haiagaru-Morphe/commit/abc1234))"),"original commit link retained");
+        check(ReleaseNoteJapanese.line("- 日本語の説明").equals("- 日本語の説明"),"Japanese descriptions unchanged");
+        String skipped="* **chmate:** prevent overlapping reviews and reuse committed feed snapshots [skip ci] ([abc1234](https://github.com/areteruhiro/Haiagaru-Morphe/commit/abc1234))";
+        check(ReleaseNoteJapanese.line(skipped).contains("共有NGの審査重複を防ぎ"),"skip-ci suffix normalized");
+        int translated=0;
+        for(var release:actual) {
+            for(String line:release.notes.split("\\n")) {
+                if(line.startsWith("* **chmate:**"))
+                    check(java.util.regex.Pattern.compile("[\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}]").matcher(line).find(),
+                            "published commit description is Japanese: "+release.version+" "+line);
+                if(line.startsWith("- ")&&line.contains("/commit/"))translated++;
+            }
+        }
+        check(translated>=37,"all historical subjects covered, including development releases");
         System.out.println("Release history: "+checks+" checks passed");
     }
 }

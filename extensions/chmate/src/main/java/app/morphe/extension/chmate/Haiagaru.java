@@ -3469,6 +3469,12 @@ public final class Haiagaru {
     private static LinearLayout settingsGENERAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        // Keep existing setting links and settings search working after moving
+        // the primary entry to the Haiagaru home screen.
+        Button addedFeatures = new Button(activity);
+        addedFeatures.setText("更新履歴");
+        addedFeatures.setOnClickListener(view -> UpdateHistory.show(activity));
+        layout.addView(addedFeatures);
         ThreadWatch.addSettingsButton(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);

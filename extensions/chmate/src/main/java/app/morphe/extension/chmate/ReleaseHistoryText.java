@@ -36,6 +36,7 @@ final class ReleaseHistoryText {
             line=line.replace("🐛 Bug Fixes","修正").replace("✨ New Features","追加機能")
                 .replace("🛠 Improvements & Fixes","改善・修正").replace("🔧 Improvements","改善")
                 .replace("🚀 Updated App Support","対応アプリ");
+            line=ReleaseNoteJapanese.line(line);
             if(line.equals("## 主な変更"))continue;
             result.append(line).append('\n');
         }
