@@ -1,3 +1,9 @@
+# Haiagaru 1.30.3 (2026-11-13)
+
+### 修正
+
+- collapse settings categories on back
+
 # Haiagaru 1.30.2 (2026-11-13)
 
 ### 修正
