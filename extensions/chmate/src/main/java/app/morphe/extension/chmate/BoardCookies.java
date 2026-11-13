@@ -84,23 +84,6 @@ public final class BoardCookies {
         if(!BoardCookiePolicy.sameServer(scope.board,url.toString()))return true;
         store(scope.board,cookies,true);return true;
     }
-    static synchronized boolean importTransferred(List<?> cookies,Set<String> names){
-        if(!enabled())return false;
-        Activity owner=authOwner.get();
-        if(owner!=null&&!owner.isFinishing()&&!owner.isDestroyed())throw new IllegalStateException("Authentication in progress");
-        String board=EdgeCookieReceiver.BOARD;
-        try{
-            ArrayList<Object> merged=new ArrayList<>();JSONArray saved=new JSONArray(prefs().getString("jar:"+board,"[]"));
-            Object url=ExternalBoardAuth.parseUrl(board);
-            for(int i=0;i<saved.length();i++){
-                String encoded=saved.getString(i);String name=encoded.split("=",2)[0];
-                if(!names.contains(name)){Object cookie=ExternalBoardAuth.parseCookie(url,encoded);if(cookie!=null)merged.add(cookie);}
-            }
-            merged.addAll(cookies);store(board,merged,false);
-            if(!prefs().edit().putLong("revision:"+board,prefs().getLong("revision:"+board,0)+1).commit())throw new IOException("Cookie revision save failed");
-            return true;
-        }catch(Exception error){throw new IllegalStateException("Cookie import failed",error);}
-    }
     private static void store(String board,List<?> cookies,boolean merge){
         try{
             LinkedHashMap<String,String> values=new LinkedHashMap<>();

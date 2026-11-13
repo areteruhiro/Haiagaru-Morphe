@@ -9,6 +9,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 
 private const val AUTH = "Lapp/morphe/extension/chmate/ExternalBoardAuth;"
 
@@ -56,31 +57,6 @@ internal fun BytecodePatchContext.patchExternalBoardAuth(version: String) {
         """.trimIndent())
     })
     val extension = mutableClassDefBy(AUTH)
-    // User-confirmed transfer must retain captured session cookies across app restarts too.
-    // Use the native serializer directly; never invent an Expires date from a Cookie header.
-    val persist = persistor.methods.single { method ->
-        method.returnType == "V" && method.parameterTypes.map(CharSequence::toString) == listOf("Ljava/util/Collection;") &&
-            method.implementation?.instructions?.any { insn ->
-                val ref = (insn as? ReferenceInstruction)?.reference as? MethodReference
-                ref?.definingClass == "Landroid/content/SharedPreferences\$Editor;" && ref.name == "putString"
-            } == true
-    }
-    val transfer = extension.methods.single { it.name == "persistTransferredCookies" }
-    extension.methods.remove(transfer)
-    extension.methods.add(MutableMethod(ImmutableMethod(transfer.definingClass,transfer.name,transfer.parameters,
-        transfer.returnType,transfer.accessFlags,transfer.annotations,transfer.hiddenApiRestrictions,
-        ImmutableMethodImplementation(4,emptyList(),emptyList(),emptyList()))).apply {
-        addInstructions(0,"""
-            const-string v0, "client_cookies"
-            const/4 v1, 0x0
-            invoke-virtual {p0, v0, v1}, Landroid/content/Context;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;
-            move-result-object p0
-            new-instance v0, ${persistor.type}
-            invoke-direct {v0, p0}, ${persistor.type}-><init>(Landroid/content/SharedPreferences;)V
-            invoke-virtual {v0, p1}, $persist
-            return-void
-        """.trimIndent())
-    })
     val urlParse=mutableClassDefBy(url).methods.single {
         it.accessFlags and 0x8 != 0 && it.returnType==url && it.parameterTypes.map(CharSequence::toString)==listOf("Ljava/lang/String;")
     }
@@ -149,6 +125,32 @@ internal fun BytecodePatchContext.patchExternalBoardAuth(version: String) {
         (it as? ReferenceInstruction)?.reference as? MethodReference
     }.single { it.definingClass==editor.type && it.returnType=="V"
         && it.parameterTypes.map(CharSequence::toString)==listOf("Z") }
+    // Native draft saving reads title, name, mail, body in that order on supported versions.
+    // Bind to that exact title widget instead of guessing a resource name or scanning EditTexts.
+    val draftInstructions = editor.methods.single { it.toString() == saveDraft.toString() }
+        .implementation!!.instructions.toList()
+    val titleRead = draftInstructions.indexOfFirst {
+        val ref = (it as? ReferenceInstruction)?.reference as? MethodReference
+        ref?.definingClass == "Landroid/widget/EditText;" && ref.name == "getText"
+    }
+    check(titleRead >= 2) { "$version native draft title read missing" }
+    val titleFields = draftInstructions.take(titleRead).mapNotNull {
+        (it as? ReferenceInstruction)?.reference as? FieldReference
+    }.takeLast(2)
+    check(titleFields.size == 2 && titleFields[0].definingClass == editor.type
+            && titleFields[1].definingClass == titleFields[0].type) { "$version native draft title binding changed" }
+    editor.methods.add(MutableMethod(ImmutableMethod(editor.type,"haiagaruStockPostTitle",emptyList(),"Ljava/lang/String;",
+        0x1,emptySet(),emptySet(),ImmutableMethodImplementation(2,emptyList(),emptyList(),emptyList()))).apply {
+        addInstructions(0,"""
+            iget-object v0, p0, ${titleFields[0]}
+            iget-object v0, v0, ${titleFields[1]}
+            invoke-virtual {v0}, Landroid/widget/EditText;->getText()Landroid/text/Editable;
+            move-result-object v0
+            invoke-virtual {v0}, Ljava/lang/Object;->toString()Ljava/lang/String;
+            move-result-object v0
+            return-object v0
+        """.trimIndent())
+    })
     editor.methods.add(MutableMethod(ImmutableMethod(editor.type,"haiagaruSaveExternalDraft",emptyList(),"V",
         0x1,emptySet(),emptySet(),ImmutableMethodImplementation(2,emptyList(),emptyList(),emptyList()))).apply {
         addInstructions(0,"""

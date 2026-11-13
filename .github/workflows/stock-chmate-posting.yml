@@ -1,4 +1,4 @@
-name: Verify Edge cookie transfer
+name: Verify stock ChMate posting
 
 on:
   workflow_dispatch:
@@ -18,11 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Test local receiver with synthetic cookies
+      - name: Verify synthetic posting destinations and drafts
         run: |
-          mkdir -p build/edge-cookie-host-test
-          javac -encoding UTF-8 -d build/edge-cookie-host-test extensions/chmate/src/main/java/app/morphe/extension/chmate/EdgeCookieReceiver.java scripts/EdgeCookieReceiverTest.java
-          java -cp build/edge-cookie-host-test app.morphe.extension.chmate.EdgeCookieReceiverTest
+          mkdir -p build/stock-posting-test
+          javac -encoding UTF-8 -d build/stock-posting-test extensions/chmate/src/main/java/app/morphe/extension/chmate/StockChmatePostingRules.java scripts/StockChmatePostingRulesTest.java
+          java -cp build/stock-posting-test app.morphe.extension.chmate.StockChmatePostingRulesTest
       - name: Build test bundle
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,7 +30,7 @@ jobs:
       - name: Save test bundle
         uses: actions/upload-artifact@v4
         with:
-          name: edge-cookie-transfer-test-bundle
+          name: stock-chmate-posting-test-bundle
           path: patches/build/libs/*.mpp
           if-no-files-found: error
           retention-days: 14

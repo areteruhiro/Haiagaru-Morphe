@@ -99,6 +99,7 @@ public final class ExternalBoardAuth {
     }
     public static void target(Object owner, String url) { target(owner,url,null); }
     public static void target(Object owner, String url, EditText body) {
+        StockChmatePosting.target(owner,url,body);
         if(url!=null && url.startsWith("http://")) url="https://"+url.substring(7);
         Activity a=activity(owner);
         if(a!=null && !BoardAuthRules.origin(url).isEmpty()) {
@@ -109,6 +110,7 @@ public final class ExternalBoardAuth {
         }
     }
     public static void addPostingMenu(Object owner, Menu menu) {
+        StockChmatePosting.addPostingMenu(owner,menu);
         BoardCookies.decorateMenu(owner,menu);
         Activity a=activity(owner);
         if(!Haiagaru.preparePostingMenu(a,menu,MENU,"showExternalBoardAuthMenu")) return;
@@ -118,6 +120,7 @@ public final class ExternalBoardAuth {
         item.setOnMenuItemClickListener(v->handlePostingMenu(owner,v));
     }
     public static boolean handlePostingMenu(Object owner, MenuItem item) {
+        if(StockChmatePosting.handlePostingMenu(owner,item))return true;
         if(BoardCookies.handleMenu(owner,item))return true;
         if(item==null || item.getItemId()!=MENU) return false;
         Activity a=activity(owner);
@@ -130,12 +133,12 @@ public final class ExternalBoardAuth {
         return true;
     }
     public static boolean handlePostingActivityMenu(MenuItem item) {
+        if(StockChmatePosting.handlePostingActivityMenu(item))return true;
         if(BoardCookies.handleActivityMenu(item))return true;
         WeakReference<Activity> ref=menus.get(item);
         return ref!=null && ref.get()!=null && handlePostingMenu(ref.get(),item);
     }
     public static void addSettingsButton(LinearLayout layout, Activity a) {
-        EdgeCookieTransfer.addSettingsButton(layout,a);
         Button button=new Button(a);button.setAllCaps(false);button.setText("外部板の認証ページを設定・開く");
         layout.addView(button);button.setOnClickListener(v->showBoards(a));
         TextView help=new TextView(a);
@@ -348,41 +351,6 @@ public final class ExternalBoardAuth {
         }catch(android.content.ActivityNotFoundException|SecurityException error){Toast.makeText(activity,"ブラウザを開けませんでした",Toast.LENGTH_LONG).show();}
     }
     public static Object parseCookie(Object url,String cookie) { return null; } // Bound at patch time.
-    public static void persistTransferredCookies(Context c,List<?> cookies) { throw new IllegalStateException("Cookie persistence bridge unavailable"); } // Bound at patch time.
-    static void importTransferredCookies(Map<String,String> snapshot) throws Exception {
-        // Revalidate at the write boundary. Never accept an arbitrary origin or Set-Cookie attributes.
-        Map<String,String> checked=EdgeCookieReceiver.cookies(snapshot.entrySet().stream()
-                .map(e->e.getKey()+"="+e.getValue()).collect(java.util.stream.Collectors.joining("; ")));
-        Object url=parseUrl(EdgeCookieReceiver.BOARD);
-        if(url==null||context==null)throw new IllegalStateException("Cookie bridge unavailable");
-        ArrayList<Object> received=new ArrayList<>();
-        for(Map.Entry<String,String> entry:checked.entrySet()){
-            Object cookie=parseCookie(url,entry.getKey()+"="+entry.getValue()+"; Path=/");
-            if(cookie==null)throw new IllegalArgumentException("Invalid cookie");received.add(cookie);
-        }
-        if(BoardCookies.importTransferred(received,checked.keySet()))return;
-        Object jar=nativeJar.get();if(jar==null)throw new IllegalStateException("Cookie jar unavailable");
-        synchronized(jar){
-            java.lang.reflect.Method read=jar.getClass().getDeclaredMethod("haiagaruNativeAuthCookies",url.getClass());read.setAccessible(true);
-            ArrayList<Object> changes=new ArrayList<>();
-            // Remove old same-name paths, so the server cannot receive two different identities.
-            java.util.HashSet<String> old=new java.util.HashSet<>();
-            for(String address:new String[]{EdgeCookieReceiver.BOARD,"https://"+EdgeCookieReceiver.HOST+"/test/bbs.cgi","https://"+EdgeCookieReceiver.HOST+"/"}){
-                Object target=parseUrl(address);
-                for(Object cookie:(List<?>)read.invoke(jar,target)){
-                    String encoded=cookie.toString();String name=encoded.substring(0,encoded.indexOf('='));
-                    if(checked.containsKey(name)&&old.add(encoded)){
-                        Object expired=parseCookie(target,encoded+"; Max-Age=0");if(expired!=null)changes.add(expired);
-                    }
-                }
-            }
-            changes.addAll(received);
-            java.lang.reflect.Method save=jar.getClass().getDeclaredMethod("haiagaruNativeSaveAuthCookies",url.getClass(),List.class);save.setAccessible(true);save.invoke(jar,url,changes);
-            // Native save only persists cookies with Expires. Explicit migration preserves session cookies too,
-            // using the app's existing serializer without inventing a server expiry.
-            persistTransferredCookies(context,changes);
-        }
-    }
     public static void received(Object url,List<?> cookies) {
         Context c=context;if(c==null || url==null) return;
         String address=url.toString(),origin=BoardAuthRules.origin(address);

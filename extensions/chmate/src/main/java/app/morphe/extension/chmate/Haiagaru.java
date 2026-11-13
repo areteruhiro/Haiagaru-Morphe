@@ -3814,6 +3814,7 @@ public final class Haiagaru {
                 "Disabled entries are hidden the next time the menu opens. Features and authentication prompts remain available."));
         menuDescription.setTextSize(13);
         layout.addView(menuDescription, rowParams(activity));
+        StockChmatePosting.addSettingsButton(layout, activity);
         String[] postSizeChoices = new String[29];
         postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
         for (int index = 1; index < 28; index++)
