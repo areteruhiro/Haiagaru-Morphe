@@ -1,3 +1,9 @@
+# Haiagaru 1.30.1 (2026-11-13)
+
+### 修正
+
+- decouple Hissi settings from native menu toggle
+
 # Haiagaru 1.30.0 (2026-11-13)
 
 ### 修正
