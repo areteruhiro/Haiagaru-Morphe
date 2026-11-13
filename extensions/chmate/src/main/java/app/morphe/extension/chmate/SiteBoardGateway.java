@@ -301,8 +301,7 @@ final class SiteBoardGateway {
     }
     synchronized Pattern sitePattern(String kind)throws IOException{
         Pattern cached=sitePatterns.get(kind);if(cached!=null)return cached;
-        if(kind.equals("edge")){Pattern result=Pattern.compile("https://bbs\\.eddibb\\.cc/liveedge/");sitePatterns.put(kind,result);return result;}
-        if(kind.equals("kenmo")){Pattern result=Pattern.compile("https://(?:kenmo\\.org|00c\\.org)/[A-Za-z0-9_-]+/");sitePatterns.put(kind,result);return result;}
+        Pattern direct=SiteBoardPatterns.direct(kind);if(direct!=null){sitePatterns.put(kind,direct);return direct;}
         reservePort();StringBuilder aliases=new StringBuilder(SiteBoardCatalog.prefix(kind)+"[a-f0-9]{32}");for(Map.Entry<String,SiteBoardProtocol.Board> row:boards.entrySet())if(row.getKey().length()==33&&row.getValue().kind.equals(kind))aliases.append('|').append(Pattern.quote(row.getKey()));Pattern result=Pattern.compile(Pattern.quote(origin())+"/(?:"+aliases+")/");sitePatterns.put(kind,result);return result;
     }
     synchronized String registrationUrl(String key)throws IOException{

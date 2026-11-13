@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-13 更新履歴の配置・版別設定と標準サイト分類（公式Release候補）: 更新履歴をHaiagaru設定トップの共有・読み込みより上へ移し、旧一括オンオフ欄を撤去。既存22コントロールを追加・拡充版の開閉内に配置し、安定版／devの重複を防止。エッヂ・オルグ板はnative BoardIDのHTTP正規化にprovider条件を合わせ、爆サイ等と同じ標準分類へ。取得HTTPS／保存ID／任意グループ設定は維持。版別231・履歴10・分類49項目成功、新規native hookなし。実機操作は検証省略指示により行わず。詳細docs/history-options-site-groups-20261113.md。
+
 2026-11-13 Haiagaru 1.27.1公式Release公開完了: エッヂの無題カテゴリ補正・オルグ板への表示名変更・共有NG初期報告数2と既存1の一度だけの移行を公開。移行49／条件判定98項目成功、通常Lint/R8 build3m10s成功。新規native hookなし、端末操作は利用者指示により省略。dev Release43357246418／master Release43357840013とBuild43357840058成功。正式版draft=false／prerelease=false、配布6assetのSHA256がGitHub digestと一致、Morphe JSONの追加20／変更修正32項目とmaster/main両JSONフィード全項目一致を確認。生成a8b9fa5d、https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.1
 
 2026-11-13 共有NGの必要な報告数（公式Release候補）: 初期値2へ変更し、既存1／不正値は一度だけ2へ移行。2以上・有効状態・例外を保持し、移行後の手動1設定も維持。移行49項目成功。既存native hook／サーバーの票数は変更せず、端末検証は利用者指示により省略。エッヂ・オルグ板修正と同時公開予定。
