@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-13 共有NGの必要な報告数（公式Release候補）: 初期値2へ変更し、既存1／不正値は一度だけ2へ移行。2以上・有効状態・例外を保持し、移行後の手動1設定も維持。移行49項目成功。既存native hook／サーバーの票数は変更せず、端末検証は利用者指示により省略。エッヂ・オルグ板修正と同時公開予定。
+
 2026-11-13 エッヂ無題フォルダ・オルグ板（公式Release候補）: BBSMENU変換が見出しとリンクを同一行へ出し、nativeのリンク優先パーサーでカテゴリが欠ける経路を修正。既存の空／無題カテゴリは表示データでエッヂへ補正し、板ID・保存ログを保持。kenmo.org／00c.orgのprovider・サイト別グループをオルグ板に統一。旧名／ドメイン検索・設定リンクも維持。BBSMENU57・検索49・設定リンク66項目成功、Lint/R8 build3m10s成功。新規native hookなし。詳細docs/edge-folder-org-20261113.md。
 
 2026-11-13 Haiagaru 1.27.0公式Release公開完了: devのCI43351733875とmasterのCI43352522562がRelease／Attest成功。追加20項目の下に変更・修正29項目を置いた、1.24.1以降の安定版全差分をMorphe用descriptionへ反映。公開JSON2個の全49項目・バージョン見出し・配布URL・GitHub digestと、master/mainの両フィード4経路の1.27.0を確認。main rawの初回キャッシュは再取得で解消。正式版prerelease=false／draft=false。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.0
