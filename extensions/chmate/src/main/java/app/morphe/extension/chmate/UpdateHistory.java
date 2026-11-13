@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
@@ -17,6 +16,8 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.CheckBox;
+import android.view.View;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,23 +39,46 @@ final class UpdateHistory {
         version.setTypeface(null, Typeface.BOLD);
         content.addView(version);
 
-        TextView settingsHeading = new TextView(context);
-        settingsHeading.setText("機能のオン・オフ");
-        styleHeading(settingsHeading, context);
-        content.addView(settingsHeading);
-        addFeatureSettings(content, activity);
-
         TextView historyHeading = new TextView(context);
         historyHeading.setText("リリース履歴");
         styleHeading(historyHeading, context);
         content.addView(historyHeading);
-        TextView history = new TextView(context);
-        history.setText(formatHistory(context, readBundledHistory(context)));
-        history.setTextIsSelectable(true);
-        history.setTextSize(14);
-        history.setLineSpacing(Math.round(2 * context.getResources().getDisplayMetrics().density), 1f);
-        history.setMovementMethod(LinkMovementMethod.getInstance());
+        TextView status = new TextView(context);
+        status.setText("アプリに同梱された更新履歴を表示しています。バージョンをタップすると詳細を開閉できます。");
+        content.addView(status);
+        CheckBox development = new CheckBox(context);
+        development.setText("開発版（dev）の履歴も表示する");
+        content.addView(development);
+        LinearLayout history = new LinearLayout(context);
+        history.setOrientation(LinearLayout.VERTICAL);
         content.addView(history);
+        String[] source = {readBundledHistory(context)};
+        Runnable render = () -> renderReleases(history, context, source[0], development.isChecked());
+        development.setOnCheckedChangeListener((button,on) -> render.run());
+        render.run();
+
+        Button fetch = new Button(context);
+        fetch.setText("GitHubから最新の更新履歴を取得");
+        fetch.setOnClickListener(view -> {
+            fetch.setEnabled(false);status.setText("GitHubから更新履歴を取得しています…");
+            new Thread(() -> {
+                try {
+                    String latest = fetchHistory();
+                    if (ReleaseHistoryText.parse(latest).isEmpty()) throw new java.io.IOException("更新履歴の形式を読み取れません");
+                    activity.runOnUiThread(() -> {
+                        if(activity.isFinishing()||activity.isDestroyed())return;
+                        source[0]=latest;render.run();fetch.setEnabled(true);
+                        status.setText("GitHubの最新の更新履歴です。新しいバージョンから表示しています。");
+                    });
+                } catch(Exception error) {
+                    activity.runOnUiThread(() -> {
+                        if(activity.isFinishing()||activity.isDestroyed())return;
+                        fetch.setEnabled(true);status.setText("GitHubから取得できませんでした。表示中の更新履歴はそのまま利用できます。");
+                    });
+                }
+            },"Haiagaru-release-history").start();
+        });
+        content.addView(fetch);
 
         Button releases = new Button(context);
         releases.setText("GitHubで更新履歴を開く");
@@ -62,11 +86,63 @@ final class UpdateHistory {
                 Uri.parse("https://github.com/areteruhiro/Haiagaru-Morphe/releases"))));
         content.addView(releases);
 
+        Button settingsHeading = new Button(context);
+        settingsHeading.setText("機能のオン・オフを表示");
+        content.addView(settingsHeading);
+        LinearLayout settings = new LinearLayout(context);
+        settings.setOrientation(LinearLayout.VERTICAL);
+        settings.setVisibility(View.GONE);
+        addFeatureSettings(settings, activity);
+        content.addView(settings);
+        settingsHeading.setOnClickListener(view -> {
+            boolean show=settings.getVisibility()!=View.VISIBLE;
+            settings.setVisibility(show?View.VISIBLE:View.GONE);
+            settingsHeading.setText(show?"機能のオン・オフを閉じる":"機能のオン・オフを表示");
+        });
+
         ScrollView scroll = new ScrollView(context);
         scroll.setFillViewport(true);
         scroll.addView(content);
         new HaiagaruDialog.Builder(activity).setTitle("更新履歴")
                 .setView(scroll).setPositiveButton("閉じる", null).show();
+    }
+
+    private static void renderReleases(LinearLayout content, Context context, String source, boolean includeDevelopment) {
+        content.removeAllViews();boolean first=true;
+        for(ReleaseHistoryText.Release release:ReleaseHistoryText.parse(source)) {
+            if(release.development&&!includeDevelopment)continue;
+            Button heading=new Button(context);
+            heading.setAllCaps(false);
+            String title=release.version+"  ·  "+release.date+(release.development?"  開発版":"  安定版");
+            TextView details=new TextView(context);
+            details.setText(formatHistory(context,release.notes));
+            details.setTextSize(14);details.setTextIsSelectable(true);
+            details.setLineSpacing(3*context.getResources().getDisplayMetrics().density,1f);
+            details.setMovementMethod(LinkMovementMethod.getInstance());
+            details.setPadding(0,8,0,24);
+            details.setVisibility(first?View.VISIBLE:View.GONE);
+            heading.setText((first?"▼ ":"▶ ")+title);
+            heading.setOnClickListener(view -> {
+                boolean show=details.getVisibility()!=View.VISIBLE;
+                details.setVisibility(show?View.VISIBLE:View.GONE);heading.setText((show?"▼ ":"▶ ")+title);
+            });
+            content.addView(heading);content.addView(details);first=false;
+        }
+        if(first){TextView empty=new TextView(context);empty.setText("表示できる安定版の履歴がありません。開発版を表示するか、GitHubから取得してください。");content.addView(empty);}
+    }
+
+    private static String fetchHistory() throws java.io.IOException {
+        java.net.HttpURLConnection connection=(java.net.HttpURLConnection)new java.net.URL(
+                "https://raw.githubusercontent.com/areteruhiro/Haiagaru-Morphe/master/CHANGELOG.md").openConnection();
+        connection.setConnectTimeout(8000);connection.setReadTimeout(15000);connection.setInstanceFollowRedirects(false);
+        try {
+            if(connection.getResponseCode()!=200)throw new java.io.IOException("GitHubの応答を取得できません");
+            try(InputStream input=connection.getInputStream();ByteArrayOutputStream output=new ByteArrayOutputStream()) {
+                byte[] buffer=new byte[8192];int count;
+                while((count=input.read(buffer))!=-1){if(output.size()+count>4*1024*1024)throw new java.io.IOException("更新履歴が取得上限を超えました");output.write(buffer,0,count);}
+                return output.toString(StandardCharsets.UTF_8.name());
+            }
+        } finally {connection.disconnect();}
     }
 
     private static void styleHeading(TextView heading, Context context) {
@@ -83,7 +159,8 @@ final class UpdateHistory {
         for (String raw : markdown.split("\\r?\\n")) {
             String line = raw.trim();
             if (line.isEmpty()) {
-                if (output.length() > 0 && output.charAt(output.length() - 1) != '\n') output.append('\n');
+                int length=output.length();
+                if (length > 0 && (length < 2 || output.charAt(length - 2) != '\n')) output.append('\n');
                 continue;
             }
             int start = output.length();
@@ -96,20 +173,14 @@ final class UpdateHistory {
                 int end = output.length() - 1;
                 output.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 output.setSpan(new RelativeSizeSpan(heading == 1 ? 1.35f : 1.12f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                output.setSpan(new ForegroundColorSpan(heading == 1 ? 0xff263b65 : 0xff405577), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } else {
                 boolean bullet = line.startsWith("* ") || line.startsWith("- ");
                 if (bullet) output.append("• ");
                 SpannableStringBuilder body = formatInline(bullet ? line.substring(2) : line);
-                int bodyStart = output.length();
                 output.append(body);
-                for (Object span : body.getSpans(0, body.length(), Object.class)) {
-                    int from = body.getSpanStart(span), to = body.getSpanEnd(span);
-                    output.setSpan(span, bodyStart + from, bodyStart + to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                }
                 output.append('\n');
                 int end = output.length() - 1;
-                if (bullet) output.setSpan(new android.text.style.LeadingMarginSpan.Standard(0, 2 * density), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                if (bullet) output.setSpan(new android.text.style.LeadingMarginSpan.Standard(0, 16 * density), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
         while (output.length() > 0 && output.charAt(output.length() - 1) == '\n') output.delete(output.length() - 1, output.length());
