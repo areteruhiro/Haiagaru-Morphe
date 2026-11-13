@@ -973,6 +973,7 @@ public final class Haiagaru {
         BoardCookies.initialize(appContext);
         ExternalBoardEditor.initialize(appContext);
         SiteBoardGateway.initialize(appContext);
+        LocalImageArchive.initialize(appContext);
         EdgeReporterHistory.initialize(appContext);
         EdgeReporterOptions.initialize(appContext);
         PopularReplies.initialize(appContext);
@@ -4184,6 +4185,8 @@ public final class Haiagaru {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         ThreadListThumbnailSettings.addSettings(layout, activity);
+        Button localImages=new Button(activity);localImages.setText("保存済み画像から表示（追加フォルダ・URLの関連付け）");
+        localImages.setOnClickListener(view->activity.startActivity(new Intent(activity,LocalImageArchiveActivity.class)));layout.addView(localImages);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";

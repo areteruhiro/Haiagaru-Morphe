@@ -62,6 +62,9 @@ ChMateに設定・閲覧・検索・NG・バックアップ機能を追加する
 - DAT落ちスレの取得、任意のHTTPS取得経路、SS速報VIPの過去ログ、保存レス・保存用スレ。[DAT経路](docs/dat-routes.md) ／ [レスアーカイブ](docs/response-archive.md)
 - レス本文の直接選択・コピー、投稿者の強調、X投稿の本文プレビュー。[直接選択](docs/direct-body-selection.md) ／ [投稿者の強調](docs/poster-highlight.md) ／ [Xプレビュー](docs/x-post-preview.md)
 - 表示本文をTXTのルールで置換（正規表現対応）。投稿内容・保存DAT・元のNG判定は変更しません。[本文の文字列置換](docs/replace-str.md)
+- 保存画像からの表示復元。既定の保存先と追加フォルダを検索し、改名した画像は内容で照合できます。対応情報がない画像は元URLを手動で関連付けます。[保存画像の復元](docs/local-image-recovery.md)
+- 外部板を含む全板検索は、追加通信のない高速モードと、対象板の一覧を取得する最新モードから選べます。OFFのサイトは板一覧・検索候補から除外します。[検索方式](docs/global-title-search.md)
+- ﾜｯﾁｮｲ長押しから、上4桁・下4桁をそれぞれコピーできます。[長押しメニュー](docs/wacchoi-menu-order.md)
 - 画像・GIF・動画の閲覧、スレ全体のメディアへの移動、動画の相対シーク・再生速度・保存。専用動画ビューアは任意パッチです。[動画操作](docs/video-viewer-controls.md)
 - 通常NGの登録上限の変更（0で無制限）、IDなしレスの非表示、自動NGと除外ID、JavaScriptによる高度なNG。[IDなしNG](docs/hidden-id-ng.md) ／ [高度なNG](docs/advanced-ng.md)
 - **連鎖あぼーんを常に非表示**（初期OFF）。元のNG対象レスや保存済みルールを変えず、連鎖されたレスの行を隠します。「NGWord-IDへの返信も非表示」とは独立した設定です。

@@ -48,6 +48,7 @@ public final class SettingsProfiles {
         numberKey("edgeLevelIntervalMinutes",15,1440);defaultValue("edgeLevelIntervalMinutes",30);
 
         booleanKey(GlobalTitleSearch.KEY);defaultValue(GlobalTitleSearch.KEY,false);
+        numberKey(GlobalTitleSearch.MODE,0,1);defaultValue(GlobalTitleSearch.MODE,0);
         RULES.put(GlobalTitleSearch.BOARDS,v->v instanceof String&&GlobalTitleSearch.validSelection((String)v));defaultValue(GlobalTitleSearch.BOARDS,"");
         for(String key:new String[]{VideoViewerSettings.GIF_NATIVE,VideoViewerSettings.VIDEO_NATIVE,VideoViewerSettings.THREAD_MEDIA}){
             booleanKey(key);defaultValue(key,false);
