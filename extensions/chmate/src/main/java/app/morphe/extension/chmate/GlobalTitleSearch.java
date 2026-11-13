@@ -43,7 +43,7 @@ public final class GlobalTitleSearch {
     public static void addSettings(LinearLayout root,Activity activity){
         SharedPreferences prefs=activity.getSharedPreferences(PREFS,0);
         LiveSettings.Toggle toggle=new LiveSettings.Toggle(activity);toggle.setText("全板検索に登録済みの外部板・bbspinkも含める");toggle.setChecked(prefs.getBoolean(KEY,false));root.addView(toggle);
-        TextView help=new TextView(activity);help.setText("HOMEの「全板から検索」に、有効な外部板とbbspinkを含めます。高速は取得済みの一覧を端末内で検索し、追加通信を行いません。未取得の板や新しいスレは最新モードで取得してください。最新は対象板の一覧を2並列・最大30秒で取得し、取得できた結果を表示します。本文はスレを開いたときに取得します。");help.setTextSize(13);root.addView(help);
+        TextView help=new TextView(activity);help.setText("HOMEの「全板から検索」に、有効な外部板とbbspinkを含めます。\n\n高速：取得済みの一覧を端末内で検索します。検索中の追加通信はありません。\n最新：未取得の板や新しいスレを含めるため、対象板の一覧を取得して検索します（2並列・最大30秒）。取得できた結果だけを表示します。\n\n本文はスレを開いたときに取得します。");help.setTextSize(13);help.setSingleLine(false);help.setMaxLines(Integer.MAX_VALUE);help.setHorizontallyScrolling(false);help.setEllipsize(null);help.setIncludeFontPadding(true);help.setPadding(0,8,0,8);root.addView(help,new LinearLayout.LayoutParams(-1,-2));
         Spinner mode=new Spinner(activity);mode.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"高速：保存済みのスレ一覧から検索","最新：対象板のスレ一覧を取得して検索"}));
         mode.setSelection(prefs.getInt(MODE,0)==1?1:0);root.addView(mode);
         mode.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){public void onNothingSelected(AdapterView<?> parent){}public void onItemSelected(AdapterView<?> parent,android.view.View view,int position,long id){if(prefs.getInt(MODE,0)!=position){prefs.edit().putInt(MODE,position).apply();Job job=ACTIVE.getAndSet(null);if(job!=null)job.cancel();}}});
