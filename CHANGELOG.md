@@ -1,3 +1,9 @@
+# Haiagaru 1.30.3-dev.2 (2026-11-13)
+
+### 修正
+
+- keep release asset configuration valid
+
 # Haiagaru 1.30.3-dev.1 (2026-11-13)
 
 ### 修正
