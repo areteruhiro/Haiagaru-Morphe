@@ -9,7 +9,7 @@ https://jbbs.shitaraba.net/computer/45040/ <br>
 ChMateに設定・閲覧・検索・NG・バックアップ機能を追加するMorpheパッチです。
 対応する元APKは **0.8.10.191 dev／0.8.10.226 dev／0.8.10.242 dev** です。0.8.10.241と0.8.10.243 devは対応対象外です。
 
-**[最新の正式リリースと配布ファイル](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)** ／ [変更履歴](CHANGELOG.md) ／ [使い方](使い方.md) ／ [FAQ](docs/faq.md)
+**[最新の正式リリースと配布ファイル](https://github.com/areteruhiro/Haiagaru-Morphe/releases/latest)** ／ [変更履歴](CHANGELOG.md) ／ [使い方](使い方.md) ／ [よくある質問](docs/faq.md)
 
 このREADMEは現在のソースに対応します。公開済みの内容は上のリリース説明で確認してください。開発ブランチの変更が公開前の場合もあります。従来の機能紹介は[Haiagaru](https://github.com/areteruhiro/Haiagaru)も参照できます。
 
