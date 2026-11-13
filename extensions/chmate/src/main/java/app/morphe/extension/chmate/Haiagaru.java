@@ -132,6 +132,8 @@ public final class Haiagaru {
     private static final String NG_REGISTRATION_LIMIT_KEY = "ngRegistrationLimit";
     /** ChMate's 5ch.io BBSMENU entry for the stock Hissi checker action. */
     private static final String CHMATE_HISSI_MENU_ENABLED_KEY = "bbs.2ch_net.menu1.enable";
+    /** Whether Haiagaru keeps ChMate's stock Hissi checker menu entry visible. */
+    static final String HISSI_MENU_ENABLED_KEY = "hissiMenuEnabled";
     private static final String HISSI_CHECKER_MODE_KEY = "hissiCheckerMode";
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
@@ -431,7 +433,7 @@ public final class Haiagaru {
     public static void onApplicationPreCreate(Application application) {
         if (application == null) return;
         initializeApplicationContext(application);
-        ensureHissiMenuEntryEnabled(application);
+        syncHissiMenuEntry(application);
         FoldLayout.install(application);
         NativeRestore191.initialize(application);
         EmojiFontFallback.initialize(application);
@@ -443,7 +445,6 @@ public final class Haiagaru {
         // hook.  The provider runs before ChMate creates its HTTP clients, so
         // applying the UA there is required for the first request after restart.
         initializeApplicationContext(application);
-        ensureHissiMenuEntryEnabled(application);
         FoldLayout.install(application);
         if (!activityTrackingInstalled) {
             synchronized (Haiagaru.class) {
@@ -990,22 +991,17 @@ public final class Haiagaru {
         ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
     }
 
-    /**
-     * Haiagaru owns the Hissi provider and viewer settings.  ChMate otherwise
-     * hides the only menu entry that reaches that provider when its stock
-     * 5ch.io BBSMENU toggle is off, making the Haiagaru settings appear to do
-     * nothing.  Keep the stock entry available so the Haiagaru settings are
-     * independent of that native visibility toggle.
-     */
-    private static void ensureHissiMenuEntryEnabled(Context context) {
+    /** Synchronizes the optional Haiagaru Hissi menu setting with ChMate's native preference. */
+    private static void syncHissiMenuEntry(Context context) {
         if (context == null) return;
         try {
+            boolean enabled = preferences(context).getBoolean(HISSI_MENU_ENABLED_KEY, true);
             SharedPreferences chMate = PreferenceManager.getDefaultSharedPreferences(context);
-            if (!chMate.getBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, false)) {
-                chMate.edit().putBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, true).apply();
+            if (chMate.getBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, false) != enabled) {
+                chMate.edit().putBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, enabled).apply();
             }
         } catch (RuntimeException error) {
-            Log.w(LOG_TAG, "Unable to enable the Hissi BBSMENU entry", error);
+            Log.w(LOG_TAG, "Unable to synchronize the Hissi BBSMENU entry", error);
         }
     }
 
@@ -4082,7 +4078,6 @@ public final class Haiagaru {
     private static LinearLayout settingsCHECKER(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        ensureHissiMenuEntryEnabled(activity);
         ResponseMenuSettings.addWacchoiSearchSetting(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
@@ -4093,6 +4088,13 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch hissiMenuEnabled = addSwitch(
+                layout,
+                activity,
+                text("ChMateの「必死チェッカーもどき」メニューを表示",
+                        "Show ChMate's \"Hissi-style checker\" menu"),
+                preferences.getBoolean(HISSI_MENU_ENABLED_KEY, true)
+        );
         Spinner hissiCheckerMode = addSpinner(
                 layout,
                 activity,
@@ -4194,6 +4196,8 @@ public final class Haiagaru {
                 preferences.getBoolean(KYODEMO_ENHANCED_VIEWER_KEY, false)
         );
 
+        live.toggle(hissiMenuEnabled, HISSI_MENU_ENABLED_KEY,
+                () -> syncHissiMenuEntry(activity));
         live.choice(hissiCheckerMode,HISSI_CHECKER_MODE_KEY);
         live.toggle(dedicatedViewerEnabled,DEDICATED_VIEWER_ENABLED_KEY);
         live.choice(hissiViewerTheme,HISSI_VIEWER_THEME_KEY);

@@ -77,6 +77,8 @@ public final class SettingsProfiles {
         numberKey(HissiScanTemplate.DAYS,0,36524);
         booleanKey(HissiScanTemplate.ENABLED);
         defaultValue(HissiScanTemplate.ENABLED,true);
+        booleanKey(Haiagaru.HISSI_MENU_ENABLED_KEY);
+        defaultValue(Haiagaru.HISSI_MENU_ENABLED_KEY,true);
         numberKey(HissiScanTemplate.PROVIDER,0,3);
         RULES.put(HissiScanTemplate.BOARDS,v->v instanceof String&&((String)v).length()<=4096
                 &&(((String)v).isBlank()||((String)v).matches("[A-Za-z0-9_,\\s-]+")));
