@@ -130,6 +130,8 @@ public final class Haiagaru {
     private static final String CHMATE_COPIPE_NG2_KEY = "copipeNg2";
     private static final String CHMATE_ARASHI_NG_KEY = "arashiNg";
     private static final String NG_REGISTRATION_LIMIT_KEY = "ngRegistrationLimit";
+    /** ChMate's 5ch.io BBSMENU entry for the stock Hissi checker action. */
+    private static final String CHMATE_HISSI_MENU_ENABLED_KEY = "bbs.2ch_net.menu1.enable";
     private static final String HISSI_CHECKER_MODE_KEY = "hissiCheckerMode";
     private static final String HISSI_VIEWER_THEME_KEY = "hissiViewerTheme";
     private static final String HISSI_VIEWER_TEXT_ZOOM_KEY = "hissiViewerTextZoom";
@@ -429,6 +431,7 @@ public final class Haiagaru {
     public static void onApplicationPreCreate(Application application) {
         if (application == null) return;
         initializeApplicationContext(application);
+        ensureHissiMenuEntryEnabled(application);
         FoldLayout.install(application);
         NativeRestore191.initialize(application);
         EmojiFontFallback.initialize(application);
@@ -440,6 +443,7 @@ public final class Haiagaru {
         // hook.  The provider runs before ChMate creates its HTTP clients, so
         // applying the UA there is required for the first request after restart.
         initializeApplicationContext(application);
+        ensureHissiMenuEntryEnabled(application);
         FoldLayout.install(application);
         if (!activityTrackingInstalled) {
             synchronized (Haiagaru.class) {
@@ -984,6 +988,25 @@ public final class Haiagaru {
         migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
         ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
+    }
+
+    /**
+     * Haiagaru owns the Hissi provider and viewer settings.  ChMate otherwise
+     * hides the only menu entry that reaches that provider when its stock
+     * 5ch.io BBSMENU toggle is off, making the Haiagaru settings appear to do
+     * nothing.  Keep the stock entry available so the Haiagaru settings are
+     * independent of that native visibility toggle.
+     */
+    private static void ensureHissiMenuEntryEnabled(Context context) {
+        if (context == null) return;
+        try {
+            SharedPreferences chMate = PreferenceManager.getDefaultSharedPreferences(context);
+            if (!chMate.getBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, false)) {
+                chMate.edit().putBoolean(CHMATE_HISSI_MENU_ENABLED_KEY, true).apply();
+            }
+        } catch (RuntimeException error) {
+            Log.w(LOG_TAG, "Unable to enable the Hissi BBSMENU entry", error);
+        }
     }
 
     /** Installs the optional crash logger before ChMate's startup provider does any work. */
@@ -4059,6 +4082,7 @@ public final class Haiagaru {
     private static LinearLayout settingsCHECKER(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        ensureHissiMenuEntryEnabled(activity);
         ResponseMenuSettings.addWacchoiSearchSetting(layout, activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
