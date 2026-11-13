@@ -33,3 +33,11 @@ Morphe用の累積差分は既存.releaserc生成元で追加20／変更修正35
 今後の公開は.releasercの既存release-notes-generatorのmainTemplateをheaderPartialのみの出力に変更し、日本語の今回の変更・累積差分・配布案内・謝辞を生成します。commit-analyzerによる版番号決定はそのままです。実際のgenerateNotesへ英語のダミーコミットを渡し、英語説明を追記せず、日本語の説明とバージョンを保持することを確認（build/history-site-japanese-generated-notes.txt）。生成CHANGELOG・配布JSONは手動編集していません。
 
 初回のAndroid buildは4分2秒で成功。公開前の互換性確認で基本設定の更新履歴入口を保持し、利用者の追加指示により日本語化を追加したため、masterのCI43362371725とdevのCI43362539867はキャンセル。公式1.27.2はまだ生成されていないことを確認し、最終差分はmasterの通常Release CIで全体を再ビルドします。重複する開発版公開を省くため日本語化コミットのdev CIのみskipし、公式ReleaseのマージではCIを実行します。
+
+## 公式公開結果
+
+最終のAndroid互換性修正ではMap.ofEntries／Map.entryを使わず、従来のHashMapとCollections.unmodifiableMapへ統一。中断したCI43363198072は生成コミットe807ce8dとタグ1.27.2を作成済みでしたが、GitHub Releaseと配布ファイルは未公開でした。履歴やタグは変更せず生成コミットを通常マージで取り込み、修正版をSemantic Releaseの次の版1.27.3として公開しました。
+
+最終CI43363586596のRelease／Attest成功。2026-11-13 13:13:06 JST、1.27.3はdraft=false／prerelease=false。6配布ファイルのSHA256がGitHub digestに一致。Morpheの追加20／変更修正35項目と日本語説明、master/mainの両JSONフィード計4経路の全プロパティ一致を確認しました。最終生成f41000e5。公開後の実CHANGELOGでも履歴19・版別231項目が成功しました。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.3
