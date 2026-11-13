@@ -67,7 +67,7 @@ public final class RefreshTargetHistory {
             android.util.TypedValue highlight=new android.util.TypedValue();
             accent=context.getTheme().resolveAttribute(android.R.attr.colorAccent,highlight,true)?highlight.data:0xff0086b3;
             LinearLayout row=new LinearLayout(context);row.setGravity(Gravity.BOTTOM);
-            String[] labels={"スレ","対象","板","書き込み","画像"};
+        String[] labels={"スレ","更新対象","板","書き込み","画像"};
             for(int i=0;i<buttons.length;i++){
                 final int tab=i;
                 TextView button=new TextView(context);buttons[i]=button;
