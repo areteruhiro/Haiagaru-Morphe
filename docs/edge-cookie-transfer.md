@@ -64,3 +64,14 @@ Haiagaruの認証情報バックアップを明示的に有効にした場合、
 失効後には読めなくなることを確認した（`EdgeCookiePersistenceInstrumentation.java`）。
 利用者のアプリやCookieは読み取っていない。Java/Kotlinコンパイル成功。
 WindowsでのMPP生成はメモリ不足で失敗したため、専用のGitHub Actionsで最終生成を行う。
+
+同日、専用CIで28項目とMPP生成が成功:
+https://github.com/areteruhiro/Haiagaru-Morphe/actions/runs/43487584826
+コミット126cc2fのMPPから191 dev用APKへ7パッチを適用。
+生成DEXでpersistTransferredCookiesがネイティブSharedPrefsCookiePersistorの保存メソッドへ
+置換されていること、APK署名・表示名・別パッケージ名を確認した。
+利用者の新規インストール指示によりMi Note 10へ導入成功、初回Activityの起動Status: okを確認。
+アプリ名: Haiagaru Cookie移行テスト。
+パッケージ: jp.co.airfront.android.a2chMate.haiagaru.cookietransfer191。
+APK SHA-256: CACCC56A9B812F228F07FFFCCEB475F5B74E1801CF4D817EEF19BDF57E7C00DA。
+既存アプリの更新・データ移行・同意操作・Cookieの実取り込みは行っていない。
