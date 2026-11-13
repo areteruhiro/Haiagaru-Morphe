@@ -1,3 +1,9 @@
+# Haiagaru 1.29.0-dev.1 (2026-11-13)
+
+### 追加機能
+
+- add gesture filter access and clarify board search
+
 # Haiagaru 1.28.0 (2026-11-13)
 
 ### 追加機能
