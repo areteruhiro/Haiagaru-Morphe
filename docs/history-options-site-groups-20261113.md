@@ -24,4 +24,12 @@ direct providerの分類をSiteBoardPatternsへ切り出し、HTTP／HTTPS双方
 - 通常Lint／R8 buildAndroidはbuild/history-site-20261113-build.logへ記録。
 - 利用者の検証省略指示を継続し、実機への導入・画面操作は行いません。ホスト判定を実機の表示結果と同一視しません。
 
-Morphe用の累積差分は既存.releaserc生成元で追加20／変更修正34項目。今回の2項目を新しい版へ追記し、1.27.1の3項目はその版に固定しました。公開はdev→masterの既存Semantic Release CIを使用します。
+Morphe用の累積差分は既存.releaserc生成元で追加20／変更修正35項目。今回の3項目を新しい版へ追記し、1.27.1の3項目はその版に固定しました。公開はdev→masterの既存Semantic Release CIを使用します。
+
+## 更新内容の日本語表示
+
+過去の公開履歴に残っていた37種類の英語コミット説明をReleaseNoteJapaneseで日本語へ対応付け、コミットのリンクはそのまま保持。すでに日本語の説明や未知の説明は変更・削除しません。実CHANGELOGの安定版／devを含む履歴19項目の試験が成功しました。
+
+今後の公開は.releasercの既存release-notes-generatorのmainTemplateをheaderPartialのみの出力に変更し、日本語の今回の変更・累積差分・配布案内・謝辞を生成します。commit-analyzerによる版番号決定はそのままです。実際のgenerateNotesへ英語のダミーコミットを渡し、英語説明を追記せず、日本語の説明とバージョンを保持することを確認（build/history-site-japanese-generated-notes.txt）。生成CHANGELOG・配布JSONは手動編集していません。
+
+初回のAndroid buildは4分2秒で成功。公開前の互換性確認で基本設定の更新履歴入口を保持し、利用者の追加指示により日本語化を追加したため、masterのCI43362371725とdevのCI43362539867はキャンセル。公式1.27.2はまだ生成されていないことを確認し、最終差分はmasterの通常Release CIで全体を再ビルドします。重複する開発版公開を省くため日本語化コミットのdev CIのみskipし、公式ReleaseのマージではCIを実行します。
