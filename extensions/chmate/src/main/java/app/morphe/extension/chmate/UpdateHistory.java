@@ -38,6 +38,9 @@ final class UpdateHistory {
         version.setTextSize(18);
         version.setTypeface(null, Typeface.BOLD);
         content.addView(version);
+        Button allFeatures = new Button(context);
+        allFeatures.setText("追加された機能をすべて見る");
+        content.addView(allFeatures);
 
         TextView historyHeading = new TextView(context);
         historyHeading.setText("リリース履歴");
@@ -53,6 +56,7 @@ final class UpdateHistory {
         history.setOrientation(LinearLayout.VERTICAL);
         content.addView(history);
         String[] source = {readBundledHistory(context)};
+        allFeatures.setOnClickListener(view -> showAllFeatures(activity,source[0]));
         Runnable render = () -> renderReleases(history, activity, source[0], development.isChecked());
         development.setOnCheckedChangeListener((button,on) -> render.run());
         render.run();
@@ -93,6 +97,31 @@ final class UpdateHistory {
                 .setView(scroll).setPositiveButton("閉じる", null).show();
     }
 
+    static void showAllFeatures(Activity activity) {
+        showAllFeatures(activity,readBundledHistory(SettingsTabUi.context(activity)));
+    }
+
+    private static void showAllFeatures(Activity activity,String source) {
+        Context context=SettingsTabUi.context(activity);
+        LinearLayout body=new LinearLayout(context);body.setOrientation(LinearLayout.VERTICAL);
+        int pad=Math.round(16*context.getResources().getDisplayMetrics().density);body.setPadding(pad,pad,pad,pad);
+        TextView help=new TextView(context);help.setText("追加された機能を目的別にまとめています。スイッチは変更すると自動保存され、通常の設定画面にも反映されます。詳しい説明は下にあります。");body.addView(help);
+        for(String category:new String[]{"アプリ・通信","表示・検索","画像・動画","NG・文字列置換","履歴・投稿"}) {
+            section(body,activity,category);
+            for(ReleaseFeatureOptions.Option option:ReleaseFeatureOptions.Option.values()) {
+                if(!category.equals(option.category()))continue;
+                addFeatureSetting(body,activity,option);
+                TextView explanation=new TextView(context);explanation.setText(option.description());explanation.setTextSize(13);
+                explanation.setPadding(0,0,0,pad/2);body.addView(explanation);
+            }
+        }
+        section(body,activity,"追加機能の詳しい説明（1.24.1以降）");
+        TextView descriptions=new TextView(context);descriptions.setText(formatHistory(context,ReleaseHistoryText.addedFeatures(source)));
+        descriptions.setTextSize(14);descriptions.setTextIsSelectable(true);descriptions.setMovementMethod(LinkMovementMethod.getInstance());body.addView(descriptions);
+        ScrollView scroll=new ScrollView(context);scroll.addView(body);
+        new HaiagaruDialog.Builder(activity).setTitle("追加機能一覧").setView(scroll).setPositiveButton("閉じる",null).show();
+    }
+
     private static void renderReleases(LinearLayout content, Activity activity, String source, boolean includeDevelopment) {
         Context context = SettingsTabUi.context(activity);
         content.removeAllViews();boolean first=true;
@@ -104,19 +133,20 @@ final class UpdateHistory {
             heading.setAllCaps(false);
             String title=release.version+"  ·  "+release.date+(release.development?"  開発版":"  安定版");
             TextView details=new TextView(context);
-            details.setText(formatHistory(context,release.notes));
+            details.setText(formatHistory(context,ReleaseHistoryText.displayNotes(release)));
             details.setTextSize(14);details.setTextIsSelectable(true);
             details.setLineSpacing(3*context.getResources().getDisplayMetrics().density,1f);
             details.setMovementMethod(LinkMovementMethod.getInstance());
             details.setPadding(0,8,0,24);
             LinearLayout body = new LinearLayout(context);
             body.setOrientation(LinearLayout.VERTICAL);
-            body.addView(details);
             java.util.List<ReleaseFeatureOptions.Option> options = ReleaseFeatureOptions.forRelease(release, visible);
             if (!options.isEmpty()) {
-                section(body, activity, "この版で追加・拡充された機能の設定");
+                section(body, activity, "機能の設定");
                 for (ReleaseFeatureOptions.Option option : options) addFeatureSetting(body, activity, option);
             }
+            section(body, activity, "更新内容");
+            body.addView(details);
             body.setVisibility(first?View.VISIBLE:View.GONE);
             heading.setText((first?"▼ ":"▶ ")+title);
             heading.setOnClickListener(view -> {
@@ -273,9 +303,9 @@ final class UpdateHistory {
         SiteBoardGateway gateway = SiteBoardGateway.get(activity);
         LiveSettings.Toggle site = new LiveSettings.Toggle(activity);
         site.setText(SiteBoardMenuProtocol.title(kind) + "の閲覧・板一覧");
-        site.setChecked(gateway.siteEnabled(kind));
-        site.setOnCheckedChangeListener((view, on) ->
-                gateway.prefs.edit().putBoolean(SiteBoardGateway.siteFlag(kind), on).apply());
+        String key=SiteBoardGateway.siteFlag(kind);
+        bindToggle(site,gateway.prefs,key,()->gateway.siteEnabled(kind),
+                on->gateway.prefs.edit().putBoolean(key,on).apply());
         content.addView(site);
     }
 
@@ -293,8 +323,7 @@ final class UpdateHistory {
                                String label, String key, boolean initial, Runnable effect) {
         LiveSettings.Toggle toggle = new LiveSettings.Toggle(activity);
         toggle.setText(label);
-        toggle.setChecked(prefs.getBoolean(key, initial));
-        toggle.setOnCheckedChangeListener((view, on) -> {
+        bindToggle(toggle,prefs,key,()->prefs.getBoolean(key,initial),on -> {
             prefs.edit().putBoolean(key, on).apply();
             if (effect != null) effect.run();
             if (prefs == SettingsProfiles.prefs(activity)) SettingsEffects.changed(activity, key, on);
@@ -306,12 +335,29 @@ final class UpdateHistory {
                                      String label, int bit) {
         LiveSettings.Toggle toggle = new LiveSettings.Toggle(activity);
         toggle.setText(label);
-        toggle.setChecked((prefs.getInt(PostingIpWarning.KEY, 0) & bit) != 0);
-        toggle.setOnCheckedChangeListener((view, on) -> {
+        bindToggle(toggle,prefs,PostingIpWarning.KEY,()->(prefs.getInt(PostingIpWarning.KEY,0)&bit)!=0,on -> {
             int flags = prefs.getInt(PostingIpWarning.KEY, 0);
             prefs.edit().putInt(PostingIpWarning.KEY, on ? flags | bit : flags & ~bit).apply();
         });
         content.addView(toggle);
+    }
+
+    private static void bindToggle(LiveSettings.Toggle toggle,SharedPreferences prefs,String key,
+                                   java.util.function.BooleanSupplier read,java.util.function.Consumer<Boolean> write) {
+        boolean[] updating={false};
+        Runnable refresh=()->{
+            updating[0]=true;
+            try{toggle.setChecked(read.getAsBoolean());}finally{updating[0]=false;}
+        };
+        refresh.run();
+        toggle.setOnCheckedChangeListener((view,on)->{if(!updating[0])write.accept(on);});
+        SharedPreferences.OnSharedPreferenceChangeListener listener=(changed,name)->{
+            if(name==null||key.equals(name))refresh.run();
+        };
+        toggle.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
+            public void onViewAttachedToWindow(View view){prefs.registerOnSharedPreferenceChangeListener(listener);refresh.run();}
+            public void onViewDetachedFromWindow(View view){prefs.unregisterOnSharedPreferenceChangeListener(listener);}
+        });
     }
 
     static String readBundledHistory(Context context) {

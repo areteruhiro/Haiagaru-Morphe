@@ -175,6 +175,9 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                                 SettingsHomeAction(if (english) "Haiagaru update history" else "Haiagaru更新履歴") {
                                     UpdateHistory.show(this@HaiagaruSettingsActivity)
                                 }
+                                SettingsHomeAction(if (english) "See all added features" else "追加された機能をすべて見る") {
+                                    UpdateHistory.showAllFeatures(this@HaiagaruSettingsActivity)
+                                }
                             }
                         }
                         item {
