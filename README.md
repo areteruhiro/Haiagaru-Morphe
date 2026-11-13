@@ -14,6 +14,10 @@ ChMateに設定・閲覧・検索・NG・バックアップ機能を追加する
 このREADMEは現在のソースに対応します。公開済みの内容は上のリリース説明で確認してください。開発ブランチの変更が公開前の場合もあります。従来の機能紹介は[Haiagaru](https://github.com/areteruhiro/Haiagaru)も参照できます。
 
 ## 導入と更新
+
+[導入方法(動画)](https://www.youtube.com/watch?v=ZiFHjQon694)
+
+
 0. [Moephe](https://morphe.software/)をインストール 
 1. 更新前にChMateの設定・必要なログをバックアップします。`.haiagaru`の設定共有ファイルだけでは、スレ本文や全履歴のバックアップにはなりません。
 2. Morpheへ[Haiagaruのパッチソースを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)します。
