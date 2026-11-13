@@ -1,3 +1,9 @@
+# Haiagaru 1.30.2 (2026-11-13)
+
+### 修正
+
+- add Hissi menu visibility option
+
 # Haiagaru 1.30.1 (2026-11-13)
 
 ### 修正
