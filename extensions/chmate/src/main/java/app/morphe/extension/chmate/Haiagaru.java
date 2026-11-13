@@ -1456,6 +1456,7 @@ public final class Haiagaru {
     /** Keeps ChMate's explicit self-navigation inside an optionally renamed installation. */
     public static Intent retargetSelfIntent(Intent intent) {
         if (intent == null) return null;
+        if (StockChmatePosting.isHandoff(intent)) return intent;
         ExternalWebSearch.prepare(intent);
         ComponentName component = intent.getComponent();
         String currentPackage = runtimePackageName;

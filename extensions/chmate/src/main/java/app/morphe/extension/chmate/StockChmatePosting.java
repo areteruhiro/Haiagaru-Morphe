@@ -18,6 +18,7 @@ import java.util.WeakHashMap;
 public final class StockChmatePosting {
     private static final String PACKAGE = "jp.co.airfront.android.a2chMate";
     private static final String EDITOR = "jp.syoboi.a2chMate.activity.ResEditActivity";
+    private static final String HANDOFF = "app.morphe.extension.chmate.STOCK_POST_DRAFT";
     private static final int MENU = 0x48690062;
     private static final Map<Activity, Draft> DRAFTS = new WeakHashMap<>();
     private static final Map<MenuItem, WeakReference<Activity>> MENUS = new WeakHashMap<>();
@@ -88,9 +89,18 @@ public final class StockChmatePosting {
     static Intent intent(String target, String body, String subject) {
         StockChmatePostingRules.validate(target, body, subject);
         Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(target))
-                .setClassName(PACKAGE, EDITOR).putExtra(Intent.EXTRA_TEXT, body);
+                .setClassName(PACKAGE, EDITOR).putExtra(Intent.EXTRA_TEXT, body).putExtra(HANDOFF, true);
         if (StockChmatePostingRules.newThread(target)) intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         return intent;
+    }
+
+    /** Preserve only this explicit external editor request across native self-navigation wrappers. */
+    static boolean isHandoff(Intent intent) {
+        if (intent == null || !intent.getBooleanExtra(HANDOFF, false)
+                || !Intent.ACTION_SENDTO.equals(intent.getAction())
+                || !new android.content.ComponentName(PACKAGE, EDITOR).equals(intent.getComponent())) return false;
+        String target = StockChmatePostingRules.target(intent.getDataString());
+        return target != null && target.equals(intent.getDataString());
     }
 
     private static void confirm(Activity activity) {

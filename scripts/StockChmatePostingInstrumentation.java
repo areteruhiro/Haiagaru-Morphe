@@ -55,7 +55,16 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
             ok((thread?BOARD:REPLY).equals(intent.getDataString()),"exact native destination");
             ok(BODY.equals(intent.getStringExtra(Intent.EXTRA_TEXT)),"Unicode and newlines preserved");
             ok(thread?TITLE.equals(intent.getStringExtra(Intent.EXTRA_SUBJECT)):!intent.hasExtra(Intent.EXTRA_SUBJECT),"subject only for new threads");
-            ok(intent.getFlags()==0 && intent.getExtras().size()==(thread?2:1),"no auto-submit/result or cookie extras");
+            ok(intent.getFlags()==0 && intent.getExtras().size()==(thread?3:2),"only draft fields and handoff marker, no auto-submit or cookies");
+            Method retarget=getTargetContext().getClassLoader().loadClass("app.morphe.extension.chmate.Haiagaru").getMethod("retargetSelfIntent",Intent.class);
+            Intent preserved=(Intent)retarget.invoke(null,new Intent(intent));
+            ok(intent.getComponent().equals(preserved.getComponent()),"handoff survives native self-navigation retargeting");
+            Intent ordinary=new Intent(intent);ordinary.removeExtra("app.morphe.extension.chmate.STOCK_POST_DRAFT");
+            ordinary=(Intent)retarget.invoke(null,ordinary);
+            ok(getTargetContext().getPackageName().equals(ordinary.getComponent().getPackageName()),"ordinary self-navigation still targets renamed app");
+            Intent unrelated=new Intent(intent).setData(android.net.Uri.parse("https://example.invalid/"));
+            unrelated=(Intent)retarget.invoke(null,unrelated);
+            ok(getTargetContext().getPackageName().equals(unrelated.getComponent().getPackageName()),"marker does not exempt unrelated destinations");
         }
     }
     @SuppressWarnings("unchecked")
@@ -63,9 +72,11 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
         Context app=getTargetContext();
         ActivityMonitor monitor=addMonitor("jp.syoboi.a2chMate.activity.ResEditActivity",null,false);
         try {
-            app.startActivity(new Intent(Intent.ACTION_SENDTO,android.net.Uri.parse(thread?BOARD:REPLY))
+            Intent source = new Intent(Intent.ACTION_SENDTO,android.net.Uri.parse(thread?BOARD:REPLY))
                 .setClassName(app.getPackageName(),"jp.syoboi.a2chMate.activity.ResEditActivity")
-                .putExtra(Intent.EXTRA_TEXT,BODY).putExtra(Intent.EXTRA_SUBJECT,TITLE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                .putExtra(Intent.EXTRA_TEXT,BODY).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if(thread)source.putExtra(Intent.EXTRA_SUBJECT,TITLE);
+            app.startActivity(source);
             editor=waitForMonitorWithTimeout(monitor,20000);
         } finally {removeMonitor(monitor);}
         ok(editor!=null,"native source editor opens");
@@ -108,14 +119,24 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
         Bitmap screenshot=getUiAutomation().takeScreenshot();
         if(screenshot!=null)try(FileOutputStream out=new FileOutputStream(new File(getContext().getExternalFilesDir(null),"stock-posting-"+(thread?"thread":"reply")+".png"))){screenshot.compress(Bitmap.CompressFormat.PNG,100,out);}
     }
+    private void receiverOnly(boolean thread) throws Exception {
+        Intent intent=(Intent)method("intent",String.class,String.class,String.class).invoke(null,thread?BOARD:REPLY,BODY,thread?TITLE:null);
+        getTargetContext().startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        waitText(BODY,true);
+        AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+        ok(root!=null && "jp.co.airfront.android.a2chMate".contentEquals(root.getPackageName()),"unmodified stock editor receives explicit draft");
+        if(thread)waitText(TITLE,true);
+    }
     @Override public void onCreate(Bundle args){super.onCreate(args);mode=args==null?"success":args.getString("mode","success");start();}
     @Override public void onStart(){
         Bundle result=new Bundle();int status=Activity.RESULT_CANCELED;
         try {
             ok(getTargetContext().getPackageName().endsWith(".cookietransfer191"),"dedicated test package only");
             type=getTargetContext().getClassLoader().loadClass("app.morphe.extension.chmate.StockChmatePosting");
-            checkIntent();open(false);handoff(false);
-            if(!mode.equals("missing")){main(()->{editor.finish();return null;});open(true);handoff(true);}
+            checkIntent();
+            if(mode.equals("receiver")){receiverOnly(false);receiverOnly(true);}
+            else {open(false);handoff(false);
+                if(!mode.equals("missing")){main(()->{editor.finish();return null;});open(true);handoff(true);}}
             result.putString("result","PASS "+checks+" native draft/Intent/confirmation checks; mode="+mode+"; public posts=0; root=0");status=Activity.RESULT_OK;
         } catch(Throwable error){result.putString("error",android.util.Log.getStackTraceString(error));}
         finally{if(editor!=null)try{main(()->{editor.finish();return null;});}catch(Exception ignored){}}

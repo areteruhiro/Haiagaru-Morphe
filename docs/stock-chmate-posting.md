@@ -25,6 +25,7 @@ root、Shizuku、プロキシ、CA追加は不要。
 - data: ネイティブ編集モデルから得た `https://bbs.eddibb.cc/liveedge/` または同ホストの `/test/read.cgi/liveedge/{正のスレID}/`
 - `Intent.EXTRA_TEXT`: 現在の本文。改行・Unicode・引用をそのまま渡す。
 - `Intent.EXTRA_SUBJECT`: スレ作成時の現在のスレタイのみ。
+- 連携用のbooleanマーカーを追加。パッケージ変更版の自己画面遷移補正は、マーカー・action・通常版の固定Component・正規化済みエッヂURLがすべて一致する場合に限り、このIntentを通常版へ保持する。
 - 本文は128 Ki文字、スレタイは改行なし1024文字まで。超過時に切り詰めず停止する。
 - URIのuserinfo・別ホスト・別ポート・query・fragmentを拒否。本文内URLから投稿先を決定しない。
 - アプリ未導入・無効化・起動拒否時は、別アプリへフォールバックせず下書きを保持して案内する。
