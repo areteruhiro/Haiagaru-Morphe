@@ -189,7 +189,10 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) }
                         items(groups, key = { it.id }) { group ->
-                            SettingsHomeCard(onClick = { selected = groups.indexOf(group) }, padded = false) {
+                            SettingsHomeCard(onClick = {
+                                if (group.id == "updates") UpdateHistory.show(this@HaiagaruSettingsActivity)
+                                else selected = groups.indexOf(group)
+                            }, padded = false) {
                                 ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium) },
                                     supportingContent = { Text(if (english) group.enSummary else group.summary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     leadingContent = { Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
@@ -265,6 +268,7 @@ private fun settingsGroups() = listOf(
     SettingsGroup("ng", "NG・ミュート", "NG and muting", "見たくない投稿・ID・名前を隠す", "Hide unwanted posts, IDs and names", "−", listOf("NG")),
     SettingsGroup("history", "履歴・コピーした記事", "History and copied text", "閲覧・書き込みの履歴と保存件数", "Browsing, posting and retention", "↶", listOf("HISTORY")),
     SettingsGroup("backup", "バックアップ・機種変更", "Backup and transfer", "ローカル保存・復元・MEGA同期・データ移行", "Local backups, restore, MEGA sync and transfer", "↓", listOf("BACKUP")),
+    SettingsGroup("updates", "Haiagaru更新履歴", "Haiagaru update history", "安定版の変更点・GitHubから最新履歴を取得", "Release changes and latest history from GitHub", "↻", emptyList()),
     SettingsGroup("system", "アプリ・通信", "App and network", "言語・広告・接続・外部板の認証", "Language, ads, connections and board sign-in", "⚙", listOf("GENERAL", "ADVANCED")),
     SettingsGroup("expert", "エキスパート設定", "Expert settings", "個別の動作を細かく切り替える", "Control additional behaviors individually", "⚙", listOf("EXPERT")),
 )
