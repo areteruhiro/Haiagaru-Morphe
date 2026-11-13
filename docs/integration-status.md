@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-13 Haiagaru 1.27.3公式Release公開完了: 更新履歴をHaiagaru設定トップの共有・読み込みより上へ配置し、一括オンオフ欄を廃止。22コントロールを版ごとの開閉内へ移し、既存設定リンクの入口を保持。エッヂ・オルグ板のHTTP正規化URLを標準providerで分類し、爆サイ等と同じサイト別項目に表示。過去37種類の英語コミット説明を日本語化し、今後の公開文は既存generatorの日本語headerのみから生成。版別231／履歴19／分類49項目成功、公開文generatorの英語ダミー除外試験成功。初回Lint/R8 build4m2s成功、最終ソースのRelease CI43363586596のRelease／Attest成功。生成f41000e5、正式版draft=false／prerelease=false、公開6assetのSHA256一致、master/main両JSONの全項目一致と追加20／変更修正35項目を確認。端末操作は省略指示に従い実施せず。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.3
+
 2026-11-13 更新履歴の配置・版別設定と標準サイト分類（公式Release候補）: 更新履歴をHaiagaru設定トップの共有・読み込みより上へ移し、旧一括オンオフ欄を撤去。既存22コントロールを追加・拡充版の開閉内に配置し、安定版／devの重複を防止。エッヂ・オルグ板はnative BoardIDのHTTP正規化にprovider条件を合わせ、爆サイ等と同じ標準分類へ。取得HTTPS／保存ID／任意グループ設定は維持。版別231・履歴10・分類49項目成功、新規native hookなし。実機操作は検証省略指示により行わず。詳細docs/history-options-site-groups-20261113.md。
 
 2026-11-13 Haiagaru 1.27.1公式Release公開完了: エッヂの無題カテゴリ補正・オルグ板への表示名変更・共有NG初期報告数2と既存1の一度だけの移行を公開。移行49／条件判定98項目成功、通常Lint/R8 build3m10s成功。新規native hookなし、端末操作は利用者指示により省略。dev Release43357246418／master Release43357840013とBuild43357840058成功。正式版draft=false／prerelease=false、配布6assetのSHA256がGitHub digestと一致、Morphe JSONの追加20／変更修正32項目とmaster/main両JSONフィード全項目一致を確認。生成a8b9fa5d、https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.1
