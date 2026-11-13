@@ -127,7 +127,9 @@ public final class StockChmatePosting {
         } catch (IllegalArgumentException invalid) { message(activity, "入力内容を確認", invalid.getMessage()); return; }
         catch (Exception unavailable) { message(activity, "通常版へ渡せません", "下書きを保存できませんでした。入力欄の内容を確認してから再試行してください。"); return; }
         try {
-            activity.startActivity(intent);
+            // Native ChMate activities can intercept SENDTO and reopen their own editor.
+            // Use the standard Application context for the external stock-app task.
+            activity.getApplicationContext().startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Toast.makeText(activity, "通常版で内容を確認して送信してください。Haiagaruの下書きは残ります。", Toast.LENGTH_LONG).show();
         } catch (ActivityNotFoundException | SecurityException unavailable) {
             message(activity, "通常版ChMateを開けません", "同じユーザー領域に通常版ChMateをインストール・有効化してください。Haiagaruの下書きは保持しています。");

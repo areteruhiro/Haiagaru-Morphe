@@ -57,6 +57,11 @@ public final class VerifyStockChmatePostingBindings {
                 if(!actual.equals(List.of(binding.toString(),title.toString())))throw new AssertionError("Generated title bridge differs from native save");
                 for(String removed:List.of("EdgeCookieReceiver","EdgeCookieTransfer"))if(classes.containsKey("Lapp/morphe/extension/chmate/"+removed+";"))throw new AssertionError("Obsolete cookie receiver retained");
                 for(var m:classes.get("Lapp/morphe/extension/chmate/ExternalBoardAuth;").getMethods())if(m.getName().equals("persistTransferredCookies") || m.getName().equals("importTransferredCookies"))throw new AssertionError("Obsolete import bridge retained");
+                boolean guarded=false;
+                for(var m:classes.get("Lapp/morphe/extension/chmate/Haiagaru;").getMethods())if(m.getName().equals("retargetSelfIntent"))
+                    for(var instruction:m.getImplementation().getInstructions())if(instruction instanceof ReferenceInstruction r && r.getReference() instanceof MethodReference ref
+                        && ref.getDefiningClass().equals("Lapp/morphe/extension/chmate/StockChmatePosting;") && ref.getName().equals("isHandoff"))guarded=true;
+                if(!guarded)throw new AssertionError("Stock handoff would be retargeted to the renamed app");
             }
             System.out.println("PASS "+path+" title="+title+" patched="+patched);
         }

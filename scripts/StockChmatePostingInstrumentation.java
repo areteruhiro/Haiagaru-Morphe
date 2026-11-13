@@ -38,7 +38,15 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
     }
     private void waitText(String text, boolean editable) throws Exception {
         for(int i=0;i<60;i++){if(find(getUiAutomation().getRootInActiveWindow(),text,editable)!=null){checks++;return;}Thread.sleep(200);}
-        throw new AssertionError("Missing visible text: "+text);
+        throw new AssertionError("Missing visible text: "+text+"; visible="+describe(getUiAutomation().getRootInActiveWindow()));
+    }
+    private String describe(AccessibilityNodeInfo node) {
+        if(node==null)return "<no window>";
+        StringBuilder out=new StringBuilder();
+        if(node.getText()!=null)out.append('[').append(node.getText()).append(']');
+        if(node.getPackageName()!=null)out.append('{').append(node.getPackageName()).append('}');
+        for(int i=0;i<node.getChildCount() && out.length()<3000;i++)out.append(describe(node.getChild(i)));
+        return out.toString();
     }
     private void click(String text) throws Exception {
         AccessibilityNodeInfo node=find(getUiAutomation().getRootInActiveWindow(),text,false);
@@ -117,7 +125,7 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
         if(thread)waitText(TITLE,true);
         ok(main(()->BODY.equals(body.getText().toString()) && !editor.isFinishing()),"handoff retains source draft without claiming success");
         Bitmap screenshot=getUiAutomation().takeScreenshot();
-        if(screenshot!=null)try(FileOutputStream out=new FileOutputStream(new File(getContext().getExternalFilesDir(null),"stock-posting-"+(thread?"thread":"reply")+".png"))){screenshot.compress(Bitmap.CompressFormat.PNG,100,out);}
+        if(screenshot!=null)try(FileOutputStream out=new FileOutputStream(new File(getTargetContext().getExternalFilesDir(null),"stock-posting-"+(thread?"thread":"reply")+".png"))){screenshot.compress(Bitmap.CompressFormat.PNG,100,out);}
     }
     private void receiverOnly(boolean thread) throws Exception {
         Intent intent=(Intent)method("intent",String.class,String.class,String.class).invoke(null,thread?BOARD:REPLY,BODY,thread?TITLE:null);
