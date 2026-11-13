@@ -1,5 +1,11 @@
 # 主開発先と統合状況
 
+2026-11-13 共有NGの必要な報告数（公式Release候補）: 初期値2へ変更し、既存1／不正値は一度だけ2へ移行。2以上・有効状態・例外を保持し、移行後の手動1設定も維持。移行49項目成功。既存native hook／サーバーの票数は変更せず、端末検証は利用者指示により省略。エッヂ・オルグ板修正と同時公開予定。
+
+2026-11-13 エッヂ無題フォルダ・オルグ板（公式Release候補）: BBSMENU変換が見出しとリンクを同一行へ出し、nativeのリンク優先パーサーでカテゴリが欠ける経路を修正。既存の空／無題カテゴリは表示データでエッヂへ補正し、板ID・保存ログを保持。kenmo.org／00c.orgのprovider・サイト別グループをオルグ板に統一。旧名／ドメイン検索・設定リンクも維持。BBSMENU57・検索49・設定リンク66項目成功、Lint/R8 build3m10s成功。新規native hookなし。詳細docs/edge-folder-org-20261113.md。
+
+2026-11-13 Haiagaru 1.27.0公式Release公開完了: devのCI43351733875とmasterのCI43352522562がRelease／Attest成功。追加20項目の下に変更・修正29項目を置いた、1.24.1以降の安定版全差分をMorphe用descriptionへ反映。公開JSON2個の全49項目・バージョン見出し・配布URL・GitHub digestと、master/mainの両フィード4経路の1.27.0を確認。main rawの初回キャッシュは再取得で解消。正式版prerelease=false／draft=false。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.0
+
 2026-11-13 設定検索・ﾜｯﾁｮｲ検索・更新履歴（公式Release候補）: 設定名を変えず、本体／Haiagaru検索へ別表記を適用。ネイティブのOR検索で共通のﾜｯﾁｮｲ見出しだけに一致する不具合を、識別文字列を含むAND条件で修正。設定トップのバックアップ直後にHaiagaru更新履歴を追加し、版別開閉・安定版／dev切替・GitHub取得へ対応。Morphe用には.releaserc生成元へ安定版1.24.1からの全差分を日本語で記載。別表記37・検索305・履歴10＋新文面10項目成功、3版の設定検索モデルと元レジスター形式を照合。詳細docs/settings-search-history-20261113.md。
 
 2026-11-13 Haiagaru 1.26.0公式Release公開完了: 更新履歴内のMarkdownを版／節／箇条書き／リンクとして表示し、機能設定をアプリ・表示・画像／動画・NG・履歴／投稿に分類。同じ設定値を各Haiagaruカテゴリへ置き、設定履歴側の保存先も機能本来のSharedPreferencesへ統一。未設定のエッヂ・けんも板・爆サイ・ふたば・あにまんを初期ON、既存のサイト別OFFは保持。エッヂ板一覧は公開ページを直接BBSMENUとして読み、けんも板はkenmo.org/00c.orgのBBSMENUを標準providerへ追加。動作確認・実機導入は利用者指示により省略。既存Semantic Release CI 43280808286がRelease／Attest成功。1.26.0: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.26.0

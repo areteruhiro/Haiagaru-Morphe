@@ -31,3 +31,11 @@ Morphe用のdescriptionは既存Semantic Releaseの.releasercのheaderPartialか
 - 端末への導入・実機操作は今回行っていません。
 
 ローカルのログとプレビューはbuild/search-history-20261113/およびbuild/search-history-20261113-*-build.logに保存します。
+
+## 公式公開
+
+1.27.0を既存Semantic Release CI43352522562で公開。Release／Attest成功（3分37秒）、prerelease=false／draft=false。devのCI43351733875も成功し、masterへの通常マージ後にmain/devへ自動反映しました。
+
+公開JSON2個は1.27.0／正しいMPPのURLを持ち、追加20項目→変更・修正29項目の順序と1.25.0／1.26.0／1.27.0の安定版見出しを確認。両JSONのGitHub digestは741993c91b1bf75b93ae5c2d91225eaa576efc47d0d19786270bbb3f8c4bece6。Windows作業ツリーの改行との差はJSONの全プロパティ比較で確認しています。master/mainの両JSONフィード計4経路も1.27.0へ反映済みです。main rawの初回応答は古いキャッシュでしたが、再取得では最新内容へ更新されました。公開メタデータの証跡はbuild/release-1.27.0-verify/に保存。
+
+公開先: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.27.0

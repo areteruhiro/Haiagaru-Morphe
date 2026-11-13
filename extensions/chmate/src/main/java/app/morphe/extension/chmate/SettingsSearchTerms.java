@@ -25,6 +25,7 @@ public final class SettingsSearchTerms {
         {"session", "セッション"}, {"login", "ログイン", "サインイン"},
         {"sync", "synchronize", "同期"}, {"wifi", "wi-fi", "wi fi", "ワイファイ"},
         {"edge", "エッヂ", "エッジ"}, {"twitter", "ツイッター"},
+        {"orgboard", "オルグ板", "オルグ", "けんも板", "kenmo.org", "kenmo", "00c.org"},
         {"menu", "メニュー"}, {"tab", "tabs", "タブ"}, {"scroll", "スクロール"},
         {"account", "アカウント"}, {"id", "アイディー", "アイディ"},
         {"on", "オン"}, {"off", "オフ"}
@@ -61,6 +62,10 @@ public final class SettingsSearchTerms {
         return result.toString();
     }
     static boolean matches(String labels, String query) {
+        // Preserve partial searches in the original label as well as aliases.
+        String original=fold(labels), literal=fold(query);boolean direct=true;
+        for(String word:literal.split("\\s+"))if(!original.contains(word)){direct=false;break;}
+        if(direct)return true;
         String text = normalize(labels), terms = normalize(query);
         if (terms.isEmpty()) return true;
         for (String word : terms.split("\\s+")) if (!text.contains(word)) return false;
