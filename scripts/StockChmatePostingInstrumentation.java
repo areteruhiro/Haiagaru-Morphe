@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 
 /** Dedicated test app + stock ChMate on an isolated emulator. Never clicks a send button. */
 public final class StockChmatePostingInstrumentation extends Instrumentation {
-    private static final String REPLY = "https://bbs.eddibb.cc/test/read.cgi/liveedge/179459598099999/";
+    private static final String REPLY = "https://bbs.eddibb.cc/test/read.cgi/liveedge/9999999999/";
     private static final String BOARD = "https://bbs.eddibb.cc/liveedge/";
     private static final String BODY = "連携確認専用・送信しない\n>>1\n改行と絵文字😀\n\nhttps://example.invalid/";
     private static final String TITLE = "連携確認専用スレタイ・送信しない";
@@ -75,7 +75,8 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
         ok(draft!=null,"real native editor registered by production hook");
         owner=((WeakReference<?>)field(draft.getClass(),"owner").get(draft)).get();
         body=(EditText)((WeakReference<?>)field(draft.getClass(),"body").get(draft)).get();
-        ok((thread?BOARD:REPLY).equals(field(draft.getClass(),"target").get(draft)),"hook uses correct reply/board target");
+        Object actualTarget=field(draft.getClass(),"target").get(draft);
+        ok((thread?BOARD:REPLY).equals(actualTarget),"hook uses correct reply/board target: "+actualTarget);
         main(()->{body.setText(BODY);return null;});
         if(thread)ok(TITLE.equals(main(()->owner.getClass().getMethod("haiagaruStockPostTitle").invoke(owner))),"native title getter reads visible source title");
         main(()->{

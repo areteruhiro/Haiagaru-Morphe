@@ -99,7 +99,6 @@ public final class ExternalBoardAuth {
     }
     public static void target(Object owner, String url) { target(owner,url,null); }
     public static void target(Object owner, String url, EditText body) {
-        StockChmatePosting.target(owner,url,body);
         if(url!=null && url.startsWith("http://")) url="https://"+url.substring(7);
         Activity a=activity(owner);
         if(a!=null && !BoardAuthRules.origin(url).isEmpty()) {
