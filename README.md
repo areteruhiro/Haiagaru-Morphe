@@ -17,7 +17,18 @@ ChMateに設定・閲覧・検索・NG・バックアップ機能を追加する
 
 1. 更新前にChMateの設定・必要なログをバックアップします。`.haiagaru`の設定共有ファイルだけでは、スレ本文や全履歴のバックアップにはなりません。
 2. Morpheへ[Haiagaruのパッチソースを追加](https://morphe.software/add-source?github=areteruhiro/Haiagaru-Morphe&name=Haiagaru)します。
-3. 対応する元APKを選び、`Haiagaru`を適用します。動画専用ビューア、MEGA、パッケージ名変更などの任意パッチは用途に合わせて選択します。
+
+3. 対応する元APKをダウンロード<br>
+242dev<br>
+https://2chmate.jp.uptodown.com/android/dw/1173615239
+
+226dev<br>
+https://2chmate.jp.uptodown.com/android/dw/1112290912
+
+191dev<br>
+https://2chmate.jp.uptodown.com/android/dw/1024004246
+
+`Haiagaru`を適用します。動画専用ビューア、MEGA、パッケージ名変更などの任意パッチは用途に合わせて選択します。
 4. 作成したAPKをインストールします。上書き更新では、既存アプリと**パッケージ名・署名鍵をそろえてください**。
 5. ChMateの設定を開き、**「セーフモード」の直前にある「Haiagaru設定」**から追加機能を設定します。旧版で表示されていた浮動ボタンは、設定画面内の入口へ置き換わります。
 
