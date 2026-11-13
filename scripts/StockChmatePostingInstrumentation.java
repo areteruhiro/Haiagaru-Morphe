@@ -54,6 +54,14 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
         ok(node!=null && node.performAction(AccessibilityNodeInfo.ACTION_CLICK),"click "+text);
         Thread.sleep(350);
     }
+    private void waitStock() throws Exception {
+        for(int i=0;i<60;i++){
+            AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+            if(root!=null && "jp.co.airfront.android.a2chMate".contentEquals(root.getPackageName()) && find(root,BODY,true)!=null){checks++;return;}
+            Thread.sleep(200);
+        }
+        throw new AssertionError("Stock editor did not receive draft; visible="+describe(getUiAutomation().getRootInActiveWindow()));
+    }
     private void checkIntent() throws Exception {
         Method factory=method("intent",String.class,String.class,String.class);
         for(boolean thread:new boolean[]{false,true}){
@@ -119,7 +127,7 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
             ok(main(()->BODY.equals(body.getText().toString()) && !editor.isFinishing()),"missing stock retains draft");
             click("閉じる");return;
         }
-        waitText(BODY,true);
+        waitStock();
         AccessibilityNodeInfo receiver=getUiAutomation().getRootInActiveWindow();
         ok(receiver!=null && "jp.co.airfront.android.a2chMate".contentEquals(receiver.getPackageName()),"stock app receives draft");
         if(thread)waitText(TITLE,true);
@@ -130,7 +138,7 @@ public final class StockChmatePostingInstrumentation extends Instrumentation {
     private void receiverOnly(boolean thread) throws Exception {
         Intent intent=(Intent)method("intent",String.class,String.class,String.class).invoke(null,thread?BOARD:REPLY,BODY,thread?TITLE:null);
         getTargetContext().startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        waitText(BODY,true);
+        waitStock();
         AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
         ok(root!=null && "jp.co.airfront.android.a2chMate".contentEquals(root.getPackageName()),"unmodified stock editor receives explicit draft");
         if(thread)waitText(TITLE,true);
