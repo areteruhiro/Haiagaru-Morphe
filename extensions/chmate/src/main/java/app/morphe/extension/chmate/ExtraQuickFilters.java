@@ -751,6 +751,29 @@ public final class ExtraQuickFilters {
             return true;
         }catch(Exception e){Log.w("Haiagaru","Extended filter dialog",e);return false;}
     }
+    /** Dispatch the ChMate body gesture to the one visible thread fragment in this pane. */
+    static boolean openFromGesture(View source) {
+        Activity activity = activity(source == null ? null : source.getContext());
+        if (activity == null) return true;
+        try {
+            Object fragment = visibleFragment(activity);
+            if (fragment == null || !open(fragment)) {
+                Toast.makeText(activity, "スレ画面でフィルターを開けませんでした", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception error) {
+            Log.w("Haiagaru", "Gesture filter dispatch failed", error);
+            Toast.makeText(activity, "スレ画面でフィルターを開けませんでした", Toast.LENGTH_SHORT).show();
+        }
+        return true;
+    }
+    private static Activity activity(Context context) {
+        while (context instanceof android.content.ContextWrapper && !(context instanceof Activity)) {
+            Context next = ((android.content.ContextWrapper) context).getBaseContext();
+            if (next == context) break;
+            context = next;
+        }
+        return context instanceof Activity ? (Activity) context : null;
+    }
     private static boolean imageList(Object a) {return QuickFilterToolbar.openImageList(a);}
     /** Read the visible thread only, at media launch time; no scrolling-time scans or URL cache. */
     static ArrayList<String> threadMedia(Context context,String selected) {

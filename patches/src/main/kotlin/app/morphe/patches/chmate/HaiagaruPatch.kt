@@ -4973,6 +4973,12 @@ val haiagaruPatch = resourcePatch(
                 refreshTabs.setAttributeNS("http://schemas.android.com/apk/res/android", "android:defaultValue", "0")
                 refreshTabs.setAttributeNS("http://schemas.android.com/apk/res/android", "android:summary", "タブレット表示の両ペインのタブを更新します。未使用のジェスチャーを割り当ててください")
                 anchor.parentNode.insertBefore(refreshTabs, deleteRead.nextSibling)
+                val quickFilters = settings.createElement("jp.syoboi.a2chMate.ui.setting.preference.gesture.GesturePreference")
+                quickFilters.setAttributeNS("http://schemas.android.com/apk/res/android", "android:title", "フィルター")
+                quickFilters.setAttributeNS("http://schemas.android.com/apk/res/android", "android:key", "haiagaruGestureQuickFilters")
+                quickFilters.setAttributeNS("http://schemas.android.com/apk/res/android", "android:defaultValue", "0")
+                quickFilters.setAttributeNS("http://schemas.android.com/apk/res/android", "android:summary", "人気レス・画像・動画などのレスフィルターを開きます。未使用のジェスチャーを割り当ててください")
+                anchor.parentNode.insertBefore(quickFilters, refreshTabs.nextSibling)
             }
         }
         if (replaceImageNgTflite && imageNgLibraryFile.value.orEmpty().isNotBlank() && packageMetadata.versionName == "0.8.10.191 dev") {
