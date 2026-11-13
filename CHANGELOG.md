@@ -1,3 +1,9 @@
+# Haiagaru 1.29.1 (2026-11-13)
+
+### 修正
+
+- rename refresh history target tab
+
 # Haiagaru 1.29.0-dev.1 (2026-11-13)
 
 ### 追加機能
