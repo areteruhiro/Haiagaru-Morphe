@@ -8,7 +8,7 @@ public final class ReleaseHistoryTextTest {
         var releases=ReleaseHistoryText.parse(fixture);
         check(releases.size()==3,"baseline excluded");
         check(!releases.get(0).development&&releases.get(1).development,"stable/dev distinction");
-        check(releases.get(0).notes.contains("Cookie検索")&&releases.get(0).notes.contains("板一覧"),"full cumulative Japanese sections retained");
+        check(releases.get(0).notes.contains("Cookie検索")&&!releases.get(0).notes.contains("板一覧"),"version summary shown without repeating older cumulative changes");
         check(!releases.get(0).notes.contains("支援者")&&!releases.get(0).notes.contains("配布説明"),"boilerplate excluded");
         check(releases.get(0).notes.contains("regression fix"),"generated category after boilerplate retained");
         check(ReleaseHistoryText.parse("Haiagaru 1.26.0 (2026-11-12)\n- 旧生成形式").size()==1,"legacy bundled headings");
@@ -34,6 +34,10 @@ public final class ReleaseHistoryTextTest {
             }
         }
         check(translated>=37,"all historical subjects covered, including development releases");
+        String features=ReleaseHistoryText.addedFeatures(Files.readString(Path.of(args[0])));
+        check(features.contains("#### 1.25.0")&&features.contains("#### 1.26.0"),"all-feature catalogue retains introduction versions");
+        check(java.util.regex.Pattern.compile("(?m)^- \\*\\*").matcher(features).results().count()==20,"complete 20-item feature catalogue retained");
+        check(!features.contains("変更・修正した機能一覧")&&!features.contains("## 謝辞"),"catalogue excludes unrelated release sections");
         System.out.println("Release history: "+checks+" checks passed");
     }
 }
