@@ -3846,6 +3846,11 @@ public final class Haiagaru {
         menuDescription.setTextSize(13);
         layout.addView(menuDescription, rowParams(activity));
         StockChmatePosting.addSettingsButton(layout, activity);
+        Spinner stockDisplayMode=addSpinner(layout,activity,
+                text("通常版ChMateの書き込み画面", "Stock ChMate posting display"),
+                new String[]{text("全画面", "Full screen"),text("ポップアップダイアログ", "Popup dialog")},
+                preferences.getInt(StockChmatePosting.DISPLAY_MODE,1)==0?0:1);
+        live.choice(stockDisplayMode,StockChmatePosting.DISPLAY_MODE);
         Switch stockMenu=addSwitch(layout,activity,
                 text("書き込み画面の「︙」に「通常版ChMateで書き込む」を追加", "Add stock ChMate posting to the posting overflow menu"),
                 preferences.getBoolean(StockChmatePosting.SHOW_MENU,true));

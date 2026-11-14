@@ -1757,3 +1757,19 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 さらに利用者指示でthreadPostingNamesを追加（初期OFF）、未保存スレは空欄を利用者が選択。専用のネイティブ名前欄を既存ThreadCommandsから登録し、スレ別の私有設定へ保存。新規スレ立て/不明URLは標準のまま。最終thread-name-build.logは通常Lint/R8成功2分16秒。
 
 最終候補は3版適用・ネイティブ名前欄接続成功。Mi Note 10へ署名一致で更新し、スレ別名前15項目ずつ、191の通常版relay/確認省略/メニュー初期ON・OFF/復帰/長押し・ツールバー独立動作19項目成功。公開投稿なし。証跡thread-names/result{191,226,242}.log、stock-return/final-result.log。
+
+
+## 2026-11-14 1.32.0公式公開完了
+
+通常版連携/容量案内/レス限定送信先09d73137、スレ別名前/メニュー設定2e829cafを通常マージし、既存Semantic Release CI43560035153 successで公開。生成commit/tag2a138840/1.32.0、draft=false/prerelease=false。前の取消CIは1.31.0のタグと生成commitまで進んだがRelease未公開。READMEの同時更新で別CI43559951687のprepare pushが競合したため、最新READMEを含むCIで公開完了。READMEだけの並行CI43560018287はcompile確認成功。
+
+公開MPP SHA256 227b7e3aab2ce836cddc1aec91bc1612f34ae168ed31e7c04d6097c1da2a6c40、GH asset digest一致/ZIP CRC正常。ThreadPostingNames/StockPostingRelayActivity/各設定キー/容量案内/レス限定ラベルを配布MPP内で確認。配布metadata2種とmaster/dev両raw feedは1.32.0・同downloadURL・SHA256 45601ab43c50dacb3d9fa242f820aae42bbfeb7d7effa61debd48e5bedcca27f一致。Pythonのredirect先TLS検証がローカル証明書不足で失敗したため、検証を無効にせずghダウンロードとOS証明書を使うInvoke-WebRequestで再取得して確認。証跡build/official132-public/verification.json、ci.log。公開MPPの再パッチ/実機再導入はせず、同じ製品ソースの最終候補を前記3版で検証・導入済み。canonical devはCI backmergeをfast-forwardで取り込み済み。
+
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.32.0 。通常版への実投稿成功は模擬結果試験であり、公開POSTの実試験とは区別する。無関係な未追跡ファイルは維持。
+
+
+## 2026-11-14 通常版書き込みの全画面/ポップアップ選択（未公開）
+
+利用者指示でstockPostingDisplayModeを追加。0全画面/1ポップアップ、初期1、設定共有も0..1/default1。︙/長押し/toolbarすべて同じ選択を使用し、isHandoffは通常版固定の2画面だけを許可。最終通常Lint/R8ビルド成功2分17秒、191候補適用・別パッケージへ署名一致更新、ActivityMonitorで実外部起動を止めた模擬テスト28項目成功。実通常版DialogのADB起動は自動承認レビュー拒否、理由詳細なし。拒否の実起動を別経路で実行せず未確認とした。今回226/242の再適用なし、新規フックなし。詳細stock-chmate-posting.md、台帳android-installations.md、証跡build/stock-dialog-20261114/。公式版1.32.0は変更していない。
+
+利用者から公式Release指示。今回候補の226/242にも適用し、署名一致で隔離reporterへ更新成功。起動/画像描画回帰110/106項目と3版のネイティブタイトルbridge/自己Intent限定例外を確認。191の28項目成功と合わせて公開へ進む。共通Javaのみの変更で新規ネイティブフックなし。通常版実画面の起動は既述の自動承認拒否により未確認、外部起動を遮断した模擬結果と区別する。

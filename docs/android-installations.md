@@ -2705,3 +2705,68 @@ OneDrive外の主開発先でビルド。既存のHaiagaru/通常版は保持し
 - app.haiagaru.tests.threadnames226 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\thread-names\tests226.apk / SHA256 852cd81b6097d8ccac72ff3ce8c2ce19daf0558219f1c7f11502246ef1915249 / 同じ鍵・端末へinstall-r成功。
 - app.haiagaru.tests.threadnames242 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\thread-names\tests242.apk / SHA256 d152c37eadadc9e4c9444e6b67c0fc323bb4049439d6e108e8fdf46d220dd0d2 / 同じ鍵・端末へinstall-r成功。
 - app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\stock-return\final-tests.apk / SHA256 639c982b00c41b3449f0ce79410c4325d781814e46248b21056d07be99043a58 / 同じ鍵・端末へinstall-r成功。
+
+
+## 2026-11-14 通常版ChMate表示方法選択（未公開）
+
+```json
+{
+  "displayName": "Haiagaru 修正確認 191",
+  "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter191",
+  "chmate": "0.8.10.191 dev",
+  "serial": "d5497008",
+  "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\dialog191.apk",
+  "apkSha256": "19ea04ea4ab2df9f6fa2126cce6831292968ff634ca865aed4b429f2e7e4271b",
+  "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\candidate.mpp",
+  "bundleSha256": "53ed318e1ee8a17d6d8702655ffb1795784014c177b93b44652d7479d6450675",
+  "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+  "alias": "Morphe",
+  "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+  "installed": "lastUpdateTime=2026-11-14 14:32:24",
+  "result": "signature matched install-r Success; 28 intercepted stock editor result/selection checks PASS"
+}
+```
+
+app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\stock-dialog-20261114\tests.apk / SHA256 c5ba9e2a5fa1dc8b0c1162a5499f0afe5da388b3078d4168318e26d342efa0ee / 同一鍵・同一端末install-r Success。通常版への外部起動をActivityMonitorで遮断し、全画面/ポップアップと模擬成功/中断28項目成功。実際の通常版ダイアログ起動は自動承認レビュー拒否により未実施。
+
+利用者の再インストール指示により、同一dialog191.apk（SHA256 19ea04ea4ab2df9f6fa2126cce6831292968ff634ca865aed4b429f2e7e4271b、上記と同一MPP/鍵/alias/cert/package）をd5497008のHaiagaru 修正確認191へ再度install-r。Success、lastUpdateTime=2026-11-14 14:34:47を確認。既存本体・通常版の更新なし。
+
+
+### 公式公開前の226/242追加確認
+
+```json
+[
+  {
+    "displayName": "Haiagaru 修正確認 226",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter226",
+    "chmate": "0.8.10.226 dev",
+    "serial": "d5497008",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\dialog226.apk",
+    "apkSha256": "8fb57aa04cbd7e9b678f2bf876ba44d23bb91e55d5395ec1c2474b3ef11cf960",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\candidate.mpp",
+    "bundleSha256": "53ed318e1ee8a17d6d8702655ffb1795784014c177b93b44652d7479d6450675",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 14:40:00",
+    "result": "signature matched install-r Success; native launch/thumbnail checks PASS"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 242",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter242",
+    "chmate": "0.8.10.242 dev",
+    "serial": "d5497008",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\dialog242.apk",
+    "apkSha256": "cc8b10104f70117deaa90d3154b18cc6692379a7862a5ce040ad810eca45928a",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\candidate.mpp",
+    "bundleSha256": "53ed318e1ee8a17d6d8702655ffb1795784014c177b93b44652d7479d6450675",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 14:40:34",
+    "result": "signature matched install-r Success; native launch/thumbnail checks PASS"
+  }
+]
+```
+
+既存の画像回帰検証器（先行台帳にAPK/署名記録済み）を再利用し、226=110、242=106項目成功。新しい公開投稿は実行しない。

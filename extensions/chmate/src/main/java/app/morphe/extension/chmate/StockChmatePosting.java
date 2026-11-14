@@ -20,8 +20,10 @@ public final class StockChmatePosting {
     static final String LONG_PRESS="stockPostingOnWriteLongPress";
     static final String SKIP_CONFIRM="stockPostingSkipConfirmation";
     static final String SHOW_MENU="stockPostingShowMenu";
+    static final String DISPLAY_MODE="stockPostingDisplayMode";
     private static final String PACKAGE = "jp.co.airfront.android.a2chMate";
     private static final String EDITOR = "jp.syoboi.a2chMate.activity.ResEditActivity";
+    private static final String DIALOG_EDITOR = EDITOR+"$Dialog";
     private static final String HANDOFF = "app.morphe.extension.chmate.STOCK_POST_DRAFT";
     private static final int MENU = 0x48690062;
     private static final Map<Activity, Draft> DRAFTS = new WeakHashMap<>();
@@ -59,7 +61,11 @@ public final class StockChmatePosting {
         String target=StockChmatePostingRules.target(address);
         if(target==null)throw new IllegalArgumentException("エッヂの投稿先を確認できません。");
         // No body/subject extras: retain the stock application's own draft.
-        return new Intent(Intent.ACTION_SENDTO,Uri.parse(target)).setClassName(PACKAGE,EDITOR).putExtra(HANDOFF,true);
+        return new Intent(Intent.ACTION_SENDTO,Uri.parse(target)).setClassName(PACKAGE,editorComponent()).putExtra(HANDOFF,true);
+    }
+    private static String editorComponent(){
+        android.content.Context context=Haiagaru.applicationContextForExtension();
+        return context==null||FeatureSwitches.prefs(context).getInt(DISPLAY_MODE,1)!=0?DIALOG_EDITOR:EDITOR;
     }
     private static void openEditor(Activity activity,String target){
         try{relay(activity,editorIntent(target),null);}
@@ -166,7 +172,7 @@ public final class StockChmatePosting {
     static Intent intent(String target, String body, String subject) {
         StockChmatePostingRules.validate(target, body, subject);
         Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(target))
-                .setClassName(PACKAGE, EDITOR).putExtra(Intent.EXTRA_TEXT, body).putExtra(HANDOFF, true);
+                .setClassName(PACKAGE, editorComponent()).putExtra(Intent.EXTRA_TEXT, body).putExtra(HANDOFF, true);
         if (StockChmatePostingRules.newThread(target)) intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         return intent;
     }
@@ -175,7 +181,8 @@ public final class StockChmatePosting {
     static boolean isHandoff(Intent intent) {
         if (intent == null || !intent.getBooleanExtra(HANDOFF, false)
                 || !Intent.ACTION_SENDTO.equals(intent.getAction())
-                || !new android.content.ComponentName(PACKAGE, EDITOR).equals(intent.getComponent())) return false;
+                || !(new android.content.ComponentName(PACKAGE, EDITOR).equals(intent.getComponent())
+                    ||new android.content.ComponentName(PACKAGE,DIALOG_EDITOR).equals(intent.getComponent()))) return false;
         String target = StockChmatePostingRules.target(intent.getDataString());
         return target != null && target.equals(intent.getDataString());
     }
