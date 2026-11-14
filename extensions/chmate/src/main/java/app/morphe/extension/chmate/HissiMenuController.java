@@ -1031,11 +1031,13 @@ public final class HissiMenuController extends ToolScreenController {
         }
     }
 
-    private void configureHissiTabs(WebView webView) {
+    private void configureHissiTabs(WebView webView) { configureHissiTabs(webView,0); }
+    private void configureHissiTabs(WebView webView,int attempt) {
         if (hissiTabs == null) return;
+        final String configuringUrl=webView.getUrl();
         if (Haiagaru.kyodemoEnhancedViewer()) {
             webView.evaluateJavascript("(function(){"
-                    + "if(location.hostname!=='www.kyodemo.net'||!location.search.includes('bs=hi'))return false;"
+                    + "if(!['www.kyodemo.net','kyodemo.net'].includes(location.hostname)||!location.pathname.startsWith('/sdemo/b/'))return false;"
                     + "var list=document.querySelector('#blist');if(!list)return false;"
                     + "var oldCreated=document.getElementById('haiagaru-kyodemo-created');if(oldCreated)oldCreated.remove();"
                     + "var posts=list.querySelectorAll('.post');if(!posts.length)return false;"
@@ -1073,11 +1075,16 @@ public final class HissiMenuController extends ToolScreenController {
                     + "Array.from(list.children).forEach(function(child){if(child===summary||child===names||child===created)return;"
                     + "child.style.display=tab===0?'':'none';});list.scrollIntoView({block:'start'});};"
                     + "window.haiagaruSelectHissiTab(0);return true;})()", result -> {
+                if(!java.util.Objects.equals(configuringUrl,webView.getUrl())||isDestroyed())return;
                 boolean available = "true".equals(result);
                 if (available) {
                     hissiTabs.setVisibility(View.VISIBLE);
                     if(hissiTabButtons.length>3)hissiTabButtons[3].setVisibility(View.VISIBLE);
                     selectHissiTab(0);
+                    return;
+                }
+                if(attempt<10&&configuringUrl!=null&&(configuringUrl.startsWith("https://www.kyodemo.net/sdemo/b/")||configuringUrl.startsWith("https://kyodemo.net/sdemo/b/"))){
+                    webView.postDelayed(()->{if(!isDestroyed()&&java.util.Objects.equals(configuringUrl,webView.getUrl()))configureHissiTabs(webView,attempt+1);},500);
                     return;
                 }
                 configureClassicHissiTabs(webView);

@@ -62,3 +62,5 @@ HOMEの長押しは並び替えダイアログに加え、ネイティブのス�
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 
 1.35.0-dev.1利用者報告の修正: HOME「並び替える」をMenuItemリスナーに加えて既存HOMEの操作ID dispatcherへ接続。依頼どおりスレタイトル長押しの「HOMEでの位置を変更」をコードごと削除。191 NGエディタonViewCreated末尾はnative b==falseがRETURN_VOIDへ直接分岐し、直前挿入した記者ボタンhookをスキップする実コードを確認。returnターゲット自体をhookへ置換しreturnを後置。runtimeのc/f field読取もNativeFieldsへ統一。226/242の発生条件は利用者へ質問中。ビルド/機能確認は未完了。
+
+191報告と利用者回答で一致。追加報告Kyodemo「作成したスレ」なし: JS guardがbs=hi必須で、実サイトのhi=等の検索URLを除外していた。ホストと/sdemo/b/、実際の#blist post構造で判定。ページ読み込み後の遅延挿入に最大5秒再試行し、別URLへ移動後の古いcallbackを破棄。修正用CI43585407045はこの追加前の差分なので、次CIにも含める。

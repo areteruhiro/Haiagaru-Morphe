@@ -6,7 +6,7 @@ const script=[...block.matchAll(/"(?:[^"\\]|\\.)*"/g)].map(m=>JSON.parse(m[0])).
 function post(n){return `<div class="post"><div class="r-head"><strong>${n}</strong>:名無し 2026/11/14</div><div class="clmess">本文${n}</div></div>`;}
 const html=`<html><body><div id="blist"><div class="box content"><h2><a href="/a">A</a></h2>${post(1)+post(2)}</div><div class="box content"><h2><a href="/b">B</a></h2>${post(11)}</div><div class="box content"><h2><a href="/c">C</a></h2>${post(1)+post(21)}</div></div></body></html>`;
 const {window}=parseHTML(html);window.HTMLElement.prototype.scrollIntoView=function(){};
-const context=vm.createContext({window,document:window.document,location:{hostname:'www.kyodemo.net',search:'?bs=hi'}});
+const context=vm.createContext({window,document:window.document,location:{hostname:'www.kyodemo.net',search:'?hi=ReporterFixture',pathname:'/sdemo/b/e_e_liveedge/'}});
 let checks=0;function ok(v,msg){if(!v)throw Error(msg);checks++;}
 ok(vm.runInContext(script,context)===true,'initialized');
 let created=window.document.getElementById('haiagaru-kyodemo-created');ok(created.querySelectorAll('.post').length===2,'only thread starters');ok([...created.querySelectorAll('strong')].every(n=>n.textContent==='1'),'only response 1, never 11/21');
