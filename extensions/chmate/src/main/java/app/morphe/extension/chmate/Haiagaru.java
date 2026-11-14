@@ -4350,6 +4350,18 @@ public final class Haiagaru {
             videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
                     "Dedicated video viewer (select the patch when patching)"));
         }
+        LinearLayout thumbnailAppearance=SettingsSection.add(layout,"Image NGの検出とサムネイル表示","自動で検出した画像だけに表示加工を適用します。Image NGを有効にして使用してください。",true);
+        for(String[] option:new String[][]{{ThumbnailAppearance.GRAY,"画像サムネイルをモノクロにする"},{ThumbnailAppearance.MOSAIC,"画像サムネイルにモザイクをかける"}}){
+            Switch toggle=addSwitch(thumbnailAppearance,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
+        }
+        EditText mosaicStrength=addTextField(thumbnailAppearance,activity,"モザイクの強さ（1：弱い〜5：強い）",Integer.toString(preferences.getInt(ThumbnailAppearance.STRENGTH,3)));
+        mosaicStrength.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);live.number(mosaicStrength,ThumbnailAppearance.STRENGTH,1,5);
+        android.widget.Spinner imageNgLevel=new LiveSettings.Choice(activity);
+        TextView imageNgLabel=new TextView(activity);imageNgLabel.setText("Image NGの検出感度");thumbnailAppearance.addView(imageNgLabel);
+        imageNgLevel.setAdapter(new android.widget.ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"弱い（誤検出を抑える）","標準（従来どおり）","強い（見逃しを抑える）"}));
+        imageNgLevel.setSelection(Math.max(0,Math.min(2,preferences.getInt(ThumbnailAppearance.SENSITIVITY,1))));
+        live.choice(imageNgLevel,ThumbnailAppearance.SENSITIVITY);
+        thumbnailAppearance.addView(imageNgLevel);
         VideoViewerSettings.addSettingsButton(layout, activity);
 
         Switch videoFrameThumbnails = addSwitch(layout, activity,
