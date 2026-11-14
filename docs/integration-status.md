@@ -1840,3 +1840,10 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
 ## 2026-11-14 外部板のスレ情報ポップアップ（未公開）
 
 ③内部スレ番号を日時にした未来年表示、④削除済みスレの板名・板へ戻るURLを191/226/242で修正。ローカルbuild成功、全版適用、Mi Note 10のgateway/native URL 277/286/283、画像110/110/106、ホスト24項目成功。提示のあにまん実URLはHTTP403のためライブ照合未確認。詳細 [site-thread-popup-20261114.md](site-thread-popup-20261114.md)。
+
+
+## 2026-11-14 Haiagaru 1.36.2公式公開
+
+外部板スレ情報修正0f64e641をdev→master merge3003c9d0、Semantic Release生成ddb02683。Release43605834690 / Build43605834622 success。23:42:30 JST公開、draft=false/prerelease=false。配布5ファイルのGitHub digest・サイズ、MPP/ZIP CRC、謝辞/寄付欄、master/main/devの両JSON計6経路の全項目一致を確認。MPP SHA-256 c81280eff0e6f937cea4f055bc72626c92abf812e149898f21f31717be853ea7。実機と未確認範囲はsite-thread-popup-20261114.md参照。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.36.2
