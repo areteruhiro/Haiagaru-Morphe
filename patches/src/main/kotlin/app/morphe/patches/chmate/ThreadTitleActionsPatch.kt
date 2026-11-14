@@ -44,6 +44,27 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
             invoke-static/range {v$list .. v$list}, Lapp/morphe/extension/chmate/ThreadTitleActions;->appendNativeGroups(Ljava/util/List;)Ljava/util/List;
             move-result-object v$list
         """.trimIndent())
+        val labelOwner=mutableClassDefBy(if(modern)"Lo/ImageManagerImageReceiver;" else "Lo/TTFullScreenVideoActivity;")
+        val render=labelOwner.methods.single { it.name=="invoke"&&it.parameterTypes.size==(if(modern)2 else 3) }
+        val (at,call)=render.implementation!!.instructions.withIndex().single {
+            val ref=(it.value as? ReferenceInstruction)?.reference as? MethodReference
+            it.value.opcode==Opcode.INVOKE_STATIC_RANGE&&ref?.definingClass==(if(modern)"Lo/enableThreadsBoost;" else "Lo/DtbSharedPreferences;")&&
+                ref.name==(if(modern)"a" else "d")&&ref.parameterTypes.take(3)==listOf("Ljava/lang/String;",if(modern)"Lo/jExternalSyntheticLambda0;" else "Lo/setAdVideoPlaybackListener;","J")
+        }
+        val label=(call as RegisterRangeInstruction).startRegister
+        check(label==3&&call.registerCount==(if(modern)26 else 25))
+        val size=label+2
+        val defaults=label+call.registerCount-1
+        // The font-size default bit is cleared only when compactLabelSize returned an SP value.
+        // The two size registers originally carry zero; the ordinary call remains unchanged on the zero path.
+        render.addInstructionsWithLabels(at,"""
+            invoke-static {v$label}, Lapp/morphe/extension/chmate/ThreadTitleActions;->compactLabelSize(Ljava/lang/String;)J
+            move-result-wide v$size
+            const-wide/16 v0, 0
+            cmp-long v0, v$size, v0
+            if-eqz v0, :native_size
+            and-int/lit8 v$defaults, v$defaults, -5
+        """.trimIndent(), app.morphe.patcher.util.smali.ExternalLabel("native_size",call))
     }
     val parameters=listOf("Landroid/view/LayoutInflater;","Landroid/view/ViewGroup;","Landroid/os/Bundle;")
     val original=owner.methods.singleOrNull { it.name=="onCreateView"&&it.parameterTypes.map(CharSequence::toString)==parameters }

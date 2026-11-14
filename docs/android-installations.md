@@ -2913,3 +2913,16 @@ app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chm
   "result": "Separate install Success; existing Haiagaru preserved"
 }
 ```
+
+
+## 2026-11-14 Image NG・長押しメニュー統合の実機検証
+
+Mi Note 10（Android 11、ADB `d5497008`）。検証専用3パッケージを署名照合後に上書き。通常アプリは変更していない。
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`: 2026-11-14T21:40:06.320431 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\title-menu-all-apks\final191.apk`（SHA-256 `ec634b5d35d57b53b3906a2b837c478bbf37ad97dd81a678bfda7c727e0da412`）。
+- Haiagaru 修正確認 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`: 2026-11-14T21:39:14.775633 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\title-menu-all-apks\final242.apk`（SHA-256 `0500cd9e47d5b261f61406016d28383331ab02ced2713ff30b03594660011341`）。
+
+パッチ: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\title-menu-all-apks\candidate.mpp`（SHA-256 `d764e9b5ddea7eade09a9e25f2d174222446cb121c293fd9969d9069e9a7b8cc`）。
+署名: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

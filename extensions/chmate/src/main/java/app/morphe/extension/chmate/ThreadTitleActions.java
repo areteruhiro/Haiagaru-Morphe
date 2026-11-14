@@ -98,6 +98,35 @@ public final class ThreadTitleActions {
             return groups;
         }catch(Exception error){android.util.Log.w("Haiagaru","Native thread title actions unavailable",error);return original;}
     }
+    /** Compose versions use packed text units. Zero leaves the themed size in effect. */
+    public static long compactLabelSize(String label){
+        android.content.Context context=Haiagaru.applicationContextForExtension();
+        if(context==null||label==null||label.length()<8)return 0;
+        android.content.res.Resources res=context.getResources();
+        android.util.DisplayMetrics dm=res.getDisplayMetrics();
+        int screen=res.getConfiguration().screenWidthDp;
+        if(screen<=0)return 0;
+        android.text.TextPaint paint=new android.text.TextPaint();
+        paint.setTextSize(android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,14,dm));
+        float available=(screen-112)*dm.density; // Sheet padding, menu icon and text padding.
+        if(available<=0)return 0;
+        float measured=paint.measureText(label);
+        if(measured<=available)return 0;
+        float size=Math.max(11f,(float)Math.floor(28f*available/measured)/2f);
+        return (1L<<32)|(Float.floatToRawIntBits(size)&0xffffffffL);
+    }
+    private static void fitLegacyLabels(View view){
+        if(android.os.Build.VERSION.SDK_INT>=26&&view instanceof android.widget.Button){
+            android.widget.TextView text=(android.widget.TextView)view;
+            float scale=text.getResources().getDisplayMetrics().scaledDensity;
+            int size=Math.round(text.getTextSize()/scale);
+            if(text.getMaxLines()==1&&size>11)text.setAutoSizeTextTypeUniformWithConfiguration(11,size,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        }
+        if(view instanceof android.view.ViewGroup){
+            android.view.ViewGroup parent=(android.view.ViewGroup)view;
+            for(int i=0;i<parent.getChildCount();i++)fitLegacyLabels(parent.getChildAt(i));
+        }
+    }
     private static View content(Object fragment,Activity a,View original)throws Exception{
             MenuThread menu=thread(fragment,a);if(menu==null)return original;
             Object info=menu.info;
@@ -127,6 +156,8 @@ public final class ThreadTitleActions {
             }
             }
             if(actions.getChildCount()>0)controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
+            fitLegacyLabels(original);
+            fitLegacyLabels(controls);
             if(nativeMenu!=null){
                 if(controls.getChildCount()>0){controls.setBackgroundColor(android.graphics.Color.TRANSPARENT);nativeMenu.addView(controls,new LinearLayout.LayoutParams(-1,-2));}
                 return original;
