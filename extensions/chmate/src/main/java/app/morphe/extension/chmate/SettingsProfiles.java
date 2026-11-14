@@ -24,6 +24,10 @@ public final class SettingsProfiles {
         // Expert is a projection of these same controls, not a second catalog.
         for(SettingsSections.Category c:SettingsSections.Category.values())if(c!=SettingsSections.Category.EXPERT)Haiagaru.settingsCategory(activity,c.name());
         booleanKey(ExpertSettings.KEY);
+        booleanKey(ThumbnailAppearance.GRAY);defaultValue(ThumbnailAppearance.GRAY,false);
+        booleanKey(ThumbnailAppearance.MOSAIC);defaultValue(ThumbnailAppearance.MOSAIC,false);
+        numberKey(ThumbnailAppearance.STRENGTH,1,5);defaultValue(ThumbnailAppearance.STRENGTH,3);
+        numberKey(ThumbnailAppearance.SENSITIVITY,0,2);defaultValue(ThumbnailAppearance.SENSITIVITY,1);
         booleanKey(PostingSettingLinks.KEY);defaultValue(PostingSettingLinks.KEY,false);
         booleanKey(StockChmatePosting.ALWAYS);defaultValue(StockChmatePosting.ALWAYS,false);
         for(String key:new String[]{ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH}){booleanKey(key);defaultValue(key,true);}
@@ -118,6 +122,7 @@ public final class SettingsProfiles {
         defaultValue(NativeToolTabs.HEADER_HEIGHT_KEY,48);
         defaultValue("hissiViewerShowAdjust",true);
         numberKey("hissiViewerTextZoom",100,130);
+        booleanKey(PopularReplies.CUSTOM_THRESHOLD);defaultValue(PopularReplies.CUSTOM_THRESHOLD,false);
         numberKey("popularReplyThreshold",1,9999);
         numberKey("popularReplyStandardThreshold",1,9999);
         for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);

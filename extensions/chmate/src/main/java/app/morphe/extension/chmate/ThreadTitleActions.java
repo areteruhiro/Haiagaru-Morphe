@@ -21,56 +21,128 @@ public final class ThreadTitleActions {
                 // Decorating this Fragment's ComposeView would put controls behind it.
                 pending=new java.lang.ref.WeakReference<>(fragment);return original;
             }
-            return content(fragment,a,original,true);
+            return content(fragment,a,original);
         }catch(Exception error){android.util.Log.w("Haiagaru","Thread title actions unavailable",error);return original;}
     }
-    public static void decorateDialog(android.app.Dialog dialog){
-        Object fragment=pending.get();if(fragment==null||dialog.getWindow()==null)return;
-        try{
-            if(!(Boolean)fragment.getClass().getMethod("isAdded").invoke(fragment)
-                    ||fragment.getClass().getMethod("getView").invoke(fragment)==null){pending.clear();return;}
-            Activity a=Haiagaru.toolbarActivity(fragment);if(a==null)return;
-            android.view.ViewGroup root=dialog.getWindow().findViewById(android.R.id.content);
-            if(root==null||root.getChildCount()!=1)return;
-            View original=root.getChildAt(0);
-            // onStart runs before WindowManager attaches the dialog: moving the
-            // still-detached ComposeView does not dispose a live composition.
-            if(original.isAttachedToWindow())return;
-            android.view.ViewGroup.LayoutParams params=original.getLayoutParams();
-            root.removeView(original);
-            View wrapped;
-            try{wrapped=content(fragment,a,original,false);}catch(Exception error){root.addView(original,params);throw error;}
-            root.addView(wrapped,params);pending.clear();
-        }catch(Exception error){android.util.Log.w("Haiagaru","Thread title dialog actions unavailable",error);}
+    private static final class MenuThread {
+        final Object info;
+        final ThreadWatchRules.Target target;
+        MenuThread(Object info,ThreadWatchRules.Target target){this.info=info;this.target=target;}
     }
-    private static View content(Object fragment,Activity a,View original,boolean old)throws Exception{
-            String version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;
-            Bundle args=(Bundle)fragment.getClass().getMethod("getArguments").invoke(fragment);if(args==null)return original;
-            Object info=args.get("threadUrl");
-            if(info==null){Object packed=args.get("args");if(packed!=null)for(Field f:packed.getClass().getDeclaredFields())if(f.getType().getName().equals("jp.syoboi.a2chMate.client.BBSUrlInfo")){f.setAccessible(true);info=f.get(packed);break;}}
-            if(info==null)return original;
-            boolean middle="0.8.10.226 dev".equals(version);
-            String server=(String)NativeFields.find(info.getClass(),old?"i":middle?"g":"f").get(info);
-            String board=(String)NativeFields.find(info.getClass(),old?"b":middle?"f":"g").get(info);
-            Object id=NativeFields.find(info.getClass(),middle?"c":"e").get(info);
-            ReporterArchiveLookup.request(a,server,board,id,args.getString("threadTitle"));
-            ThreadWatchRules.Target t=ThreadWatchRules.fromParts(server,board,id);
+    private static MenuThread thread(Object fragment,Activity a)throws Exception{
+        String version=a.getPackageManager().getPackageInfo(a.getPackageName(),0).versionName;
+        boolean old=version.contains("191"), middle=version.contains("226");
+        Bundle args=(Bundle)fragment.getClass().getMethod("getArguments").invoke(fragment);
+        if(args==null)return null;
+        Object info=args.get("threadUrl");
+        if(info==null){Object packed=args.get("args");if(packed!=null)for(Field f:packed.getClass().getDeclaredFields())if(f.getType().getName().equals("jp.syoboi.a2chMate.client.BBSUrlInfo")){f.setAccessible(true);info=f.get(packed);break;}}
+        if(info==null)return null;
+        String server=(String)NativeFields.find(info.getClass(),old?"i":middle?"g":"f").get(info);
+        String board=(String)NativeFields.find(info.getClass(),old?"b":middle?"f":"g").get(info);
+        Object id=NativeFields.find(info.getClass(),middle?"c":"e").get(info);
+        ReporterArchiveLookup.request(a,server,board,id,args.getString("threadTitle"));
+        return new MenuThread(info,ThreadWatchRules.fromParts(server,board,id));
+    }
+    public static java.util.List<?> appendNativeGroups(java.util.List<?> original){
+        Object fragment=pending.get();if(fragment==null||original==null)return original;
+        try{
+            if(!Boolean.TRUE.equals(fragment.getClass().getMethod("isAdded").invoke(fragment)))return original;
+            Activity a=Haiagaru.toolbarActivity(fragment);if(a==null)return original;
+            MenuThread menu=thread(fragment,a);if(menu==null)return original;
+            java.util.ArrayList<String> labels=new java.util.ArrayList<>();
+            java.util.ArrayList<Runnable> actions=new java.util.ArrayList<>();
+            if(FeatureSwitches.enabled(SHOW_REFRESH,true)){
+                String label=RefreshTargets.menuLabel(a,menu.info);
+                if(label!=null){labels.add(label);actions.add(()->RefreshTargets.toggleFromMenu(a,menu.info));}
+            }
+            ThreadWatchRules.Target target=menu.target;
+            if(target!=null&&FeatureSwitches.enabled(SHOW_WATCH,true)){
+                labels.add("このスレの新着通知");actions.add(()->ThreadWatch.show(a,target));
+            }
+            if(target!=null&&FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(target.url)){
+                labels.add("エッヂの閲覧認証");actions.add(()->ReadingAuth.open(a,target.url));
+            }
+            if(labels.isEmpty())return original;
+            boolean middle=fragment.getClass().getName().equals("o.getDislikeManager");
+            ClassLoader loader=fragment.getClass().getClassLoader();
+            Class<?> row=loader.loadClass(middle?"o.getTtAdContainer$IconCompatParcelizer":"o.zzbbs$RemoteActionCompatParcelizer");
+            Class<?> fn=loader.loadClass(middle?"o.binderDied":"o.zzcbx");
+            Object unit=NativeFields.find(loader.loadClass(middle?"o.Ff11":"o.zzbwq"),middle?"c":"INSTANCE").get(null);
+            Object icon=null;
+            if(!middle){
+                Field field=NativeFields.find(row,"d");
+                for(Object group:original)if(group instanceof java.util.List){
+                    for(Object item:(java.util.List<?>)group)if(row.isInstance(item)){icon=field.get(item);if(icon!=null)break;}
+                    if(icon!=null)break;
+                }
+                if(icon==null)return original;
+            }
+            java.lang.reflect.Constructor<?> ctor=middle?row.getDeclaredConstructor(String.class,fn):
+                row.getDeclaredConstructor(String.class,NativeFields.find(row,"d").getType(),fn,boolean.class,boolean.class);
+            ctor.setAccessible(true);
+            java.util.ArrayList<Object> added=new java.util.ArrayList<>();
+            for(int i=0;i<labels.size();i++){
+                Runnable action=actions.get(i);
+                Object callback=java.lang.reflect.Proxy.newProxyInstance(loader,new Class<?>[]{fn},(self,method,args)->{
+                    switch(method.getName()){
+                        case "invoke": if(!a.isFinishing()&&!a.isDestroyed())action.run();return unit;
+                        case "hashCode": return System.identityHashCode(self);
+                        case "equals": return self==args[0];
+                        default: return "Haiagaru thread title action";
+                    }
+                });
+                added.add(middle?ctor.newInstance(labels.get(i),callback):ctor.newInstance(labels.get(i),icon,callback,false,false));
+            }
+            java.util.ArrayList<Object> groups=new java.util.ArrayList<>(original);
+            groups.add(added);
+            return groups;
+        }catch(Exception error){android.util.Log.w("Haiagaru","Native thread title actions unavailable",error);return original;}
+    }
+    /** Compose versions use packed text units. Zero leaves the themed size in effect. */
+    public static long compactLabelSize(String label){
+        android.content.Context context=Haiagaru.applicationContextForExtension();
+        if(context==null||label==null||label.length()<8)return 0;
+        android.content.res.Resources res=context.getResources();
+        android.util.DisplayMetrics dm=res.getDisplayMetrics();
+        int screen=res.getConfiguration().screenWidthDp;
+        if(screen<=0)return 0;
+        android.text.TextPaint paint=new android.text.TextPaint();
+        paint.setTextSize(android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,14,dm));
+        float available=(screen-112)*dm.density; // Sheet padding, menu icon and text padding.
+        if(available<=0)return 0;
+        float measured=paint.measureText(label);
+        if(measured<=available)return 0;
+        float size=Math.max(11f,(float)Math.floor(28f*available/measured)/2f);
+        return (1L<<32)|(Float.floatToRawIntBits(size)&0xffffffffL);
+    }
+    private static void fitLegacyLabels(View view){
+        if(android.os.Build.VERSION.SDK_INT>=26&&view instanceof android.widget.Button){
+            android.widget.TextView text=(android.widget.TextView)view;
+            float scale=text.getResources().getDisplayMetrics().scaledDensity;
+            int size=Math.round(text.getTextSize()/scale);
+            if(text.getMaxLines()==1&&size>11)text.setAutoSizeTextTypeUniformWithConfiguration(11,size,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+        }
+        if(view instanceof android.view.ViewGroup){
+            android.view.ViewGroup parent=(android.view.ViewGroup)view;
+            for(int i=0;i<parent.getChildCount();i++)fitLegacyLabels(parent.getChildAt(i));
+        }
+    }
+    private static View content(Object fragment,Activity a,View original)throws Exception{
+            MenuThread menu=thread(fragment,a);if(menu==null)return original;
+            Object info=menu.info;
+            ThreadWatchRules.Target t=menu.target;
+            // 191's native dialog is a ScrollView with its own menu container.
+            // Add the existing actions to that container so they scroll with native entries.
+            LinearLayout nativeMenu=null;
+            if(original instanceof android.widget.ScrollView){
+                android.view.ViewGroup scroll=(android.view.ViewGroup)original;
+                if(scroll.getChildCount()==1&&scroll.getChildAt(0) instanceof LinearLayout)
+                    nativeMenu=(LinearLayout)scroll.getChildAt(0);
+            }
             LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
-            // 226/242 render a full-window Compose bottom sheet, rather than a
-            // window-sized dialog. Keep extra actions beneath that sheet's content.
-            box.addView(original,old?new LinearLayout.LayoutParams(-1,-2):new LinearLayout.LayoutParams(-1,0,1));
+            if(nativeMenu==null)box.addView(original,new LinearLayout.LayoutParams(-1,-2));
             LinearLayout controls=new LinearLayout(a);controls.setOrientation(LinearLayout.VERTICAL);
             LinearLayout actions=new LinearLayout(a);
-            android.util.TypedValue background=new android.util.TypedValue();
-            int panelColor=(a.getResources().getConfiguration().uiMode&android.content.res.Configuration.UI_MODE_NIGHT_MASK)==android.content.res.Configuration.UI_MODE_NIGHT_YES?0xff202020:0xfffafafa;
-            if(a.getTheme().resolveAttribute(android.R.attr.colorBackground,background,true))panelColor=background.data|0xff000000;
-            // The checkbox lies outside Material's sheet Surface. Paint the complete
-            // control area so the thread behind the transparent dialog cannot show through.
-            controls.setBackgroundColor(panelColor);
-            if(!old)controls.setOnApplyWindowInsetsListener((v,insets)->{
-                int bottom=android.os.Build.VERSION.SDK_INT>=30?insets.getInsets(android.view.WindowInsets.Type.systemBars()).bottom:insets.getSystemWindowInsetBottom();
-                v.setPadding(0,0,0,bottom);return insets;
-            });
             android.widget.CheckBox refresh=FeatureSwitches.enabled(SHOW_REFRESH,true)?RefreshTargets.control(a,info):null;
             if(refresh!=null)controls.addView(refresh,new LinearLayout.LayoutParams(-1,-2));
             if(t!=null){
@@ -84,6 +156,12 @@ public final class ThreadTitleActions {
             }
             }
             if(actions.getChildCount()>0)controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
+            fitLegacyLabels(original);
+            fitLegacyLabels(controls);
+            if(nativeMenu!=null){
+                if(controls.getChildCount()>0){controls.setBackgroundColor(android.graphics.Color.TRANSPARENT);nativeMenu.addView(controls,new LinearLayout.LayoutParams(-1,-2));}
+                return original;
+            }
             if(controls.getChildCount()==0){box.removeView(original);return original;}
             box.addView(controls,new LinearLayout.LayoutParams(-1,-2));
             return box;

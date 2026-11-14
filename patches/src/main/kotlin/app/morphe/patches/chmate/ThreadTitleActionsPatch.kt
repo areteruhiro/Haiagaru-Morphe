@@ -6,6 +6,10 @@ import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLa
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.RegisterRangeInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodImplementation
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
@@ -18,23 +22,49 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
         else->return
     }
     val owner=mutableClassDefBy(type)
-    // Compose sheets use their own Dialog window. Add controls to that window
-    // during onStart, before its ComposeView is attached to WindowManager.
-    val dialogs=when(version){
-        "0.8.10.226 dev"->listOf("Lo/setLogLevel;","Lo/r8lambda6d913dPkLkVGsfjlwMa6Wnm0so8;")
-        "0.8.10.242 dev"->listOf("Lo/getFullPriceMicros;")
-        else->emptyList()
-    }
-    for(dialogType in dialogs){
-        val dialog=mutableClassDefBy(dialogType)
-        check(dialog.methods.none { it.name=="onStart"&&it.parameterTypes.isEmpty() })
-        val start=MutableMethod(ImmutableMethod(dialogType,"onStart",emptyList(),"V",4,
-            emptySet(),emptySet(),ImmutableMethodImplementation(1,emptyList(),emptyList(),emptyList())))
-        start.addInstructions(0,"""
-            invoke-super {p0}, ${dialog.superclass}->onStart()V
-            invoke-static {p0}, Lapp/morphe/extension/chmate/ThreadTitleActions;->decorateDialog(Landroid/app/Dialog;)V
-            return-void
-        """.trimIndent());dialog.methods.add(start)
+    if(version!="0.8.10.191 dev"){
+        val modern=version=="0.8.10.242 dev"
+        val renderer=mutableClassDefBy(if(modern)"Lo/zzbbs;" else "Lo/getTtAdContainer;")
+        val sites=renderer.methods.flatMap { method ->
+            method.implementation?.instructions?.mapIndexedNotNull { i,insn ->
+                val ref=(insn as? ReferenceInstruction)?.reference as? MethodReference
+                val register=when{
+                    modern&&insn.opcode==Opcode.INVOKE_STATIC_RANGE&&ref?.definingClass=="Lo/zaco;"&&ref.name=="c"&&
+                        ref.parameterTypes.firstOrNull()=="Ljava/util/List;" -> (insn as RegisterRangeInstruction).startRegister
+                    !modern&&insn.opcode==Opcode.INVOKE_DIRECT&&ref?.definingClass=="Lo/TTCeilingLandingPageActivity3;"&&
+                        ref.name=="<init>"&&ref.parameterTypes.lastOrNull()=="Ljava/util/List;" -> (insn as FiveRegisterInstruction).registerG
+                    else->null
+                }
+                register?.let { Triple(method,i,it) }
+            }.orEmpty()
+        }
+        check(sites.size==1) { "$version thread title menu list anchor changed" }
+        val (method,index,list)=sites.single()
+        method.addInstructionsWithLabels(index,"""
+            invoke-static/range {v$list .. v$list}, Lapp/morphe/extension/chmate/ThreadTitleActions;->appendNativeGroups(Ljava/util/List;)Ljava/util/List;
+            move-result-object v$list
+        """.trimIndent())
+        val labelOwner=mutableClassDefBy(if(modern)"Lo/ImageManagerImageReceiver;" else "Lo/TTFullScreenVideoActivity;")
+        val render=labelOwner.methods.single { it.name=="invoke"&&it.parameterTypes.size==(if(modern)2 else 3) }
+        val (at,call)=render.implementation!!.instructions.withIndex().single {
+            val ref=(it.value as? ReferenceInstruction)?.reference as? MethodReference
+            it.value.opcode==Opcode.INVOKE_STATIC_RANGE&&ref?.definingClass==(if(modern)"Lo/enableThreadsBoost;" else "Lo/DtbSharedPreferences;")&&
+                ref.name==(if(modern)"a" else "d")&&ref.parameterTypes.take(3)==listOf("Ljava/lang/String;",if(modern)"Lo/jExternalSyntheticLambda0;" else "Lo/setAdVideoPlaybackListener;","J")
+        }
+        val label=(call as RegisterRangeInstruction).startRegister
+        check(label==3&&call.registerCount==(if(modern)26 else 25))
+        val size=label+2
+        val defaults=label+call.registerCount-1
+        // The font-size default bit is cleared only when compactLabelSize returned an SP value.
+        // The two size registers originally carry zero; the ordinary call remains unchanged on the zero path.
+        render.addInstructionsWithLabels(at,"""
+            invoke-static {v$label}, Lapp/morphe/extension/chmate/ThreadTitleActions;->compactLabelSize(Ljava/lang/String;)J
+            move-result-wide v$size
+            const-wide/16 v0, 0
+            cmp-long v0, v$size, v0
+            if-eqz v0, :native_size
+            and-int/lit8 v$defaults, v$defaults, -5
+        """.trimIndent(), app.morphe.patcher.util.smali.ExternalLabel("native_size",call))
     }
     val parameters=listOf("Landroid/view/LayoutInflater;","Landroid/view/ViewGroup;","Landroid/os/Bundle;")
     val original=owner.methods.singleOrNull { it.name=="onCreateView"&&it.parameterTypes.map(CharSequence::toString)==parameters }
