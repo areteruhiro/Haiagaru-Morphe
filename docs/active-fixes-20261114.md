@@ -52,3 +52,11 @@ HOMEの長押しは並び替えダイアログに加え、ネイティブのス�
 18:58 XIG05再接続、bugreport52,841,779bytes回収成功。FS/data/anr/temp_anr_3661936118934892529.txtのPID19417 mainはBinderProxy.transact→IJobCallback.jobFinished→JobServiceEngine.JobHandler。18:35はnative binderでsystem job完了応答待ち。外部板ScrollViewとは別。system_server側対応thread/lockの確認が次の調査。証跡anr1835-main.txt。
 
 利用者の最新指示: 実機検証は利用者が実施する。エージェントは差分を説明し、実機検証を追加で繰り返さない。ユーザー確認前の公式公開を完了扱いしない。build-complete-candidateはANRログの追加前コンパイルのため、最新全体のビルド成功とは扱わない。
+
+## 2026-11-14 1.35.0-dev.1 利用者検証用プレリリース
+
+利用者の明示指示で最新統合版の実機機能検証は利用者側へ移管し、devのみへ公開。製品4a953de9、masterの既存生成1.34.0を通常merge15b7c8dcで取り込み、既存Semantic Release CI43583611555 Release/Attest成功。19:09:56 JST公開、prerelease=true/draft=false。正式安定版へはマージしていない。
+
+公開差分はHOME順/pin、記者IDメニュー/過去補完、Kyodemo作成スレ、設定折りたたみ/区切り、通常版書込、設定リンクmenu、画像補完、uguu、ふたば、外部板描画/長押し再入対策、ANRログ。公開文へ初期値・未確認範囲・ANR未解決とログ制限・謝辞/寄付を明記。公開MPP SHA256 28f8715ac7a6e4c94c648fe684670b9fd5899b7dda85257f4777c7b890d5b092。全5assetのGitHub digest一致、MPP CRC/追加classと設定キー同梱、devのpre feed1.35.0-dev.1を確認。証跡build/prerelease1350dev1-public/verification.json、reporter-parity-20261114/prerelease-ci.log。Python URL取得はローカル証明書エラーのためghで取得して検証。最新統合版の実機確認/公開送信は行っていない。18:35ANRはsystem job callback待ち、根因未確定。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
