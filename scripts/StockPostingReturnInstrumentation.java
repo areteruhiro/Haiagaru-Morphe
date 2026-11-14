@@ -26,6 +26,18 @@ public final class StockPostingReturnInstrumentation extends Instrumentation {
    main(()->{owner=new Owner(host);owner.W=loader.loadClass("jp.syoboi.a2chMate.client.BBSUrlInfo").getConstructor(String.class,String.class,Long.class,int.class,Integer.class,String.class).newInstance("bbs.eddibb.cc","liveedge",9999999999L,0,null,null);host.setContentView(owner.root);return null;});Thread.sleep(600);
    String board="https://bbs.eddibb.cc/liveedge/",reply="https://bbs.eddibb.cc/test/read.cgi/liveedge/9999999999/";
    main(()->{Intent empty=(Intent)method(posting,"editorIntent",String.class).invoke(null,reply);ok(!empty.hasExtra(Intent.EXTRA_TEXT)&&!empty.hasExtra(Intent.EXTRA_SUBJECT),"toolbar leaves stock draft intact");ok((Boolean)method(posting,"isHandoff",Intent.class).invoke(null,empty),"toolbar uses explicit handoff marker");return null;});
+   main(()->{
+    method(posting,"target",Object.class,String.class,EditText.class).invoke(null,owner,reply,owner.body);
+    Menu menu=new PopupMenu(host,owner.body).getMenu();menu.add(0,0x7f0a018f,0,"version");menu.add(0,0x7f0a02f7,0,"history");
+    Field menuId=posting.getDeclaredField("MENU");menuId.setAccessible(true);int id=menuId.getInt(null);
+    prefs.edit().remove("stockPostingShowMenu").commit();method(posting,"addPostingMenu",Object.class,Menu.class).invoke(null,owner,menu);
+    ok(menu.findItem(id)!=null&&menu.findItem(id).isVisible(),"stock posting overflow menu initially ON");
+    prefs.edit().putBoolean("stockPostingShowMenu",false).commit();method(posting,"addPostingMenu",Object.class,Menu.class).invoke(null,owner,menu);
+    ok(!menu.findItem(id).isVisible(),"OFF hides an existing overflow entry");
+    method(posting,"handlePostingMenu",Object.class,MenuItem.class).invoke(null,owner,menu.findItem(id));ok(captured==null,"disabled stale menu does not launch stock editor");
+    prefs.edit().putBoolean("stockPostingShowMenu",true).commit();method(posting,"addPostingMenu",Object.class,Menu.class).invoke(null,owner,menu);ok(menu.findItem(id).isVisible(),"ON restores the same overflow entry");
+    prefs.edit().putBoolean("stockPostingShowMenu",false).commit();return null;
+   });
    // Explicit toolbar and long press both use the real relay, with an intercepted stock editor.
    prefs.edit().putBoolean("stockPostingOnWriteLongPress",false).commit();
    main(()->{View pencil=new View(host);pencil.setId(2);ok(!(Boolean)posting.getMethod("longClick",Object.class,View.class).invoke(null,owner,pencil),"OFF keeps native web long press");return null;});
@@ -42,7 +54,7 @@ public final class StockPostingReturnInstrumentation extends Instrumentation {
    main(()->{ok(captured!=null,"successful result received through framework relay");ok(owner.body.length()==0&&owner.title.length()==0,"only confirmed success clears body and title");ok(owner.saves>=3,"native draft save called before handoff and after cleanup");ok(host.isFinishing()||host.isDestroyed(),"success closes source editor and returns to Haiagaru reader");return null;});
   }finally{
    removeMonitor(stock);if(host!=null)main(()->{if(!host.isFinishing())host.finish();return null;});
-   SharedPreferences.Editor restore=prefs.edit();for(String key:new String[]{"stockPostingSkipConfirmation","stockPostingOnWriteLongPress"})if(saved.containsKey(key))restore.putBoolean(key,(Boolean)saved.get(key));else restore.remove(key);restore.commit();if(hadTablet)nativePrefs.edit().putBoolean("enableTabletHome2",tablet).commit();else nativePrefs.edit().remove("enableTabletHome2").commit();
+   SharedPreferences.Editor restore=prefs.edit();for(String key:new String[]{"stockPostingSkipConfirmation","stockPostingOnWriteLongPress","stockPostingShowMenu"})if(saved.containsKey(key))restore.putBoolean(key,(Boolean)saved.get(key));else restore.remove(key);restore.commit();if(hadTablet)nativePrefs.edit().putBoolean("enableTabletHome2",tablet).commit();else nativePrefs.edit().remove("enableTabletHome2").commit();
   }
  }
 }

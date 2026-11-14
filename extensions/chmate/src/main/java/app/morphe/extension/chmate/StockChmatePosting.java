@@ -19,6 +19,7 @@ public final class StockChmatePosting {
     static final int ACTION=0x7e00000d;
     static final String LONG_PRESS="stockPostingOnWriteLongPress";
     static final String SKIP_CONFIRM="stockPostingSkipConfirmation";
+    static final String SHOW_MENU="stockPostingShowMenu";
     private static final String PACKAGE = "jp.co.airfront.android.a2chMate";
     private static final String EDITOR = "jp.syoboi.a2chMate.activity.ResEditActivity";
     private static final String HANDOFF = "app.morphe.extension.chmate.STOCK_POST_DRAFT";
@@ -125,27 +126,31 @@ public final class StockChmatePosting {
     static void addPostingMenu(Object owner, Menu menu) {
         Activity activity = ExternalBoardAuth.activity(owner);
         if (activity == null || menu == null) return;
-        boolean visible = Haiagaru.isPostingOverflowMenu(activity, menu) && current(activity) != null;
+        boolean visible = menuEnabled(activity) && Haiagaru.isPostingOverflowMenu(activity, menu) && current(activity) != null;
         MenuItem existing = menu.findItem(MENU);
         if (existing != null) { existing.setVisible(visible); return; }
         if (!visible) return;
         MenuItem item = menu.add(Menu.NONE, MENU, Menu.NONE, "通常版ChMateで書き込む");
         MENUS.put(item, new WeakReference<>(activity));
         item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-        item.setOnMenuItemClickListener(clicked -> { confirm(activity); return true; });
+        item.setOnMenuItemClickListener(clicked -> { if(menuEnabled(activity))confirm(activity); return true; });
+    }
+
+    private static boolean menuEnabled(Activity activity) {
+        return activity!=null&&FeatureSwitches.prefs(activity).getBoolean(SHOW_MENU,true);
     }
 
     static boolean handlePostingMenu(Object owner, MenuItem item) {
         if (item == null || item.getItemId() != MENU) return false;
         Activity activity = ExternalBoardAuth.activity(owner);
-        if (activity != null) confirm(activity);
+        if (menuEnabled(activity)) confirm(activity);
         return true;
     }
 
     static boolean handlePostingActivityMenu(MenuItem item) {
         if (item == null || item.getItemId() != MENU) return false;
         WeakReference<Activity> ref = MENUS.get(item);
-        if (ref != null && ref.get() != null) confirm(ref.get());
+        if (ref != null && menuEnabled(ref.get())) confirm(ref.get());
         return true;
     }
 

@@ -26,6 +26,8 @@ public final class SettingsProfiles {
         booleanKey(ExpertSettings.KEY);
         booleanKey(StockChmatePosting.LONG_PRESS);defaultValue(StockChmatePosting.LONG_PRESS,false);
         booleanKey(StockChmatePosting.SKIP_CONFIRM);defaultValue(StockChmatePosting.SKIP_CONFIRM,false);
+        booleanKey(StockChmatePosting.SHOW_MENU);defaultValue(StockChmatePosting.SHOW_MENU,true);
+        booleanKey(ThreadPostingNames.ENABLED);defaultValue(ThreadPostingNames.ENABLED,false);
         for(String key:new String[]{"settingsOptionLinksEnabled","reporterSearchEnabled","videoLandscapeImmersive"}){
             booleanKey(key);defaultValue(key,true);
         }
