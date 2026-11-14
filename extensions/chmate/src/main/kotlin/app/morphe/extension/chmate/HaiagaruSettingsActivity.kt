@@ -171,14 +171,14 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         modifier = Modifier.fillMaxWidth(), shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp)) }
                     if (query.isBlank()) {
                         item {
-                            SettingsHomeCard {
+                            SettingsFrame {
                                 SettingsHomeAction(if (english) "Haiagaru update history" else "Haiagaru更新履歴") {
                                     UpdateHistory.show(this@HaiagaruSettingsActivity)
                                 }
                             }
                         }
                         item {
-                            SettingsHomeCard {
+                            SettingsFrame {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     SettingsHomeAction(if (english) "Share settings" else "設定を共有", Modifier.weight(1f)) { SettingsProfiles.share(this@HaiagaruSettingsActivity) }
                                     SettingsHomeAction(if (english) "Load settings" else "設定を読み込む", Modifier.weight(1f)) { SettingsProfiles.open(this@HaiagaruSettingsActivity) }
@@ -196,7 +196,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)) }
                         items(groups, key = { it.id }) { group ->
-                            SettingsHomeCard(onClick = {
+                            SettingsFrame(onClick = {
                                 selected = groups.indexOf(group)
                             }, padded = false) {
                                 ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium, fontSize = 17.sp,
@@ -224,7 +224,11 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         items(visibleMatches, key = { (group, option) -> "${group.id}:${System.identityHashCode(option.control)}" }) {
-                            (group, option) -> HaiagaruUi.Group(group.title(english)) { BoundSettingRow(option, update) }
+                            (group, option) -> SettingsFrame(padded = false) {
+                                Text(group.title(english), style = MaterialTheme.typography.titleSmall,
+                                    color = HaiagaruUi.settingsCategoryColor, modifier = Modifier.padding(start = 12.dp, top = 10.dp))
+                                BoundSettingRow(option, update)
+                            }
                         }
                     }
                 } else {
@@ -236,7 +240,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                                 color = HaiagaruUi.settingsCategoryColor, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
                         }
                         items(rows, key = { "${source}:${System.identityHashCode(it.control)}" }) { option ->
-                            HaiagaruUi.Group { BoundSettingRow(option, update) }
+                            SettingsFrame(padded = false) { BoundSettingRow(option, update) }
                         }
                     }
                 }
@@ -274,9 +278,9 @@ private fun settingsGroups() = listOf(
     SettingsGroup("expert", "エキスパート設定", "Expert settings", "個別の動作を細かく切り替える", "Control additional behaviors individually", "⚙", listOf("EXPERT")),
 )
 
-/** Home-only cards; preference editors keep their existing controls and persistence. */
+/** The settings home, category rows and search results share the same outer frame. */
 @Composable
-private fun SettingsHomeCard(onClick: (() -> Unit)? = null, padded: Boolean = true,
+private fun SettingsFrame(onClick: (() -> Unit)? = null, padded: Boolean = true,
     content: @Composable ColumnScope.() -> Unit) {
     Surface(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface,
