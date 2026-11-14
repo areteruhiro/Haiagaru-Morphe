@@ -340,6 +340,14 @@ public final class Haiagaru {
         throw new NoSuchFieldException(type.getName() + "." + name);
     }
 
+    static void notifyUploadCapacityError() {
+        Activity activity=resumedActivity.get();
+        if(activity==null)return;
+        activity.runOnUiThread(()->{
+            if(resumedActivity.get()==activity)MediaUploadHosts.showCapacityError(activity);
+        });
+    }
+
     /** Runs the legacy 0.8.10.191 image request without its generated integrity decoy. */
     public static Object uploadLegacyImage(Object[] arguments) throws Exception {
         if (MediaUploadHosts.handles(arguments)) return MediaUploadHosts.upload(arguments,
@@ -369,10 +377,15 @@ public final class Haiagaru {
             }
 
             int status = connection.getResponseCode();
+            if (status == 413) throw MediaUploadHosts.capacityError();
             InputStream responseStream = status >= 200 && status < 300
                     ? connection.getInputStream() : connection.getErrorStream();
             String body = readUtf8(responseStream);
-            JSONObject root = new JSONObject(body);
+            JSONObject root;
+            try { root = new JSONObject(body); }
+            catch (org.json.JSONException malformed) {
+                throw new IOException("アップロード先の応答を確認できません（HTTP " + status + "）。再送前にサイトを確認してください");
+            }
 
             ClassLoader loader = Haiagaru.class.getClassLoader();
             Class<?> responseType = Class.forName(
@@ -454,6 +467,7 @@ public final class Haiagaru {
                         @Override public void onActivityStarted(Activity activity) { }
                         @Override public void onActivityResumed(Activity activity) {
                             resumedActivity = new WeakReference<>(activity);
+                            MediaUploadHosts.resumed(activity);
                             View decor=activity.getWindow().peekDecorView();
                             if(decor!=null&&shouldHideAds())hideRememberedAdViews(decor);
                             NativeToolTabs.resumed(activity);
@@ -512,6 +526,7 @@ public final class Haiagaru {
                 result = addToolbarChoice(result, 0x7e000009, "haiagaru_hissi_droid_plus");
                 result = addToolbarChoice(result, ToolbarIcons.AUTO_NG_EXCLUSIONS, "haiagaru_auto_ng_exclusions");
                 result = addToolbarChoice(result, ThreadWatch.ACTION, "haiagaru_thread_watch");
+                result = addToolbarChoice(result, StockChmatePosting.ACTION, "haiagaru_stock_posting");
             }
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
@@ -651,6 +666,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(itemId==StockChmatePosting.ACTION){StockChmatePosting.openFromToolbar(fragment);return true;}
         if(itemId==OpenTabsRefresh.ACTION){OpenTabsRefresh.refresh(toolbarActivity(fragment));return true;}
         if(itemId==ThreadWatch.ACTION){ThreadWatch.show(fragment);return true;}
         if (itemId == ToolbarIcons.AUTO_NG_EXCLUSIONS) {
@@ -1456,6 +1472,7 @@ public final class Haiagaru {
     /** Keeps ChMate's explicit self-navigation inside an optionally renamed installation. */
     public static Intent retargetSelfIntent(Intent intent) {
         if (intent == null) return null;
+        if (StockChmatePosting.isHandoff(intent)) return intent;
         ExternalWebSearch.prepare(intent);
         ComponentName component = intent.getComponent();
         String currentPackage = runtimePackageName;
@@ -3470,11 +3487,6 @@ public final class Haiagaru {
                     ImgurWebUpload.uploadsMenuVisible(activity));
             new LiveSettings(ImgurWebUpload.prefs(activity), () -> {})
                     .toggle(showImgurUploads, ImgurWebUpload.SHOW_UPLOADS_MENU);
-            Button imgurLogin = new Button(activity);
-            imgurLogin.setText(text("Imgurにログイン／Webアカウント送信（開発中）", "Imgur login / web account uploads (in development)"));
-            imgurLogin.setOnClickListener(view -> activity.startActivity(
-                    new Intent(activity, ImgurWebLoginActivity.class)));
-            layout.addView(imgurLogin);
             Button imgurUploads = new Button(activity);
             imgurUploads.setText(text("Imgur投稿一覧", "Imgur uploads"));
             imgurUploads.setOnClickListener(view -> activity.startActivity(new Intent(activity, ImgurUploadsActivity.class)));
@@ -3826,6 +3838,18 @@ public final class Haiagaru {
                 "Disabled entries are hidden the next time the menu opens. Features and authentication prompts remain available."));
         menuDescription.setTextSize(13);
         layout.addView(menuDescription, rowParams(activity));
+        StockChmatePosting.addSettingsButton(layout, activity);
+        Switch stockSkipConfirm=addSwitch(layout,activity,
+                text("通常版ChMateへ渡す確認を省略する", "Skip confirmation before handing off to stock ChMate"),
+                preferences.getBoolean(StockChmatePosting.SKIP_CONFIRM,false));
+        live.toggle(stockSkipConfirm,StockChmatePosting.SKIP_CONFIRM);
+        Switch stockLongPress=addSwitch(layout,activity,
+                text("書き込みボタンの長押しで通常版ChMateを開く（エッヂ）", "Long-press the write button to open stock ChMate (Edge)"),
+                preferences.getBoolean(StockChmatePosting.LONG_PRESS,false));
+        live.toggle(stockLongPress,StockChmatePosting.LONG_PRESS);
+        TextView stockLongPressHelp=new TextView(activity);
+        stockLongPressHelp.setText(text("オフは従来どおりWebで開きます。ツールバーの「標準アプリで書き込むを開く」からも利用できます。本文・スレタイを渡す場合は、書き込み画面の「通常版ChMateで書き込む」を使ってください。", "Off keeps the native web action. You can also add Open posting in the standard app to the toolbar. Use the posting-screen menu to hand off a composed draft."));
+        layout.addView(stockLongPressHelp,rowParams(activity));
         String[] postSizeChoices = new String[29];
         postSizeChoices[0] = text("標準（ChMateの既定値）", "Default (ChMate)");
         for (int index = 1; index < 28; index++)

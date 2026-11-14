@@ -7,7 +7,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.widget.ListView;
 import java.lang.ref.WeakReference;
 
 /** Resolve a notification's response after native DAT download and adapter binding. */
@@ -86,8 +85,8 @@ public final class ThreadWatchNavigation {
         if(list!=null&&target.guard!=null&&list.getViewTreeObserver().isAlive())list.getViewTreeObserver().removeOnPreDrawListener(target.guard);
         target.guard=null;
     }
-    private static void guard191(Pending target,Object fragment,View list){
-        if(target.guard!=null||!(list instanceof ListView))return;
+    private static void guardPosition(Pending target,Object fragment,View list,String version){
+        if(target.guard!=null)return;
         WeakReference<Object> owner=new WeakReference<>(fragment);
         target.guard=()->{
             if(pending!=target||System.currentTimeMillis()>target.expires||XPostPreviewPosition.hasUserInteraction(list)){
@@ -95,9 +94,9 @@ public final class ThreadWatchNavigation {
             }
             if(!list.isShown()||list.isLayoutRequested()||owner.get()==null)return true;
             try{
-                if(!FilterPosition.responseVisible((ListView)list,target.number)){
+                if(!FilterPosition.responseVisible(list,target.number)){
                     Object current=owner.get();
-                    String url=NativeThreadContext.url(NativeThreadContext.board(current,"0.8.10.191 dev"),"0.8.10.191 dev",1);
+                    String url=NativeThreadContext.url(NativeThreadContext.board(current,version),version,1);
                     ThreadWatchRules.Target opened=url==null?null:ThreadWatchRules.target(url),requested=ThreadWatchRules.target(target.url);
                     if(opened==null||requested==null||!opened.url.equals(requested.url)){clear(list.getContext(),target);return true;}
                     if(FilterPosition.jumpToResponse(current,target.number))return false;
@@ -125,14 +124,13 @@ public final class ThreadWatchNavigation {
                 // Keep the target pending for that reader instead of discarding it.
                 if(!opened.url.equals(requested.url))return;
                 if(XPostPreviewPosition.hasUserInteraction(list)){clear(list.getContext(),target);return;}
-                if(target.positioned&&version.contains("191")){
+                if(target.positioned){
                     // The original DAT refresh may still replace the adapter and
                     // restore an older unread position. Keep the explicit target
                     // until the bounded request expires; never start extra refreshes.
-                    guard191(target,fragment,list);
+                    guardPosition(target,fragment,list,version);
                 }else if(FilterPosition.jumpToResponse(fragment,target.number)){
-                    if(!version.contains("191")){clear(list.getContext(),target);return;}
-                    target.positioned=true;guard191(target,fragment,list);
+                    target.positioned=true;guardPosition(target,fragment,list,version);
                 }
                 // The worker may finish after the activity appears. Ask the native
                 // reader to refresh once, then retry its real response adapter.

@@ -100,6 +100,7 @@ public final class ExternalBoardAuth {
     }
     public static void target(Object owner, String url) { target(owner,url,null); }
     public static void target(Object owner, String url, EditText body) {
+        MediaUploadHosts.bindEditor(activity(owner),body,url);
         if(url!=null && url.startsWith("http://")) url="https://"+url.substring(7);
         Activity a=activity(owner);
         if(a!=null && !BoardAuthRules.origin(url).isEmpty()) {
@@ -110,6 +111,7 @@ public final class ExternalBoardAuth {
         }
     }
     public static void addPostingMenu(Object owner, Menu menu) {
+        StockChmatePosting.addPostingMenu(owner,menu);
         BoardCookies.decorateMenu(owner,menu);
         Activity a=activity(owner);
         if(!Haiagaru.preparePostingMenu(a,menu,MENU,"showExternalBoardAuthMenu")) return;
@@ -119,6 +121,7 @@ public final class ExternalBoardAuth {
         item.setOnMenuItemClickListener(v->handlePostingMenu(owner,v));
     }
     public static boolean handlePostingMenu(Object owner, MenuItem item) {
+        if(StockChmatePosting.handlePostingMenu(owner,item))return true;
         if(BoardCookies.handleMenu(owner,item))return true;
         if(item==null || item.getItemId()!=MENU) return false;
         Activity a=activity(owner);
@@ -131,6 +134,7 @@ public final class ExternalBoardAuth {
         return true;
     }
     public static boolean handlePostingActivityMenu(MenuItem item) {
+        if(StockChmatePosting.handlePostingActivityMenu(item))return true;
         if(BoardCookies.handleActivityMenu(item))return true;
         WeakReference<Activity> ref=menus.get(item);
         return ref!=null && ref.get()!=null && handlePostingMenu(ref.get(),item);

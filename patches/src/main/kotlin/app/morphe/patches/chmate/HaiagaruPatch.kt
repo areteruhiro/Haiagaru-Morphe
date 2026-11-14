@@ -5167,6 +5167,7 @@ val haiagaruPatch = resourcePatch(
             "haiagaru_hissi_droid_plus" to "必死チェッカーDroid＋で開く",
             "haiagaru_auto_ng_exclusions" to "自動NG除外ID",
             "haiagaru_thread_watch" to "このスレの新着通知",
+            "haiagaru_stock_posting" to "標準アプリで書き込むを開く",
             "haiagaru_refresh_open_tabs" to "開いているスレ・板を一括更新",
         )) {
             for (values in listOf("values", "values-en")) {
@@ -5182,6 +5183,8 @@ val haiagaruPatch = resourcePatch(
                 it.createPublicId("drawable", name)
             }
             val iconPath = when (name) {
+                "haiagaru_stock_posting" ->
+                    "M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75zM20.71,7.04a1,1 0,0 0,0 -1.41l-2.34,-2.34a1,1 0,0 0,-1.41 0l-1.83,1.83 3.75,3.75zM13,19h8v2h-8z"
                 "haiagaru_refresh_open_tabs" ->
                     "M3,3h8v2H5v6H3zM13,3h8v8h-2V5h-6zM3,13h2v6h6v2H3zM19,13h2v8h-8v-2h6zM16,8v4h-4l1.6,-1.6A3,3 0,1 0,15 13h2a5,5 0,1 1,-2.3,-4.2z"
                 "haiagaru_thread_watch" ->
@@ -5585,6 +5588,11 @@ val haiagaruPatch = resourcePatch(
             })
             application.appendChild(document.createElement("activity").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.ThreadWatchOpenActivity")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Translucent.NoTitleBar")
+            })
+            application.appendChild(document.createElement("activity").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.StockPostingRelayActivity")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:theme","@android:style/Theme.Translucent.NoTitleBar")
             })
