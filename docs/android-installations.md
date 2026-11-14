@@ -2948,3 +2948,18 @@ Mi Note 10 Android 11 / ADB `d5497008`。Haiagaru 修正確認 226 / ChMate 0.8.
 - APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\two-column-apks\final226.apk`、SHA-256 `c0b596928322dad7299e774b0cb1113584319190b3e1f0c5937c635c4f81af63`
 - MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\two-column-apks\candidate.mpp`、SHA-256 `67f322e231f0db604cab48e338bd7ab38912cbb783705afb5be14842f7d47a20`
 - 署名: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+
+
+## 2026-11-14 外部板のスレ情報ポップアップ修正確認
+
+Mi Note 10（Android 11、ADB `d5497008`）。検証用の別パッケージだけを署名照合後に上書き。通常アプリは変更していない。
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`: 2026-11-14T23:31:17.664457 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-popup-20261114\apks\final191.apk`、SHA-256 `4b16aafc476a7bc545649a96bec314663675b5b76ac74a0c0a83d58387e6b19b`。
+- Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`: 2026-11-14T23:32:25.095231 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-popup-20261114\apks\final226.apk`、SHA-256 `44f08ca2c092b546f387a50eb6cc668f0682177082eaaeb3a71da30595cd04a5`。
+- Haiagaru 修正確認 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`: 2026-11-14T23:33:32.914372 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-popup-20261114\apks\final242.apk`、SHA-256 `146764acd0da1480831d52553582538dac3f60c092851edf567192d801c6d4e3`。
+
+MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-popup-20261114\apks\candidate.mpp`、SHA-256 `a916a5bca1fff44666829aef01e38b7677b1fb025e3bd03c3d077312ab8bf02d`。
+署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
