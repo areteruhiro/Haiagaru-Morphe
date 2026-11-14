@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.rotate
 import androidx.core.graphics.drawable.toBitmap
@@ -148,7 +149,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
         is SettingsSection -> {
             var expanded by remember(view) { mutableStateOf(!view.collapsed) }
             Column(Modifier.fillMaxWidth()) {
-                ListItem(headlineContent = { Text(item.label, style = MaterialTheme.typography.titleMedium,
+                ListItem(headlineContent = { Text(item.label, style = MaterialTheme.typography.titleMedium, fontSize = 17.sp,
                     color = HaiagaruUi.settingsCategoryColor) },
                     supportingContent = { if (item.description.isNotBlank()) Text(item.description) },
                     trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null,

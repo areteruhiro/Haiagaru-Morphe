@@ -3671,6 +3671,18 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchImageViewerRotati
         "0.8.10.226 dev" -> "o.TTVideoLandingPageActivity4"
         else -> return
     }
+    val canvas=mutableClassDefBy("L${targetImageView.replace('.','/')};")
+    val position=canvas.methods.single { it.name=="setPosition" && it.parameterTypes==listOf("F","F","F","Z") }
+    val minimumField=if(versionName=="0.8.10.191 dev")"B" else "C"
+    val minimumRead=position.implementation!!.instructions.withIndex().single {
+        val ref=(it.value as? ReferenceInstruction)?.reference as? FieldReference
+        ref?.definingClass==canvas.type && ref.name==minimumField && ref.type=="F"
+    }
+    val destination=(minimumRead.value as TwoRegisterInstruction).registerA
+    position.addInstructions(minimumRead.index+1,"""
+        invoke-static/range {p0 .. p4}, Lapp/morphe/extension/chmate/ImageScaleRetention;->minimumForPosition(Ljava/lang/Object;FFFZ)F
+        move-result v$destination
+    """.trimIndent())
     val activityType = "Ljp/syoboi/a2chMate/activity/ImagesViewer2Activity;"
     val onCreate = mutableClassDefBy(activityType).methods.single { method ->
         method.name == "onCreate" && method.returnType == "V"

@@ -79,3 +79,10 @@ Haiagaru設定 → 書き込む → 「通常版ChMateの書き込み画面」�
 最終final-build.logは通常Lint/R8成功2分17秒。191へ適用・署名一致更新成功。更新したStockPostingReturnInstrumentationは28項目成功（両表示方法、初期ポップアップ、固定component限定、模擬成功/中断、設定復元）。ネイティブタイトルbridgeと自己Intent限定例外も検証成功。共通Java処理だけの変更で新規ネイティブフックなし。226/242の今回候補の再適用・実画面起動は未実施、公開なし。
 
 公開前追記：候補の226/242もパッチ適用・別package更新成功、起動/画像回帰110/106項目成功。191/226/242のtitle bridgeと自己Intent限定例外を確認。
+
+
+## 対応板の拡張（開発中）
+
+エッヂ限定を解除し、通常版が扱う2ch互換の板URL・test/read.cgiスレURLと、したらばの板URL・bbs/read.cgiスレURLを受け渡す。投稿先は既存のネイティブ編集モデルからのみ読み取り、本文から推測しない。通常版のサポート・認証は各板に依存する。Haiagaru内部のlocalhost/数値IPやローカル用ホスト、query/fragment/資格情報付きURL・投稿CGI・不正スレIDは対象外。独自形式の外部板を通常版対応として保証しない。
+
+設定の「基本設定・言語」「画面・文字・テーマ」は初期collapsed=trueに変更。69af8434の旧SettingsSectionsでの戻る処理修正は主開発先へ統合済みだが、Composeは別経路で初期展開falseを反映していた。作業スペース差分の欠落ではない。
