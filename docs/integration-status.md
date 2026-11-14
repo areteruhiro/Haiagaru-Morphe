@@ -1793,3 +1793,12 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 PC仮想メモリ不足で複数のビルドが失敗。既存の検証workflow43565295600では先行折りたたみ/他板ソースのMPP生成成功。最終ソースはメモリ負荷が下がった後のローカル通常Lint/R8 build成功4m、3版適用・実機別package更新済み。native scale/control191/226各15、settings/stock24230、画像110/110/106項目成功。新規対象crashなし。最初の実UI失敗は端末の別アプリ遷移と初回案内を区別し、案内だけを試験中スキップしてfinally復元。最初のPopup試験はhostの表示待ち、ACTION_UP試験はattach前の縮小が初期layoutで戻るfixture問題を修正し、attach後に縮小→UPを行って成功。失敗を成功扱いしていない。公開POSTや通常版の実起動は行っていない。
 
 証跡build/image-settings-20261114、先行CI build/settings-stock-allboards-20261114。台帳android-installations.md。ユーザーから完了後公式Releaseの指示あり。無関係未追跡ファイルを保持。
+
+
+## 2026-11-14 1.33.1公式公開完了
+
+設定/他板27d95b49と画像/設定整理da2e5b14、試験器整形d6debcd3をdev→master通常マージ。最終push f337b552、既存Semantic Release CI43568724227 success、生成commit/tag106447f8/1.33.1、draft=false/prerelease=false。初回pushは別アカウントHaiagaruへ切り替わっていて403だったため、保存済み所有者areteruhiroの認証を当該git操作の環境に限定して利用。共有のアクティブアカウントは変更しなかった。
+
+公開MPP SHA256 7a5c65db7b15380d7b4f24514a90fc2bbfb8e00ed86ba2b9ba81e6a632a8e66a、GitHub asset digest一致・ZIP CRC正常、ImageScaleRetention/倍率フック補助・通常版relayの同梱を確認。配布metadata両種とmaster/dev両raw feedは1.33.1・同downloadURL・SHA256 8f4c129b3ebda340ffb1a5a9f37caa12cdd362c6649b9de77760a8e5deddc388一致。証跡build/official1331-public/verification.json、ci.log。配布MPPそのものの再パッチ/端末再導入は未実施、同製品ソースの候補を3版へ適用・実機導入して検証済み。devはCI backmergeをff取り込み。
+
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.33.1 。指を離す倍率だけを維持し次画像への引継ぎは変えない。設定スクリーンショット、15/15/30と画像110/110/106の成功結果、公開POSTなしの制限は上記のとおり。無関係未追跡ファイル維持。
