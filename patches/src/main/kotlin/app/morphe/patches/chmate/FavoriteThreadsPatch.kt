@@ -2,6 +2,7 @@ package app.morphe.patches.chmate
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
@@ -27,8 +28,12 @@ internal fun BytecodePatchContext.patchFavoriteThreads(version: String) {
         else -> "Ljp/syoboi/a2chMate/ui/home/HomeFragment;"
     })
     val menu = home.methods.single { it.name==(if(version.contains("191"))"Wy_" else "d") && it.parameterTypes==listOf("Landroid/view/Menu;") && it.returnType=="V" }
-    // Entry interception also covers branches targeting the original return.
-    menu.addInstructions(0,"invoke-static {p0, p1}, Lapp/morphe/extension/chmate/HomeThreadOrder;->menu(Ljava/lang/Object;Landroid/view/Menu;)V")
+    // Add after native/super menu preparation; keep all branches landing on the hook.
+    menu.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
+        .asReversed().forEach { exit ->
+            menu.replaceInstruction(exit.index,"invoke-static {p0, p1}, Lapp/morphe/extension/chmate/HomeThreadOrder;->menu(Ljava/lang/Object;Landroid/view/Menu;)V")
+            menu.addInstructions(exit.index+1,"return-void")
+        }
     // Track the actual HOME mode before mapping only this sorting invocation.
     // The flow/persisted tab stays 108 (favorites) or 109 (refresh targets),
     // independent of the native 102 snapshot used to build either list.
