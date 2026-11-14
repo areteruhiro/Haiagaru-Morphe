@@ -152,7 +152,7 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
             var expanded by remember(view) { mutableStateOf(!view.collapsed) }
             Column(Modifier.fillMaxWidth()) {
                 ListItem(headlineContent = { Text(item.label, style = MaterialTheme.typography.titleMedium, fontSize = 17.sp,
-                    color = HaiagaruUi.settingsCategoryColor) },
+                    color = MaterialTheme.colorScheme.onSurface) },
                     supportingContent = { if (item.description.isNotBlank()) Text(item.description) },
                     trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null,
                         Modifier.rotate(if (expanded) 90f else 0f)) },
