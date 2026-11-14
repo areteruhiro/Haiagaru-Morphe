@@ -2831,3 +2831,64 @@ app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chm
 - app.haiagaru.tests.imagescale226 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-settings-20261114\tests\tests226.apk / SHA256 06bb9b59575bdeb382a693627a4e7c6be78c26c2bec1d1d233501091ef2b22d1 / 同じ鍵・端末へinstall-r成功、15項目PASS。
 - app.haiagaru.tests.settingsstock242 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-settings-20261114\settings-tests.apk / SHA256 d3eb3b442759cff95b5155d0100389763612dd76abdf2c8d1d103560ca049a29 / 同じ鍵・端末へinstall-r成功、30項目PASS。
 最終MPPはローカル通常Lint/R8 build4m成功。191/226のnative ACTION_UP後50%維持、25/50/75/100/150/200/400%指定、下限/上限、︙Popup表示と直接回転への切替各15項目、242設定の再入場で2セクションが閉じる/重複ヘッダーなし/ネイティブ5ch・bbspink・Edgeのoverflow準備フックから通常版項目表示とOFF非表示30項目成功。画像描画・再問い合わせ110/110/106項目成功。3版title bridge/自己Intent例外、191/226倍率フックの元命令・レジスター・引数保持検証成功。公開POST/外部通常版起動/メディア送信なし、新規対象crashなし。
+
+
+## 2026-11-14 リンクカード除外設定・公式公開前候補
+
+通常Lint/R8 build-binding.logは5m7s成功。Mi Note 10の既存隔離reporter各版と証明書一致を照合し、署名一致install-r成功。既存の通常版/Haiagaru本体/データは保持。
+
+```json
+[
+  {
+    "displayName": "Haiagaru 修正確認 242",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter242",
+    "chmate": "0.8.10.242 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\final242.apk",
+    "apkSha256": "dfe65d63cb976b81de2b4e6e138419fc68713d518bac6966a81680b131f2d0ed",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\candidate.mpp",
+    "bundleSha256": "aee2debf205132fbfdb11a2fe4dcaa89eb2437399577eaf36798b491f039f223",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "2026-11-14T16:40:58.634331",
+    "result": "signature matched; install-r Success; native thumbnail PASS; shared exclusion policy/settings242 25 checks and existing settings242 30 checks PASS"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 191",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter191",
+    "chmate": "0.8.10.191 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\final191.apk",
+    "apkSha256": "aeba31e40535a5edd8624c664e1a96c0fe6ea4d47a406fde23948fe1f3cea8f9",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\candidate.mpp",
+    "bundleSha256": "aee2debf205132fbfdb11a2fe4dcaa89eb2437399577eaf36798b491f039f223",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "2026-11-14T16:44:03.527402",
+    "result": "signature matched; install-r Success; native thumbnail PASS; shared exclusion policy/settings242 25 checks and existing settings242 30 checks PASS"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 226",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter226",
+    "chmate": "0.8.10.226 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\final226.apk",
+    "apkSha256": "09a91c59099e16cc06a2a262490623a7181953b83d217dd29bdf0bbbc877d334",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\site-card-exclusions-20261114\\candidate.mpp",
+    "bundleSha256": "aee2debf205132fbfdb11a2fe4dcaa89eb2437399577eaf36798b491f039f223",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "2026-11-14T16:44:40.456672",
+    "result": "signature matched; install-r Success; native thumbnail PASS; shared exclusion policy/settings242 25 checks and existing settings242 30 checks PASS"
+  }
+]
+```
+
+検証APK `app.haiagaru.tests.cardexclusions242` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-card-exclusions-20261114\tests\tests.apk` / SHA256 `78b9fcea51d5a9721d357dd7caff0c6294d6ed44607442e06e6933d8f9594fe2`、同じ鍵・alias Morphe・証明書・端末へ更新成功。導入16:43頃JST、25項目成功。初期値とエラー表示は実UI、保存済みカードは合成metadataをnative本文ビューへ渡した描画試験。メタデータ取得/画像送信/公開POSTなし。
+191/226/242 native画像表示110/110/106、242設定再入場・ネイティブ板メニュー30項目成功。新規ネイティブフック変更なし、共通Java/Kotlinだけの変更。除外設定UIとカード描画は共通処理を242で確認し、191/226では同機能のUI試験を繰り返していない。crash-before/after一致、新規crashなし。初回reset失敗はComposeのスナップショット欠落を修正。本文fixtureのnull AttributeSetと非compiled XML失敗を修正し、compiled layoutのSTART_TAGまで進めてnative本文生成成功。失敗を成功扱いしていない。

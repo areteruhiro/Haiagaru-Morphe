@@ -1802,3 +1802,12 @@ PC仮想メモリ不足で複数のビルドが失敗。既存の検証workflow4
 公開MPP SHA256 7a5c65db7b15380d7b4f24514a90fc2bbfb8e00ed86ba2b9ba81e6a632a8e66a、GitHub asset digest一致・ZIP CRC正常、ImageScaleRetention/倍率フック補助・通常版relayの同梱を確認。配布metadata両種とmaster/dev両raw feedは1.33.1・同downloadURL・SHA256 8f4c129b3ebda340ffb1a5a9f37caa12cdd362c6649b9de77760a8e5deddc388一致。証跡build/official1331-public/verification.json、ci.log。配布MPPそのものの再パッチ/端末再導入は未実施、同製品ソースの候補を3版へ適用・実機導入して検証済み。devはCI backmergeをff取り込み。
 
 公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.33.1 。指を離す倍率だけを維持し次画像への引継ぎは変えない。設定スクリーンショット、15/15/30と画像110/110/106の成功結果、公開POSTなしの制限は上記のとおり。無関係未追跡ファイル維持。
+
+
+## 2026-11-14 リンクカード除外URL設定（公式公開指示あり）
+
+利用者指示で除外URL/ドメインを1行ずつ追加・編集可能にし、初期値https://imgur.com/とサブドメイン/配下を除外。空欄保存で解除、パス境界を保持。元リンク/画像動画/Xカードは保持。候補・保存済みカード・待機中のmetadata/image取得に反映。設定共有対応。詳細site-link-cards.md。
+
+ホスト判定39項目成功。実機reset失敗からCompose入力値/エラースナップショット欠落を修正し、実UI追加/保存/空欄/初期値/キャンセル/不正URL表示と合成cachedカード描画25項目成功。fixture初期化失敗も修正し全試験を完了。最終通常Lint/R8 build5m7s成功、3版適用・署名一致で別package実機更新、native画像110/110/106、242既存設定/板メニュー30項目成功。新規crashなし、公開POST/カードダウンロードなし。新規nativeフックなし。共通設定UI試験は242、191/226は画像回帰と起動を確認。台帳android-installations.md、証跡build/site-card-exclusions-20261114。
+
+利用者から完了後公式Release指示あり。既存Semantic Release CIへdev→master通常マージで進む。無関係な未追跡ファイルを保持。
