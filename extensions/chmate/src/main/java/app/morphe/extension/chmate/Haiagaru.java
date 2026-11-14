@@ -3489,6 +3489,10 @@ public final class Haiagaru {
     private static LinearLayout settingsGENERAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout basics=SettingsSection.add(layout,text("基本設定・言語", "Basics and language"),text("言語、広告、設定リンク、初期設定", "Language, ads, setting links and defaults"),false);
+        LinearLayout sites=SettingsSection.add(layout,text("外部掲示板・板一覧", "External boards and board list"),text("使うサイトと板一覧の分類", "Sites to use and board grouping"),true);
+        LinearLayout tabs=SettingsSection.add(layout,text("追加画面のタブ設定", "Tool screen tabs"),text("タブの追加先、自動表示する画面、手動追加", "Target pane, automatic screens and manual tabs"),true);
+        LinearLayout gestures=SettingsSection.add(layout,text("設定画面のジェスチャー", "Settings gestures"),text("設定内で使うスワイプの感度", "Swipe sensitivity inside settings"),true);
         // Keep existing setting links and settings search working after moving
         // the primary entry to the Haiagaru home screen.
         Button addedFeatures = new Button(activity);
@@ -3505,60 +3509,61 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
-        Switch settingOptionLinks = addSwitch(layout, activity,
+        Switch settingOptionLinks = addSwitch(basics, activity,
                 "設定内の機能名をタップして設定を開く", FeatureSwitches.enabled("settingsOptionLinksEnabled", true));
         new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(settingOptionLinks, "settingsOptionLinksEnabled");
         SiteBoardGateway siteGateway = SiteBoardGateway.get(activity);
         for (String kind : SiteBoardMenuProtocol.KINDS) {
-            Switch site = addSwitch(layout, activity,
+            Switch site = addSwitch(sites, activity,
                     "使用する：" + SiteBoardMenuProtocol.title(kind) + "の閲覧・板一覧",
                     siteGateway.siteEnabled(kind));
             site.setOnCheckedChangeListener((button, checked) ->
                     siteGateway.prefs.edit().putBoolean(SiteBoardGateway.siteFlag(kind), checked).apply());
         }
-        Switch siteGroups=addSwitch(layout,activity,text("外部板をサイト別に板一覧の最上位へ表示","Show external boards by site at the top level"),preferences.getBoolean(ExternalBoardGroups.KEY,false));
+        Switch siteGroups=addSwitch(sites,activity,text("外部板をサイト別に板一覧の最上位へ表示","Show external boards by site at the top level"),preferences.getBoolean(ExternalBoardGroups.KEY,false));
         live.toggle(siteGroups,ExternalBoardGroups.KEY);
-        TextView siteGroupsHelp=new TextView(activity);siteGroupsHelp.setText("初期OFF。オンではエッヂ・オルグ板・したらばなどをサイト別に表示します。板一覧のキャッシュへ反映するため、変更後はChMateを再起動してください。");layout.addView(siteGroupsHelp);
-        android.widget.Button settingLinks=new android.widget.Button(activity);settingLinks.setText("設定リンクを作成");layout.addView(settingLinks);
+        TextView siteGroupsHelp=new TextView(activity);siteGroupsHelp.setText("初期OFF。オンではエッヂ・オルグ板・したらばなどをサイト別に表示します。板一覧のキャッシュへ反映するため、変更後はChMateを再起動してください。");sites.addView(siteGroupsHelp);
+        android.widget.Button settingLinks=new android.widget.Button(activity);settingLinks.setText("設定リンクを作成");basics.addView(settingLinks);
         settingLinks.setOnClickListener(v->activity.startActivity(new Intent(activity,SettingLinkActivity.class)));
-        Switch nativeTabs = addSwitch(layout, activity,
-                text("タブレットの追加画面をホーム側のタブで開く", "Open extra tablet screens in HOME tabs"),
+        Switch nativeTabs = addSwitch(tabs, activity,
+                text("タブの追加先：ホーム側（オフはスレ側）", "Tab destination: HOME (off: thread pane)"),
                 preferences.getBoolean(NativeToolTabs.KEY, false));
         live.toggle(nativeTabs, NativeToolTabs.KEY);
-        Switch nativeGestures = addSwitch(layout, activity,
+        Switch nativeGestures = addSwitch(tabs, activity,
                 text("追加画面のタブでChMateのジェスチャーを使う", "Use ChMate gestures in tool tabs"),
                 preferences.getBoolean(NativeToolTabChMateGestures.KEY, false));
         live.toggle(nativeGestures, NativeToolTabChMateGestures.KEY);
         TextView nativeGestureHelp = new TextView(activity);
         nativeGestureHelp.setText(text("ChMateの「設定 → ジェスチャー」の「タブを閉じる」「左のタブ」「右のタブ」「戻る」「進む」「新しいタブ」を使います。戻る・進むはビューア内の閲覧履歴を移動し、戻る履歴がなければタブを閉じます。設定のカテゴリ内では設定一覧へ戻ります。新しいタブは同じペインに本体の空タブを追加します。オンの間は固定スワイプを使いません。初期オフ、再起動不要です。",
                 "Uses ChMate's Close/Left/Right tab, Back, Forward and New tab assignments. Back/Forward navigate browser history; Back at the root closes the tool (or returns to the settings category list). New tab creates a native blank tab in the same pane. Replaces fixed swipes. Off by default; no restart required."));
-        layout.addView(nativeGestureHelp);
-        EditText gestureSensitivity = addTextField(layout, activity,
+        tabs.addView(nativeGestureHelp);
+        EditText gestureSensitivity = addTextField(gestures, activity,
                 text("Haiagaru設定内のジェスチャー感度（50〜200%）", "Settings gesture sensitivity (50–200%)"),
                 Integer.toString(preferences.getInt(HaiagaruSettingsGestures.SENSITIVITY, 100)));
         gestureSensitivity.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
         TextView gestureHelp = new TextView(activity);
         gestureHelp.setText(text("100%はChMateの設定と同じ距離です。大きくすると短いスワイプで反応します。設定画面だけに適用し、次の操作から反映します。",
                 "100% uses ChMate's gesture distance. Higher values need a shorter swipe. Applies only inside settings, from the next gesture."));
-        layout.addView(gestureHelp);
+        gestures.addView(gestureHelp);
         live.number(gestureSensitivity, HaiagaruSettingsGestures.SENSITIVITY, 50, 200);
-        Switch nativeSettingsTab = addSwitch(layout, activity,
+        LinearLayout screens=SettingsSection.add(tabs,text("自動でタブ表示する画面", "Screens opened as tabs"),text("オフの画面は別画面で開きます", "Disabled screens open separately"),true);
+        Switch nativeSettingsTab = addSwitch(screens, activity,
                 text("タブ表示する画面：Haiagaru設定", "Tab screen: Haiagaru settings"),
                 preferences.getBoolean(NativeToolTabs.SETTINGS_KEY, true));
         live.toggle(nativeSettingsTab, NativeToolTabs.SETTINGS_KEY);
-        Switch nativeEddiTab = addSwitch(layout, activity,
+        Switch nativeEddiTab = addSwitch(screens, activity,
                 text("タブ表示する画面：エッヂ過去ログ検索", "Tab screen: Edge archive search"),
                 preferences.getBoolean(NativeToolTabs.EDDI_KEY, true));
         live.toggle(nativeEddiTab, NativeToolTabs.EDDI_KEY);
-        Switch nativeSearchTab = addSwitch(layout, activity,text("タブ表示する画面：投稿を探す", "Tab screen: Find posts"),preferences.getBoolean(NativeToolTabs.SEARCH_KEY,true));
+        Switch nativeSearchTab = addSwitch(screens, activity,text("タブ表示する画面：投稿を探す", "Tab screen: Find posts"),preferences.getBoolean(NativeToolTabs.SEARCH_KEY,true));
         live.toggle(nativeSearchTab,NativeToolTabs.SEARCH_KEY);
-        Switch nativeCheckerTab = addSwitch(layout, activity,text("タブ表示する画面：投稿検索・結果", "Tab screen: Checker results"),preferences.getBoolean(NativeToolTabs.CHECKER_KEY,true));
+        Switch nativeCheckerTab = addSwitch(screens, activity,text("タブ表示する画面：投稿検索・結果", "Tab screen: Checker results"),preferences.getBoolean(NativeToolTabs.CHECKER_KEY,true));
         live.toggle(nativeCheckerTab,NativeToolTabs.CHECKER_KEY);
-        Switch nativeHissiTab = addSwitch(layout, activity,text("タブ表示する画面：必死チェッカーもどき専用ビュワー", "Tab screen: Hissi-style dedicated viewer"),preferences.getBoolean(NativeToolTabs.HISSI_KEY,true));
+        Switch nativeHissiTab = addSwitch(screens, activity,text("タブ表示する画面：必死チェッカーもどき専用ビュワー", "Tab screen: Hissi-style dedicated viewer"),preferences.getBoolean(NativeToolTabs.HISSI_KEY,true));
         live.toggle(nativeHissiTab,NativeToolTabs.HISSI_KEY);
-        Switch nativeFullTab = addSwitch(layout, activity,text("タブ表示する画面：ワッチョイ全文検索", "Tab screen: Full Wacchoi search"),preferences.getBoolean(NativeToolTabs.FULL_KEY,true));
+        Switch nativeFullTab = addSwitch(screens, activity,text("タブ表示する画面：ワッチョイ全文検索", "Tab screen: Full Wacchoi search"),preferences.getBoolean(NativeToolTabs.FULL_KEY,true));
         live.toggle(nativeFullTab,NativeToolTabs.FULL_KEY);
-        EditText toolTabHeight = addTextField(layout, activity,
+        EditText toolTabHeight = addTextField(tabs, activity,
                 text("専用画面タブの見出しバーの高さ（dp・48〜80）", "Tool tab header height (dp, 48–80)"),
                 Integer.toString(NativeToolTabs.headerHeightDp(activity)));
         toolTabHeight.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -3566,17 +3571,17 @@ public final class Haiagaru {
         TextView nativeTabsHelp = new TextView(activity);
         nativeTabsHelp.setText(text("オンはホーム側、オフはスレ側のタブ列に追加します。各「タブ表示する画面」をオフにした画面は別画面で開きます。「画面を新しいタブに追加」の手動追加も同じ追加先を使います。変更は次に開く画面から反映され、既存のタブは自動では移動しません。",
                 "On adds screens to HOME tabs; off adds them to thread tabs. Individual screen switches control automatic tab opening. Manual additions use the same pane selection. Existing tabs are not moved."));
-        layout.addView(nativeTabsHelp);
+        tabs.addView(nativeTabsHelp);
         Button addToolTab = new Button(activity);
         addToolTab.setText(text("画面を新しいタブに追加", "Add a screen in a new tab"));
         addToolTab.setOnClickListener(view -> NativeToolTabs.showChooser(activity));
-        layout.addView(addToolTab);
+        tabs.addView(addToolTab);
         TextView addToolTabHelp = new TextView(activity);
         addToolTabHelp.setText(text("タブレット表示で使えます。各画面の自動タブ表示がオフでも手動追加できます。追加先は上の設定で、ホーム側／スレ側を切り替えます。",
                 "In tablet mode, manually add any screen even when its automatic tab setting is off. The switch above selects HOME or thread tabs."));
-        layout.addView(addToolTabHelp);
+        tabs.addView(addToolTabHelp);
         int initialSettingsLanguage = SettingsLanguage.index(preferences.getString("settingsLanguage", "ja"));
-        Spinner settingsLanguage = addSpinner(layout, activity,
+        Spinner settingsLanguage = addSpinner(basics, activity,
                 "Haiagaruの表示言語 / Haiagaru language",
                 new String[]{"日本語 / Japanese", "English / 英語", "端末の言語 / System"},
                 initialSettingsLanguage);
@@ -3585,10 +3590,10 @@ public final class Haiagaru {
                 "表示言語を選ぶと保存され、次に設定を開いたときに反映されます。",
                 "The selected language is saved immediately and appears when settings are reopened."));
         settingsLanguageDescription.setTextSize(13);
-        layout.addView(settingsLanguageDescription, rowParams(activity));
+        basics.addView(settingsLanguageDescription, rowParams(activity));
 
         Switch hideAd = addSwitch(
-                layout,
+                basics,
                 activity,
                 text("広告を削除", "Remove ads"),
                 preferences.getBoolean("hideAd", true)
@@ -3596,27 +3601,32 @@ public final class Haiagaru {
 
         live.choice(settingsLanguage, () -> preferences.edit().putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition())).apply());
         live.toggle(hideAd, "hideAd");
-        LightweightSetup.controls(activity,layout);
+        LightweightSetup.controls(activity,basics);
         Button resetSettings=new Button(activity);
         resetSettings.setText(text("Haiagaruの設定を初期設定に戻す","Reset Haiagaru settings to defaults"));
         resetSettings.setOnClickListener(v->SettingsProfiles.confirmReset(activity));
-        layout.addView(resetSettings);
+        basics.addView(resetSettings);
         return layout;
     }
 
     private static LinearLayout settingsDISPLAY(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        ThreadSearchOptions.add(layout,activity);
+        LinearLayout appearance=SettingsSection.add(layout,text("画面・文字・テーマ", "Layout, text and themes"),text("画面モード、行間、テーマ、本文の装飾", "Display mode, spacing, themes and text styling"),false);
+        LinearLayout behavior=SettingsSection.add(layout,text("スレの操作・更新", "Thread controls and refresh"),text("コピー、読書位置、自動リロード", "Copying, reading position and auto-reload"),true);
+        LinearLayout filters=SettingsSection.add(layout,text("ツールバー・絞り込み", "Toolbar and filters"),text("ボタン、人気レス、フィルターの表示", "Buttons, popular replies and filter presentation"),true);
+        LinearLayout lists=SettingsSection.add(layout,text("スレ一覧・HOME・履歴の表示", "Thread lists, HOME and history"),text("並び順、表示するスレ、履歴タブ", "Ordering, thread visibility and history tabs"),true);
+        LinearLayout search=SettingsSection.add(layout,text("スレ内検索・記者ID", "Thread search and reporter IDs"),text("検索対象と記者IDの表示・検索", "Search targets and reporter ID display/search"),true);
+        ThreadSearchOptions.add(search,activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        Switch automaticFold = addSwitch(layout, activity,
+        Switch automaticFold = addSwitch(appearance, activity,
                 text("折りたたみ状態でスマホ／タブレット表示を自動切替", "Switch phone/tablet layout by folding state"),
                 preferences.getBoolean("automaticFoldMode", false));
         TextView foldHelp = new TextView(activity);
         foldHelp.setText(text("Jetpack WindowManagerの折り目情報で判定します。内側画面の折り目を確認後、折り目がなくなるとスマホ表示へ戻します。DPIや600dp幅で推測しません。非対応端末・閉じた状態の初回起動は手動設定を維持します。分割画面で折り目が範囲外の場合も切替えません。投稿・設定・メディア表示中は切替を保留します。",
                 "Uses Jetpack WindowManager folding features, not DPI or a 600dp threshold. After verifying the inner display, absence of a fold returns to phone layout. Unsupported devices, a first launch while closed, and split windows without a hinge keep the manual/current layout. Editing, settings and media defer switching."));
-        layout.addView(foldHelp);
+        appearance.addView(foldHelp);
         automaticFold.setOnCheckedChangeListener((button, checked) -> {
             preferences.edit().putBoolean("automaticFoldMode", checked).apply(); FoldLayout.settingsChanged();
         });
@@ -3627,76 +3637,78 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
-        Switch directCopyAnchors = addSwitch(layout, activity,
+        Switch directCopyAnchors = addSwitch(behavior, activity,
                 text("長押しコピー中も >>番号の長押し操作を優先", "Keep native >>anchor long presses while copying"),
                 preferences.getBoolean("directCopyAnchors", true));
-        Switch readingRecovery = addSwitch(layout, activity,
+        Switch readingRecovery = addSwitch(behavior, activity,
                 text("更新・画面切替時の読書位置を補助保存する", "Keep extra reading-position recovery"),
                 preferences.getBoolean(ReadingPosition.ENABLED, true));
         TextView readingRecoveryHelp = new TextView(activity);
         readingRecoveryHelp.setText(text("ChMate標準とは別の位置保存です。スレ切替が重い場合の切り分けにオフにできます。変更には再起動が必要です。標準の既読位置や保存済みログは削除しません。",
                 "Additional position recovery, separate from ChMate. Disable to diagnose slow thread switching. Restart required; native read positions and logs are kept."));
-        layout.addView(readingRecoveryHelp);
+        behavior.addView(readingRecoveryHelp);
         live.toggle(readingRecovery, ReadingPosition.ENABLED);
         Button importThemes = new Button(activity);
         importThemes.setText(text("自作テーマをファイル／フォルダから取り込み・削除", "Import / delete custom themes from files / folder"));
         importThemes.setOnClickListener(view -> activity.startActivity(new Intent(activity, ThemeImportActivity.class)));
-        layout.addView(importThemes);
+        appearance.addView(importThemes);
         Switch topAlignShortThreads = null;
         if (supportsModernThreadList(activity)) {
             topAlignShortThreads = addSwitch(
-                    layout, activity,
+                    appearance, activity,
                     text("レスが少ないスレを上詰めで表示", "Align short threads to the top"),
                     preferences.getBoolean("topAlignShortThreads", false));
         }
         final Switch topAlignShortThreadsSwitch = topAlignShortThreads;
         EditText autoReloadIntervalField = null;
         if (LegacyAutoReload.supported(activity)) {
-            autoReloadIntervalField = addTextField(layout, activity,
+            autoReloadIntervalField = addTextField(behavior, activity,
                     text("自動リロードの最小間隔（秒、10〜1800）", "Minimum auto-reload interval (seconds, 10–1800)"),
                     Integer.toString(autoReloadIntervalSeconds()));
             autoReloadIntervalField.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
             TextView autoReloadHelp = new TextView(activity);
             autoReloadHelp.setText(text("自動スクロールを長押しで開始／停止。現在位置からスクロールし、末尾で待って更新します。新着がない場合は間隔が延びます。板の更新制限を優先し、画面を離れると停止します。",
                     "Long-press auto-scroll to start/stop. Scrolls from the current position, then waits at the bottom before reloading. Empty updates increase the interval. Board limits are respected; leaving the screen stops it."));
-            layout.addView(autoReloadHelp);
+            behavior.addView(autoReloadHelp);
         }
         final EditText autoReloadInterval = autoReloadIntervalField;
         String[] titleSpacingChoices = new String[21];
         for (int index = 0; index < titleSpacingChoices.length; index++)
             titleSpacingChoices[index] = (100 + index * 5) + "%";
         final int initialThreadTitleSpacing = threadTitleSpacingPercent();
-        Spinner threadTitleSpacing = addSpinner(layout, activity,
+        Spinner threadTitleSpacing = addSpinner(appearance, activity,
                 text("スレ一覧のタイトル行間（標準に対する割合）", "Thread-list title line spacing (relative to default)"),
                 titleSpacingChoices, (initialThreadTitleSpacing - 100) / 5);
 
-        ToolbarIcons.addSettingsButton(layout, activity);
-        PopularReplies.addSettings(layout,activity);
-        QuickFilterOptions.addSettings(layout,activity);
-        QuickFilterOptions.addToolbarEntry(layout,activity);
-        HomeSelectionBar.addSettings(layout,activity);
-        Switch historyRefreshTargets=addSwitch(layout,activity,
+        ToolbarIcons.addSettingsButton(filters, activity);
+        PopularReplies.addSettings(filters,activity);
+        LinearLayout filterCatalog=new LinearLayout(activity);filterCatalog.setOrientation(LinearLayout.VERTICAL);
+        filterCatalog.setTag(SettingsSection.CATALOG_ONLY_TAG,true);filters.addView(filterCatalog);
+        QuickFilterOptions.addSettings(filterCatalog,activity);
+        QuickFilterOptions.addToolbarEntry(filters,activity);
+        HomeSelectionBar.addSettings(lists,activity);
+        Switch historyRefreshTargets=addSwitch(lists,activity,
                 text("履歴ポップアップに「更新対象」タブを表示", "Show refresh targets in the history popup"),
                 preferences.getBoolean(RefreshTargetHistory.VISIBLE_KEY,false));
         Switch compactFilters = null;
         if (QuickFilterToolbar.supported(activity)) {
-            compactFilters = addSwitch(layout, activity,
+            compactFilters = addSwitch(filters, activity,
                     "上部フィルタを表示しない（ツールバーの「フィルタ」は利用できます）",
                     preferences.getBoolean("compactQuickFilters", false));
         }
         final Switch compactQuickFiltersSwitch = compactFilters;
-        Switch keepFilterPosition = addSwitch(layout, activity,
+        Switch keepFilterPosition = addSwitch(filters, activity,
                 "フィルタ切り替え時に表示位置を維持する（対象外のレスは近くのレスへ移動）",
                 preferences.getBoolean("keepQuickFilterPosition", false));
 
         final boolean initialHideNgThreadGroup = hideNgThreadGroup();
-        Switch hideDroppedThreadsSwitch=addSwitch(layout,activity,
+        Switch hideDroppedThreadsSwitch=addSwitch(lists,activity,
                 "未読・履歴・スレのタブでDAT落ちスレを非表示（ログは削除しない）",
                 preferences.getBoolean(HiddenDroppedThreads.KEY,false));
-        Switch deleteReadLongPress = addSwitch(layout, activity,
+        Switch deleteReadLongPress = addSwitch(behavior, activity,
                 text("更新ボタン長押しで既読スレを削除", "Delete read threads by long-pressing Refresh"),
                 preferences.getBoolean(DeleteReadThreads.LONG_PRESS_KEY, true));
-        Switch hideNgThreadGroupSwitch = addSwitch(layout, activity,
+        Switch hideNgThreadGroupSwitch = addSwitch(lists, activity,
                 text("スレ一覧の最下部にあるNGグループを非表示", "Hide the NG group at the bottom of thread lists"),
                 initialHideNgThreadGroup);
         Switch readThreadsFirst = null;
@@ -3705,7 +3717,7 @@ public final class Haiagaru {
         if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
                 || "0.8.10.241".equals(chMateVersion) || "0.8.10.242 dev".equals(chMateVersion)
                 || "0.8.10.243 dev".equals(chMateVersion)) {
-            readThreadsFirst = addSwitch(layout, activity,
+            readThreadsFirst = addSwitch(lists, activity,
                     text("板のスレ一覧で既読スレを上に", "Show read threads first in board lists"),
                     ReadThreadsFirst.enabled());
         }
@@ -3716,14 +3728,14 @@ public final class Haiagaru {
             });
         }
         Switch edgeReporterId = addSwitch(
-                layout,
+                search,
                 activity,
                 text(EdgeReporterOptions.MENU_LABEL, "Edge reporter IDs: long press / NG Threads"),
                 EdgeReporterOptions.menu()
         );
-        Switch edgeReporterBoardList=addSwitch(layout,activity,
+        Switch edgeReporterBoardList=addSwitch(search,activity,
                 text(EdgeReporterOptions.BOARD_LABEL,"Edge reporter IDs: board thread list"),EdgeReporterOptions.board());
-        Switch reporterSearchEnabled = addSwitch(layout, activity,
+        Switch reporterSearchEnabled = addSwitch(search, activity,
                 "記者ID・スレ名の期間指定検索を有効にする",
                 FeatureSwitches.enabled("reporterSearchEnabled", true));
         new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(reporterSearchEnabled, "reporterSearchEnabled");
@@ -3732,13 +3744,13 @@ public final class Haiagaru {
         Button reporterSearch = new Button(activity);
         reporterSearch.setText("記者ID・スレ名から過去スレを検索");
         reporterSearch.setOnClickListener(v -> ReporterSearchUi.show(activity, null));
-        layout.addView(reporterSearch);
+        search.addView(reporterSearch);
         TextView reporterHelp=new TextView(activity);
-        reporterHelp.setText("長押し・NG追加・Threadsと、板を開いたスレ一覧への表示を別々に設定できます。既存の設定は両方へ引き継ぎます。表示を変えた後は一覧を開き直してください。未取得の記者IDは板を更新すると反映されます。");layout.addView(reporterHelp);
+        reporterHelp.setText("長押し・NG追加・Threadsと、板を開いたスレ一覧への表示を別々に設定できます。既存の設定は両方へ引き継ぎます。表示を変えた後は一覧を開き直してください。未取得の記者IDは板を更新すると反映されます。");search.addView(reporterHelp);
 
-        PosterHighlight.addSettingsButton(layout, activity);
+        PosterHighlight.addSettingsButton(appearance, activity);
         if (StringReplacement.supported(activity)) {
-            Switch replacementEnabled = addSwitch(layout, activity, "本文の文字列置換を有効にする",
+            Switch replacementEnabled = addSwitch(appearance, activity, "本文の文字列置換を有効にする",
                     StringReplacement.prefs(activity).getBoolean("enabled", false));
             replacementEnabled.setOnCheckedChangeListener((button, checked) -> {
                 StringReplacement.prefs(activity).edit().putBoolean("enabled", checked).apply();
@@ -3748,7 +3760,7 @@ public final class Haiagaru {
             replaceStrings.setText("本文の文字列置換（外部TXT）");
             replaceStrings.setOnClickListener(v -> activity.startActivity(
                     new Intent(activity, ReplacementSettingsActivity.class)));
-            layout.addView(replaceStrings, rowParams(activity));
+            appearance.addView(replaceStrings, rowParams(activity));
         }
 
 
@@ -3762,19 +3774,19 @@ public final class Haiagaru {
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
         live.toggle(hideDroppedThreadsSwitch,HiddenDroppedThreads.KEY);
         live.toggle(historyRefreshTargets,RefreshTargetHistory.VISIBLE_KEY);
-        Switch excludeHiddenNgUnread=addSwitch(layout,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
+        Switch excludeHiddenNgUnread=addSwitch(lists,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
         live.toggle(excludeHiddenNgUnread,HiddenNgUnread.KEY);
-        TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("既読位置は変えず、取得してNG判定できた非表示レスだけを件数から除きます。未取得・未判定のレスは除きません。変更後はスレを開き直してください。");layout.addView(unreadNgHelp);
-        Switch hideDroppedDrafts=addSwitch(layout,activity,
+        TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("既読位置は変えず、取得してNG判定できた非表示レスだけを件数から除きます。未取得・未判定のレスは除きません。変更後はスレを開き直してください。");lists.addView(unreadNgHelp);
+        Switch hideDroppedDrafts=addSwitch(lists,activity,
                 text("DAT落ちスレの下書きを非表示", "Hide drafts for dropped threads"),
                 preferences.getBoolean(HiddenDroppedThreads.DRAFTS,false));
-        Switch hideDroppedSent=addSwitch(layout,activity,
+        Switch hideDroppedSent=addSwitch(lists,activity,
                 text("DAT落ちスレの送信済み・書き込み先を非表示", "Hide sent posts and destinations for dropped threads"),
                 preferences.getBoolean(HiddenDroppedThreads.SENT,false));
         TextView droppedPostsHelp=new TextView(activity);
         droppedPostsHelp.setText(text("HOMEの「下書き／送信済み」に適用します。下書きと送信済みは個別に変更できます。本文・履歴・DATは削除せず、オフで再表示します。判定できないスレと新規スレ作成の下書きは表示を維持します。",
                 "Applies to HOME drafts/sent posts independently. Content and history remain stored; turn off to show them again. Unconfirmed threads and drafts for new threads stay visible."));
-        layout.addView(droppedPostsHelp);
+        lists.addView(droppedPostsHelp);
         live.toggle(hideDroppedDrafts,HiddenDroppedThreads.DRAFTS);
         live.toggle(hideDroppedSent,HiddenDroppedThreads.SENT);
         live.toggle(readThreadsFirstSwitch,"readThreadsFirst",Haiagaru::refreshBoardListAfterReadSortChange);
@@ -4374,12 +4386,16 @@ public final class Haiagaru {
     private static LinearLayout settingsSOCIAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout sites=SettingsSection.add(layout,text("Webサイトのリンクカード", "Website link cards"),text("表示、サムネイル、取得件数とキャッシュ", "Display, thumbnails, limits and cache"),true);
+        LinearLayout x=SettingsSection.add(layout,text("X／Twitterのカード", "X/Twitter cards"),text("本文、折りたたみ、表示形式と操作", "Text, collapse, presentation and actions"),true);
         SharedPreferences preferences = preferences(activity);
-        Switch siteCards = addSwitch(layout, activity,
+        Switch siteCards = addSwitch(sites, activity,
                 text("Webサイトのリンクカードを表示（追加通信あり）", "Show website link cards (network access)"), siteCardsEnabled());
-        Switch siteImages = addSwitch(layout, activity,
+        SettingsSection siteDetails=SettingsSection.add(sites,text("リンクカードの詳細", "Link card details"),text("サムネイルと取得設定", "Thumbnails and retrieval"),true);
+        siteDetails.available=siteCards::isChecked;siteDetails.unavailableMessage="リンクカードの表示をオンにすると変更できます。";
+        Switch siteImages = addSwitch(siteDetails, activity,
                 text("サイトカードにサムネイルを表示", "Show thumbnails in website cards"), siteCardImages());
-        EditText siteCardLimit = addTextField(layout, activity,
+        EditText siteCardLimit = addTextField(siteDetails, activity,
                 text("1レスあたりのリンクカード上限（1〜20件）", "Maximum link cards per response (1–20)"),
                 Integer.toString(siteCardMaxPerResponse()));
         siteCardLimit.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -4394,7 +4410,7 @@ public final class Haiagaru {
                 siteCardLimit.setError("1〜20件");
             }
         });
-        EditText siteCardRetention = addTextField(layout, activity,
+        EditText siteCardRetention = addTextField(siteDetails, activity,
                 text("リンクカード情報の保持時間（1〜168時間）", "Link card metadata retention (1–168 hours)"),
                 Integer.toString(siteCardCacheHours()));
         siteCardRetention.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -4412,7 +4428,7 @@ public final class Haiagaru {
         TextView siteHelp = new TextView(activity);
         siteHelp.setText(text("YahooニュースなどのURLから、サイト共通のタイトル・説明・画像情報を取得します。対応サイトは追加設定なしで表示できます。取得できないURLは元のリンクを残します。上で1レスあたりの最大件数と取得済み情報の保存時間を設定できます。",
                 "Uses shared page metadata for titles, summaries and images, including Yahoo News. Compatible sites work without individual setup. Unavailable previews keep the original link. Set the per-response limit and metadata retention above."));
-        layout.addView(siteHelp);
+        siteDetails.addView(siteHelp);
         siteCards.setOnCheckedChangeListener((v,on)->{preferences.edit().putBoolean("siteCardsEnabled",on).apply();SiteCards.changed();});
         siteImages.setOnCheckedChangeListener((v,on)->{preferences.edit().putBoolean("siteCardImages",on).apply();SiteCards.changed();});
         Button clearSiteCards = new Button(activity);clearSiteCards.setText(text("サイトカードのキャッシュを削除", "Clear website card cache"));
@@ -4420,7 +4436,7 @@ public final class Haiagaru {
             clearSiteCards.setEnabled(false);
             SiteCards.clear(()->{if(!activity.isFinishing()&&!activity.isDestroyed()){
                 clearSiteCards.setEnabled(true);Toast.makeText(activity,"サイトカードのキャッシュを削除しました",Toast.LENGTH_SHORT).show();}});
-        });layout.addView(clearSiteCards);
+        });sites.addView(clearSiteCards);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
         try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
@@ -4429,30 +4445,32 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
-        Switch xPostPreview = addSwitch(layout, activity,
+        Switch xPostPreview = addSwitch(x, activity,
                 text("X／Twitterの投稿内容をレス内に表示（追加通信あり）", "Show X/Twitter post text in responses (network access)"),
                 xPostPreviewEnabled());
-        Switch xPostFullText = addSwitch(layout, activity,
+        SettingsSection xDetails=SettingsSection.add(x,text("Xカードの詳細", "X card details"),text("本文の表示とリンク操作", "Text presentation and link actions"),true);
+        xDetails.available=xPostPreview::isChecked;xDetails.unavailableMessage="Xの投稿内容の表示をオンにすると変更できます。";
+        Switch xPostFullText = addSwitch(xDetails, activity,
                 text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
                 xPostPreviewFullText());
-        Switch xPostCollapsible = addSwitch(layout, activity,
+        Switch xPostCollapsible = addSwitch(xDetails, activity,
                 text("X投稿のプレビューを折りたたむ（タップで開閉）", "Collapse X previews (tap to expand/collapse)"),
                 xPostPreviewCollapsible());
-        Switch xPostCard = addSwitch(layout, activity,
+        Switch xPostCard = addSwitch(xDetails, activity,
                 text("X投稿のプレビューをカード形式で表示", "Display X previews as cards"), xPostPreviewCard());
         TextView xPostCardNote = new TextView(activity);
         xPostCardNote.setText(text("投稿者・本文・日時を枠付きで表示します。X公式の埋め込みではなく、プロフィール画像の追加取得は行いません。",
                 "Shows author, text and date in a native card, not an official X embed. No extra profile-image downloads."));
-        xPostCardNote.setTextSize(13); layout.addView(xPostCardNote);
-        Switch xPostActions = addSwitch(layout, activity,
+        xPostCardNote.setTextSize(13); xDetails.addView(xPostCardNote);
+        Switch xPostActions = addSwitch(xDetails, activity,
                 text("Xプレビューに返信・リポスト・いいね・リンクコピーを表示", "Show reply, repost, like and copy link actions"), xPostPreviewActions());
-        Switch xPostBrowser = addSwitch(layout, activity,
+        Switch xPostBrowser = addSwitch(xDetails, activity,
                 text("X投稿・操作をブラウザのアプリ内タブで開く", "Open X posts and actions in browser in-app tabs"), xPostPreviewBrowser());
         TextView xPostActionsNote = new TextView(activity);
         xPostActionsNote.setText(text("操作はX公式ページで確認します。ログインが必要な場合があります。自動で投稿・いいねは行いません。アプリ内タブ非対応のブラウザでは通常表示になります。",
                 "Confirm actions on X. Login may be required. Nothing is posted or liked automatically. Unsupported browsers open normally."));
-        xPostActionsNote.setTextSize(13); layout.addView(xPostActionsNote);
-        XPostPreview.addCacheSettings(layout, activity);
+        xPostActionsNote.setTextSize(13); xDetails.addView(xPostActionsNote);
+        XPostPreview.addCacheSettings(x, activity);
 
         live.toggle(xPostPreview,"xPostPreviewEnabled");
         live.toggle(xPostFullText,"xPostPreviewFullText");
@@ -4660,6 +4678,10 @@ public final class Haiagaru {
             Log.w(LOG_TAG, "Unable to add automatic DAT route controls", error);
         }
         final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
+        Switch archiveOriginalSite=addSwitch(layout,activity,
+                text("エッヂ過去ログを元サイトで開く", "Open Edge archive in the original site"),
+                ArchiveSearchLayout.originalSite(activity));
+        live.toggle(archiveOriginalSite,ArchiveSearchLayout.ORIGINAL_SITE);
         Switch archiveThreadStandalone = addSwitch(layout, activity,
                 text("エッヂ過去ログのスレをタブレットモードを解除して開く",
                         "Open Edge archive threads outside tablet mode"),
@@ -5569,6 +5591,10 @@ public final class Haiagaru {
             default: return false;
         }
         return menu.findItem(versionItem) != null && menu.findItem(uploadHistoryItem) != null;
+    }
+
+    static boolean externalBoardAuthMenuEnabled(Context context) {
+        return context != null && preferences(context).getBoolean("showExternalBoardAuthMenu", true);
     }
 
     static boolean preparePostingMenu(Context context, Menu menu, int itemId, String key) {
