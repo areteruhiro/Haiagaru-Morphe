@@ -666,6 +666,8 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(HomeThreadOrder.click(fragment,itemId))return true;
+        if(StockChmatePosting.normalClick(fragment,itemId))return true;
         if(itemId==StockChmatePosting.ACTION){StockChmatePosting.openFromToolbar(fragment);return true;}
         if(itemId==OpenTabsRefresh.ACTION){OpenTabsRefresh.refresh(toolbarActivity(fragment));return true;}
         if(itemId==ThreadWatch.ACTION){ThreadWatch.show(fragment);return true;}
@@ -1045,6 +1047,7 @@ public final class Haiagaru {
             }
         });
         crashLoggerInstalled = true;
+        AnrLogs.collect(crashContext);
     }
 
     private static void writeCrashLog(Context context, Thread thread, Throwable error)
@@ -1126,7 +1129,7 @@ public final class Haiagaru {
     }
 
     /** Writes a UTF-8 report to Downloads/Haiagaru on every supported Android release. */
-    private static void writeDownloadLog(Context context, String fileName, String report)
+    static void writeDownloadLog(Context context, String fileName, String report)
             throws IOException {
         if (context == null) throw new IOException("No context available for Downloads log");
         if (Build.VERSION.SDK_INT >= 29) {
@@ -3532,6 +3535,7 @@ public final class Haiagaru {
             site.setOnCheckedChangeListener((button, checked) ->
                     siteGateway.prefs.edit().putBoolean(SiteBoardGateway.siteFlag(kind), checked).apply());
         }
+        Button futabaRanking=new Button(activity);futabaRanking.setText("ふたばの勢いランキング（ふたぽ）");futabaRanking.setOnClickListener(v->FutabaRanking.show(activity));sites.addView(futabaRanking);
         Switch siteGroups=addSwitch(sites,activity,text("外部板をサイト別に板一覧の最上位へ表示","Show external boards by site at the top level"),preferences.getBoolean(ExternalBoardGroups.KEY,false));
         live.toggle(siteGroups,ExternalBoardGroups.KEY);
         TextView siteGroupsHelp=new TextView(activity);siteGroupsHelp.setText("初期OFF。オンではエッヂ・オルグ板・したらばなどをサイト別に表示します。板一覧のキャッシュへ反映するため、変更後はChMateを再起動してください。");sites.addView(siteGroupsHelp);
@@ -3831,6 +3835,7 @@ public final class Haiagaru {
         threadNamesHelp.setText(text("次に書き込み画面を開くときから適用します。未保存のスレは空欄で開きます。オフと新規スレ立ては従来の板ごとの動作です。通常版ChMateには引き継ぎません。", "Applies when opening the next editor. Unsaved threads start blank. Off and new-thread creation keep native board behavior. Names are not passed to stock ChMate."));
         layout.addView(threadNamesHelp,rowParams(activity));
         String[][] menuOptions = {
+                {"showPostingSettingLinks", text("書き込みメニューに「設定リンクを作成」を表示", "Show Create setting link in the posting menu")},
                 {"showClipboardHistoryMenu", text("メニューに「コピー履歴・分類」を表示", "Show clipboard history in the menu")},
                 {"showUploadHostMenu", text("メニューに「アップロード先を変更」を表示", "Show upload destination in the menu")},
                 {"showExternalBoardAuthMenu", text("メニューに「外部板の認証ページ」を表示", "Show external board authentication in the menu")}
@@ -3851,6 +3856,9 @@ public final class Haiagaru {
                 new String[]{text("全画面", "Full screen"),text("ポップアップダイアログ", "Popup dialog")},
                 preferences.getInt(StockChmatePosting.DISPLAY_MODE,1)==0?0:1);
         live.choice(stockDisplayMode,StockChmatePosting.DISPLAY_MODE);
+        Switch stockAlways=addSwitch(layout,activity,"常に通常版ChMateで書き込む",
+                preferences.getBoolean(StockChmatePosting.ALWAYS,false));
+        live.toggle(stockAlways,StockChmatePosting.ALWAYS);
         Switch stockMenu=addSwitch(layout,activity,
                 text("書き込み画面の「︙」に「通常版ChMateで書き込む」を追加", "Add stock ChMate posting to the posting overflow menu"),
                 preferences.getBoolean(StockChmatePosting.SHOW_MENU,true));
@@ -4547,7 +4555,7 @@ public final class Haiagaru {
             RegisteredImageNg.prefs(activity).edit().putBoolean(RegisteredImageNg.ENABLE, checked).apply();
             RegisteredImageNg.settingsChanged();
         });
-        Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動で非表示にする",
+        Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動であぼーん表示にする",
                 preferences.getBoolean(RedIdAutoNg.KEY, false));
         TextView autoNgRedIdsDescription = new TextView(activity);
         autoNgRedIdsDescription.setText("オンにすると、開くすべてのスレで動作します。投稿数は各スレ内で判定し、ChMateで赤色（8件以上）のIDのレスを非表示にします。あるスレで赤くなったIDも、別のスレで8件未満ならこの機能では隠しません。初期OFF。通常のNGIDには登録しません。除外IDは全スレ共通です。変更後はスレを開き直してください。");
@@ -4555,6 +4563,10 @@ public final class Haiagaru {
         layout.addView(autoNgRedIdsDescription, rowParams(activity));
         live.toggle(autoNgRedIds, RedIdAutoNg.KEY);
         RedIdAutoNg.addExclusionsButton(layout, activity);
+        SettingsSection titleMenu=SettingsSection.add(layout,"スレタイトル長押しの追加項目","表示する項目を選択",true);
+        String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH};
+        String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
+        for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
         EdgeLevelSettings.add(layout,activity);
         Switch hideChainedAbone = addSwitch(layout, activity,
                 text("連鎖あぼーんを常に非表示", "Always hide chained aboon rows"),

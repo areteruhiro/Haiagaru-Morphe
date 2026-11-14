@@ -7400,9 +7400,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseB
         }
         check(call >= 0) { "242 Imgur thumbnail projection missing" }
         val urls = (projection.implementation!!.instructions[call] as FiveRegisterInstruction).registerC
-        projection.addInstructionsWithLabels(call, """
-            invoke-static {p0, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+        // A native branch targets the conversion directly when String[] is cached.
+        // Replace that target so both fresh extraction and cached arrays are expanded.
+        val nativeConversion = (projection.implementation!!.instructions[call] as ReferenceInstruction).reference
+        projection.replaceInstruction(call,
+            "invoke-static {p0, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;")
+        projection.addInstructionsWithLabels(call + 1, """
             move-result-object v$urls
+            invoke-static {v$urls}, $nativeConversion
         """)
         // The 242 row renderer also inlines extraction, bypassing the model getter.
         boundClassForEach("HaiagaruPatch:15") { owner ->
@@ -8631,9 +8636,17 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
                 && it.returnType == "V"
                 && it.parameters.map(CharSequence::toString) ==
                 listOf("Landroid/view/View;", "Landroid/os/Bundle;")
-        }.addBeforeEveryReturn(
-            "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V"
-        )
+        }.let { editor ->
+            // Native b==false jumps directly to RETURN_VOID. Replace that target
+            // so existing branches cannot bypass the reporter controls.
+            editor.implementation!!.instructions.withIndex()
+                .filter { it.value.opcode == Opcode.RETURN_VOID }.asReversed()
+                .forEach { (index, _) ->
+                    editor.replaceInstruction(index,
+                        "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V")
+                    editor.addInstruction(index + 1, "return-void")
+                }
+        }
     } else {
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"

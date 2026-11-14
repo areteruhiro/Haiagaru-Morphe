@@ -21,6 +21,14 @@ internal fun BytecodePatchContext.patchFavoriteThreads(version: String) {
         if (modern) it.name == "d" && it.parameterTypes.size == 6 && it.parameterTypes.take(2) == listOf("I", "I")
         else it.name == "haiagaruNativeHistorySort" && it.parameterTypes == listOf("I", "Z")
     }
+    val home = mutableClassDefBy(when(version){
+        "0.8.10.191 dev" -> "Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;"
+        "0.8.10.226 dev" -> "Ljp/syoboi/a2chMate/fragment/HomeFragment;"
+        else -> "Ljp/syoboi/a2chMate/ui/home/HomeFragment;"
+    })
+    val menu = home.methods.single { it.name==(if(version.contains("191"))"Wy_" else "d") && it.parameterTypes==listOf("Landroid/view/Menu;") && it.returnType=="V" }
+    // Entry interception also covers branches targeting the original return.
+    menu.addInstructions(0,"invoke-static {p0, p1}, Lapp/morphe/extension/chmate/HomeThreadOrder;->menu(Ljava/lang/Object;Landroid/view/Menu;)V")
     // Track the actual HOME mode before mapping only this sorting invocation.
     // The flow/persisted tab stays 108 (favorites) or 109 (refresh targets),
     // independent of the native 102 snapshot used to build either list.

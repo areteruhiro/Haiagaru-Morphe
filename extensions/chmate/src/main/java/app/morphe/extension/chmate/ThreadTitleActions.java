@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 
 /** Extends the native title dialog before its view is attached; native actions stay intact. */
 public final class ThreadTitleActions {
+    static final String SHOW_REFRESH="titleMenuShowRefresh",SHOW_WATCH="titleMenuShowWatch",SHOW_AUTH="titleMenuShowAuth";
     private static java.lang.ref.WeakReference<Object> pending=new java.lang.ref.WeakReference<>(null);
     public static View wrap(Object fragment,View original){
         if(original==null)return null;
@@ -52,6 +53,7 @@ public final class ThreadTitleActions {
             String server=(String)NativeFields.find(info.getClass(),old?"i":middle?"g":"f").get(info);
             String board=(String)NativeFields.find(info.getClass(),old?"b":middle?"f":"g").get(info);
             Object id=NativeFields.find(info.getClass(),middle?"c":"e").get(info);
+            ReporterArchiveLookup.request(a,server,board,id,args.getString("threadTitle"));
             ThreadWatchRules.Target t=ThreadWatchRules.fromParts(server,board,id);
             LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
             // 226/242 render a full-window Compose bottom sheet, rather than a
@@ -69,17 +71,20 @@ public final class ThreadTitleActions {
                 int bottom=android.os.Build.VERSION.SDK_INT>=30?insets.getInsets(android.view.WindowInsets.Type.systemBars()).bottom:insets.getSystemWindowInsetBottom();
                 v.setPadding(0,0,0,bottom);return insets;
             });
-            android.widget.CheckBox refresh=RefreshTargets.control(a,info);
+            android.widget.CheckBox refresh=FeatureSwitches.enabled(SHOW_REFRESH,true)?RefreshTargets.control(a,info):null;
             if(refresh!=null)controls.addView(refresh,new LinearLayout.LayoutParams(-1,-2));
             if(t!=null){
+            if(FeatureSwitches.enabled(SHOW_WATCH,true)){
             Button watch=new Button(a);watch.setAllCaps(false);watch.setText("このスレの新着通知");actions.addView(watch,new LinearLayout.LayoutParams(0,-2,1));
             watch.setOnClickListener(v->ThreadWatch.show(a,t));
-            if(ReadingAuth.eligible(t.url)){
+            }
+            if(FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(t.url)){
                 Button auth=new Button(a);auth.setText("エッヂの閲覧認証");auth.setAllCaps(false);actions.addView(auth,new LinearLayout.LayoutParams(0,-2,1));
                 auth.setOnClickListener(v->ReadingAuth.open(a,t.url));
             }
             }
-            controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
+            if(actions.getChildCount()>0)controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
+            if(controls.getChildCount()==0){box.removeView(original);return original;}
             box.addView(controls,new LinearLayout.LayoutParams(-1,-2));
             return box;
     }

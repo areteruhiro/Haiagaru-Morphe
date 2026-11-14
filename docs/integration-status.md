@@ -1811,3 +1811,11 @@ PC仮想メモリ不足で複数のビルドが失敗。既存の検証workflow4
 ホスト判定39項目成功。実機reset失敗からCompose入力値/エラースナップショット欠落を修正し、実UI追加/保存/空欄/初期値/キャンセル/不正URL表示と合成cachedカード描画25項目成功。fixture初期化失敗も修正し全試験を完了。最終通常Lint/R8 build5m7s成功、3版適用・署名一致で別package実機更新、native画像110/110/106、242既存設定/板メニュー30項目成功。新規crashなし、公開POST/カードダウンロードなし。新規nativeフックなし。共通設定UI試験は242、191/226は画像回帰と起動を確認。台帳android-installations.md、証跡build/site-card-exclusions-20261114。
 
 利用者から完了後公式Release指示あり。既存Semantic Release CIへdev→master通常マージで進む。無関係な未追跡ファイルを保持。
+
+## 2026-11-14 1.35.0-dev.1 利用者検証用プレリリース
+
+利用者の明示指示で最新統合版の実機機能検証は利用者側へ移管し、devのみへ公開。製品4a953de9、masterの既存生成1.34.0を通常merge15b7c8dcで取り込み、既存Semantic Release CI43583611555 Release/Attest成功。19:09:56 JST公開、prerelease=true/draft=false。正式安定版へはマージしていない。
+
+公開差分はHOME順/pin、記者IDメニュー/過去補完、Kyodemo作成スレ、設定折りたたみ/区切り、通常版書込、設定リンクmenu、画像補完、uguu、ふたば、外部板描画/長押し再入対策、ANRログ。公開文へ初期値・未確認範囲・ANR未解決とログ制限・謝辞/寄付を明記。公開MPP SHA256 28f8715ac7a6e4c94c648fe684670b9fd5899b7dda85257f4777c7b890d5b092。全5assetのGitHub digest一致、MPP CRC/追加classと設定キー同梱、devのpre feed1.35.0-dev.1を確認。証跡build/prerelease1350dev1-public/verification.json、reporter-parity-20261114/prerelease-ci.log。Python URL取得はローカル証明書エラーのためghで取得して検証。最新統合版の実機確認/公開送信は行っていない。18:35ANRはsystem job callback待ち、根因未確定。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
