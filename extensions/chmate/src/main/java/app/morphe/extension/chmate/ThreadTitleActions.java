@@ -62,8 +62,8 @@ public final class ThreadTitleActions {
             if(target!=null&&FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(target.url)){
                 labels.add("エッヂの閲覧認証");actions.add(()->ReadingAuth.open(a,target.url));
             }
-            if(labels.isEmpty())return original;
             boolean middle=fragment.getClass().getName().equals("o.getDislikeManager");
+            if(labels.isEmpty())return middle?twoNativeColumns(original):original;
             ClassLoader loader=fragment.getClass().getClassLoader();
             Class<?> row=loader.loadClass(middle?"o.getTtAdContainer$IconCompatParcelizer":"o.zzbbs$RemoteActionCompatParcelizer");
             Class<?> fn=loader.loadClass(middle?"o.binderDied":"o.zzcbx");
@@ -95,8 +95,19 @@ public final class ThreadTitleActions {
             }
             java.util.ArrayList<Object> groups=new java.util.ArrayList<>(original);
             groups.add(added);
-            return groups;
+            return middle?twoNativeColumns(groups):groups;
         }catch(Exception error){android.util.Log.w("Haiagaru","Native thread title actions unavailable",error);return original;}
+    }
+    private static java.util.List<?> twoNativeColumns(java.util.List<?> groups){
+        java.util.ArrayList<Object> rows=new java.util.ArrayList<>();
+        for(Object group:groups){
+            if(!(group instanceof java.util.List))return groups;
+            rows.addAll((java.util.List<?>)group);
+        }
+        if(rows.size()<2)return groups;
+        int split=(rows.size()+1)/2;
+        return java.util.Arrays.asList(new java.util.ArrayList<>(rows.subList(0,split)),
+                new java.util.ArrayList<>(rows.subList(split,rows.size())));
     }
     /** Compose versions use packed text units. Zero leaves the themed size in effect. */
     public static long compactLabelSize(String label){
