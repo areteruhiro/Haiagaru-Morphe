@@ -188,7 +188,10 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
     for (index in 0 until root.childCount) {
         val child = root.getChildAt(index)
         if (child is NativeSurfaceSlot) continue
-        val browserFrame = child is FrameLayout && ((0 until child.childCount).any { child.getChildAt(it) is android.webkit.WebView } || (child.layoutParams as? LinearLayout.LayoutParams)?.weight?.let { it > 0 } == true)
+        // A weighted ScrollView is still a form/list, not a native browser surface.
+        // Mounting it as AndroidView forces every board row through native text measurement.
+        val browserFrame = child is FrameLayout && child !is ScrollView &&
+            (0 until child.childCount).any { child.getChildAt(it) is android.webkit.WebView }
         if (child is android.webkit.WebView || child is VideoView || browserFrame ||
             child.javaClass.name.endsWith("GifViewerActivity\$GifCanvas")) {
             val params = child.layoutParams

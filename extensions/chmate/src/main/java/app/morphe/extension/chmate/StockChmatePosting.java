@@ -17,6 +17,7 @@ import java.util.WeakHashMap;
 /** Hands an explicit draft to stock ChMate's exported editor. Never reads cookies or sends a post. */
 public final class StockChmatePosting {
     static final int ACTION=0x7e00000d;
+    static final String ALWAYS="stockPostingAlways";
     static final String LONG_PRESS="stockPostingOnWriteLongPress";
     static final String SKIP_CONFIRM="stockPostingSkipConfirmation";
     static final String SHOW_MENU="stockPostingShowMenu";
@@ -42,6 +43,12 @@ public final class StockChmatePosting {
     private static String toolbarTarget(Object fragment,Activity activity)throws Exception{
         String version=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;
         return StockChmatePostingRules.target(NativeThreadContext.url(NativeThreadContext.board(fragment,version),version,0));
+    }
+    public static boolean normalClick(Object fragment,int action){
+        if(action!=2||!FeatureSwitches.enabled(ALWAYS,false))return false;
+        Activity activity=Haiagaru.toolbarActivity(fragment);if(activity==null)return false;
+        try{String target=toolbarTarget(fragment,activity);if(target==null)return false;openEditor(activity,target);return true;}
+        catch(Exception unavailable){return false;}
     }
     public static boolean longClick(Object fragment,android.view.View button){
         if(button==null||button.getId()!=2||!FeatureSwitches.enabled(LONG_PRESS,false))return false;

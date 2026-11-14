@@ -7400,9 +7400,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchLegacyBeResponseB
         }
         check(call >= 0) { "242 Imgur thumbnail projection missing" }
         val urls = (projection.implementation!!.instructions[call] as FiveRegisterInstruction).registerC
-        projection.addInstructionsWithLabels(call, """
-            invoke-static {p0, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;
+        // A native branch targets the conversion directly when String[] is cached.
+        // Replace that target so both fresh extraction and cached arrays are expanded.
+        val nativeConversion = (projection.implementation!!.instructions[call] as ReferenceInstruction).reference
+        projection.replaceInstruction(call,
+            "invoke-static {p0, v$urls}, Lapp/morphe/extension/chmate/ImgurAlbumAttachments;->complete(Ljava/lang/Object;[Ljava/lang/String;)[Ljava/lang/String;")
+        projection.addInstructionsWithLabels(call + 1, """
             move-result-object v$urls
+            invoke-static {v$urls}, $nativeConversion
         """)
         // The 242 row renderer also inlines extraction, bypassing the model getter.
         boundClassForEach("HaiagaruPatch:15") { owner ->

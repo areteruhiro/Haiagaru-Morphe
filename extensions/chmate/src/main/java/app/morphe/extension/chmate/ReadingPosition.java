@@ -39,6 +39,7 @@ public final class ReadingPosition {
     private ReadingPosition() { }
 
     public static void register(Object fragment) {
+        ReporterArchiveLookup.opened(fragment);
         try {
             Session old = SESSIONS.remove(fragment);
             if (old != null) old.close();
