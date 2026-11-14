@@ -1,6 +1,6 @@
 掲示板での問い合わせは以下のみです。
 
-areteruhiro ◆8LNH56sLs6
+areteruhiro ◆8LNH56sLs6 <br>
 ChMate用Morpheパッチ「Haiagaru」 Part 1
 https://jbbs.shitaraba.net/computer/45040/ <br> 
 
