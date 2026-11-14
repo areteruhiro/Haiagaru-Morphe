@@ -2963,3 +2963,18 @@ Mi Note 10（Android 11、ADB `d5497008`）。検証用の別パッケージだ�
 
 MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-popup-20261114\apks\candidate.mpp`、SHA-256 `a916a5bca1fff44666829aef01e38b7677b1fb025e3bd03c3d077312ab8bf02d`。
 署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 HOME・1レス目NG・ダーク設定枠の最終候補
+
+Mi Note 10（Android 11、ADB `d5497008`）。署名照合後、別パッケージのみ更新。
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`: 2026-11-15T02:04:51.290812 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\outline-apks\final191.apk`、SHA-256 `873b37bb07e12dc0896f8ead2fe6285eb6309399e80648f7267fa14c7ea4716f`。
+- Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`: 2026-11-15T02:04:29.587634 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\outline-apks\final226.apk`、SHA-256 `de8acf55b862a560d77a9a708fb68b999e76e27c8563409bd3def18b947fbeb9`。
+- Haiagaru 修正確認 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`: 2026-11-15T02:03:56.850727 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\outline-apks\final242.apk`、SHA-256 `6faa0546af7b3fc5578056630e94fd23c2b6f233683072d02d691e59ec51ab01`。
+
+MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\outline-apks\candidate.mpp`、SHA-256 `e3989a6723287c4605617572826722a4960f1710f86271988622b1f28394ce29`。
+署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

@@ -1847,3 +1847,8 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
 外部板スレ情報修正0f64e641をdev→master merge3003c9d0、Semantic Release生成ddb02683。Release43605834690 / Build43605834622 success。23:42:30 JST公開、draft=false/prerelease=false。配布5ファイルのGitHub digest・サイズ、MPP/ZIP CRC、謝辞/寄付欄、master/main/devの両JSON計6経路の全項目一致を確認。MPP SHA-256 c81280eff0e6f937cea4f055bc72626c92abf812e149898f21f31717be853ea7。実機と未確認範囲はsite-thread-popup-20261114.md参照。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.36.2
+
+
+## 2026-11-15 Haiagaru 1.37.0公式公開
+
+HOMEの板並び替え、226/242の並び替え表示、1レス目NG、あにまん添付画像、長押しメニュー文字色、ダーク設定枠を `be799ad5` で統合。Release 43619273983 / Build 43619273989 success、公式1.37.0を02:10:02 JST公開。配布5点のSHA-256・サイズ・ZIP CRC、master/main/devの両Morphe feed（計6経路）、謝辞・寄付欄を確認。公開MPP SHA-256 `50585b8be8794cc14090a17ed4ba8b1fe8a15238ba8a2ecb18b6d5e6e5c3b121`。実機検証範囲は [archive-home-firstng-20261115.md](archive-home-firstng-20261115.md)。
