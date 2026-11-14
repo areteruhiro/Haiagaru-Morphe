@@ -2576,3 +2576,70 @@ emulator-5580 / Haiagaru_Root_API36 / API36。署名鍵 C:/Users/narum/morphe-ch
 ]
 
 191専用app.haiagaru.tests.watchposition191も同じ鍵で導入。APK C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current/build/history-notification-20261114/watch-test/tests.apk / SHA256 7C6ECE9A86E36AB776370B2F52BE340BD4D31575EFE9036FA61EFFD9FADE8AC9。実ListView/nativeレス番号で通知初期位置・更新後の再配置・手動操作による解除の8項目成功。公開通信0。実native履歴popupは各18項目、サムネイル191=123/226=121/242=121項目成功。新規crashログ空。
+
+
+## 2026-11-14 容量エラー・レス限定送信先・226/242通知位置・通常版連携
+
+OneDrive外の主開発先でビルド。既存のHaiagaru/通常版は保持し、Mi Note 10の別パッケージへ導入。利用者から実機確認済み・公式Release許可あり。
+
+```json
+[
+  {
+    "displayName": "Haiagaru 修正確認 191",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter191",
+    "chmate": "0.8.10.191 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply191.apk",
+    "apkSha256": "818958ea12e32b57bb71ec46af069ba1fade98cca9e328c5cfcca5ac4d25e79b",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply-candidate.mpp",
+    "bundleSha256": "b842e90afceecffc7f95de8b52de5becda29548d168faededc3bd519ee6ff595",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 13:41:08",
+    "result": "install-r Success; upload/navigation 16 checks PASS; user confirmed device behavior before official release"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 226",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter226",
+    "chmate": "0.8.10.226 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply226.apk",
+    "apkSha256": "64f4d989048757fef313ae930868767013a6e7914cb92f8399d4e8dd066d6e18",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply-candidate.mpp",
+    "bundleSha256": "b842e90afceecffc7f95de8b52de5becda29548d168faededc3bd519ee6ff595",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 13:37:04",
+    "result": "install-r Success; upload/navigation 16 checks PASS; user confirmed device behavior before official release"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 242",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter242",
+    "chmate": "0.8.10.242 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply242.apk",
+    "apkSha256": "e4f72285a8f7a882468f5c9d13ae1f586d4e2010114e4dcc8c27a319055966ef",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\video-attachment-20261114\\reply-candidate.mpp",
+    "bundleSha256": "b842e90afceecffc7f95de8b52de5becda29548d168faededc3bd519ee6ff595",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 13:39:24",
+    "result": "install-r Success; upload/navigation 16 checks PASS; user confirmed device behavior before official release"
+  }
+]
+```
+
+各版のUploadNavigationInstrumentationは16項目、StockPostingReturnInstrumentationは191で15項目（ActivityMonitorによる結果模擬）、ネイティブ画像描画/再問い合わせ回帰は191/226/242で110/110/106項目成功。試験中の公開投稿/メディア送信なし。Frida原因解析時だけ利用者の再添付を観測してHTTP413を確認。容量エラーのhost試験71項目成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\tests\tests191.apk / SHA256 7c5a403f674947d428ae0c3b31d11f6464051018dd21d318cd9d74d8caba6d2e / 同一鍵・同一端末へinstall-r成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\thumbnail-inst191\signed.apk / SHA256 260cb3809432348744044de6b874965e7675fab417d747138f8584600625f488 / 同一鍵・同一端末へinstall-r成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\tests\tests226.apk / SHA256 0067c3aa70b44fa4f91c9e3f7632449559ec2a3903964b92d43a8b1380a5ab12 / 同一鍵・同一端末へinstall-r成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\thumbnail-inst226\signed.apk / SHA256 19112aa0d61d47cbcec628b512efdb9845f3dd0f4269b16cef0d9cc328d9b450 / 同一鍵・同一端末へinstall-r成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\tests\tests242.apk / SHA256 debd259dcf44b2a2c68623518bfdd376d8e58704c09298e01c5736f432bccce2 / 同一鍵・同一端末へinstall-r成功。
+- 検証器 C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\thumbnail-inst242\signed.apk / SHA256 0e5d281f7c0963b8394648c2a5dc5cbc759dc586b60f9e68badfd9d5543e95e7 / 同一鍵・同一端末へinstall-r成功。
+- app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\stock-return\tests.apk / SHA256 aac3756ca5cffba7442c7515076630994f2a0faea00668e2c57c35eb5ceb4801 / 同一鍵・同一端末へinstall-r成功。
