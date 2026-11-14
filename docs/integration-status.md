@@ -1773,3 +1773,10 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 利用者指示でstockPostingDisplayModeを追加。0全画面/1ポップアップ、初期1、設定共有も0..1/default1。︙/長押し/toolbarすべて同じ選択を使用し、isHandoffは通常版固定の2画面だけを許可。最終通常Lint/R8ビルド成功2分17秒、191候補適用・別パッケージへ署名一致更新、ActivityMonitorで実外部起動を止めた模擬テスト28項目成功。実通常版DialogのADB起動は自動承認レビュー拒否、理由詳細なし。拒否の実起動を別経路で実行せず未確認とした。今回226/242の再適用なし、新規フックなし。詳細stock-chmate-posting.md、台帳android-installations.md、証跡build/stock-dialog-20261114/。公式版1.32.0は変更していない。
 
 利用者から公式Release指示。今回候補の226/242にも適用し、署名一致で隔離reporterへ更新成功。起動/画像描画回帰110/106項目と3版のネイティブタイトルbridge/自己Intent限定例外を確認。191の28項目成功と合わせて公開へ進む。共通Javaのみの変更で新規ネイティブフックなし。通常版実画面の起動は既述の自動承認拒否により未確認、外部起動を遮断した模擬結果と区別する。
+
+
+## 2026-11-14 1.33.0公式公開完了
+
+全画面/ポップアップ表示選択14794343、検証記録837bb01aをdev→master通常マージ28b0c919。既存Semantic Release CI43562766139 success、生成commit/tag e0c077cb/1.33.0、draft=false/prerelease=false。公開MPP SHA256 c309b1d0ff85465232a9bd7292a11ca1bb3e332e87f0c8875c247ed069b0c448、GitHub asset digest一致/ZIP CRC正常。公開MPPのstockPostingDisplayMode、固定Dialog component、StockPostingRelayActivityを確認。配布metadata両種とmaster/dev両raw feedは1.33.0・同downloadURL・SHA256 13c4c9ca551ef7decfa294d14b1be57709199b4052207a975818a530dced3f9e一致。証跡build/official133-public/verification.json、ci.log。devへCI backmergeをff取り込み。
+
+公式 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.33.0 。既述の実通常版画面の未確認はそのまま維持し、公開ノートにも記載。公開MPPそのものの再パッチ/再導入はせず同製品ソースのローカル候補を191/226/242へ適用・実機導入して検証済み。
