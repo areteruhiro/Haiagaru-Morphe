@@ -41,7 +41,7 @@ public final class RefreshTargets {
     }
     static String menuLabel(Activity activity,Object info)throws Exception{
         String key=menuKey(activity,info);
-        return key==null?null:selected(activity).contains(key)?"更新対象から外す":"更新対象に含む";
+        return key==null?null:selected(activity).contains(key)?"☑ 更新対象から外す":"□ 更新対象に含む";
     }
     static void toggleFromMenu(Activity activity,Object info){
         try{
