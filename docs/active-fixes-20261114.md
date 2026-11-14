@@ -86,3 +86,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
 公開MPP SHA256 708f83173a219a3c1e55f859d40b839f2541935a0869b00d8ff37c846a3ff1a6。全5assets GitHub digest一致、MPP CRC/追加HomeOrderRow同梱、master/dev両JSON計4feedのversion/downloadURL一致、修正説明/謝辞/寄付欄を確認。初回の検証scriptはR8で消えるローカル変数名localRevisionの文字列を要求して失敗したため、その不適切な検査を除き、配布クラス/CRC/digestを検証した。製品エラーとは扱わない。証跡build/official1351-public/verification.json、ci.log。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
+
+人気レスtap popup性能の再報告: 総レス数が多いほど遅い、1.9.3ではなし。利用者回答により次修正版で既存popularReplyDirectを一度OFF（popularReplyDirectOffV1移行marker）、以後の手動ONは維持。popup設定とは独立し、未設定値のpopup ON継承を廃止。NativeRows capture gateも共通directForへ統一。端末未接続、変更はまだ未配布。PopularModesAndroidTestへ一度OFF/手動ON維持/popup独立のfixtureを追加。
+
+性能調査の具体的経路: PopularNativeRows.saveは小さい返信popupを処理するたび、Snapshot構築後に既存の全スレresponsesを線形走査して所属を判定。全レス数依存の処理であり、capture有効時に通る。SnapshotにIdentityHashMapベースの所属集合を一度構築し、popupは初レスのidentityでsnapshot構築前に判定。二重確認も同じ集合を使用、表示/NG/閾値/キャッシュ所有判定の意味は維持。実機での効果は未確認。

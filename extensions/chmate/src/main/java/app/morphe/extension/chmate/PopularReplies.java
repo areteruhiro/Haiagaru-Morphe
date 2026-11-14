@@ -34,11 +34,13 @@ public final class PopularReplies {
     static boolean enabledFor(Context c){return prefs(c).getBoolean("popularReplyPopup",false);}
     static void initialize(Context c){
         SharedPreferences p=prefs(c);
-        if(!p.contains("popularReplyDirect"))p.edit().putBoolean("popularReplyDirect",p.getBoolean("popularReplyPopup",false)).apply();
+        // One-time mitigation requested for existing installs. Later user opt-in survives.
+        if(!p.getBoolean("popularReplyDirectOffV1",false))
+            p.edit().putBoolean("popularReplyDirect",false).putBoolean("popularReplyDirectOffV1",true).apply();
     }
     static boolean directFor(Context c){
         SharedPreferences p=prefs(c);
-        return p.getBoolean("popularReplyDirect",p.getBoolean("popularReplyPopup",false));
+        return p.getBoolean("popularReplyDirect",false);
     }
     static int thresholdValue(Context c,int nativeDefault){
         return Math.max(1,Math.min(9999,prefs(c).getInt(directFor(c)?"popularReplyThreshold":"popularReplyStandardThreshold",directFor(c)?3:nativeDefault)));
