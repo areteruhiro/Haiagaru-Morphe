@@ -2770,3 +2770,64 @@ app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chm
 ```
 
 既存の画像回帰検証器（先行台帳にAPK/署名記録済み）を再利用し、226=110、242=106項目成功。新しい公開投稿は実行しない。
+
+
+## 2026-11-14 設定折りたたみ・他板の通常版連携・画像倍率/回転メニュー
+
+```json
+[
+  {
+    "displayName": "Haiagaru 修正確認 191",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter191",
+    "chmate": "0.8.10.191 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\final191.apk",
+    "apkSha256": "2bf2dd16936412a20c9cc9ee62ae6e264c9cc5748df55dc801a963abf9247991",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\candidate.mpp",
+    "bundleSha256": "7f5f638e28890b5b90a1347b3e26bc6fbbdf3785689a3bdba796bbabcf6a391c",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 15:48:04",
+    "result": "signature matched install-r Success; native thumbnail checks PASS; 191/226 zoom/popup15 each, 242 settings/native posting menu30 checks PASS"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 226",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter226",
+    "chmate": "0.8.10.226 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\final226.apk",
+    "apkSha256": "42a17b025ffe2b244296e1332b5bceef86acbcaed2603acc01170f3bc6358ac1",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\candidate.mpp",
+    "bundleSha256": "7f5f638e28890b5b90a1347b3e26bc6fbbdf3785689a3bdba796bbabcf6a391c",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 15:48:34",
+    "result": "signature matched install-r Success; native thumbnail checks PASS; 191/226 zoom/popup15 each, 242 settings/native posting menu30 checks PASS"
+  },
+  {
+    "displayName": "Haiagaru 修正確認 242",
+    "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter242",
+    "chmate": "0.8.10.242 dev",
+    "serial": "d5497008",
+    "device": "Mi Note 10 Android 11",
+    "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\final242.apk",
+    "apkSha256": "978263c409ae5661d77c026905af5a7f86c0e07ad7cf2821d7872f4a94f8edcd",
+    "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\image-settings-20261114\\candidate.mpp",
+    "bundleSha256": "7f5f638e28890b5b90a1347b3e26bc6fbbdf3785689a3bdba796bbabcf6a391c",
+    "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+    "alias": "Morphe",
+    "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+    "installed": "lastUpdateTime=2026-11-14 15:50:05",
+    "result": "signature matched install-r Success; native thumbnail checks PASS; 191/226 zoom/popup15 each, 242 settings/native posting menu30 checks PASS"
+  }
+]
+```
+
+- app.haiagaru.tests.imagescale191 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-settings-20261114\tests\tests191.apk / SHA256 04e70534e3ab0dc4510706c2ee7ff5309e30ac51e240c28b19693e4196a745cd / 同じ鍵・端末へinstall-r成功、15項目PASS。
+- app.haiagaru.tests.imagescale226 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-settings-20261114\tests\tests226.apk / SHA256 06bb9b59575bdeb382a693627a4e7c6be78c26c2bec1d1d233501091ef2b22d1 / 同じ鍵・端末へinstall-r成功、15項目PASS。
+- app.haiagaru.tests.settingsstock242 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-settings-20261114\settings-tests.apk / SHA256 d3eb3b442759cff95b5155d0100389763612dd76abdf2c8d1d103560ca049a29 / 同じ鍵・端末へinstall-r成功、30項目PASS。
+最終MPPはローカル通常Lint/R8 build4m成功。191/226のnative ACTION_UP後50%維持、25/50/75/100/150/200/400%指定、下限/上限、︙Popup表示と直接回転への切替各15項目、242設定の再入場で2セクションが閉じる/重複ヘッダーなし/ネイティブ5ch・bbspink・Edgeのoverflow準備フックから通常版項目表示とOFF非表示30項目成功。画像描画・再問い合わせ110/110/106項目成功。3版title bridge/自己Intent例外、191/226倍率フックの元命令・レジスター・引数保持検証成功。公開POST/外部通常版起動/メディア送信なし、新規対象crashなし。

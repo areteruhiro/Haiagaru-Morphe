@@ -55,7 +55,13 @@ public final class ImageViewerRotationButton {
         android.util.Log.i(LOG_TAG, "Rotation button installed on " + root.getClass().getName());
         RotationClickListener action = new RotationClickListener(activity, root, imageViewClassName);
         root.setTag(ACTION_TAG, action);
-        button.setOnClickListener(action);
+        button.setOnClickListener(v -> {
+            if(VideoViewerSettings.prefs(activity).getBoolean(MENU_KEY,true)) {
+                android.widget.PopupMenu menu=new android.widget.PopupMenu(activity,button);
+                prepareMenu(activity,menu.getMenu());
+                menu.show();
+            } else action.onClick(v);
+        });
         synchronizeControlsVisibility(activity, root, button);
     }
 
@@ -96,9 +102,21 @@ public final class ImageViewerRotationButton {
 
             @Override
             public boolean onPreDraw() {
-                if (!Haiagaru.imageRotationButtonEnabled(activity) || VideoViewerSettings.prefs(activity).getBoolean(MENU_KEY, true)) {
+                boolean inMenu=VideoViewerSettings.prefs(activity).getBoolean(MENU_KEY,true);
+                // 226 hides its ActionBar and uses a configurable native toolbar.
+                // If that toolbar has no overflow entry, moving rotation into the
+                // menu must not remove the only way to reach it.
+                View nativeOverflow=root.findViewById(7);
+                boolean overflowVisible=nativeOverflow!=null&&nativeOverflow.isShown()
+                        &&nativeOverflow.getWidth()>0&&nativeOverflow.getAlpha()>0f;
+                if (!Haiagaru.imageRotationButtonEnabled(activity) || inMenu&&overflowVisible) {
                     if (button.getVisibility() != View.GONE) button.setVisibility(View.GONE);
                     return true;
+                }
+                String caption=inMenu?"︙":"⟳";
+                if(button instanceof TextView&&!caption.contentEquals(((TextView)button).getText())) {
+                    ((TextView)button).setText(caption);
+                    button.setContentDescription(inMenu?"画像のメニュー":"画像を右に回転");
                 }
                 position.update();
                 if (counter == null || !counter.isAttachedToWindow()) counter = findCounter(root);

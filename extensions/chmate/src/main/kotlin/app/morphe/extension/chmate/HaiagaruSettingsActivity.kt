@@ -199,7 +199,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                             SettingsHomeCard(onClick = {
                                 selected = groups.indexOf(group)
                             }, padded = false) {
-                                ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium,
+                                ListItem(headlineContent = { Text(group.title(english), style = MaterialTheme.typography.titleMedium, fontSize = 17.sp,
                                     color = HaiagaruUi.settingsCategoryColor) },
                                     supportingContent = { Text(if (english) group.enSummary else group.summary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     leadingContent = { Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
@@ -229,15 +229,10 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                     }
                 } else {
                     val group = groups[selected]
-                    item { HaiagaruUi.Group {
-                        Text(group.title(english), style = MaterialTheme.typography.titleMedium)
-                        HorizontalDivider()
-                        Text(if (english) group.enSummary else group.summary, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } }
                     group.sources.forEach { source ->
                         val rows = settingsRows(body(source))
                         if (group.sources.size > 1) item("heading:$source") {
-                            Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall,
+                            Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall, fontSize = 15.sp,
                                 color = HaiagaruUi.settingsCategoryColor, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
                         }
                         items(rows, key = { "${source}:${System.identityHashCode(it.control)}" }) { option ->

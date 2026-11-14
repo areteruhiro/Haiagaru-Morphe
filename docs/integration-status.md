@@ -1780,3 +1780,16 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 全画面/ポップアップ表示選択14794343、検証記録837bb01aをdev→master通常マージ28b0c919。既存Semantic Release CI43562766139 success、生成commit/tag e0c077cb/1.33.0、draft=false/prerelease=false。公開MPP SHA256 c309b1d0ff85465232a9bd7292a11ca1bb3e332e87f0c8875c247ed069b0c448、GitHub asset digest一致/ZIP CRC正常。公開MPPのstockPostingDisplayMode、固定Dialog component、StockPostingRelayActivityを確認。配布metadata両種とmaster/dev両raw feedは1.33.0・同downloadURL・SHA256 13c4c9ca551ef7decfa294d14b1be57709199b4052207a975818a530dced3f9e一致。証跡build/official133-public/verification.json、ci.log。devへCI backmergeをff取り込み。
 
 公式 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.33.0 。既述の実通常版画面の未確認はそのまま維持し、公開ノートにも記載。公開MPPそのものの再パッチ/再導入はせず同製品ソースのローカル候補を191/226/242へ適用・実機導入して検証済み。
+
+
+## 2026-11-14 設定折りたたみ・他板の通常版連携・画像縮小保持（公式指示あり）
+
+69af8434の旧SettingsSections修正は主開発先に統合済み。ComposeのSettingsSection初期collapsed=falseだった基本設定・言語/画面・文字・テーマをtrueへ変更し、再入場の実UIを検証。カテゴリ内重複タイトル/罫線/説明を削除、青い見出しのホーム/セクションtitle16→17sp、source14→15sp。
+
+通常版連携はEdge限定を外し、2ch互換の/test/read.cgiと板URL、したらばの/bbs/read.cgiと板URLを許可。ネイティブ編集モデルだけから受け取り、数値IP・localhost・ローカル用suffix・不正URL/ID/投稿CGIは拒否。host68項目成功。通常版が各板に対応・認証している必要あり、独自外部板は保証しない。242の本物の編集画面で5ch/bbspink/Edgeのフックが登録し、ネイティブのmenu準備メソッドを通って項目が出ることとOFFで隠れることを確認。
+
+191/226のsetPositionは指を離した倍率をnative minimumへ戻していた。元の下限読み取り後に指定された正の倍率（5%以上）を認める補助値を入れ、ネイティブ命令/上限/座標補正/アニメーションは維持。次画像への倍率引継ぎは利用者指示で変更しない。226でnative overflowがない場合、回転操作をmenuへ移すと入口まで消えるため、viewer内に︙を出して既存回転項目を開く。
+
+PC仮想メモリ不足で複数のビルドが失敗。既存の検証workflow43565295600では先行折りたたみ/他板ソースのMPP生成成功。最終ソースはメモリ負荷が下がった後のローカル通常Lint/R8 build成功4m、3版適用・実機別package更新済み。native scale/control191/226各15、settings/stock24230、画像110/110/106項目成功。新規対象crashなし。最初の実UI失敗は端末の別アプリ遷移と初回案内を区別し、案内だけを試験中スキップしてfinally復元。最初のPopup試験はhostの表示待ち、ACTION_UP試験はattach前の縮小が初期layoutで戻るfixture問題を修正し、attach後に縮小→UPを行って成功。失敗を成功扱いしていない。公開POSTや通常版の実起動は行っていない。
+
+証跡build/image-settings-20261114、先行CI build/settings-stock-allboards-20261114。台帳android-installations.md。ユーザーから完了後公式Releaseの指示あり。無関係未追跡ファイルを保持。

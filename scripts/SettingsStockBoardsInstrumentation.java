@@ -18,12 +18,13 @@ public final class SettingsStockBoardsInstrumentation extends Instrumentation {
  void test()throws Exception{
   app=getTargetContext();ok(app.getPackageName().endsWith("haiagaru.reporter242"),"isolated242 only");loader=app.getClassLoader();stock=loader.loadClass("app.morphe.extension.chmate.StockChmatePosting");
   SharedPreferences p=app.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);boolean had=p.contains("stockPostingShowMenu"),old=p.getBoolean("stockPostingShowMenu",true);p.edit().putBoolean("stockPostingShowMenu",true).commit();
+  SharedPreferences consent=app.getSharedPreferences("haiagaru.personal-ng-submissions",0);boolean hadPrompt=consent.contains("settingsConsentShownV1"),prompt=consent.getBoolean("settingsConsentShownV1",false);boolean hadMinimal=p.contains("minimalSetupPromptV1"),minimal=p.getBoolean("minimalSetupPromptV1",false);consent.edit().putBoolean("settingsConsentShownV1",true).commit();p.edit().putBoolean("minimalSetupPromptV1",true).commit();
   // Block all outgoing stock-editor starts even if the test accidentally reaches a handoff action.
   ActivityMonitor monitor=new ActivityMonitor(){@Override public ActivityResult onStartActivity(Intent i){if(i.getComponent()!=null&&i.getComponent().getPackageName().equals("jp.co.airfront.android.a2chMate"))return new ActivityResult(Activity.RESULT_CANCELED,null);return null;}};addMonitor(monitor);
   try{
    activity=startActivitySync(new Intent().setClassName(app.getPackageName(),"app.morphe.extension.chmate.HaiagaruSettingsActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(900);
-   for(String[] section:new String[][]{{"スレッド","画面・文字・テーマ","折りたたみ状態でスマホ／タブレット表示を自動切替"},{"アプリ・通信","基本設定・言語","設定リンクを作成"}}){
-    tap(section[0]);waitText(section[1]);ok(find(getUiAutomation().getRootInActiveWindow(),section[2])==null,"section initially collapsed "+section[1]);tap(section[1]);waitText(section[2]);checks++;sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);Thread.sleep(400);tap(section[0]);waitText(section[1]);ok(find(getUiAutomation().getRootInActiveWindow(),section[2])==null,"reenter category is collapsed "+section[1]);sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);Thread.sleep(400);
+   for(String[] section:new String[][]{{"スレッド","画面・文字・テーマ","折りたたみ状態でスマホ／タブレット表示を自動切替"},{"アプリ・通信","基本設定・言語","設定内の機能名をタップして設定を開く"}}){
+    tap(section[0]);waitText(section[1]);ok(find(getUiAutomation().getRootInActiveWindow(),section[0].equals("スレッド")?"画面・文字・コピー・リンクカード":"言語・広告・接続・外部板の認証")==null,"redundant category intro removed");android.graphics.Bitmap shot=getUiAutomation().takeScreenshot();if(shot!=null)try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(app.getExternalFilesDir(null),section[0].equals("スレッド")?"settings-reading.png":"settings-system.png"))){shot.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}ok(find(getUiAutomation().getRootInActiveWindow(),section[2])==null,"section initially collapsed "+section[1]);tap(section[1]);waitText(section[2]);checks++;sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);Thread.sleep(400);tap(section[0]);waitText(section[1]);ok(find(getUiAutomation().getRootInActiveWindow(),section[2])==null,"reenter category is collapsed "+section[1]);sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);Thread.sleep(400);
    }
    main(()->{activity.finish();return null;});activity=null;
    for(String url:new String[]{"https://egg.5ch.io/test/read.cgi/android/9999999999/","https://phoebe.bbspink.com/test/read.cgi/pinkj/9999999999/","https://bbs.eddibb.cc/test/read.cgi/liveedge/9999999999/"}){
@@ -38,6 +39,6 @@ public final class SettingsStockBoardsInstrumentation extends Instrumentation {
      p.edit().putBoolean("stockPostingShowMenu",false).commit();method(owner.getClass(),"d",Menu.class).invoke(owner,menu);ok(!menu.findItem(id).isVisible(),"OFF hides native menu entry");p.edit().putBoolean("stockPostingShowMenu",true).commit();return null;
     });main(()->{activity.finish();return null;});activity=null;
    }
-  }finally{removeMonitor(monitor);if(activity!=null)main(()->{activity.finish();return null;});if(had)p.edit().putBoolean("stockPostingShowMenu",old).commit();else p.edit().remove("stockPostingShowMenu").commit();}
+  }finally{if(hadPrompt)consent.edit().putBoolean("settingsConsentShownV1",prompt).commit();else consent.edit().remove("settingsConsentShownV1").commit();if(hadMinimal)p.edit().putBoolean("minimalSetupPromptV1",minimal).commit();else p.edit().remove("minimalSetupPromptV1").commit();removeMonitor(monitor);if(activity!=null)main(()->{activity.finish();return null;});if(had)p.edit().putBoolean("stockPostingShowMenu",old).commit();else p.edit().remove("stockPostingShowMenu").commit();}
  }
 }
