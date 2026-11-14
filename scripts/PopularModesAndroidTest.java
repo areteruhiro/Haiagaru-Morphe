@@ -14,7 +14,7 @@ public final class PopularModesAndroidTest {
  public static String run(Context app)throws Exception {
   checks=0;String version=app.getPackageManager().getPackageInfo(app.getPackageName(),0).versionName;boolean old=version.contains("191"),middle=version.contains("226");ClassLoader loader=app.getClassLoader();
   Class<?> popular=Class.forName("app.morphe.extension.chmate.PopularReplies",true,loader),nativeRows=Class.forName("app.morphe.extension.chmate.PopularNativeRows",true,loader);
-  SharedPreferences p=app.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);Map<String,?> saved=p.getAll();String[] keys={"popularReplyPopup","popularReplyDirect","popularReplyThreshold","popularReplyStandardThreshold","popularReplyDirectOffV1"};
+  SharedPreferences p=app.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0);Map<String,?> saved=p.getAll();String[] keys={"popularReplyPopup","popularReplyDirect","popularReplyThreshold","popularReplyStandardThreshold","popularReplyDirectOffV1","popularReplyCustomThreshold"};
   List snapshots=(List)field(nativeRows,"snapshots").get(null);List previous; synchronized(snapshots){previous=new ArrayList(snapshots);}
   try {
    p.edit().remove("popularReplyDirectOffV1").putBoolean(keys[1],true).putBoolean(keys[0],true).commit();
@@ -105,8 +105,16 @@ public final class PopularModesAndroidTest {
    check(call(nativeRows,"find",new Class<?>[]{List.class},source)!=flatCapture,"changed reference counts invalidate the same response objects");
    check(((Set<?>)call(nativeRows,"select",new Class<?>[]{List.class,int.class},source,3)).isEmpty(),"updated capture can represent a genuine zero count");
    field(response,old?"r":middle?"p":"s").setInt(source.get(0),3);
-   p.edit().putBoolean(keys[1],false).putInt(keys[3],5).putInt(keys[2],3).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==5,"standard threshold independent");
-   p.edit().putBoolean(keys[1],true).commit();check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==3,"direct threshold independent");
+   p.edit().putBoolean(keys[1],false).putInt(keys[3],5).putInt(keys[2],8).remove(keys[5]).commit();
+   check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==7,"existing saved number is ignored until enabled");
+   p.edit().putBoolean(keys[5],true).commit();
+   check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==5,"standard threshold independent");
+   p.edit().putBoolean(keys[1],true).commit();
+   check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==8,"direct threshold independent");
+   p.edit().putBoolean(keys[5],false).commit();
+   check((Integer)call(popular,"selectThreshold",new Class<?>[]{int.class},7)==7,"disabled override leaves the native predicate untouched");
+   check((Integer)call(popular,"thresholdValue",new Class<?>[]{Context.class,int.class},app,7)==3,"direct mode falls back to 3 when override is disabled");
+   check(p.getInt(keys[3],0)==5&&p.getInt(keys[2],0)==8,"both custom thresholds survive disabling");
    check(rows.size()==106&&source.size()==105,"source rows retained alongside structural filter row");
    if(old||middle){
     // Reproduce the legacy 191/226 race: the displayed adapter rows exist,
@@ -127,7 +135,7 @@ public final class PopularModesAndroidTest {
    }
    return "PASS "+version+" "+checks+" popularity mode/native row checks";
   }finally{
-   SharedPreferences.Editor e=p.edit();for(String k:new String[]{"popularReplyPopup","popularReplyDirect","popularReplyThreshold","popularReplyStandardThreshold","quickFilterCounts","quickFilterExtras","popularReplyDirectOffV1"}){Object v=saved.get(k);if(v instanceof Boolean)e.putBoolean(k,(Boolean)v);else if(v instanceof Integer)e.putInt(k,(Integer)v);else e.remove(k);}e.commit();
+   SharedPreferences.Editor e=p.edit();for(String k:new String[]{"popularReplyPopup","popularReplyDirect","popularReplyThreshold","popularReplyStandardThreshold","quickFilterCounts","quickFilterExtras","popularReplyDirectOffV1","popularReplyCustomThreshold"}){Object v=saved.get(k);if(v instanceof Boolean)e.putBoolean(k,(Boolean)v);else if(v instanceof Integer)e.putInt(k,(Integer)v);else e.remove(k);}e.commit();
    synchronized(snapshots){snapshots.clear();snapshots.addAll(previous);}
   }
  }
