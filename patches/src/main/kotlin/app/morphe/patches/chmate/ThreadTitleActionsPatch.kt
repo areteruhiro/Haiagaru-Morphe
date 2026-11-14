@@ -53,12 +53,14 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
         }
         val label=(call as RegisterRangeInstruction).startRegister
         check(label==3&&call.registerCount==(if(modern)26 else 25))
-        val size=label+2
+        // Both wrappers take color first. 242 inserts a style argument before fontSize.
+        val size=label+(if(modern)5 else 4)
+        val sizeMask=if(modern)-17 else -9
         val defaults=label+call.registerCount-1
         // Only 226 uses the narrow three-column title grid. Its explicit maxLines
         // operand is v20; soft wrapping is already enabled by the default mask.
         val lineLimit=if(modern) "" else "const/16 v20, 2"
-        // The font-size default bit is cleared only when compactLabelSize returned an SP value.
+        // Clear only the fontSize default bit for an explicit SP value.
         // The two size registers originally carry zero; the ordinary call remains unchanged on the zero path.
         render.addInstructionsWithLabels(at,"""
             $lineLimit
@@ -67,7 +69,7 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
             const-wide/16 v0, 0
             cmp-long v0, v$size, v0
             if-eqz v0, :native_size
-            and-int/lit8 v$defaults, v$defaults, -5
+            and-int/lit8 v$defaults, v$defaults, $sizeMask
         """.trimIndent(), app.morphe.patcher.util.smali.ExternalLabel("native_size",call))
     }
     val parameters=listOf("Landroid/view/LayoutInflater;","Landroid/view/ViewGroup;","Landroid/os/Bundle;")

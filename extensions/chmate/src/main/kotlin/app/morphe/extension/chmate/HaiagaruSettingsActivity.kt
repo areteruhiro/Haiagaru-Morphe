@@ -22,6 +22,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
@@ -282,9 +284,13 @@ private fun settingsGroups() = listOf(
 @Composable
 private fun SettingsFrame(onClick: (() -> Unit)? = null, padded: Boolean = true,
     content: @Composable ColumnScope.() -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val dark = colors.surface.luminance() < colors.onSurface.luminance()
+    val outline = if (dark) colors.onSurface.copy(alpha = .42f).compositeOver(colors.surface)
+        else colors.outlineVariant.copy(alpha = .3f)
     Surface(modifier = Modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
-        shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = .3f)),
+        shape = RoundedCornerShape(12.dp), color = colors.surface,
+        border = BorderStroke(if (dark) 1.dp else 0.5.dp, outline),
         shadowElevation = 0.dp) {
         Column(if (padded) Modifier.padding(horizontal = 12.dp, vertical = 10.dp) else Modifier, content = content)
     }

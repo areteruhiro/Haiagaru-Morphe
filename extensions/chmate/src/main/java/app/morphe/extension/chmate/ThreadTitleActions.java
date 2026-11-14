@@ -91,7 +91,7 @@ public final class ThreadTitleActions {
                         default: return "Haiagaru thread title action";
                     }
                 });
-                added.add(middle?ctor.newInstance(labels.get(i),callback):ctor.newInstance(labels.get(i),icon,callback,false,false));
+                added.add(middle?ctor.newInstance(labels.get(i),callback):ctor.newInstance(labels.get(i),icon,callback,false,true));
             }
             java.util.ArrayList<Object> groups=new java.util.ArrayList<>(original);
             groups.add(added);
