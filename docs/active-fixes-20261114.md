@@ -78,3 +78,15 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
 
 1.35.0並び替えピン即時反映の報告: HomeOrderListの引数は同じView/DragOrder/callbackのためCompose skip対象となり、MutableなJava list/pinを行内で読むだけでは変更が観測されなかった。ModelUiのrevisionを明示伝搬し、ローカル操作でlocalRevision更新、label/pinのimmutable snapshotを作ってLazyColumnへ渡す。ピン変更/ドラッグ/アクセシビリティ移動が同じ更新経路。保存/キャンセル/backupキーは変更せず。Kotlin/Javaコンパイル進行中、実機検証は利用者担当の指示を維持。公式Release指示あり。
+
+## 2026-11-14 1.35.1公式公開（並び替えピン即時反映）
+
+6f04b64fをdev→master通常merge dc32a7aa。Release CI43589406178/Build43589406170 success、20:23:00 JST公開、draft=false/prerelease=false。HomeOrderListへrevisionを渡し、操作でlocalRevisionを更新、immutableなlabel/pinの行snapshotをLazyColumnへ渡して、同一View参照でComposeが再描画を省略する経路を修正。保存/キャンセル/標準順復元/backup形式は維持。Kotlin/Java compile58s成功。実機操作は利用者側で確認する指示に従い未実施、公開文でも区別。
+
+公開MPP SHA256 708f83173a219a3c1e55f859d40b839f2541935a0869b00d8ff37c846a3ff1a6。全5assets GitHub digest一致、MPP CRC/追加HomeOrderRow同梱、master/dev両JSON計4feedのversion/downloadURL一致、修正説明/謝辞/寄付欄を確認。初回の検証scriptはR8で消えるローカル変数名localRevisionの文字列を要求して失敗したため、その不適切な検査を除き、配布クラス/CRC/digestを検証した。製品エラーとは扱わない。証跡build/official1351-public/verification.json、ci.log。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
+
+人気レスtap popup性能の再報告: 総レス数が多いほど遅い、1.9.3ではなし。利用者回答により次修正版で既存popularReplyDirectを一度OFF（popularReplyDirectOffV1移行marker）、以後の手動ONは維持。popup設定とは独立し、未設定値のpopup ON継承を廃止。NativeRows capture gateも共通directForへ統一。端末未接続、変更はまだ未配布。PopularModesAndroidTestへ一度OFF/手動ON維持/popup独立のfixtureを追加。
+
+性能調査の具体的経路: PopularNativeRows.saveは小さい返信popupを処理するたび、Snapshot構築後に既存の全スレresponsesを線形走査して所属を判定。全レス数依存の処理であり、capture有効時に通る。SnapshotにIdentityHashMapベースの所属集合を一度構築し、popupは初レスのidentityでsnapshot構築前に判定。二重確認も同じ集合を使用、表示/NG/閾値/キャッシュ所有判定の意味は維持。実機での効果は未確認。

@@ -1827,3 +1827,11 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 公開MPP SHA256 b2b050f8346698542cf0fc9b550364d3b7407b6c85ce03dc5409a323aa83cd9e。全5assets GitHub digest一致、ZIP CRC/追加class/不要表示文字列の除去、master/dev両JSON計4feed1.35.0とdownloadURL一致を確認。謝辞/寄付欄と最新仕様を公開文へ明記。証跡build/official1350-public/verification.json、ci.log。開発版dev.2/dev.3の先行CIも成功。ANR根因/解消は未確定。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
+
+## 2026-11-14 1.35.1公式公開（並び替えピン即時反映）
+
+6f04b64fをdev→master通常merge dc32a7aa。Release CI43589406178/Build43589406170 success、20:23:00 JST公開、draft=false/prerelease=false。HomeOrderListへrevisionを渡し、操作でlocalRevisionを更新、immutableなlabel/pinの行snapshotをLazyColumnへ渡して、同一View参照でComposeが再描画を省略する経路を修正。保存/キャンセル/標準順復元/backup形式は維持。Kotlin/Java compile58s成功。実機操作は利用者側で確認する指示に従い未実施、公開文でも区別。
+
+公開MPP SHA256 708f83173a219a3c1e55f859d40b839f2541935a0869b00d8ff37c846a3ff1a6。全5assets GitHub digest一致、MPP CRC/追加HomeOrderRow同梱、master/dev両JSON計4feedのversion/downloadURL一致、修正説明/謝辞/寄付欄を確認。初回の検証scriptはR8で消えるローカル変数名localRevisionの文字列を要求して失敗したため、その不適切な検査を除き、配布クラス/CRC/digestを検証した。製品エラーとは扱わない。証跡build/official1351-public/verification.json、ci.log。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
