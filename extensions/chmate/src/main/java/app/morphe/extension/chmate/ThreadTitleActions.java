@@ -132,44 +132,76 @@ public final class ThreadTitleActions {
             for(int i=0;i<parent.getChildCount();i++)fitLegacyLabels(parent.getChildAt(i));
         }
     }
+    private static boolean nativeColumn(View view){
+        if(!(view instanceof LinearLayout))return false;
+        LinearLayout column=(LinearLayout)view;
+        if(column.getOrientation()!=LinearLayout.VERTICAL)return false;
+        for(int i=0;i<column.getChildCount();i++)
+            if(column.getChildAt(i).getClass().getName().equals("o.r8lambdaFP1taOY2C0VNHH09jrpf0HpwLqQ"))return true;
+        return false;
+    }
     private static View content(Object fragment,Activity a,View original)throws Exception{
-            MenuThread menu=thread(fragment,a);if(menu==null)return original;
-            Object info=menu.info;
-            ThreadWatchRules.Target t=menu.target;
-            // 191's native dialog is a ScrollView with its own menu container.
-            // Add the existing actions to that container so they scroll with native entries.
-            LinearLayout nativeMenu=null;
-            if(original instanceof android.widget.ScrollView){
-                android.view.ViewGroup scroll=(android.view.ViewGroup)original;
-                if(scroll.getChildCount()==1&&scroll.getChildAt(0) instanceof LinearLayout)
-                    nativeMenu=(LinearLayout)scroll.getChildAt(0);
+        MenuThread menu=thread(fragment,a);if(menu==null)return original;
+        fitLegacyLabels(original);
+        if(!(original instanceof android.widget.ScrollView))return original;
+        View child=((android.widget.ScrollView)original).getChildAt(0);
+        if(!(child instanceof LinearLayout))return original;
+        LinearLayout root=(LinearLayout)child;
+        LinearLayout left=null,right=null;
+        for(int i=0;i<root.getChildCount();i++){
+            if(!(root.getChildAt(i) instanceof LinearLayout))continue;
+            LinearLayout grid=(LinearLayout)root.getChildAt(i);
+            if(grid.getOrientation()==LinearLayout.HORIZONTAL&&grid.getChildCount()==2
+                    &&nativeColumn(grid.getChildAt(0))&&nativeColumn(grid.getChildAt(1))){
+                left=(LinearLayout)grid.getChildAt(0);right=(LinearLayout)grid.getChildAt(1);break;
             }
-            LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
-            if(nativeMenu==null)box.addView(original,new LinearLayout.LayoutParams(-1,-2));
-            LinearLayout controls=new LinearLayout(a);controls.setOrientation(LinearLayout.VERTICAL);
-            LinearLayout actions=new LinearLayout(a);
-            android.widget.CheckBox refresh=FeatureSwitches.enabled(SHOW_REFRESH,true)?RefreshTargets.control(a,info):null;
-            if(refresh!=null)controls.addView(refresh,new LinearLayout.LayoutParams(-1,-2));
-            if(t!=null){
-            if(FeatureSwitches.enabled(SHOW_WATCH,true)){
-            Button watch=new Button(a);watch.setAllCaps(false);watch.setText("このスレの新着通知");actions.addView(watch,new LinearLayout.LayoutParams(0,-2,1));
-            watch.setOnClickListener(v->ThreadWatch.show(a,t));
+        }
+        if(left==null||right==null)return original;
+        Button template=(Button)left.getChildAt(0);
+        java.util.ArrayList<Button> entries=new java.util.ArrayList<>();
+        if(FeatureSwitches.enabled(SHOW_REFRESH,true)){
+            String label=RefreshTargets.menuLabel(a,menu.info);
+            if(label!=null){
+                Button item=legacyItem(template,label,()->{});
+                item.setOnClickListener(v->{
+                    RefreshTargets.toggleFromMenu(a,menu.info);
+                    try{item.setText(RefreshTargets.menuLabel(a,menu.info));}
+                    catch(Exception error){android.util.Log.w("Haiagaru","Refresh title menu label unavailable",error);}
+                });
+                entries.add(item);
             }
-            if(FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(t.url)){
-                Button auth=new Button(a);auth.setText("エッヂの閲覧認証");auth.setAllCaps(false);actions.addView(auth,new LinearLayout.LayoutParams(0,-2,1));
-                auth.setOnClickListener(v->ReadingAuth.open(a,t.url));
-            }
-            }
-            if(actions.getChildCount()>0)controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
-            fitLegacyLabels(original);
-            fitLegacyLabels(controls);
-            if(nativeMenu!=null){
-                if(controls.getChildCount()>0){controls.setBackgroundColor(android.graphics.Color.TRANSPARENT);nativeMenu.addView(controls,new LinearLayout.LayoutParams(-1,-2));}
-                return original;
-            }
-            if(controls.getChildCount()==0){box.removeView(original);return original;}
-            box.addView(controls,new LinearLayout.LayoutParams(-1,-2));
-            return box;
+        }
+        ThreadWatchRules.Target t=menu.target;
+        if(t!=null&&FeatureSwitches.enabled(SHOW_WATCH,true))
+            entries.add(legacyItem(template,"このスレの新着通知",()->ThreadWatch.show(a,t)));
+        if(t!=null&&FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(t.url))
+            entries.add(legacyItem(template,"エッヂの閲覧認証",()->ReadingAuth.open(a,t.url)));
+        int leftCount=visibleItems(left),rightCount=visibleItems(right);
+        for(Button entry:entries){
+            LinearLayout column=leftCount<=rightCount?left:right;
+            column.addView(entry,new LinearLayout.LayoutParams(-1,-2));
+            if(column==left)leftCount++;else rightCount++;
+        }
+        return original;
+    }
+    private static int visibleItems(LinearLayout column){
+        int count=0;
+        for(int i=0;i<column.getChildCount();i++)if(column.getChildAt(i).getVisibility()==View.VISIBLE)count++;
+        return count;
+    }
+    private static Button legacyItem(Button template,String label,Runnable action)throws Exception{
+        Button button=(Button)template.getClass().getConstructor(android.content.Context.class,android.util.AttributeSet.class)
+                .newInstance(template.getContext(),null);
+        button.setTypeface(template.getTypeface());
+        button.setTextColor(template.getTextColors());
+        button.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,template.getTextSize());
+        button.setGravity(template.getGravity());
+        button.setPadding(template.getPaddingLeft(),template.getPaddingTop(),template.getPaddingRight(),template.getPaddingBottom());
+        button.setMinHeight(template.getMinHeight());button.setMinimumHeight(template.getMinimumHeight());
+        button.setAllCaps(false);button.setSingleLine(false);button.setMaxLines(2);
+        button.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        button.setText(label);button.setOnClickListener(v->action.run());
+        return button;
     }
     private ThreadTitleActions(){}
 }
