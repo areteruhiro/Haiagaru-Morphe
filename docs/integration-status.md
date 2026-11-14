@@ -1766,3 +1766,8 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 公開MPP SHA256 227b7e3aab2ce836cddc1aec91bc1612f34ae168ed31e7c04d6097c1da2a6c40、GH asset digest一致/ZIP CRC正常。ThreadPostingNames/StockPostingRelayActivity/各設定キー/容量案内/レス限定ラベルを配布MPP内で確認。配布metadata2種とmaster/dev両raw feedは1.32.0・同downloadURL・SHA256 45601ab43c50dacb3d9fa242f820aae42bbfeb7d7effa61debd48e5bedcca27f一致。Pythonのredirect先TLS検証がローカル証明書不足で失敗したため、検証を無効にせずghダウンロードとOS証明書を使うInvoke-WebRequestで再取得して確認。証跡build/official132-public/verification.json、ci.log。公開MPPの再パッチ/実機再導入はせず、同じ製品ソースの最終候補を前記3版で検証・導入済み。canonical devはCI backmergeをfast-forwardで取り込み済み。
 
 公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.32.0 。通常版への実投稿成功は模擬結果試験であり、公開POSTの実試験とは区別する。無関係な未追跡ファイルは維持。
+
+
+## 2026-11-14 通常版書き込みの全画面/ポップアップ選択（未公開）
+
+利用者指示でstockPostingDisplayModeを追加。0全画面/1ポップアップ、初期1、設定共有も0..1/default1。︙/長押し/toolbarすべて同じ選択を使用し、isHandoffは通常版固定の2画面だけを許可。最終通常Lint/R8ビルド成功2分17秒、191候補適用・別パッケージへ署名一致更新、ActivityMonitorで実外部起動を止めた模擬テスト28項目成功。実通常版DialogのADB起動は自動承認レビュー拒否、理由詳細なし。拒否の実起動を別経路で実行せず未確認とした。今回226/242の再適用なし、新規フックなし。詳細stock-chmate-posting.md、台帳android-installations.md、証跡build/stock-dialog-20261114/。公式版1.32.0は変更していない。

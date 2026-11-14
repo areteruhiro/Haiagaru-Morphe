@@ -2705,3 +2705,26 @@ OneDrive外の主開発先でビルド。既存のHaiagaru/通常版は保持し
 - app.haiagaru.tests.threadnames226 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\thread-names\tests226.apk / SHA256 852cd81b6097d8ccac72ff3ce8c2ce19daf0558219f1c7f11502246ef1915249 / 同じ鍵・端末へinstall-r成功。
 - app.haiagaru.tests.threadnames242 / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\thread-names\tests242.apk / SHA256 d152c37eadadc9e4c9444e6b67c0fc323bb4049439d6e108e8fdf46d220dd0d2 / 同じ鍵・端末へinstall-r成功。
 - app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\video-attachment-20261114\stock-return\final-tests.apk / SHA256 639c982b00c41b3449f0ce79410c4325d781814e46248b21056d07be99043a58 / 同じ鍵・端末へinstall-r成功。
+
+
+## 2026-11-14 通常版ChMate表示方法選択（未公開）
+
+```json
+{
+  "displayName": "Haiagaru 修正確認 191",
+  "package": "jp.co.airfront.android.a2chMate.haiagaru.reporter191",
+  "chmate": "0.8.10.191 dev",
+  "serial": "d5497008",
+  "apk": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\dialog191.apk",
+  "apkSha256": "19ea04ea4ab2df9f6fa2126cce6831292968ff634ca865aed4b429f2e7e4271b",
+  "bundle": "C:\\Users\\narum\\.codex\\worktrees\\945d\\morphe-chmate\\output\\haiagaru-current\\build\\stock-dialog-20261114\\candidate.mpp",
+  "bundleSha256": "53ed318e1ee8a17d6d8702655ffb1795784014c177b93b44652d7479d6450675",
+  "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+  "alias": "Morphe",
+  "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+  "installed": "lastUpdateTime=2026-11-14 14:32:24",
+  "result": "signature matched install-r Success; 28 intercepted stock editor result/selection checks PASS"
+}
+```
+
+app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\stock-dialog-20261114\tests.apk / SHA256 c5ba9e2a5fa1dc8b0c1162a5499f0afe5da388b3078d4168318e26d342efa0ee / 同一鍵・同一端末install-r Success。通常版への外部起動をActivityMonitorで遮断し、全画面/ポップアップと模擬成功/中断28項目成功。実際の通常版ダイアログ起動は自動承認レビュー拒否により未実施。
