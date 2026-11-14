@@ -120,7 +120,12 @@ public final class ThreadTitleActions {
             android.widget.TextView text=(android.widget.TextView)view;
             float scale=text.getResources().getDisplayMetrics().scaledDensity;
             int size=Math.round(text.getTextSize()/scale);
-            if(text.getMaxLines()==1&&size>11)text.setAutoSizeTextTypeUniformWithConfiguration(11,size,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+            if(text.getMaxLines()==1){
+                text.setSingleLine(false);
+                text.setMaxLines(2);
+                text.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                if(size>11)text.setAutoSizeTextTypeUniformWithConfiguration(11,size,1,android.util.TypedValue.COMPLEX_UNIT_SP);
+            }
         }
         if(view instanceof android.view.ViewGroup){
             android.view.ViewGroup parent=(android.view.ViewGroup)view;
