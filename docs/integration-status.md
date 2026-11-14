@@ -1751,3 +1751,9 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 通常版連携の完成純差分を統合し、成功/戻る結果のrelay、確認省略、鉛筆長押しの任意切替、ツールバー起動を追加。容量超過はFridaでHTTP413を実測し、容量エラーと送信先設定への案内に変更。Imgurログインを送信先設定へ集約し、利用者の修正指示に従って1ファイル限定案を「このレスでだけ」に変更。191だけだった更新後の対象維持を226/242の実リストにも適用。
 
 主開発先のreply-build.logは通常Lint/R8成功、3版適用成功。Mi Note 10の隔離reporter191/226/242へインストールし、通知位置/容量ダイアログ/レス限定経路を各16、ネイティブ画像110/110/106、通常版relayの模擬結果15、ホスト送信71項目成功。新規対象crashなし。実際の公開投稿・テスト用画像送信なし。利用者から実機確認済み・公式Release許可あり。既存アプリ/通常版/無関係な未追跡ファイルは保持。詳細upload-navigation-20261114.md、stock-chmate-posting.md、android-installations.md。既存Semantic Release CIでdev→master通常マージして公開する。
+
+利用者の追加指示でstockPostingShowMenuを追加（初期ON）。書き込み︙の通常版連携項目だけを切り替え、長押し/ツールバーは独立。最初の公式CI43558484230は公開前にcancel完了、1.31.0 Release未作成を確認し、追加をまとめて再実行する。
+
+さらに利用者指示でthreadPostingNamesを追加（初期OFF）、未保存スレは空欄を利用者が選択。専用のネイティブ名前欄を既存ThreadCommandsから登録し、スレ別の私有設定へ保存。新規スレ立て/不明URLは標準のまま。最終thread-name-build.logは通常Lint/R8成功2分16秒。
+
+最終候補は3版適用・ネイティブ名前欄接続成功。Mi Note 10へ署名一致で更新し、スレ別名前15項目ずつ、191の通常版relay/確認省略/メニュー初期ON・OFF/復帰/長押し・ツールバー独立動作19項目成功。公開投稿なし。証跡thread-names/result{191,226,242}.log、stock-return/final-result.log。

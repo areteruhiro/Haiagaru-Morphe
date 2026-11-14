@@ -3823,6 +3823,13 @@ public final class Haiagaru {
                 text("スレ立てコマンドの候補を表示", "Show thread creation command suggestions"),
                 preferences.getBoolean("threadCommandsEnabled", true));
         live.toggle(threadCommands, "threadCommandsEnabled");
+        Switch threadNames=addSwitch(layout,activity,
+                text("名前欄をスレごとに保存する", "Remember posting names per thread"),
+                preferences.getBoolean(ThreadPostingNames.ENABLED,false));
+        live.toggle(threadNames,ThreadPostingNames.ENABLED);
+        TextView threadNamesHelp=new TextView(activity);
+        threadNamesHelp.setText(text("次に書き込み画面を開くときから適用します。未保存のスレは空欄で開きます。オフと新規スレ立ては従来の板ごとの動作です。通常版ChMateには引き継ぎません。", "Applies when opening the next editor. Unsaved threads start blank. Off and new-thread creation keep native board behavior. Names are not passed to stock ChMate."));
+        layout.addView(threadNamesHelp,rowParams(activity));
         String[][] menuOptions = {
                 {"showClipboardHistoryMenu", text("メニューに「コピー履歴・分類」を表示", "Show clipboard history in the menu")},
                 {"showUploadHostMenu", text("メニューに「アップロード先を変更」を表示", "Show upload destination in the menu")},
@@ -3839,6 +3846,10 @@ public final class Haiagaru {
         menuDescription.setTextSize(13);
         layout.addView(menuDescription, rowParams(activity));
         StockChmatePosting.addSettingsButton(layout, activity);
+        Switch stockMenu=addSwitch(layout,activity,
+                text("書き込み画面の「︙」に「通常版ChMateで書き込む」を追加", "Add stock ChMate posting to the posting overflow menu"),
+                preferences.getBoolean(StockChmatePosting.SHOW_MENU,true));
+        live.toggle(stockMenu,StockChmatePosting.SHOW_MENU);
         Switch stockSkipConfirm=addSwitch(layout,activity,
                 text("通常版ChMateへ渡す確認を省略する", "Skip confirmation before handing off to stock ChMate"),
                 preferences.getBoolean(StockChmatePosting.SKIP_CONFIRM,false));
