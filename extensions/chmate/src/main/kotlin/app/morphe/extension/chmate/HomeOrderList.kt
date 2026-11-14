@@ -18,28 +18,36 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
 /** Dialog-local draft order. The existing Save/Cancel buttons own persistence. */
-@Composable internal fun HomeOrderList(view: ListView, ordering: HomeThreadOrder.DragOrder, changed: () -> Unit) {
+@Composable internal fun HomeOrderList(view: ListView, ordering: HomeThreadOrder.DragOrder, revision: Int, changed: () -> Unit) {
     val state=rememberLazyListState()
     val scope=rememberCoroutineScope()
     var dragging by remember(view) { mutableIntStateOf(-1) }
     var pointerY by remember(view) { mutableFloatStateOf(0f) }
     val currentChanged by rememberUpdatedState(changed)
-    val adapter=view.adapter ?: return
+    var localRevision by remember(view) { mutableIntStateOf(0) }
+    val rows=remember(view,revision,localRevision) {
+        val adapter=view.adapter
+        (0 until (adapter?.count ?: 0)).map { index ->
+            HomeOrderRow(adapter?.getItem(index)?.toString().orEmpty().removePrefix("📌 "),ordering.pinned(index))
+        }
+    }
+    val invalidate={localRevision++;currentChanged()}
+
     LazyColumn(Modifier.fillMaxWidth().height(420.dp),state=state,
         verticalArrangement=Arrangement.spacedBy(4.dp)) {
-        items(adapter.count) { index ->
-            val label=view.adapter?.getItem(index)?.toString().orEmpty().removePrefix("📌 ")
+        items(rows.size) { index ->
+            val entry=rows[index]
             Row(Modifier.fillMaxWidth()
                 .background(if(dragging==index) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
                 .semantics {
                     customActions=listOf(
-                        CustomAccessibilityAction("一つ上へ") { ordering.move(index,index-1).also { if(it)currentChanged() } },
-                        CustomAccessibilityAction("一つ下へ") { ordering.move(index,index+1).also { if(it)currentChanged() } })
+                        CustomAccessibilityAction("一つ上へ") { ordering.move(index,index-1).also { if(it)invalidate() } },
+                        CustomAccessibilityAction("一つ下へ") { ordering.move(index,index+1).also { if(it)invalidate() } })
                 }.padding(start=12.dp),verticalAlignment=Alignment.CenterVertically) {
-                Text(label,Modifier.weight(1f).padding(vertical=12.dp),fontSize=14.sp)
-                TextButton(onClick={ordering.togglePin(index);currentChanged()},
-                    modifier=Modifier.semantics { contentDescription=if(ordering.pinned(index))"ピン留めを解除" else "ピン留め" }) {
-                    Text(if(ordering.pinned(index))"📌" else "☆")
+                Text(entry.label,Modifier.weight(1f).padding(vertical=12.dp),fontSize=14.sp)
+                TextButton(onClick={ordering.togglePin(index);invalidate()},
+                    modifier=Modifier.semantics { contentDescription=if(entry.pinned)"ピン留めを解除" else "ピン留め" }) {
+                    Text(if(entry.pinned)"📌" else "☆")
                 }
                 Text("☰",fontSize=24.sp,modifier=Modifier
                     .width(48.dp).heightIn(min=48.dp)
@@ -58,7 +66,7 @@ import kotlinx.coroutines.launch
                                     val info=state.layoutInfo
                                     val target=info.visibleItemsInfo.firstOrNull { pointerY>=it.offset&&pointerY<it.offset+it.size }?.index
                                     if(target!=null&&target!=dragging&&ordering.move(dragging,target)){
-                                        dragging=target;currentChanged()
+                                        dragging=target;invalidate()
                                     }
                                     val edge=48.dp.toPx()
                                     val step=when { pointerY<info.viewportStartOffset+edge -> -20f
@@ -72,3 +80,5 @@ import kotlinx.coroutines.launch
         }
     }
 }
+
+private data class HomeOrderRow(val label: String,val pinned: Boolean)

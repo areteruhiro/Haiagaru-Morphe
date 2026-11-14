@@ -76,3 +76,5 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 公開MPP SHA256 b2b050f8346698542cf0fc9b550364d3b7407b6c85ce03dc5409a323aa83cd9e。全5assets GitHub digest一致、ZIP CRC/追加class/不要表示文字列の除去、master/dev両JSON計4feed1.35.0とdownloadURL一致を確認。謝辞/寄付欄と最新仕様を公開文へ明記。証跡build/official1350-public/verification.json、ci.log。開発版dev.2/dev.3の先行CIも成功。ANR根因/解消は未確定。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
+
+1.35.0並び替えピン即時反映の報告: HomeOrderListの引数は同じView/DragOrder/callbackのためCompose skip対象となり、MutableなJava list/pinを行内で読むだけでは変更が観測されなかった。ModelUiのrevisionを明示伝搬し、ローカル操作でlocalRevision更新、label/pinのimmutable snapshotを作ってLazyColumnへ渡す。ピン変更/ドラッグ/アクセシビリティ移動が同じ更新経路。保存/キャンセル/backupキーは変更せず。Kotlin/Javaコンパイル進行中、実機検証は利用者担当の指示を維持。公式Release指示あり。
