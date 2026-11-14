@@ -2926,3 +2926,25 @@ Mi Note 10（Android 11、ADB `d5497008`）。検証専用3パッケージを署
 
 パッチ: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\title-menu-all-apks\candidate.mpp`（SHA-256 `d764e9b5ddea7eade09a9e25f2d174222446cb121c293fd9969d9069e9a7b8cc`）。
 署名: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-14 長押しメニューの191標準2列と226折り返し検証
+
+Mi Note 10 / Android 11 / ADB `d5497008`。検証専用の別アプリにのみ導入。
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`: 2026-11-14T22:48:28.933397 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\native-grid-apks\final191.apk`（SHA-256 `480f6ac5e9cfdb469685d3a9a892d7d872726208a5f9179ad2fee2b44e8e2606`）。
+- Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`: 2026-11-14T22:49:08.134002 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\native-grid-apks\final226.apk`（SHA-256 `3af1f0c2c6d57baf752f925ea9bfa8cb63b055d1cdb7c01bd7e69f2c3fc3336a`）。
+
+パッチ: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\native-grid-apks\candidate.mpp`（SHA-256 `4f5dde27466aa3c04dd0f25ae15f9740f02f299c64db48da56bcaba7555bf65e`）。
+署名: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-14 226 長押しメニューの2列表示
+
+Mi Note 10 Android 11 / ADB `d5497008`。Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`。2026-11-14T22:56:27.140971 JST、signature matched; install-r Success。
+
+- APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\two-column-apks\final226.apk`、SHA-256 `c0b596928322dad7299e774b0cb1113584319190b3e1f0c5937c635c4f81af63`
+- MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-registration-20261114\two-column-apks\candidate.mpp`、SHA-256 `67f322e231f0db604cab48e338bd7ab38912cbb783705afb5be14842f7d47a20`
+- 署名: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
