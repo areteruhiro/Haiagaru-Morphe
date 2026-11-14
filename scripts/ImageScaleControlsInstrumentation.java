@@ -28,7 +28,7 @@ public final class ImageScaleControlsInstrumentation extends Instrumentation {
     Method set=type.getMethod("setPosition",float.class,float.class,float.class,boolean.class);Field scale=field(type,old?"C":"D");
     for(float value:new float[]{.25f,.5f,.75f,1f,1.5f,2f,4f}){set.invoke(canvas,0f,0f,value,false);ok(Math.abs(scale.getFloat(canvas)-value)<.001f,"native release keeps scale "+value);}
     set.invoke(canvas,0f,0f,0f,false);ok(scale.getFloat(canvas)>0,"invalid zero keeps positive native scale");set.invoke(canvas,0f,0f,100f,false);ok(scale.getFloat(canvas)<=50f,"native maximum remains bounded");
-    
+
     FrameLayout root=new FrameLayout(activity);root.addView(canvas,new FrameLayout.LayoutParams(500,500));TextView counter=new TextView(activity);counter.setText("1 / 2");root.addView(counter);activity.setContentView(root);
     prefs.edit().putBoolean(menuKey,true).commit();Class<?> rotation=loader.loadClass("app.morphe.extension.chmate.ImageViewerRotationButton");rotation.getMethod("install",Activity.class,String.class).invoke(null,activity,type.getName());return null;
    });Thread.sleep(500);
