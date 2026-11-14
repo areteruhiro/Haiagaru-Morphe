@@ -135,7 +135,7 @@ private fun modelFingerprint(view: View?): Long {
     value = value * 31 + (view.getTag(PosterHighlight.COLOR_PREVIEW_TAG)?.hashCode() ?: 0)
     value = value * 31 + view.visibility + if (view.isEnabled) 1 else 0
     when (view) {
-        is TextView -> value = value * 31 + view.text.hashCode() + (view.error?.hashCode() ?: 0)
+        is TextView -> value = value * 31 + view.text.toString().hashCode() + (view.error?.toString()?.hashCode() ?: 0)
         is ImageView -> value = value * 31 + System.identityHashCode(view.drawable)
         is ProgressBar -> value = value * 31 + view.progress
     }

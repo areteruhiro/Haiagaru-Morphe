@@ -5628,13 +5628,13 @@ public final class Haiagaru {
                 .setMessage("1行に1つ、URLまたはドメインを入力してください。配下のサブドメインも対象です。パスを指定すると、そのページと配下だけを除外します。\n\n元のリンクと画像・動画の添付表示は残します。除外を解除するには行を削除してください。空欄で保存すると追加の除外はなくなります。")
                 .setView(input).setNegativeButton("キャンセル",null).setNeutralButton("初期値",null).setPositiveButton("保存",null).create();
         dialog.show();
-        dialog.getButton(-3).setOnClickListener(v->{input.setText(SiteCardExclusions.DEFAULT);input.setError(null);});
+        dialog.getButton(-3).setOnClickListener(v->{input.setText(SiteCardExclusions.DEFAULT);input.setError(null);dialog.refresh();});
         dialog.getButton(-1).setOnClickListener(v->{
             try{
                 String value=SiteCardExclusions.normalize(input.getText().toString());
                 preferences(activity).edit().putString(SiteCardExclusions.KEY,value).apply();
                 SiteCards.changed();dialog.dismiss();
-            }catch(IllegalArgumentException invalid){input.setError(invalid.getMessage());}
+            }catch(IllegalArgumentException invalid){input.setError(invalid.getMessage());dialog.refresh();}
         });
     }
 
