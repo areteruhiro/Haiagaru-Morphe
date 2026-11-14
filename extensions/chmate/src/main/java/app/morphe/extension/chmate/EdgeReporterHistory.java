@@ -215,9 +215,9 @@ public final class EdgeReporterHistory {
     }
     private static void addLegacyButton(Object fragment, View root) {
         try {
-            Object type = fragment.getClass().getField("c").get(fragment);
+            Object type = NativeFields.find(fragment.getClass(),"c").get(fragment);
             if (!(type instanceof Enum) || !"THREAD".equals(((Enum<?>) type).name())) return;
-            Object board = fragment.getClass().getField("f").get(fragment);
+            Object board = NativeFields.find(fragment.getClass(),"f").get(fragment);
             if (!EdgeReporterId.isBoard(board)) return;
             EditText input = findInput(root);
             if (input == null || editorSuffix(board,input.getText().toString()) == null

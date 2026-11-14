@@ -666,6 +666,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(HomeThreadOrder.click(fragment,itemId))return true;
         if(StockChmatePosting.normalClick(fragment,itemId))return true;
         if(itemId==StockChmatePosting.ACTION){StockChmatePosting.openFromToolbar(fragment);return true;}
         if(itemId==OpenTabsRefresh.ACTION){OpenTabsRefresh.refresh(toolbarActivity(fragment));return true;}

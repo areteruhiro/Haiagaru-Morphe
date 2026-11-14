@@ -8636,9 +8636,17 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchEdgeReporterHisto
                 && it.returnType == "V"
                 && it.parameters.map(CharSequence::toString) ==
                 listOf("Landroid/view/View;", "Landroid/os/Bundle;")
-        }.addBeforeEveryReturn(
-            "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V"
-        )
+        }.let { editor ->
+            // Native b==false jumps directly to RETURN_VOID. Replace that target
+            // so existing branches cannot bypass the reporter controls.
+            editor.implementation!!.instructions.withIndex()
+                .filter { it.value.opcode == Opcode.RETURN_VOID }.asReversed()
+                .forEach { (index, _) ->
+                    editor.replaceInstruction(index,
+                        "invoke-static/range {p0 .. p0}, $runtime->addLegacyButton(Ljava/lang/Object;)V")
+                    editor.addInstruction(index + 1, "return-void")
+                }
+        }
     } else {
         val owner = when (version) {
             "0.8.10.226 dev" -> "Lo/getSegmentsokio;"

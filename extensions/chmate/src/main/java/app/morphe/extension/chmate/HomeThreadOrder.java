@@ -11,7 +11,6 @@ import org.json.*;
 public final class HomeThreadOrder {
     private static final String PREFS="haiagaru.home-thread-order";
     private static final int MENU=0x48690133;
-    private static int activeDisplayMode;
     private static final Map<Integer,List<?>> latest=new HashMap<>();
     private static final Map<Object,Integer> modes=new WeakHashMap<>();
     private static final ThreadLocal<Integer> sortingMode=new ThreadLocal<>();
@@ -40,7 +39,6 @@ public final class HomeThreadOrder {
     }
     static List<?> apply(List<?> source,int mode){
         if(source==null||!target(mode)||Haiagaru.applicationContextForExtension()==null)return source;
-        activeDisplayMode=mode;
         synchronized(latest){latest.put(mode,new ArrayList<>(source));}
         Map<String,Integer> ranks=new HashMap<>();try{JSONArray order=new JSONArray(prefs().getString("order:"+Math.abs(mode),"[]"));for(int i=0;i<order.length();i++)ranks.put(order.getString(i),i);}catch(JSONException ignored){}
         Set<String> pinned=prefs().getStringSet("pins:"+Math.abs(mode),Collections.emptySet());if(ranks.isEmpty()&&pinned.isEmpty())return source;
@@ -68,23 +66,11 @@ public final class HomeThreadOrder {
         HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("HOMEのスレを並び替える").setView(box).setNegativeButton("キャンセル",null).setNeutralButton("標準の順番",(d,w)->{prefs().edit().remove("order:"+Math.abs(mode)).remove("pins:"+Math.abs(mode)).apply();BrowsingHistory.refreshVisible(activity);}).setPositiveButton("保存",(d,w)->{prefs().edit().putString("order:"+Math.abs(mode),new JSONArray(order).toString()).putStringSet("pins:"+Math.abs(mode),pinned).apply();BrowsingHistory.refreshVisible(activity);}).create();
         list.setOnItemLongClickListener((parent,view,position,id)->{String key=order.get(position);new HaiagaruDialog.Builder(activity).setTitle("スレの位置を変更").setItems(new String[]{"一つ上へ","一つ下へ",pinned.contains(key)?"ピン留めを解除":"ピン留め"},(d,action)->{int at=order.indexOf(key);if(action==0&&at>0)Collections.swap(order,at,at-1);if(action==1&&at<order.size()-1)Collections.swap(order,at,at+1);if(action==2){if(!pinned.remove(key))pinned.add(key);}order.sort(Comparator.comparingInt(k->pinned.contains(k)?0:1));refresh.run();dialog.refresh();}).setNegativeButton("閉じる",null).show();return true;});refresh.run();dialog.show();
     }
-    static View titleControl(Activity activity,String server,String board,Object id){
-        final int mode=activeDisplayMode;List<?> source;synchronized(latest){source=latest.get(mode);}
-        if(source==null||!target(mode)||server==null||board==null)return null;
-        String suffix="/"+board+"\n"+id,wanted=null;
-        ArrayList<String> order=new ArrayList<>();
-        for(Object row:apply(source,mode)){String key=key(row);if(key==null)continue;order.add(key);
-            String normalized=key.replace("%2F","/").replace("%2f","/");
-            if(normalized.endsWith(suffix)&&normalized.substring(0,normalized.length()-suffix.length()).replaceFirst("^https?://","").equals(server))wanted=key;}
-        if(wanted==null)return null;
-        final String selected=wanted;Button button=new Button(activity);button.setText("HOMEでの位置を変更");button.setAllCaps(false);
-        button.setOnClickListener(v->{Set<String> pins=new HashSet<>(prefs().getStringSet("pins:"+mode,Collections.emptySet()));
-            new HaiagaruDialog.Builder(activity).setTitle("HOMEでの位置を変更").setItems(new String[]{"一つ上へ","一つ下へ",pins.contains(selected)?"ピン留めを解除":"ピン留め"},(dialog,action)->{
-                int at=order.indexOf(selected);if(action==0&&at>0)Collections.swap(order,at,at-1);if(action==1&&at+1<order.size())Collections.swap(order,at,at+1);
-                if(action==2){if(!pins.remove(selected))pins.add(selected);}
-                prefs().edit().putString("order:"+mode,new JSONArray(order).toString()).putStringSet("pins:"+mode,pins).apply();BrowsingHistory.refreshVisible(activity);
-                Toast.makeText(activity,"HOMEの表示順を変更しました",Toast.LENGTH_SHORT).show();
-            }).setNegativeButton("閉じる",null).show();});return button;
+    public static boolean click(Object fragment,int action){
+        if(action!=MENU)return false;
+        Activity activity=Haiagaru.toolbarActivity(fragment);
+        if(activity!=null)show(activity,mode(fragment));
+        return true;
     }
     private HomeThreadOrder(){}
 }

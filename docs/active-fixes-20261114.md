@@ -60,3 +60,5 @@ HOMEの長押しは並び替えダイアログに加え、ネイティブのス�
 公開差分はHOME順/pin、記者IDメニュー/過去補完、Kyodemo作成スレ、設定折りたたみ/区切り、通常版書込、設定リンクmenu、画像補完、uguu、ふたば、外部板描画/長押し再入対策、ANRログ。公開文へ初期値・未確認範囲・ANR未解決とログ制限・謝辞/寄付を明記。公開MPP SHA256 28f8715ac7a6e4c94c648fe684670b9fd5899b7dda85257f4777c7b890d5b092。全5assetのGitHub digest一致、MPP CRC/追加classと設定キー同梱、devのpre feed1.35.0-dev.1を確認。証跡build/prerelease1350dev1-public/verification.json、reporter-parity-20261114/prerelease-ci.log。Python URL取得はローカル証明書エラーのためghで取得して検証。最新統合版の実機確認/公開送信は行っていない。18:35ANRはsystem job callback待ち、根因未確定。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
+
+1.35.0-dev.1利用者報告の修正: HOME「並び替える」をMenuItemリスナーに加えて既存HOMEの操作ID dispatcherへ接続。依頼どおりスレタイトル長押しの「HOMEでの位置を変更」をコードごと削除。191 NGエディタonViewCreated末尾はnative b==falseがRETURN_VOIDへ直接分岐し、直前挿入した記者ボタンhookをスキップする実コードを確認。returnターゲット自体をhookへ置換しreturnを後置。runtimeのc/f field読取もNativeFieldsへ統一。226/242の発生条件は利用者へ質問中。ビルド/機能確認は未完了。

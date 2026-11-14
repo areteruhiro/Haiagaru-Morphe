@@ -67,7 +67,6 @@ public final class ThreadTitleActions {
             // The checkbox lies outside Material's sheet Surface. Paint the complete
             // control area so the thread behind the transparent dialog cannot show through.
             controls.setBackgroundColor(panelColor);
-            View homeOrder=HomeThreadOrder.titleControl(a,server,board,id);if(homeOrder!=null)controls.addView(homeOrder,new LinearLayout.LayoutParams(-1,-2));
             if(!old)controls.setOnApplyWindowInsetsListener((v,insets)->{
                 int bottom=android.os.Build.VERSION.SDK_INT>=30?insets.getInsets(android.view.WindowInsets.Type.systemBars()).bottom:insets.getSystemWindowInsetBottom();
                 v.setPadding(0,0,0,bottom);return insets;
