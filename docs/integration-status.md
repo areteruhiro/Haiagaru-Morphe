@@ -1740,3 +1740,7 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 
 利用者から公式Releaseを指示。公開説明の『最適化のみ』制約は明示的に解除されたため、既存.releasercのnotes writerを日本語のcommit本文を掲載する形式へ変更。実際のgeneratorで1.28.0の追加・改善/修正/57項目の確認説明をpreview成功。README・機能説明も現行機能へ更新。公開は既存Semantic Release CIとdev→master通常マージを使用する。
 
+
+## 2026-11-14 履歴標準タブ・191通知位置（公開指示あり）
+
+詳細history-native-notification-20261114.md。191/226/242のnativeタブモデルへ更新対象を追加し、OFFはpopup加工なし。191通知の初期移動直後に追跡を破棄せず、既存40秒以内で更新後の対象位置を維持し手動操作で解除。最終Lint/R8 build成功、3版適用・native popup各18、通知位置8、サムネイル123/121/121、既存命令/レジスター保持3版検査成功。新規crash空。隔離emulator-5580のみ、実機本体の変更・公開POSTなし。利用者から公式Release指示、既存CIでdev→master通常マージへ進む。

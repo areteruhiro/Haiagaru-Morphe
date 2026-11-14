@@ -84,6 +84,22 @@ public final class FilterPosition {
     }
 
     /** Explicit user-requested navigation only; never used when simply closing a popup. */
+    static boolean responseVisible(ListView list,int number) throws Exception {
+        ListAdapter adapter=list.getAdapter();if(adapter==null)return false;
+        int start=Math.max(0,list.getFirstVisiblePosition()),end=Math.min(adapter.getCount()-1,list.getLastVisiblePosition());
+        for(int i=start;i<=end;i++){
+            View child=list.getChildAt(i-start);
+            if(child==null||child.getBottom()<=list.getPaddingTop()||child.getTop()>=list.getHeight()-list.getPaddingBottom())continue;
+            Object row=adapter.getItem(i);if(row==null)continue;
+            for(Class<?> type=row.getClass();type!=null;type=type.getSuperclass())for(Field field:type.getDeclaredFields()){
+                if(!field.getType().getName().equals("o.processAdDisplayErrorPostbackForUserError"))continue;
+                field.setAccessible(true);Object response=field.get(row);
+                if(response!=null&&((Number)ResponseArchiveEntry.field(response,"o")).intValue()==number)return true;
+            }
+        }
+        return false;
+    }
+
     static boolean jumpToResponse(Object fragment,int number) throws Exception {
         return jumpToResponse(fragment, number, 0);
     }
