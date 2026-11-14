@@ -1835,3 +1835,8 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
 公開MPP SHA256 708f83173a219a3c1e55f859d40b839f2541935a0869b00d8ff37c846a3ff1a6。全5assets GitHub digest一致、MPP CRC/追加HomeOrderRow同梱、master/dev両JSON計4feedのversion/downloadURL一致、修正説明/謝辞/寄付欄を確認。初回の検証scriptはR8で消えるローカル変数名localRevisionの文字列を要求して失敗したため、その不適切な検査を除き、配布クラス/CRC/digestを検証した。製品エラーとは扱わない。証跡build/official1351-public/verification.json、ci.log。
 
 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.1
+
+
+## 2026-11-14 外部板のスレ情報ポップアップ（未公開）
+
+③内部スレ番号を日時にした未来年表示、④削除済みスレの板名・板へ戻るURLを191/226/242で修正。ローカルbuild成功、全版適用、Mi Note 10のgateway/native URL 277/286/283、画像110/110/106、ホスト24項目成功。提示のあにまん実URLはHTTP403のためライブ照合未確認。詳細 [site-thread-popup-20261114.md](site-thread-popup-20261114.md)。
