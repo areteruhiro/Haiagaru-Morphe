@@ -55,9 +55,13 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
         check(label==3&&call.registerCount==(if(modern)26 else 25))
         val size=label+2
         val defaults=label+call.registerCount-1
+        // Only 226 uses the narrow three-column title grid. Its explicit maxLines
+        // operand is v20; soft wrapping is already enabled by the default mask.
+        val lineLimit=if(modern) "" else "const/16 v20, 2"
         // The font-size default bit is cleared only when compactLabelSize returned an SP value.
         // The two size registers originally carry zero; the ordinary call remains unchanged on the zero path.
         render.addInstructionsWithLabels(at,"""
+            $lineLimit
             invoke-static {v$label}, Lapp/morphe/extension/chmate/ThreadTitleActions;->compactLabelSize(Ljava/lang/String;)J
             move-result-wide v$size
             const-wide/16 v0, 0
