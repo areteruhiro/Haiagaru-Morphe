@@ -3501,7 +3501,7 @@ public final class Haiagaru {
     private static LinearLayout settingsGENERAL(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout basics=SettingsSection.add(layout,text("基本設定・言語", "Basics and language"),text("言語、広告、設定リンク、初期設定", "Language, ads, setting links and defaults"),false);
+        LinearLayout basics=SettingsSection.add(layout,text("基本設定・言語", "Basics and language"),text("言語、広告、設定リンク、初期設定", "Language, ads, setting links and defaults"),true);
         LinearLayout sites=SettingsSection.add(layout,text("外部掲示板・板一覧", "External boards and board list"),text("使うサイトと板一覧の分類", "Sites to use and board grouping"),true);
         LinearLayout tabs=SettingsSection.add(layout,text("追加画面のタブ設定", "Tool screen tabs"),text("タブの追加先、自動表示する画面、手動追加", "Target pane, automatic screens and manual tabs"),true);
         LinearLayout gestures=SettingsSection.add(layout,text("設定画面のジェスチャー", "Settings gestures"),text("設定内で使うスワイプの感度", "Swipe sensitivity inside settings"),true);
@@ -3624,7 +3624,7 @@ public final class Haiagaru {
     private static LinearLayout settingsDISPLAY(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout appearance=SettingsSection.add(layout,text("画面・文字・テーマ", "Layout, text and themes"),text("画面モード、行間、テーマ、本文の装飾", "Display mode, spacing, themes and text styling"),false);
+        LinearLayout appearance=SettingsSection.add(layout,text("画面・文字・テーマ", "Layout, text and themes"),text("画面モード、行間、テーマ、本文の装飾", "Display mode, spacing, themes and text styling"),true);
         LinearLayout behavior=SettingsSection.add(layout,text("スレの操作・更新", "Thread controls and refresh"),text("コピー、読書位置、自動リロード", "Copying, reading position and auto-reload"),true);
         LinearLayout filters=SettingsSection.add(layout,text("ツールバー・絞り込み", "Toolbar and filters"),text("ボタン、人気レス、フィルターの表示", "Buttons, popular replies and filter presentation"),true);
         LinearLayout lists=SettingsSection.add(layout,text("スレ一覧・HOME・履歴の表示", "Thread lists, HOME and history"),text("並び順、表示するスレ、履歴タブ", "Ordering, thread visibility and history tabs"),true);
@@ -3860,7 +3860,7 @@ public final class Haiagaru {
                 preferences.getBoolean(StockChmatePosting.SKIP_CONFIRM,false));
         live.toggle(stockSkipConfirm,StockChmatePosting.SKIP_CONFIRM);
         Switch stockLongPress=addSwitch(layout,activity,
-                text("書き込みボタンの長押しで通常版ChMateを開く（エッヂ）", "Long-press the write button to open stock ChMate (Edge)"),
+                text("書き込みボタンの長押しで通常版ChMateを開く", "Long-press the write button to open stock ChMate"),
                 preferences.getBoolean(StockChmatePosting.LONG_PRESS,false));
         live.toggle(stockLongPress,StockChmatePosting.LONG_PRESS);
         TextView stockLongPressHelp=new TextView(activity);
