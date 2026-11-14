@@ -55,10 +55,18 @@ public final class ThreadTitleActions {
             Object id=NativeFields.find(info.getClass(),middle?"c":"e").get(info);
             ReporterArchiveLookup.request(a,server,board,id,args.getString("threadTitle"));
             ThreadWatchRules.Target t=ThreadWatchRules.fromParts(server,board,id);
+            // 191's native dialog is a ScrollView with its own menu container.
+            // Add the existing actions to that container so they scroll with native entries.
+            LinearLayout nativeMenu=null;
+            if(old&&original instanceof android.widget.ScrollView){
+                android.view.ViewGroup scroll=(android.view.ViewGroup)original;
+                if(scroll.getChildCount()==1&&scroll.getChildAt(0) instanceof LinearLayout)
+                    nativeMenu=(LinearLayout)scroll.getChildAt(0);
+            }
             LinearLayout box=new LinearLayout(a);box.setOrientation(LinearLayout.VERTICAL);
             // 226/242 render a full-window Compose bottom sheet, rather than a
             // window-sized dialog. Keep extra actions beneath that sheet's content.
-            box.addView(original,old?new LinearLayout.LayoutParams(-1,-2):new LinearLayout.LayoutParams(-1,0,1));
+            if(nativeMenu==null)box.addView(original,old?new LinearLayout.LayoutParams(-1,-2):new LinearLayout.LayoutParams(-1,0,1));
             LinearLayout controls=new LinearLayout(a);controls.setOrientation(LinearLayout.VERTICAL);
             LinearLayout actions=new LinearLayout(a);
             android.util.TypedValue background=new android.util.TypedValue();
@@ -84,6 +92,10 @@ public final class ThreadTitleActions {
             }
             }
             if(actions.getChildCount()>0)controls.addView(actions,new LinearLayout.LayoutParams(-1,-2));
+            if(nativeMenu!=null){
+                if(controls.getChildCount()>0){controls.setBackgroundColor(android.graphics.Color.TRANSPARENT);nativeMenu.addView(controls,new LinearLayout.LayoutParams(-1,-2));}
+                return original;
+            }
             if(controls.getChildCount()==0){box.removeView(original);return original;}
             box.addView(controls,new LinearLayout.LayoutParams(-1,-2));
             return box;

@@ -2892,3 +2892,24 @@ app.haiagaru.tests.stockreturn / C:\Users\narum\.codex\worktrees\945d\morphe-chm
 
 検証APK `app.haiagaru.tests.cardexclusions242` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-card-exclusions-20261114\tests\tests.apk` / SHA256 `78b9fcea51d5a9721d357dd7caff0c6294d6ed44607442e06e6933d8f9594fe2`、同じ鍵・alias Morphe・証明書・端末へ更新成功。導入16:43頃JST、25項目成功。初期値とエラー表示は実UI、保存済みカードは合成metadataをnative本文ビューへ渡した描画試験。メタデータ取得/画像送信/公開POSTなし。
 191/226/242 native画像表示110/110/106、242設定再入場・ネイティブ板メニュー30項目成功。新規ネイティブフック変更なし、共通Java/Kotlinだけの変更。除外設定UIとカード描画は共通処理を242で確認し、191/226では同機能のUI試験を繰り返していない。crash-before/after一致、新規crashなし。初回reset失敗はComposeのスナップショット欠落を修正。本文fixtureのnull AttributeSetと非compiled XML失敗を修正し、compiled layoutのSTART_TAGまで進めてnative本文生成成功。失敗を成功扱いしていない。
+
+## 2026-11-14 記者NG報告の191別アプリ確認
+
+署名の異なる普通版は上書きせず、利用者指示で別packageを導入。絶対パスはbuild/ng-registration-20261114/installation.jsonのローカル台帳。
+
+```json
+{
+  "package": "jp.co.airfront.android.a2chMate.haiagaru.ngverify191",
+  "name": "Haiagaru 確認191",
+  "version": "0.8.10.191 dev",
+  "patch": "1.35.1 official",
+  "serial": "d5497008",
+  "apkSha256": "54329071a021032937ac71ec3e79403ca0027c43aa85a0205c0b5817d18c102b",
+  "mppSha256": "708f83173a219a3c1e55f859d40b839f2541935a0869b00d8ff37c846a3ff1a6",
+  "certificateSha256": "0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed",
+  "key": "C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore",
+  "alias": "Morphe",
+  "installed": "2026-11-14T20:51:02.991956",
+  "result": "Separate install Success; existing Haiagaru preserved"
+}
+```
