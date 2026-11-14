@@ -4431,6 +4431,9 @@ public final class Haiagaru {
         SharedPreferences preferences = preferences(activity);
         Switch siteCards = addSwitch(sites, activity,
                 text("Webサイトのリンクカードを表示（追加通信あり）", "Show website link cards (network access)"), siteCardsEnabled());
+        Button excludedCards=new Button(activity);
+        excludedCards.setText(text("リンクカードから除外するURLを追加・編集", "Add / edit URLs excluded from link cards"));
+        excludedCards.setOnClickListener(v->showSiteCardExclusions(activity));sites.addView(excludedCards);
         SettingsSection siteDetails=SettingsSection.add(sites,text("リンクカードの詳細", "Link card details"),text("サムネイルと取得設定", "Thumbnails and retrieval"),true);
         siteDetails.available=siteCards::isChecked;siteDetails.unavailableMessage="リンクカードの表示をオンにすると変更できます。";
         Switch siteImages = addSwitch(siteDetails, activity,
@@ -5611,6 +5614,28 @@ public final class Haiagaru {
     static long siteCardCacheDurationMillis() { return siteCardCacheHours() * 60L * 60L * 1000L; }
     static boolean siteCardImages() {
         SharedPreferences prefs = preferencesOrNull();return prefs == null || prefs.getBoolean("siteCardImages", true);
+    }
+    static String siteCardExcludedUrls(){
+        SharedPreferences prefs=preferencesOrNull();
+        return prefs==null?SiteCardExclusions.DEFAULT:prefs.getString(SiteCardExclusions.KEY,SiteCardExclusions.DEFAULT);
+    }
+    private static void showSiteCardExclusions(Activity activity){
+        EditText input=new EditText(activity);input.setSingleLine(false);input.setMinLines(4);input.setMaxLines(10);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        input.setText(siteCardExcludedUrls());input.setHint("https://imgur.com/\nexample.com\nhttps://example.org/news/");
+        input.setContentDescription("リンクカードから除外するURL（1行に1つ）");
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("リンクカードから除外するURL")
+                .setMessage("1行に1つ、URLまたはドメインを入力してください。配下のサブドメインも対象です。パスを指定すると、そのページと配下だけを除外します。\n\n元のリンクと画像・動画の添付表示は残します。除外を解除するには行を削除してください。空欄で保存すると追加の除外はなくなります。")
+                .setView(input).setNegativeButton("キャンセル",null).setNeutralButton("初期値",null).setPositiveButton("保存",null).create();
+        dialog.show();
+        dialog.getButton(-3).setOnClickListener(v->{input.setText(SiteCardExclusions.DEFAULT);input.setError(null);});
+        dialog.getButton(-1).setOnClickListener(v->{
+            try{
+                String value=SiteCardExclusions.normalize(input.getText().toString());
+                preferences(activity).edit().putString(SiteCardExclusions.KEY,value).apply();
+                SiteCards.changed();dialog.dismiss();
+            }catch(IllegalArgumentException invalid){input.setError(invalid.getMessage());}
+        });
     }
 
     /** ResEdit also prepares the BE account popup; only its main overflow owns upload actions. */

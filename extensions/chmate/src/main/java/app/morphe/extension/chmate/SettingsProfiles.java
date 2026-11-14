@@ -100,6 +100,9 @@ public final class SettingsProfiles {
         defaultValue(SiteCards.MAX_PER_RESPONSE_KEY,2);
         numberKey(SiteCards.CACHE_HOURS_KEY,1,168);
         defaultValue(SiteCards.CACHE_HOURS_KEY,24);
+        RULES.put(SiteCardExclusions.KEY,v->{if(!(v instanceof String))return false;
+            try{SiteCardExclusions.parse((String)v);return true;}catch(IllegalArgumentException invalid){return false;}});
+        defaultValue(SiteCardExclusions.KEY,SiteCardExclusions.DEFAULT);
         booleanKey(XPostPreviewPosition.ENABLED);
         defaultValue(XPostPreviewPosition.ENABLED,true);
         booleanKey(ReadingPosition.ENABLED);
@@ -186,7 +189,7 @@ public final class SettingsProfiles {
         }boolean saved=e.commit();
         if(saved&&values.containsKey("imageVpnDomains")){ImageVpnController.reloadDomains();SiteCards.clear(()->{});}
         if(saved&&(values.containsKey(SiteCards.MAX_PER_RESPONSE_KEY)||values.containsKey(SiteCards.CACHE_HOURS_KEY)
-                ||values.containsKey("siteCardsEnabled")||values.containsKey("siteCardImages")))SiteCards.changed();
+                ||values.containsKey("siteCardsEnabled")||values.containsKey("siteCardImages")||values.containsKey(SiteCardExclusions.KEY)))SiteCards.changed();
         if(saved&&values.containsKey(XPostPreviewPosition.ENABLED))XPostPreviewPosition.settingsChanged();
         return saved;
     }
