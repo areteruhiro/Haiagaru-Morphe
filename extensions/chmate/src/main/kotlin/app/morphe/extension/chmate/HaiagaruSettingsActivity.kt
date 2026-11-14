@@ -226,7 +226,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         items(visibleMatches, key = { (group, option) -> "${group.id}:${System.identityHashCode(option.control)}" }) {
                             (group, option) -> SettingsFrame(padded = false) {
                                 Text(group.title(english), style = MaterialTheme.typography.titleSmall,
-                                    color = HaiagaruUi.settingsCategoryColor, modifier = Modifier.padding(start = 12.dp, top = 10.dp))
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, top = 10.dp))
                                 BoundSettingRow(option, update)
                             }
                         }
@@ -237,7 +237,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         val rows = settingsRows(body(source))
                         if (group.sources.size > 1) item("heading:$source") {
                             Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall, fontSize = 15.sp,
-                                color = HaiagaruUi.settingsCategoryColor, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
                         }
                         items(rows, key = { "${source}:${System.identityHashCode(it.control)}" }) { option ->
                             SettingsFrame(padded = false) { BoundSettingRow(option, update) }
