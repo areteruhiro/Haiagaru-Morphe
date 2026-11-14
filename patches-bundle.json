@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-14T17:07:38",
-  "description": "# Haiagaru 1.37.0 (2026-11-14)\n\n### 修正\n\nHaiagaru設定のトップ、詳細、検索結果の共通枠をダークテーマでも見分けられるようにしました。\n\n\n### 追加機能\n\nHOMEの「板」タブで並び替え・ピン留め・標準順への復元に対応。226・242では現在のタブを参照してメニューを表示します。板の順序もローカル／MEGA設定バックアップに含まれます。\n\n191・226・242で、1レス目に対する既存のNG表示設定を通常一覧・ツリー表示に反映します。\n\nあにまんで別スレ由来の添付画像を取りこぼす問題を修正。過去ログ画像も画像として表示します。\n\nスレタイ長押しの更新対象・新着通知・閲覧認証を、ダークテーマでも読める標準のメニュー色で表示します。\n\n\n## 謝辞\n\nご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。\n\n- yujirox 様\n- ﾜｯﾁｮｲ 8f01-uDul 様\n- toya0717 様\n- MUMEI 様\n- タケヨシキ 様\n- 無名 様\n\n今回のご報告・動作確認・連携へのご協力にも感謝します。\n\n- ｵｲｺﾗﾐﾈｵ 様\n- Red Frame X 様\n- ﾜｯﾁｮｲ 3f3c-gNc7 様\n- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）\n- rikunode 様（226／242のDroid＋ツールバー対応）\n\n## 開発継続へのご支援のお願い\n\n開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。\n\n- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)\n- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)\n\n皆様からのご報告・検証・ご支援が開発の励みになっています。",
-  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.37.0/patches-1.37.0.mpp",
+  "created_at": "2026-11-14T17:39:37",
+  "description": "# Haiagaru 1.37.1 (2026-11-14)\n\n### 修正\n\n191・226・242でスレタイ長押しの更新対象にチェックを表示し、登録・解除を押した直後にマークと文言を切り替えます。3版の実機でメニューを開いたまま登録と解除を確認しました。\n\n\n## 謝辞\n\nご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。\n\n- yujirox 様\n- ﾜｯﾁｮｲ 8f01-uDul 様\n- toya0717 様\n- MUMEI 様\n- タケヨシキ 様\n- 無名 様\n\n今回のご報告・動作確認・連携へのご協力にも感謝します。\n\n- ｵｲｺﾗﾐﾈｵ 様\n- Red Frame X 様\n- ﾜｯﾁｮｲ 3f3c-gNc7 様\n- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）\n- rikunode 様（226／242のDroid＋ツールバー対応）\n\n## 開発継続へのご支援のお願い\n\n開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。\n\n- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)\n- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)\n\n皆様からのご報告・検証・ご支援が開発の励みになっています。",
+  "download_url": "https://github.com/areteruhiro/Haiagaru-Morphe/releases/download/1.37.1/patches-1.37.1.mpp",
   "signature_download_url": "",
-  "version": "1.37.0"
+  "version": "1.37.1"
 }
