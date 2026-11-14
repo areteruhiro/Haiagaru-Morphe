@@ -68,3 +68,11 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 追加仕様確定: HOME並び替えはダイアログ内の一覧で上下へドラッグ。HOME本体を直接ドラッグする案は撤回。専用HomeOrderListで右つまみをドラッグしdraft順を変更、保存で確定/キャンセルで破棄。pin群を優先し群をまたぐドラッグは抑制。「標準の並び替えに戻す」で現在タブのorder/pinを消す。最新指示は完成後公式Release。実機機能検証は利用者担当という指示を維持。
 
 利用者追加: 保存済みのHOME並び替え順/pinをローカル/MEGAバックアップへ含める。共通HaiagaruSyncSnapshot.EXTRA_SETTINGSへHomeThreadOrder.PREFSを登録。既存typed string/string-set形式で通常復元/不足分merge、古いbackupで項目がない場合はローカル保持。バックアップ分類「設定」がONの場合が対象。draft中の未保存順は含めない。
+
+## 2026-11-14 1.35.0公式公開
+
+利用者の完成後公式Release指示に従いdev→master通常merge d821fc28。Release CI43586841910/Build43586841938 success、draft=false/prerelease=false、19:51:50 JST公開。191 NG末尾分岐hook修正、HOME menu dispatcher修正、不要なHOME位置変更ボタン削除、Kyodemo検索URL/遅延表示、ダイアログ内ドラッグ/標準復元、並び順とpinの共通ローカル/MEGA設定backupを含む。Kotlin/Java compile1m3s成功、Kyodemo DOM11項目成功。利用者による実機確認指示に従い、最新版の実機操作/backup実復元は開発側未実施。成功扱いせず公開本文に制限を明記。
+
+公開MPP SHA256 b2b050f8346698542cf0fc9b550364d3b7407b6c85ce03dc5409a323aa83cd9e。全5assets GitHub digest一致、ZIP CRC/追加class/不要表示文字列の除去、master/dev両JSON計4feed1.35.0とdownloadURL一致を確認。謝辞/寄付欄と最新仕様を公開文へ明記。証跡build/official1350-public/verification.json、ci.log。開発版dev.2/dev.3の先行CIも成功。ANR根因/解消は未確定。
+
+https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0
