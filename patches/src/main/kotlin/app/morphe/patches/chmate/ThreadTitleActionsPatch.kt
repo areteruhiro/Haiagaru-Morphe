@@ -64,6 +64,8 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
         // The two size registers originally carry zero; the ordinary call remains unchanged on the zero path.
         render.addInstructionsWithLabels(at,"""
             $lineLimit
+            invoke-static {v$label}, Lapp/morphe/extension/chmate/ThreadTitleActions;->liveLabel(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object v$label
             invoke-static {v$label}, Lapp/morphe/extension/chmate/ThreadTitleActions;->compactLabelSize(Ljava/lang/String;)J
             move-result-wide v$size
             const-wide/16 v0, 0

@@ -43,6 +43,50 @@ public final class ThreadTitleActions {
         ReporterArchiveLookup.request(a,server,board,id,args.getString("threadTitle"));
         return new MenuThread(info,ThreadWatchRules.fromParts(server,board,id));
     }
+    // Use ChMate's own Compose runtime. The extension's isolated Compose state
+    // cannot invalidate a native composition. Each menu row has its own token.
+    private static final java.util.List<java.lang.ref.WeakReference<RefreshLabel>> refreshLabels=new java.util.ArrayList<>();
+
+    private static final class RefreshLabel implements Runnable {
+        final Activity activity;
+        final Object info, state;
+        final String token;
+        final java.lang.reflect.Method read, write;
+
+        RefreshLabel(Activity activity,Object info,String initial,boolean middle)throws Exception{
+            this.activity=activity;this.info=info;
+            token=new String(initial);
+            ClassLoader loader=activity.getClassLoader();
+            Class<?> factory=loader.loadClass(middle?"o.gc":"o.b8");
+            Class<?> policy=loader.loadClass(middle?"o.b1":"o.b7d");
+            java.lang.reflect.Method create=factory.getDeclaredMethod(middle?"c":"a",Object.class,policy,int.class);
+            create.setAccessible(true);
+            state=create.invoke(null,initial,null,2);
+            Class<?> implementation=loader.loadClass(middle?"o.i":"o.b7c");
+            read=implementation.getMethod("c");
+            write=implementation.getMethod(middle?"a":"c",Object.class);
+            read.setAccessible(true);write.setAccessible(true);
+            refreshLabels.removeIf(ref->ref.get()==null);
+            refreshLabels.add(new java.lang.ref.WeakReference<>(this));
+        }
+
+        @Override public void run(){
+            RefreshTargets.toggleFromMenu(activity,info);
+            try{String label=RefreshTargets.menuLabel(activity,info);if(label!=null)write.invoke(state,label);}
+            catch(Exception error){android.util.Log.w("Haiagaru","Refresh title menu label unavailable",error);}
+        }
+    }
+
+    public static String liveLabel(String label){
+        for(int i=refreshLabels.size()-1;i>=0;i--){
+            RefreshLabel entry=refreshLabels.get(i).get();
+            if(entry==null){refreshLabels.remove(i);continue;}
+            if(entry.token==label)try{return (String)entry.read.invoke(entry.state);}
+            catch(Exception error){android.util.Log.w("Haiagaru","Refresh title menu state unavailable",error);break;}
+        }
+        return label;
+    }
+
     public static java.util.List<?> appendNativeGroups(java.util.List<?> original){
         Object fragment=pending.get();if(fragment==null||original==null)return original;
         try{
@@ -51,9 +95,16 @@ public final class ThreadTitleActions {
             MenuThread menu=thread(fragment,a);if(menu==null)return original;
             java.util.ArrayList<String> labels=new java.util.ArrayList<>();
             java.util.ArrayList<Runnable> actions=new java.util.ArrayList<>();
+            boolean middle=fragment.getClass().getName().equals("o.getDislikeManager");
             if(FeatureSwitches.enabled(SHOW_REFRESH,true)){
                 String label=RefreshTargets.menuLabel(a,menu.info);
-                if(label!=null){labels.add(label);actions.add(()->RefreshTargets.toggleFromMenu(a,menu.info));}
+                if(label!=null){
+                    try{RefreshLabel live=new RefreshLabel(a,menu.info,label,middle);labels.add(live.token);actions.add(live);}
+                    catch(ReflectiveOperationException error){
+                        android.util.Log.w("Haiagaru","Native refresh menu state unavailable",error);
+                        labels.add(label);actions.add(()->RefreshTargets.toggleFromMenu(a,menu.info));
+                    }
+                }
             }
             ThreadWatchRules.Target target=menu.target;
             if(target!=null&&FeatureSwitches.enabled(SHOW_WATCH,true)){
@@ -62,7 +113,6 @@ public final class ThreadTitleActions {
             if(target!=null&&FeatureSwitches.enabled(SHOW_AUTH,true)&&ReadingAuth.eligible(target.url)){
                 labels.add("エッヂの閲覧認証");actions.add(()->ReadingAuth.open(a,target.url));
             }
-            boolean middle=fragment.getClass().getName().equals("o.getDislikeManager");
             if(labels.isEmpty())return middle?twoNativeColumns(original):original;
             ClassLoader loader=fragment.getClass().getClassLoader();
             Class<?> row=loader.loadClass(middle?"o.getTtAdContainer$IconCompatParcelizer":"o.zzbbs$RemoteActionCompatParcelizer");

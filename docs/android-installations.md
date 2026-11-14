@@ -2978,3 +2978,17 @@ Mi Note 10（Android 11、ADB `d5497008`）。署名照合後、別パッケー�
 
 MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\outline-apks\candidate.mpp`、SHA-256 `e3989a6723287c4605617572826722a4960f1710f86271988622b1f28394ce29`。
 署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 更新対象チェックの即時表示
+
+Mi Note 10（ADB `d5497008`、Android 11）。署名照合後に検証用別パッケージのみ更新。
+
+- Haiagaru 修正確認 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`: 2026-11-15T02:37:22.220336 JST、install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\live-refresh-apks\final191.apk`、SHA-256 `a4a95e0edd15b4e74b79649e0f141d912bf6c1e6ac4cde1175a386fd5da79539`。
+- Haiagaru 修正確認 / 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`: 2026-11-15T02:36:45.476508 JST、install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\live-refresh-apks\final226.apk`、SHA-256 `23bcbcb78019fe2a546b6331e79ace699f0bbf0f7e78a08d8473e9844a8a0806`。
+- Haiagaru 修正確認 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`: 2026-11-15T02:35:56.949192 JST、install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\live-refresh-apks\final242.apk`、SHA-256 `35c460d22db5596ae2f0bf4cb1e95bd1290471a3a8a73d880e741eedfcc56dc4`。
+
+MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\archive-home-firstng-20261115\live-refresh-apks\candidate.mpp`、SHA-256 `ed2c41f8c37c1c76f403ad7fef05cfa345445cfd4f1f7d309ac5f52835b49ab4`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
