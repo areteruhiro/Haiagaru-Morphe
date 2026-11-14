@@ -1757,3 +1757,12 @@ emulator-5580の既存reporter3版へ署名一致install-r。試験用通知権�
 さらに利用者指示でthreadPostingNamesを追加（初期OFF）、未保存スレは空欄を利用者が選択。専用のネイティブ名前欄を既存ThreadCommandsから登録し、スレ別の私有設定へ保存。新規スレ立て/不明URLは標準のまま。最終thread-name-build.logは通常Lint/R8成功2分16秒。
 
 最終候補は3版適用・ネイティブ名前欄接続成功。Mi Note 10へ署名一致で更新し、スレ別名前15項目ずつ、191の通常版relay/確認省略/メニュー初期ON・OFF/復帰/長押し・ツールバー独立動作19項目成功。公開投稿なし。証跡thread-names/result{191,226,242}.log、stock-return/final-result.log。
+
+
+## 2026-11-14 1.32.0公式公開完了
+
+通常版連携/容量案内/レス限定送信先09d73137、スレ別名前/メニュー設定2e829cafを通常マージし、既存Semantic Release CI43560035153 successで公開。生成commit/tag2a138840/1.32.0、draft=false/prerelease=false。前の取消CIは1.31.0のタグと生成commitまで進んだがRelease未公開。READMEの同時更新で別CI43559951687のprepare pushが競合したため、最新READMEを含むCIで公開完了。READMEだけの並行CI43560018287はcompile確認成功。
+
+公開MPP SHA256 227b7e3aab2ce836cddc1aec91bc1612f34ae168ed31e7c04d6097c1da2a6c40、GH asset digest一致/ZIP CRC正常。ThreadPostingNames/StockPostingRelayActivity/各設定キー/容量案内/レス限定ラベルを配布MPP内で確認。配布metadata2種とmaster/dev両raw feedは1.32.0・同downloadURL・SHA256 45601ab43c50dacb3d9fa242f820aae42bbfeb7d7effa61debd48e5bedcca27f一致。Pythonのredirect先TLS検証がローカル証明書不足で失敗したため、検証を無効にせずghダウンロードとOS証明書を使うInvoke-WebRequestで再取得して確認。証跡build/official132-public/verification.json、ci.log。公開MPPの再パッチ/実機再導入はせず、同じ製品ソースの最終候補を前記3版で検証・導入済み。canonical devはCI backmergeをfast-forwardで取り込み済み。
+
+公式URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.32.0 。通常版への実投稿成功は模擬結果試験であり、公開POSTの実試験とは区別する。無関係な未追跡ファイルは維持。
