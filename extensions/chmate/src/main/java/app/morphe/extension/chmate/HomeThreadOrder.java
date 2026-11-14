@@ -9,7 +9,9 @@ import org.json.*;
 
 /** Display-only HOME ordering. Never rewrites bookmarks, stars or read positions. */
 public final class HomeThreadOrder {
-    private static final String PREFS="haiagaru.home-thread-order";
+    public static final int DRAG_TAG=0x48690135;
+    public interface DragOrder { boolean move(int from,int to); void togglePin(int position); boolean pinned(int position); }
+    static final String PREFS="haiagaru.home-thread-order";
     private static final int MENU=0x48690133;
     private static final Map<Integer,List<?>> latest=new HashMap<>();
     private static final Map<Object,Integer> modes=new WeakHashMap<>();
@@ -60,10 +62,19 @@ public final class HomeThreadOrder {
         List<?> sorted=apply(source,mode);ArrayList<Object> rows=new ArrayList<>();HashSet<String> seen=new HashSet<>();for(Object row:sorted){String key=key(row);if(key!=null&&seen.add(key))rows.add(row);}
         if(rows.isEmpty()){Toast.makeText(activity,"並び替えるスレがありません",Toast.LENGTH_LONG).show();return;}
         ArrayList<String> order=new ArrayList<>();for(Object row:rows)order.add(key(row));Map<String,String> titles=new HashMap<>();for(Object row:rows){String key=key(row);try{String type=row.getClass().getName();titles.put(key,String.valueOf(NativeFields.find(row.getClass(),type.equals("o.onAdDisplayed$setIcon")?"e":type.equals("o.Yy2$open")?"k":"m").get(row)));}catch(Exception ignored){titles.put(key,key);}}Set<String> pinned=new HashSet<>(prefs().getStringSet("pins:"+Math.abs(mode),Collections.emptySet()));
-        LinearLayout box=new LinearLayout(activity);box.setOrientation(1);TextView help=new TextView(activity);help.setText("スレを長押しして上下移動・ピン留めできます。ピン留めしたスレは先頭へ表示します。変更は保存で確定します。");box.addView(help);
+        LinearLayout box=new LinearLayout(activity);box.setOrientation(1);TextView help=new TextView(activity);help.setText("右のつまみを上下へドラッグして並び替えます。ピンのボタンでピン留めできます。ピン留めしたスレは先頭へ表示します。変更は保存で確定します。");box.addView(help);
         ListView list=new ListView(activity);box.addView(list,new LinearLayout.LayoutParams(-1,(int)(420*activity.getResources().getDisplayMetrics().density)));
         Runnable refresh=()->{ArrayList<String> labels=new ArrayList<>();for(String key:order){String title=titles.get(key);labels.add((pinned.contains(key)?"📌 ":"")+title);}list.setAdapter(new ArrayAdapter<>(activity,android.R.layout.simple_list_item_1,labels));};
-        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("HOMEのスレを並び替える").setView(box).setNegativeButton("キャンセル",null).setNeutralButton("標準の順番",(d,w)->{prefs().edit().remove("order:"+Math.abs(mode)).remove("pins:"+Math.abs(mode)).apply();BrowsingHistory.refreshVisible(activity);}).setPositiveButton("保存",(d,w)->{prefs().edit().putString("order:"+Math.abs(mode),new JSONArray(order).toString()).putStringSet("pins:"+Math.abs(mode),pinned).apply();BrowsingHistory.refreshVisible(activity);}).create();
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("HOMEのスレを並び替える").setView(box).setNegativeButton("キャンセル",null).setNeutralButton("標準の並び替えに戻す",(d,w)->{prefs().edit().remove("order:"+Math.abs(mode)).remove("pins:"+Math.abs(mode)).apply();BrowsingHistory.refreshVisible(activity);}).setPositiveButton("保存",(d,w)->{prefs().edit().putString("order:"+Math.abs(mode),new JSONArray(order).toString()).putStringSet("pins:"+Math.abs(mode),pinned).apply();BrowsingHistory.refreshVisible(activity);}).create();
+        list.setTag(DRAG_TAG,new DragOrder(){
+            public boolean move(int from,int to){
+                if(from<0||to<0||from>=order.size()||to>=order.size()||from==to)return false;
+                if(pinned(from)!=pinned(to))return false;
+                order.add(to,order.remove(from));refresh.run();dialog.refresh();return true;
+            }
+            public boolean pinned(int position){return position>=0&&position<order.size()&&pinned.contains(order.get(position));}
+            public void togglePin(int position){if(position<0||position>=order.size())return;String key=order.get(position);if(!pinned.remove(key))pinned.add(key);order.sort(Comparator.comparingInt(k->pinned.contains(k)?0:1));refresh.run();dialog.refresh();}
+        });
         list.setOnItemLongClickListener((parent,view,position,id)->{String key=order.get(position);new HaiagaruDialog.Builder(activity).setTitle("スレの位置を変更").setItems(new String[]{"一つ上へ","一つ下へ",pinned.contains(key)?"ピン留めを解除":"ピン留め"},(d,action)->{int at=order.indexOf(key);if(action==0&&at>0)Collections.swap(order,at,at-1);if(action==1&&at<order.size()-1)Collections.swap(order,at,at+1);if(action==2){if(!pinned.remove(key))pinned.add(key);}order.sort(Comparator.comparingInt(k->pinned.contains(k)?0:1));refresh.run();dialog.refresh();}).setNegativeButton("閉じる",null).show();return true;});refresh.run();dialog.show();
     }
     public static boolean click(Object fragment,int action){

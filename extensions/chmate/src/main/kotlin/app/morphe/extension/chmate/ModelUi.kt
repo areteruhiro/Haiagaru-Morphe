@@ -242,6 +242,8 @@ internal fun prepareNativeSurfaces(root: ViewGroup) {
                     modifier.fillMaxSize()
                 else modifier.fillMaxWidth().height(420.dp))
         is ListView -> {
+            val ordering=view.getTag(HomeThreadOrder.DRAG_TAG) as? HomeThreadOrder.DragOrder
+            if(ordering!=null){ HomeOrderList(view,ordering,changed);return }
             val adapter = view.adapter ?: return
             DisposableEffect(adapter) {
                 val observer = object : android.database.DataSetObserver() {

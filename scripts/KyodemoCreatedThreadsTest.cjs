@@ -13,4 +13,6 @@ let created=window.document.getElementById('haiagaru-kyodemo-created');ok(create
 window.haiagaruSelectHissiTab(3);ok(created.style.display==='','created tab shown');ok(window.document.getElementById('haiagaru-kyodemo-summary').style.display==='none','summary hidden');
 window.haiagaruSelectHissiTab(0);ok(created.style.display==='none','normal responses restored');
 ok(vm.runInContext(script,context)===true,'reinitialize');created=window.document.getElementById('haiagaru-kyodemo-created');ok(created.querySelectorAll('.post').length===2,'no duplicated clone after refresh');ok(window.document.querySelectorAll('#blist > .box.content .post').length===5,'native posts intact');
+context.location.hostname='kyodemo.net';ok(vm.runInContext(script,context)===true,'bare Kyodemo host accepted');
+context.location.hostname='other.invalid';ok(vm.runInContext(script,context)===false,'foreign page rejected');
 console.log('PASS '+checks+' Kyodemo created-thread DOM checks');

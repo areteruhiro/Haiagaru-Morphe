@@ -64,3 +64,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.35.0-dev.1
 1.35.0-dev.1利用者報告の修正: HOME「並び替える」をMenuItemリスナーに加えて既存HOMEの操作ID dispatcherへ接続。依頼どおりスレタイトル長押しの「HOMEでの位置を変更」をコードごと削除。191 NGエディタonViewCreated末尾はnative b==falseがRETURN_VOIDへ直接分岐し、直前挿入した記者ボタンhookをスキップする実コードを確認。returnターゲット自体をhookへ置換しreturnを後置。runtimeのc/f field読取もNativeFieldsへ統一。226/242の発生条件は利用者へ質問中。ビルド/機能確認は未完了。
 
 191報告と利用者回答で一致。追加報告Kyodemo「作成したスレ」なし: JS guardがbs=hi必須で、実サイトのhi=等の検索URLを除外していた。ホストと/sdemo/b/、実際の#blist post構造で判定。ページ読み込み後の遅延挿入に最大5秒再試行し、別URLへ移動後の古いcallbackを破棄。修正用CI43585407045はこの追加前の差分なので、次CIにも含める。
+
+追加仕様確定: HOME並び替えはダイアログ内の一覧で上下へドラッグ。HOME本体を直接ドラッグする案は撤回。専用HomeOrderListで右つまみをドラッグしdraft順を変更、保存で確定/キャンセルで破棄。pin群を優先し群をまたぐドラッグは抑制。「標準の並び替えに戻す」で現在タブのorder/pinを消す。最新指示は完成後公式Release。実機機能検証は利用者担当という指示を維持。
+
+利用者追加: 保存済みのHOME並び替え順/pinをローカル/MEGAバックアップへ含める。共通HaiagaruSyncSnapshot.EXTRA_SETTINGSへHomeThreadOrder.PREFSを登録。既存typed string/string-set形式で通常復元/不足分merge、古いbackupで項目がない場合はローカル保持。バックアップ分類「設定」がONの場合が対象。draft中の未保存順は含めない。
