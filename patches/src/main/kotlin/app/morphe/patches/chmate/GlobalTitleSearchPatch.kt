@@ -47,5 +47,6 @@ internal fun BytecodePatchContext.patchGlobalTitleSearch(version:String){
         """.trimIndent())
     })
     patchBackgroundGlobalSearch(version)
+    patchFf5chBrowserAds(version)
     println("Native HOME global title search: $version -> $type, original query/parser retained")
 }

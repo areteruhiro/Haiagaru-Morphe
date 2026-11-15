@@ -3242,3 +3242,11 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
   APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\final242.apk`、SHA-256 `b1701fa77717d1cb6c8cda8e9362362c2023e310979b2337c359701fc8174043`。
   MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\candidate.mpp`、SHA-256 `db05296bc57293504b33898bf868885ad0add3c0cce55a53c4fe0a07876705a7`。
   署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 ff5ch広告ブロック・動画没入候補
+
+- 2026-11-15T20:45:56.731573 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ff5ch-browser-20261115\apks\final242.apk`、SHA-256 `ac29eaed1aa3f2a07220f2cd36c46794029ec431bb2439f7b005ff47e3265845`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ff5ch-browser-20261115\apks\candidate.mpp`、SHA-256 `b84543ec4a7e7b15baad5e7ee0439f52d32b0865c66d291127533418bbe7dc4d`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

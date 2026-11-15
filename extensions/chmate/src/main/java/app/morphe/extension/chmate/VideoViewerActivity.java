@@ -577,10 +577,13 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             video.pause();
         }
     }
+    private boolean immersiveWindowActive;
+
     private void updateImmersiveMode() {
         View decor = getWindow().getDecorView();
         int flags = decor.getSystemUiVisibility();
-        boolean landscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+        boolean landscape = immersiveWindowActive && FeatureSwitches.enabled("videoLandscapeImmersive", false)
+                && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
         int next = landscape ? flags | LANDSCAPE_IMMERSIVE_FLAGS : flags & ~LANDSCAPE_IMMERSIVE_FLAGS;
         if (next != flags) decor.setSystemUiVisibility(next);
         if (playerRoot != null) playerRoot.requestApplyInsets();
@@ -594,13 +597,16 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
         if (hasFocus) updateImmersiveMode();
     }
     @Override protected void onResume() {
-        super.onResume(); foreground = true;
+        super.onResume();
+        immersiveWindowActive = true; foreground = true;
         updateImmersiveMode();
         if (video != null) gestures = new VideoViewerGestures(this);
         if (prepared && playWhenReady) video.start();
         if (gifFallback != null && playWhenReady) gifFallback.play();
     }
     @Override protected void onPause() {
+        immersiveWindowActive = false;
+        updateImmersiveMode();
         if (touchControls != null) touchControls.cancel();
         foreground = false; pausePlayback();
         // Returning from another app should resume only on the user's play action.
