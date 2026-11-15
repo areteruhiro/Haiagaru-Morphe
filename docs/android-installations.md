@@ -3186,3 +3186,19 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
   APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-static-final\final242.apk`、SHA-256 `95dc323c5d01e506b985e76ccd32f7da51e31da0515381bdb1d343b555a1c721`。
   MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-static-final\candidate.mpp`、SHA-256 `f5238b69305b8174824be53e37eae6765a1bf534e9158aab6f1cd52d5055c0da`。
   署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 全板検索の完了通知修正版
+
+- 2026-11-15T19:10:48.948734 JST、Haiagaru 修正確認 191 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\final191.apk`、SHA-256 `51682943eaad54c19a26e2231039e4efc6fb3aac997ecf90116381b638206f40`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\candidate.mpp`、SHA-256 `951e1da2c922aadf6700f4146a4fff0fdbc9178a6f5983dafd1887185fcd8980`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T19:11:21.428314 JST、Haiagaru 修正確認 226 / 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\final226.apk`、SHA-256 `b0d8809af09f0cec754a196cf3b8d55d7929525092484f846c65139c68fc1aa0`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\candidate.mpp`、SHA-256 `951e1da2c922aadf6700f4146a4fff0fdbc9178a6f5983dafd1887185fcd8980`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T19:11:56.952501 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\final242.apk`、SHA-256 `2e9396c9cb9e549d98e40926ce354b212b47a3839ccdc7fc0038db3ffeb51f8b`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\candidate.mpp`、SHA-256 `951e1da2c922aadf6700f4146a4fff0fdbc9178a6f5983dafd1887185fcd8980`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
