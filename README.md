@@ -49,6 +49,7 @@ https://2chmate.jp.uptodown.com/android/dw/1024004246
 |---|---|---|
 | 191の自動NG画像判定の修正 | `haiagaru-image-ng.zip` | 191のみ。修正ファイルがない場合、既知のJNIクラッシュを避けるため標準Image NGの推論を保護停止します。226／242には不要です。 |
 | 成人向け・グロ画像の追加検出 | `haiagaru-image-moderation.zip` | 任意パッチ。モデル・4 ABIのONNX Runtime・191用修正をまとめたZIPです。Android 7以降。 |
+| 画像判定と画像取得専用VPN | `haiagaru-image-moderation-vpn.zip` | 「成人向け・グロ画像の自動検出」と「画像取得専用VPN」の両方のオプションで同じZIPを選択します。 |
 | モデル・実行ライブラリの個別指定 | `haiagaru-image-moderation-model.zip` ＋ `haiagaru-image-moderation-runtime.zip` | 一括ZIPの代わりに両方を選択します。191の標準Image NGには別途修正ZIPも指定します。 |
 | 画像取得専用VPN | `haiagaru-image-vpn-v2.zip` | 実験用の任意パッチです。Image NG用ZIPとは別です。 |
 | 絵文字フォント | `NotoColorEmoji.ttf`などの対応フォント | パッチオプションで指定します。未選択なら端末標準を使用します。 |
@@ -92,7 +93,7 @@ https://2chmate.jp.uptodown.com/android/dw/1024004246
 - 外部板を含む全板検索は、追加通信のない高速モードと、対象板の一覧を取得する最新モードから選べます。OFFのサイトは板一覧・検索候補から除外します。[検索方式](docs/global-title-search.md)
 - ﾜｯﾁｮｲ長押しから、上4桁・下4桁をそれぞれコピーできます。[長押しメニュー](docs/wacchoi-menu-order.md)
 - 画像・GIF・動画の閲覧、スレ全体のメディアへの移動、動画の相対シーク・再生速度・保存。専用動画ビューアは任意パッチです。[動画操作](docs/video-viewer-controls.md)
-- ChMate標準の「画像は常にモザイク」にモノクロと強度を追加。追加モデルでは成人向け／グロを個別に検出でき、スレ一覧画像にも適用できます。登録画像に一致する一覧画像は、画像のみ非表示・スレを非表示・モザイク・そのままから選べます。[画像判定と一覧サムネイル](docs/image-ng-and-list-thumbnails.md)
+- 「画像・動画 → セーフティ」にImage NG、登録画像のあぼーん、ChMate標準の「画像は常にモザイク」の設定をまとめました。追加モデルでは成人向け／グロを個別に検出でき、スレ一覧画像にも適用できます。登録画像に一致する一覧画像は、画像のみ非表示・スレを非表示・モザイク・そのままから選べます。[画像判定と一覧サムネイル](docs/image-ng-and-list-thumbnails.md)
 - ふたばの板一覧に「勢いランキング」を追加。ミラーのimg／mayも公式板へ正規化し、先頭2レスの画像URLと一覧タイトルの(img)／(may)に対応します。
 - 通常NGの登録上限の変更（0で無制限）、IDなしレスの非表示、自動NGと除外ID、JavaScriptによる高度なNG。[IDなしNG](docs/hidden-id-ng.md) ／ [高度なNG](docs/advanced-ng.md)
 - **連鎖あぼーんを常に非表示**（初期OFF）。元のNG対象レスや保存済みルールを変えず、連鎖されたレスの行を隠します。「NGWord-IDへの返信も非表示」とは独立した設定です。

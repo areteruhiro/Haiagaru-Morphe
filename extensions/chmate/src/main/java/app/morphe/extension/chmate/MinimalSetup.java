@@ -32,15 +32,22 @@ final class MinimalSetup {
             .setPositiveButton("決定",(d,w)->{
                 if(!on.isChecked()){SettingsProfiles.prefs(a).edit().putBoolean(PROMPT,true).apply();return;}
                 try{
-                    SettingsProfiles.catalog(a);
-                    if(!SettingsProfiles.apply(a,SettingsProfiles.minimalValues(adsOnly)))throw new IllegalStateException("設定の保存に失敗しました");
-                    for(String name:new String[]{PosterHighlight.PREFS,ProgrammableNgController.PREFS,"haiagaru.hidden-id-ng"})
-                        if(!a.getSharedPreferences(name,0).edit().putBoolean("enabled",false).commit())throw new IllegalStateException("追加機能の設定を保存できません");
-                    if(!a.getSharedPreferences("haiagaru.mega-sync.options",0).edit().putBoolean("automatic",false).commit()
-                        ||!a.getSharedPreferences("haiagaru_imgur_web",0).edit().putBoolean("enabled",false).commit()
-                        ||!a.getSharedPreferences("haiagaru_upload_hosts",0).edit().putString("imageHost","native").putString("videoHost","native").commit())
-                        throw new IllegalStateException("同期・アップロード設定を保存できません");
-                    updateToolbars(a,adsOnly);
+                    if(adsOnly){
+                        LightweightSetup.apply(a);
+                    }else{
+                        SettingsProfiles.catalog(a);
+                        if(!SettingsProfiles.apply(a,SettingsProfiles.minimalValues(false)))throw new IllegalStateException("設定の保存に失敗しました");
+                        for(String name:new String[]{PosterHighlight.PREFS,ProgrammableNgController.PREFS,
+                                "haiagaru.hidden-id-ng",StringReplacement.PREFS,RegisteredImageNg.PREFS}){
+                            if(!a.getSharedPreferences(name,0).edit().putBoolean("enabled",false).commit())
+                                throw new IllegalStateException("追加機能の設定を保存できません");
+                        }
+                        if(!a.getSharedPreferences("haiagaru.mega-sync.options",0).edit().putBoolean("automatic",false).commit()
+                                ||!a.getSharedPreferences("haiagaru_imgur_web",0).edit().putBoolean("enabled",false).commit()
+                                ||!a.getSharedPreferences("haiagaru_upload_hosts",0).edit().putString("imageHost","native").putString("videoHost","native").commit())
+                            throw new IllegalStateException("同期・アップロード設定を保存できません");
+                        updateToolbars(a);
+                    }
                     if(!SettingsProfiles.prefs(a).edit().putBoolean(ACTIVE,!adsOnly).putBoolean(PROMPT,true).commit())throw new IllegalStateException("初期設定を保存できません");
                     for(WacchoiBackgroundJob job:WacchoiSearchService.jobs().values())if(job.running)job.cancel();
                     Haiagaru.refreshBoardListAfterReadSortChange();
@@ -49,7 +56,7 @@ final class MinimalSetup {
                     .setMessage("一部は保存されている可能性があります。\n"+e.getMessage()).setPositiveButton("閉じる",null).show();}
             }).show();
     }
-    private static void updateToolbars(Context c,boolean adsOnly)throws Exception{
+    private static void updateToolbars(Context c)throws Exception{
         File[] files=new File(c.getApplicationInfo().dataDir,"shared_prefs").listFiles();if(files==null)return;
         for(File file:files){
             String name=file.getName();if(!name.endsWith(".xml"))continue;
@@ -59,12 +66,15 @@ final class MinimalSetup {
             boolean changed=false;
             for(int i=0;i<rows.length();i++){
                 JSONObject row=rows.optJSONObject(i);if(row==null)continue;int id=row.optInt("id",Integer.MIN_VALUE);
-                boolean custom=id>=0x7e000001&&id<=0x7e000006||id==FavoriteThreads.TAB||id==HomeRefreshTargets.TAB;
-                for(int action:ResponseMenuSettings.IDS)if(id==action)custom=true;
-                if(custom){row.put("visible",!adsOnly&&id==0x7e000001);changed=true;}
+                if(isCustomToolbarAction(id)){row.put("visible",id==0x7e000001);changed=true;}
             }
             if(changed&&!p.edit().putString("toolbarSettings",root.toString()).commit())throw new IllegalStateException("ツールバー設定を保存できません");
         }
+    }
+    static boolean isCustomToolbarAction(int id){
+        if(ToolbarIcons.index(id)>=0)return true;
+        for(int action:ResponseMenuSettings.IDS)if(id==action)return true;
+        return false;
     }
     private MinimalSetup(){}
 }

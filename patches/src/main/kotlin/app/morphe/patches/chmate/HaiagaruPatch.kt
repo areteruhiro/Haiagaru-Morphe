@@ -5191,6 +5191,7 @@ val haiagaruPatch = resourcePatch(
             "haiagaru_auto_ng_exclusions" to "自動NG除外ID",
             "haiagaru_thread_watch" to "このスレの新着通知",
             "haiagaru_stock_posting" to "標準アプリで書き込むを開く",
+            "haiagaru_response_select" to "選択（レス複数選択）",
             "haiagaru_refresh_open_tabs" to "開いているスレ・板を一括更新",
         )) {
             for (values in listOf("values", "values-en")) {
@@ -5206,6 +5207,8 @@ val haiagaruPatch = resourcePatch(
                 it.createPublicId("drawable", name)
             }
             val iconPath = when (name) {
+                "haiagaru_response_select" ->
+                    "M19,3H5a2,2 0,0 0,-2 2v14a2,2 0,0 0,2 2h14a2,2 0,0 0,2 -2V5a2,2 0,0 0,-2 -2zM10,17l-5,-5 1.41,-1.41L10,14.17l7.59,-7.58L19,8z"
                 "haiagaru_stock_posting" ->
                     "M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75zM20.71,7.04a1,1 0,0 0,0 -1.41l-2.34,-2.34a1,1 0,0 0,-1.41 0l-1.83,1.83 3.75,3.75zM13,19h8v2h-8z"
                 "haiagaru_refresh_open_tabs" ->

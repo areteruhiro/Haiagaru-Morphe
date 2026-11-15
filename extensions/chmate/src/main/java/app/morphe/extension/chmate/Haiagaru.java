@@ -527,6 +527,7 @@ public final class Haiagaru {
                 result = addToolbarChoice(result, ToolbarIcons.AUTO_NG_EXCLUSIONS, "haiagaru_auto_ng_exclusions");
                 result = addToolbarChoice(result, ThreadWatch.ACTION, "haiagaru_thread_watch");
                 result = addToolbarChoice(result, StockChmatePosting.ACTION, "haiagaru_stock_posting");
+                result = addToolbarChoice(result, MultiResponseNg.TOOLBAR, "haiagaru_response_select");
             }
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version) || "0.8.10.242 dev".equals(version))
                 result = addToolbarChoice(result, DIRECT_COPY_TOOLBAR_ID, "haiagaru_direct_copy");
@@ -4370,7 +4371,9 @@ public final class Haiagaru {
             videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
                     "Dedicated video viewer (select the patch when patching)"));
         }
-        LinearLayout alwaysMosaic=SettingsSection.add(layout,"ChMateの「画像は常にモザイク」","ChMate側で「画像は常にモザイク」をオンにしたときに適用します。",true);
+        LinearLayout safety=SettingsSection.add(layout,"セーフティ","Image NG、画像の検出、モノクロ・モザイク",true);
+        addImageSafetySettings(safety, activity, preferences, live, chMateVersion);
+        LinearLayout alwaysMosaic=SettingsSection.add(safety,"ChMateの「画像は常にモザイク」","ChMate側で「画像は常にモザイク」をオンにしたときに適用します。",true);
         for(String[] option:new String[][]{{ThumbnailAppearance.ALWAYS_GRAY,"モザイクにモノクロを重ねる"},{ThumbnailAppearance.ALWAYS_STRENGTH,"下のモザイクの強さを使う"}}){
             Switch toggle=addSwitch(alwaysMosaic,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
         }
@@ -4564,19 +4567,9 @@ public final class Haiagaru {
         live.number(strength,ThumbnailAppearance.STRENGTH,1,5);
     }
 
-    private static LinearLayout settingsNG(Activity activity) {
-        LinearLayout layout = new LinearLayout(activity);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        SharedPreferences preferences = preferences(activity);
-        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        String chMateVersion = "";
-        try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }
-        catch (Exception ignored) { }
-        LiveSettings live = new LiveSettings(preferences, () -> {
-            View decor = activity.getWindow().getDecorView();
-            decor.requestLayout(); decor.invalidate();
-        });
-        LinearLayout thumbnailAppearance=SettingsSection.add(layout,"Image NGの検出とサムネイル表示","標準のImage NGと追加の画像検出を設定します。",true);
+    private static void addImageSafetySettings(LinearLayout safety, Activity activity,
+            SharedPreferences preferences, LiveSettings live, String chMateVersion) {
+        LinearLayout thumbnailAppearance=SettingsSection.add(safety,"Image NGの検出とサムネイル表示","標準のImage NGと追加の画像検出を設定します。",true);
         if("0.8.10.191 dev".equals(chMateVersion)&&!ImageNgRuntimeSafety.allow191Inference()){
             TextView runtimeHelp=new TextView(activity);
             runtimeHelp.setText("191の標準Image NGは、修正ライブラリが未導入のためクラッシュを防ぐ保護停止中です。Morpheで191用の画像判定修正ZIPを選んでパッチを適用すると再開します。追加の成人向け・グロ画像検出は別に使用できます。");
@@ -4607,17 +4600,28 @@ public final class Haiagaru {
             TextView help=new TextView(activity);help.setText("成人向け・グロ画像の検出には、Morpheで画像検出用ZIPを選択してパッチを適用してください。");
             thumbnailAppearance.addView(help);
         }
-        HiddenIdNg.addSettingsButton(layout, activity);
         Button imageNg = new Button(activity);
         imageNg.setText("登録画像によるあぼーん（判定レベル・一致枚数）");
         imageNg.setOnClickListener(view -> activity.startActivity(new Intent(activity, RegisteredImageNgSettingsActivity.class)));
-        layout.addView(imageNg, rowParams(activity));
-        Switch registeredImageNg = addSwitch(layout, activity, "登録画像に一致するレスをあぼーん",
+        safety.addView(imageNg, rowParams(activity));
+        Switch registeredImageNg = addSwitch(safety, activity, "登録画像に一致するレスをあぼーん",
                 RegisteredImageNg.prefs(activity).getBoolean(RegisteredImageNg.ENABLE, false));
         registeredImageNg.setOnCheckedChangeListener((button, checked) -> {
             RegisteredImageNg.prefs(activity).edit().putBoolean(RegisteredImageNg.ENABLE, checked).apply();
             RegisteredImageNg.settingsChanged();
         });
+    }
+
+    private static LinearLayout settingsNG(Activity activity) {
+        LinearLayout layout = new LinearLayout(activity);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        SharedPreferences preferences = preferences(activity);
+        SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        LiveSettings live = new LiveSettings(preferences, () -> {
+            View decor = activity.getWindow().getDecorView();
+            decor.requestLayout(); decor.invalidate();
+        });
+        HiddenIdNg.addSettingsButton(layout, activity);
         Switch autoNgRedIds = addSwitch(layout, activity, "全スレで赤いIDのレスを自動であぼーん表示にする",
                 preferences.getBoolean(RedIdAutoNg.KEY, false));
         TextView autoNgRedIdsDescription = new TextView(activity);

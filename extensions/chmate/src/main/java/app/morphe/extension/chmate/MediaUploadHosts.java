@@ -165,7 +165,8 @@ public final class MediaUploadHosts {
         SharedPreferences p=prefs(activity);
         WeakReference<EditText> editorRef=editors.get(activity);
         EditText editor=editorRef==null?null:editorRef.get();
-        Destination reply=editor==null?null:replyDestinations.get(editor);
+        boolean hasPostingEditor=editor!=null&&editor.isAttachedToWindow();
+        Destination reply=hasPostingEditor?replyDestinations.get(editor):null;
         Destination initial=reply==null?new Destination(p):reply;
         LinearLayout root=new LinearLayout(activity); root.setOrientation(LinearLayout.VERTICAL);
         Switch ask=new Switch(activity);ask.setText("画像・動画のアップロード時にアップロード先を選ぶ");
@@ -183,10 +184,15 @@ public final class MediaUploadHosts {
         key.setText(initial.key);key.setHint("APIキーはチャットへ送らないでください");root.addView(key);
         CheckBox adult=new CheckBox(activity);adult.setText("imgboxをAdult Contentとして送信");
         adult.setChecked(initial.adult);root.addView(adult);
-        Switch once=new Switch(activity);once.setText("このレスでだけアップロード先を変更する");once.setChecked(reply!=null);
-        once.setEnabled(editor!=null&&editor.isAttachedToWindow());root.addView(once);
-        TextView onceHelp=new TextView(activity);
-        onceHelp.setText(editor==null?"レス限定の変更は書き込み画面から設定できます。":"オンにすると、この書き込み画面の画像・動画すべてに適用します。書き込み完了・画面を閉じると解除し、保存済みのアップロード先は変更しません。");root.addView(onceHelp);
+        Switch once=hasPostingEditor?new Switch(activity):null;
+        if(once!=null) {
+            once.setText("このレスでだけアップロード先を変更する");
+            once.setChecked(reply!=null);
+            root.addView(once);
+            TextView onceHelp=new TextView(activity);
+            onceHelp.setText("オンにすると、この書き込み画面の画像・動画すべてに適用します。書き込み完了・画面を閉じると解除し、保存済みのアップロード先は変更しません。");
+            root.addView(onceHelp);
+        }
         TextView help=new TextView(activity);
         help.setText("uguu.seは一時共有用で、現在は3時間で自動削除されます。保存期間・上限はサイト側で変更される場合があります。\n\n標準添付は選択したサイトへ送信し、URLと標準履歴を自動で登録します。アクセス確認が出る場合は下のWeb画面で確認してください。手動Web送信とは別です。認証情報を含むバックアップは共有しないでください。");root.addView(help);
         Button guide = new Button(activity);guide.setText("使い方・制限を見る（GitHub）");
@@ -221,12 +227,12 @@ public final class MediaUploadHosts {
             if((i.equals("imgpile")||m.equals("imgpile")) && !MediaUploadPolicy.validKey(api)) {
                 key.setError("imgpileのAPIキーを入力してください");return;
             }
-            if(once.isChecked()) {
+            if(once!=null&&once.isChecked()) {
                 if(editor==null||!editor.isAttachedToWindow()){dialog.dismiss();return;}
                 replyDestinations.put(editor,new Destination(i,m,api,adult.isChecked()));
             }
             else {
-                if(editor!=null)replyDestinations.remove(editor);
+                if(hasPostingEditor)replyDestinations.remove(editor);
                 p.edit().putString("imageHost",i).putString("videoHost",m).putString("imgpileApiKey",api)
                         .putBoolean("imgboxAdult",adult.isChecked()).apply();
             }

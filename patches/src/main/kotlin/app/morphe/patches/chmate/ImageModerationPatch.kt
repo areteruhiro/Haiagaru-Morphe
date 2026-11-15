@@ -34,7 +34,7 @@ val imageModerationPatch = resourcePatch(
     dependsOn(haiagaruPatch)
     val bundle = filePathOption(
         key = "imageModerationFile", default = "", title = "haiagaru-image-moderation.zip",
-        description = "モデルと実行ライブラリをまとめたZIPを選択してください。",
+        description = "haiagaru-image-moderation.zip、またはVPNも収録したhaiagaru-image-moderation-vpn.zipを選択してください。",
         allowedExtensions = listOf("zip"),
     )
     val modelFile = filePathOption(
@@ -65,7 +65,11 @@ val imageModerationPatch = resourcePatch(
             val required=if(combined.isNotBlank())files else if(archive==model)
                 setOf(modelPath,"assets/haiagaru/image-moderation/MODEL-NOTICE.txt","assets/haiagaru/image-moderation/SWIFTFORMER-LICENSE.txt")
                 else files.filterNot { it.startsWith("chmate191/") || it == modelPath || it.endsWith("/MODEL-NOTICE.txt") || it.endsWith("/SWIFTFORMER-LICENSE.txt") }.toSet()
-            check(items.keys == required && required.all { items.getValue(it).size == 1 && seen.add(it) }) { "画像検出用ZIPの内容が一致しません。" }
+            val includesVpn = combined.isNotBlank() && items.keys.any { it.startsWith("vpn/") }
+            val expectedEntries = if (includesVpn) required + IMAGE_VPN_BUNDLE_ENTRIES else required
+            check(items.keys == expectedEntries && items.values.all { it.size == 1 } && required.all(seen::add)) {
+                "画像検出用ZIPの内容が一致しません。"
+            }
             for (name in required) {
                 val entry = items.getValue(name).single()
                 check(entry.size in 1..(32L * 1024 * 1024)) { "画像検出用ZIPのサイズが不正です: $name" }
