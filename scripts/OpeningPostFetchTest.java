@@ -69,6 +69,29 @@ public final class OpeningPostFetchTest {
         var edge=ThreadListThumbnailRules.board("https://bbs.eddibb.cc/liveedge/");
         check(edge.openingDatUrl("1794543005").equals("https://bbs.eddibb.cc/liveedge/dat/1794543005.dat"),"Edge preview endpoint is DAT, not full HTML");
         check(ThreadListThumbnailRules.board("https://egg.5ch.io/android/").openingDatUrl("1794543005")==null,"5ch keeps first-response HTML route");
+        for (String host : new String[]{"img.2chan.net", "may.2chan.net", "nov.2chan.net"}) {
+            String address="https://"+host+"/b/res/123.htm";
+            String source="<div class=thre data-res=123><span class=cno>No.123</span>"
+                    + "<blockquote>http://cdn.example.org/first.jpg</blockquote>"
+                    + "<table><tr><td class=rtd><span class=cno>No.124</span>"
+                    + "<blockquote>https://cdn.example.org/second.jpg</blockquote></td></tr></table></div>";
+            var board=SiteBoardProtocol.address("https://"+host+"/b/");
+            List<String> originals=List.of(board.url+"src/123.png");
+            String attachment="<a href='/b/src/123.png'><img src='/b/thumb/123s.jpg'></a>";
+            check(SiteBoardProtocol.futabaPreviews(board,attachment,originals)
+                    .equals(List.of(board.url+"thumb/123s.jpg")),"site-provided thumbnail is used on "+host);
+            check(originals.equals(List.of(board.url+"src/123.png")),"full-size URL remains the click target on "+host);
+            check(SiteBoardProtocol.futabaPreviews(board,"",originals).equals(originals),"missing preview keeps original on "+host);
+            String prefix=OpeningPostHtml.read(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)),
+                    "text/html; charset=UTF-8",address,"futaba","123",html -> {
+                        var opening=SiteBoardProtocol.thread(board,"123",html).entries.get(0);
+                        return !ThreadListThumbnailRules.openingTextMedia(opening.body,address,1).isEmpty();
+                    });
+            var parsed=SiteBoardProtocol.thread(board,"123",prefix);
+            check(parsed.entries.size()==1,"plain first-post URL stops before replies on "+host);
+            check(ThreadListThumbnailRules.openingTextMedia(parsed.entries.get(0).body,address,2)
+                    .equals(List.of("https://cdn.example.org/first.jpg")),"first-post media remains available on "+host);
+        }
         var futabaBoard=SiteBoardProtocol.address("https://img.2chan.net/b/");
         String first="<span class=cno>No.123</span><span class=cnm>名</span><span class=cnw>日付</span><blockquote>本文</blockquote>";
         String second="<table><tr><td class=rtd><span class=cno>No.124</span><span class=cnm>名</span><span class=cnw>日付</span><a href='https://img.2chan.net/b/src/reply.jpg'>画像</a><blockquote>返信</blockquote></td></tr></table>";

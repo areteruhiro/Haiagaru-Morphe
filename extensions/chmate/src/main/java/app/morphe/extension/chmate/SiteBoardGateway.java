@@ -31,6 +31,9 @@ final class SiteBoardGateway {
     private final Map<String,String> images=Collections.synchronizedMap(new LinkedHashMap<String,String>(64,.75f,true){
         @Override protected boolean removeEldestEntry(Map.Entry<String,String> e){return size()>2048;}
     });
+    private final Map<String,String> previewSources=Collections.synchronizedMap(new LinkedHashMap<String,String>(64,.75f,true){
+        @Override protected boolean removeEldestEntry(Map.Entry<String,String> e){return size()>256;}
+    });
     private final Set<String> posting=ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients=ConcurrentHashMap.newKeySet();
     private final Map<String,Long> sent=new ConcurrentHashMap<>();
@@ -129,7 +132,7 @@ final class SiteBoardGateway {
 
     private static String boardName(SiteBoardProtocol.Board board, String name) {
         if(!SiteBoardProtocol.futabaTag(board).isEmpty()){
-            if(name.isEmpty()||name.equals(board.host)||name.equals("追加掲示板")||name.startsWith("http")||name.equals("ふたば "+board.host))
+            if(name.isEmpty()||name.equals(board.host)||name.equals(board.host+"/"+board.path+"/")||name.equals("追加掲示板")||name.startsWith("http")||name.equals("ふたば "+board.host))
                 name="二次元裏";
             return SiteBoardProtocol.futabaTitle(board,name);
         }
@@ -157,6 +160,11 @@ final class SiteBoardGateway {
                 db.update("boards", values, "server=? AND name IN (?,?) AND (title IN (?,?,?) OR title LIKE 'http%')",
                         new String[]{server, android.net.Uri.encode(server + "/" + key), key,
                                 entry.getValue().host, "", "追加掲示板"});
+                SiteBoardProtocol.Board source=entry.getValue();
+                if(!SiteBoardProtocol.futabaTag(source).isEmpty())
+                    db.update("boards",values,"server=? AND name IN (?,?) AND (title IN (?,?,?,?) OR title LIKE 'http%')",
+                            new String[]{source.host,android.net.Uri.encode(source.host+"/"+source.path),source.path,
+                                    source.host,"","追加掲示板",source.host+"/"+source.path+"/"});
             } catch (RuntimeException unavailable) {
                 android.util.Log.w("Haiagaru", "Saved Animanch board title repair unavailable", unavailable);
             }
@@ -215,6 +223,10 @@ final class SiteBoardGateway {
         if(enabled())start();return key;
     }
     String registeredKey(String host,String key){
+        if(host!=null&&host.matches("(?:img|may)\\.2chan\\.net")&&"b".equals(key))try{
+            String address=localUrl("https://"+host+"/b/");
+            if(address!=null)return URI.create(address).getPath().replace("/","");
+        }catch(IOException unavailable){return null;}
         return port>0&&("127.0.0.1:"+port).equals(host)&&key!=null&&boards.containsKey(key)?key:null;
     }
     String popupBoardKey(String key,String thread){
@@ -549,14 +561,23 @@ final class SiteBoardGateway {
         }
         Response response=transport.getOpeningThumbnail(thumbnailContext,board,id);
         if(response.status!=200)throw new IOException("HTTP "+response.status);
-        SiteBoardProtocol.ThreadPage thread=SiteBoardProtocol.thread(board,id,response.text());
+        String html=response.text();
+        SiteBoardProtocol.ThreadPage thread=SiteBoardProtocol.thread(board,id,html);
         if(thread.entries.isEmpty())return Collections.emptyList();
         LinkedHashSet<String> found=new LinkedHashSet<>();
         collectOpeningMedia(found,thread.entries.get(0),board.threadUrl(id),limit);
         // Futaba img/may occasionally have the thread image attached to entry 2.
         if(found.isEmpty()&&board.kind.equals("futaba")&&thread.entries.size()>1)
             collectOpeningMedia(found,thread.entries.get(1),board.threadUrl(id),limit);
-        return new ArrayList<>(found);
+        List<String> images=new ArrayList<>(found);
+        if(board.kind.equals("futaba")){
+            List<String> previews=SiteBoardProtocol.futabaPreviews(board,html,images);
+            for(int i=0;i<images.size();i++){
+                String source=images.get(i),preview=previews.get(i);
+                if(source.equals(preview))previewSources.remove(source);else previewSources.put(source,preview);
+            }
+        }
+        return images;
     }
     private static void collectOpeningMedia(Set<String> found,SiteBoardProtocol.Entry entry,String threadUrl,int limit){
         for(String url:entry.media){
@@ -574,15 +595,16 @@ final class SiteBoardGateway {
     }
     /** Site transport enforces the same origin and authentication rules as native DAT images. */
     byte[] openingImageBytes(Context context,String url)throws IOException{
-        if(ImageVpnController.protectedPreview(url)){
+        String address=previewSources.getOrDefault(url,url);
+        if(ImageVpnController.protectedPreview(address)){
             app.morphe.extension.chmate.vpn.nativecore.imagevpn.Image result=
-                    ThumbnailRequestPacing.fetch(context,url,gate->ImageVpnController.fetchPreview(url));
+                    ThumbnailRequestPacing.fetch(context,address,gate->ImageVpnController.fetchPreview(address));
             byte[] body=result.getBody();String type=result.getContentType();
             if(body==null||body.length>3*1024*1024||type==null||!type.toLowerCase(Locale.ROOT).startsWith("image/"))
                 throw new IOException("VPN経由でサムネイルを取得できません");
             return body;
         }
-        Response image=transport.getThumbnail(context,url);
+        Response image=transport.getThumbnail(context,address);
         if(image.status!=200||image.bytes.length>3*1024*1024||!image.type.toLowerCase(Locale.ROOT).startsWith("image/"))throw new IOException("サムネイル画像を取得できません");
         return image.bytes;
     }
