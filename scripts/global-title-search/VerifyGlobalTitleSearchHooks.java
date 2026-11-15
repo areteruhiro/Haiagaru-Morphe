@@ -1,5 +1,6 @@
 import com.android.tools.smali.dexlib2.*;import com.android.tools.smali.dexlib2.dexbacked.*;import com.android.tools.smali.dexlib2.iface.*;import com.android.tools.smali.dexlib2.iface.instruction.*;import com.android.tools.smali.dexlib2.iface.reference.*;import java.util.*;import java.util.zip.*;
 public final class VerifyGlobalTitleSearchHooks {
+ static final String HOME_ACTIVITY="Ljp/syoboi/a2chMate/activity/HomeActivity;";
  static final Set<String> HOME=Set.of("Lo/r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk;","Ljp/syoboi/a2chMate/fragment/HomeFragment;","Ljp/syoboi/a2chMate/ui/home/HomeFragment;");
  static List<Instruction> code(Method m){var out=new ArrayList<Instruction>();m.getImplementation().getInstructions().forEach(out::add);return out;}
  static boolean calls(Instruction i,String name){return i instanceof ReferenceInstruction r&&r.getReference().toString().contains("->"+name+"(");}
@@ -30,7 +31,7 @@ public final class VerifyGlobalTitleSearchHooks {
   if(p!=modified.size()||injected!=(modern?0:1))throw new AssertionError("unexpected saved-search HOME injection");
  }
 
- static Map<String,ClassDef> load(String apk)throws Exception{var out=new HashMap<String,ClassDef>();try(var z=new ZipFile(apk)){for(var e:Collections.list(z.entries()))if(e.getName().matches("classes[0-9]*\\.dex"))try(var in=new java.io.BufferedInputStream(z.getInputStream(e))){for(var c:DexBackedDexFile.fromInputStream(Opcodes.getDefault(),in).getClasses())if(HOME.contains(c.getType())||Set.of("Lo/getSdkVersion;","Lo/afterHandshake;","Lo/AXE3;").contains(c.getType()))out.put(c.getType(),c);}}return out;}
+ static Map<String,ClassDef> load(String apk)throws Exception{var out=new HashMap<String,ClassDef>();try(var z=new ZipFile(apk)){for(var e:Collections.list(z.entries()))if(e.getName().matches("classes[0-9]*\\.dex"))try(var in=new java.io.BufferedInputStream(z.getInputStream(e))){for(var c:DexBackedDexFile.fromInputStream(Opcodes.getDefault(),in).getClasses())if(HOME_ACTIVITY.equals(c.getType())||HOME.contains(c.getType())||Set.of("Lo/getSdkVersion;","Lo/afterHandshake;","Lo/AXE3;").contains(c.getType()))out.put(c.getType(),c);}}return out;}
  public static void main(String[] args)throws Exception{
   var before=load(args[0]);var after=load(args[1]);int hooks=0;
   for(var c:after.values())for(var m:c.getMethods())if(m.getImplementation()!=null){var code=new ArrayList<Instruction>();m.getImplementation().getInstructions().forEach(code::add);if(code.isEmpty()||!(code.get(0) instanceof ReferenceInstruction r)||!(r.getReference() instanceof MethodReference ref)||!ref.getDefiningClass().equals("Lapp/morphe/extension/chmate/GlobalTitleSearch;"))continue;
@@ -55,6 +56,18 @@ public final class VerifyGlobalTitleSearchHooks {
    wrapped++;
   }
   verifyHome(args.length>2?load(args[2]):before,after);
+  if(args.length>3&&args[3].equals("notification")){
+   Method receive=null;
+   for(var m:after.get(HOME_ACTIVITY).getMethods())if(m.getName().equals("onNewIntent")&&m.getParameterTypes().equals(List.of("Landroid/content/Intent;")))receive=m;
+   if(receive==null)throw new AssertionError("HOME must receive warm completion notification");
+   boolean hook=false;
+   for(var i:code(receive))if(calls(i,"received")){
+    var regs=(RegisterRangeInstruction)i;
+    if(regs.getRegisterCount()!=2||regs.getStartRegister()!=receive.getImplementation().getRegisterCount()-2)throw new AssertionError("notification Activity/Intent argument registers");
+    hook=true;
+   }
+   if(!hook)throw new AssertionError("warm completion notification hook missing");
+  }
   if(wrapped!=1)throw new AssertionError("missing saved-result URL wrapper");
   if(hooks!=2)throw new AssertionError("expected exactly two global search hooks, got "+hooks);System.out.println("PASS native global title search: original URL/parser instructions, registers and provider/query operands retained");
  }

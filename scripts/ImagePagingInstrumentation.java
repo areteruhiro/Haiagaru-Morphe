@@ -102,6 +102,8 @@ public final class ImagePagingInstrumentation extends Instrumentation {
  }
  void test(Bundle b)throws Exception{
   Context app=getTargetContext();
+  boolean horizontal=app.getPackageName().endsWith("242");
+  int dx=horizontal?1:0,dy=horizontal?0:-1;
   check(app.getPackageName().matches(".*\\.reporter(191|226|242)"),"isolated viewer only");
   Class<?> navigation=app.getClassLoader().loadClass("app.morphe.extension.chmate.MediaViewerNavigation");
   index=navigation.getDeclaredMethod("nativeIndex",Activity.class);index.setAccessible(true);
@@ -125,24 +127,24 @@ public final class ImagePagingInstrumentation extends Instrumentation {
     Method mixedPolicy=policy.getDeclaredMethod("mixed",Activity.class);mixedPolicy.setAccessible(true);
     open(app,mixedUrls,2);waitIndex(2,"mixed gallery last image");Thread.sleep(750);
     check(main(()->(Boolean)mixedPolicy.invoke(null,viewer)),"mixed gallery uses external paging");
-    swipe(0,-1);waitClosed("native image at end of mixed gallery closes");
+    swipe(dx,dy);waitClosed("native image at end of mixed gallery closes");
     open(app,mixedUrls,0);waitIndex(0,"mixed gallery first image");Thread.sleep(750);
-    swipe(0,1);waitClosed("native image at start of mixed gallery closes");
+    swipe(-dx,-dy);waitClosed("native image at start of mixed gallery closes");
     return;
    }
    open(app,urls,1);
    waitIndex(1,"initial native index");Thread.sleep(700);
-   swipe(0,-1);waitIndex(2,"default upward advances");
-   swipe(0,1);waitIndex(1,"default downward reverses");
-   swipe(-1,0);Thread.sleep(400);waitIndex(1,"default unassigned left does not page");
+   swipe(dx,dy);waitIndex(2,"default next advances");
+   swipe(-dx,-dy);waitIndex(1,"default previous reverses");
+   swipe(dy,dx);Thread.sleep(400);waitIndex(1,"default unassigned axis does not page");
    p.edit().putInt(KEYS[1],4).putInt(KEYS[2],3).commit();
    swipe(1,0);waitIndex(2,"custom right advances");
    swipe(-1,0);waitIndex(1,"custom left reverses");
    p.edit().putInt(KEYS[1],0).commit();
    swipe(1,0);Thread.sleep(350);waitIndex(1,"unassigned next does not page");
    p.edit().remove(KEYS[1]).remove(KEYS[2]).commit();
-   swipe(0,-1);waitIndex(2,"advance before closing at the last image");
-   swipe(0,-1);waitClosed("last image next closes viewer");
+   swipe(dx,dy);waitIndex(2,"advance before closing at the last image");
+   swipe(dx,dy);waitClosed("last image next closes viewer");
    p.edit().putInt(KEYS[1],4).putInt(KEYS[2],3).commit();
    open(app,urls,0);waitIndex(0,"reopened at first image");Thread.sleep(600);
    swipe(-1,0);waitClosed("first image custom previous closes viewer");
