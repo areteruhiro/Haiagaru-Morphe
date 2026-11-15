@@ -3087,3 +3087,14 @@ Mi Note 10 Android 11（ADB `d5497008`）。検証用別パッケージのみ更
   APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\final242.apk`、SHA-256 `430c97ea38fbc0501cd8e3a1664165f3c96d847d177eed0a542e52eb1e660c0d`。
   MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\candidate.mpp`、SHA-256 `92a7fa3e12b711993e977556dca0d01cc8d0a933e0b09f877c9fbe227cee68f0`。
   署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+設定配色の同一MPPを使った残り2版の適用・確認（Mi Note 10、Android 11、ADB `d5497008`）：
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`：2026-11-15T14:49:15.003169 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\final191.apk`、SHA-256 `2c3365ef95feca61c4a1c90c7a0c04eb54a2275b33092fad4c970321e8019087`。
+  MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\candidate.mpp`、SHA-256 `92a7fa3e12b711993e977556dca0d01cc8d0a933e0b09f877c9fbe227cee68f0`。署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+- Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`：2026-11-15T14:50:52.113447 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\final226.apk`、SHA-256 `40d200728d432bb22c1d68276f6e190389233082cb8a295325b927e4c246548b`。
+  MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\candidate.mpp`、SHA-256 `92a7fa3e12b711993e977556dca0d01cc8d0a933e0b09f877c9fbe227cee68f0`。署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

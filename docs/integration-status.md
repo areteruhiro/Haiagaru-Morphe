@@ -1893,3 +1893,8 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.38.0
 ## 2026-11-15 設定の配色と余白
 
 設定の画面と操作／リンクカード・Xのプレビューを水色、カテゴリ上余白12dp、スイッチONを水色とした。バンドルビルド成功。Mi Note 10の隔離242でライト／ダーク各10項目（見出しとON/OFFトラックの色、設定保存）。画像・動画とNG・ミュートの先頭カード枠位置は両テーマともy=238で一致。242のHOME/NG37、画像106、直前の同じNG変更を含む191/226の画像各110成功。1レス目NGの新規フック引数・結果レジスター・比較命令を3版で検査。新規の重大エラーは未検出。証跡 build/settings-accent-20261115。
+
+
+## 2026-11-15 Haiagaru 1.38.1公式公開
+
+差分 `b2e0026a` を dev から master に通常マージ `ea38fa22`。Release 43682602316／Build Haiagaru 43682602342 成功、Semantic Release生成 `1ce8bb2a`、14:53:07 JST正式公開。配布5点のSHA-256・サイズ・ZIP検査、MPP同梱内容、master/main/devのMorphe用JSON計6経路、謝辞・寄付欄を照合。MPP SHA-256 `89207d418e54df314a577bd3ab1bbb14701bbeca0f8816411c3f1b812308d970`。証跡 build/settings-accent-20261115/published-1.38.1/verification.json。
