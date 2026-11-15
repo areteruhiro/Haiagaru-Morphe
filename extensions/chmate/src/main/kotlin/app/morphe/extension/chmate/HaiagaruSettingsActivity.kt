@@ -166,7 +166,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                 navigationIcon = { IconButton(onClick = back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, if (english) "Back" else "戻る") } })
         }) { insets ->
             LazyColumn(state = list, modifier = Modifier.fillMaxSize().padding(insets).imePadding(),
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = if (selected < 0) 4.dp else 12.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (selected < 0) {
                     item { OutlinedTextField(query, { query = it }, placeholder = { Text(if (english) "Find a setting" else "設定を検索") },
                         leadingIcon = { Icon(Icons.Filled.Search, null) }, singleLine = true,
@@ -235,11 +235,13 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                     }
                 } else {
                     val group = groups[selected]
-                    group.sources.forEach { source ->
+                    group.sources.forEachIndexed { index, source ->
                         val rows = settingsRows(body(source))
                         if (group.sources.size > 1) item("heading:$source") {
                             Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall, fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, top = 8.dp))
+                                color = if (source == "DISPLAY" || source == "SOCIAL")
+                                    HaiagaruUi.settingsCategoryColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 12.dp, top = if (index == 0) 0.dp else 8.dp))
                         }
                         items(rows, key = { "${source}:${System.identityHashCode(it.control)}" }) { option ->
                             SettingsFrame(padded = false) { BoundSettingRow(option, update) }
