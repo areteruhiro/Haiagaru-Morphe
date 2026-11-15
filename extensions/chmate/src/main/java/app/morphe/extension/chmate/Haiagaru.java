@@ -3619,6 +3619,7 @@ public final class Haiagaru {
         live.choice(settingsLanguage, () -> preferences.edit().putString("settingsLanguage", SettingsLanguage.value(settingsLanguage.getSelectedItemPosition())).apply());
         live.toggle(hideAd, "hideAd");
         LightweightSetup.controls(activity,basics);
+        HomeDisplayRecovery.addSettings(basics,activity);
         Button resetSettings=new Button(activity);
         resetSettings.setText(text("Haiagaruの設定を初期設定に戻す","Reset Haiagaru settings to defaults"));
         resetSettings.setOnClickListener(v->SettingsProfiles.confirmReset(activity));
@@ -4576,6 +4577,11 @@ public final class Haiagaru {
             decor.requestLayout(); decor.invalidate();
         });
         LinearLayout thumbnailAppearance=SettingsSection.add(layout,"Image NGの検出とサムネイル表示","標準のImage NGと追加の画像検出を設定します。",true);
+        if("0.8.10.191 dev".equals(chMateVersion)&&!ImageNgRuntimeSafety.allow191Inference()){
+            TextView runtimeHelp=new TextView(activity);
+            runtimeHelp.setText("191の標準Image NGは、修正ライブラリが未導入のためクラッシュを防ぐ保護停止中です。Morpheで191用の画像判定修正ZIPを選んでパッチを適用すると再開します。追加の成人向け・グロ画像検出は別に使用できます。");
+            thumbnailAppearance.addView(runtimeHelp);
+        }
         for(String[] option:new String[][]{{ThumbnailAppearance.GRAY,"画像サムネイルをモノクロにする"},{ThumbnailAppearance.MOSAIC,"画像サムネイルにモザイクをかける"}}){
             Switch toggle=addSwitch(thumbnailAppearance,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
         }

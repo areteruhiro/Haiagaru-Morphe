@@ -5,7 +5,7 @@
 | 必要な機能 | 保存するファイル | Morpheで選ぶ場所 | 未選択の場合 |
 | --- | --- | --- | --- |
 | 端末にない絵文字の補完 | NotoColorEmoji.ttf | Haiagaru → オプション → 絵文字フォントを選択 | 端末標準の絵文字。新しい絵文字が表示できない場合があります |
-| 191 devの自動NG画像判定クラッシュ修正 | haiagaru-image-ng.zip | Haiagaru → オプション → 191画像判定の修正ファイルを選択 | 本体の判定ライブラリを維持。既知のクラッシュ修正は適用しません |
+| 191 devの自動NG画像判定クラッシュ修正 | haiagaru-image-ng.zip | Haiagaru → オプション → 191画像判定の修正ファイルを選択 | 本体ライブラリを維持し、既知のJNIクラッシュを避けるため標準Image NGの推論を保護停止します |
 | 成人向け・グロ画像の個別検出（Android 7以上） | haiagaru-image-moderation.zip | 成人向け・グロ画像の自動検出 → オプション | 追加モデルを使いません。ChMate標準のImage NGとは独立です |
 | 画像検出のモデルと実行ライブラリを個別に指定 | haiagaru-image-moderation-model.zip ＋ haiagaru-image-moderation-runtime.zip | 同パッチの「個別指定: 画像検出モデルZIP」「個別指定: ONNX Runtime ZIP」 | モデルと実行ライブラリの両方が必要です |
 | 対象画像のVPN取得（実験用） | haiagaru-image-vpn-v2.zip（従来image-stack.aarも可） | 画像取得専用VPN → オプション → VPN用ZIP／AARを選択 | VPNを追加しません。このパッチのチェックは外してください |

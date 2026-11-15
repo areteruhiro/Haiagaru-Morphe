@@ -34,6 +34,7 @@ public final class SettingsProfiles {
         booleanKey(ImageModeration.GORE);defaultValue(ImageModeration.GORE,false);
         booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
+        booleanKey(MediaUploadHosts.ASK_DESTINATION);defaultValue(MediaUploadHosts.ASK_DESTINATION,false);
         booleanKey(NativeImageNgList.ENABLE);defaultValue(NativeImageNgList.ENABLE,false);
         numberKey(ThreadListThumbnail.REGISTERED_ACTION,0,3);defaultValue(ThreadListThumbnail.REGISTERED_ACTION,0);
         booleanKey(PostingSettingLinks.KEY);defaultValue(PostingSettingLinks.KEY,false);

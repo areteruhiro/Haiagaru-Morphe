@@ -259,6 +259,19 @@ private fun BytecodePatchContext.patchLegacyThumbnailBinding(version: String) {
 
 /** Draw effects only at the native response thumbnail bitmap calls. */
 internal fun BytecodePatchContext.patchThumbnailAppearance(version: String) {
+    if (version == "0.8.10.191 dev") {
+        val score=mutableClassDefBy("Lo/oca;").methods.single {
+            it.name=="VA_" && it.returnType=="F" && it.parameterTypes==listOf("Landroid/graphics/Bitmap;", "Ljava/lang/String;")
+        }
+        check(score.implementation!!.registerCount>=4) { "191 Image NG safety scratch register unavailable" }
+        score.addInstructionsWithLabels(0, """
+            invoke-static {}, Lapp/morphe/extension/chmate/ImageNgRuntimeSafety;->allow191Inference()Z
+            move-result v0
+            if-nez v0, :verified_runtime
+            const/4 v0, 0x0
+            return v0
+        """.trimIndent(), ExternalLabel("verified_runtime", score.implementation!!.instructions.first()))
+    }
     val owner=when(version){
         "0.8.10.191 dev"->"Lo/qaf;"
         "0.8.10.226 dev"->"Lo/TTRewardExpressVideoActivity;"
