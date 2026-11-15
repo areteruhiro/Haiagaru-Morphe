@@ -1558,6 +1558,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         val profile = profileFor(packageMetadata.versionName)
         patchNativeToolTabs(packageMetadata.versionName)
         patchReadingPosition(packageMetadata.versionName)
+        patchNativeImagePaging(packageMetadata.versionName)
         patchUnreadToolbarCount(packageMetadata.versionName)
         patchHiddenNgUnread(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)

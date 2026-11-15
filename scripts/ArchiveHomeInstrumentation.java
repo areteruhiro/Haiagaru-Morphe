@@ -63,6 +63,26 @@ public final class ArchiveHomeInstrumentation extends Instrumentation {
   }}finally{if(initial>0)m(fragment.getClass(),old||middle?"a":"d",int.class).invoke(fragment,initial);}
   String ka=(String)m(order,"key",Object.class).invoke(null,a),kz=(String)m(order,"key",Object.class).invoke(null,z);ok(ka!=null&&kz!=null&&!ka.equals(kz),"board stable keys");
   SharedPreferences prefs=app.getSharedPreferences("haiagaru.home-thread-order",0);String previous=prefs.getString("order:107",null);Set<String> pins=prefs.contains("pins:107")?new HashSet<>(prefs.getStringSet("pins:107",Collections.emptySet())):null;
-  try{prefs.edit().putString("order:107",new org.json.JSONArray(Arrays.asList(kz,ka)).toString()).remove("pins:107").commit();List<?> out=(List<?>)m(order,"apply",List.class,int.class).invoke(null,Arrays.asList(a,z),107);ok(out.size()==2&&out.get(0)==z,"board persisted sort");prefs.edit().putStringSet("pins:107",new HashSet<>(Arrays.asList(ka))).commit();out=(List<?>)m(order,"apply",List.class,int.class).invoke(null,Arrays.asList(a,z),107);ok(out.get(0)==a,"board pins precede manual ranks");}finally{SharedPreferences.Editor e=prefs.edit();if(previous==null)e.remove("order:107");else e.putString("order:107",previous);if(pins==null)e.remove("pins:107");else e.putStringSet("pins:107",pins);e.commit();}
+  Object navigation=null;
+  List<?> source=Arrays.asList(a,z);
+  if(!old&&!middle){
+   Class<?> action=loader.loadClass("o.getAvailabilityStatus$IconCompatParcelizer");
+   Constructor<?> nav=action.getDeclaredConstructor(String.class);nav.setAccessible(true);
+   navigation=nav.newInstance("板一覧へ");
+   source=Arrays.asList(navigation,a,z);
+  }
+  Method apply=m(order,"apply",List.class,int.class);
+  try{
+   prefs.edit().putString("order:107",new org.json.JSONArray(Arrays.asList(kz,ka)).toString()).remove("pins:107").commit();
+   List<?> out=(List<?>)apply.invoke(null,source,107);
+   ok(out.indexOf(z)>=0&&out.indexOf(z)<out.indexOf(a),"board persisted sort");
+   if(navigation!=null)ok(out.size()==3&&out.get(0)==navigation,"native board-list navigation remains first after manual sort");
+   prefs.edit().putStringSet("pins:107",new HashSet<>(Arrays.asList(ka))).commit();
+   out=(List<?>)apply.invoke(null,source,107);
+   ok(out.indexOf(a)>=0&&out.indexOf(a)<out.indexOf(z),"board pins precede manual ranks");
+   if(navigation!=null)ok(out.size()==3&&out.get(0)==navigation,"native board-list navigation remains first after pinning");
+   prefs.edit().remove("order:107").remove("pins:107").commit();
+   ok(apply.invoke(null,source,107)==source,"standard order retains the entire native list");
+  }finally{SharedPreferences.Editor e=prefs.edit();if(previous==null)e.remove("order:107");else e.putString("order:107",previous);if(pins==null)e.remove("pins:107");else e.putStringSet("pins:107",pins);e.commit();}
  }
 }

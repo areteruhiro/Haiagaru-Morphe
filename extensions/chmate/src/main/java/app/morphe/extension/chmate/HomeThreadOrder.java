@@ -60,13 +60,21 @@ public final class HomeThreadOrder {
         synchronized(latest){latest.put(mode,new ArrayList<>(source));}
         Map<String,Integer> ranks=new HashMap<>();try{JSONArray order=new JSONArray(prefs().getString("order:"+Math.abs(mode),"[]"));for(int i=0;i<order.length();i++)ranks.put(order.getString(i),i);}catch(JSONException ignored){}
         Set<String> pinned=prefs().getStringSet("pins:"+Math.abs(mode),Collections.emptySet());if(ranks.isEmpty()&&pinned.isEmpty())return source;
-        // Manual order crosses board/date groups; omit headings which no longer
-        // describe the following thread. Native data and default sorting stay intact.
-        ArrayList<Object> result=new ArrayList<>();
+        ArrayList<Object> movable=new ArrayList<>();
         Map<Object,String> keys=new IdentityHashMap<>();
-        for(Object row:source){String key=key(row);if(key!=null){result.add(row);keys.put(row,key);}}
-        result.sort(Comparator.comparingInt((Object row)->pinned.contains(keys.get(row))?0:1)
+        for(Object row:source){String key=key(row);if(key!=null){movable.add(row);keys.put(row,key);}}
+        if(movable.isEmpty())return source;
+        movable.sort(Comparator.comparingInt((Object row)->pinned.contains(keys.get(row))?0:1)
                 .thenComparingInt(row->ranks.getOrDefault(keys.get(row),Integer.MAX_VALUE)));
+
+        // Keep native action rows (including the "板一覧へ" row) at their
+        // original slots. Only omit group headings that would now mislabel rows.
+        ArrayList<Object> result=new ArrayList<>(source.size());
+        Iterator<Object> sorted=movable.iterator();
+        for(Object row:source){
+            if(keys.containsKey(row))result.add(sorted.next());
+            else if(!HiddenDroppedThreads.timeHeading(row))result.add(row);
+        }
         return result;
     }
     public static void menu(Object fragment,Menu menu){

@@ -2,6 +2,7 @@ package app.morphe.patches.chmate
 
 import app.morphe.patcher.patch.BytecodePatchContext
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.Opcode
@@ -73,6 +74,30 @@ internal fun BytecodePatchContext.patchThreadTitleActions(version: String){
             if-eqz v0, :native_size
             and-int/lit8 v$defaults, v$defaults, $sizeMask
         """.trimIndent(), app.morphe.patcher.util.smali.ExternalLabel("native_size",call))
+    }
+    if(version=="0.8.10.242 dev"){
+        // The disabled branch shares its style between board and thread menus.
+        // Its TextStyle color can be Unspecified. Resolve the same theme color
+        // as the enabled branch before dimming; keep native enabled/click flags.
+        val style=mutableClassDefBy("Lo/getPrimaryDataMarkerColumn;").methods.single{
+            it.name=="b"&&it.parameterTypes==listOf("Z","Z","Lo/zzcch;","Lo/Y;","I")
+        }
+        val body=style.implementation!!.instructions.toList()
+        val at=body.indices.single { i ->
+            ((body[i] as? ReferenceInstruction)?.reference as? MethodReference)?.toString() ==
+                "Lo/mExternalSyntheticLambda37;->e()J" &&
+            (body.getOrNull(i+2) as? com.android.tools.smali.dexlib2.iface.instruction.NarrowLiteralInstruction)?.narrowLiteral==1053609165
+        }
+        val composer=((body[at-1] as FiveRegisterInstruction).registerC)
+        val color=(body[at+1] as OneRegisterInstruction).registerA
+        val alpha=(body[at+2] as OneRegisterInstruction).registerA
+        check(composer==4&&color==5&&alpha==7)
+        style.replaceInstruction(at+2,"const v$alpha, 0x3f1eb852") // 0.62f
+        style.replaceInstruction(at,"invoke-static {v$composer}, Lo/InAppMessageResultInAppMessageResponseCode;->d(Lo/Y;)Lo/onAlternativeBillingOnlyAvailabilityResponse;")
+        style.addInstructions(at+1,"""
+            move-result-object v$color
+            invoke-virtual {v$color}, Lo/onAlternativeBillingOnlyAvailabilityResponse;->P()J
+        """.trimIndent())
     }
     val parameters=listOf("Landroid/view/LayoutInflater;","Landroid/view/ViewGroup;","Landroid/os/Bundle;")
     val original=owner.methods.singleOrNull { it.name=="onCreateView"&&it.parameterTypes.map(CharSequence::toString)==parameters }

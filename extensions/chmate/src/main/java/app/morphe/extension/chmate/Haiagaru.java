@@ -4362,6 +4362,7 @@ public final class Haiagaru {
         imageNgLevel.setSelection(Math.max(0,Math.min(2,preferences.getInt(ThumbnailAppearance.SENSITIVITY,1))));
         live.choice(imageNgLevel,ThumbnailAppearance.SENSITIVITY);
         thumbnailAppearance.addView(imageNgLevel);
+        NativeImagePaging.addSettingsButton(layout, activity);
         VideoViewerSettings.addSettingsButton(layout, activity);
 
         Switch videoFrameThumbnails = addSwitch(layout, activity,

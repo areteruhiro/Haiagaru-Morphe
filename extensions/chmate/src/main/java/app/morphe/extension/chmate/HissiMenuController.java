@@ -199,6 +199,10 @@ public final class HissiMenuController extends ToolScreenController {
             }
             target = currentUsesKyodemo ? kyodemoTarget : hissiTarget;
         }
+        if(getIntent().getBooleanExtra("haiagaru.checker.forceHissi",false)&&incoming!=null
+                &&"hissi.org".equalsIgnoreCase(incoming.getHost())&&hissiTarget!=null){
+            currentUsesKyodemo=false;target=hissiTarget;
+        }
         if(getIntent().getBooleanExtra("haiagaru.checker.forceKyodemo",false)&&incoming!=null
                 &&"www.kyodemo.net".equalsIgnoreCase(incoming.getHost())){currentUsesKyodemo=true;target=incoming.toString();}
         if (target == null) {

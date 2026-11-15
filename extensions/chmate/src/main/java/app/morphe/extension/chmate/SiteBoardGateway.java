@@ -271,8 +271,8 @@ final class SiteBoardGateway {
         String id=AnimanchProtocol.threadId(address);
         if(id==null)return localUrl(address);
         if(animanchCategories.get(id)==null){
-            String html=page(AnimanchProtocol.ORIGIN+"/board/"+id+"/");
-            rememberAnimanchPage(id,html);
+            try{rememberAnimanchPage(id,page(AnimanchProtocol.ORIGIN+"/board/"+id+"/"));}
+            catch(IOException unavailable){/* The root route can still open a cached or restricted thread. */}
         }
         return localUrl(address);
     }
