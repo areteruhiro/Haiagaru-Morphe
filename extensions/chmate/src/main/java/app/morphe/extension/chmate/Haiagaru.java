@@ -666,6 +666,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(MultiResponseNg.click(fragment,itemId))return true;
         if(HomeThreadOrder.click(fragment,itemId))return true;
         if(StockChmatePosting.normalClick(fragment,itemId))return true;
         if(itemId==StockChmatePosting.ACTION){StockChmatePosting.openFromToolbar(fragment);return true;}
@@ -3784,6 +3785,10 @@ public final class Haiagaru {
         live.toggle(topAlignShortThreadsSwitch,"topAlignShortThreads");
         live.number(autoReloadInterval,"autoReloadInterval",10,1800);
         live.choice(threadTitleSpacing,"threadTitleSpacingPercent",i->100+i*5);
+        LinearLayout titleMenu=SettingsSection.add(layout,"スレタイトル長押しの追加項目","表示する項目を選択",true);
+        String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH};
+        String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
+        for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
         live.toggle(compactQuickFiltersSwitch,"compactQuickFilters");
         live.toggle(keepFilterPosition,"keepQuickFilterPosition");
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
@@ -4576,10 +4581,6 @@ public final class Haiagaru {
         layout.addView(autoNgRedIdsDescription, rowParams(activity));
         live.toggle(autoNgRedIds, RedIdAutoNg.KEY);
         RedIdAutoNg.addExclusionsButton(layout, activity);
-        SettingsSection titleMenu=SettingsSection.add(layout,"スレタイトル長押しの追加項目","表示する項目を選択",true);
-        String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH};
-        String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
-        for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
         EdgeLevelSettings.add(layout,activity);
         Switch disableFirstResponseNg = addSwitch(layout, activity,
                 text(">>1 レスNGを無効化する", "Exclude the first response from NG"),
@@ -5921,6 +5922,7 @@ public final class Haiagaru {
     private static void refreshImgurList(android.view.View view) {
         if (!view.isShown()) return;
         if (view instanceof android.widget.ListView) {
+            ReadingPosition.beforeMediaRefresh(view);
             android.widget.ListAdapter adapter = ((android.widget.ListView) view).getAdapter();
             if (adapter instanceof android.widget.HeaderViewListAdapter)
                 adapter = ((android.widget.HeaderViewListAdapter) adapter).getWrappedAdapter();
@@ -5933,7 +5935,10 @@ public final class Haiagaru {
             if (!"androidx.recyclerview.widget.RecyclerView".equals(type.getName())) continue;
             try {
                 Object adapter = type.getMethod("getAdapter").invoke(view);
-                if (adapter != null) adapter.getClass().getMethod("notifyDataSetChanged").invoke(adapter);
+                if (adapter != null) {
+                    ReadingPosition.beforeMediaRefresh(view);
+                    adapter.getClass().getMethod("notifyDataSetChanged").invoke(adapter);
+                }
             } catch (ReflectiveOperationException | RuntimeException error) {
                 Log.w(LOG_TAG, "Could not refresh resolved Imgur attachments", error);
             }

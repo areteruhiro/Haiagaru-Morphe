@@ -43,9 +43,10 @@ public final class SettingsProfiles {
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(FirstResponseNg.KEY);defaultValue(FirstResponseNg.KEY,FirstResponseNg.DEFAULT);
+        booleanKey(MediaViewerBackGesture.DOUBLE_BACK);
         booleanKey(NativeImagePaging.ENABLED);defaultValue(NativeImagePaging.ENABLED,true);
-        numberKey(NativeImagePaging.NEXT,0,4);defaultValue(NativeImagePaging.NEXT,NativeImagePaging.UP);
-        numberKey(NativeImagePaging.PREVIOUS,0,4);defaultValue(NativeImagePaging.PREVIOUS,NativeImagePaging.DOWN);
+        numberKey(NativeImagePaging.NEXT,0,4);defaultValue(NativeImagePaging.NEXT,NativeImagePaging.defaultDirection(activity,NativeImagePaging.NEXT));
+        numberKey(NativeImagePaging.PREVIOUS,0,4);defaultValue(NativeImagePaging.PREVIOUS,NativeImagePaging.defaultDirection(activity,NativeImagePaging.PREVIOUS));
         numberKey(ViewerCornerControls.BACK,0,3);defaultValue(ViewerCornerControls.BACK,1);
         numberKey(ViewerCornerControls.MORE,0,3);defaultValue(ViewerCornerControls.MORE,0);
         numberKey(VideoViewerSettings.INLINE_LIMIT,1,8);defaultValue(VideoViewerSettings.INLINE_LIMIT,2);
@@ -64,6 +65,7 @@ public final class SettingsProfiles {
         numberKey("edgeLevelThreshold",0,9999);defaultValue("edgeLevelThreshold",5);
         numberKey("edgeLevelIntervalMinutes",15,1440);defaultValue("edgeLevelIntervalMinutes",30);
 
+        for(String key:new String[]{GlobalSearchHome.BACKGROUND,GlobalSearchHome.HISTORY,GlobalSearchHome.PARTIAL}){booleanKey(key);defaultValue(key,true);}
         booleanKey(GlobalTitleSearch.KEY);defaultValue(GlobalTitleSearch.KEY,false);
         numberKey(GlobalTitleSearch.MODE,0,1);defaultValue(GlobalTitleSearch.MODE,0);
         RULES.put(GlobalTitleSearch.BOARDS,v->v instanceof String&&GlobalTitleSearch.validSelection((String)v));defaultValue(GlobalTitleSearch.BOARDS,"");
@@ -262,11 +264,12 @@ public final class SettingsProfiles {
         out.put(GifAutoFetchPolicy.KEY,3);
         return out;
     }
-    static Map<String,Object> minimalValues(){
+    static Map<String,Object> minimalValues(){return minimalValues(false);}
+    static Map<String,Object> minimalValues(boolean adsOnly){
         Map<String,Object> out=new LinkedHashMap<>();for(Map.Entry<String,Rule> e:RULES.entrySet())if(e.getValue().accepts(false))out.put(e.getKey(),false);
         for(String key:new String[]{"edgeReporterId","edgeReporterBoardList","dedicatedViewerEnabled","kyodemoEnhancedViewer","automaticDat",
                 "hideAd","videoViewerEnabled","videoYoutubeEnabled","urlImageFetchEnabled","videoFrameThumbnailsEnabled","wacchoiSearchEnabled","showEdgeSearch",
-                ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,true);
+                ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,!adsOnly||"hideAd".equals(key));
         out.put("urlVideoFetchMode",0);return out;
     }
 }

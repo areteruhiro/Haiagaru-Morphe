@@ -370,6 +370,10 @@ final class SiteBoardGateway {
         long now=android.os.SystemClock.elapsedRealtime();attachments.entrySet().removeIf(e->now-e.getValue().created>600000);
         if(image==null){attachments.remove(target);return;}if(!attachments.containsKey(target)&&attachments.size()>=4)throw new IOException("添付の待機数が上限です。他の添付を解除してください");attachments.put(target,new PendingImage(image));
     }
+    synchronized String globalSearchUrl(String id)throws IOException{
+        if(id==null||!id.matches("[0-9a-f-]{36}"))throw new IOException("検索結果のIDが不正です");
+        start();return origin()+"/haiagaru-global-result/"+id;
+    }
     synchronized void start()throws IOException{
         if(socket!=null&&!socket.isClosed())return;
         ServerSocket next=new ServerSocket();next.setReuseAddress(true);
@@ -401,6 +405,12 @@ final class SiteBoardGateway {
             }
             if(!("127.0.0.1:"+port).equals(headers.get("host"))||headers.containsKey("transfer-encoding")
                     ||headers.containsKey("origin")&&!origin().equals(headers.get("origin"))){send(client,403,"text/plain",new byte[0]);return;}
+            if(request[0].equals("GET")&&target.getRawPath().matches("/haiagaru-global-result/[0-9a-f-]{36}")&&target.getRawQuery()==null){
+                Context app=Haiagaru.applicationContextForExtension();
+                GlobalSearchResults.Result result=app==null?null:GlobalTitleSearchService.result(app,target.getRawPath().substring("/haiagaru-global-result/".length()));
+                if(result==null){send(client,404,"text/plain",new byte[0]);return;}
+                send(client,200,"text/tab-separated-values; charset=UTF-8",result.text.getBytes(java.nio.charset.StandardCharsets.UTF_8));return;
+            }
             if(!enabled()){send(client,503,"text/plain; charset=UTF-8","追加掲示板の「使用する」がオフです".getBytes("UTF-8"));return;}
             String path=target.getRawPath();
             Matcher catalogue=Pattern.compile("/haiagaru-menu-(edge|bakusai|futaba|animanch)/").matcher(path);

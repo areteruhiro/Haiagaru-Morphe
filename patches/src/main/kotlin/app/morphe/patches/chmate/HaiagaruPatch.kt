@@ -102,8 +102,11 @@ private fun BytecodePatchContext.patchHiddenNgMenu(version: String) {
         .methods.single { it.name == "itemId" }
     bridge.replaceInstruction(0, "const v0, ${profile.third}")
     instructions.indices.filter { instructions[it].opcode == Opcode.RETURN_VOID }.reversed().forEach {
-        method.addInstruction(it,
-            "invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/HiddenNgMenu;->apply(Landroid/view/Menu;)V")
+        method.replaceInstruction(it,"invoke-static/range {p1 .. p1}, Lapp/morphe/extension/chmate/HiddenNgMenu;->apply(Landroid/view/Menu;)V")
+        method.addInstructions(it+1, """
+            invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/MultiResponseNg;->menu(Ljava/lang/Object;Landroid/view/Menu;)V
+            return-void
+        """.trimIndent())
     }
     println("Hidden NG overflow option: $version -> ${owner.type}->${method.name}")
 }
@@ -1259,6 +1262,11 @@ private fun BytecodePatchContext.patchQuickFilterToolbar(version: String) {
 private fun BytecodePatchContext.patchQuickFilterPosition(version: String) {
     val extension = "Lapp/morphe/extension/chmate/FilterPosition;"
     if (version == "0.8.10.191 dev") {
+        val bind=mutableClassDefBy("Lo/pa;").methods.single{it.name=="onViewCreated"&&it.returnType=="V"}
+        bind.implementation!!.instructions.withIndex().filter{it.value.opcode==Opcode.RETURN_VOID}.asReversed().forEach{(index,_)->
+            bind.replaceInstruction(index,"invoke-static/range {p0 .. p0}, $extension->register(Ljava/lang/Object;)V")
+            bind.addInstruction(index+1,"return-void")
+        }
         val owner = "Lo/pa\$21;"
         val callback = mutableClassDefBy(owner).methods.single {
             it.name == "e" && it.parameterTypes.isEmpty() && it.returnType == "V"
@@ -5617,6 +5625,11 @@ val haiagaruPatch = resourcePatch(
             })
             application.appendChild(document.createElement("service").apply {
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.WacchoiSearchService")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:foregroundServiceType","dataSync")
+            })
+            application.appendChild(document.createElement("service").apply {
+                setAttributeNS(ANDROID_XML_NAMESPACE,"android:name","app.morphe.extension.chmate.GlobalTitleSearchService")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:exported","false")
                 setAttributeNS(ANDROID_XML_NAMESPACE,"android:foregroundServiceType","dataSync")
             })

@@ -45,7 +45,7 @@ public final class MediaViewerNavigation {
     }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
-    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;int next,previous;boolean custom;String selected;MediaViewerBackGesture back;}
+    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;int next,previous;boolean custom,canPage;String selected;MediaViewerBackGesture back;}
     private static final WeakHashMap<Activity,WeakReference<Object>> MODELS=new WeakHashMap<>();
 
     static void rememberBody(TextView view,MotionEvent event) {
@@ -282,16 +282,20 @@ public final class MediaViewerNavigation {
         int action=event.getActionMasked();Swipe swipe=SWIPES.get(activity);
         // Validate installation/version once per gesture, not on every MOVE frame.
         if(action!=MotionEvent.ACTION_DOWN&&swipe==null)return false;
-        if(action==MotionEvent.ACTION_DOWN&&!Haiagaru.videoViewerEnabled()
-                ||!VideoViewerSettings.prefs(activity).getBoolean("videoViewerEnabled",true)
-                ||!VideoViewerSettings.prefs(activity).getBoolean(activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
-                        ?VideoViewerSettings.THREAD_MEDIA:VideoViewerSettings.MEDIA_SWIPE,!activity.getIntent().getBooleanExtra(THREAD_EXTRA,false))){
+        boolean dedicated=activity instanceof VideoViewerActivity||activity instanceof GifViewerActivity;
+        boolean doubleBack=dedicated&&VideoViewerSettings.prefs(activity).getBoolean(MediaViewerBackGesture.DOUBLE_BACK,false);
+        boolean paging=Haiagaru.videoViewerEnabled()
+                &&VideoViewerSettings.prefs(activity).getBoolean("videoViewerEnabled",true)
+                &&VideoViewerSettings.prefs(activity).getBoolean(activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)
+                        ?VideoViewerSettings.THREAD_MEDIA:VideoViewerSettings.MEDIA_SWIPE,!activity.getIntent().getBooleanExtra(THREAD_EXTRA,false));
+        if(!paging&&!doubleBack){
             SWIPES.remove(activity);return false;
         }
         if(swipe!=null&&swipe.cancelling)return false;
         if(action==MotionEvent.ACTION_DOWN){
-            if(links(activity).size()<2)return false;
-            swipe=new Swipe();swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
+            boolean canPage=paging&&links(activity).size()>=2;
+            if(!canPage&&!doubleBack)return false;
+            swipe=new Swipe();swipe.canPage=canPage;swipe.selected=current(activity);swipe.x=event.getRawX();swipe.y=event.getRawY();
             swipe.custom=NativeImagePaging.isNativeActivity(activity)&&NativeImagePaging.enabled(activity);
             if(swipe.custom){
                 android.content.SharedPreferences prefs=VideoViewerSettings.prefs(activity);
@@ -303,7 +307,7 @@ public final class MediaViewerNavigation {
                     ||controlAt(activity.getWindow().getDecorView(),swipe.x,swipe.y)
                     ||activity instanceof VideoViewerActivity&&((VideoViewerActivity)activity).isVideoToolbarTouch(swipe.x,swipe.y)
                     ||surface==null&&zoomed(activity.getWindow().getDecorView());
-            if(!swipe.blocked){swipe.back=new MediaViewerBackGesture(activity);swipe.back.dispatch(event);}
+            if(!swipe.blocked){swipe.back=new MediaViewerBackGesture(activity,activity::finish,dedicated);swipe.back.dispatch(event);}
             SWIPES.put(activity,swipe);return false;
         }
         if(swipe==null)return false;
@@ -311,6 +315,7 @@ public final class MediaViewerNavigation {
         if(action==MotionEvent.ACTION_CANCEL){SWIPES.remove(activity);return false;}
         if(swipe.blocked){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return swipe.dragging;}
         if(swipe.back!=null&&swipe.back.dispatch(event)){SWIPES.remove(activity);return true;}
+        if(!swipe.canPage){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return false;}
         boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
         float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);

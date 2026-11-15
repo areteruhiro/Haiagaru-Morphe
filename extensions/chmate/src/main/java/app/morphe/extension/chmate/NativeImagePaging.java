@@ -32,8 +32,13 @@ public final class NativeImagePaging {
     private NativeImagePaging(){}
 
     static boolean enabled(Context context){return VideoViewerSettings.prefs(context).getBoolean(ENABLED,true);}
+    static int defaultDirection(Context context,String key){
+        boolean horizontal=false;
+        if(context!=null)try{horizontal="0.8.10.242 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}catch(android.content.pm.PackageManager.NameNotFoundException ignored){}
+        return NEXT.equals(key)?(horizontal?RIGHT:UP):(horizontal?LEFT:DOWN);
+    }
     static int direction(SharedPreferences prefs,String key){
-        int fallback=NEXT.equals(key)?UP:DOWN;
+        int fallback=defaultDirection(Haiagaru.applicationContextForExtension(),key);
         int value=prefs.getInt(key,fallback);
         return value>=0&&value<=RIGHT?value:fallback;
     }
@@ -67,7 +72,7 @@ public final class NativeImagePaging {
     private static void showSettings(Activity activity){
         SharedPreferences prefs=VideoViewerSettings.prefs(activity);
         String[] names={"次の画像："+DIRECTIONS[direction(prefs,NEXT)],"前の画像："+DIRECTIONS[direction(prefs,PREVIOUS)],
-                enabled(activity)?"ChMate標準の操作に戻す":"方向指定を使う","初期設定（↑ 次へ／↓ 前へ）に戻す"};
+                enabled(activity)?"ChMate標準の操作に戻す":"方向指定を使う","初期設定（"+DIRECTIONS[defaultDirection(activity,NEXT)]+" 次へ／"+DIRECTIONS[defaultDirection(activity,PREVIOUS)]+" 前へ）に戻す"};
         new HaiagaruDialog.Builder(activity).setTitle("画像の切り替えジェスチャー")
                 .setItems(names,(dialog,which)->{
                     if(which<2)choose(activity,which==0?NEXT:PREVIOUS);

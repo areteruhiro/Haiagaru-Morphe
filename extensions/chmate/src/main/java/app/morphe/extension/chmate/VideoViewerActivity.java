@@ -491,7 +491,8 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
             if("gestureFullScreen".equals(key)){toggleControls();return;}
         }
         switch (key) {
-            case "gestureBack": case "gestureCloseTab": finish(); break;
+            case "gestureBack": MediaViewerBackGesture.finishDedicated(this,this::finish); break;
+            case "gestureCloseTab": finish(); break;
             case "gestureTop": if (prepared) seekAbsolute(0); break;
             case "gestureBottom": if (prepared) seekAbsolute(Math.max(0, video.getDuration() - 1)); break;
             case "gestureRefresh":

@@ -73,6 +73,18 @@ public final class ReadingPosition {
         }
     }
 
+    static void beforeMediaRefresh(View list) {
+        for (Session session : SESSIONS.values()) {
+            if (session.list != list || !list.canScrollVertically(-1)) continue;
+            try {
+                if (XPostPreviewPosition.interacting(list)) return;
+                session.mediaAnchor = session.anchor();
+                session.mediaUntil = android.os.SystemClock.uptimeMillis() + 550;
+            } catch (Exception ignored) {}
+            return;
+        }
+    }
+
     public static void save(Object fragment) {
         Session session = SESSIONS.get(fragment);
         if (session != null) session.save();
@@ -172,7 +184,8 @@ public final class ReadingPosition {
         final Runnable delayedSave = this::save;
         String inspectedKey, written;
         boolean closed, restoring;
-        Anchor coldPreview, openingAnchor;
+        Anchor coldPreview, openingAnchor, mediaAnchor;
+        long mediaUntil;
         boolean openingRebuild;
         long coldPreviewUntil;
         final long opened=android.os.SystemClock.uptimeMillis();
@@ -245,6 +258,24 @@ public final class ReadingPosition {
             // Never perform reflective anchor discovery on every 120 Hz frame.
             long now = android.os.SystemClock.uptimeMillis();
             if (!list.isShown()) return true;
+            if (mediaAnchor != null) {
+                if (now > mediaUntil || XPostPreviewPosition.interacting(list)) mediaAnchor = null;
+                else if (!list.isLayoutRequested()) {
+                    Anchor previous = mediaAnchor;
+                    mediaAnchor = null;
+                    try {
+                        Anchor current = anchor();
+                        Object owner = fragment.get();
+                        if (owner != null && current != null && current.adapter == previous.adapter
+                                && current.key.equals(previous.key)
+                                && (current.number != previous.number || Math.abs(current.offset - previous.offset) > 2)
+                                && FilterPosition.jumpToResponse(owner, previous.number, previous.offset)) {
+                            restoring = true;
+                            return false;
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
             // Capture the displayed unread viewport, not an adapter index. The
             // saved position is relevant only during the initial 191 load.
             if(version.contains("191")&&now-opened<12000&&!XPostPreviewPosition.hasUserInteraction(list)){

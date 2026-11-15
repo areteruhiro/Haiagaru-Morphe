@@ -49,7 +49,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
         gestures = HaiagaruSettingsGestures(this, window.decorView,
             { onBackPressedDispatcher.onBackPressed() }, { top() }, { bottom() }).also { it.setCloseAction { finish() } }
         if (savedInstanceState == null) window.decorView.post {
-            PersonalNgSubmissions.offerOnSettingsOpen(this) { MinimalSetup.offer(this) }
+            SettingsSupport.offer(this) { PersonalNgSubmissions.offerOnSettingsOpen(this) { MinimalSetup.offer(this) } }
         }
     }
 
@@ -186,7 +186,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                                     SettingsHomeAction(if (english) "Load settings" else "設定を読み込む", Modifier.weight(1f)) { SettingsProfiles.open(this@HaiagaruSettingsActivity) }
                                 }
                                 Spacer(Modifier.height(6.dp))
-                                SettingsHomeAction(if (english) "Choose minimal setup again" else "最低限構成を選び直す") { MinimalSetup.show(this@HaiagaruSettingsActivity) }
+                                SettingsHomeAction(if (english) "Choose minimal setup again" else "最低限構成を選び直す") { MinimalSetup.choose(this@HaiagaruSettingsActivity) }
 
                             }
                         }
