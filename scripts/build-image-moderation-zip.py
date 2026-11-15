@@ -25,6 +25,7 @@ def download(url, destination):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--split", action="store_true", help="Also create separately selectable model and runtime ZIPs.")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory() as directory:
@@ -50,6 +51,16 @@ def main():
                 for name in ("libonnxruntime.so", "libonnxruntime4j_jni.so"):
                     suffix = f"{abi}/{name}"
                     bundle.writestr(zipfile.ZipInfo("lib/" + suffix), runtime.read("jni/" + suffix), compress_type=zipfile.ZIP_DEFLATED)
+    if args.split:
+        with zipfile.ZipFile(args.output) as combined:
+            for part in ("model", "runtime"):
+                target = args.output.with_name(args.output.stem + "-" + part + ".zip")
+                with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+                    for name in combined.namelist():
+                        is_model = name.endswith(("/model.onnx", "/MODEL-NOTICE.txt", "/SWIFTFORMER-LICENSE.txt"))
+                        if name.startswith("chmate191/") or (part == "model") != is_model:
+                            continue
+                        archive.writestr(zipfile.ZipInfo(name), combined.read(name), compress_type=zipfile.ZIP_DEFLATED)
 
 
 if __name__ == "__main__":

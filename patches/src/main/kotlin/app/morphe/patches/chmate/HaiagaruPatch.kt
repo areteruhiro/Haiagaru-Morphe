@@ -5406,6 +5406,12 @@ val haiagaruPatch = resourcePatch(
                 path = path, pathAttribute = "android:pathPrefix")
             document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), "*.2chan.net",
                 path = "/.*/res/.*", pathAttribute = "android:pathPattern")
+            for (board in listOf("img", "may")) {
+                document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), "$board.2chan.net",
+                    path = "/b/", pathAttribute = "android:path")
+                document.addOpenUrlFilter(openUrlActivity, listOf("http", "https"), "die-or.work",
+                    path = "/$board/b/", pathAttribute = "android:pathPrefix")
+            }
             if (!dedicatedViewerEnabled) {
                 document.addOpenUrlFilter(
                     openUrlActivity, listOf("http", "https"), "hissi.org",

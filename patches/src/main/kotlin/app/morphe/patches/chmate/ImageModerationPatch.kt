@@ -37,17 +37,36 @@ val imageModerationPatch = resourcePatch(
         description = "モデルと実行ライブラリをまとめたZIPを選択してください。",
         allowedExtensions = listOf("zip"),
     )
+    val modelFile = filePathOption(
+        key = "imageModerationModelFile", default = "", title = "個別指定: 画像検出モデルZIP",
+        description = "一括ZIPを使わない場合に、haiagaru-image-moderation-model.zipを選択します。",
+        allowedExtensions = listOf("zip"),
+    )
+    val runtimeFile = filePathOption(
+        key = "imageModerationRuntimeFile", default = "", title = "個別指定: ONNX Runtime ZIP",
+        description = "個別指定ではモデルZIPとhaiagaru-image-moderation-runtime.zipの両方が必要です。191の標準Image NG修正ZIPはHaiagaru側で指定できます。",
+        allowedExtensions = listOf("zip"),
+    )
     execute {
-        check(bundle.value.orEmpty().isNotBlank()) { "画像検出用ZIPを選ぶか、任意パッチのチェックを外してください。" }
-        ZipFile(File(bundle.value.orEmpty())).use { zip ->
+        val combined=bundle.value.orEmpty()
+        val model=modelFile.value.orEmpty()
+        val runtime=runtimeFile.value.orEmpty()
+        check(combined.isBlank() || model.isBlank()&&runtime.isBlank()) { "一括ZIPと個別ZIPはどちらか一方を指定してください。" }
+        check(combined.isNotBlank() || model.isNotBlank()&&runtime.isNotBlank()) { "一括ZIP、またはモデルZIPとONNX Runtime ZIPを両方選んでください。" }
+        val archives=if(combined.isNotBlank())listOf(combined) else listOf(model,runtime)
+        val seen=mutableSetOf<String>()
+        for(archive in archives)ZipFile(File(archive)).use { zip ->
             val items = zip.entries().asSequence().filterNot { it.isDirectory }.groupBy { it.name }
             val notices = setOf("assets/haiagaru/image-moderation/ONNX-LICENSE.txt",
                 "assets/haiagaru/image-moderation/ONNX-ThirdPartyNotices.txt",
                 "assets/haiagaru/image-moderation/MODEL-NOTICE.txt",
                 "assets/haiagaru/image-moderation/SWIFTFORMER-LICENSE.txt")
             val files = moderationHashes.keys + notices
-            check(items.keys == files && files.all { items.getValue(it).size == 1 }) { "画像検出用ZIPの内容が一致しません。" }
-            for (name in files) {
+            val required=if(combined.isNotBlank())files else if(archive==model)
+                setOf(modelPath,"assets/haiagaru/image-moderation/MODEL-NOTICE.txt","assets/haiagaru/image-moderation/SWIFTFORMER-LICENSE.txt")
+                else files.filterNot { it.startsWith("chmate191/") || it == modelPath || it.endsWith("/MODEL-NOTICE.txt") || it.endsWith("/SWIFTFORMER-LICENSE.txt") }.toSet()
+            check(items.keys == required && required.all { items.getValue(it).size == 1 && seen.add(it) }) { "画像検出用ZIPの内容が一致しません。" }
+            for (name in required) {
                 val entry = items.getValue(name).single()
                 check(entry.size in 1..(32L * 1024 * 1024)) { "画像検出用ZIPのサイズが不正です: $name" }
                 val bytes = zip.getInputStream(entry).use { it.readNBytes(entry.size.toInt() + 1) }
@@ -65,7 +84,7 @@ val imageModerationPatch = resourcePatch(
                     writeBytes(bytes)
                 }
             }
-            if (packageMetadata.versionName == "0.8.10.191 dev")
+            if (combined.isNotBlank() && packageMetadata.versionName == "0.8.10.191 dev")
                 get("assets/haiagaru/image-ng-runtime-fixed").apply { parentFile.mkdirs(); writeText("1") }
         }
         document("AndroidManifest.xml").use { manifest ->

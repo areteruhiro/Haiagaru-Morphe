@@ -27,6 +27,11 @@ public final class OpeningPostFetchTest {
         return new EdgeOpeningDat.Part(206,"bytes "+first+"-"+end+"/"+dat.length,"text/plain; charset=Shift_JIS",chunk);
     };}
     public static void main(String[] args)throws Exception{
+        byte[] mirror=("案内<><><>元スレURL<>title\n名前<><>date<>https://img.2chan.net/b/src/12345.jpg<>\nthird<><><>not-read<>\n").getBytes(Charset.forName("windows-31j"));
+        Counted two=new Counted(mirror);
+        byte[] twoLines=EdgeOpeningDat.read(two,65536,2);
+        String twoBodies=EdgeOpeningDat.body((first,last)->new EdgeOpeningDat.Part(200,null,"text/plain",twoLines),2);
+        check(twoBodies.contains("https://img.2chan.net/b/src/12345.jpg")&&!twoBodies.contains("not-read"),"mirror reads only first two DAT records");
         String tail="<li id=res3><div class=resbody>https://cdn.example.org/ignored.jpg "+"x".repeat(1000000)+"</div></li>";
         String animanch=html("<title>あにまん</title><ul id=resList><li id=res1><div class=resbody>https://cdn.example.org/first.jpg</div></li><li id=res2><div class=resbody>second</div></li>"+tail+"</ul>","animanch",unused->false);
         check(animanch.contains("first.jpg")&&!animanch.contains("res2")&&!animanch.contains("ignored.jpg"),"only Animanch post 1 retained");

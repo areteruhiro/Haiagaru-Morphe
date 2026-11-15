@@ -659,6 +659,9 @@ public final class ProgrammableNgController {
         boolean[] result=enabled?rules.evaluate(inputs):new boolean[inputs.size()];
         boolean[] shared=SharedNg.match(inputs);for(int i=0;i<result.length;i++)result[i]|=shared[i];return result;
     }
+    static boolean[] notificationMatches(List<ProgrammableNgScript.Input> inputs){
+        return evaluateBodies(inputs);
+    }
     private static boolean bodyRulesEnabled(){if(SharedNg.enabled())return true;if(!enabled)return false;for(ProgrammableNgRuleSet.Rule rule:rules.rules)if(rule.enabled&&"body".equals(rule.target))return true;return false;}
     static String plain(String html) {
         return PLAIN_TEXT.plain(html,value->Html.fromHtml(value).toString());

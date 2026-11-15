@@ -328,7 +328,7 @@ public final class ThreadListThumbnail {
         String dat=board.openingDatUrl(id);
         if(dat!=null){
             String opening=EdgeOpeningDat.body((first,last)->ThumbnailRequestPacing.fetch(context,dat,
-                    gate->fetchOpeningDat(dat,first,last,gate)));
+                    gate->fetchOpeningDat(dat,first,last,gate)),board.host.equals("die-or.work")?2:1);
             return ThreadListThumbnailRules.openingTextMedia(opening,address,limit);
         }
         byte[] html=ThumbnailRequestPacing.fetch(context,address+"1",gate->fetchOpeningHtml(address+"1",id,gate));
@@ -365,7 +365,7 @@ public final class ThreadListThumbnail {
             int cap=status==200?EdgeOpeningDat.MAX_BYTES+1:last-first+2;
             try(InputStream input=connection.getInputStream()){
                 EdgeOpeningDat.Part part=new EdgeOpeningDat.Part(status,connection.getHeaderField("Content-Range"),
-                        connection.getContentType(),EdgeOpeningDat.read(input,cap));
+                        connection.getContentType(),EdgeOpeningDat.read(input,cap,address.startsWith("https://die-or.work/")?2:1));
                 connection.disconnect();return part;
             }
         }finally{connection.disconnect();}
