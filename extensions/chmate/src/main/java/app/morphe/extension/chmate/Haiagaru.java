@@ -4581,6 +4581,15 @@ public final class Haiagaru {
         String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
         for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
         EdgeLevelSettings.add(layout,activity);
+        Switch disableFirstResponseNg = addSwitch(layout, activity,
+                text(">>1 レスNGを無効化する", "Exclude the first response from NG"),
+                preferences.getBoolean(FirstResponseNg.KEY, FirstResponseNg.DEFAULT));
+        live.toggle(disableFirstResponseNg, FirstResponseNg.KEY);
+        TextView firstResponseNgHelp = new TextView(activity);
+        firstResponseNgHelp.setText(text(
+                "オンにすると1レス目をNGの表示対象から外します。設定を変更したらスレを開き直してください。",
+                "Keeps response 1 visible when it matches an NG rule. Reopen the thread after changing this setting."));
+        layout.addView(firstResponseNgHelp, rowParams(activity));
         Switch hideChainedAbone = addSwitch(layout, activity,
                 text("連鎖あぼーんを常に非表示", "Always hide chained aboon rows"),
                 preferences.getBoolean(ChainAboneVisibility.KEY, false));

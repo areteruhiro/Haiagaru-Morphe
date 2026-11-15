@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -190,7 +191,12 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(item.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
                     color = if (item.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
-                Switch(checked = item.checked == true, onCheckedChange = null, enabled = item.enabled)
+                val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+                Switch(checked = item.checked == true, onCheckedChange = null, enabled = item.enabled,
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = if (dark) HaiagaruUi.settingsCategoryColor else Color(0xFF4A8FC6),
+                        checkedThumbColor = Color(0xFF102E48)
+                    ))
             }
         }
         is SeekBar -> BoundSeekBar(view, item.label, changed)

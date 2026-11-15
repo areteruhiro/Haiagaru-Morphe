@@ -42,6 +42,7 @@ public final class SettingsProfiles {
         booleanKey(ExternalBoardGroups.KEY);defaultValue(ExternalBoardGroups.KEY,false);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
+        booleanKey(FirstResponseNg.KEY);defaultValue(FirstResponseNg.KEY,FirstResponseNg.DEFAULT);
         booleanKey(NativeImagePaging.ENABLED);defaultValue(NativeImagePaging.ENABLED,true);
         numberKey(NativeImagePaging.NEXT,0,4);defaultValue(NativeImagePaging.NEXT,NativeImagePaging.UP);
         numberKey(NativeImagePaging.PREVIOUS,0,4);defaultValue(NativeImagePaging.PREVIOUS,NativeImagePaging.DOWN);
