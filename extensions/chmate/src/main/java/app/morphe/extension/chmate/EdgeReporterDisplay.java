@@ -67,5 +67,6 @@ public final class EdgeReporterDisplay {
         return EdgeReporterHistory.displayTitle(SCOPE.get(),thread, original);
     }
 
-    public static void end() { ThreadListThumbnail.end(); SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); SCOPE.remove(); }
+    public static void end() { endRow(null); }
+    public static void endRow(Object row) { ThreadListThumbnail.end(row); SiteThreadMetadata.end(); THREAD.remove(); EDGE.remove(); SCOPE.remove(); }
 }

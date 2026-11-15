@@ -5021,6 +5021,7 @@ val haiagaruPatch = resourcePatch(
                     writeBytes(bytes)
                 }
             }
+            get("assets/haiagaru/image-ng-runtime-fixed").apply { parentFile.mkdirs(); writeText("1") }
         }
         document("res/values/strings.xml").use { strings ->
             val entry = strings.createElement("string")

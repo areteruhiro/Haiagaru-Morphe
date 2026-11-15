@@ -284,6 +284,15 @@ internal fun BytecodePatchContext.patchThumbnailAppearance(version: String) {
             (it as com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction).registerB==0
     })
     method.replaceInstruction(index,"invoke-static {v${call.registerC}, v${call.registerD}, v${call.registerE}, v${call.registerF}, v0}, Lapp/morphe/extension/chmate/ThumbnailAppearance;->drawDetected(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;Landroid/graphics/Matrix;Landroid/graphics/Paint;Ljava/lang/Object;)V")
+    mutableClassDefBy(owner).methods.single { it.name=="setMosaic"&&it.parameterTypes==listOf("Z") }
+        .addInstructions(0,"invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ThumbnailAppearance;->setNativeMosaic(Ljava/lang/Object;Z)V")
+    val (nativeDrawIndex, nativeDraw) = method.implementation!!.instructions.withIndex().single { (_, insn) ->
+        val ref = (insn as? ReferenceInstruction)?.reference as? MethodReference
+        insn.opcode == Opcode.INVOKE_VIRTUAL && ref?.returnType == "V" &&
+            ref.parameterTypes == listOf("Landroid/graphics/Canvas;", "Landroid/graphics/Matrix;", "Landroid/graphics/Paint;")
+    }
+    val nativeDrawRegisters = nativeDraw as FiveRegisterInstruction
+    method.addInstructions(nativeDrawIndex+1,"invoke-static {v${nativeDrawRegisters.registerD}, v${nativeDrawRegisters.registerE}, v0}, Lapp/morphe/extension/chmate/ThumbnailAppearance;->moderateNative(Landroid/graphics/Canvas;Landroid/graphics/Matrix;Ljava/lang/Object;)V")
     val bindings=mutableClassDefBy(owner).methods.flatMap { binding ->
         val code=binding.implementation?.instructions?.toList().orEmpty()
         code.mapIndexedNotNull { i, current ->

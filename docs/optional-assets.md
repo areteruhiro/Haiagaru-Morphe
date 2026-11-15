@@ -6,6 +6,7 @@
 | --- | --- | --- | --- |
 | 端末にない絵文字の補完 | NotoColorEmoji.ttf | Haiagaru → オプション → 絵文字フォントを選択 | 端末標準の絵文字。新しい絵文字が表示できない場合があります |
 | 191 devの自動NG画像判定クラッシュ修正 | haiagaru-image-ng.zip | Haiagaru → オプション → 191画像判定の修正ファイルを選択 | 本体の判定ライブラリを維持。既知のクラッシュ修正は適用しません |
+| 成人向け・グロ画像の個別検出（Android 7以上） | haiagaru-image-moderation.zip | 成人向け・グロ画像の自動検出 → オプション | 追加モデルを使いません。ChMate標準のImage NGとは独立です |
 | 対象画像のVPN取得（実験用） | haiagaru-image-vpn-v2.zip（従来image-stack.aarも可） | 画像取得専用VPN → オプション → VPN用ZIP／AARを選択 | VPNを追加しません。このパッチのチェックは外してください |
 
 ## 初めて使う場合
@@ -38,6 +39,10 @@ ZIPはどちらも展開せず選びます。ファイル名を変更して代�
 画像判定ZIPとVPN用ZIP／AARはそれぞれ4種類のCPU向けライブラリを含み、利用者がCPUを調べて選ぶ必要はありません。画像判定は対応する226 dev元APKの選択にも対応しています。
 
 ## 開発者向け
+
+成人向け・グロ画像の自動検出には、[Image Safety Classifier XS](https://huggingface.co/OwenElliott/image-safety-classifier-xs)（モデルカードの表記はMIT）と [ONNX Runtime](https://github.com/microsoft/onnxruntime/tree/v1.23.2)（MIT）を使用します。モデルと4 ABIのライブラリ、191用のImage NG修正、ライセンスをZIPにまとめます。対応するReleaseから `haiagaru-image-moderation.zip` を保存し、Morpheの任意パッチで展開せずに選びます。191でもこのZIPを選んだ場合は旧修正ZIPを別に選ぶ必要はありません。端末内でサムネイルだけを判定し、画像を判定サービスへ送信しません。動画全体の判定は行わず、見逃しや誤検出もあります。
+
+手元では `python scripts/build-image-moderation-zip.py build/optional-assets/haiagaru-image-moderation.zip` で生成できます。
 
 `./gradlew :patches:buildAndroid` は画像判定ZIPとVPN用ZIPを生成し、通常のSemantic Release CIでMPPと別々に添付します。巨大資材のソース・ライセンスはリポジトリに残し、MPPのリソースからだけ除外します。生成先は画像判定が `optional-assets/haiagaru-image-ng.zip`、VPN版が `build/optional-assets/haiagaru-image-vpn-v2.zip` です。VPN ZIPにはAAR内のJNIライブラリと対応する第三者ライセンスを含めます。
 

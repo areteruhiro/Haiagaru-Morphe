@@ -3703,6 +3703,18 @@ public final class Haiagaru {
         filterCatalog.setTag(SettingsSection.CATALOG_ONLY_TAG,true);filters.addView(filterCatalog);
         QuickFilterOptions.addSettings(filterCatalog,activity);
         QuickFilterOptions.addToolbarEntry(filters,activity);
+        LinearLayout listImages=SettingsSection.add(lists,"スレ一覧画像表示","表示設定と登録画像の扱い",true);
+        ThreadListThumbnailSettings.addSettings(listImages, activity);
+        android.widget.Spinner registeredThumbs=new LiveSettings.Choice(activity);
+        registeredThumbs.setContentDescription("登録画像に一致したスレ一覧画像の扱い");
+        TextView registeredThumbsLabel=new TextView(activity);
+        registeredThumbsLabel.setText("登録画像に一致したスレ一覧画像の扱い");
+        listImages.addView(registeredThumbsLabel);
+        registeredThumbs.setAdapter(new android.widget.ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"そのまま表示","画像だけを非表示","スレを非表示","画像にモザイク"}));
+        registeredThumbs.setSelection(Math.max(0,Math.min(3,preferences.getInt(ThreadListThumbnail.REGISTERED_ACTION,0))));
+        live.choice(registeredThumbs,ThreadListThumbnail.REGISTERED_ACTION);
+        listImages.addView(registeredThumbs);
         HomeSelectionBar.addSettings(lists,activity);
         Switch historyRefreshTargets=addSwitch(lists,activity,
                 text("履歴ポップアップに「更新対象」タブを表示", "Show refresh targets in the history popup"),
@@ -4280,7 +4292,6 @@ public final class Haiagaru {
     private static LinearLayout settingsMEDIA(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
-        ThreadListThumbnailSettings.addSettings(layout, activity);
         Button localImages=new Button(activity);localImages.setText("保存済み画像から表示（追加フォルダ・URLの関連付け）");
         localImages.setOnClickListener(view->activity.startActivity(new Intent(activity,LocalImageArchiveActivity.class)));layout.addView(localImages);
         SharedPreferences preferences = preferences(activity);
@@ -4358,18 +4369,11 @@ public final class Haiagaru {
             videoViewer.setText(text("動画専用ビューア（パッチ適用時に選択してください）",
                     "Dedicated video viewer (select the patch when patching)"));
         }
-        LinearLayout thumbnailAppearance=SettingsSection.add(layout,"Image NGの検出とサムネイル表示","自動で検出した画像だけに表示加工を適用します。Image NGを有効にして使用してください。",true);
-        for(String[] option:new String[][]{{ThumbnailAppearance.GRAY,"画像サムネイルをモノクロにする"},{ThumbnailAppearance.MOSAIC,"画像サムネイルにモザイクをかける"}}){
-            Switch toggle=addSwitch(thumbnailAppearance,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
+        LinearLayout alwaysMosaic=SettingsSection.add(layout,"ChMateの「画像は常にモザイク」","ChMate側で「画像は常にモザイク」をオンにしたときに適用します。",true);
+        for(String[] option:new String[][]{{ThumbnailAppearance.ALWAYS_GRAY,"モザイクにモノクロを重ねる"},{ThumbnailAppearance.ALWAYS_STRENGTH,"下のモザイクの強さを使う"}}){
+            Switch toggle=addSwitch(alwaysMosaic,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
         }
-        EditText mosaicStrength=addTextField(thumbnailAppearance,activity,"モザイクの強さ（1：弱い〜5：強い）",Integer.toString(preferences.getInt(ThumbnailAppearance.STRENGTH,3)));
-        mosaicStrength.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);live.number(mosaicStrength,ThumbnailAppearance.STRENGTH,1,5);
-        android.widget.Spinner imageNgLevel=new LiveSettings.Choice(activity);
-        TextView imageNgLabel=new TextView(activity);imageNgLabel.setText("Image NGの検出感度");thumbnailAppearance.addView(imageNgLabel);
-        imageNgLevel.setAdapter(new android.widget.ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"弱い（誤検出を抑える）","標準（従来どおり）","強い（見逃しを抑える）"}));
-        imageNgLevel.setSelection(Math.max(0,Math.min(2,preferences.getInt(ThumbnailAppearance.SENSITIVITY,1))));
-        live.choice(imageNgLevel,ThumbnailAppearance.SENSITIVITY);
-        thumbnailAppearance.addView(imageNgLevel);
+        addThumbnailMosaicStrength(alwaysMosaic,activity,preferences,live);
         NativeImagePaging.addSettingsButton(layout, activity);
         VideoViewerSettings.addSettingsButton(layout, activity);
 
@@ -4553,6 +4557,12 @@ public final class Haiagaru {
         return layout;
     }
 
+    private static void addThumbnailMosaicStrength(LinearLayout section,Activity activity,SharedPreferences preferences,LiveSettings live){
+        EditText strength=addTextField(section,activity,"モザイクの強さ（1：弱い〜5：強い）",Integer.toString(preferences.getInt(ThumbnailAppearance.STRENGTH,3)));
+        strength.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        live.number(strength,ThumbnailAppearance.STRENGTH,1,5);
+    }
+
     private static LinearLayout settingsNG(Activity activity) {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -4565,6 +4575,32 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        LinearLayout thumbnailAppearance=SettingsSection.add(layout,"Image NGの検出とサムネイル表示","標準のImage NGと追加の画像検出を設定します。",true);
+        for(String[] option:new String[][]{{ThumbnailAppearance.GRAY,"画像サムネイルをモノクロにする"},{ThumbnailAppearance.MOSAIC,"画像サムネイルにモザイクをかける"}}){
+            Switch toggle=addSwitch(thumbnailAppearance,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
+        }
+        addThumbnailMosaicStrength(thumbnailAppearance,activity,preferences,live);
+        android.widget.Spinner imageNgLevel=new LiveSettings.Choice(activity);
+        TextView imageNgLabel=new TextView(activity);imageNgLabel.setText("Image NGの検出感度");thumbnailAppearance.addView(imageNgLabel);
+        imageNgLevel.setAdapter(new android.widget.ArrayAdapter<>(activity,android.R.layout.simple_spinner_dropdown_item,new String[]{"弱い（誤検出を抑える）","標準（従来どおり）","強い（見逃しを抑える）"}));
+        imageNgLevel.setSelection(Math.max(0,Math.min(2,preferences.getInt(ThumbnailAppearance.SENSITIVITY,1))));
+        live.choice(imageNgLevel,ThumbnailAppearance.SENSITIVITY);
+        thumbnailAppearance.addView(imageNgLevel);
+        Switch nativeNgList=addSwitch(thumbnailAppearance,activity,"ChMate標準のImage NGをスレ一覧の画像にも適用する",preferences.getBoolean(NativeImageNgList.ENABLE,false));
+        live.toggle(nativeNgList,NativeImageNgList.ENABLE);
+        if("0.8.10.191 dev".equals(chMateVersion)&&!NativeImageNgList.fixed191(activity)){
+            nativeNgList.setEnabled(false);
+            nativeNgList.setText("ChMate標準のImage NGをスレ一覧にも適用する（191用の画像判定修正が必要）");
+        }
+        boolean moderationInstalled=ImageModeration.available(activity);
+        for(String[] option:new String[][]{{ImageModeration.ADULT,"成人向け画像を検出してモザイク"},{ImageModeration.GORE,"グロ画像を検出してモザイク"},{ImageModeration.LIST,"スレ一覧の画像にも自動検出を適用する"}}){
+            Switch toggle=addSwitch(thumbnailAppearance,activity,option[1],preferences.getBoolean(option[0],false));live.toggle(toggle,option[0]);
+            toggle.setEnabled(moderationInstalled);
+        }
+        if(!moderationInstalled){
+            TextView help=new TextView(activity);help.setText("成人向け・グロ画像の検出には、Morpheで画像検出用ZIPを選択してパッチを適用してください。");
+            thumbnailAppearance.addView(help);
+        }
         HiddenIdNg.addSettingsButton(layout, activity);
         Button imageNg = new Button(activity);
         imageNg.setText("登録画像によるあぼーん（判定レベル・一致枚数）");

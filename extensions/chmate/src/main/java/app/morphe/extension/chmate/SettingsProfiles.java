@@ -28,6 +28,13 @@ public final class SettingsProfiles {
         booleanKey(ThumbnailAppearance.MOSAIC);defaultValue(ThumbnailAppearance.MOSAIC,false);
         numberKey(ThumbnailAppearance.STRENGTH,1,5);defaultValue(ThumbnailAppearance.STRENGTH,3);
         numberKey(ThumbnailAppearance.SENSITIVITY,0,2);defaultValue(ThumbnailAppearance.SENSITIVITY,1);
+        booleanKey(ThumbnailAppearance.ALWAYS_GRAY);defaultValue(ThumbnailAppearance.ALWAYS_GRAY,false);
+        booleanKey(ThumbnailAppearance.ALWAYS_STRENGTH);defaultValue(ThumbnailAppearance.ALWAYS_STRENGTH,false);
+        booleanKey(ImageModeration.ADULT);defaultValue(ImageModeration.ADULT,false);
+        booleanKey(ImageModeration.GORE);defaultValue(ImageModeration.GORE,false);
+        booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
+        booleanKey(NativeImageNgList.ENABLE);defaultValue(NativeImageNgList.ENABLE,false);
+        numberKey(ThreadListThumbnail.REGISTERED_ACTION,0,3);defaultValue(ThreadListThumbnail.REGISTERED_ACTION,0);
         booleanKey(PostingSettingLinks.KEY);defaultValue(PostingSettingLinks.KEY,false);
         booleanKey(StockChmatePosting.ALWAYS);defaultValue(StockChmatePosting.ALWAYS,false);
         for(String key:new String[]{ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH}){booleanKey(key);defaultValue(key,true);}
