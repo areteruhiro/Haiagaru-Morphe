@@ -3098,3 +3098,19 @@ Mi Note 10 Android 11（ADB `d5497008`）。検証用別パッケージのみ更
 - Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`：2026-11-15T14:50:52.113447 JST、signature matched; install-r Success。
   APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\final226.apk`、SHA-256 `40d200728d432bb22c1d68276f6e190389233082cb8a295325b927e4c246548b`。
   MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\settings-accent-20261115\apks\candidate.mpp`、SHA-256 `92a7fa3e12b711993e977556dca0d01cc8d0a933e0b09f877c9fbe227cee68f0`。署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 画像の端で閉じる動作
+
+Mi Note 10（Android 11、ADB `d5497008`）。検証用別パッケージのみ更新。
+
+- Haiagaru 修正確認 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`：2026-11-15T15:00:49.041161 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-edge-20261115\apks\final242.apk`、SHA-256 `684ac9961482f5f84770e01077c9cdbda2ee9817df705347515d05cbab5436a4`。
+
+- Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`：2026-11-15T15:02:20.912373 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-edge-20261115\apks\final191.apk`、SHA-256 `143289b1a14a51e561b4ff9f149fdcc0bd98dba0372bcba496abcec23f076dda`。
+
+- Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`：2026-11-15T15:03:47.920090 JST、signature matched; install-r Success。
+  APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-edge-20261115\apks\final226.apk`、SHA-256 `a3eaf13db9a0c147999b1dd3b351627779448b873e57e48d547b29c923a75c09`。
+
+MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-edge-20261115\apks\candidate.mpp`、SHA-256 `d488bf5c7e10e69a650f2af228a136a992ee85332068370b11636c96fcafb8cb`。署名鍵: `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

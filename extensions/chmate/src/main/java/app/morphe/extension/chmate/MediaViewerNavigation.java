@@ -243,11 +243,15 @@ public final class MediaViewerNavigation {
         ArrayList<String> links=links(activity);return links.size()>1?" · "+(links.indexOf(current(activity))+1)+"/"+links.size():"";
     }
     static boolean move(Activity activity,int step) {
-        return move(activity,step,current(activity));
+        return move(activity,step,current(activity),false);
     }
-    private static boolean move(Activity activity,int step,String selected){
+    private static boolean move(Activity activity,int step,String selected,boolean closeAtEdge){
         ArrayList<String> links=links(activity);int current=links.indexOf(selected),next=current+step;
-        if(current<0||next<0||next>=links.size())return false;
+        if(current<0)return false;
+        if(next<0||next>=links.size()){
+            if(closeAtEdge)activity.finish();
+            return closeAtEdge;
+        }
         activity.startActivity(destination(activity,links,next));activity.finish();activity.overridePendingTransition(0,0);return true;
     }
     public static boolean onNativeTouch(Activity activity,MotionEvent event) {
@@ -330,9 +334,9 @@ public final class MediaViewerNavigation {
                         final Swipe completed=swipe;
                         // Native recognizers post completion to the main Handler.
                         activity.getWindow().getDecorView().post(()->{
-                            if(!completed.back.returned()&&!activity.isFinishing()&&!activity.isDestroyed())move(activity,step,completed.selected);
+                            if(!completed.back.returned()&&!activity.isFinishing()&&!activity.isDestroyed())move(activity,step,completed.selected,completed.custom);
                         });
-                    }else move(activity,step,swipe.selected);
+                    }else move(activity,step,swipe.selected,swipe.custom);
                 }return true;}
         }
         return swipe.dragging;

@@ -112,8 +112,16 @@ public final class NativeImagePaging {
             return touch(container,activity,container,event,container::dispatchTouchEvent,step->{
                 Object binding=NativeFields.find(fragment.getClass(),"d").get(fragment);
                 Object pager=NativeFields.find(binding.getClass(),"m").get(binding);
-                int next=NativeFields.find(pager.getClass(),"b").getInt(pager)+step;
-                if(next>=0&&next<pageCount(fragment))invokePage(fragment,"e",next,true);
+                int index=NativeFields.find(pager.getClass(),"b").getInt(pager);
+                int count=pageCount(fragment);
+                if(index<0||index>=count)return;
+                int next=index+step;
+                if(next<0||next>=count){
+                    // Same native callback as the viewer's Back action; it closes only the overlay.
+                    Method close=fragment.getClass().getDeclaredMethod("e",fragment.getClass());
+                    close.setAccessible(true);
+                    close.invoke(null,fragment);
+                }else invokePage(fragment,"e",next,true);
             });
         }catch(ReflectiveOperationException|RuntimeException ignored){return false;}
     }
@@ -142,7 +150,9 @@ public final class NativeImagePaging {
                 int index=NativeFields.find(activity.getClass(),old?"f":"o").getInt(activity);
                 int next=index+step;
                 ArrayList<String> links=activity.getIntent().getStringArrayListExtra("links");
-                if(index>=0&&links!=null&&next>=0&&next<links.size())invokePage(activity,old?"d":"a",next,false);
+                if(links==null||index<0||index>=links.size())return;
+                if(next<0||next>=links.size())activity.finish();
+                else invokePage(activity,old?"d":"a",next,false);
             });
         }catch(ReflectiveOperationException|RuntimeException ignored){return false;}
     }

@@ -1898,3 +1898,8 @@ https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.38.0
 ## 2026-11-15 Haiagaru 1.38.1公式公開
 
 差分 `b2e0026a` を dev から master に通常マージ `ea38fa22`。Release 43682602316／Build Haiagaru 43682602342 成功、Semantic Release生成 `1ce8bb2a`、14:53:07 JST正式公開。配布5点のSHA-256・サイズ・ZIP検査、MPP同梱内容、master/main/devのMorphe用JSON計6経路、謝辞・寄付欄を照合。MPP SHA-256 `89207d418e54df314a577bd3ab1bbb14701bbeca0f8816411c3f1b812308d970`。証跡 build/settings-accent-20261115/published-1.38.1/verification.json。
+
+
+## 2026-11-15 画像の端で閉じるジェスチャー（未公開）
+
+標準以外の方向設定では、先頭の画像で前へ／末尾の画像で次へを行うとビューアーを閉じる。242の埋め込みは標準Backと同じコールバックでオーバーレイだけを閉じる。GIF等の混在ギャラリーは画像のサブ一覧ではなく元の全一覧の端で判定。標準設定と割り当てなしは維持。修正前242で末尾で閉じないことを再現、修正後はMi Note 10の191/226/242で全画面各13項目・混在各7項目・242埋め込み14項目成功。画像回帰110/110/106成功。新規フック追加はなく既存フックを維持。MPPビルド成功、証跡 build/image-paging-edge-20261115。公開済み1.38.1には未収録。
