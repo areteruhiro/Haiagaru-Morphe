@@ -25,6 +25,7 @@ final class ThreadListThumbnailRules {
             return "https://"+host+"/test/read.cgi/"+name+"/"+id+"/";
         }
         String openingDatUrl(String id){
+            if(host.equals("die-or.work"))return "https://"+host+"/"+name+"/dat/"+id+".dat";
             return host.equals("bbs.eddibb.cc")?"https://"+host+"/"+name+"/dat/"+id+".dat":null;
         }
         String settingsKey(){return "5ch:"+host+"/"+name;}
@@ -47,6 +48,10 @@ final class ThreadListThumbnailRules {
                     ||host==null||uri.getUserInfo()!=null||uri.getPort()!=-1||uri.getRawQuery()!=null||uri.getRawFragment()!=null||path==null)return null;
             host=host.toLowerCase(Locale.ROOT);
             boolean edge=host.equals("bbs.eddibb.cc");
+            if(host.equals("die-or.work")){
+                Matcher mirror=Pattern.compile("^/(?:(?:test/read\\.cgi/)?)(img/b|may/b)(?:/[0-9]{9,11})?/?$").matcher(path);
+                return mirror.matches()?new Board(host,mirror.group(1)):null;
+            }
             if(!(host.endsWith(".5ch.io")||host.endsWith(".5ch.net")||edge))return null;
             Matcher thread=Pattern.compile("^/test/read\\.cgi/([a-zA-Z0-9_-]{1,80})/[0-9]{9,11}/?$",Pattern.CASE_INSENSITIVE).matcher(path);
             Matcher edgeThread=Pattern.compile("^/liveedge/[0-9]{9,11}/?$",Pattern.CASE_INSENSITIVE).matcher(path);

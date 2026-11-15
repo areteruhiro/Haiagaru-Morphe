@@ -98,6 +98,7 @@ public final class ResponseMenuSettings {
         } catch(Exception error) { android.util.Log.w("Haiagaru","Response toolbar catalog",error); }
     }
     static boolean visible(int id) {
+        if(ResponseMultiSelection.hideSearch(id))return false;
         Context context = Haiagaru.applicationContextForExtension();
         String key=longPressKey(id);
         if(context!=null){
