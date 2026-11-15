@@ -13,7 +13,8 @@ import java.util.*;
 /** In-place selection over the original response list. Native rows and listeners are untouched. */
 public final class ResponseMultiSelection {
     static final String COPY_POPUP="responseCopyHaiagaruPopup";
-    private static final int SELECT=0x4847382,COPY=0x4847383,NG=0x4847384,TOOLS=0x4847385,SAVE=0x4847386,SEARCH=0x4847387;
+    static final int SELECT=0x4847382;
+    private static final int COPY=0x4847383,NG=0x4847384,TOOLS=0x4847385,SAVE=0x4847386,SEARCH=0x4847387;
     private static final Map<Activity,Session> SESSIONS=new WeakHashMap<>();
     private static final Map<MenuItem,Runnable> ACTIONS=new WeakHashMap<>();
     private static final ThreadLocal<Boolean> NATIVE_TOOLS=new ThreadLocal<>();
@@ -73,7 +74,7 @@ public final class ResponseMultiSelection {
     }
     static void appendSheet(Object builder,Object response,Object board)throws Exception{
         MultiResponseNg.Target t=target(null,board);if(t==null)return;
-        ResponseArchive.appendSheetAction(builder,"選択",android.R.drawable.checkbox_on_background,()->selectResponse(t,response));
+        if(ResponseMenuSettings.visible(SELECT))ResponseArchive.appendSheetAction(builder,"選択",android.R.drawable.checkbox_on_background,()->selectResponse(t,response));
         if(SESSIONS.containsKey(t.activity)||useHaiagaruCopyPopup(t.activity))ResponseArchive.appendSheetAction(builder,"コピー・選択",android.R.drawable.ic_menu_edit,()->{
             Session s=SESSIONS.get(t.activity);if(s!=null&&s.target.url.equals(t.url))copy(t,s.selected());
             else try{MultiResponseNg.Plan p=new MultiResponseNg.Plan(response);p.selected=true;copy(t,new ArrayList<>(Arrays.asList(p)));}catch(Exception e){report(t.activity,e);}
@@ -82,7 +83,11 @@ public final class ResponseMultiSelection {
             ResponseArchive.appendSheetAction(builder,"選択中のレスをNG登録",android.R.drawable.ic_delete,()->MultiResponseNg.ng(t,s.selected()));
     }
     private static void add(Menu menu,int id,String title,Runnable action){
-        MenuItem item=menu.findItem(id);if(item==null)item=menu.add(0,id,menu.size(),title);
+        MenuItem item=menu.findItem(id);if(item==null)item=menu.add(0,id,ResponseMenuSettings.order(id,menu.size()),title);
+        if(id==SELECT){
+            item.setIcon(android.R.drawable.checkbox_on_background);
+            item.setVisible(ResponseMenuSettings.visible(id));
+        }
         ACTIONS.put(item,action);item.setOnMenuItemClickListener(v->handle(v));
     }
     public static boolean handle(Object item){Runnable action=ACTIONS.get(item);if(action==null)return false;action.run();return true;}

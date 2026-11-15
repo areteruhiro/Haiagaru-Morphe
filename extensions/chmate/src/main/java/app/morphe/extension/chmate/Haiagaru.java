@@ -3795,13 +3795,15 @@ public final class Haiagaru {
         }
 
 
+        Button keywordLabels=new Button(activity);keywordLabels.setText("キーワードの表示名を設定");
+        keywordLabels.setOnClickListener(v->DisplayNames.showKeywords(activity));layout.addView(keywordLabels);
         live.toggle(directCopyAnchors,"directCopyAnchors");
         live.toggle(topAlignShortThreadsSwitch,"topAlignShortThreads");
         live.number(autoReloadInterval,"autoReloadInterval",10,1800);
         live.choice(threadTitleSpacing,"threadTitleSpacingPercent",i->100+i*5);
         LinearLayout titleMenu=SettingsSection.add(layout,"スレタイトル長押しの追加項目","表示する項目を選択",true);
-        String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH};
-        String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
+        String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH,DisplayNames.SHOW_RENAME};
+        String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示","「スレの名前を変更」を表示"};
         for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
         live.toggle(addSwitch(filters,activity,
                 "コピー・選択をHaiagaruポップアップで表示する",

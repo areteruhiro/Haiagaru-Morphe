@@ -233,6 +233,20 @@ final class SiteBoardProtocol {
             return "https://"+board.host+path;
         }catch(RuntimeException invalid){return null;}
     }
+    static List<String> futabaPreviews(Board board,String html,List<String> sources){
+        Map<String,String> previews=new HashMap<>();
+        for(Element link:Jsoup.parse(html,board.url).select("a[href]")){
+            String original=futabaMedia(board,link.attr("href"));
+            Element image=link.selectFirst("img[src],img[data-src]");
+            if(original==null||image==null)continue;
+            String preview=futabaMedia(board,image.hasAttr("data-src")?image.attr("data-src"):image.attr("src"));
+            if(preview!=null&&URI.create(preview).getPath().startsWith("/"+board.path+"/thumb/"))
+                previews.putIfAbsent(original,preview);
+        }
+        List<String> result=new ArrayList<>();
+        for(String source:sources)result.add(previews.getOrDefault(source,source));
+        return result;
+    }
     private static Entry entry(Board board,String number,String name,String date,Element body){
         Element safe=body.clone();LinkedHashSet<String> media=new LinkedHashSet<>();
         for(Element image:safe.select("img")){

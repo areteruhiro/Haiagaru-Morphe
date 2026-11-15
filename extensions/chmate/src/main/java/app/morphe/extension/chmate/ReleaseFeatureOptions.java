@@ -18,7 +18,7 @@ final class ReleaseFeatureOptions {
         GLOBAL_SEARCH_BACKGROUND("1.40.0"), GLOBAL_SEARCH_HISTORY("1.40.0"), GLOBAL_SEARCH_PARTIAL("1.40.0"),
         VIEWER_DOUBLE_BACK("1.40.0"), ALWAYS_MOSAIC_GRAY("1.40.0"), ALWAYS_MOSAIC_STRENGTH("1.40.0"),
         MODERATION_ADULT("1.40.0"), MODERATION_GORE("1.40.0"), MODERATION_LIST("1.40.0"),
-        UPLOAD_DESTINATION("1.40.0"), NG_REPLY_NOTIFICATIONS("1.40.0");
+        UPLOAD_DESTINATION("1.40.0"), NG_REPLY_NOTIFICATIONS("1.40.0"), THREAD_RENAME("1.41.0"), KEYWORD_NAMES("1.41.0");
 
         final String version;
         Option(String version) { this.version = version; }
@@ -26,7 +26,7 @@ final class ReleaseFeatureOptions {
             switch(this){
                 case SETTINGS_LINKS:case SITE_GROUPS:case EDGE:case ORG:case BAKUSAI:case FUTABA:case ANIMAN:return "アプリ・通信";
                 case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:case REPORTER_SEARCH:case REPORTER_MENU:case REPORTER_BOARD:return "表示・検索";
-                case GLOBAL_SEARCH_BACKGROUND:case GLOBAL_SEARCH_HISTORY:case GLOBAL_SEARCH_PARTIAL:return "表示・検索";
+                case THREAD_RENAME:case KEYWORD_NAMES:case GLOBAL_SEARCH_BACKGROUND:case GLOBAL_SEARCH_HISTORY:case GLOBAL_SEARCH_PARTIAL:return "表示・検索";
                 case VIEWER_DOUBLE_BACK:case ALWAYS_MOSAIC_GRAY:case ALWAYS_MOSAIC_STRENGTH:
                 case MODERATION_ADULT:case MODERATION_GORE:case MODERATION_LIST:case UPLOAD_DESTINATION:
                 case LOCAL_IMAGES:case THREAD_THUMBNAILS:case VIDEO_THUMBNAILS:case VIDEO_IMMERSIVE:return "画像・動画";
@@ -66,6 +66,8 @@ final class ReleaseFeatureOptions {
                 case MODERATION_LIST:return "スレ一覧の画像にも有効な自動検出を適用します。画像検出ZIPが必要です。";
                 case UPLOAD_DESTINATION:return "書き込み画面から画像・動画を添付するときに、送信先を選べます。";
                 case NG_REPLY_NOTIFICATIONS:return "NGに該当する返信を新着通知の対象から外します。";
+                case THREAD_RENAME:return "スレタイトル長押しに「スレの名前を変更」を表示します。表示名はHOMEとスレ一覧で使います。";
+                case KEYWORD_NAMES:return "検索条件ごとに短い表示名を付けられます。縦棒やカンマも使用できます。";
                 default:throw new AssertionError(this);
             }
         }

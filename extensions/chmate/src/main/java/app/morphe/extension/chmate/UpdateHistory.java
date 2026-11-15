@@ -302,6 +302,14 @@ final class UpdateHistory {
                         DeleteReadThreads.LONG_PRESS_KEY, true, null); break;
             case IP_WIFI: addIpNetwork(content, activity, main, "IP表示スレへの投稿前確認（Wi-Fi）", 1); break;
             case IP_MOBILE: addIpNetwork(content, activity, main, "IP表示スレへの投稿前確認（モバイル回線）", 2); break;
+            case THREAD_RENAME:
+                toggle(content, activity, FeatureSwitches.prefs(activity), "スレタイトル長押しに「スレの名前を変更」を表示",
+                        DisplayNames.SHOW_RENAME, true, null); break;
+            case KEYWORD_NAMES:
+                Button names = new Button(activity);
+                names.setText("キーワードの表示名を設定");
+                names.setOnClickListener(view -> DisplayNames.showKeywords(activity));
+                content.addView(names); break;
             case GLOBAL_SEARCH_BACKGROUND:
                 toggle(content, activity, main, "全板検索をバックグラウンドで実行",
                         GlobalSearchHome.BACKGROUND, true, null); break;
