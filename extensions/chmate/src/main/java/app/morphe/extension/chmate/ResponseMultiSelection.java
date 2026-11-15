@@ -13,7 +13,7 @@ import java.util.*;
 /** In-place selection over the original response list. Native rows and listeners are untouched. */
 public final class ResponseMultiSelection {
     static final String COPY_POPUP="responseCopyHaiagaruPopup";
-    private static final int SELECT=0x4847382,COPY=0x4847383,NG=0x4847384,TOOLS=0x4847385,SAVE=0x4847386;
+    private static final int SELECT=0x4847382,COPY=0x4847383,NG=0x4847384,TOOLS=0x4847385,SAVE=0x4847386,SEARCH=0x4847387;
     private static final Map<Activity,Session> SESSIONS=new WeakHashMap<>();
     private static final Map<MenuItem,Runnable> ACTIONS=new WeakHashMap<>();
     private static final ThreadLocal<Boolean> NATIVE_TOOLS=new ThreadLocal<>();
@@ -99,10 +99,18 @@ public final class ResponseMultiSelection {
     }
     private static void report(Activity a,Exception e){android.util.Log.w("Haiagaru","Response selection",e);Toast.makeText(a,"操作できませんでした。スレを開き直してください。",1).show();}
     private static final class Session implements ActionMode.Callback {
+        private static final long SCROLL_IDLE_MS = 350;
         final MultiResponseNg.Target target;final ArrayList<MultiResponseNg.Plan> plans;
         final Map<Integer,MultiResponseNg.Plan> byNumber=new HashMap<>();final ViewGroup list;
         final Method item;final Window.Callback original,proxy;final Tint tint;
         ActionMode mode;boolean closed,tracking,scrolling;MotionEvent down;
+        final int[] listLocation = new int[2];
+        private final Handler handler = new Handler(Looper.getMainLooper());
+        private final Runnable scrollIdle = this::finishScroll;
+        private boolean scrollActive;
+        private boolean searching;
+        private HaiagaruDialog searchDialog;
+        private String searchQuery = "";
         final ViewTreeObserver.OnScrollChangedListener scrolled;
         final ViewTreeObserver.OnGlobalLayoutListener layout;
         Session(MultiResponseNg.Target t,ArrayList<MultiResponseNg.Plan> p)throws Exception{
@@ -117,14 +125,36 @@ public final class ResponseMultiSelection {
                 if(m.getName().equals("dispatchKeyEvent")&&args[0] instanceof KeyEvent){KeyEvent e=(KeyEvent)args[0];if(e.getKeyCode()==KeyEvent.KEYCODE_BACK){if(e.getAction()==KeyEvent.ACTION_UP)close();return true;}}
                 try{return m.invoke(original,args);}catch(InvocationTargetException e){throw e.getCause();}
             });
-            tint=new Tint(t.activity,this);scrolled=()->tint.invalidate();
+            tint=new Tint(t.activity,this);
+            scrolled=()->{tint.invalidate();if(scrollActive)scheduleScrollIdle();};
             layout=()->{if(!list.isAttachedToWindow()){close();return;}tint.layout(0,0,list.getWidth(),list.getHeight());tint.invalidate();};
         }
         void begin(){
             target.activity.getWindow().setCallback(proxy);list.getOverlay().add(tint);tint.layout(0,0,list.getWidth(),list.getHeight());
             list.getViewTreeObserver().addOnScrollChangedListener(scrolled);list.getViewTreeObserver().addOnGlobalLayoutListener(layout);
-            mode=target.activity.startActionMode(this);if(mode==null){close();return;}
-            update();Toast.makeText(target.activity,"レスをタップして選択・解除。操作から既存の長押しメニューを開けます。",1).show();
+            startSelectionBar();
+            if(!closed)Toast.makeText(target.activity,"レスをタップして選択・解除。操作から既存の長押しメニューを開けます。",1).show();
+        }
+        private void startSelectionBar(){
+            mode=target.activity.startActionMode(this);
+            if(mode==null){close();return;}
+            update();
+        }
+        private void scheduleScrollIdle(){
+            handler.removeCallbacks(scrollIdle);
+            handler.postDelayed(scrollIdle,SCROLL_IDLE_MS);
+        }
+        private void finishScroll(){
+            if(closed)return;
+            if(searching||searchDialog!=null)return;
+            if(scrolling){scheduleScrollIdle();return;}
+            scrollActive=false;
+            if(mode!=null)return;
+            try{
+                target.current();
+                if(list.isShown()&&target.activity.getWindow().getCallback()==proxy)startSelectionBar();
+                else close();
+            }catch(Exception changed){close();}
         }
         int number(View child)throws Exception{
             Object row;if(list instanceof ListView){ListView v=(ListView)list;int at=v.getPositionForView(child);if(at<0)return -1;row=v.getItemAtPosition(at);}
@@ -136,9 +166,11 @@ public final class ResponseMultiSelection {
         boolean touch(MotionEvent e){
             if(closed)return false;
             try{target.current();if(!list.isShown()){close();return false;}}catch(Exception changed){close();return false;}
-            int action=e.getActionMasked();int[] loc=new int[2];list.getLocationOnScreen(loc);
-            float x=e.getRawX()-loc[0],y=e.getRawY()-loc[1];
+            int action=e.getActionMasked();
+            list.getLocationOnScreen(listLocation);
+            float x=e.getRawX()-listLocation[0],y=e.getRawY()-listLocation[1];
             if(action==MotionEvent.ACTION_DOWN){
+                clearTouch();
                 tracking=x>=0&&y>=0&&x<list.getWidth()&&y<list.getHeight();scrolling=false;
                 if(!tracking)return false;down=MotionEvent.obtain(e);return true;
             }
@@ -146,14 +178,34 @@ public final class ResponseMultiSelection {
             if(action==MotionEvent.ACTION_MOVE||action==MotionEvent.ACTION_POINTER_DOWN){
                 float dx=e.getRawX()-down.getRawX(),dy=e.getRawY()-down.getRawY();
                 int slop=ViewConfiguration.get(list.getContext()).getScaledTouchSlop();
-                if(!scrolling&&(e.getPointerCount()>1||dx*dx+dy*dy>slop*slop)){scrolling=true;original.dispatchTouchEvent(down);}
-                if(scrolling)original.dispatchTouchEvent(e);return true;
+                if(!scrolling&&(e.getPointerCount()>1||dx*dx+dy*dy>slop*slop)){
+                    scrolling=true;
+                    scrollActive=true;
+                    scheduleScrollIdle();
+                    dispatchToList(down);
+                }
             }
             if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL){
-                if(scrolling)original.dispatchTouchEvent(e);
+                boolean wasScrolling=scrolling;
+                clearTouch();
+                if(wasScrolling){scheduleScrollIdle();dispatchToList(e);}
                 else if(action==MotionEvent.ACTION_UP){View child=childAt(x,y);if(child!=null)try{toggle(number(child));}catch(Exception error){report(target.activity,error);}}
-                tracking=false;if(down!=null){down.recycle();down=null;}return true;
-            }return true;
+            }else if(scrolling){scheduleScrollIdle();dispatchToList(e);}
+            return true;
+        }
+        private void dispatchToList(MotionEvent source){
+            // The Activity also interprets ChMate gestures. Route drags inside
+            // selection mode to the native list without running those gestures.
+            list.getLocationOnScreen(listLocation);
+            MotionEvent event=MotionEvent.obtain(source);
+            event.offsetLocation(source.getRawX()-source.getX()-listLocation[0],
+                    source.getRawY()-source.getY()-listLocation[1]);
+            try{list.dispatchTouchEvent(event);}finally{event.recycle();}
+        }
+        private void clearTouch(){
+            tracking=false;
+            scrolling=false;
+            if(down!=null){down.recycle();down=null;}
         }
         void toggle(int number){MultiResponseNg.Plan p=byNumber.get(number);if(p==null)return;
             if(!p.selected&&selected().size()>=100){Toast.makeText(target.activity,"最大100件まで選択できます",0).show();return;}
@@ -162,25 +214,105 @@ public final class ResponseMultiSelection {
         ArrayList<MultiResponseNg.Plan> selected(){ArrayList<MultiResponseNg.Plan> out=new ArrayList<>();for(MultiResponseNg.Plan p:plans)if(p.selected)out.add(p);return out;}
         void update(){if(mode!=null)mode.setTitle(selected().size()+"レス選択中");tint.invalidate();}
         void close(){if(closed)return;closed=true;
+            handler.removeCallbacks(scrollIdle);
+            if(searchDialog!=null){searchDialog.dismiss();searchDialog=null;}
             if(target.activity.getWindow().getCallback()==proxy)target.activity.getWindow().setCallback(original);
-            if(down!=null){if(scrolling){MotionEvent cancel=MotionEvent.obtain(down);cancel.setAction(MotionEvent.ACTION_CANCEL);original.dispatchTouchEvent(cancel);cancel.recycle();}down.recycle();down=null;}
+            MotionEvent cancel=down!=null&&scrolling?MotionEvent.obtain(down):null;
+            clearTouch();
+            if(cancel!=null){
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                try{dispatchToList(cancel);}finally{cancel.recycle();}
+            }
             list.getOverlay().remove(tint);if(list.getViewTreeObserver().isAlive()){list.getViewTreeObserver().removeOnScrollChangedListener(scrolled);list.getViewTreeObserver().removeOnGlobalLayoutListener(layout);}
             if(SESSIONS.get(target.activity)==this)SESSIONS.remove(target.activity);if(mode!=null){ActionMode old=mode;mode=null;old.finish();}
         }
         public boolean onCreateActionMode(ActionMode mode,Menu menu){
             menu.add(0,NG,0,"NG登録").setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
             menu.add(0,COPY,1,"コピー").setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
-            menu.add(0,SAVE,2,"レスを保存");menu.add(0,TOOLS,3,"操作（レス長押しメニュー）");menu.add(0,SELECT,3,"選択をすべて解除");return true;
+            menu.add(0,SEARCH,2,"スレ内検索");
+            menu.add(0,SAVE,3,"レスを保存");menu.add(0,TOOLS,4,"操作（レス長押しメニュー）");menu.add(0,SELECT,5,"選択をすべて解除");return true;
         }
         public boolean onPrepareActionMode(ActionMode m,Menu menu){return false;}
         public boolean onActionItemClicked(ActionMode m,MenuItem entry){
             ArrayList<MultiResponseNg.Plan> selected=selected();
             if(entry.getItemId()==SELECT){for(MultiResponseNg.Plan p:plans)p.selected=false;update();return true;}
+            if(entry.getItemId()==SEARCH){search();return true;}
             if(selected.isEmpty()){Toast.makeText(target.activity,"レスをタップして選択してください",0).show();return true;}
             if(entry.getItemId()==NG){MultiResponseNg.ng(target,selected);return true;}
             if(entry.getItemId()==COPY){copy(target,selected);return true;}
             if(entry.getItemId()==SAVE){saveSelected(target.activity);return true;}
             if(entry.getItemId()==TOOLS){nativeTools(selected);return true;}return false;
+        }
+        private void search(){
+            if(closed||searching)return;
+            EditText field=new EditText(target.activity);
+            field.setSingleLine(true);
+            field.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(256)});
+            field.setHint("検索語");
+            field.setText(searchQuery);
+            field.setSelection(field.length());
+            showSearchDialog(new HaiagaruDialog.Builder(target.activity).setTitle("スレ内検索").setView(field)
+                    .setNegativeButton("キャンセル",null)
+                    .setPositiveButton("検索",(dialog,which)->findResponses(field.getText().toString().trim())));
+        }
+        private void findResponses(String query){
+            if(closed||searching||query.isEmpty())return;
+            searchQuery=query;
+            searching=true;
+            MultiResponseNg.IO.execute(()->{
+                List<MultiResponseNg.Plan> results=new ArrayList<>();
+                try{
+                    String[] terms=query.toLowerCase(Locale.ROOT).split("[\\s\\p{Z}]+");
+                    for(MultiResponseNg.Plan plan:plans){
+                        String text=Html.fromHtml(ThreadSearchText.text(plan.response)).toString().toLowerCase(Locale.ROOT);
+                        boolean matches=true;
+                        for(String term:terms)if(!term.isEmpty()&&!text.contains(term)){matches=false;break;}
+                        if(matches)results.add(plan);
+                    }
+                    target.activity.runOnUiThread(()->{
+                        searching=false;
+                        if(closed||target.activity.isFinishing()||target.activity.isDestroyed())return;
+                        try{target.current();showSearchResults(results);}catch(Exception changed){close();}
+                    });
+                }catch(RuntimeException error){
+                    target.activity.runOnUiThread(()->{searching=false;if(!closed){report(target.activity,error);scheduleScrollIdle();}});
+                }
+            });
+        }
+        private void showSearchResults(List<MultiResponseNg.Plan> results){
+            HaiagaruDialog.Builder dialog=new HaiagaruDialog.Builder(target.activity)
+                    .setTitle("スレ内検索（"+results.size()+"件）")
+                    .setNegativeButton("閉じる",null)
+                    .setNeutralButton("検索語を変更",(d,w)->search());
+            if(results.isEmpty()){
+                dialog.setMessage("一致するレスがありません。");
+            }else{
+                String[] labels=new String[results.size()];
+                boolean[] checked=new boolean[results.size()];
+                for(int i=0;i<results.size();i++){
+                    MultiResponseNg.Plan plan=results.get(i);
+                    labels[i]=plan.label();
+                    checked[i]=plan.selected;
+                }
+                dialog.setMultiChoiceItems(labels,checked,(d,index,on)->{
+                    if(closed)return;
+                    MultiResponseNg.Plan plan=results.get(index);
+                    if(plan.selected!=on)toggle(plan.number);
+                    checked[index]=plan.selected;
+                    ((HaiagaruDialog)d).refresh();
+                });
+            }
+            showSearchDialog(dialog);
+        }
+        private void showSearchDialog(HaiagaruDialog.Builder builder){
+            HaiagaruDialog dialog=builder.create();
+            dialog.setOnDismissListener(dismissed->{
+                if(searchDialog!=dialog)return;
+                searchDialog=null;
+                if(!closed)scheduleScrollIdle();
+            });
+            searchDialog=dialog;
+            dialog.show();
         }
         void nativeTools(ArrayList<MultiResponseNg.Plan> selected){
             Set<Integer> numbers=new HashSet<>();for(MultiResponseNg.Plan p:selected)numbers.add(p.number);
@@ -192,7 +324,14 @@ public final class ResponseMultiSelection {
         View body(View v){String n=v.getClass().getName();if(n.equals("o.r8lambda1VMNzQcdpAFQ0ukC0aRPi4Owdo")||n.equals("o.PAGClientBidding")||n.equals("o.zzbhr"))return v;
             if(v instanceof ViewGroup){ViewGroup g=(ViewGroup)v;for(int i=0;i<g.getChildCount();i++){View found=body(g.getChildAt(i));if(found!=null)return found;}}return null;
         }
-        public void onDestroyActionMode(ActionMode mode){close();}
+        public void onDestroyActionMode(ActionMode finished){
+            if(finished!=mode)return;
+            mode=null;
+            // ChMate can finish the contextual bar while hiding its toolbar on scroll.
+            // Keep the selected responses and reattach the bar once the list settles.
+            if(!closed&&(scrollActive||searching||searchDialog!=null)){scheduleScrollIdle();return;}
+            close();
+        }
     }
     private static final class Tint extends View {
         final Session session;final Paint fill=new Paint(),outline=new Paint();

@@ -277,10 +277,11 @@ public final class SettingsProfiles {
     }
     static Map<String,Object> minimalValues(){return minimalValues(false);}
     static Map<String,Object> minimalValues(boolean adsOnly){
+        if(adsOnly)return adsOnlyValues();
         Map<String,Object> out=new LinkedHashMap<>();for(Map.Entry<String,Rule> e:RULES.entrySet())if(e.getValue().accepts(false))out.put(e.getKey(),false);
         for(String key:new String[]{"edgeReporterId","edgeReporterBoardList","dedicatedViewerEnabled","kyodemoEnhancedViewer","automaticDat",
                 "hideAd","videoViewerEnabled","videoYoutubeEnabled","urlImageFetchEnabled","videoFrameThumbnailsEnabled","wacchoiSearchEnabled","showEdgeSearch",
-                ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,!adsOnly||"hideAd".equals(key));
+                ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,true);
         out.put("urlVideoFetchMode",0);return out;
     }
 }

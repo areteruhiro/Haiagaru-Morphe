@@ -12,9 +12,10 @@ import java.lang.ref.WeakReference;
 /** User-reviewed multi-response registration through the existing native NG stores and DAT index. */
 public final class MultiResponseNg {
     static final int MENU=0x4847381;
+    static final int TOOLBAR=0x7e00000e;
     private static final String[] CATEGORIES={"ID","名前","本文（NGWord）","レス番号（このスレ）"};
     private static final String[] STORES={"ID","NAME","WORD"};
-    private static final ExecutorService IO=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"Haiagaru-response-selection");t.setDaemon(true);return t;});
+    static final ExecutorService IO=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"Haiagaru-response-selection");t.setDaemon(true);return t;});
     private static final Set<Object> OPEN=Collections.newSetFromMap(new WeakHashMap<>());
     static final class Target {
         final Object fragment,board,adapter,index;final String version,url,scope;final Activity activity;
@@ -55,7 +56,11 @@ public final class MultiResponseNg {
         MenuItem item=menu.findItem(MENU);if(item==null)item=menu.add(0,MENU,0,"レス複数選択");
         item.setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);item.setOnMenuItemClickListener(v->{open(fragment);return true;});
     }
-    public static boolean click(Object fragment,int action){if(action!=MENU)return false;open(fragment);return true;}
+    public static boolean click(Object fragment,int action){
+        if(action!=MENU&&action!=TOOLBAR)return false;
+        open(fragment);
+        return true;
+    }
     static void open(Object fragment){
         if(OPEN.contains(fragment))return;OPEN.add(fragment);
         try{

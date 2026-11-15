@@ -150,6 +150,32 @@ private fun SelectableSettingLabel(modifier: Modifier = Modifier, content: @Comp
     else androidx.compose.foundation.text.selection.SelectionContainer(modifier) { content() }
 }
 
+@Composable
+internal fun SettingSwitchRow(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    label: @Composable () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp)
+            .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Box(Modifier.weight(1f)) { label() }
+        val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
+        Switch(
+            checked = checked, onCheckedChange = null, enabled = enabled,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = if (dark) HaiagaruUi.settingsCategoryColor else Color(0xFF4A8FC6),
+                checkedThumbColor = Color(0xFF102E48),
+            ),
+        )
+    }
+}
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
@@ -188,20 +214,16 @@ internal fun BoundSettingRow(item: BoundSetting, changed: () -> Unit) {
             }
         }
         is CompoundButton -> {
-            Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
-                .toggleable(item.checked == true, enabled = item.enabled, role = Role.Switch) {
-                    if (view.isChecked != it) view.performClick()
-                    changed()
-                }.padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                SelectableSettingLabel(Modifier.weight(1f)) { Text(item.label, style = MaterialTheme.typography.bodyLarge,
-                    color = if (item.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant) }
-                val dark = MaterialTheme.colorScheme.surface.luminance() < .5f
-                Switch(checked = item.checked == true, onCheckedChange = null, enabled = item.enabled,
-                    colors = SwitchDefaults.colors(
-                        checkedTrackColor = if (dark) HaiagaruUi.settingsCategoryColor else Color(0xFF4A8FC6),
-                        checkedThumbColor = Color(0xFF102E48)
-                    ))
+            var checked by remember(view, item.checked) { mutableStateOf(view.isChecked) }
+            SettingSwitchRow(checked, onCheckedChange = {
+                if (view.isChecked != it) view.performClick()
+                checked = view.isChecked
+                changed()
+            }, enabled = item.enabled) {
+                SelectableSettingLabel {
+                    Text(item.label, style = MaterialTheme.typography.bodyLarge,
+                        color = if (item.enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
         is SeekBar -> BoundSeekBar(view, item.label, changed)

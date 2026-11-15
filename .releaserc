@@ -139,6 +139,10 @@
             "label": "個別導入: ONNX Runtime"
           },
           {
+            "path": "build/optional-assets/haiagaru-image-moderation-vpn.zip",
+            "label": "一括導入: 画像検出・画像取得専用VPN"
+          },
+          {
             "path": "build/optional-assets/haiagaru-image-vpn-v2.zip",
             "label": "任意導入: 画像取得VPNライブラリ v2（Image NGとは別・展開不要）"
           }
