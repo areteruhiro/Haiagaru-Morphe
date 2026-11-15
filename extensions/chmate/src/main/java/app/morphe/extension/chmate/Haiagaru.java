@@ -3789,6 +3789,9 @@ public final class Haiagaru {
         String[] titleKeys={ThreadTitleActions.SHOW_REFRESH,ThreadTitleActions.SHOW_WATCH,ThreadTitleActions.SHOW_AUTH};
         String[] titleLabels={"「更新対象に含む」を表示","「このスレの新着通知」を表示","「エッヂの閲覧認証」を表示"};
         for(int i=0;i<titleKeys.length;i++)live.toggle(addSwitch(titleMenu,activity,titleLabels[i],preferences.getBoolean(titleKeys[i],true)),titleKeys[i]);
+        live.toggle(addSwitch(filters,activity,
+                "コピー・選択をHaiagaruポップアップで表示する",
+                ResponseMultiSelection.useHaiagaruCopyPopup(activity)),ResponseMultiSelection.COPY_POPUP);
         live.toggle(compactQuickFiltersSwitch,"compactQuickFilters");
         live.toggle(keepFilterPosition,"keepQuickFilterPosition");
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
@@ -4378,7 +4381,7 @@ public final class Haiagaru {
                         .putBoolean("videoFrameThumbnailsEnabled", checked).apply());
         Switch videoLandscapeImmersive = addSwitch(layout, activity,
                 "専用動画ビューアを横画面で没入表示する",
-                FeatureSwitches.enabled("videoLandscapeImmersive", true));
+                FeatureSwitches.enabled("videoLandscapeImmersive", false));
         new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(videoLandscapeImmersive, "videoLandscapeImmersive");
 
         Spinner mediaAutoFetch = addSpinner(layout, activity,

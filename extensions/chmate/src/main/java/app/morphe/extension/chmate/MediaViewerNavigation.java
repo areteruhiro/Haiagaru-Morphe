@@ -45,7 +45,7 @@ public final class MediaViewerNavigation {
     }
     private static WeakReference<TextView> body=new WeakReference<>(null);
     private static long touched;
-    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;int next,previous;boolean custom,canPage;String selected;MediaViewerBackGesture back;}
+    private static final class Swipe {float x,y;boolean dragging,blocked,cancelling;int next,previous;boolean custom,canPage,horizontalPriority;String selected;MediaViewerBackGesture back;}
     private static final WeakHashMap<Activity,WeakReference<Object>> MODELS=new WeakHashMap<>();
 
     static void rememberBody(TextView view,MotionEvent event) {
@@ -301,6 +301,7 @@ public final class MediaViewerNavigation {
                 android.content.SharedPreferences prefs=VideoViewerSettings.prefs(activity);
                 swipe.next=NativeImagePaging.direction(prefs,NativeImagePaging.NEXT);
                 swipe.previous=NativeImagePaging.direction(prefs,NativeImagePaging.PREVIOUS);
+                swipe.horizontalPriority=NativeImagePaging.legacy191(activity)&&(swipe.next>=NativeImagePaging.LEFT||swipe.previous>=NativeImagePaging.LEFT);
             }
             Rect bounds=new Rect();View area=surface!=null?surface:activity.getWindow().getDecorView();
             swipe.blocked=!area.getGlobalVisibleRect(bounds)||!bounds.contains((int)swipe.x,(int)swipe.y)
@@ -314,11 +315,12 @@ public final class MediaViewerNavigation {
         if(event.getPointerCount()>1||action==MotionEvent.ACTION_POINTER_DOWN){swipe.blocked=true;return swipe.dragging;}
         if(action==MotionEvent.ACTION_CANCEL){SWIPES.remove(activity);return false;}
         if(swipe.blocked){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return swipe.dragging;}
-        if(swipe.back!=null&&swipe.back.dispatch(event)){SWIPES.remove(activity);return true;}
-        if(!swipe.canPage){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return false;}
-        boolean backPriority=swipe.back!=null&&swipe.back.active();
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
         float threshold=Math.max(48,48*activity.getResources().getDisplayMetrics().density);
+        boolean pageFlick=swipe.canPage&&swipe.horizontalPriority&&NativeImagePaging.assignedHorizontal(dx,dy,threshold,swipe.next,swipe.previous);
+        if(!pageFlick&&swipe.back!=null&&swipe.back.dispatch(event)){SWIPES.remove(activity);return true;}
+        if(!swipe.canPage){if(action==MotionEvent.ACTION_UP)SWIPES.remove(activity);return false;}
+        boolean backPriority=!pageFlick&&swipe.back!=null&&swipe.back.active();
         // Whole-thread paging has the same four directions in every version.
         // The configured native Back recognizer above still gets first refusal.
         int step=swipe.custom?NativeImagePaging.step(NativeImagePaging.axis(dx,dy,threshold),swipe.next,swipe.previous)

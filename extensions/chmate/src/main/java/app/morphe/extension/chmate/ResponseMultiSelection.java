@@ -12,11 +12,13 @@ import java.util.*;
 
 /** In-place selection over the original response list. Native rows and listeners are untouched. */
 public final class ResponseMultiSelection {
+    static final String COPY_POPUP="responseCopyHaiagaruPopup";
     private static final int SELECT=0x4847382,COPY=0x4847383,NG=0x4847384,TOOLS=0x4847385,SAVE=0x4847386;
     private static final Map<Activity,Session> SESSIONS=new WeakHashMap<>();
     private static final Map<MenuItem,Runnable> ACTIONS=new WeakHashMap<>();
     private static final ThreadLocal<Boolean> NATIVE_TOOLS=new ThreadLocal<>();
     static boolean nativeToolsRequested(){return Boolean.TRUE.equals(NATIVE_TOOLS.get());}
+    static boolean useHaiagaruCopyPopup(Context context){return SettingsProfiles.prefs(context).getBoolean(COPY_POPUP,false);}
     static boolean selecting(){return !SESSIONS.isEmpty();}
     static boolean hideSearch(int id){return selecting()&&(id==75||id==0x7e000077||id==0x7e000078);}
     private static final String[] COPY_FIELDS={"レス番号","名前","本文","レスのURL","ヘッダー＋本文","選択（項目を組み合わせる・編集）"};
@@ -57,8 +59,11 @@ public final class ResponseMultiSelection {
                 if(title.startsWith("コピー"))nativeCopy=item;
                 if(title.startsWith("NG")&&(title.contains("追加")||title.contains("登録"))&&!title.contains("Thread"))nativeNg=item;
             }
-            if(nativeCopy==null)add(menu,COPY,s==null?"コピー・選択":"コピー（選択中のレス）",copy);
-            else{nativeCopy.setTitle(s==null?"コピー・選択":"コピー（選択中のレス）");ACTIONS.put(nativeCopy,copy);nativeCopy.setOnMenuItemClickListener(ResponseMultiSelection::handle);}
+            if(s!=null||useHaiagaruCopyPopup(t.activity)){
+                String title=s==null?"コピー・選択":"コピー（選択中のレス）";
+                if(nativeCopy==null)add(menu,COPY,title,copy);
+                else{nativeCopy.setTitle(title);ACTIONS.put(nativeCopy,copy);nativeCopy.setOnMenuItemClickListener(ResponseMultiSelection::handle);}
+            }
             if(s!=null&&s.target.url.equals(t.url)){
                 Runnable ng=()->MultiResponseNg.ng(t,s.selected());
                 if(nativeNg==null)add(menu,NG,"選択中のレスをNG登録",ng);
@@ -69,7 +74,7 @@ public final class ResponseMultiSelection {
     static void appendSheet(Object builder,Object response,Object board)throws Exception{
         MultiResponseNg.Target t=target(null,board);if(t==null)return;
         ResponseArchive.appendSheetAction(builder,"選択",android.R.drawable.checkbox_on_background,()->selectResponse(t,response));
-        ResponseArchive.appendSheetAction(builder,"コピー・選択",android.R.drawable.ic_menu_edit,()->{
+        if(SESSIONS.containsKey(t.activity)||useHaiagaruCopyPopup(t.activity))ResponseArchive.appendSheetAction(builder,"コピー・選択",android.R.drawable.ic_menu_edit,()->{
             Session s=SESSIONS.get(t.activity);if(s!=null&&s.target.url.equals(t.url))copy(t,s.selected());
             else try{MultiResponseNg.Plan p=new MultiResponseNg.Plan(response);p.selected=true;copy(t,new ArrayList<>(Arrays.asList(p)));}catch(Exception e){report(t.activity,e);}
         });
@@ -208,20 +213,41 @@ public final class ResponseMultiSelection {
         }return out.toString();
     }
     static void copy(MultiResponseNg.Target target,ArrayList<MultiResponseNg.Plan> plans){
-        if(plans.isEmpty()){Toast.makeText(target.activity,"レスをタップして選択してください",0).show();return;}
-        new HaiagaruDialog.Builder(target.activity).setTitle(plans.size()+"レスをコピー").setItems(COPY_FIELDS,(d,i)->{
-            boolean[] fields=new boolean[5];if(i<5){fields[i]=true;copyText(target,plans,fields,false);}else{
-                fields[0]=fields[1]=fields[2]=true;
-                new HaiagaruDialog.Builder(target.activity).setTitle("コピーする項目を選択").setMultiChoiceItems(Arrays.copyOf(COPY_FIELDS,5),fields,(dialog,at,checked)->fields[at]=checked)
-                    .setNegativeButton("キャンセル",null).setPositiveButton("内容を選択・編集",(dialog,which)->copyText(target,plans,fields,true)).show();
-            }
-        }).setNegativeButton("キャンセル",null).show();
+        Activity activity=target.activity;
+        if(plans.isEmpty()){Toast.makeText(activity,"レスをタップして選択してください",0).show();return;}
+        String title=plans.size()+"レスをコピー";
+        DialogInterface.OnClickListener action=(d,i)->{
+            boolean[] fields=new boolean[5];
+            if(i<5){fields[i]=true;copyText(target,plans,fields,false);}
+            else chooseCopyFields(target,plans,fields);
+        };
+        if(useHaiagaruCopyPopup(activity))
+            new HaiagaruDialog.Builder(activity).setTitle(title).setItems(COPY_FIELDS,action).setNegativeButton("キャンセル",null).show();
+        else new AlertDialog.Builder(activity).setTitle(title).setItems(COPY_FIELDS,action).setNegativeButton("キャンセル",null).show();
+    }
+    private static void chooseCopyFields(MultiResponseNg.Target target,ArrayList<MultiResponseNg.Plan> plans,boolean[] fields){
+        Activity activity=target.activity;
+        fields[0]=fields[1]=fields[2]=true;
+        String[] labels=Arrays.copyOf(COPY_FIELDS,5);
+        DialogInterface.OnMultiChoiceClickListener choose=(dialog,at,checked)->fields[at]=checked;
+        DialogInterface.OnClickListener proceed=(dialog,which)->copyText(target,plans,fields,true);
+        if(useHaiagaruCopyPopup(activity))
+            new HaiagaruDialog.Builder(activity).setTitle("コピーする項目を選択").setMultiChoiceItems(labels,fields,choose)
+                .setNegativeButton("キャンセル",null).setPositiveButton("内容を選択・編集",proceed).show();
+        else new AlertDialog.Builder(activity).setTitle("コピーする項目を選択").setMultiChoiceItems(labels,fields,choose)
+                .setNegativeButton("キャンセル",null).setPositiveButton("内容を選択・編集",proceed).show();
     }
     private static void copyText(MultiResponseNg.Target target,ArrayList<MultiResponseNg.Plan> plans,boolean[] fields,boolean edit){
-        try{target.current();String text=copied(target,plans,fields);if(text.trim().isEmpty()){Toast.makeText(target.activity,"コピーする項目を選択してください",0).show();return;}
-            if(edit){EditText input=new EditText(target.activity);input.setText(text);input.setMinLines(3);input.setMaxLines(12);
-                new HaiagaruDialog.Builder(target.activity).setTitle("コピー内容の選択・編集").setView(input).setNegativeButton("キャンセル",null).setPositiveButton("コピー",(d,w)->clipboard(target.activity,input.getText().toString())).show();
-            }else clipboard(target.activity,text);
+        try{target.current();String text=copied(target,plans,fields);Activity activity=target.activity;
+            if(text.trim().isEmpty()){Toast.makeText(activity,"コピーする項目を選択してください",0).show();return;}
+            if(!edit){clipboard(activity,text);return;}
+            EditText input=new EditText(activity);input.setText(text);input.setMinLines(3);input.setMaxLines(12);
+            DialogInterface.OnClickListener accept=(d,w)->clipboard(activity,input.getText().toString());
+            if(useHaiagaruCopyPopup(activity))
+                new HaiagaruDialog.Builder(activity).setTitle("コピー内容の選択・編集").setView(input)
+                    .setNegativeButton("キャンセル",null).setPositiveButton("コピー",accept).show();
+            else new AlertDialog.Builder(activity).setTitle("コピー内容の選択・編集").setView(input)
+                    .setNegativeButton("キャンセル",null).setPositiveButton("コピー",accept).show();
         }catch(Exception e){report(target.activity,e);}
     }
     private static void clipboard(Activity a,String text){((ClipboardManager)a.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("選択したレス",text));Toast.makeText(a,"コピーしました",0).show();}

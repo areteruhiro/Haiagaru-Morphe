@@ -53,6 +53,7 @@ public final class ReadingPosition {
             Session session = new Session(fragment, activity, list);
             SESSIONS.put(fragment, session);
             list.getViewTreeObserver().addOnPreDrawListener(session);
+            list.getViewTreeObserver().addOnGlobalLayoutListener(session);
             list.getViewTreeObserver().addOnScrollChangedListener(session);
             list.addOnAttachStateChangeListener(session);
         } catch (Exception error) { Log.w("HaiagaruPosition", "Cannot attach reading-position observer", error); }
@@ -77,9 +78,16 @@ public final class ReadingPosition {
         for (Session session : SESSIONS.values()) {
             if (session.list != list || !list.canScrollVertically(-1)) continue;
             try {
-                if (XPostPreviewPosition.interacting(list)) return;
-                session.mediaAnchor = session.anchor();
-                session.mediaUntil = android.os.SystemClock.uptimeMillis() + 550;
+                if (XPostPreviewPosition.interacting(list)) { session.mediaAnchor=null; return; }
+                long now=android.os.SystemClock.uptimeMillis();
+                // The list can draw unchanged while the thumbnail is still loading.
+                // Keep the original logical anchor across coalesced thumbnail updates.
+                if(session.mediaAnchor==null||now>session.mediaUntil){
+                    session.mediaAnchor=session.anchor();
+                    session.mediaCorrections=0;
+                }
+                session.mediaLayout=true;
+                session.mediaUntil=now+2800;
             } catch (Exception ignored) {}
             return;
         }
@@ -171,7 +179,7 @@ public final class ReadingPosition {
     }
 
     private static final class Session implements ViewTreeObserver.OnPreDrawListener,
-            ViewTreeObserver.OnScrollChangedListener, View.OnAttachStateChangeListener {
+            ViewTreeObserver.OnScrollChangedListener, ViewTreeObserver.OnGlobalLayoutListener, View.OnAttachStateChangeListener {
         final WeakReference<Object> fragment;
         final Activity activity;
         final View list;
@@ -186,6 +194,8 @@ public final class ReadingPosition {
         boolean closed, restoring;
         Anchor coldPreview, openingAnchor, mediaAnchor;
         long mediaUntil;
+        int mediaCorrections;
+        boolean mediaLayout;
         boolean openingRebuild;
         long coldPreviewUntil;
         final long opened=android.os.SystemClock.uptimeMillis();
@@ -260,20 +270,24 @@ public final class ReadingPosition {
             if (!list.isShown()) return true;
             if (mediaAnchor != null) {
                 if (now > mediaUntil || XPostPreviewPosition.interacting(list)) mediaAnchor = null;
-                else if (!list.isLayoutRequested()) {
+                else if (mediaLayout && !list.isLayoutRequested()) {
                     Anchor previous = mediaAnchor;
-                    mediaAnchor = null;
+                    mediaLayout = false;
                     try {
                         Anchor current = anchor();
                         Object owner = fragment.get();
-                        if (owner != null && current != null && current.adapter == previous.adapter
-                                && current.key.equals(previous.key)
-                                && (current.number != previous.number || Math.abs(current.offset - previous.offset) > 2)
-                                && FilterPosition.jumpToResponse(owner, previous.number, previous.offset)) {
-                            restoring = true;
-                            return false;
+                        if(owner==null||current==null||current.adapter!=previous.adapter||!current.key.equals(previous.key)){
+                            mediaAnchor=null;
+                        }else if(current.number!=previous.number||Math.abs(current.offset-previous.offset)>2){
+                            if(mediaCorrections>=3||!FilterPosition.jumpToResponse(owner,previous.number,previous.offset)){
+                                mediaAnchor=null;
+                            }else{
+                                mediaCorrections++;
+                                restoring=true;
+                                return false;
+                            }
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {mediaAnchor=null;}
                 }
             }
             // Capture the displayed unread viewport, not an adapter index. The
@@ -372,6 +386,10 @@ public final class ReadingPosition {
             return true;
         }
 
+        @Override public void onGlobalLayout() {
+            if(mediaAnchor!=null)mediaLayout=true;
+        }
+
         @Override public void onScrollChanged() {
             if (closed || restoring || coldPreview!=null || !list.isShown()) return;
             lastScroll = android.os.SystemClock.uptimeMillis();
@@ -381,6 +399,8 @@ public final class ReadingPosition {
 
         void save() {
             if (closed || restoring || coldPreview!=null) return;
+            if (mediaAnchor!=null&&android.os.SystemClock.uptimeMillis()<mediaUntil
+                    &&!XPostPreviewPosition.interacting(list)&&mediaLayout)return;
             MAIN.removeCallbacks(delayedSave);
             try {
                 Anchor current = anchor();
@@ -411,6 +431,7 @@ public final class ReadingPosition {
             save(); closed = true; MAIN.removeCallbacks(delayedSave);
             if (list.getViewTreeObserver().isAlive()) {
                 list.getViewTreeObserver().removeOnPreDrawListener(this);
+                list.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 list.getViewTreeObserver().removeOnScrollChangedListener(this);
             }
             list.removeOnAttachStateChangeListener(this);

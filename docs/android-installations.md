@@ -3202,3 +3202,43 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
   APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\final242.apk`、SHA-256 `2e9396c9cb9e549d98e40926ce354b212b47a3839ccdc7fc0038db3ffeb51f8b`。
   MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\search-multing-20261115\apks-notification\candidate.mpp`、SHA-256 `951e1da2c922aadf6700f4146a4fff0fdbc9178a6f5983dafd1887185fcd8980`。
   署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 191画像フリック・コピー・BE Cookie 先行候補
+
+- 2026-11-15T20:16:03.496155 JST、Haiagaru 修正確認 191 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks\final191.apk`、SHA-256 `92615902a409f81b4dd607a9ac877157640ab7e03abb81b606bb46a64d235156`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks\candidate.mpp`、SHA-256 `1a8a3d50bfc60a8ceebcb4d9ae92e128d0195090b8430e664340190f38ae18ac`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 遅延サムネイル補正候補
+
+- 2026-11-15T20:21:04.352283 JST、Haiagaru 修正確認 191 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\final191.apk`、SHA-256 `392a5c421cf785f9b86287ac6508ffa1ac486f47b1f2c7bf69e4ea46c405dbcb`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\candidate.mpp`、SHA-256 `af7fa7a72a73c7fdf8b68d8208894764e396e82f637c0dbd7a2ab63a22bedcc5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T20:21:36.917753 JST、Haiagaru 修正確認 226 / 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\final226.apk`、SHA-256 `d3c803c1c49d19bd679c17b7aff89688e26d97a188279881af73e876fab8e36c`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\candidate.mpp`、SHA-256 `af7fa7a72a73c7fdf8b68d8208894764e396e82f637c0dbd7a2ab63a22bedcc5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T20:22:12.571249 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\final242.apk`、SHA-256 `6f9aaf51ea57e7ec5d2b331f388744c100dd8a6e2163c81f7e28d6294fc2cb73`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-delayed\candidate.mpp`、SHA-256 `af7fa7a72a73c7fdf8b68d8208894764e396e82f637c0dbd7a2ab63a22bedcc5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+
+## 2026-11-15 全板検索の履歴ボタン順序を含む候補
+
+- 2026-11-15T20:27:49.522219 JST、Haiagaru 修正確認 191 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\final191.apk`、SHA-256 `999547f3e99424db9efad2acc5c5dd01108701a243d9e39367ec358795349216`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\candidate.mpp`、SHA-256 `db05296bc57293504b33898bf868885ad0add3c0cce55a53c4fe0a07876705a7`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T20:28:21.674263 JST、Haiagaru 修正確認 226 / 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\final226.apk`、SHA-256 `4d17072432657bf5e58be79c70a7e311f68d9b539270e7524c8632732be6e049`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\candidate.mpp`、SHA-256 `db05296bc57293504b33898bf868885ad0add3c0cce55a53c4fe0a07876705a7`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+- 2026-11-15T20:28:56.721242 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\final242.apk`、SHA-256 `b1701fa77717d1cb6c8cda8e9362362c2023e310979b2337c359701fc8174043`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\copy-gesture-be-20261115\apks-order\candidate.mpp`、SHA-256 `db05296bc57293504b33898bf868885ad0add3c0cce55a53c4fe0a07876705a7`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。

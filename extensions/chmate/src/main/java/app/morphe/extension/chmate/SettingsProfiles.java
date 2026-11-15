@@ -36,11 +36,13 @@ public final class SettingsProfiles {
         booleanKey(StockChmatePosting.SHOW_MENU);defaultValue(StockChmatePosting.SHOW_MENU,true);
         numberKey(StockChmatePosting.DISPLAY_MODE,0,1);defaultValue(StockChmatePosting.DISPLAY_MODE,1);
         booleanKey(ThreadPostingNames.ENABLED);defaultValue(ThreadPostingNames.ENABLED,false);
-        for(String key:new String[]{"settingsOptionLinksEnabled","reporterSearchEnabled","videoLandscapeImmersive"}){
+        for(String key:new String[]{"settingsOptionLinksEnabled","reporterSearchEnabled"}){
             booleanKey(key);defaultValue(key,true);
         }
         booleanKey(ExternalBoardGroups.KEY);defaultValue(ExternalBoardGroups.KEY,false);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
+        booleanKey(ResponseMultiSelection.COPY_POPUP);defaultValue(ResponseMultiSelection.COPY_POPUP,false);
+        booleanKey("videoLandscapeImmersive");defaultValue("videoLandscapeImmersive",false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(FirstResponseNg.KEY);defaultValue(FirstResponseNg.KEY,FirstResponseNg.DEFAULT);
         booleanKey(MediaViewerBackGesture.DOUBLE_BACK);

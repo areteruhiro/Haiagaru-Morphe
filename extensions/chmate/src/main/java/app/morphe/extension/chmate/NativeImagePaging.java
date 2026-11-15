@@ -28,10 +28,19 @@ public final class NativeImagePaging {
         int next,previous;
         boolean claimed,cancelling,multiTouch;
         MediaViewerBackGesture back;
+        boolean horizontalPriority;
     }
     private NativeImagePaging(){}
 
     static boolean enabled(Context context){return VideoViewerSettings.prefs(context).getBoolean(ENABLED,true);}
+    static boolean legacy191(Context context){
+        try{return "0.8.10.191 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}
+        catch(android.content.pm.PackageManager.NameNotFoundException ignored){return false;}
+    }
+    static boolean assignedHorizontal(float dx,float dy,float threshold,int next,int previous){
+        int direction=axis(dx,dy,threshold);
+        return (direction==LEFT||direction==RIGHT)&&step(direction,next,previous)!=0;
+    }
     static int defaultDirection(Context context,String key){
         boolean horizontal=false;
         if(context!=null)try{horizontal="0.8.10.242 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}catch(android.content.pm.PackageManager.NameNotFoundException ignored){}
@@ -179,6 +188,7 @@ public final class NativeImagePaging {
             if(MediaViewerNavigation.zoomed(surface)||MediaViewerNavigation.controlAt(activity.getWindow().getDecorView(),x,y))return false;
             SharedPreferences prefs=VideoViewerSettings.prefs(activity);
             swipe=new Swipe();swipe.x=x;swipe.y=y;swipe.next=direction(prefs,NEXT);swipe.previous=direction(prefs,PREVIOUS);
+            swipe.horizontalPriority=legacy191(activity)&&(swipe.next>=LEFT||swipe.previous>=LEFT);
             swipe.threshold=48*surface.getResources().getDisplayMetrics().density;
             swipe.claim=ViewConfiguration.get(activity).getScaledTouchSlop();
             // In 242 an embedded viewer must close its overlay, not the thread Activity.
@@ -191,8 +201,9 @@ public final class NativeImagePaging {
         if(action==MotionEvent.ACTION_CANCEL){SWIPES.remove(key);return swipe.claimed;}
         if(event.getPointerCount()>1||action==MotionEvent.ACTION_POINTER_DOWN){swipe.multiTouch=true;return swipe.claimed;}
         if(swipe.multiTouch){if(action==MotionEvent.ACTION_UP)SWIPES.remove(key);return swipe.claimed;}
-        if(swipe.back.dispatch(event)){SWIPES.remove(key);return true;}
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
+        boolean pageFlick=swipe.horizontalPriority&&assignedHorizontal(dx,dy,swipe.threshold,swipe.next,swipe.previous);
+        if(!pageFlick&&swipe.back.dispatch(event)){SWIPES.remove(key);return true;}
         // Claim before the old horizontal pager crosses its own drag threshold.
         // This also prevents an unassigned direction from silently changing pages.
         if(action==MotionEvent.ACTION_MOVE&&!swipe.claimed&&axis(dx,dy,swipe.claim)!=0){
@@ -205,7 +216,7 @@ public final class NativeImagePaging {
         if(!swipe.claimed)return false;
         int step=step(axis(dx,dy,swipe.threshold),swipe.next,swipe.previous);
         if(step!=0){
-            if(swipe.back.active()){
+            if(!pageFlick&&swipe.back.active()){
                 MediaViewerBackGesture back=swipe.back;
                 surface.post(()->{if(!back.returned()&&surface.isShown()&&!activity.isFinishing())
                     try{page.move(step);}catch(ReflectiveOperationException|RuntimeException ignoredError){}});

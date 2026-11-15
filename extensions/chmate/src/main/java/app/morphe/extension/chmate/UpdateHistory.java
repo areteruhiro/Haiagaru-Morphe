@@ -278,7 +278,7 @@ final class UpdateHistory {
                         "videoFrameThumbnailsEnabled", true, null); break;
             case VIDEO_IMMERSIVE:
                 toggle(content, activity, FeatureSwitches.prefs(activity), "専用動画ビューアの横画面で没入表示",
-                        "videoLandscapeImmersive", true, null); break;
+                        "videoLandscapeImmersive", false, null); break;
             case IMAGE_NG:
                 toggle(content, activity, RegisteredImageNg.prefs(activity),
                         "登録画像に一致するレスをあぼーん", RegisteredImageNg.ENABLE, false,

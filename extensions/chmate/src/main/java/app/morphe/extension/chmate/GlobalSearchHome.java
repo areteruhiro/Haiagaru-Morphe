@@ -56,7 +56,9 @@ public final class GlobalSearchHome {
     public static List<?> rows(List<?> input){
         Context c=Haiagaru.applicationContextForExtension();if(input==null||!enabled(c))return input;
         try{
-            Type t=type(c);ArrayList<Object> out=new ArrayList<>(),extra=new ArrayList<>();
+            Type t=type(c);ArrayList<Object> out=new ArrayList<>();
+            Map<String,Integer> localRows=new HashMap<>(),globalRows=new HashMap<>();
+            Map<String,Object> extra=new LinkedHashMap<>();
             for(Object row:input){
                 if(!t.row.isInstance(row)){out.add(row);continue;}
                 String query=(String)NativeFields.find(t.row,t.queryField).get(row);
@@ -64,21 +66,36 @@ public final class GlobalSearchHome {
                 if(!"FF2CH".equals(kind)&&!"LOCAL".equals(kind)){out.add(row);continue;}
                 if(query==null||query.trim().isEmpty()){out.add(row);continue;}
                 if(ACTIONS.containsKey(row)&&ACTIONS.get(row).id!=null){continue;} // Do not duplicate inserted history controls.
-                if("LOCAL".equals(kind)){out.add(t.make("取得済みのスレから検索",query,kind));continue;}
+                if("LOCAL".equals(kind)){
+                    localRows.putIfAbsent(query,out.size());
+                    out.add(t.make("取得済みのスレから検索",query,kind));continue;
+                }
                 Object global=t.make("全板から「"+query+"」を検索",query,"FF2CH");
-                ACTIONS.put(global,new Action(query,null));out.add(global);
+                ACTIONS.put(global,new Action(query,null));globalRows.putIfAbsent(query,out.size());out.add(global);
                 GlobalTitleSearchService.Job running=GlobalTitleSearchService.running(query);
                 if(running!=null){
                     if(partial(c)){
                         Object result=t.make("検索中のスレ一覧を表示（"+GlobalSearchResults.count(running.text)+"件）",query,"FF2CH");
-                        ACTIONS.put(result,new Action(query,running.id));extra.add(result);
+                        ACTIONS.put(result,new Action(query,running.id));extra.put(query,result);
                     }
                 }else if(history(c)){
                     String id=GlobalSearchResults.latest(c,query);
                     if(id!=null){Object saved=t.make("過去に取得したスレ一覧を表示（"+GlobalSearchResults.dateLabel(GlobalSearchResults.date(c,query))+"）",query,"FF2CH");
-                        ACTIONS.put(saved,new Action(query,id));extra.add(saved);}
+                        ACTIONS.put(saved,new Action(query,id));extra.put(query,saved);}
                 }
-            }out.addAll(extra);return out;
+            }
+            if(extra.isEmpty())return out;
+            Map<Integer,Object> after=new HashMap<>();
+            for(Map.Entry<String,Object> item:extra.entrySet()){
+                String query=item.getKey();
+                after.put(localRows.getOrDefault(query,globalRows.get(query)),item.getValue());
+            }
+            ArrayList<Object> ordered=new ArrayList<>(out.size()+extra.size());
+            for(int i=0;i<out.size();i++){
+                ordered.add(out.get(i));
+                Object action=after.get(i);if(action!=null)ordered.add(action);
+            }
+            return ordered;
         }catch(Exception error){android.util.Log.w("HaiagaruSearch","Native HOME search controls unchanged",error);return input;}
     }
     public static void menu(Object fragment,Menu menu){

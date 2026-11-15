@@ -100,6 +100,42 @@ public final class ImagePagingInstrumentation extends Instrumentation {
   }
   check(closed,label);
  }
+ int nativeHorizontalCode(Context context,int dx)throws Exception{
+  ClassLoader loader=context.getClassLoader();
+  Method binding=loader.loadClass("app.morphe.extension.chmate.VideoViewerGestures").getDeclaredMethod("recognizerClassName");
+  binding.setAccessible(true);
+  Class<?> type=loader.loadClass((String)binding.invoke(null));
+  java.util.concurrent.atomic.AtomicInteger recognized=new java.util.concurrent.atomic.AtomicInteger();
+  main(()->{
+   Object recognizer=null;
+   for(Constructor<?> constructor:type.getConstructors()){
+    Class<?>[] args=constructor.getParameterTypes();
+    if(args.length!=2||args[0]!=Context.class||!args[1].isInterface())continue;
+    Object listener=java.lang.reflect.Proxy.newProxyInstance(loader,new Class<?>[]{args[1]},(proxy,method,values)->{
+      if(values!=null&&values.length==3&&values[0] instanceof Integer)recognized.set((Integer)values[0]);
+      if(method.getReturnType()==boolean.class)return false;
+      if(method.getReturnType()==int.class)return 0;
+      return null;
+    });
+    recognizer=constructor.newInstance(viewer,listener);break;
+   }
+   if(recognizer==null)throw new AssertionError("native gesture recognizer unavailable");
+   Method touch=null;
+   for(Method method:type.getDeclaredMethods())if(Modifier.isPublic(method.getModifiers())
+       &&Arrays.equals(method.getParameterTypes(),new Class<?>[]{MotionEvent.class})&&method.getReturnType()==boolean.class){touch=method;break;}
+   if(touch==null)throw new AssertionError("native recognizer dispatcher unavailable");
+   View root=viewer.getWindow().getDecorView();
+   long now=SystemClock.uptimeMillis();
+   float x=root.getWidth()*.46f,y=root.getHeight()*.48f,dist=Math.min(root.getWidth(),root.getHeight())*.30f;
+   for(int i=0;i<=5;i++){
+    MotionEvent event=MotionEvent.obtain(now,now+i*30,i==0?MotionEvent.ACTION_DOWN:i==5?MotionEvent.ACTION_UP:MotionEvent.ACTION_MOVE,x+dist*dx*i/5,y,0);
+    try{touch.invoke(recognizer,event);}finally{event.recycle();}
+   }
+   return null;
+  });
+  for(int i=0;i<15&&recognized.get()==0;i++)Thread.sleep(80);
+  return recognized.get();
+ }
  void test(Bundle b)throws Exception{
   Context app=getTargetContext();
   boolean horizontal=app.getPackageName().endsWith("242");
@@ -140,6 +176,16 @@ public final class ImagePagingInstrumentation extends Instrumentation {
    p.edit().putInt(KEYS[1],4).putInt(KEYS[2],3).commit();
    swipe(1,0);waitIndex(2,"custom right advances");
    swipe(-1,0);waitIndex(1,"custom left reverses");
+   if(app.getPackageName().endsWith("191")){
+    for(int side:new int[]{1,-1}){
+     int code=nativeHorizontalCode(app,side);
+     check(code!=0,"learn actual native horizontal Back gesture code");
+     b.putString(side>0?"rightBackCode":"leftBackCode",Integer.toString(code));
+     nativePrefs.edit().putInt("gestureBack",code).commit();
+     swipe(side,0);waitIndex(side>0?2:1,"assigned image direction takes precedence over same native Back");
+    }
+    nativePrefs.edit().putInt("gestureBack",0).commit();
+   }
    p.edit().putInt(KEYS[1],0).commit();
    swipe(1,0);Thread.sleep(350);waitIndex(1,"unassigned next does not page");
    p.edit().remove(KEYS[1]).remove(KEYS[2]).commit();
