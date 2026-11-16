@@ -2021,3 +2021,8 @@ ReadingPositionでsetSelectionFromTop後の次レイアウトを待たず描画�
 ### 1.41.1未公開と再試行
 
 Release 43836894129は1.41.1のタグ作成後、Gradle publishのpackageReleaseで失敗。GitHub Release・アセットなし。Build Haiagaru 43836894319は成功。下位例外が記録されず原因未確定。タグ作成前の梱包検証を既存workflowへ追加する案は、所有者OAuthトークンにworkflow scopeがなくpushを拒否されたため、未公開の変更をrevertした。既存workflowのまま、生成タグを保持して次のパッチ版で公開を再試行する。
+
+
+## 2026-11-16 Haiagaru 1.41.2 正式公開
+
+既存Semantic ReleaseのRelease 43838194189とBuild Haiagaru 43838194128が成功。生成コミット53d891e0をmaster／devへ反映。公開アセット9点のサイズ・GitHub提供SHA-256・ZIP整合性を照合し、MPPの位置補正ヘルパーと既存拡張の同梱を確認。MPP SHA-256 `52201a4fb8d4e2868b29371046f4e4f64ae69cd56606520065f27888389eb46e`。画像判定＋VPN統合ZIPの内容を各個別ZIPと照合し、master／devの正式版・プレ版バンドル情報が1.41.2を指すことも確認した。更新内容・検証範囲・226未特定の記載・謝辞・寄付欄を公開本文で確認。証跡 build/scroll-filter-fix/verified-1.41.2.json。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.41.2 。1.41.1はタグのみで配布なし、削除・書換えは実施していない。
