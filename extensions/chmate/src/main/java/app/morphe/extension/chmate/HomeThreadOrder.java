@@ -95,6 +95,7 @@ public final class HomeThreadOrder {
         return result;
     }
     public static void menu(Object fragment,Menu menu){
+        ResponseNotes.homeMenu(fragment,menu);
         GlobalSearchHome.menu(fragment,menu);
         if(menu!=null&&menu.findItem(0x48690139)==null){
             menu.add(Menu.NONE,0x48690139,Menu.NONE,"キーワードの表示名を設定")

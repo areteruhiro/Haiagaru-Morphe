@@ -493,6 +493,7 @@ public final class Haiagaru {
     /** Adds the archive action to ChMate's own home-toolbar customization model. */
     public static Object addEdgeArchiveToolbarChoice(Object toolbarModel) {
         Object result=addToolbarChoice(toolbarModel, EDDI_ARCHIVE_TOOLBAR_ID, "haiagaru_edge_archive");
+        result=addToolbarChoice(result,ResponseNotes.MENU,"haiagaru_response_notes");
         return addToolbarChoice(result,OpenTabsRefresh.ACTION,"haiagaru_refresh_open_tabs");
     }
 
@@ -667,6 +668,7 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if(itemId==ResponseNotes.MENU){ResponseNotes.open(toolbarActivity(fragment),null);return true;}
         if(MultiResponseNg.click(fragment,itemId))return true;
         if(HomeThreadOrder.click(fragment,itemId))return true;
         if(StockChmatePosting.normalClick(fragment,itemId))return true;
@@ -3637,6 +3639,8 @@ public final class Haiagaru {
         LinearLayout lists=SettingsSection.add(layout,text("スレ一覧・HOME・履歴の表示", "Thread lists, HOME and history"),text("並び順、表示するスレ、履歴タブ", "Ordering, thread visibility and history tabs"),true);
         LinearLayout search=SettingsSection.add(layout,text("スレ内検索・記者ID", "Thread search and reporter IDs"),text("検索対象と記者IDの表示・検索", "Search targets and reporter ID display/search"),true);
         ThreadSearchOptions.add(search,activity);
+        Switch homeNotes=addSwitch(lists,activity,"HOMEの3点メニューにメモを表示",SettingsProfiles.prefs(activity).getBoolean("homeResponseNotesMenu",true));
+        homeNotes.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean("homeResponseNotesMenu",on).apply();activity.invalidateOptionsMenu();});
         Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
         homeOrder.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.ENABLED);
         homeOrder.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.ENABLED,on).apply();activity.invalidateOptionsMenu();});
@@ -4376,6 +4380,9 @@ public final class Haiagaru {
         Switch videoViewer = addSwitch(layout, activity,
                 text("動画を専用ビューアで開く（オフなら従来の動作）", "Open videos in dedicated viewer (off: original behavior)"),
                 preferences.getBoolean("videoViewerEnabled", true));
+        Switch externalVideoCache=addSwitch(layout,activity,"外部プレイヤー用にimgpile動画を一時取得",preferences.getBoolean(ExternalVideoCache.KEY,true));
+        live.toggle(externalVideoCache,ExternalVideoCache.KEY);
+        TextView externalVideoHelp=new TextView(activity);externalVideoHelp.setText("専用ビューアを使わないとき、動画を取得してから端末の動画アプリへ渡します。最大128MB・60秒。一時ファイルは次回取得時に24時間経過分を整理します。");layout.addView(externalVideoHelp);
         if (!VideoViewerActivity.installed(activity)) {
             videoViewer.setChecked(false);
             videoViewer.setEnabled(false);

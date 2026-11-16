@@ -3584,3 +3584,38 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
   APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-momentum-support\apks\final226.apk`、SHA-256 `680d2e46bd2f14eb3dd87e79c8fdc014be19356d447a4163bbd4e6a222018e43`。
   MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\site-momentum-support\apks\candidate.mpp`、SHA-256 `7774388a13750abd90d2e32d4eb59bba7dd234478ae26d783f6604a5363b6f3f`。
   署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+## 2026-11-16 画像切り替えトグル242（未公開）
+
+- 2026-11-16T23:14:41.234628 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。動画専用ビューアのパッチON。アプリ設定videoViewerEnabled=true、videoUseNativeViewer=falseを保存し、インストールマーカーと設定画面起動を確認。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-toggle-242\apks\final242.apk`、SHA-256 `da719fa270b83cb07e6319523299899895526c97b467511b2842113dc0b65ca7`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\image-paging-toggle-242\apks\candidate.mpp`、SHA-256 `6ec028e6148ad1a48406678e7af4b23089405572e6e6905f3214b02caca58d79`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+## 2026-11-16 imgpile外部再生・サムネイル候補242（未公開）
+
+- 2026-11-16T23:32:17.802808 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。動画専用ビューアOFFの試験20項目成功（試験後は設定を元へ復元）。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\external-video-cache-242\apks\final242.apk`、SHA-256 `ac5598f633ebc7444ecc0610bba6c3cd9dd1792d7e1edd5cfa29ed45dff22749`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\external-video-cache-242\apks\candidate.mpp`、SHA-256 `29ac411b79e1e5d6a1a0dbee87dc1ea7f448c831525d7a4142ed70ce457aa4d8`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+## 2026-11-17 メモ・HOME・ジェスチャー候補242（未公開）
+
+- 2026-11-17T00:00:50.808838 JST、Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\final242.apk`、SHA-256 `6c5bfa878db41a71a290e5324420e77babf454b7a02a6db96127d8be6a7dbceb`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\candidate.mpp`、SHA-256 `9d99b6de4ccdeda84c3ff53b6f3156cab39706ebe58814363b6cfe32dd7c82f5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+## 2026-11-17 メモ候補・公式公開前の対応版確認
+
+- 2026-11-17T00:36:56.627674 JST、Haiagaru 修正確認 191 / 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\final191.apk`、SHA-256 `7dff56298eb4d221007f7e9f1a19adb32f7cd56f11cf6f9679265fa18490d1a9`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\candidate.mpp`、SHA-256 `9d99b6de4ccdeda84c3ff53b6f3156cab39706ebe58814363b6cfe32dd7c82f5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+
+## 2026-11-17 メモ候補・公式公開前の対応版確認
+
+- 2026-11-17T00:37:28.713448 JST、Haiagaru 修正確認 226 / 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226`。Mi Note 10 Android 11、ADB `d5497008`。signature matched; install-r Success。
+  APK `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\final226.apk`、SHA-256 `b96ff2992b206c823232a9f1f9a3c24a3e6f1aec2a72f1a429fcf92ffc6e372c`。
+  MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\response-notes-20261116\apks\candidate.mpp`、SHA-256 `9d99b6de4ccdeda84c3ff53b6f3156cab39706ebe58814363b6cfe32dd7c82f5`。
+  署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
