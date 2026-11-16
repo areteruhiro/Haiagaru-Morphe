@@ -32,6 +32,30 @@ final class VideoFrameThumbnail {
     static void request(String url) {
         enqueue(url,false);
     }
+    /** Reuse a user-downloaded video even when the streaming request previously failed. */
+    static void requestLocal(String url,File source){
+        if(!DirectVideoUrls.supported(url)||!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true)||Haiagaru.mediaAutoFetchMode()==3)return;
+        boolean four=fourAllowed();int minimum=Haiagaru.videoPreviewMinimumSeconds(),count=Haiagaru.videoPreviewCount();
+        String variant=variant(four,minimum,count);
+        WORKER.execute(()->{
+            Context context=Haiagaru.applicationContextForExtension();if(context==null)return;File staging=null;
+            try{
+                if(!FeatureSwitches.enabled("videoFrameThumbnailsEnabled",true)||Haiagaru.mediaAutoFetchMode()==3||four&&!fourAllowed()||XMediaAttachments.hasFramePoster(url,variant)||!source.isFile())return;
+                byte[] digest=MessageDigest.getInstance("SHA-256").digest((variant+":"+url).getBytes("UTF-8"));StringBuilder key=new StringBuilder();
+                for(byte value:digest)key.append(String.format(java.util.Locale.ROOT,"%02x",value&255));
+                File directory=new File(context.getCacheDir(),"haiagaru-video-frames");if(!directory.isDirectory()&&!directory.mkdirs())return;
+                File image=new File(directory,key+".jpg");
+                if(!image.isFile()||image.length()==0){
+                    if(VideoFrameDecodeService.blocked(context))return;
+                    staging=File.createTempFile("external-preview-",".jpg",directory);
+                    if(!VideoFrameDecodeService.decode(context,source,staging,four,minimum,count)||!staging.renameTo(image))return;
+                }
+                XMediaAttachments.setFramePoster(url,variant,VideoThumbnailServer.register(key.toString(),image));
+                ImgurAlbumAttachments.refreshVideoModels();ThreadListThumbnail.frameReady(url);
+            }catch(Exception error){android.util.Log.w("HaiagaruMedia","Downloaded video preview unavailable",error);}
+            finally{if(staging!=null)staging.delete();}
+        });
+    }
     static boolean retry(String url){return enqueue(url,true);}
     static boolean running(String url){return ATTEMPTED.running(currentVariant()+":"+url);}
     private static boolean enqueue(String url,boolean manual) {

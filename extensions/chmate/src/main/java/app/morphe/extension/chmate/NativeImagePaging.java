@@ -33,8 +33,10 @@ public final class NativeImagePaging {
     }
     private NativeImagePaging(){}
 
-    static boolean disabled(Context context){return VideoViewerSettings.prefs(context).getBoolean(DISABLED,false);}
-    static boolean enabled(Context context){return !disabled(context)&&VideoViewerSettings.prefs(context).getBoolean(ENABLED,true);}
+    // The previous "disable gestures" choice now means to leave handling to ChMate.
+    // Keep reading its key until the user next changes the mode, without blocking native input.
+    static boolean disabled(Context context){return false;}
+    static boolean enabled(Context context){SharedPreferences prefs=VideoViewerSettings.prefs(context);return !prefs.getBoolean(DISABLED,false)&&prefs.getBoolean(ENABLED,true);}
     static boolean legacy191(Context context){
         try{return "0.8.10.191 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}
         catch(android.content.pm.PackageManager.NameNotFoundException ignored){return false;}
@@ -82,17 +84,28 @@ public final class NativeImagePaging {
     }
     private static void showSettings(Activity activity){
         SharedPreferences prefs=VideoViewerSettings.prefs(activity);
-        String[] names={"次の画像："+DIRECTIONS[direction(prefs,NEXT)],"前の画像："+DIRECTIONS[direction(prefs,PREVIOUS)],
-                enabled(activity)?"ChMate標準の操作に戻す":"方向指定を使う",
-                disabled(activity)?"画像切り替えジェスチャーを有効にする":"画像切り替えジェスチャーを無効にする",
-                "初期設定（"+DIRECTIONS[defaultDirection(activity,NEXT)]+" 次へ／"+DIRECTIONS[defaultDirection(activity,PREVIOUS)]+" 前へ）に戻す"};
-        new HaiagaruDialog.Builder(activity).setTitle("画像の切り替えジェスチャー")
-                .setItems(names,(dialog,which)->{
-                    if(which<2)choose(activity,which==0?NEXT:PREVIOUS);
-                    else if(which==2){prefs.edit().putBoolean(ENABLED,!enabled(activity)).putBoolean(DISABLED,false).apply();showSettings(activity);}
-                    else if(which==3){prefs.edit().putBoolean(DISABLED,!disabled(activity)).apply();showSettings(activity);}
-                    else{prefs.edit().remove(NEXT).remove(PREVIOUS).remove(ENABLED).remove(DISABLED).apply();showSettings(activity);}
-                }).setNegativeButton("閉じる",null).show();
+        LinearLayout body=new LinearLayout(activity);body.setOrientation(LinearLayout.VERTICAL);
+        int padding=Math.round(16*activity.getResources().getDisplayMetrics().density);body.setPadding(padding,padding,padding,padding);
+        android.widget.Switch toggle=new LiveSettings.Toggle(activity);
+        toggle.setText("Haiagaruの画像切り替え設定を使う");toggle.setChecked(enabled(activity));body.addView(toggle);
+        android.widget.TextView help=new android.widget.TextView(activity);
+        help.setText("ON：下の方向指定を使います。\nOFF：この設定を適用せず、ChMate標準の操作を使います。");body.addView(help);
+        Button next=new Button(activity),previous=new Button(activity),reset=new Button(activity);
+        body.addView(next);body.addView(previous);body.addView(reset);
+        reset.setText("初期設定（"+DIRECTIONS[defaultDirection(activity,NEXT)]+" 次へ／"+DIRECTIONS[defaultDirection(activity,PREVIOUS)]+" 前へ）に戻す");
+        Runnable refresh=()->{
+            next.setText("次の画像："+DIRECTIONS[direction(prefs,NEXT)]);
+            previous.setText("前の画像："+DIRECTIONS[direction(prefs,PREVIOUS)]);
+            next.setEnabled(toggle.isChecked());previous.setEnabled(toggle.isChecked());
+        };
+        toggle.setOnCheckedChangeListener((button,on)->{prefs.edit().putBoolean(ENABLED,on).remove(DISABLED).apply();refresh.run();});
+        reset.setOnClickListener(view->{prefs.edit().remove(NEXT).remove(PREVIOUS).remove(ENABLED).remove(DISABLED).apply();toggle.setChecked(true);refresh.run();});
+        refresh.run();
+        HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("画像の切り替えジェスチャー")
+                .setView(body).setNegativeButton("閉じる",null).create();
+        next.setOnClickListener(view->{dialog.dismiss();choose(activity,NEXT);});
+        previous.setOnClickListener(view->{dialog.dismiss();choose(activity,PREVIOUS);});
+        dialog.show();
     }
     private static void choose(Activity activity,String key){
         SharedPreferences prefs=VideoViewerSettings.prefs(activity);

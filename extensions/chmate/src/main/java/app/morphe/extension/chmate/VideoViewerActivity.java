@@ -63,6 +63,7 @@ public final class VideoViewerActivity extends HaiagaruComposeActivity {
     public static void prepareExternalIntent(Intent intent) {
         if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) return;
         Context context = Haiagaru.applicationContextForExtension();
+        if(ExternalVideoCache.prepare(context,intent))return;
         if (context == null || !Haiagaru.videoViewerEnabled()) return;
         Uri uri = intent.getData();
         if (uri == null) return;

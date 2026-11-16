@@ -30,7 +30,7 @@ public final class ImagePagingInstrumentation extends Instrumentation {
   throw new AssertionError(label+": index="+last+" expected="+expected);
  }
  Integer liveIndex()throws Exception {
-  if(!embedded)return (Integer)index.invoke(null,viewer);
+  if(!embedded){Integer current=(Integer)index.invoke(null,viewer);if(current!=null)return current;}
   Class<?> policy=getTargetContext().getClassLoader().loadClass("app.morphe.extension.chmate.NativeImagePaging");
   Map<?,?> refs=(Map<?,?>)get(policy,"CONTAINERS",null);
   for(var entry:refs.entrySet()){
@@ -199,10 +199,10 @@ public final class ImagePagingInstrumentation extends Instrumentation {
    Method enabled=policy.getDeclaredMethod("enabled",Context.class);enabled.setAccessible(true);
    check(!(Boolean)enabled.invoke(null,app),"standard mode disables custom directions");
    p.edit().putBoolean("imagePagingDisabled",true).commit();
-   open(app,urls,1);waitIndex(1,"disabled gallery starts at middle");Thread.sleep(600);
-   for(int[] direction:new int[][]{{1,0},{-1,0},{0,1},{0,-1}}){
-    swipe(direction[0],direction[1]);Thread.sleep(300);waitIndex(1,"disabled image gestures never page");
-   }
+   Method disabled=policy.getDeclaredMethod("disabled",Context.class);disabled.setAccessible(true);
+   check(!(Boolean)enabled.invoke(null,app),"old disable choice delegates to native operation");
+   check(!(Boolean)disabled.invoke(null,app),"old disable choice never suppresses native paging");
+   open(app,urls,1);waitIndex(1,"native-mode gallery starts at middle");Thread.sleep(600);
    p.edit().putBoolean("imagePagingDisabled",false).putBoolean(KEYS[0],true).putInt(KEYS[1],3).putInt(KEYS[2],4).commit();
    swipe(-1,0);waitIndex(2,"configured left advances in every version");
    swipe(1,0);waitIndex(1,"configured right reverses in every version");
