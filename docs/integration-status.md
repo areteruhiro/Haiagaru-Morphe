@@ -2018,6 +2018,6 @@ ReadingPositionでsetSelectionFromTop後の次レイアウトを待たず描画�
 最終MPPのビルドと191・226・242への適用に成功。Mi Note 10 Android 11（d5497008）の隔離3版で各25項目に合格。両プリセットのchtoioをOFFからONへ保存できること、ネイティブレスを返すListViewで末尾付近の行を2回拡大しても補正途中のずれた描画フレームを検出しないこと、補正レイアウト待ちでは描画を抑制することを確認。ネイティブサムネイルは191/226=110項目、242=106項目に合格。検証開始後のクラッシュログは空。位置試験は表示行の高さ変更による模擬サムネイル更新で、報告端末・実メディアの全条件を再現したものではない。226のフィルター問題は未特定のまま公開説明に明記する。証跡 build/scroll-filter-fix。
 
 
-### 公式公開CIの初回失敗
+### 1.41.1未公開と再試行
 
-Release 43836894129は1.41.1の生成コミット38e8b28f／タグ作成後、Gradle publishの:extensions:chmate:packageRelease（IncrementalSplitterRunnable）で失敗。GitHub Releaseと配布アセットは作成されていない。同じソースのBuild Haiagaru 43836894319は成功。ログに下位例外がなく梱包失敗の原因は未確定。既存release.ymlにタグ作成前のbuildAndroid検証（詳細スタックトレース、最大2ワーカー、プロジェクト並列化なし）を追加し、publishも最大2ワーカーで実行する。生成済みタグやCI生成ファイルは書き換えず、通常のdev→masterマージで次のパッチ版へ進める。
+Release 43836894129は1.41.1のタグ作成後、Gradle publishのpackageReleaseで失敗。GitHub Release・アセットなし。Build Haiagaru 43836894319は成功。下位例外が記録されず原因未確定。タグ作成前の梱包検証を既存workflowへ追加する案は、所有者OAuthトークンにworkflow scopeがなくpushを拒否されたため、未公開の変更をrevertした。既存workflowのまま、生成タグを保持して次のパッチ版で公開を再試行する。
