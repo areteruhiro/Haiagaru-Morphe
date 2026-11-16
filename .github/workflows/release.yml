@@ -43,11 +43,16 @@ jobs:
 
       # Semantic release runs its own Gradle build command.
       # Only dev and master branches generate releases as specified by .releaserc.
+      # Check Android packaging before semantic-release creates a version tag.
+      - name: Verify release packaging before tagging
+        run: ./gradlew :patches:buildAndroid --no-daemon --no-parallel --max-workers=2 --stacktrace
+
       - name: Release
         uses: cycjimmy/semantic-release-action@v6
         id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GRADLE_OPTS: -Dorg.gradle.workers.max=2 -Dorg.gradle.parallel=false
 
       - name: Attest
         if: steps.release.outputs.new_release_published == 'true'
