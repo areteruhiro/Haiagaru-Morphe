@@ -61,6 +61,10 @@ public final class SiteThreadMetadata {
         if(id==null)return;try{state.thread=field(row,id).getLong(row);state.count=field(row,count).getInt(row);String source=SiteThreadIds.source(Long.toString(state.thread));String key=state.board+":"+source;if(!CACHE.containsKey(key))acquire(state.gateway,state.board,source);}catch(Exception ignored){state.thread=0;state.count=0;}
     }
     static String currentBoard(){Binding binding=CURRENT.get();return binding==null?null:binding.board;}
+    static Map<String,Long> creationSnapshot(){
+        Context context=Haiagaru.applicationContextForExtension();if(context!=null)initialize(context);
+        synchronized(CACHE){return new HashMap<>(CACHE);}
+    }
     static long cachedCreation(String key,String id){
         Long value=CACHE.get(key+":"+id);return value==null?0:value;
     }

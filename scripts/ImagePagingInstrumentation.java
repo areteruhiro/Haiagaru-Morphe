@@ -13,7 +13,7 @@ import java.util.concurrent.*;
 // Full-screen native viewers use loopback images. Optional embedded mode opens the public test thread.
 public final class ImagePagingInstrumentation extends Instrumentation {
  final String VIEWER="jp.syoboi.a2chMate.activity.ImagesViewer2Activity";
- final String[] KEYS={"imagePagingGestures","imagePagingNext","imagePagingPrevious"};
+ final String[] KEYS={"imagePagingGestures","imagePagingNext","imagePagingPrevious","imagePagingDisabled"};
  Activity viewer;
  boolean embedded,mixed;
  Method index;
@@ -198,6 +198,14 @@ public final class ImagePagingInstrumentation extends Instrumentation {
    Class<?> policy=app.getClassLoader().loadClass("app.morphe.extension.chmate.NativeImagePaging");
    Method enabled=policy.getDeclaredMethod("enabled",Context.class);enabled.setAccessible(true);
    check(!(Boolean)enabled.invoke(null,app),"standard mode disables custom directions");
+   p.edit().putBoolean("imagePagingDisabled",true).commit();
+   open(app,urls,1);waitIndex(1,"disabled gallery starts at middle");Thread.sleep(600);
+   for(int[] direction:new int[][]{{1,0},{-1,0},{0,1},{0,-1}}){
+    swipe(direction[0],direction[1]);Thread.sleep(300);waitIndex(1,"disabled image gestures never page");
+   }
+   p.edit().putBoolean("imagePagingDisabled",false).putBoolean(KEYS[0],true).putInt(KEYS[1],3).putInt(KEYS[2],4).commit();
+   swipe(-1,0);waitIndex(2,"configured left advances in every version");
+   swipe(1,0);waitIndex(1,"configured right reverses in every version");
    b.putString("viewer",embedded?"in-thread 242 overlay; reader Activity retained":"same native Activity throughout");
   }finally{
    if(viewer!=null)main(()->{viewer.finish();return null;});
