@@ -271,6 +271,7 @@ public final class SettingsProfiles {
         for(Map.Entry<String,Rule> entry:RULES.entrySet())
             if(entry.getValue().accepts(false))out.put(entry.getKey(),false);
         out.put("hideAd",true);
+        out.put("chtoio",true);
         out.put("urlVideoFetchMode",3);
         out.put(GifAutoFetchPolicy.KEY,3);
         return out;
@@ -280,7 +281,7 @@ public final class SettingsProfiles {
         if(adsOnly)return adsOnlyValues();
         Map<String,Object> out=new LinkedHashMap<>();for(Map.Entry<String,Rule> e:RULES.entrySet())if(e.getValue().accepts(false))out.put(e.getKey(),false);
         for(String key:new String[]{"edgeReporterId","edgeReporterBoardList","dedicatedViewerEnabled","kyodemoEnhancedViewer","automaticDat",
-                "hideAd","videoViewerEnabled","videoYoutubeEnabled","urlImageFetchEnabled","videoFrameThumbnailsEnabled","wacchoiSearchEnabled","showEdgeSearch",
+                "hideAd","chtoio","videoViewerEnabled","videoYoutubeEnabled","urlImageFetchEnabled","videoFrameThumbnailsEnabled","wacchoiSearchEnabled","showEdgeSearch",
                 ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,true);
         out.put("urlVideoFetchMode",0);return out;
     }
