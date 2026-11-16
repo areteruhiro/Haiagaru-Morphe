@@ -4066,7 +4066,7 @@ public final class Haiagaru {
         Switch chtoio = addSwitch(
                 layout,
                 activity,
-                "chtoio",
+                "5ch.netのリンクを5ch.ioに変換",
                 preferences.getBoolean("chtoio", true)
         );
 

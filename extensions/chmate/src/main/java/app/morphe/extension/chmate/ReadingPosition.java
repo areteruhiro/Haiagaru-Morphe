@@ -84,6 +84,8 @@ public final class ReadingPosition {
                 // Keep the original logical anchor across coalesced thumbnail updates.
                 if(session.mediaAnchor==null||now>session.mediaUntil){
                     session.mediaAnchor=session.anchor();
+                    session.openingRebuild=false;
+                    session.openingAnchor=null;
                     session.mediaCorrections=0;
                 }
                 session.mediaLayout=true;
@@ -91,6 +93,13 @@ public final class ReadingPosition {
             } catch (Exception ignored) {}
             return;
         }
+    }
+
+    static boolean mediaPending(View list) {
+        for (Session session : SESSIONS.values())
+            if (session.list == list && session.mediaAnchor != null
+                    && android.os.SystemClock.uptimeMillis() <= session.mediaUntil) return true;
+        return false;
     }
 
     public static void save(Object fragment) {
@@ -261,8 +270,14 @@ public final class ReadingPosition {
         }
 
         @Override public boolean onPreDraw() {
-            if (closed) return true;
-            if (restoring) { restoring = false; onScrollChanged(); return true; }
+            if (closed || !list.isShown()) return true;
+            if (restoring) {
+                // setSelectionFromTop schedules another layout. Drawing the old children
+                // here exposes the displaced frame between two corrections.
+                if (list.isLayoutRequested()) return false;
+                restoring = false;
+                onScrollChanged();
+            }
             // ViewTreeObserver belongs to the whole window. Retained tablet
             // fragments also receive callbacks while adjacent pages animate.
             // Never perform reflective anchor discovery on every 120 Hz frame.
@@ -292,7 +307,7 @@ public final class ReadingPosition {
             }
             // Capture the displayed unread viewport, not an adapter index. The
             // saved position is relevant only during the initial 191 load.
-            if(version.contains("191")&&now-opened<12000&&!XPostPreviewPosition.hasUserInteraction(list)){
+            if(mediaAnchor==null&&version.contains("191")&&now-opened<12000&&!XPostPreviewPosition.hasUserInteraction(list)){
                 try{
                     if(openingRebuild&&!list.isLayoutRequested()){
                         openingRebuild=false;
@@ -317,7 +332,7 @@ public final class ReadingPosition {
             try {
                 Anchor current = anchor();
                 if(current==null)return true;
-                if(version.contains("191")&&now-opened<12000&&current.number>1
+                if(mediaAnchor==null&&version.contains("191")&&now-opened<12000&&current.number>1
                         &&!openingRebuild&&!XPostPreviewPosition.hasUserInteraction(list))openingAnchor=current;
                 if(coldPreview!=null){
                     if(now>coldPreviewUntil||XPostPreviewPosition.hasUserInteraction(list)){coldPreview=null;onScrollChanged();}

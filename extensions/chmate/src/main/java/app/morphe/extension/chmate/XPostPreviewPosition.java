@@ -66,7 +66,7 @@ final class XPostPreviewPosition {
             // Native unread/end positioning owns both endpoints. A preview must
             // never pin a response above the native footer or unread boundary.
             if(!view.canScrollVertically(-1)||!view.canScrollVertically(1))return;
-            if (PENDING.containsKey(view) || !view.isShown() || view.isLayoutRequested() || interacting(view)) return;
+            if (ReadingPosition.mediaPending(view) || PENDING.containsKey(view) || !view.isShown() || view.isLayoutRequested() || interacting(view)) return;
             try {
                 Anchor anchor = new Anchor((ViewGroup) view);
                 if (anchor.position < 0) return;
@@ -118,7 +118,7 @@ final class XPostPreviewPosition {
             if (list.isLayoutRequested()) return true;
             close();
             try {
-                if (!list.isShown() || interacting(list) || !list.canScrollVertically(-1)||!list.canScrollVertically(1)
+                if (ReadingPosition.mediaPending(list) || !list.isShown() || interacting(list) || !list.canScrollVertically(-1)||!list.canScrollVertically(1)
                         || adapter != call(list, "getAdapter", new Class<?>[0]) || count != count()) return true;
                 View first=list.getChildCount()==0?null:list.getChildAt(0);
                 int current=first==null?-1:list instanceof ListView?((ListView)list).getFirstVisiblePosition():(Integer)call(list,"getChildAdapterPosition",new Class<?>[]{View.class},first);
