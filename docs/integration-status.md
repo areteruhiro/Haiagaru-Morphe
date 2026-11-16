@@ -2044,3 +2044,9 @@ Lint/R8付きMPPビルドと191／226／242適用成功。Mi Note 10 Android 11�
 設定最下部にサポート板リンクを追加。191／226／242の勢い比較を実際の作成日時から計算し、ソート中の日時・時計を固定。ふたばの一覧取得時に既存OPページから日時も保存する。日時未取得のスレは0相当で、取得後の再ソート／一覧更新で反映する。
 
 先行メニュー・画像操作・検索・動画サムネイル変更も統合し、Lint/R8付きビルド成功。Mi Note 10 Android 11の隔離3版で勢い各11項目、メニュー各10項目、画像操作24／20／20項目、サイト本文・画像経路649／655／652項目に成功。元比較の命令・レジスター保持とソート呼出し1／1／2箇所を検査。日時26項目成功、新規クラッシュなし。サポートの追加クリック試験は利用者指示で省略（開始済みの補助試験は指示到着時に成功済み）。補助テストの旧日時スコープ・可変ローカルポート前提を現行仕様へ更新した。詳細 docs/site-momentum-support-20261116.md、証跡 build/site-momentum-support、導入は台帳記録済み。既存Semantic Releaseで正式公開する。
+
+## 2026-11-16 Haiagaru 1.42.0 正式公開
+
+検証済みdev 50200ae4をmaster 1d4f3c58へ通常マージし、既存Semantic Releaseで正式公開。生成コミット414fd77a、正式版URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.42.0 。Build Haiagaru 43877636358成功。公開アセット9点のサイズ・GitHub提供SHA-256・ZIP整合性と統合ZIPの内容を照合し、公開MPP内のSiteMomentumSort・画像ジェスチャー無効化・メニュー設定を確認。MPP SHA-256 `eb65a2314d8d0a1bea11680a2edd0c871c77de0278b27d6feb2769c182ed5f20`。謝辞・寄付欄と更新内容の記載も確認。証跡 build/site-momentum-support/verified-1.42.0.json。
+
+Release 43877636445の初回はGitHub Release・アセットの公開完了後、dev側で同時生成された1.42.0-dev.1との自動backmergeでCI生成ファイルが競合した。masterのCI生成内容を採用して通常マージ290a72d7で解消しdevへpush。手作業でリリース・タグ・配布物を作成／書換えず、master／devの両バンドル情報が正式1.42.0を指すことを確認。失敗ジョブは既存workflowの再実行を開始した。
