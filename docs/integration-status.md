@@ -2050,3 +2050,5 @@ Lint/R8付きMPPビルドと191／226／242適用成功。Mi Note 10 Android 11�
 検証済みdev 50200ae4をmaster 1d4f3c58へ通常マージし、既存Semantic Releaseで正式公開。生成コミット414fd77a、正式版URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.42.0 。Build Haiagaru 43877636358成功。公開アセット9点のサイズ・GitHub提供SHA-256・ZIP整合性と統合ZIPの内容を照合し、公開MPP内のSiteMomentumSort・画像ジェスチャー無効化・メニュー設定を確認。MPP SHA-256 `eb65a2314d8d0a1bea11680a2edd0c871c77de0278b27d6feb2769c182ed5f20`。謝辞・寄付欄と更新内容の記載も確認。証跡 build/site-momentum-support/verified-1.42.0.json。
 
 Release 43877636445の初回はGitHub Release・アセットの公開完了後、dev側で同時生成された1.42.0-dev.1との自動backmergeでCI生成ファイルが競合した。masterのCI生成内容を採用して通常マージ290a72d7で解消しdevへpush。手作業でリリース・タグ・配布物を作成／書換えず、master／devの両バンドル情報が正式1.42.0を指すことを確認。失敗ジョブは既存workflowの再実行を開始した。
+
+Release 43877636445の再実行（attempt 2）は成功。既存タグ／公開ファイルを維持したまま、競合解消後の最終コンパイル確認まで完了。Build Haiagaruも成功済み。ChatMate’sの自動APKビルドは新しい更新を検知して開始しており、APK配布完了とは区別する。
