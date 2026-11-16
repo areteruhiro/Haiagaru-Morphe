@@ -18,6 +18,7 @@ import java.util.WeakHashMap;
 /** Configurable gestures for native multi-image viewers. Page changes use the current native screen. */
 public final class NativeImagePaging {
     static final String ENABLED="imagePagingGestures", NEXT="imagePagingNext", PREVIOUS="imagePagingPrevious";
+    static final String DISABLED="imagePagingDisabled";
     static final int UP=1, DOWN=2, LEFT=3, RIGHT=4;
     private static final String[] DIRECTIONS={"割り当てなし","↑ 上","↓ 下","← 左","→ 右"};
     private static final WeakHashMap<View, WeakReference<Object>> CONTAINERS=new WeakHashMap<>();
@@ -32,7 +33,8 @@ public final class NativeImagePaging {
     }
     private NativeImagePaging(){}
 
-    static boolean enabled(Context context){return VideoViewerSettings.prefs(context).getBoolean(ENABLED,true);}
+    static boolean disabled(Context context){return VideoViewerSettings.prefs(context).getBoolean(DISABLED,false);}
+    static boolean enabled(Context context){return !disabled(context)&&VideoViewerSettings.prefs(context).getBoolean(ENABLED,true);}
     static boolean legacy191(Context context){
         try{return "0.8.10.191 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}
         catch(android.content.pm.PackageManager.NameNotFoundException ignored){return false;}
@@ -81,12 +83,15 @@ public final class NativeImagePaging {
     private static void showSettings(Activity activity){
         SharedPreferences prefs=VideoViewerSettings.prefs(activity);
         String[] names={"次の画像："+DIRECTIONS[direction(prefs,NEXT)],"前の画像："+DIRECTIONS[direction(prefs,PREVIOUS)],
-                enabled(activity)?"ChMate標準の操作に戻す":"方向指定を使う","初期設定（"+DIRECTIONS[defaultDirection(activity,NEXT)]+" 次へ／"+DIRECTIONS[defaultDirection(activity,PREVIOUS)]+" 前へ）に戻す"};
+                enabled(activity)?"ChMate標準の操作に戻す":"方向指定を使う",
+                disabled(activity)?"画像切り替えジェスチャーを有効にする":"画像切り替えジェスチャーを無効にする",
+                "初期設定（"+DIRECTIONS[defaultDirection(activity,NEXT)]+" 次へ／"+DIRECTIONS[defaultDirection(activity,PREVIOUS)]+" 前へ）に戻す"};
         new HaiagaruDialog.Builder(activity).setTitle("画像の切り替えジェスチャー")
                 .setItems(names,(dialog,which)->{
                     if(which<2)choose(activity,which==0?NEXT:PREVIOUS);
-                    else if(which==2){prefs.edit().putBoolean(ENABLED,!enabled(activity)).apply();showSettings(activity);}
-                    else{prefs.edit().remove(NEXT).remove(PREVIOUS).remove(ENABLED).apply();showSettings(activity);}
+                    else if(which==2){prefs.edit().putBoolean(ENABLED,!enabled(activity)).putBoolean(DISABLED,false).apply();showSettings(activity);}
+                    else if(which==3){prefs.edit().putBoolean(DISABLED,!disabled(activity)).apply();showSettings(activity);}
+                    else{prefs.edit().remove(NEXT).remove(PREVIOUS).remove(ENABLED).remove(DISABLED).apply();showSettings(activity);}
                 }).setNegativeButton("閉じる",null).show();
     }
     private static void choose(Activity activity,String key){
@@ -97,7 +102,7 @@ public final class NativeImagePaging {
         if(assigned!=0)labels[assigned]+="（現在の割り当てと入れ替え）";
         new HaiagaruDialog.Builder(activity).setTitle(NEXT.equals(key)?"次の画像へ":"前の画像へ")
                 .setSingleChoiceItems(labels,old,(dialog,which)->{
-                    SharedPreferences.Editor edit=prefs.edit().putBoolean(ENABLED,true).putInt(key,which);
+                    SharedPreferences.Editor edit=prefs.edit().putBoolean(ENABLED,true).putBoolean(DISABLED,false).putInt(key,which);
                     if(which!=0&&which==assigned)edit.putInt(other,old==which?0:old);
                     edit.apply();dialog.dismiss();showSettings(activity);
                 }).setNegativeButton("戻る",(dialog,which)->showSettings(activity)).show();
@@ -121,7 +126,7 @@ public final class NativeImagePaging {
             if(activity==null)return false;
             if(event.getActionMasked()==MotionEvent.ACTION_DOWN){
                 SWIPES.remove(container);
-                if(!enabled(activity)||isNativeActivity(activity)&&mixed(activity)||pageCount(fragment)<2)return false;
+                if((!enabled(activity)&&!disabled(activity))||isNativeActivity(activity)&&mixed(activity)&&!disabled(activity)||pageCount(fragment)<2)return false;
             }
             return touch(container,activity,container,event,container::dispatchTouchEvent,step->{
                 Object binding=NativeFields.find(fragment.getClass(),"d").get(fragment);
@@ -154,7 +159,7 @@ public final class NativeImagePaging {
             if(event.getActionMasked()==MotionEvent.ACTION_DOWN){
                 SWIPES.remove(activity);
                 ArrayList<String> links=activity.getIntent().getStringArrayListExtra("links");
-                if(!enabled(activity)||mixed(activity)||links==null||links.size()<2)return false;
+                if((!enabled(activity)&&!disabled(activity))||mixed(activity)&&!disabled(activity)||links==null||links.size()<2)return false;
             }else if(!SWIPES.containsKey(activity))return false;
             View root=activity.getWindow().getDecorView();
             return touch(activity,activity,root,event,activity::dispatchTouchEvent,step->{
@@ -188,7 +193,8 @@ public final class NativeImagePaging {
             if(MediaViewerNavigation.zoomed(surface)||MediaViewerNavigation.controlAt(activity.getWindow().getDecorView(),x,y))return false;
             SharedPreferences prefs=VideoViewerSettings.prefs(activity);
             swipe=new Swipe();swipe.x=x;swipe.y=y;swipe.next=direction(prefs,NEXT);swipe.previous=direction(prefs,PREVIOUS);
-            swipe.horizontalPriority=legacy191(activity)&&(swipe.next>=LEFT||swipe.previous>=LEFT);
+            if(disabled(activity))swipe.next=swipe.previous=0;
+            swipe.horizontalPriority=true;
             swipe.threshold=48*surface.getResources().getDisplayMetrics().density;
             swipe.claim=ViewConfiguration.get(activity).getScaledTouchSlop();
             // In 242 an embedded viewer must close its overlay, not the thread Activity.
@@ -202,7 +208,7 @@ public final class NativeImagePaging {
         if(event.getPointerCount()>1||action==MotionEvent.ACTION_POINTER_DOWN){swipe.multiTouch=true;return swipe.claimed;}
         if(swipe.multiTouch){if(action==MotionEvent.ACTION_UP)SWIPES.remove(key);return swipe.claimed;}
         float dx=event.getRawX()-swipe.x,dy=event.getRawY()-swipe.y;
-        boolean pageFlick=swipe.horizontalPriority&&assignedHorizontal(dx,dy,swipe.threshold,swipe.next,swipe.previous);
+        boolean pageFlick=swipe.horizontalPriority&&step(axis(dx,dy,swipe.claim),swipe.next,swipe.previous)!=0;
         if(!pageFlick&&swipe.back.dispatch(event)){SWIPES.remove(key);return true;}
         // Claim before the old horizontal pager crosses its own drag threshold.
         // This also prevents an unassigned direction from silently changing pages.

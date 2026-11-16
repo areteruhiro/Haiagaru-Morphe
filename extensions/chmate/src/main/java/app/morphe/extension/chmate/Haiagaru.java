@@ -3637,6 +3637,15 @@ public final class Haiagaru {
         LinearLayout lists=SettingsSection.add(layout,text("スレ一覧・HOME・履歴の表示", "Thread lists, HOME and history"),text("並び順、表示するスレ、履歴タブ", "Ordering, thread visibility and history tabs"),true);
         LinearLayout search=SettingsSection.add(layout,text("スレ内検索・記者ID", "Thread search and reporter IDs"),text("検索対象と記者IDの表示・検索", "Search targets and reporter ID display/search"),true);
         ThreadSearchOptions.add(search,activity);
+        Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
+        homeOrder.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.ENABLED);
+        homeOrder.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.ENABLED,on).apply();activity.invalidateOptionsMenu();});
+        Switch cachedControls=addSwitch(search,activity,"取得済みスレ検索に追加の操作欄を表示",SettingsProfiles.prefs(activity).getBoolean(CachedWacchoiSearch.CONTROLS,true));
+        cachedControls.setTag(SettingLinkEntry.KEY_TAG,CachedWacchoiSearch.CONTROLS);
+        cachedControls.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(CachedWacchoiSearch.CONTROLS,on).apply());
+        Switch keywordMenu=addSwitch(lists,activity,"3点メニューに「キーワードの表示名を設定」を表示",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.KEYWORD_MENU,false));
+        keywordMenu.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.KEYWORD_MENU);
+        keywordMenu.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.KEYWORD_MENU,on).apply();activity.invalidateOptionsMenu();});
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         Switch automaticFold = addSwitch(appearance, activity,
