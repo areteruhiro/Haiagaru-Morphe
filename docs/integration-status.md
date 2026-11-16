@@ -2074,3 +2074,7 @@ Lint/R8ビルド成功。242へ適用・署名照合後に隔離reporter242へ�
 ### 2026-11-17 公式公開前の全対応版確認
 
 同じ最終MPP（SHA-256 `9d99b6de4ccdeda84c3ff53b6f3156cab39706ebe58814363b6cfe32dd7c82f5`）を191／226／242へ適用。Mi Note 10 Android 11の隔離3版でメモ各28項目・メニュー各10項目、画像操作22／18／18項目、本文・画像経路649／655／652項目に成功。レスメニューの元命令・分岐・レジスターとジェスチャー設定フックも3版照合。242の位置観測はOFF構成でモデル追跡がない場合にネイティブコンテナを読むよう補助テストを更新し再実行成功。新規クラッシュなし。メモの実ジェスチャー軌跡を手動で全方向操作した確認や、Mi ビデオの連続再生完了は未確認。テスト用通信から外部サイトへの投稿は行っていない。APK署名と導入は台帳記録済み。
+
+## 2026-11-17 Haiagaru 1.43.0 正式公開
+
+Semantic Release 43899431861とBuild Haiagaru 43899432130が成功。生成コミット4c96f5cfをmaster／devへ反映。公開アセット9点のサイズ・GitHub提供SHA-256・ZIP整合性を検証し、MPP内のResponseNotesStore／ExternalVideoCache／画像切り替え設定を確認。モデル・実行ライブラリ・VPN統合ZIPも各個別資材と一致。master／devのバンドル情報が正式1.43.0を指すことを確認。MPP SHA-256 `7e455912a9676a250eca85a27e20cbf02f7ec0bd3ce09b457b3361289d94ca43`。更新説明・謝辞・寄付欄を確認。証跡 build/response-notes-20261116/verified-1.43.0.json。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.43.0 。
