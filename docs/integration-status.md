@@ -2107,3 +2107,8 @@ Release 43996385293はタグ／生成コミット01cc8d1fの作成後、Gradle p
 ## 2026-11-17 投稿上限・残量表示の公開前確認
 
 板のSETTING.TXT／したらばAPI／外部板の投稿フォームから上限を取得。新規スレのスレタイ、本文、行数の残量を表示し、超過部分を赤色にする。Haiagaru設定でON/OFF（初期ON）、カウンター長押しで再取得。下書きは変更しない。上限非公開は未取得表示。Lint/R8 build2m41s、ホスト36、実機3版各26、gateway本文・画像等657／663／660項目成功、新規製品クラッシュなし。隔離reporterのみ更新、台帳記録済み。詳細docs/post-input-limits-20261117.md。未公開1.44.1の位置ずれ修正と合わせ、既存Semantic Releaseで次版公開へ進む。
+
+
+## 2026-11-17 Haiagaru 1.45.0 正式公開
+
+投稿上限・残量表示とON/OFF、未公開だったリンクカードの位置ずれ修正を正式公開。Release 44018811823（Release／Attest）とBuild Haiagaru 44018811942成功。生成030b7615をmaster／devへ反映。公開9アセットのサイズ・GitHub SHA-256・ZIP整合性、MPPの投稿上限設定と位置保持処理、画像検出／VPN統合資材を検証。master／devの両バンドルJSONは正式1.45.0と公開MPPを指す。MPP SHA-256 `3b1367dfac61b9b92ffde8e89570df3a5617f588629402cc963849c909d0a242`。証跡build/post-input-limits-20261117/verified-1.45.0.json。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.45.0 。
