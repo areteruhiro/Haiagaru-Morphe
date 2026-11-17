@@ -36,7 +36,7 @@ public final class SiteBoardGatewayInstrumentation extends Instrumentation {
  }
  private volatile Activity resumed;
  private final Set<Activity> activities=Collections.synchronizedSet(new LinkedHashSet<>());
- @Override public void callActivityOnResume(Activity activity){super.callActivityOnResume(activity);resumed=activity;activities.add(activity);}
+ @Override public void callActivityOnResume(Activity activity){super.callActivityOnResume(activity);if(android.os.Build.VERSION.SDK_INT>=27){activity.setShowWhenLocked(true);activity.setTurnScreenOn(true);}activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);resumed=activity;activities.add(activity);}
  /** Remove only our unregistered fixture tabs; retain all real registrations and other tabs. */
  private void cleanFixtureTabs()throws Exception{
   Set<String> real=new HashSet<>();org.json.JSONArray registered=new org.json.JSONArray(app.getSharedPreferences("haiagaru.site-boards",0).getString("boards","[]"));for(int n=0;n<registered.length();n++)real.add(registered.getJSONObject(n).getString("key"));

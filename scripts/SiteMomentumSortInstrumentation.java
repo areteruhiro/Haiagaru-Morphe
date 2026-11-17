@@ -27,6 +27,11 @@ public final class SiteMomentumSortInstrumentation extends Instrumentation {
    Method apply=sort.getMethod("sort",List.class,Comparator.class);apply.invoke(null,rows,nativeSort);
    ok(rows.get(0)==newer,"946 newer responses outrank 996 older responses");ok(rows.get(1)==older,"older thread follows higher momentum");ok(rows.get(2)==unknown,"unknown creation date never impersonates high momentum");
    Collections.reverse(rows);apply.invoke(null,rows,nativeSort);ok(rows.get(0)==newer&&rows.get(2)==unknown,"input order does not change result");
+   for(Object item:rows)f(row,old?"d":mid?"c":"a").setInt(item,0);
+   apply.invoke(null,rows,nativeSort);ok(rows.get(0)==newer,"sort uses subject total responses, not cached/read count");
+   Comparator<Object> updating=(a,b)->{synchronized(cache){cache.put(keys[0],now-1);}return nativeSort.compare(a,b);};
+   apply.invoke(null,rows,updating);ok(rows.get(0)==newer,"metadata changes during comparison cannot change snapshot");
+   synchronized(cache){cache.put(keys[0],now-12850);}
    Comparator<Object> reverse=nativeSort.reversed();apply.invoke(null,rows,reverse);ok(rows.get(0)==unknown&&rows.get(2)==newer,"native reverse ordering is preserved");
    synchronized(cache){cache.put(keys[0],now-100);}
    apply.invoke(null,rows,nativeSort);ok(rows.get(0)==older,"subsequent sort observes updated creation metadata");

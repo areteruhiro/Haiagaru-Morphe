@@ -8,11 +8,12 @@ public final class SiteMomentumSort {
     private static final ThreadLocal<Snapshot> CURRENT=new ThreadLocal<>();
     private static final class Snapshot {
         final Map<String,Long> dates=SiteThreadMetadata.creationSnapshot();
-        final String board=SiteThreadMetadata.currentBoard();
+        final String board;
         final long now=System.currentTimeMillis()/1000;
         final Map<Object,Long> values=new IdentityHashMap<>();
         boolean external;
         Snapshot(List<?> rows){
+            board=SiteThreadMetadata.sortBoard(rows);
             for(Object item:rows)try{long[] row=row(item);if(row!=null){external|=external(row[0]);values.put(item,value(row,this));}}
             catch(ReflectiveOperationException|RuntimeException unknown){/* Keep unknown row types native. */}
         }
@@ -42,15 +43,16 @@ public final class SiteMomentumSort {
     private static Object field(Object row,String key)throws ReflectiveOperationException{
         Field field=row.getClass().getDeclaredField(key);field.setAccessible(true);return field.get(row);
     }
-    private static long[] row(Object row)throws ReflectiveOperationException{
+    static long[] row(Object row)throws ReflectiveOperationException{
         if(row==null)return null;String type=row.getClass().getName(),subject,id,count;
         switch(type){
-            case "o.MaxAdViewImplExternalSyntheticLambda2":subject="a";id="e";count="d";break;
-            case "o.verifyHostname":subject="d";id="b";count="c";break;
-            case "o.zzauw":subject="i";id="d";count="a";break;
+            case "o.MaxAdViewImplExternalSyntheticLambda2":subject="a";id="e";count="a";break;
+            case "o.verifyHostname":subject="d";id="b";count="e";break;
+            case "o.zzauw":subject="i";id="d";count="b";break;
             default:return null;
         }
-        return new long[]{((Number)field(field(row,subject),id)).longValue(),((Number)field(row,count)).intValue()};
+        Object entry=field(row,subject);
+        return new long[]{((Number)field(entry,id)).longValue(),((Number)field(entry,count)).intValue()};
     }
     private SiteMomentumSort(){}
 }
