@@ -7,8 +7,12 @@ import zipfile
 
 MODEL = "https://huggingface.co/OwenElliott/image-safety-classifier-xs/resolve/54f4560/"
 ORT = "https://cdn.jsdelivr.net/gh/microsoft/onnxruntime@v1.23.2/"
-AAR = ("https://repo.maven.apache.org/maven2/com/microsoft/onnxruntime/"
-       "onnxruntime-android/1.23.2/onnxruntime-android-1.23.2.aar")
+AAR_PATH = ("com/microsoft/onnxruntime/onnxruntime-android/1.23.2/"
+            "onnxruntime-android-1.23.2.aar")
+AAR = (
+    "https://maven-central.storage-download.googleapis.com/maven2/" + AAR_PATH,
+    "https://repo.maven.apache.org/maven2/" + AAR_PATH,
+)
 ASSETS = "assets/haiagaru/image-moderation/"
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_CACHE = ROOT / "build" / "optional-assets" / "source-cache"
@@ -18,14 +22,21 @@ ABIS = ("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
 
 def download(url, destination):
     destination.parent.mkdir(parents=True, exist_ok=True)
-    partial = destination.with_suffix(destination.suffix + ".part")
-    try:
-        with urllib.request.urlopen(url, timeout=60) as source, partial.open("wb") as out:
-            shutil.copyfileobj(source, out)
-        partial.replace(destination)
-    except OSError as error:
-        partial.unlink(missing_ok=True)
-        raise OSError(f"Could not fetch {url}: {error}") from error
+    urls = (url,) if isinstance(url, str) else url
+    failures = []
+    for candidate in urls:
+        partial = destination.with_suffix(destination.suffix + ".part")
+        try:
+            with urllib.request.urlopen(candidate, timeout=60) as source, partial.open("wb") as out:
+                shutil.copyfileobj(source, out)
+            partial.replace(destination)
+            return
+        except OSError as error:
+            failures.append(f"{candidate}: {error}")
+            partial.unlink(missing_ok=True)
+    if failures:
+        error = "; ".join(failures)
+        raise OSError(f"Could not fetch {error}") from None
 
 
 def cached_download(url, cache, name):
