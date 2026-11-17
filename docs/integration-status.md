@@ -2086,3 +2086,7 @@ Semantic Release 43899431861とBuild Haiagaru 43899432130が成功。生成コ�
 勢い順は191／226の主sortへの適用漏れを修正し、3版とも通常一覧とフィルターの2箇所を必須化。表示外のスレも日時取得の対象とし、総レス数と固定した日時／時計から計算する。242の未知日時の表示を0へ修正。Lint/R8ビルド、全3版適用・署名照合後の隔離reporter更新成功。実機の勢い各13項目・主sort／フィルターフック・HOME起動成功。先行候補で本文・画像経路649／655／652項目、最終候補242で画像復元／破損画像削除14項目・強調期限切れ削除／X省略／実回転12項目成功。製品3版の新規クラッシュなし（初版の補助Providerだけの権限要件違反は修正して再試験成功）。
 
 MPP SHA-256 `0b76909c4762783917557356586394e2fa31cd819634c6968097e4db2e4f1fbe`。証跡 build/highlight-immersive-x-20261117、詳細 docs/image-recovery-momentum-20261117.md、導入は台帳記録済み。利用者のスクリーンショット全スレの実サイト上の順序一致は未確認。既存Semantic Releaseで正式公開を開始する。
+
+## 2026-11-17 Haiagaru 1.44.0 正式公開
+
+検証済みdev 1a213843をmaster b478bd2bへ通常マージし、既存Semantic Releaseで正式公開。Release 43987668965とBuild Haiagaru 43987668910は成功。生成コミット908724a5をmaster／devへ反映した。公開アセット9点のサイズ・GitHub提供SHA-256・ZIP整合性、MPP内の自動復元案内・期限設定・勢い比較器、画像判定／VPN統合ZIPの各個別資材との一致を検証。master／devの正式版・プレ版バンドル情報も正式1.44.0と公開MPPを指すことを確認。MPP SHA-256 `f6c8ff9eff4651dc2bdb499c845a378943af6a0f3e11c3e44b048857ac299329`。更新説明・謝辞・寄付欄を確認。証跡 build/highlight-immersive-x-20261117/verified-1.44.0.json。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.44.0 。
