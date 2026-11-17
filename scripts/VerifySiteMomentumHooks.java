@@ -10,6 +10,6 @@ public class VerifySiteMomentumHooks{
   for(int i=0;i<original.size();i++)ok(VerifySearchHistoryHooks.key(original.get(i)).equals(VerifySearchHistoryHooks.key(patched.get(i+offset))),"native comparator instruction "+i+" retained");
   ok(((ReferenceInstruction)patched.get(0)).getReference().toString().contains("SiteMomentumSort;->compare"),"new scoped comparator gate");
   int sortCalls=0;for(var t:after.values())for(var m:t.getMethods())if(m.getImplementation()!=null)for(var i:m.getImplementation().getInstructions())if(i instanceof ReferenceInstruction r&&r.getReference().toString().equals("Lapp/morphe/extension/chmate/SiteMomentumSort;->sort(Ljava/util/List;Ljava/util/Comparator;)V")){sortCalls++;System.out.println("sort scope: "+m);}
-  ok(sortCalls==(a[0].equals("242")?2:1),"exact board sorting call only: "+sortCalls);System.out.println("PASS "+a[0]+" momentum native instructions/registers and verified sort scopes");
+  ok(sortCalls==2,"exact primary and filter sorting calls: "+sortCalls);System.out.println("PASS "+a[0]+" momentum native instructions/registers and verified sort scopes");
  }
 }

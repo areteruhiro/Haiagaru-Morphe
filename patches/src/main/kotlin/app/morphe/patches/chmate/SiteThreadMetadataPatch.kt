@@ -113,7 +113,8 @@ private fun BytecodePatchContext.patchSiteMomentumSort(old:Boolean,middle:Boolea
     val targets=classes.values.flatMap{type->type.methods.filter{method->
         val code=method.implementation?.instructions?:return@filter false
         code.any{insn->val ref=(insn as? ReferenceInstruction)?.reference
-            ref is FieldReference&&(ref.definingClass==model||ref.definingClass==subject)}&&
+            (ref is FieldReference&&(ref.definingClass==model||ref.definingClass==subject))||
+                (ref is MethodReference&&ref.definingClass==comparator.type)}&&
             code.any{insn->((insn as? ReferenceInstruction)?.reference as? MethodReference)?.toString()=="Ljava/util/Collections;->sort(Ljava/util/List;Ljava/util/Comparator;)V"}
     }.map{type.type to it.name}}
     for((owner,name) in targets){
@@ -127,7 +128,7 @@ private fun BytecodePatchContext.patchSiteMomentumSort(old:Boolean,middle:Boolea
             }
         }
     }
-    check(count>0){"Native board momentum sort entry missing"}
+    check(count==2){"Native board momentum sort entries changed: $count (primary list and filter must both be scoped)"}
     println("Site momentum sort: $count stable-snapshot sort entries")
 }
 
