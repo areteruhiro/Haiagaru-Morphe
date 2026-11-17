@@ -140,6 +140,7 @@ public final class SettingsProfiles {
         defaultValue("hissiViewerShowAdjust",true);
         numberKey("hissiViewerTextZoom",100,130);
         booleanKey(PopularReplies.CUSTOM_THRESHOLD);defaultValue(PopularReplies.CUSTOM_THRESHOLD,false);
+        booleanKey(PostEditorLimits.KEY);defaultValue(PostEditorLimits.KEY,true);
         numberKey("popularReplyThreshold",1,9999);
         numberKey("popularReplyStandardThreshold",1,9999);
         for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
