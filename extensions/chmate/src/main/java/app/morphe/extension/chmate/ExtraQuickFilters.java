@@ -14,6 +14,8 @@ import java.util.regex.*;
 
 /** Per-adapter display filters. Native DAT, read counts, NG flags and navigation stay untouched. */
 public final class ExtraQuickFilters {
+    static final String OPTIMIZATION="quickFilterWorkOptimization";
+    static boolean optimized(){return FeatureSwitches.enabled(OPTIMIZATION,true);}
     private static final String[] LABELS = {"人気レス", "リンク", "画像", "動画", "AA", "自分", "返信"};
     private static final String[] KINDS = {"POPULAR", "LINK", "IMAGE", "MOVIE"};
     private static final ThreadLocal<Boolean> RESETTING=new ThreadLocal<>();
@@ -65,36 +67,18 @@ public final class ExtraQuickFilters {
     /** Same controls for the transient popup and the non-modal, persistent panel. */
     private static final class BottomControls extends LinearLayout {
         final Object adapter;final ToggleButton[] buttons=new ToggleButton[7];
-        final Activity activity;final TextView handle;final ScrollView scroll;Runnable resized=()->{};
-        int liveHeight;float startY;int startHeight;boolean dragging;
+        final Activity activity;final ScrollView scroll;Runnable resized=()->{};
         BottomControls(Activity activity,Object adapter,Runnable beforeImage){
             super(activity);this.activity=activity;this.adapter=adapter;setOrientation(VERTICAL);
-            GridLayout grid=new GridLayout(activity);grid.setColumnCount(4);
+            LinearLayout grid=new LinearLayout(activity);grid.setOrientation(HORIZONTAL);
+            HorizontalScrollView choicesScroll=new HorizontalScrollView(activity);choicesScroll.setHorizontalScrollBarEnabled(false);choicesScroll.addView(grid,new HorizontalScrollView.LayoutParams(-2,-2));
             int pad=Math.round(8*getResources().getDisplayMetrics().density);grid.setPadding(pad,pad,pad,pad);
-            handle=new TextView(activity);handle.setText("━━");handle.setGravity(android.view.Gravity.CENTER);handle.setTextSize(16);
-            handle.setContentDescription("フィルターパネルの高さを調整");handle.setTag("haiagaru.bottomFilterResizeHandle");
-            addView(handle,new LinearLayout.LayoutParams(-1,dp(28)));
-            scroll=new ScrollView(activity);scroll.setFillViewport(false);scroll.addView(grid,new ScrollView.LayoutParams(-1,-2));
+            scroll=new ScrollView(activity);scroll.setFillViewport(false);scroll.addView(choicesScroll,new ScrollView.LayoutParams(-1,-2));
             addView(scroll,new LinearLayout.LayoutParams(-1,-2,1));
-            handle.setOnTouchListener((v,event)->{
-                switch(event.getActionMasked()){
-                    case android.view.MotionEvent.ACTION_DOWN:
-                        startY=event.getRawY();startHeight=getHeight();dragging=true;v.getParent().requestDisallowInterceptTouchEvent(true);return true;
-                    case android.view.MotionEvent.ACTION_MOVE:
-                        if(!dragging)return false;liveHeight=clamp(startHeight+Math.round(startY-event.getRawY()));requestLayout();resized.run();return true;
-                    case android.view.MotionEvent.ACTION_UP:
-                        if(!dragging)return false;dragging=false;
-                        if(liveHeight>0)activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).edit().putInt(QuickFilterOptions.HEIGHT,Math.max(1,Math.round(liveHeight/getResources().getDisplayMetrics().density))).apply();
-                        liveHeight=0;v.getParent().requestDisallowInterceptTouchEvent(false);v.performClick();requestLayout();resized.run();return true;
-                    case android.view.MotionEvent.ACTION_CANCEL:
-                        dragging=false;liveHeight=0;v.getParent().requestDisallowInterceptTouchEvent(false);requestLayout();resized.run();return true;
-                    default:return false;
-                }
-            });
-            setBackgroundColor(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY));
+            updateBackground();
             for(int i=0;i<buttons.length;i++){
-                final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(13);styleButton(button);
-                button.setMinimumHeight(pad*8);GridLayout.LayoutParams params=new GridLayout.LayoutParams(GridLayout.spec(i/4),GridLayout.spec(i%4,1f));params.width=0;params.height=-2;params.setMargins(pad/2,pad/2,pad/2,pad/2);grid.addView(button,params);
+                final int index=i;ToggleButton button=new ToggleButton(activity);buttons[i]=button;button.setAllCaps(false);button.setTextSize(14);styleButton(button);
+                int buttonHeight=dp(52);button.setGravity(android.view.Gravity.CENTER);button.setMinHeight(buttonHeight);button.setHeight(buttonHeight);button.setPadding(dp(14),0,dp(14),0);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,buttonHeight);params.setMargins(2,dp(1),2,dp(1));grid.addView(button,params);
                 button.setOnClickListener(v->{try{
                     boolean requested=button.isChecked();toggle(adapter,index,false,true);
                     if(index<4&&!(index==0&&PopularReplies.enabledFor(activity))){State state=state(adapter);state.pendingFilters[index]=requested;state.pendingFilterMask|=1<<index;}
@@ -110,19 +94,17 @@ public final class ExtraQuickFilters {
             redraw();
         }
         int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
+        void updateBackground(){setBackground(FeatureSwitches.enabled(QuickFilterOptions.TRANSPARENT,true)?null:new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));}
         int clamp(int value){
             android.graphics.Rect visible=new android.graphics.Rect();activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
             int available=visible.height();if(available<=0)available=getResources().getDisplayMetrics().heightPixels;
-            return Math.max(Math.min(dp(88),available),Math.min(value,Math.max(dp(88),available*3/5)));
+            return Math.max(Math.min(dp(64),available),Math.min(value,Math.max(dp(64),available*3/5)));
         }
         @Override protected void onMeasure(int width,int height){
-            int saved=activity.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getInt(QuickFilterOptions.HEIGHT,0);
-            int requested=liveHeight>0?liveHeight:saved>0?dp(saved):0;
-            // Bound both modes to the available pane. The ScrollView keeps every filter reachable.
-            super.onMeasure(width,View.MeasureSpec.makeMeasureSpec(clamp(requested>0?requested:Integer.MAX_VALUE),requested>0?View.MeasureSpec.EXACTLY:View.MeasureSpec.AT_MOST));
+            super.onMeasure(width,View.MeasureSpec.makeMeasureSpec(clamp(Integer.MAX_VALUE),View.MeasureSpec.AT_MOST));
         }
         void redraw(){try{
-            int handleVisibility=QuickFilterOptions.resizeHandle()?View.VISIBLE:View.GONE;if(handle.getVisibility()!=handleVisibility)handle.setVisibility(handleVisibility);
+            updateBackground();
             boolean[] on=selected(adapter);String[] names=labels(adapter);
             for(int i=0;i<buttons.length;i++){
                 ToggleButton button=buttons[i];
@@ -133,12 +115,12 @@ public final class ExtraQuickFilters {
         }catch(Exception error){Log.w("Haiagaru","Bottom filter state",error);}}
     }
     private static boolean showBottomPanel(Activity activity,Object a)throws Exception{
-        collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+        prepareCounts(a);
         int pad=Math.round(8*activity.getResources().getDisplayMetrics().density);
         PopupWindow popup=new PopupWindow();BottomControls grid=new BottomControls(activity,a,popup::dismiss);
         popup.setContentView(grid);popup.setWidth(-1);popup.setHeight(-2);popup.setFocusable(true);popup.setOutsideTouchable(true);
         grid.resized=()->{if(!popup.isShowing())return;grid.measure(View.MeasureSpec.makeMeasureSpec(activity.getWindow().getDecorView().getWidth(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));popup.update(0,bottomInset(activity)+pad,-1,grid.getMeasuredHeight());};
-        popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));popup.setElevation(pad*2);
+        popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));popup.setElevation(0);
         android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;grid.redraw();handler.postDelayed(this,150);}};
         popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
@@ -184,9 +166,9 @@ public final class ExtraQuickFilters {
                 list=current;originalPadding=list.getPaddingBottom();
                 if(list.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)
                     originalMargin=((ViewGroup.MarginLayoutParams)list.getLayoutParams()).bottomMargin;
-                collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+                prepareCounts(a);
                 panel=new BottomControls(activity,a,()->{});panel.resized=this::schedule;panel.setTag("haiagaru.persistentBottomFilters");
-                panel.setElevation(8*root.getResources().getDisplayMetrics().density);panel.setVisibility(View.GONE);
+                panel.setElevation(0);panel.setVisibility(View.GONE);
                 host.addView(panel,new FrameLayout.LayoutParams(-1,-2));
                 int width=list.getWidth();if(width<=0)width=root.getWidth();
                 if(width<=0)width=root.getResources().getDisplayMetrics().widthPixels;
@@ -329,7 +311,7 @@ public final class ExtraQuickFilters {
         int pendingFilterMask;
         boolean[] pendingFilters = new boolean[4];
         int[] counts = new int[7];
-        boolean mediaCountsReady;
+        boolean mediaCountsReady,countQueued;
         Set<Integer> aa = new HashSet<>(), mine = new HashSet<>(), replies = new HashSet<>();
         Exception failure;
         PopularNativeRows.Snapshot popularSnapshot;
@@ -340,7 +322,7 @@ public final class ExtraQuickFilters {
             Object f=ref.get();if(f==null)continue;
             try{View root=(View)call(f,"getView",new Class<?>[0]);if(root!=null&&root.isShown()){
                 Object a=adapter(f);rebuild(a);
-                collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+                prepareCounts(a);
                 refresh(a);
             }}
             catch(Exception error){Log.w("Haiagaru","Refresh popularity settings",error);}
@@ -358,7 +340,7 @@ public final class ExtraQuickFilters {
                     PopularNativeRows.Snapshot snapshot=PopularNativeRows.find(source);
                     if(snapshot==null||(s.counts[0]>=0&&!retry&&s.popularSnapshot==snapshot))continue;
                     collect(a,source);
-                    if(retry||(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&selected(a)[0]))rebuild(a);
+                    if(retry||(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&nativeSelected(a)[0]))rebuild(a);
                     else refresh(a);
                 }catch(Exception error){Log.w("Haiagaru","Finish native popular count",error);}
             }
@@ -389,7 +371,7 @@ public final class ExtraQuickFilters {
             throw new IllegalStateException("Response adapter unavailable");
         FRAGMENTS.put(a,new WeakReference<>(fragment)); return a;
     }
-    private static boolean[] selected(Object a) throws Exception {
+    private static boolean[] nativeSelected(Object a) throws Exception {
         boolean[] result=new boolean[7]; Object m=model(a);
         if(legacy(a)) {
             String[] keys={"c","a","e","b"};
@@ -402,12 +384,17 @@ public final class ExtraQuickFilters {
             if(i!=4)throw new IllegalStateException("Filter states changed");
         }
         State selection=state(a);
+        int mask=selection.extra;
+        for(int i=4;i<7;i++)result[i]=(mask&(1<<(i-4)))!=0;
+        return result;
+    }
+    /** Optimistic checkmarks are UI-only; extraction always reads committed native flags. */
+    private static boolean[] selected(Object a)throws Exception{
+        boolean[] result=nativeSelected(a);State selection=state(a);
         for(int i=0;i<4;i++)if((selection.pendingFilterMask&(1<<i))!=0) {
             if(result[i]==selection.pendingFilters[i])selection.pendingFilterMask&=~(1<<i);
             else result[i]=selection.pendingFilters[i];
         }
-        int mask=selection.extra;
-        for(int i=4;i<7;i++)result[i]=(mask&(1<<(i-4)))!=0;
         return result;
     }
     private static void toggle(Object a,int which) throws Exception {toggle(a,which,false);}
@@ -421,6 +408,9 @@ public final class ExtraQuickFilters {
             try {if(adapter(owner)==a){fragment=owner;break;}}catch(Exception ignored){}
         }
         if(fragment!=null&&!reset)FilterPosition.beforeFragment(fragment,preservePosition);
+        boolean optimizedAction=optimized();
+        if(optimizedAction)FilterPosition.beginCapturedAction();
+        try {
         if(which>=4) {
             State s=state(a);s.extra^=1<<(which-4);
             try { rebuild(a);if(s.failure!=null)throw s.failure; } catch(Exception e) { s.extra^=1<<(which-4);refresh(a);throw e; }
@@ -440,6 +430,7 @@ public final class ExtraQuickFilters {
             } else call(m,"b",new Class<?>[]{kind},value);
         }
         refresh(a);
+        }finally{if(optimizedAction)FilterPosition.endCapturedAction();}
     }
     static void rebuild(Object a) throws Exception {
         if(legacy(a)||middle(a))call(a,legacy(a)?"c":"b",new Class<?>[]{boolean.class},false);
@@ -480,13 +471,14 @@ public final class ExtraQuickFilters {
         Method get=m.getClass().getMethod("e",m.getClass());
         return get.invoke(null,m);
     }
-    private static Map<Integer,Integer> collect(Object a,List<?> source) throws Exception {
+    private static Map<Integer,Integer> collect(Object a,List<?> source) throws Exception {return collect(a,source,true);}
+    private static Map<Integer,Integer> collect(Object a,List<?> source,boolean includeCounts) throws Exception {
         State s=state(a);
         // A reset changes selection only, not the full response list or its counts.
         // No extra predicate is active now; retain the counts until the next normal
         // update/dialog opening instead of reparsing every post during native callbacks.
         if(resetting()&&s.extra==0)return null;
-        boolean showCounts=QuickFilterOptions.counts();
+        boolean showCounts=includeCounts&&QuickFilterOptions.counts();
         boolean needAa=showCounts||(s.extra&1)!=0;
         boolean needReplies=showCounts||(s.extra&4)!=0;
         boolean needMine=needReplies||(s.extra&2)!=0;
@@ -494,11 +486,14 @@ public final class ExtraQuickFilters {
         if(source.isEmpty()){s.counts=counts;s.mediaCountsReady=true;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return Collections.emptyMap();}
         Object idx=needMine?index(a):null;
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
+        Method ownRead=needMine?idx.getClass().getMethod(indexMethod,int.class):null;
+        if(ownRead!=null)ownRead.setAccessible(true);
+        Method aaRead=null;
         if(needAa||needMine)for(Object r:source)if(response(r)) {
             int no=number(r);
             // ChMate marks an own post with bit 0; bit 3 is not the own-post flag.
-            if(needMine&&( ((Number)call(idx,indexMethod,new Class<?>[]{int.class},no)).intValue()&1)!=0)mine.add(no);
-            if(needAa&&Boolean.TRUE.equals(call(r,legacy(a)?"e":middle(a)?"i":"g",new Class<?>[0])))aa.add(no);
+            if(needMine&&( ((Number)ownRead.invoke(idx,no)).intValue()&1)!=0)mine.add(no);
+            if(needAa){if(aaRead==null){aaRead=r.getClass().getMethod(legacy(a)?"e":middle(a)?"i":"g");aaRead.setAccessible(true);}if(Boolean.TRUE.equals(aaRead.invoke(r)))aa.add(no);}
         }
         if(needReplies)for(Object r:source)if(response(r)) {
             int no=number(r);
@@ -541,8 +536,8 @@ public final class ExtraQuickFilters {
             PopularNativeRows.Snapshot nativeRows=PopularNativeRows.find(source);
             counts[0]=nativeRows==null?-1:showCounts?nativeRows.selected(threshold).size():0;
         }
-        s.aa=aa;s.mine=mine;s.replies=replies;s.counts=counts;s.failure=null;
-        s.mediaCountsReady=showCounts;
+        s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;
+        if(includeCounts){s.counts=counts;s.mediaCountsReady=showCounts;}
         s.popularSnapshot=PopularNativeRows.find(source);
         return direct;
     }
@@ -587,13 +582,14 @@ public final class ExtraQuickFilters {
             State s=state(a);
             if(snapshot==s.appliedSnapshot)snapshot=s.rawSnapshot;
             s.rawSnapshot=snapshot;
-            if(!QuickFilterOptions.counts()&&s.extra==0
-                    &&(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!selected(a)[0])) {
+            scheduleCounts(a);
+            if((optimized()||!QuickFilterOptions.counts())&&s.extra==0
+                    &&(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!nativeSelected(a)[0])) {
                 s.appliedSnapshot=snapshot;
                 return snapshot;
             }
             List<?> full=PopularReplies.fullList(field(snapshot,"j"));
-            Map<Integer,Integer> direct=collect(a,full);
+            Map<Integer,Integer> direct=collect(a,full,!optimized());
             List<?> rows=(List<?>)field(snapshot,"b");
             List<?> filtered=filterCollected(a,rows,full,direct);
             if(filtered==rows){s.appliedSnapshot=snapshot;return snapshot;}
@@ -607,7 +603,7 @@ public final class ExtraQuickFilters {
     private static List<?> filterCollected(Object a,List<?> rows,List<?> countedSource,Map<Integer,Integer> direct) throws Exception {
             // Standard mode must retain the native renderer's current result. Replacing
             // it with cached templates can resurrect an earlier empty/partial layout.
-            if(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&selected(a)[0]) {
+            if(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&nativeSelected(a)[0]) {
                 List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
                 PopularNativeRows.Snapshot raw=PopularNativeRows.find(source);
                 if(raw==null)throw new IllegalStateException("Direct popularity layout unavailable");
@@ -618,7 +614,7 @@ public final class ExtraQuickFilters {
                 Set<Integer> matches=new HashSet<>();
                 for(Map.Entry<Integer,Integer> entry:counts.entrySet())if(entry.getValue()>=threshold)matches.add(entry.getKey());
                 ArrayList<Object> directRows=new ArrayList<>();
-                Set<Integer> allowed=new HashSet<>();boolean[] selection=selected(a);
+                Set<Integer> allowed=new HashSet<>();boolean[] selection=nativeSelected(a);
                 // Other native filters remain an intersection with the native output.
                 if(selection[1]||selection[2]||selection[3])for(Object row:rows){Object r=rowResponse(row);if(r!=null)allowed.add(number(r));}
                 directRows.addAll(popularRows(raw.rows,matches,allowed,
@@ -653,13 +649,14 @@ public final class ExtraQuickFilters {
         // Showing extra buttons does not mean their predicates are selected.
         // Leave native popularity/media output alone until counts or an extra
         // predicate actually needs the full-thread scan.
-        if(!QuickFilterOptions.counts()&&state(a).extra==0)try{
-            if(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!selected(a)[0])
+        scheduleCounts(a);
+        if((optimized()||!QuickFilterOptions.counts())&&state(a).extra==0)try{
+            if(PopularReplies.enabledFor(context(a))||!PopularReplies.directFor(context(a))||!nativeSelected(a)[0])
                 return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);
         }catch(Exception e){Log.w("Haiagaru","Popular filter selection unavailable",e);}
         try {
             Object source=field(a,legacy(a)?"K":middle(a)?"J":"o");
-            List<?> full=PopularReplies.fullList(source);Map<Integer,Integer> direct=collect(a,full);
+            List<?> full=PopularReplies.fullList(source);Map<Integer,Integer> direct=collect(a,full,!optimized());
             List<?> kept=filterCollected(a,rows,full,direct);return kept instanceof ArrayList?(ArrayList<?>)kept:new ArrayList<>(kept);
         }catch(Exception e){state(a).failure=e;Log.e("Haiagaru","Extra quick filters unavailable",e);return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);}
     }
@@ -681,19 +678,30 @@ public final class ExtraQuickFilters {
             }
         }catch(Exception e){Log.e("Haiagaru","Extra legacy filters",e);}
     }
+    private static void prepareCounts(Object adapter)throws Exception{
+        if(optimized())scheduleCounts(adapter);
+        else collect(adapter,PopularReplies.fullList(field(adapter,legacy(adapter)?"K":middle(adapter)?"J":"o")));
+    }
+    /** Counts decorate the controls; they must not delay the native extraction/commit. */
+    private static void scheduleCounts(Object adapter){
+        if(!optimized()||!QuickFilterOptions.counts())return;State state=state(adapter);if(state.countQueued)return;
+        state.countQueued=true;state.mediaCountsReady=false;WeakReference<Object> ref=new WeakReference<>(adapter);
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{
+            Object current=ref.get();if(current==null)return;State latest=state(current);latest.countQueued=false;
+            if(!optimized()||!QuickFilterOptions.counts())return;
+            try{collect(current,PopularReplies.fullList(field(current,legacy(current)?"K":middle(current)?"J":"o")),true);}
+            catch(Exception error){latest.mediaCountsReady=true;Arrays.fill(latest.counts,-1);Log.w("Haiagaru","Deferred filter counts unavailable",error);}
+            refresh(current);
+        },80);
+    }
     private static String[] labels(Object a) {
         State s=state(a);boolean showCounts=QuickFilterOptions.counts();
-        // Turning counts ON must populate the deferred values immediately,
-        // even if the native response list has not been rebuilt meanwhile.
-        if(showCounts&&!s.mediaCountsReady)try {
-            collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
-        }catch(Exception error){
-            s.mediaCountsReady=true;
-            Arrays.fill(s.counts,-1);
-            Log.w("Haiagaru","Deferred filter counts unavailable",error);
+        if(showCounts&&!s.mediaCountsReady){
+            if(optimized())scheduleCounts(a);
+            else try{collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));}catch(Exception error){s.mediaCountsReady=true;Arrays.fill(s.counts,-1);Log.w("Haiagaru","Filter counts unavailable",error);}
         }
         int[] counts=s.counts;String[] result=new String[7];
-        for(int i=0;i<7;i++)result[i]=showCounts?(counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;
+        for(int i=0;i<7;i++)result[i]=showCounts?(!s.mediaCountsReady?"…":counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;
     }
     public static boolean reset(Object fragment){
         RESETTING.set(true);
@@ -709,7 +717,7 @@ public final class ExtraQuickFilters {
                 // a long thread once for each flag plus once for the extra filters.
                 if(changed!=null)call(changed,"c",new Class<?>[0]);else rebuild(a);
             }else{
-                boolean[] on=selected(a);for(int i=0;i<4;i++)if(on[i]){toggle(a,i,true);selection.pendingFilters[i]=false;selection.pendingFilterMask|=1<<i;}
+                boolean[] on=nativeSelected(a);selection.pendingFilterMask=0;for(int i=0;i<4;i++)if(on[i]){toggle(a,i,true);selection.pendingFilters[i]=false;selection.pendingFilterMask|=1<<i;}
                 rebuild(a);
             }
             refresh(a);return true;
@@ -722,7 +730,7 @@ public final class ExtraQuickFilters {
             if(activity==null||activity.isFinishing())return false;
             if(QuickFilterOptions.pinned()){updatePinned(fragment);return true;}
             if(QuickFilterOptions.bottom())return showBottomPanel(activity,a);
-            collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));
+            prepareCounts(a);
             int[] indices=visibleIndices();boolean[] all=selected(a);String[] fullNames=labels(a);
             boolean[] checked=new boolean[indices.length];String[] names=new String[indices.length];
             for(int i=0;i<indices.length;i++){checked[i]=all[indices[i]];names[i]=fullNames[indices[i]];}

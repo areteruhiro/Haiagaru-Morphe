@@ -456,6 +456,20 @@ public final class NativeToolTabs {
         Bundle args=arguments(fragment);
         if(!marker(args))throw new IllegalStateException("Not a Haiagaru tool tab");
         if("eddi".equals(tool(args))){
+            if(ArchiveSearchLayout.originalSite(activity)||!Haiagaru.dedicatedViewerEnabled()){
+                FrameLayout webHost=new FrameLayout(activity);
+                String archiveWebUrl=args.getString("haiagaru.eddi.web.url","https://eddiarchive3rd.boy.jp/");
+                if(!"eddiarchive3rd.boy.jp".equalsIgnoreCase(Uri.parse(archiveWebUrl).getHost()))archiveWebUrl="https://eddiarchive3rd.boy.jp/";
+                HissiMenuController controller=new HissiMenuController(activity,new Intent(Intent.ACTION_VIEW,Uri.parse(archiveWebUrl)).putExtra("haiagaru.eddi.web",true),true,()->closeCurrentTab(activity,fragment),content->{SettingsTabUi.clear(webHost);webHost.addView(content,new FrameLayout.LayoutParams(-1,-1));});
+                controller.create(restored);
+                return new Content(webHost){
+                    @Override void resume(){controller.resume();}
+                    @Override void pause(){controller.pause();}
+                    @Override void save(Bundle out){controller.save(out);String saved=out.getString("haiagaru.checker.url");if(saved!=null)args.putString("haiagaru.eddi.web.url",saved);}
+                    @Override void close(){controller.close();}
+                };
+            }
+
             Bundle state=restored==null?new Bundle():new Bundle(restored);
             if(!state.containsKey(EddiArchiveSearchUi.STATE_KEY)&&args.containsKey(Intent.EXTRA_TEXT))state.putString(EddiArchiveSearchUi.STATE_KEY,args.getString(Intent.EXTRA_TEXT));
             Runnable close=()->{if(!closeCurrentTab(activity,fragment))Toast.makeText(activity,"この画面のタブを閉じられませんでした",Toast.LENGTH_SHORT).show();};

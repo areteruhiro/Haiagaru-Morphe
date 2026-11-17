@@ -223,9 +223,27 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         val board = if (version == "0.8.10.191 dev") "Ljp/syoboi/a2chMate/client/BBSUrlInfo\$BoardID;"
             else "Ljp/syoboi/a2chMate/client/BoardID;"
         val name = when (version) { "0.8.10.191 dev" -> "e"; "0.8.10.226 dev" -> "b"; else -> "a" }
-        check(mutableClassDefBy(table).methods.count {
+        val klass = mutableClassDefBy(table)
+        val deletes = klass.methods.filter {
             it.name == name && it.parameterTypes == listOf(board, "J") && it.returnType == "V"
-        } == 1) { "Native delete-with-cache API changed: $version" }
+        }
+        check(deletes.size == 1) { "Native delete-with-cache API changed: $version" }
+        val native = deletes.single()
+        check(native.accessFlags and 8 == 0) { "Native delete-with-cache API became static: $version" }
+        val delegateName = "haiagaruNativeDeleteThread"
+        val delegate = MutableMethod(ImmutableMethod(klass.type, delegateName, native.parameters, native.returnType,
+            native.accessFlags, native.annotations, native.hiddenApiRestrictions, native.implementation))
+        val wrapper = MutableMethod(ImmutableMethod(klass.type, name, native.parameters, native.returnType,
+            native.accessFlags, native.annotations, native.hiddenApiRestrictions,
+            ImmutableMethodImplementation(4, emptyList(), emptyList(), emptyList())))
+        wrapper.addInstructions(0, """
+            invoke-virtual {p0, p1, p2, p3}, $table->$delegateName(${board}J)V
+            invoke-static/range {p1 .. p3}, Lapp/morphe/extension/chmate/ThreadScopedNg;->nativeThreadDeleted(Ljava/lang/Object;J)V
+            return-void
+        """.trimIndent())
+        klass.methods.remove(native)
+        klass.methods.add(delegate)
+        klass.methods.add(wrapper)
     }
 }
 
@@ -425,6 +443,18 @@ private fun BytecodePatchContext.patchPostedThreadDisplayCount(version: String) 
  */
 private fun BytecodePatchContext.patchNgRegistrationLimit() {
     val ngWord = mutableClassDefBy("Ljp/syoboi/a2chMate/ng/NGWord;")
+    val itemType = "Ljp/syoboi/a2chMate/ng/NGWord\$Item;"
+    val updater = ngWord.methods.single {
+        it.returnType == "I" && it.parameterTypes.map(CharSequence::toString) == listOf(itemType,itemType)
+    }
+    val updaterStart=updater.implementation!!.instructions.first()
+    updater.addInstructionsWithLabels(0,"""
+        invoke-static {p0, p1, p2}, Lapp/morphe/extension/chmate/ThreadScopedNg;->interceptRegistration(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Z
+        move-result v0
+        if-eqz v0, :native_ng_registration
+        const/4 v0, 0x0
+        return v0
+    """.trimIndent(),ExternalLabel("native_ng_registration",updaterStart))
     val candidates = ngWord.methods.filter { method ->
         method.returnType == "V"
             && method.parameters.map(CharSequence::toString).singleOrNull() ==
@@ -1987,6 +2017,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchImageListResolvedMedia(packageMetadata.versionName)
         patchThumbnailClickAttachments(packageMetadata.versionName)
         patchNativeImageCloseLifecycle(packageMetadata.versionName)
+        patchRegisteredImageLongPress(packageMetadata.versionName)
         patchThumbnailRebind242(packageMetadata.versionName)
         patchThumbnailAppearance(packageMetadata.versionName)
         if (packageMetadata.versionName in setOf("0.8.10.191 dev", "0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) {
@@ -2012,6 +2043,19 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchExternalBoardEditor(packageMetadata.versionName)
         patchPosterHighlight(packageMetadata.versionName)
     }
+}
+
+/** Add an opt-in registered-image NG action to the response image long-press menu. */
+private fun BytecodePatchContext.patchRegisteredImageLongPress(versionName: String) {
+    val profile=when(versionName){
+        "0.8.10.226 dev"->Triple("Lo/getImgAcceptedHeight;","b",listOf("Lo/getImgAcceptedHeight;","Lo/setDomStorageEnabled;","Lo/GNkKjv;","Lo/BouncyCastleSocketAdapterCompanion;"))
+        "0.8.10.242 dev"->Triple("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;","d",listOf("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;","Lo/isDataValid;","Lo/getMinApkVersion;","Lo/KeJ11;"))
+        else->return
+    }
+    val owner=mutableClassDefBy(profile.first)
+    val menu=owner.methods.single{it.name==profile.second&&it.accessFlags and 8!=0&&it.returnType=="V"
+        &&it.parameterTypes.map(CharSequence::toString)==profile.third}
+    menu.addInstructions(0,"invoke-static/range {p1 .. p2}, Lapp/morphe/extension/chmate/RegisteredImageNg;->appendLongPressAction(Ljava/lang/Object;Ljava/lang/Object;)V")
 }
 
 /**

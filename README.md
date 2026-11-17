@@ -190,6 +190,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 - [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
 
 ### 謝辞
+👑 kitadai 氏<br>
 yujirox 様 <br>
 ﾜｯﾁｮｲ 8f01-uDul 様 <br>
 toya0717 様<br>

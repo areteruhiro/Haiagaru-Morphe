@@ -31,6 +31,14 @@ public final class PostLimitRulesTest {
   ok(PostLimitRules.summary("本文",inspect("a",0,0,null),new PostLimitRules.Limit(0,"文字",null)).contains("上限未取得"),"unknown state explicit");
   ok(PostLimitRules.lineSummary(inspect("a\nb\nc",0,0,null),2).contains("超過1行"),"remaining lines shown");
   int[] calls={0};PostLimitRules.Measure measured=text->{calls[0]++;return text.length();};String longText="a".repeat(20000);ok(inspect(longText,17000,0,measured).excessStart==17000&&calls[0]<=20,"overflow lookup uses logarithmic measurements");
+  PostLimitRules.Limit perLine=new PostLimitRules.Limit(3,"文字",PostLimitRules.UTF16);
+  var lr=PostLimitRules.inspectLines("abcd\nx\r\ny1234",perLine);ok(lr.longest.used==5&&lr.excess.size()==2,"longest logical line and independent overflow spans");ok(Arrays.equals(lr.excess.get(0),new int[]{3,4})&&Arrays.equals(lr.excess.get(1),new int[]{11,13}),"CRLF line offsets preserve later non-excess text");
+  var em=PostLimitRules.inspectLines("a😀b\nok",new PostLimitRules.Limit(2,"文字",PostLimitRules.UTF16));ok(Arrays.equals(em.excess.get(0),new int[]{1,4}),"per-line emoji is never split");
+  ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_CHARS=80"))==80,"explicit character cap");
+  var bytes=PostLimitRules.settings("BBS_MAX_LINE_BYTES=160");ok(PostLimitRules.lineMaximum(bytes)==160&&!PostLimitRules.lineCharacters(bytes),"explicit byte cap");
+  ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_LENGTH=80"))==0,"unknown units do not invent a limit");
+  ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_LENGTH=80\nBBS_MAX_LINE_UNIT=chars"))==80,"explicit length and units");
+  ok(PostLimitRules.inspectLines("long line",new PostLimitRules.Limit(0,"文字",PostLimitRules.UTF16)).excess.isEmpty(),"unknown line cap has no warning");
   System.out.println("PASS "+checks+" posting-limit unit, Unicode and line checks");
  }
 }

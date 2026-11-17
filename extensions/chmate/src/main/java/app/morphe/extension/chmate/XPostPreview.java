@@ -67,6 +67,14 @@ public final class XPostPreview {
     // Native body TextViews call onBound from their overridden setText. Our own
     // preview writes must not enter that binding hook again (191/226/242).
     private static final ThreadLocal<TextView> WRITING = new ThreadLocal<>();
+
+    static void thresholdModeChanged() {
+        revision++;
+        MAIN.post(() -> {
+            List<TextView> views = new ArrayList<>(BOUND.keySet());
+            for (TextView view : views) if (view != null && view.isAttachedToWindow()) apply(view, true);
+        });
+    }
     private static final class RowState {
         final String source;
         final java.util.HashSet<String> expanded = new java.util.HashSet<>();
@@ -131,19 +139,24 @@ public final class XPostPreview {
     static final class Data {
         final String id, author, handle, text, date, excerpt;
         final boolean truncated,possiblyTruncated;
+        final int visibleBytes;
         Data(String id, String author, String handle, String text, String date) {
             this(id,author,handle,text,date,false,false);
         }
         Data(String id, String author, String handle, String text, String date,boolean truncated,boolean possiblyTruncated) {
+            this(id,author,handle,text,date,truncated,possiblyTruncated,XPostLength.visibleBytes(text,null));
+        }
+        Data(String id, String author, String handle, String text, String date,boolean truncated,boolean possiblyTruncated,int visibleBytes) {
             this.id = id; this.author = author; this.handle = handle; this.text = text; this.date = date;
             this.truncated=truncated;this.possiblyTruncated=possiblyTruncated;
+            this.visibleBytes=visibleBytes;
             excerpt = text.codePointCount(0, text.length()) > 140
                     ? text.substring(0, text.offsetByCodePoints(0, 140)) + "…" : text;
         }
         String notice(boolean full){
             if(!full&&text.codePointCount(0,text.length())>140)return "［表示を140文字で省略しています］";
-            if(truncated)return "［投稿の一部のみ取得しています。続きは元の投稿で確認］";
-            return possiblyTruncated?"［全文を取得できていない可能性があります。元の投稿で確認］":"";
+            if(truncated)return "［以下省略］";
+            return possiblyTruncated?"［省略の可能性］":"";
         }
     }
 
@@ -171,11 +184,17 @@ public final class XPostPreview {
         if (user == null || text.isEmpty() || text.length() > 50_000) return null;
         String handle = user.optString("screen_name", "");
         if (!handle.matches("[A-Za-z0-9_]{1,50}")) return null;
-        return new Data(expectedId, user.optString("name", "").substring(0,
+        int visibleBytes = XPostLength.visibleBytes(text, post);
+        int detailedPoints = XPostLength.detailedPoints(text, post);
+        boolean thresholdReached = Haiagaru.xPostWarningThresholdMode() == 0
+                ? detailedPoints >= XPostLength.POSSIBLE_TRUNCATION_POINTS
+                : visibleBytes >= XPostLength.POSSIBLE_TRUNCATION_BYTES;
+        Data data = new Data(expectedId, user.optString("name", "").substring(0,
                 Math.min(200, user.optString("name", "").length())), handle, text,
                 post.optString("created_at", ""),post.optBoolean("truncated",false)&&!fullProvided,
                 !noteComplete&&(post.optBoolean("is_note_tweet",false)||note!=null)
-                        ||!fullProvided&&(text.codePointCount(0,text.length())>=140||text.endsWith("…")||text.endsWith("...")));
+                        ||!fullProvided&&(thresholdReached||text.endsWith("…")||text.endsWith("...")));
+        return new Data(data.id,data.author,data.handle,data.text,data.date,data.truncated,data.possiblyTruncated,visibleBytes);
     }
 
     static void apply(TextView view) {

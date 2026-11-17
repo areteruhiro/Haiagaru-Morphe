@@ -381,7 +381,7 @@ public final class WacchoiLongPressMenu {
                 if(WacchoiSuffixNg.prefix(query)!=null&&ResponseMenuSettings.nameMenuVisible(0x7e000079)){
                     Object upperNg=java.lang.reflect.Proxy.newProxyInstance(callbackType.getClassLoader(),new Class<?>[]{callbackType},(proxy,invoked,args)->{
                         if(invoked.getDeclaringClass()==Object.class){if("hashCode".equals(invoked.getName()))return System.identityHashCode(proxy);if("equals".equals(invoked.getName()))return proxy==args[0];return "HaiagaruPrefixNg";}
-                        if("invoke".equals(invoked.getName())&&invoked.getParameterTypes().length==0)WacchoiSuffixNg.confirmPrefix(launchContext,query,found.nativeBoard);
+                        if("invoke".equals(invoked.getName())&&invoked.getParameterTypes().length==0)WacchoiSuffixNg.confirmPrefix(launchContext,query,found.nativeBoard,found.host);
                         return null;
                     });
                     appendSheetItem(method,builder,hasIcon,"ﾜｯﾁｮｲ上4桁をNG登録",android.R.drawable.ic_menu_delete,upperNg);
@@ -396,7 +396,7 @@ public final class WacchoiLongPressMenu {
                                     return "HaiagaruWacchoiSuffixNg";
                                 }
                                 if ("invoke".equals(invoked.getName()) && invoked.getParameterTypes().length == 0)
-                                    WacchoiSuffixNg.confirm(launchContext, query, found.nativeBoard);
+                                    WacchoiSuffixNg.confirm(launchContext, query, found.nativeBoard,found.host);
                                 return null;
                             });
                     SUFFIX_LONG_PRESS.put(ngCallback, () -> WacchoiSuffixNg.copyAndEdit(launchContext, query));
@@ -550,13 +550,13 @@ public final class WacchoiLongPressMenu {
         }
         if(menuVisible(0x7e000079,nameMenu)&&WacchoiSuffixNg.prefix(context.query)!=null&&menu.findItem(0x7e000079)==null){
             MenuItem upperNg=menu.add(Menu.NONE,0x7e000079,ResponseMenuSettings.order(0x7e000079,menu.size()),"ﾜｯﾁｮｲ上4桁をNG登録");
-            PREFIX_NG_ACTIONS.put(upperNg,()->WacchoiSuffixNg.confirmPrefix(ngContext,context.query,context.nativeBoard));
+            PREFIX_NG_ACTIONS.put(upperNg,()->WacchoiSuffixNg.confirmPrefix(ngContext,context.query,context.nativeBoard,context.host));
             upperNg.setOnMenuItemClickListener(item->handlePrefixNg(item));
         }
         if (menuVisible(76,nameMenu) && WacchoiSuffixNg.suffix(context.query) != null && menu.findItem(76) == null) {
             MenuItem suffixItem = menu.add(Menu.NONE, 76, ResponseMenuSettings.order(76, menu.size()), "ﾜｯﾁｮｲ下4桁をNG登録")
                     .setOnMenuItemClickListener(item -> {
-                        WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard);
+                        WacchoiSuffixNg.confirm(ngContext, context.query, context.nativeBoard,context.host);
                         return true;
                     });
             SUFFIX_LONG_PRESS.put(suffixItem, () -> WacchoiSuffixNg.copyAndEdit(ngContext, context.query));

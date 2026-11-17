@@ -65,7 +65,9 @@ final class NativeNgStore {
     }
 
     void update(Object before, Object after) throws ReflectiveOperationException {
-        update.invoke(store, before, after);
+        ThreadScopedNg.beginBypass();
+        try { update.invoke(store, before, after); }
+        finally { ThreadScopedNg.endBypass(); }
         WacchoiSuffixNg.notifyLegacyNameChange(store.getClass().getClassLoader(), category, itemType, before, after);
     }
 

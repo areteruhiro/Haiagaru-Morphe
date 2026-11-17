@@ -34,6 +34,8 @@ public final class SettingsProfiles {
         booleanKey(ImageModeration.GORE);defaultValue(ImageModeration.GORE,false);
         booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
+        booleanKey(NotificationNg.CHAIN_KEY);defaultValue(NotificationNg.CHAIN_KEY,false);
+        booleanKey(QuickFilterOptions.TRANSPARENT);defaultValue(QuickFilterOptions.TRANSPARENT,true);
         booleanKey(MediaUploadHosts.ASK_DESTINATION);defaultValue(MediaUploadHosts.ASK_DESTINATION,false);
         booleanKey(NativeImageNgList.ENABLE);defaultValue(NativeImageNgList.ENABLE,false);
         numberKey(ThreadListThumbnail.REGISTERED_ACTION,0,3);defaultValue(ThreadListThumbnail.REGISTERED_ACTION,0);
@@ -55,7 +57,7 @@ public final class SettingsProfiles {
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(FirstResponseNg.KEY);defaultValue(FirstResponseNg.KEY,FirstResponseNg.DEFAULT);
         booleanKey(MediaViewerBackGesture.DOUBLE_BACK);
-        booleanKey(NativeImagePaging.ENABLED);defaultValue(NativeImagePaging.ENABLED,true);
+        booleanKey(NativeImagePaging.ENABLED);defaultValue(NativeImagePaging.ENABLED,false);
         numberKey(NativeImagePaging.NEXT,0,4);defaultValue(NativeImagePaging.NEXT,NativeImagePaging.defaultDirection(activity,NativeImagePaging.NEXT));
         numberKey(NativeImagePaging.PREVIOUS,0,4);defaultValue(NativeImagePaging.PREVIOUS,NativeImagePaging.defaultDirection(activity,NativeImagePaging.PREVIOUS));
         numberKey(ViewerCornerControls.BACK,0,3);defaultValue(ViewerCornerControls.BACK,1);
@@ -68,7 +70,10 @@ public final class SettingsProfiles {
         booleanKey(VideoViewerSettings.INLINE_GIF);defaultValue(VideoViewerSettings.INLINE_GIF,false);
         booleanKey(ImageViewerRotationButton.MENU_KEY);defaultValue(ImageViewerRotationButton.MENU_KEY,true);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
-        booleanKey(ArchiveSearchLayout.ORIGINAL_SITE);defaultValue(ArchiveSearchLayout.ORIGINAL_SITE,false);
+        booleanKey(Haiagaru.STARTUP_OPTIMIZATION);defaultValue(Haiagaru.STARTUP_OPTIMIZATION,true);
+        booleanKey(ExtraQuickFilters.OPTIMIZATION);defaultValue(ExtraQuickFilters.OPTIMIZATION,true);
+        booleanKey(ResponseNoteIndicator.KEY);defaultValue(ResponseNoteIndicator.KEY,true);
+        booleanKey(ArchiveSearchLayout.ORIGINAL_SITE);defaultValue(ArchiveSearchLayout.ORIGINAL_SITE,true);
         for(String key:new String[]{"fast191UpdateConnect","optimize191UpdateProgress"}){booleanKey(key);defaultValue(key,true);}
         numberKey(CachedSearchOrder.KEY,0,4);defaultValue(CachedSearchOrder.KEY,0);
         for(String k:new String[]{EdgeLevelNg.OBSERVED}){booleanKey(k);defaultValue(k,false);}
@@ -78,11 +83,12 @@ public final class SettingsProfiles {
 
         for(String key:new String[]{GlobalSearchHome.BACKGROUND,GlobalSearchHome.HISTORY,GlobalSearchHome.PARTIAL}){booleanKey(key);defaultValue(key,true);}
         booleanKey(GlobalTitleSearch.KEY);defaultValue(GlobalTitleSearch.KEY,false);
-        numberKey(GlobalTitleSearch.MODE,0,1);defaultValue(GlobalTitleSearch.MODE,0);
+        numberKey(GlobalTitleSearch.MODE,0,1);defaultValue(GlobalTitleSearch.MODE,1);
         RULES.put(GlobalTitleSearch.BOARDS,v->v instanceof String&&GlobalTitleSearch.validSelection((String)v));defaultValue(GlobalTitleSearch.BOARDS,"");
         for(String key:new String[]{VideoViewerSettings.GIF_NATIVE,VideoViewerSettings.VIDEO_NATIVE,VideoViewerSettings.THREAD_MEDIA}){
             booleanKey(key);defaultValue(key,false);
         }
+        booleanKey(VideoViewerSettings.GIF_DEDICATED);defaultValue(VideoViewerSettings.GIF_DEDICATED,false);
         RULES.put("userAgent",value->value instanceof String&&ViewingUserAgentRules.valid((String)value));
         defaultValue("userAgent",BrowserUaTemplates.DEFAULT);
         numberKey(HaiagaruSettingsGestures.SENSITIVITY,50,200);
@@ -124,6 +130,8 @@ public final class SettingsProfiles {
         defaultValue(SiteCards.MAX_PER_RESPONSE_KEY,2);
         numberKey(SiteCards.CACHE_HOURS_KEY,1,168);
         defaultValue(SiteCards.CACHE_HOURS_KEY,24);
+        choiceKey("xPostWarningThresholdMode",new HashSet<>(Arrays.asList(0,1)));
+        defaultValue("xPostWarningThresholdMode",1);
         RULES.put(SiteCardExclusions.KEY,v->{if(!(v instanceof String))return false;
             try{SiteCardExclusions.parse((String)v);return true;}catch(IllegalArgumentException invalid){return false;}});
         defaultValue(SiteCardExclusions.KEY,SiteCardExclusions.DEFAULT);
@@ -156,7 +164,7 @@ public final class SettingsProfiles {
         "hideNgWordIdReplies",ChainAboneVisibility.KEY,EdgeLevelNg.OBSERVED,
         "urlImageFetchEnabled","videoFrameThumbnailsEnabled","videoSwipeBrightness","videoSwipeVolume","videoDoubleTapSeek","videoYoutubeEnabled","videoAutoplay",
         "siteCardsEnabled","siteCardImages",XPostPreviewPosition.ENABLED,"patrolImagesEnabled","patrolImageFilterEnabled","responseArchiveEnabled","directBodySelection",
-        "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters","compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
+        "popularReplyPopup","popularReplyDirect","quickFilterCounts","quickFilterExtras","bottomQuickFilterPanel","persistentBottomQuickFilters",QuickFilterOptions.TRANSPARENT,"compactQuickFilters","wacchoiSearchEnabled","wacchoiBackgroundSearch",
         "wacchoiLongPressSearch","wacchoiLongPressSuffixSearch","wacchoiLongPressPrefixSearch","wacchoiLongPressSuffixNg","wacchoiLongPressPrefixNg","responseExtraTools","wacchoiSearchHistory","showEdgeSearch","showZzzSearch","readThreadsFirstNewOnly","automaticFoldMode",
         "groupBrowsingHistoryByBoard","showRefreshTargetsInHistoryPopup","imageVpnEnabled","hideDroppedHomeThreads","hideDroppedDrafts","hideDroppedSent","nativeToolTabs","nativeToolTabSettings","nativeToolTabEddi",
         "nativeToolTabSearch","nativeToolTabChecker","nativeToolTabHissi","nativeToolTabWacchoi",NativeToolTabChMateGestures.KEY,"floatingQuickFilterButton","hissiViewerCompactHeader",

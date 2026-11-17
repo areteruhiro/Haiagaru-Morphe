@@ -241,6 +241,9 @@ public final class Haiagaru {
             + "9kQy5kSVkF2kCALI9DxTEE3yuzZFKw7f7pKGZzs3wZCyeMCZNCC2MRQ=";
 
     private static volatile Context applicationContext;
+
+    /** Application context for callbacks originating from native singletons. */
+    public static Context applicationContext() { return applicationContext; }
     private static volatile WeakReference<Activity> resumedActivity = new WeakReference<>(null);
     private static volatile boolean activityTrackingInstalled;
     private static volatile boolean crashLoggerInstalled;
@@ -984,10 +987,17 @@ public final class Haiagaru {
         return ExternalEmojiPost.prepareBody(url, body);
     }
 
-    private static void initializeApplicationContext(Context context) {
+    static final String STARTUP_OPTIMIZATION="startupWorkOptimization";
+    private static Context initializedApplicationContext;
+    private static synchronized void initializeApplicationContext(Context context) {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        WacchoiSuffixNg.scheduleExpiry(appContext);
+        boolean optimize=preferences(appContext).getBoolean(STARTUP_OPTIMIZATION,true);
+        if(optimize&&initializedApplicationContext==appContext)return;
+        runtimePackageName = appContext.getPackageName();
+        if(optimize)migrateRestoredPackageReferences(appContext);
         LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
@@ -1007,10 +1017,10 @@ public final class Haiagaru {
         ProgrammableNgController.initialize(appContext);
         HiddenIdNg.initialize(appContext);
         PosterHighlight.initialize(appContext);
-        runtimePackageName = appContext.getPackageName();
-        migrateRestoredPackageReferences(appContext);
+        if(!optimize)migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
         ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
+        initializedApplicationContext=appContext;
     }
 
     /** Synchronizes the optional Haiagaru Hissi menu setting with ChMate's native preference. */
@@ -1295,7 +1305,9 @@ public final class Haiagaru {
         }
 
         int changedValues = 0;
+        boolean optimize=preferences(application).getBoolean(STARTUP_OPTIMIZATION,true);
         for (File preferenceFile : preferenceFiles) {
+            if(optimize&&!RestoredPreferenceScan.needsParsing(preferenceFile,originalPackage))continue;
             String fileName = preferenceFile.getName();
             String preferenceName = fileName.substring(0, fileName.length() - 4);
             try {
@@ -3528,6 +3540,10 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch startupOptimization=addSwitch(basics,activity,"起動時の重複初期化・設定読み込みを最適化（次回起動から）",preferences.getBoolean(STARTUP_OPTIMIZATION,true));
+        live.toggle(startupOptimization,STARTUP_OPTIMIZATION);
+        Switch filterOptimization=addSwitch(basics,activity,"フィルターの抽出・位置保持・件数集計を最適化",preferences.getBoolean(ExtraQuickFilters.OPTIMIZATION,true));
+        live.toggle(filterOptimization,ExtraQuickFilters.OPTIMIZATION);
         Switch settingOptionLinks = addSwitch(basics, activity,
                 "設定内の機能名をタップして設定を開く", FeatureSwitches.enabled("settingsOptionLinksEnabled", true));
         new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(settingOptionLinks, "settingsOptionLinksEnabled");
@@ -3639,6 +3655,8 @@ public final class Haiagaru {
         LinearLayout lists=SettingsSection.add(layout,text("スレ一覧・HOME・履歴の表示", "Thread lists, HOME and history"),text("並び順、表示するスレ、履歴タブ", "Ordering, thread visibility and history tabs"),true);
         LinearLayout search=SettingsSection.add(layout,text("スレ内検索・記者ID", "Thread search and reporter IDs"),text("検索対象と記者IDの表示・検索", "Search targets and reporter ID display/search"),true);
         ThreadSearchOptions.add(search,activity);
+        Switch noteIndicators=addSwitch(lists,activity,"メモ済みレスの右下にアイコンを表示（タップで編集）",SettingsProfiles.prefs(activity).getBoolean(ResponseNoteIndicator.KEY,true));
+        noteIndicators.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(ResponseNoteIndicator.KEY,on).apply());
         Switch homeNotes=addSwitch(lists,activity,"HOMEの3点メニューにメモを表示",SettingsProfiles.prefs(activity).getBoolean("homeResponseNotesMenu",true));
         homeNotes.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean("homeResponseNotesMenu",on).apply();activity.invalidateOptionsMenu();});
         Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
@@ -3865,11 +3883,11 @@ public final class Haiagaru {
                 preferences.getBoolean("threadCommandsEnabled", true));
         live.toggle(threadCommands, "threadCommandsEnabled");
         Switch postingLimits=addSwitch(layout,activity,
-                text("投稿上限・残り文字数・行数と超過部分を表示", "Show posting limits, remaining length and excess text"),
+                text("投稿上限・残り文字数・行数・1行上限と超過部分を表示", "Show posting limits, remaining length and excess text"),
                 preferences.getBoolean(PostEditorLimits.KEY,true));
         live.toggle(postingLimits,PostEditorLimits.KEY);
         TextView postingLimitsHelp=new TextView(activity);
-        postingLimitsHelp.setText(text("板設定からスレタイ・本文・行数の上限を取得し、超えた部分を赤色で表示します。バイト制限の板はバイト数で判定します。取得できない上限は「上限未取得」と表示します。カウンターの長押しで再取得できます。OFFで上限表示と赤色表示を解除し、入力内容は保持します。",
+        postingLimitsHelp.setText(text("板設定からスレタイ・本文・行数・1行の上限を取得し、超えた部分を赤色で表示します。1行は改行までとして判定します。バイト制限の板はバイト数で判定します。取得できない上限は「上限未取得」と表示します。カウンターの長押しで再取得できます。OFFで上限表示と赤色表示を解除し、入力内容は保持します。",
                 "Reads board limits and highlights excess text in red. Byte-limited boards use their posting byte count. Missing limits stay unknown. Long-press a counter to refresh. Turning this off removes counters and highlights while retaining the draft."));
         layout.addView(postingLimitsHelp);
         Switch threadNames=addSwitch(layout,activity,
@@ -4046,8 +4064,8 @@ public final class Haiagaru {
                     Toast.makeText(activity,"UAテンプレートを保存しました。開いている認証画面は一度閉じてください。",Toast.LENGTH_LONG).show();
                 }).setNegativeButton("閉じる",null).show());
         TextView uaHelp = new TextView(activity);
-        uaHelp.setText(text("閲覧・投稿・認証に選択したAndroid情報を適用します。ChMateが付ける識別名と版番号は保持します。Cookie・SessionIDを保持し、テンプレートの自動切替は行いません。開いている認証画面のUAは変更しないため、認証中の切替は避けてください。UAの変更は、投稿制限や認証の解除を保証するものではありません。",
-                "Applies the selected Android information to reading, posting and authentication, retaining ChMate's client name and version where provided. Keeps cookies and SessionID; no automatic rotation. Existing authentication windows keep their original UA, so avoid switching during authentication. UA does not guarantee removal of restrictions or authentication."));
+        uaHelp.setText(text("閲覧・投稿・認証に選択したAndroid版を適用し、機種名はこの端末から取得します。3つのテンプレートはAndroid版だけが異なり、ChMateが付ける識別名と版番号は保持します。Cookie・SessionIDを保持します。開いている認証画面のUAは変更しないため、認証中の切替は避けてください。UAの変更は、投稿制限や認証の解除を保証するものではありません。",
+                "Applies the selected Android release to reading, posting and authentication and reads the model name from this device. The three templates differ only by Android release; ChMate's client name and version are retained. Cookies and SessionID are preserved. Existing authentication windows keep their original UA, so avoid switching during authentication. UA does not guarantee removal of restrictions or authentication."));
         layout.addView(uaHelp);
         Switch boardCookies=addSwitch(layout,activity,text("Cookieを板ごとに管理する","Manage cookies separately for each board"),preferences.getBoolean(BoardCookies.KEY,false));
         live.toggle(boardCookies,BoardCookies.KEY);
@@ -4556,6 +4574,25 @@ public final class Haiagaru {
                 xPostPreviewEnabled());
         SettingsSection xDetails=SettingsSection.add(x,text("Xカードの詳細", "X card details"),text("本文の表示とリンク操作", "Text presentation and link actions"),true);
         xDetails.available=xPostPreview::isChecked;xDetails.unavailableMessage="Xの投稿内容の表示をオンにすると変更できます。";
+        Button xWarningMode = new Button(activity);
+        Runnable updateXWarningMode = () -> xWarningMode.setText("省略の可能性を知らせる基準："
+                + (xPostWarningThresholdMode() == 0 ? "詳細判定（280ポイント）" : "簡易判定（320バイト）"));
+        updateXWarningMode.run();
+        xWarningMode.setOnClickListener(v -> {
+            int selected = xPostWarningThresholdMode();
+            new HaiagaruDialog.Builder(activity).setTitle("X投稿の省略判定")
+                    .setSingleChoiceItems(new String[]{"詳細判定（日本語・絵文字・URLを考慮）", "簡易判定（320バイト）"}, selected,
+                            (dialog, which) -> {
+                                preferences.edit().putInt("xPostWarningThresholdMode", which).apply();
+                                updateXWarningMode.run();
+                                XPostPreview.thresholdModeChanged();
+                                dialog.dismiss();
+                            }).setNegativeButton("閉じる", null).show();
+        });
+        xDetails.addView(xWarningMode);
+        TextView xWarningHelp = new TextView(activity);
+        xWarningHelp.setText("投稿全体が取得できず、選んだ基準を超えた場合に「省略の可能性」と表示します。添付メディアの短縮URLは文字数に含めません。通常のURLと改行は簡易判定のバイト数に含みます。");
+        xDetails.addView(xWarningHelp);
         Switch xPostFullText = addSwitch(xDetails, activity,
                 text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
                 xPostPreviewFullText());
@@ -4627,10 +4664,10 @@ public final class Haiagaru {
             thumbnailAppearance.addView(help);
         }
         Button imageNg = new Button(activity);
-        imageNg.setText("登録画像によるあぼーん（判定レベル・一致枚数）");
+        imageNg.setText("登録画像をあぼーんにする（判定レベル・一致枚数）");
         imageNg.setOnClickListener(view -> activity.startActivity(new Intent(activity, RegisteredImageNgSettingsActivity.class)));
         safety.addView(imageNg, rowParams(activity));
-        Switch registeredImageNg = addSwitch(safety, activity, "登録画像に一致するレスをあぼーん",
+        Switch registeredImageNg = addSwitch(safety, activity, "登録画像をあぼーんにする",
                 RegisteredImageNg.prefs(activity).getBoolean(RegisteredImageNg.ENABLE, false));
         registeredImageNg.setOnCheckedChangeListener((button, checked) -> {
             RegisteredImageNg.prefs(activity).edit().putBoolean(RegisteredImageNg.ENABLE, checked).apply();
@@ -4831,10 +4868,10 @@ public final class Haiagaru {
             Log.w(LOG_TAG, "Unable to add automatic DAT route controls", error);
         }
         final EditText archiveRouteTemplates = archiveRouteTemplatesValue;
-        Switch archiveOriginalSite=addSwitch(layout,activity,
-                text("エッヂ過去ログを元サイトで開く", "Open Edge archive in the original site"),
-                ArchiveSearchLayout.originalSite(activity));
-        live.toggle(archiveOriginalSite,ArchiveSearchLayout.ORIGINAL_SITE);
+        Button archiveOriginalSite = new Button(activity);
+        archiveOriginalSite.setText(text("エッヂ過去ログ：専用ビューア1／2を選ぶ", "Edge archive: choose viewer 1 or 2"));
+        archiveOriginalSite.setOnClickListener(v->ArchiveSearchLayout.choose(activity));
+        layout.addView(archiveOriginalSite);
         Switch archiveThreadStandalone = addSwitch(layout, activity,
                 text("エッヂ過去ログのスレをタブレットモードを解除して開く",
                         "Open Edge archive threads outside tablet mode"),
@@ -5951,6 +5988,11 @@ public final class Haiagaru {
     public static boolean xPostPreviewEnabled() {
         SharedPreferences prefs = preferencesOrNull();
         return prefs != null && prefs.getBoolean("xPostPreviewEnabled", false);
+    }
+
+    public static int xPostWarningThresholdMode() {
+        SharedPreferences prefs = preferencesOrNull();
+        return prefs == null ? 1 : prefs.getInt("xPostWarningThresholdMode", 1);
     }
 
     public static boolean xPostPreviewFullText() {

@@ -36,7 +36,7 @@ public final class NativeImagePaging {
     // The previous "disable gestures" choice now means to leave handling to ChMate.
     // Keep reading its key until the user next changes the mode, without blocking native input.
     static boolean disabled(Context context){return false;}
-    static boolean enabled(Context context){SharedPreferences prefs=VideoViewerSettings.prefs(context);return !prefs.getBoolean(DISABLED,false)&&prefs.getBoolean(ENABLED,true);}
+    static boolean enabled(Context context){SharedPreferences prefs=VideoViewerSettings.prefs(context);return !prefs.getBoolean(DISABLED,false)&&prefs.getBoolean(ENABLED,false);}
     static boolean legacy191(Context context){
         try{return "0.8.10.191 dev".equals(context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);}
         catch(android.content.pm.PackageManager.NameNotFoundException ignored){return false;}

@@ -223,8 +223,8 @@ public final class HissiMenuController extends ToolScreenController {
         // Resolve the checker first so OFF still preserves the selected service,
         // source board, ID/ﾜｯﾁｮｲ and custom-scheme links cached by ChMate.
         // Every entry point (including explicit launches) reaches this boundary.
-        if (!Haiagaru.dedicatedViewerEnabled()
-                || (!eddiArchiveMode && !Haiagaru.dedicatedCheckerViewerAvailable())) {
+        if (!eddiArchiveMode && (!Haiagaru.dedicatedViewerEnabled()
+                || !Haiagaru.dedicatedCheckerViewerAvailable())) {
             Intent standardWeb = new Intent(Intent.ACTION_VIEW, Uri.parse(target));
             standardWeb.setClassName(this, "jp.syoboi.a2chMate.activity.WebViewActivity");
             startActivity(standardWeb);
@@ -317,6 +317,7 @@ public final class HissiMenuController extends ToolScreenController {
             return false;
         });
         webView.setOnLongClickListener(view -> {
+            if(eddiArchiveMode){ArchiveResultActions.longPress(host,webView,lastTouchX,lastTouchY);return true;}
             float scale = Math.max(0.1f, webView.getScale());
             int x = Math.round(lastTouchX / scale);
             int y = Math.round(lastTouchY / scale);
@@ -420,6 +421,7 @@ public final class HissiMenuController extends ToolScreenController {
                     kyodemoAnalysisButton.setText("分析");
                 }
                 configureHissiTabs(view);
+                if(eddiArchiveMode)ArchiveResultActions.install(view);
                 if (url.equals(pendingAnalysisResult)
                         || ("wt".equals(Uri.parse(url).getFragment())
                                 && !url.equals(analysisAutoOpenedUrl))) {
@@ -1246,6 +1248,11 @@ public final class HissiMenuController extends ToolScreenController {
 
     /** Receives viewer events from the WebView. */
     private final class ViewerBridge {
+        @JavascriptInterface public void openArchiveThread(String url){
+            if(!eddiArchiveMode||ArchiveResultActions.nativeUrl(url)==null)return;
+            host.runOnUiThread(()->{if(viewerWebView!=null&&isEddiArchiveUri(Uri.parse(viewerWebView.getUrl()==null?"":viewerWebView.getUrl())))openThreadInChMate(url);});
+        }
+
         @JavascriptInterface
         public void copyPost(String data) {
             runOnUiThread(() -> showPostCopyDialog(data));
@@ -1747,6 +1754,7 @@ public final class HissiMenuController extends ToolScreenController {
     }
 
     private boolean openThreadInChMate(String url) {
+        if(eddiArchiveMode){String nativeUrl=ArchiveResultActions.nativeUrl(url);if(nativeUrl!=null)url=nativeUrl;}
         if (openEddiThreadInChMate(url)) return true;
         String original = KyodemoRouting.sourceThreadUrl(sourceHost, sourceBoard, url);
         if (original != null) url = original;
