@@ -3693,7 +3693,8 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
   APK `build/ua-post-test-20261118/apks/final242.apk`、SHA-256 `ccb76f21c1b15460950f345d30a170b063e395dd011b11c09767a26b4ecb66a9`。
   MPP `build/ua-post-test-20261118/apks/candidate.mpp`、SHA-256 `bdb31ed551029e7862ac4ba0fa5e949ef440b6b135860edab2a5ccd0bbc59b79`。
   署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`、証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。191/226/242の全APKで同じ証明書を検証し、3版すべてのパッチ適用が完了。実機は242のみ導入。
-- 5chのテストスレGETでは「テストスレ」、835レス、投稿フォームを確認。投稿は未実施。MIUI端末がADB tapを `INJECT_EVENTS` 権限エラーで拒否し、CodexのUI制御対象にも端末画面がないため、投稿欄を操作できなかった。
+- 5chのテストスレGETでは「テストスレ」、835レス、投稿フォームを確認。投稿はユーザーが後で行う指示のため未実施。
+- Android arm64用の公式Frida-server 17.18.0を取得し、公開アセットSHA-256 `77c2a4aadf6010c69766abea5b6a408c66f5e2da43b3f2c920cf75a5fa1ec7f5` を照合。展開バイナリSHA-256 `fa64b9207bcabe84d67b00d570d5bd7c01b8f27860263c294b7635ca5c1b8b09` を `/data/local/tmp/haiagaru-frida-server-17.18.0` に配置し、実行権限を設定。Magiskの `su -c id` は `uid=0(root)`。PID 31470でroot起動し、`127.0.0.1:27042` のloopbackのみを待受。Windows側Frida 17.18.0からの端末接続は `full`。バイナリとサーバーは次回用に残す。
 
 - Haiagaru 修正確認 242 / 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / Mi Note 10 Android 11 / ADB `d5497008` / 2026-11-17T13:23:32.442111 / signature matched; install-r Success
   APK: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\post-input-limits-20261117\apks\final242.apk`、SHA-256 `cde7cd5e09cdef3b6821bd448ae822190886e69c861a7fe0a1795332b428ab81`。MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\post-input-limits-20261117\apks\candidate.mpp`、SHA-256 `9d6e9824ca867071c367f14006985e16540c3dcd4338bb9359cf7d5ee8c73d0c`。署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
