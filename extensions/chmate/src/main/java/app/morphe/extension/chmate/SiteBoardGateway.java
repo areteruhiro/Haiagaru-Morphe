@@ -229,6 +229,13 @@ final class SiteBoardGateway {
         }catch(IOException unavailable){return null;}
         return port>0&&("127.0.0.1:"+port).equals(host)&&key!=null&&boards.containsKey(key)?key:null;
     }
+    SiteBoardProtocol.Board postingLimitBoard(String address){
+        try{URI uri=URI.create(address);String path=uri.getPath().replaceAll("^/+|/+$","");String key=registeredKey(uri.getRawAuthority(),path);return key==null?null:boards.get(key);}catch(Exception invalid){return null;}
+    }
+    String postingLimitPage(SiteBoardProtocol.Board board)throws IOException{
+        if(!siteEnabled(board.kind))throw new IOException("使用しない板です");
+        return page(board.kind.equals("futaba")?board.url+"futaba.htm":board.url);
+    }
     String popupBoardKey(String key,String thread){
         SiteBoardProtocol.Board original=boards.get(key);
         if(original==null||!original.kind.equals("animanch")||thread==null)return key;

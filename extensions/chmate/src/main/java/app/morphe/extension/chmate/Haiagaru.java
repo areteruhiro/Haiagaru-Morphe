@@ -3864,6 +3864,14 @@ public final class Haiagaru {
                 text("スレ立てコマンドの候補を表示", "Show thread creation command suggestions"),
                 preferences.getBoolean("threadCommandsEnabled", true));
         live.toggle(threadCommands, "threadCommandsEnabled");
+        Switch postingLimits=addSwitch(layout,activity,
+                text("投稿上限・残り文字数・行数と超過部分を表示", "Show posting limits, remaining length and excess text"),
+                preferences.getBoolean(PostEditorLimits.KEY,true));
+        live.toggle(postingLimits,PostEditorLimits.KEY);
+        TextView postingLimitsHelp=new TextView(activity);
+        postingLimitsHelp.setText(text("板設定からスレタイ・本文・行数の上限を取得し、超えた部分を赤色で表示します。バイト制限の板はバイト数で判定します。取得できない上限は「上限未取得」と表示します。カウンターの長押しで再取得できます。OFFで上限表示と赤色表示を解除し、入力内容は保持します。",
+                "Reads board limits and highlights excess text in red. Byte-limited boards use their posting byte count. Missing limits stay unknown. Long-press a counter to refresh. Turning this off removes counters and highlights while retaining the draft."));
+        layout.addView(postingLimitsHelp);
         Switch threadNames=addSwitch(layout,activity,
                 text("名前欄をスレごとに保存する", "Remember posting names per thread"),
                 preferences.getBoolean(ThreadPostingNames.ENABLED,false));
