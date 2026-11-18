@@ -690,13 +690,25 @@ public final class ExtraQuickFilters {
         if(optimized())scheduleCounts(adapter);
         else collect(adapter,PopularReplies.fullList(field(adapter,legacy(adapter)?"K":middle(adapter)?"J":"o")));
     }
+    private static boolean countsVisible(Object adapter){
+        HaiagaruDialog dialog=state(adapter).dialog.get();
+        if(dialog!=null&&dialog.isShowing())return true;
+        for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){
+            Bar bar=ref.get();if(bar!=null&&bar.adapter.get()==adapter&&bar.isShown())return true;
+        }
+        for(WeakReference<PinnedPanel> ref:new ArrayList<>(PINNED.values())){
+            PinnedPanel panel=ref.get();
+            if(panel!=null&&panel.panel!=null&&panel.panel.adapter==adapter&&panel.panel.isShown())return true;
+        }
+        return false;
+    }
     /** Counts decorate the controls; they must not delay the native extraction/commit. */
     private static void scheduleCounts(Object adapter){
         if(!optimized()||!QuickFilterOptions.counts())return;State state=state(adapter);if(state.countQueued)return;
         state.countQueued=true;state.mediaCountsReady=false;WeakReference<Object> ref=new WeakReference<>(adapter);
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{
             Object current=ref.get();if(current==null)return;State latest=state(current);latest.countQueued=false;
-            if(!optimized()||!QuickFilterOptions.counts())return;
+            if(!optimized()||!QuickFilterOptions.counts()||!countsVisible(current))return;
             try{collect(current,PopularReplies.fullList(field(current,legacy(current)?"K":middle(current)?"J":"o")),true);}
             catch(Exception error){latest.mediaCountsReady=true;Arrays.fill(latest.counts,-1);Log.w("Haiagaru","Deferred filter counts unavailable",error);}
             refresh(current);

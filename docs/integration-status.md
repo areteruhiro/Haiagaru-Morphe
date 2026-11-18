@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-18 画像戻る・HOME/返信負荷・共有NG（プレ公開準備）: 静止画ギャラリーの混在paging横取りを防ぎnative Backを独立受信。19125/22618/24218画像gesture項目成功、3版署名・隔離導入・履歴DEX成功。共有NG本文不要時のHTML解析省略11309項目、server personal148項目成功。HOME変換重複削減、表示UIなしの遅延集計抑止、初期化済みprefs読込省略、検索境界線/不要共有報告ボタン削除/personal送信時inline binding使用。OPPO実測と実共有投稿は未実施。詳細docs/performance-gallery-20261118.md。
+
 2026-11-18 検索初期ON・順序保持・通知文字化け・履歴OOM（未公開）: 検索メニューの未保存時初期値をONへ統一。191/226/242の順序切替直後にnative resListOrderを保存。UTF-8優先の厳密復号＋旧文字コードfallback、保存DATはstreaming判定。履歴タイトル補完OOM時は元タイトルへ退避。最終build成功、3版適用・署名照合・DEX・隔離アプリ導入成功。242順序全2値のnative保存確認、文字コードhost試験成功、既存writer14項目成功。実際の通知再現・複数スレでの表示比較は未確認。詳細docs/thread-preferences-notification-20261118.md。
 
 2026-11-18 履歴削除・226自分フィルター・設定版表示（未公開）: ThreadScopedNgをpublicにしてnative削除callbackのIllegalAccessErrorを解消。191のHOME履歴削除後にソート用sourceコピーを同期（スレIDはh）。226の自分判定はadapter Kのlive indexからbit0を読む。Compose/旧設定ヘッダーへPatch版表示。通常Lint/R8 build成功、3版適用・署名照合・隔離package導入・起動・DEX検査成功、新規fatalなし。242設定版表示確認。実データ削除・226実投稿・Android15は未確認。証跡build/bugfix-20261118-rebuilt、導入台帳参照。

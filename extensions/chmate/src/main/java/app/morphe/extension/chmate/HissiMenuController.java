@@ -1589,6 +1589,8 @@ public final class HissiMenuController extends ToolScreenController {
                     + "}"
                     + "body[data-haiagaru-eddi]{box-sizing:border-box;width:100%;max-width:760px;"
                     + "margin:0 auto;overflow-x:hidden;}"
+                    + "body[data-haiagaru-eddi] #threadContainer{border-top:1px solid "
+                    + (dark ? "#777d88" : "#8c919b") + " !important;padding-top:12px !important;margin-top:12px !important;}"
                     + "body[data-haiagaru-eddi] #myForm{box-sizing:border-box;width:100% !important;"
                     + "max-width:720px;margin:10px auto 14px !important;padding:12px !important;"
                     + "border:1px solid " + (dark ? "#41454c" : "#d8d8de") + " !important;"

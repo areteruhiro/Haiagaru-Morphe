@@ -149,22 +149,25 @@ public final class BrowsingHistory {
             // 191 getItem/getCount read j. Native b() and Filter.publishResults replace j later.
             String[] fields = legacy191 ? new String[]{"g", "i", "j"} : new String[]{"g", "d"};
             Object[] replacements = new Object[fields.length];
+            java.util.IdentityHashMap<Object,Object> processed=new java.util.IdentityHashMap<>();
             for (int i = 0; i < fields.length; i++) {
                 Object original = field(adapter, fields[i]).get(adapter);
                 // Native lazy/search adapters may not have populated every cache yet.
                 // An absent source cache must not bypass filtering of the visible list.
                 if (!(original instanceof List)) {replacements[i]=original;continue;}
+                if(processed.containsKey(original)){replacements[i]=processed.get(original);continue;}
                 List<?> source=HiddenDroppedThreads.source(original,(List<?>)original);
                 // Notification must preserve the native search result/order. The full sort
                 // path restores from its source; the final boundary only removes dropped rows.
                 List<?> ordered = group ? transformValues(source, mode)
                         : HiddenDroppedThreads.active(mode) && HiddenDroppedThreads.target(mode)
                                 ? HiddenDroppedThreads.filter((List<?>)original, mode) : source;
-                ordered=GlobalSearchHome.rows(ordered);
-                ordered=HomeThreadOrder.apply(ordered,mode);
-                if(ordered==original){replacements[i]=original;continue;}
+                // transformValues already runs both passes for the full sort.
+                if(!group){ordered=GlobalSearchHome.rows(ordered);ordered=HomeThreadOrder.apply(ordered,mode);}
+                if(ordered==original){replacements[i]=original;processed.put(original,original);continue;}
                 replacements[i] = original.getClass().getConstructor(List.class).newInstance(ordered);
                 HiddenDroppedThreads.remember(replacements[i],source);
+                processed.put(original,replacements[i]);
             }
             for (int i = 0; i < fields.length; i++) field(adapter, fields[i]).set(adapter, replacements[i]);
     }

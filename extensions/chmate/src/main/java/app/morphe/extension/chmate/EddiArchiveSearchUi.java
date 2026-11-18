@@ -275,6 +275,9 @@ final class EddiArchiveSearchUi {
             int mode = Haiagaru.hissiViewerSwipeHistory();
             if (mode != 0) navigateBySwipe(right == (mode == 1));
         });
+        View resultsDivider = new View(activity);
+        resultsDivider.setBackgroundColor(muted);
+        root.addView(resultsDivider, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1))));
         results = new LinearLayout(activity);
         results.setOrientation(LinearLayout.VERTICAL);
         scroll.addView(results);

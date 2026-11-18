@@ -989,13 +989,16 @@ public final class Haiagaru {
 
     static final String STARTUP_OPTIMIZATION="startupWorkOptimization";
     private static Context initializedApplicationContext;
+    private static boolean initializedStartupOptimization;
     private static synchronized void initializeApplicationContext(Context context) {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
+        // This option takes effect on the next process start. Avoid reopening
+        // preferences in each provider/application startup callback.
+        if(initializedApplicationContext==appContext&&initializedStartupOptimization)return;
         WacchoiSuffixNg.scheduleExpiry(appContext);
         boolean optimize=preferences(appContext).getBoolean(STARTUP_OPTIMIZATION,true);
-        if(optimize&&initializedApplicationContext==appContext)return;
         runtimePackageName = appContext.getPackageName();
         if(optimize)migrateRestoredPackageReferences(appContext);
         LocalAutoBackup.initialize(appContext);
@@ -1020,6 +1023,7 @@ public final class Haiagaru {
         if(!optimize)migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
         ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
+        initializedStartupOptimization=optimize;
         initializedApplicationContext=appContext;
     }
 
