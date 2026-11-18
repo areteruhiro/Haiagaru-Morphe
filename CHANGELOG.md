@@ -1,3 +1,45 @@
+# Haiagaru 1.46.0-dev.2 (2026-11-18)
+
+### 修正
+
+- preserve thread delete arguments during NG cleanup
+
+
+### 追加機能
+
+おすすめプリセット利用中の既存環境でも、レスからのID・NGName・NGワード登録をChMate標準動作に戻します。記者IDのNGThreadをスレ一覧に反映し、登録後の保存確認を追加します。
+
+ワッチョイ全文コピーの括弧除去を任意化し、括弧付きの上下4桁コピーと正規表現追加を修正します。上4桁はaabb-、下4桁は-XXXXでコピーできます。スレタイ長押しから記者IDもコピーできます。
+
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
 # Haiagaru 1.46.0-dev.1 (2026-11-17)
 
 ### 修正
