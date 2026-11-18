@@ -2,7 +2,10 @@
 
 # Android導入・署名台帳
 
-## 2026-11-18 NG登録・ワッチョイ・記者ID修正候補（プレリリース準備）
+## 2026-11-18 NG登録・ワッチョイ・記者ID修正（プレリリース公開済み）
+
+- Haiagaru `1.46.0-dev.2` をプレリリース公開。https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.2
+- 公開MPP `patches-1.46.0-dev.2.mpp` SHA-256 `249e2cc62ee9ae9e7e531343d491d2afd3798f547f7d06dbeae1e5f1659377c0`。`patches-bundle-pre.json` と `patches-bundle.json` は同一 SHA-256 `40879f8046712bbffcc2d1135eb1f6fa66eaad289b6b9f4828ce6d33be9949ec`。GitHubで非draft・prereleaseを確認。
 
 - 修正版MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\candidate.mpp` / SHA-256 `0cedcb750952f4d8f1b6f705c6eb36473726b1600bb961db12f663e760678f79`。
 - 191 / Mi Note 10 Android 11 / ADB `d5497008` / package `jp.co.airfront.android.a2chMate.haiagaru.reporter191` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\final191.apk` / SHA-256 `8f34f303f6f6ba129ebb789b708abedf6c6ae6976d1692f49cc67004b5400bf9` / install-r Success `2026-11-18T13:31:07.753266`。
