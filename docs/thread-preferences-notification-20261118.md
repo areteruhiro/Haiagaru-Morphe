@@ -14,3 +14,5 @@
 - OOM追加退避を含む最終候補は`build/thread-preferences-20261118/final-apks`。全3版生成・署名照合・隔離package install-r成功。全3版の即時保存DEX検査とmetadataTitle/title/historyTitleに直接applyがないことを検査。242実行時にenumの全2値を保存しnative getterと一致、元設定復元を確認。実端末の通知再現・複数スレを切り替えた順序保持は未確認。未公開。
 
 - 242実行時の検索メニュー未保存初期ON・明示OFF/ON各確認成功、元設定復元。新規fatalなし。外部スレをACTION_VIEWで開く追加比較は自動承認レビューにより拒否（詳細理由なし）。実画面での別スレ間比較と報告端末での再現確認は未実施。
+
+- 最終生成DEXで、191/226のonViewCreatedと242のViewModel constructorが、切替時の書込先と同じnative resListOrderキーを読むことを3版検査成功。保存と新規スレの初期値読込の接続を確認（VerifyResponseOrderPersistence）。実画面の外部スレ比較は上記の通り未実施。
