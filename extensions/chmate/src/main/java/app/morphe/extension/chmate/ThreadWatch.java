@@ -343,7 +343,7 @@ public final class ThreadWatch {
             try(InputStream in=c.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){
                 byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){if(stopped.get())throw new InterruptedIOException();if(out.size()+n>4*1024*1024)throw new IOException("Size");out.write(b,0,n);}
                 String type=c.getContentType();java.util.regex.Matcher charset=java.util.regex.Pattern.compile("charset\\s*=\\s*[\"']?([^;\\s\"']+)",2).matcher(type==null?"":type);
-                return new String(out.toByteArray(),Charset.forName(charset.find()?charset.group(1):url.contains("eddibb.cc/")?"UTF-8":url.contains("jbbs.shitaraba.net/")?"EUC-JP":"MS932"));
+                return NotificationDatText.decode(out.toByteArray(),charset.find()?charset.group(1):url.contains("eddibb.cc/")?"UTF-8":url.contains("jbbs.shitaraba.net/")?"EUC-JP":"MS932");
             }
         }finally{c.disconnect();}
     }

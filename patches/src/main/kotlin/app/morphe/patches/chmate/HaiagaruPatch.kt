@@ -1303,6 +1303,19 @@ private fun BytecodePatchContext.patchQuickFilterPosition(version: String) {
             bind.replaceInstruction(index,"invoke-static/range {p0 .. p0}, $extension->register(Ljava/lang/Object;)V")
             bind.addInstruction(index+1,"return-void")
         }
+        // Persist explicit ordering immediately, before another thread is opened.
+        val order = mutableClassDefBy("Lo/pa;").methods.single {
+            it.name == "b" && it.parameterTypes == listOf("I") && it.returnType == "V"
+        }
+        val assignment = order.implementation!!.instructions.withIndex().single { (_, instruction) ->
+            instruction.opcode == Opcode.IPUT && (instruction as? ReferenceInstruction)?.reference?.toString() == "Lo/pa;->x:I"
+        }
+        val value = (assignment.value as TwoRegisterInstruction).registerA
+        val scratch = order.findFreeRegister(assignment.index + 1)
+        order.addInstructions(assignment.index + 1, """
+            sget-object v$scratch, Ljp/syoboi/a2chMate/Prefs;->ax:Lo/m1b${'$'}setContentView;
+            invoke-static {v$scratch, v$value}, Ljp/syoboi/a2chMate/Prefs;->a(Lo/m1b${'$'}setContentView;I)V
+        """.trimIndent())
         val owner = "Lo/pa\$21;"
         val callback = mutableClassDefBy(owner).methods.single {
             it.name == "e" && it.parameterTypes.isEmpty() && it.returnType == "V"
@@ -1321,6 +1334,16 @@ private fun BytecodePatchContext.patchQuickFilterPosition(version: String) {
         return
     }
     if (version !in setOf("0.8.10.226 dev", "0.8.10.241", "0.8.10.242 dev")) return
+    if (version == "0.8.10.242 dev") {
+        val selectOrder = mutableClassDefBy("Lo/zzabe;").methods.single {
+            it.name == "c" && it.parameterTypes == listOf("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;", "Lo/zzacn;") && it.returnType == "V"
+        }
+        val update = selectOrder.implementation!!.instructions.withIndex().single { (_, instruction) ->
+            (instruction as? ReferenceInstruction)?.reference?.toString() == "Lo/zzcpf;->b(Ljava/lang/Object;)V"
+        }
+        val selected = (update.value as FiveRegisterInstruction).registerD
+        selectOrder.addInstructions(update.index + 1, "invoke-static/range {v$selected .. v$selected}, Lapp/morphe/extension/chmate/NativeResponseOrder;->save242(Ljava/lang/Object;)V")
+    }
     val fragment = mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
     val bind = fragment.methods.single { it.name == "onViewCreated" && it.returnType == "V" }
     bind.implementation!!.instructions.withIndex().filter { it.value.opcode == Opcode.RETURN_VOID }
@@ -1329,6 +1352,19 @@ private fun BytecodePatchContext.patchQuickFilterPosition(version: String) {
                 invoke-static/range {p0 .. p0}, $extension->register(Ljava/lang/Object;)V
             """.trimIndent())
         }
+    if (version == "0.8.10.226 dev") {
+        val order = fragment.methods.single { it.name == "f" && it.parameterTypes == listOf("I") && it.returnType == "V" }
+        val assignment = order.implementation!!.instructions.withIndex().single { (_, instruction) ->
+            instruction.opcode == Opcode.IPUT && (instruction as? ReferenceInstruction)?.reference?.toString() == "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;->t:I"
+        }
+        val value = (assignment.value as TwoRegisterInstruction).registerA
+        val scratch = order.findFreeRegister(assignment.index + 1)
+        order.addInstructions(assignment.index + 1, """
+            invoke-static {}, Ljp/syoboi/a2chMate/Prefs;->ao()Lo/readToken${'$'}ComponentActivity;
+            move-result-object v$scratch
+            invoke-static {v$scratch, v$value}, Ljp/syoboi/a2chMate/Prefs;->d(Lo/readToken${'$'}ComponentActivity;I)V
+        """.trimIndent())
+    }
     if (version == "0.8.10.226 dev") {
         val toggle = mutableClassDefBy("Lo/listener\$setContentView\$ComponentActivity;").methods.single {
             it.name == "invoke" && it.returnType == "Ljava/lang/Object;"

@@ -64,8 +64,13 @@ public final class EdgeReporterHistory {
     }
     public static String title(Object board, long thread, String title) {
         if (!ReporterMetadataWrites.headroom()) return title;
-        String resolved=metadataTitle(board,thread,title);
-        return EdgeReporterId.isBoard(board)&&!EdgeReporterOptions.menu()?EdgeReporterId.titleForNextThreadMatch(resolved):resolved;
+        try {
+            String resolved=metadataTitle(board,thread,title);
+            return EdgeReporterId.isBoard(board)&&!EdgeReporterOptions.menu()?EdgeReporterId.titleForNextThreadMatch(resolved):resolved;
+        } catch (OutOfMemoryError unavailable) {
+            // Optional reporter metadata must never abort the native history load.
+            return title;
+        }
     }
     private static String metadataTitle(Object board,long thread,String title){
         SharedPreferences prefs = cache;

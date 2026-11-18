@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-18 検索初期ON・順序保持・通知文字化け・履歴OOM（未公開）: 検索メニューの未保存時初期値をONへ統一。191/226/242の順序切替直後にnative resListOrderを保存。UTF-8優先の厳密復号＋旧文字コードfallback、保存DATはstreaming判定。履歴タイトル補完OOM時は元タイトルへ退避。最終build成功、3版適用・署名照合・DEX・隔離アプリ導入成功。242順序全2値のnative保存確認、文字コードhost試験成功、既存writer14項目成功。実際の通知再現・複数スレでの表示比較は未確認。詳細docs/thread-preferences-notification-20261118.md。
+
 2026-11-18 履歴削除・226自分フィルター・設定版表示（未公開）: ThreadScopedNgをpublicにしてnative削除callbackのIllegalAccessErrorを解消。191のHOME履歴削除後にソート用sourceコピーを同期（スレIDはh）。226の自分判定はadapter Kのlive indexからbit0を読む。Compose/旧設定ヘッダーへPatch版表示。通常Lint/R8 build成功、3版適用・署名照合・隔離package導入・起動・DEX検査成功、新規fatalなし。242設定版表示確認。実データ削除・226実投稿・Android15は未確認。証跡build/bugfix-20261118-rebuilt、導入台帳参照。
 
 2026-11-18 NG登録・ワッチョイ・記者ID修正（1.46.0-dev.2 プレリリース公開済み）: おすすめプリセットが有効な既存環境では、新設定キー未保存時もレス起点のNG登録をChMate標準動作にする。通常構成は従来どおりスレ限定選択を使え、明示ON/OFFも優先する。NGルール登録後にnativeストアから再読込して保存を検証。記者IDのNGThreadルールを記者ID付きスレ一覧へ適用。ワッチョイ括弧除去を任意化し、括弧付きの上下コピー・正規表現追加を修正。上側は`aabb-`、下側は`-XXXX`。スレタイトル長押しに記者IDコピーを追加。`:patches:buildAndroid`成功、純Java 7+5+12項目成功。修正版MPP SHA-256 `0cedcb750952f4d8f1b6f705c6eb36473726b1600bb961db12f663e760678f79`で191/226/242全てへ適用、カスタムメニューcallback bridge 191=2/226=1/242=1検査成功、署名一致。Mi Note 10 Android 11の隔離パッケージへデータ保持導入、各版起動成功。専用focused instrumentationは3版各12項目成功。既存reporter/archive/UI回帰は191/226各39項目成功、242はreporter・archive関連20項目後、画像プレビューの`2/2`スワイプ待ちで失敗（今回変更していないviewer経路、原因未特定）。導入前後のcrash bufferに差分なし。Pixel 11 Pro実機ではなくMi Note 10での検証。公開MPP SHA-256 `249e2cc62ee9ae9e7e531343d491d2afd3798f547f7d06dbeae1e5f1659377c0`。詳細は`build/ng-fixes-20261118`と`docs/android-installations.md`。
