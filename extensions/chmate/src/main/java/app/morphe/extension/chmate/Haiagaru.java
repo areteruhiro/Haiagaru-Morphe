@@ -997,6 +997,10 @@ public final class Haiagaru {
         // This option takes effect on the next process start. Avoid reopening
         // preferences in each provider/application startup callback.
         if(initializedApplicationContext==appContext&&initializedStartupOptimization)return;
+        SharedPreferences startupPreferences=preferences(appContext);
+        if(!startupPreferences.getBoolean("bottomFilterOpaqueMigrationV1",false))
+            startupPreferences.edit().putBoolean(QuickFilterOptions.TRANSPARENT,false)
+                    .putBoolean("bottomFilterOpaqueMigrationV1",true).apply();
         WacchoiSuffixNg.scheduleExpiry(appContext);
         boolean optimize=preferences(appContext).getBoolean(STARTUP_OPTIMIZATION,true);
         runtimePackageName = appContext.getPackageName();
