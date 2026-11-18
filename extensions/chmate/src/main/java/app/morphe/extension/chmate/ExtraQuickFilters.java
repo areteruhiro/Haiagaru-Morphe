@@ -450,6 +450,10 @@ public final class ExtraQuickFilters {
         if(!legacy(a)&&!middle(a))return (Context)field(a,"e");
         return ((android.view.LayoutInflater)field(a,legacy(a)?"q":"s")).getContext();
     }
+    private static Method declaredMethod(Class<?> type,String name,Class<?>...parameters)throws NoSuchMethodException{
+        for(Class<?> current=type;current!=null;current=current.getSuperclass())try{return current.getDeclaredMethod(name,parameters);}catch(NoSuchMethodException ignored){}
+        throw new NoSuchMethodException(type.getName()+"."+name);
+    }
     static int number(Object r) throws Exception { return ((Number)field(r,r.getClass().getName().equals("o.BouncyCastleSocketAdapterCompanion")?"l":"o")).intValue(); }
     private static int[] anchors(Object r) throws Exception { return (int[])field(r,legacyResponse(r)?"d":middleResponse(r)?"a":"b"); }
     private static boolean legacyResponse(Object r){return r.getClass().getName().equals("o.processAdDisplayErrorPostbackForUserError");}
@@ -466,10 +470,12 @@ public final class ExtraQuickFilters {
     }
     static Object index(Object a) throws Exception {
         if(legacy(a))return call(field(a,"M"),"b",new Class<?>[0]);
-        if(!middle(a))return call(a,"a",new Class<?>[0]);
-        Object m=model(a);
-        Method get=m.getClass().getMethod("e",m.getClass());
-        return get.invoke(null,m);
+        if(middle(a)) {
+            // The 226 adapter already owns the live response index. Reopening its
+            // file-backed wrapper can lag a newly parsed thread and miss own posts.
+            return field(a,"K");
+        }
+        return call(a,"a",new Class<?>[0]);
     }
     private static Map<Integer,Integer> collect(Object a,List<?> source) throws Exception {return collect(a,source,true);}
     private static Map<Integer,Integer> collect(Object a,List<?> source,boolean includeCounts) throws Exception {
@@ -486,13 +492,15 @@ public final class ExtraQuickFilters {
         if(source.isEmpty()){s.counts=counts;s.mediaCountsReady=true;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return Collections.emptyMap();}
         Object idx=needMine?index(a):null;
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
-        Method ownRead=needMine?idx.getClass().getMethod(indexMethod,int.class):null;
+        Method ownRead=needMine?(middle(a)?declaredMethod(idx.getClass(),"b",int.class,int.class)
+                :idx.getClass().getMethod(indexMethod,int.class)):null;
         if(ownRead!=null)ownRead.setAccessible(true);
         Method aaRead=null;
         if(needAa||needMine)for(Object r:source)if(response(r)) {
             int no=number(r);
             // ChMate marks an own post with bit 0; bit 3 is not the own-post flag.
-            if(needMine&&( ((Number)ownRead.invoke(idx,no)).intValue()&1)!=0)mine.add(no);
+            int postFlags=needMine?((Number)(middle(a)?ownRead.invoke(idx,no,0):ownRead.invoke(idx,no))).intValue():0;
+            if(needMine&&(postFlags&1)!=0)mine.add(no);
             if(needAa){if(aaRead==null){aaRead=r.getClass().getMethod(legacy(a)?"e":middle(a)?"i":"g");aaRead.setAccessible(true);}if(Boolean.TRUE.equals(aaRead.invoke(r)))aa.add(no);}
         }
         if(needReplies)for(Object r:source)if(response(r)) {

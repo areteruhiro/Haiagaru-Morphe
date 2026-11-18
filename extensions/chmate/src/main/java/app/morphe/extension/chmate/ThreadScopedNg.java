@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 /** Removes only thread-scoped NG rows after their source thread is deleted. */
-final class ThreadScopedNg {
+public final class ThreadScopedNg {
     static final String ENABLED = "threadScopedNgEnabled";
     private static final String[] CATEGORIES = {"ID", "NAME", "WORD"};
     private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>();

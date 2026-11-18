@@ -578,6 +578,8 @@ public final class NativeToolTabs {
             LinearLayout bar=new LinearLayout(activity);Button back=new Button(activity);back.setText("戻る");
             back.setOnClickListener(v->{if(selected!=null)show(null);else NativeToolTabs.back(activity);});bar.addView(back);
             title=new TextView(activity);title.setTextSize(20);bar.addView(title,new LinearLayout.LayoutParams(0,-2,1));root.addView(bar);
+            TextView patchVersion=new TextView(activity);patchVersion.setText("Patch "+BuildConfig.HAIAGARU_VERSION);patchVersion.setTextSize(12);
+            root.addView(patchVersion,new LinearLayout.LayoutParams(-1,-2));
             scroll=new ScrollView(activity);scroll.setFillViewport(true);body=new LinearLayout(activity);body.setOrientation(1);scroll.addView(body);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
             categoryHost=new FrameLayout(activity);root.addView(categoryHost,new LinearLayout.LayoutParams(-1,0,1));
             show(restored==null?args.getString(Intent.EXTRA_TEXT):restored.getString(SELECTED,args.getString(Intent.EXTRA_TEXT)));

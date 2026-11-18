@@ -20,6 +20,11 @@ public final class BrowsingHistory {
     private static final String PREFS = "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final List<Display> displays=new ArrayList<>();
     private static final List<Legacy> legacyFragments=new ArrayList<>();
+    private static final ThreadLocal<HistoryDelete> HISTORY_DELETE=new ThreadLocal<>();
+    private static final class HistoryDelete {
+        final Object fragment;final int mode;final long id;final String board;
+        HistoryDelete(Object f,int m,long i,String b){fragment=f;mode=m;id=i;board=b;}
+    }
     private static final class Display {
         final WeakReference<List<Object>> output;final List<?> source;final int mode;
         Display(List<Object> o,List<?> s,int m){output=new WeakReference<>(o);source=s;mode=m;}
@@ -35,6 +40,40 @@ public final class BrowsingHistory {
     private static SharedPreferences prefs() { return context.getSharedPreferences(PREFS, 0); }
     private static Field field(Object owner, String name) throws Exception {
         Field value = owner.getClass().getDeclaredField(name); value.setAccessible(true); return value;
+    }
+    private static int trackedLegacyMode(Object fragment){
+        synchronized(legacyFragments){
+            for(Legacy entry:legacyFragments)if(entry.fragment.get()==fragment)return entry.mode;
+        }
+        return HomeThreadOrder.mode(fragment);
+    }
+    /** Capture the HOME history row before ChMate runs its native swipe removal. */
+    public static void nativeHistoryDeleteStart(Object fragment,int position,long threadId){
+        HISTORY_DELETE.remove();
+        if(fragment==null||threadId<=0||!fragment.getClass().getName().equals("o.r8lambdaTb_p0z6z2AqSZIga1YhmAVmiTPk"))return;
+        int mode=trackedLegacyMode(fragment);int selected=Math.abs(mode);
+        if(selected!=100&&selected!=103)return;
+        String board=null;
+        try{
+            Object adapter=field(fragment,"e").get(fragment);Object value=field(adapter,"j").get(adapter);
+            if(value instanceof List&&position>=0&&position<((List<?>)value).size()){
+                Object row=((List<?>)value).get(position);
+                if(row!=null&&row.getClass().getName().equals("o.onAdDisplayed$setIcon")){
+                    Object id=field(row,"h").get(row);
+                    if(id instanceof Number&&((Number)id).longValue()==threadId){Object b=field(row,"g").get(row);if(b!=null)board=b.toString();}
+                }
+            }
+        }catch(Exception error){Log.w("Haiagaru","HOME history swipe target unavailable",error);}
+        HISTORY_DELETE.set(new HistoryDelete(fragment,mode,threadId,board));
+    }
+    /** Keep the source copy used by refresh hooks in sync after native swipe succeeds. */
+    public static void nativeHistoryDeleteResult(Object fragment,int position,long threadId,boolean removed){
+        HistoryDelete pending=HISTORY_DELETE.get();HISTORY_DELETE.remove();
+        if(!removed||pending==null||pending.fragment!=fragment||pending.id!=threadId)return;
+        try{
+            HiddenDroppedThreads.removeRememberedHistoryThread(pending.board,threadId);
+            applyLegacy(fragment,pending.mode);
+        }catch(Exception error){Log.w("Haiagaru","HOME history swipe refresh unavailable",error);}
     }
     public static List<?> transform(List<?> input, int mode) {
         mode=HomeThreadOrder.logicalMode(mode);
