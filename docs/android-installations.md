@@ -2,6 +2,23 @@
 
 # Android導入・署名台帳
 
+## 2026-11-18 閲覧履歴削除クラッシュ修正候補（未導入・未公開）
+
+1.46.0-dev.1の242版で履歴削除時に報告されたART `VerifyError` を調査し、
+元の削除処理へ渡す板ID・64bitスレIDを専用レジスターに退避する修正候補を生成。
+191／226／242の各原APKへのパッチ適用と署名検証、`:patches:buildAndroid` は成功。
+242の生成DEXでは後処理が退避済みのローカルレジスターを使うことを確認した。
+APKは実機へ導入しておらず、履歴削除の実機再確認と公開は未実施。
+
+- 191 / Haiagaru 修正確認 191 / ChMate 0.8.10.191 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter191` / `<workspace>/build/crash-history-fix-20261118/final191.apk` / SHA-256 `6CFC21F702E6EFC26F28C43827CB7D95896F4B762BA7ABBE198D052A07FB5202` / 未導入。
+- 226 / Haiagaru 修正確認 226 / ChMate 0.8.10.226 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter226` / `<workspace>/build/crash-history-fix-20261118/final226.apk` / SHA-256 `314AD975D1C7C625BEAE6F1AA9C34B293D8208EA52356673BD020914039DD4B0` / 未導入。
+- 242 / Haiagaru 修正確認 242 / ChMate 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / `<workspace>/build/crash-history-fix-20261118/final242-copyfix.apk` / SHA-256 `F1B27CE6D9AEDD2C71DBC24AD2123904B7D9C843D9A38EB4B64490DD6F7E3FE6` / 未導入。
+
+MPP `<workspace>/build/crash-history-fix-20261118/candidate.mpp` / SHA-256 `187D39291CBFD4ADC5F6F86453D28C34A0265347B0E7E4E2FA263287CE0320EC`。
+3 APKとも署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
+絶対パス・鍵ファイル・aliasを含む完全記録は非公開台帳
+`build/local-development-records/crash-history-fix-20261118.json` に保存。
+
 ## 2026-11-13 設定の整理・エッヂ過去ログ表示調整（実機191、未公開）
 
 利用者の既存Haiagaruへの上書き指示により、XIG05 / serial `730eae72` / 表示名`Haiagaru` /

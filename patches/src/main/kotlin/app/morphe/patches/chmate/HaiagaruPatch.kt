@@ -233,12 +233,18 @@ private fun BytecodePatchContext.patchNgEditGesture(version: String) {
         val delegateName = "haiagaruNativeDeleteThread"
         val delegate = MutableMethod(ImmutableMethod(klass.type, delegateName, native.parameters, native.returnType,
             native.accessFlags, native.annotations, native.hiddenApiRestrictions, native.implementation))
+        // Keep copies of the board and wide thread ID in local registers. The
+        // native body reuses incoming parameter registers as scratch; reading
+        // p2/p3 after delegation can therefore fail ART's verifier on return.
         val wrapper = MutableMethod(ImmutableMethod(klass.type, name, native.parameters, native.returnType,
             native.accessFlags, native.annotations, native.hiddenApiRestrictions,
-            ImmutableMethodImplementation(4, emptyList(), emptyList(), emptyList())))
+            ImmutableMethodImplementation(7, emptyList(), emptyList(), emptyList())))
+        val invoke = if (native.accessFlags and 2 != 0) "invoke-direct/range" else "invoke-virtual/range"
         wrapper.addInstructions(0, """
-            invoke-virtual {p0, p1, p2, p3}, $table->$delegateName(${board}J)V
-            invoke-static/range {p1 .. p3}, Lapp/morphe/extension/chmate/ThreadScopedNg;->nativeThreadDeleted(Ljava/lang/Object;J)V
+            move-object v0, p1
+            move-wide v1, p2
+            $invoke {p0 .. p3}, $table->$delegateName(${board}J)V
+            invoke-static/range {v0 .. v2}, Lapp/morphe/extension/chmate/ThreadScopedNg;->nativeThreadDeleted(Ljava/lang/Object;J)V
             return-void
         """.trimIndent())
         klass.methods.remove(native)
