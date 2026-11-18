@@ -24,7 +24,7 @@ final class QuickFilterOptions {
         SettingsSection bottom=SettingsSection.add(root,"下部フィルターパネル","表示方法",true);
         add(bottom,activity,"bottomQuickFilterPanel","下部フィルターパネルを使う（外側タップで閉じる）",false);
         add(bottom,activity,"persistentBottomQuickFilters","下部フィルターを常に表示",false);
-        add(bottom,activity,TRANSPARENT,"下部フィルターの背景を透過する",true);
+        add(bottom,activity,TRANSPARENT,"下部フィルターの背景を透過する",false);
         TextView pinnedHelp=new TextView(activity);pinnedHelp.setText("スレ本文の下端にフィルターを固定します。外側をタップしても閉じず、上部フィルターとも併用できます。オフにすると固定表示を解除します。");bottom.addView(pinnedHelp);
         add(root,activity,"floatingQuickFilterButton","フィルターのフローティングボタンを表示",false);
         TextView help=new TextView(activity);help.setText("上部フィルターと下部パネルは個別に表示できます。下部パネルは上部フィルターを隠しません。長押ししてドラッグすると位置を変更できます。必死チェッカーの表示領域は「同じIDの投稿を調べる」設定で上部タイトルを省略して広げられます。");root.addView(help);

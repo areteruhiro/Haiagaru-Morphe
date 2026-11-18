@@ -36,7 +36,7 @@ public final class SettingsProfiles {
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
         booleanKey(NotificationNg.CHAIN_KEY);defaultValue(NotificationNg.CHAIN_KEY,false);
         booleanKey(ThreadScopedNg.ENABLED);defaultValue(ThreadScopedNg.ENABLED,!prefs(activity).getBoolean(MinimalSetup.ACTIVE,false));
-        booleanKey(QuickFilterOptions.TRANSPARENT);defaultValue(QuickFilterOptions.TRANSPARENT,true);
+        booleanKey(QuickFilterOptions.TRANSPARENT);defaultValue(QuickFilterOptions.TRANSPARENT,false);
         booleanKey(MediaUploadHosts.ASK_DESTINATION);defaultValue(MediaUploadHosts.ASK_DESTINATION,false);
         booleanKey(NativeImageNgList.ENABLE);defaultValue(NativeImageNgList.ENABLE,false);
         numberKey(ThreadListThumbnail.REGISTERED_ACTION,0,3);defaultValue(ThreadListThumbnail.REGISTERED_ACTION,0);

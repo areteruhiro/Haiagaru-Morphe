@@ -94,7 +94,7 @@ public final class ExtraQuickFilters {
             redraw();
         }
         int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
-        void updateBackground(){setBackground(FeatureSwitches.enabled(QuickFilterOptions.TRANSPARENT,true)?null:new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));}
+        void updateBackground(){setBackground(FeatureSwitches.enabled(QuickFilterOptions.TRANSPARENT,false)?null:new android.graphics.drawable.ColorDrawable(themeColor(activity,android.R.attr.colorBackground,android.graphics.Color.DKGRAY)));}
         int clamp(int value){
             android.graphics.Rect visible=new android.graphics.Rect();activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
             int available=visible.height();if(available<=0)available=getResources().getDisplayMetrics().heightPixels;
