@@ -1639,6 +1639,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchNativeToolTabs(packageMetadata.versionName)
         patchReadingPosition(packageMetadata.versionName)
         patchNativeImagePaging(packageMetadata.versionName)
+        patchRadarScrollbarTouch(packageMetadata.versionName)
         patchUnreadToolbarCount(packageMetadata.versionName)
         patchHiddenNgUnread(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
@@ -1912,6 +1913,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
             "0.8.10.191 dev" -> {
                 patchLegacySettingsPaneDivider("Lo/pq;")
                 patchLegacyExternalWebSearch191()
+                patchLegacyEdgeArchiveLocalSearch191()
                 patchLegacyBeResponseBody(
                     "Lo/processAdDisplayErrorPostbackForUserError;", "c")
                 patchProgrammableNg191()
@@ -2311,6 +2313,19 @@ private fun BytecodePatchContext.patchLegacyExternalWebSearch191() {
     method.addInstructions(0, """
         invoke-static/range {p0 .. p1}, Lapp/morphe/extension/chmate/ExternalWebSearch;->open(Landroid/content/Context;Ljava/lang/String;)V
         return-void
+    """.trimIndent())
+}
+
+/** Append imported Edge archive DAT hits to ChMate 191's acquired-thread search. */
+private fun BytecodePatchContext.patchLegacyEdgeArchiveLocalSearch191() {
+    val observer = mutableClassDefBy("Ljp/syoboi/a2chMate/fragment/SearchFragment\$1;")
+    val callback = observer.methods.single {
+        it.name == "c" && it.returnType == "V"
+            && it.parameterTypes == listOf("Ljava/lang/Object;")
+    }
+    callback.addInstructions(0, """
+        check-cast p1, Ljava/util/ArrayList;
+        invoke-static {p0, p1}, Lapp/morphe/extension/chmate/EdgeArchiveLocalSearch;->appendFromSearchObserver(Ljava/lang/Object;Ljava/util/ArrayList;)V
     """.trimIndent())
 }
 

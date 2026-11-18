@@ -51,6 +51,14 @@ final class ExpertSettings {
         options.addView(previewHelp);
         new LiveSettings(prefs, () -> {}).toggle(previewPosition, XPostPreviewPosition.ENABLED,
                 XPostPreviewPosition::settingsChanged);
+        LiveSettings.Toggle delayedFilterPosition=new LiveSettings.Toggle(activity);
+        delayedFilterPosition.setText("遅延位置スナップショット");
+        delayedFilterPosition.setChecked(prefs.getBoolean(FilterPosition.DELAYED_SNAPSHOT,false));
+        options.addView(delayedFilterPosition);
+        android.widget.TextView delayedFilterPositionHelp=new android.widget.TextView(activity);
+        delayedFilterPositionHelp.setText("初期OFF。フィルター変更前の全行位置スナップショットを省き、一覧更新後に位置を探します。フィルター変更後に表示位置がずれる場合はOFFのままにしてください。変更後のフィルター操作から反映されます。");
+        options.addView(delayedFilterPositionHelp);
+        new LiveSettings(prefs,()->{}).toggle(delayedFilterPosition,FilterPosition.DELAYED_SNAPSHOT);
         LiveSettings.Toggle conditionalRefresh = new LiveSettings.Toggle(activity);
         conditionalRefresh.setText("スレ更新で条件付き取得を省く");
         conditionalRefresh.setChecked(prefs.getBoolean(ThreadRefreshOptions.KEY, true));

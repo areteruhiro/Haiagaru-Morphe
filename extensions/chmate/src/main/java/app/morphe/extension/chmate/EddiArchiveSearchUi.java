@@ -633,6 +633,7 @@ final class EddiArchiveSearchUi {
             card.setOnClickListener(view -> {
                 try {
                     saveState(null);
+                    EdgeArchiveLocalSearch.markArchiveResult(thread.url, thread.title);
                     if (opener.open(thread.url)) return;
                     Haiagaru.reportEddiArchiveError(activity, "THREAD_OPEN_FAILED",
                             "ChMate could not open archive result: " + thread.url, null);

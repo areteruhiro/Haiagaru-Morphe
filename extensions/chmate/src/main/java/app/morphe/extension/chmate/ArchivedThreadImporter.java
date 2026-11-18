@@ -105,6 +105,7 @@ final class ArchivedThreadImporter {
         }
         File datFile = new File(directory, cacheBoard + "_" + info.thread + ".dat");
         if (datFile.isFile() && datFile.length() > 0) {
+            EdgeArchiveLocalSearch.remember(activity, datFile, originalUrl, "");
             Log.i(LOG_TAG, "Using existing cached DAT " + datFile.getName()
                     + " (" + datFile.length() + " bytes)");
             // Let ChMate continue normally when the imported DAT is already
@@ -139,6 +140,7 @@ final class ArchivedThreadImporter {
                         return;
                     }
                     publishDat(directory, datFile, info, dat);
+                    EdgeArchiveLocalSearch.remember(activity, datFile, originalUrl, "");
                     Log.i(LOG_TAG, "Imported " + dat.length + " Talk DAT bytes for " + importKey);
                     reopen(activity, originalUrl, null);
                     return;
@@ -152,6 +154,7 @@ final class ArchivedThreadImporter {
                 }
                 byte[] dat = fetchArchivedDat(activity, info);
                 publishDat(directory, datFile, info, dat);
+                EdgeArchiveLocalSearch.remember(activity, datFile, originalUrl, "");
                 Log.i(LOG_TAG, "Imported " + dat.length + " DAT bytes for " + importKey);
                 reopen(activity, originalUrl, "過去ログを取得しました");
             } catch (Throwable error) {

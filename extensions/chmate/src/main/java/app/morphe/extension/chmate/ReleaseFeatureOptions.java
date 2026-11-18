@@ -21,7 +21,7 @@ final class ReleaseFeatureOptions {
         UPLOAD_DESTINATION("1.40.0"), NG_REPLY_NOTIFICATIONS("1.40.0"), THREAD_RENAME("1.41.0"), KEYWORD_NAMES("1.41.0"),
         HOME_THREAD_ORDER("1.42.0"), KEYWORD_MENU("1.42.0"),
         RESPONSE_NOTES_MENU("1.43.0"), ROTATION_MENU("1.43.0"), EXTERNAL_VIDEO_CACHE("1.43.0"),
-        POST_LIMIT_DISPLAY("1.46.0"), STARTUP_OPTIMIZATION("1.46.0"), FILTER_OPTIMIZATION("1.46.0"),
+        POST_LIMIT_DISPLAY("1.46.0"), FILTER_OPTIMIZATION("1.46.0"), DELAYED_POSITION_SNAPSHOT("1.46.0"),
         NOTE_INDICATOR("1.46.0"), HOME_NOTES_MENU("1.46.0"), ARCHIVE_VIEWER_MODE("1.46.0"),
         NG_CHAIN_REPLY_NOTIFICATIONS("1.46.0"), FILTER_TRANSPARENT_BACKGROUND("1.46.0"),
         IMAGE_PAGING_GESTURES("1.46.0"), GIF_DEDICATED_VIEWER("1.46.0"), THREAD_SCOPED_NG("1.46.0"),
@@ -99,8 +99,8 @@ final class ReleaseFeatureOptions {
                 case ROTATION_MENU:return "画像ビューアの回転操作を画面上のボタンと︙メニューのどちらへ置くか切り替えます。";
                 case EXTERNAL_VIDEO_CACHE:return "専用ビューアを使わないとき、imgpile動画を一時取得して外部プレイヤーへ渡します。";
                 case POST_LIMIT_DISPLAY:return "投稿欄に板ごとのスレタイ・本文・行数・1行あたりの上限と超過位置を表示します。";
-                case STARTUP_OPTIMIZATION:return "起動時の重複初期化と設定読み込みを最適化します。変更は次回起動から反映します。";
-                case FILTER_OPTIMIZATION:return "フィルターの抽出・位置保持・件数集計の処理を最適化します。";
+                case FILTER_OPTIMIZATION:return "レスフィルター全体の抽出・位置保持などの処理を任意で最適化します。初期状態はOFFです。";
+                case DELAYED_POSITION_SNAPSHOT:return "エキスパート設定で遅延位置スナップショットを切り替えられます。初期状態はOFFです。";
                 case NOTE_INDICATOR:return "メモ済みレスの右下にアイコンを表示します。タップしてメモを開き、編集できます。";
                 case HOME_NOTES_MENU:return "HOMEの3点メニューにメモの一覧を表示します。";
                 case ARCHIVE_VIEWER_MODE:return "エッヂ過去ログの専用ビューア1（従来画面）／2（元サイト表示）を選びます。";

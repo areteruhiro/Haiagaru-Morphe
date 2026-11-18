@@ -104,16 +104,13 @@ public final class HissiMenuController extends ToolScreenController {
             try {
                 archiveSearchUi = EddiArchiveSearchUi.embed(host, incoming, this::openThreadInChMate, state, this::finish);
                 showArchive((LinearLayout)archiveSearchUi.rootView());
-            } catch (RuntimeException error) {
+            } catch (RuntimeException | LinkageError error) {
                 Haiagaru.reportEddiArchiveError(this, "VIEWER_START_FAILED",
                         "Native Edge archive viewer could not start", error);
-                TextView failure = new TextView(this);
-                failure.setText("エッヂ過去ログを開けませんでした（VIEWER_START_FAILED）。\n"
-                        + "Download/Haiagaru の診断ログを確認してください。");
-                failure.setPadding(32, 48, 32, 32);
-                showModel("投稿検索・結果", failure);
+                // Fall through to the managed-site WebView below. An optional
+                // native archive UI failure must not make the URL unopenable.
             }
-            return;
+            if(archiveSearchUi!=null)return;
         }
         sourceHost = getIntent() == null ? null
                 : getIntent().getStringExtra("haiagaru.wacchoi.host");

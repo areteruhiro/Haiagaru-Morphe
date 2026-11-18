@@ -15,6 +15,7 @@ final class QuickFilterOptions {
     static boolean visible(int index){return index>=0&&index<7&&(index<4 || extras()&&FeatureSwitches.enabled(new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies"}[index-4],true));}
     static void addSettings(LinearLayout root,Activity activity){
         add(root,activity,"quickFilterCounts","フィルターに件数を表示",false);
+        add(root,activity,ExtraQuickFilters.OPTIMIZATION,"フィルターの抽出・位置保持・件数集計を最適化",false);
         Switch extra=add(root,activity,"quickFilterExtras","フィルターにAA・自分・返信を追加",true);
         SettingsSection kinds=SettingsSection.add(root,"追加するフィルターの種類","AA・自分・返信を個別に選択",true);
         kinds.available=extra::isChecked;kinds.unavailableMessage="上の「AA・自分・返信を追加」をオンにすると変更できます。";
@@ -27,7 +28,7 @@ final class QuickFilterOptions {
         add(bottom,activity,TRANSPARENT,"下部フィルターの背景を透過する",false);
         TextView pinnedHelp=new TextView(activity);pinnedHelp.setText("スレ本文の下端にフィルターを固定します。外側をタップしても閉じず、上部フィルターとも併用できます。オフにすると固定表示を解除します。");bottom.addView(pinnedHelp);
         add(root,activity,"floatingQuickFilterButton","フィルターのフローティングボタンを表示",false);
-        TextView help=new TextView(activity);help.setText("上部フィルターと下部パネルは個別に表示できます。下部パネルは上部フィルターを隠しません。長押ししてドラッグすると位置を変更できます。必死チェッカーの表示領域は「同じIDの投稿を調べる」設定で上部タイトルを省略して広げられます。");root.addView(help);
+        TextView help=new TextView(activity);help.setText("件数表示をオンにすると、レスの抽出後に件数を集計します。包括的な最適化は初期OFFです。上部フィルターと下部パネルは個別に表示できます。下部パネルは上部フィルターを隠しません。長押ししてドラッグすると位置を変更できます。必死チェッカーの表示領域は「同じIDの投稿を調べる」設定で上部タイトルを省略して広げられます。");root.addView(help);
     }
     static void showToolbarSettings(Activity activity){
         LinearLayout panel=new LinearLayout(activity);panel.setOrientation(1);addSettings(panel,activity);

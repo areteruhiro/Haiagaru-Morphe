@@ -64,6 +64,10 @@ public final class ThreadScopedNg {
     /** Defers native ID/name/word insertion until the thread-only checkbox is chosen. */
     public static boolean interceptRegistration(Object nativeStore,Object before,Object after) {
         if(Boolean.TRUE.equals(BYPASS.get())||nativeStore==null||before!=null||after==null)return false;
+        // Native NG writes can also arrive during background refresh. Only a
+        // foreground user registration should be replaced with an interactive
+        // scope prompt; let all background writes follow ChMate's normal path.
+        if(android.os.Looper.myLooper()!=android.os.Looper.getMainLooper())return false;
         Context context=Haiagaru.applicationContext();if(context==null)return false;
         if(!enabled(context))return false;
         NativeNgStore supported=null;

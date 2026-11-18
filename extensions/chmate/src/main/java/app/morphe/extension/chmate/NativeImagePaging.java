@@ -169,6 +169,12 @@ public final class NativeImagePaging {
     }
     public static boolean onActivityTouch(Activity activity,MotionEvent event){
         try{
+            // Whole-thread galleries use MediaViewerNavigation's thread snapshot and
+            // configured directions. The native-page handler must not compete with it.
+            if(activity.getIntent().getBooleanExtra(MediaViewerNavigation.THREAD_EXTRA,false)){
+                if(event.getActionMasked()==MotionEvent.ACTION_DOWN)SWIPES.remove(activity);
+                return false;
+            }
             if(event.getActionMasked()==MotionEvent.ACTION_DOWN){
                 SWIPES.remove(activity);
                 ArrayList<String> links=activity.getIntent().getStringArrayListExtra("links");

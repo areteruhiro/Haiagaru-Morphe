@@ -17,6 +17,8 @@ import java.util.WeakHashMap;
 
 /** One bounded, filter-specific anchor restoration; never changes filtering or network requests. */
 public final class FilterPosition {
+    static final String DELAYED_SNAPSHOT="filterDelayedPositionSnapshot";
+    static boolean delayedSnapshot(){return FeatureSwitches.enabled(DELAYED_SNAPSHOT,false);}
     private static final ArrayList<WeakReference<Object>> fragments = new ArrayList<>();
     private static final WeakHashMap<View, Pending> pending = new WeakHashMap<>();
     private static final java.util.HashMap<Class<?>, Field> responseFields = new java.util.HashMap<>();
@@ -213,7 +215,6 @@ public final class FilterPosition {
         final List<Object> before;
         final Object firstRow;
         final Object presentation;
-        final boolean optimized=ExtraQuickFilters.optimized();
         final boolean lazySnapshot;
         final int anchor, offset;
         final Object anchorKey;
@@ -238,7 +239,7 @@ public final class FilterPosition {
             count.setAccessible(true);
             item.setAccessible(true);
             presentation=presentation(adapter);
-            lazySnapshot=optimized&&presentation!=null;
+            lazySnapshot=delayedSnapshot()&&presentation!=null;
             before = lazySnapshot ? java.util.Collections.emptyList() : rows();
             firstRow = ((Number)count.invoke(adapter)).intValue()==0 ? null : item.invoke(adapter, 0);
             ViewGroup group = (ViewGroup) list;
@@ -285,7 +286,7 @@ public final class FilterPosition {
                 // ListView notifies at commit; 242 publishes an immutable current list.
                 // Do not scan every response on every frame while native work is pending.
                 Object currentPresentation=presentation==null?null:presentation(adapter);
-                if(optimized&&!changed&&(list instanceof ListView||presentation!=null&&currentPresentation==presentation))return true;
+                if(lazySnapshot&&!changed&&presentation!=null&&currentPresentation==presentation)return true;
                 if(lazySnapshot&&presentation!=null&&currentPresentation!=presentation){
                     List<Object> after=rows();int target=-1;boolean exact=false;
                     for(int i=0;i<after.size();i++)if(anchorKey!=null&&anchorKey==after.get(i)){target=i;exact=true;break;}
@@ -298,7 +299,6 @@ public final class FilterPosition {
                     return false;
                 }
                 List<Object> after = rows();
-                if(optimized&&presentation!=null&&currentPresentation!=presentation&&before.equals(after)){close();return true;}
                 if (!changed && before.equals(after) && (after.isEmpty() || item.invoke(adapter, 0) == firstRow))
                     return true; // Wait for the asynchronous native list commit.
                 int target = FilterPositionAnchor.nearest(before, after, anchor);

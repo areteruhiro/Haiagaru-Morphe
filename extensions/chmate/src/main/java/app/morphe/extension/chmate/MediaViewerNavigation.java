@@ -257,7 +257,8 @@ public final class MediaViewerNavigation {
     private static final java.util.Map<Activity,MediaViewerBackGesture> STILL_BACK=new java.util.WeakHashMap<>();
     public static boolean onNativeTouch(Activity activity,MotionEvent event) {
         if(event.getActionMasked()==MotionEvent.ACTION_DOWN)STILL_BACK.remove(activity);
-        if(event.getActionMasked()==MotionEvent.ACTION_DOWN&&NativeImagePaging.enabled(activity)&&!NativeImagePaging.mixed(activity)){
+        if(event.getActionMasked()==MotionEvent.ACTION_DOWN&&NativeImagePaging.enabled(activity)&&!NativeImagePaging.mixed(activity)
+                &&!activity.getIntent().getBooleanExtra(THREAD_EXTRA,false)){
             SWIPES.remove(activity);return false; // The native-only hook turns the page in place.
         }
         if (event.getActionMasked() == MotionEvent.ACTION_DOWN

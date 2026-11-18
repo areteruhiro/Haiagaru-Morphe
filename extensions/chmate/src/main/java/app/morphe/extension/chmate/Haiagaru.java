@@ -987,24 +987,17 @@ public final class Haiagaru {
         return ExternalEmojiPost.prepareBody(url, body);
     }
 
-    static final String STARTUP_OPTIMIZATION="startupWorkOptimization";
-    private static Context initializedApplicationContext;
-    private static boolean initializedStartupOptimization;
     private static synchronized void initializeApplicationContext(Context context) {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
-        // This option takes effect on the next process start. Avoid reopening
-        // preferences in each provider/application startup callback.
-        if(initializedApplicationContext==appContext&&initializedStartupOptimization)return;
         SharedPreferences startupPreferences=preferences(appContext);
         if(!startupPreferences.getBoolean("bottomFilterOpaqueMigrationV1",false))
             startupPreferences.edit().putBoolean(QuickFilterOptions.TRANSPARENT,false)
                     .putBoolean("bottomFilterOpaqueMigrationV1",true).apply();
         WacchoiSuffixNg.scheduleExpiry(appContext);
-        boolean optimize=preferences(appContext).getBoolean(STARTUP_OPTIMIZATION,true);
         runtimePackageName = appContext.getPackageName();
-        if(optimize)migrateRestoredPackageReferences(appContext);
+        migrateRestoredPackageReferences(appContext);
         LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
@@ -1024,11 +1017,8 @@ public final class Haiagaru {
         ProgrammableNgController.initialize(appContext);
         HiddenIdNg.initialize(appContext);
         PosterHighlight.initialize(appContext);
-        if(!optimize)migrateRestoredPackageReferences(appContext);
         HttpsTransport.setEnabled(preferences(appContext).getBoolean("forceHttps", false));
         ViewingUserAgent.init(preferences(appContext),BrowserUaTemplates.DEFAULT);
-        initializedStartupOptimization=optimize;
-        initializedApplicationContext=appContext;
     }
 
     /** Synchronizes the optional Haiagaru Hissi menu setting with ChMate's native preference. */
@@ -1313,9 +1303,7 @@ public final class Haiagaru {
         }
 
         int changedValues = 0;
-        boolean optimize=preferences(application).getBoolean(STARTUP_OPTIMIZATION,true);
         for (File preferenceFile : preferenceFiles) {
-            if(optimize&&!RestoredPreferenceScan.needsParsing(preferenceFile,originalPackage))continue;
             String fileName = preferenceFile.getName();
             String preferenceName = fileName.substring(0, fileName.length() - 4);
             try {
@@ -2543,6 +2531,7 @@ public final class Haiagaru {
         String original = intent.getData().toString();
         boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
         boolean vipThread = ArchiveRouteVariables.isVipThread(original);
+        boolean archiveRetry = intent.getBooleanExtra("haiagaru.archive.retry", false);
         if (talkThread) {
             try {
                 String version = activity.getPackageManager()
@@ -2555,15 +2544,15 @@ public final class Haiagaru {
             } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
             }
         }
-        if (!talkThread && !vipThread && !isChtoioEnabled()) return;
+        boolean edgeArchive = EdgeArchiveLocalSearch.consumeArchiveResult(original);
+        if (!talkThread && !vipThread && !isChtoioEnabled() && !edgeArchive && !archiveRetry) return;
         String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
-        boolean archiveRetry = intent.getBooleanExtra("haiagaru.archive.retry", false);
         if (archiveRetry) {
             // The retry marker is valid only for the Activity opened immediately
             // after publishing a DAT. Do not let ChMate copy it into later intents.
             intent.removeExtra("haiagaru.archive.retry");
         }
-        boolean shouldImport = talkThread
+        boolean shouldImport = edgeArchive || talkThread
                 || (isAutomaticDatEnabled(activity) && (vipThread || isLegacyServerThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
@@ -2602,10 +2591,11 @@ public final class Haiagaru {
 
         boolean talkThread = ArchivedThreadImporter.isTalkThreadUrl(original);
         boolean vipThread = ArchiveRouteVariables.isVipThread(original);
-        if (!talkThread && !vipThread && !isChtoioEnabled()) return false;
-        String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
         boolean archiveRetry = bundle.getBoolean("haiagaru.archive.retry", false);
-        boolean shouldImport = talkThread
+        boolean edgeArchive = EdgeArchiveLocalSearch.consumeArchiveResult(original);
+        if (!talkThread && !vipThread && !isChtoioEnabled() && !edgeArchive && !archiveRetry) return false;
+        String rewritten = talkThread || vipThread ? original : rewriteLegacyThreadUrl(original);
+        boolean shouldImport = edgeArchive || talkThread
                 || (isAutomaticDatEnabled(activity) && (vipThread || isLegacyServerThreadUrl(original)));
         if (!archiveRetry && shouldImport
                 && ArchivedThreadImporter.importIfNeeded(activity, original, rewritten)) {
@@ -3548,10 +3538,6 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
-        Switch startupOptimization=addSwitch(basics,activity,"起動時の重複初期化・設定読み込みを最適化（次回起動から）",preferences.getBoolean(STARTUP_OPTIMIZATION,true));
-        live.toggle(startupOptimization,STARTUP_OPTIMIZATION);
-        Switch filterOptimization=addSwitch(basics,activity,"フィルターの抽出・位置保持・件数集計を最適化",preferences.getBoolean(ExtraQuickFilters.OPTIMIZATION,true));
-        live.toggle(filterOptimization,ExtraQuickFilters.OPTIMIZATION);
         Switch settingOptionLinks = addSwitch(basics, activity,
                 "設定内の機能名をタップして設定を開く", FeatureSwitches.enabled("settingsOptionLinksEnabled", true));
         new LiveSettings(FeatureSwitches.prefs(activity), () -> {}).toggle(settingOptionLinks, "settingsOptionLinksEnabled");

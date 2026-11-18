@@ -334,10 +334,10 @@ final class UpdateHistory {
                 toggle(content,activity,VideoViewerSettings.prefs(activity),"外部プレイヤー用にimgpile動画を一時取得",ExternalVideoCache.KEY,true,null); break;
             case POST_LIMIT_DISPLAY:
                 toggle(content,activity,FeatureSwitches.prefs(activity),"投稿欄に板ごとの上限・残量・超過位置を表示", "postEditorLimitDisplay",true,null); break;
-            case STARTUP_OPTIMIZATION:
-                toggle(content,activity,FeatureSwitches.prefs(activity),"起動時の重複初期化・設定読み込みを最適化（次回起動から）",Haiagaru.STARTUP_OPTIMIZATION,true,null); break;
             case FILTER_OPTIMIZATION:
-                toggle(content,activity,FeatureSwitches.prefs(activity),"フィルターの抽出・位置保持・件数集計を最適化",ExtraQuickFilters.OPTIMIZATION,true,null); break;
+                toggle(content,activity,FeatureSwitches.prefs(activity),"フィルターの抽出・位置保持・件数集計を最適化",ExtraQuickFilters.OPTIMIZATION,false,null); break;
+            case DELAYED_POSITION_SNAPSHOT:
+                toggle(content,activity,SettingsProfiles.prefs(activity),"エキスパート設定：遅延位置スナップショット",FilterPosition.DELAYED_SNAPSHOT,false,null); break;
             case NOTE_INDICATOR:
                 toggle(content,activity,SettingsProfiles.prefs(activity),"メモ済みレスの右下にアイコンを表示（タップで編集）",ResponseNoteIndicator.KEY,true,null); break;
             case HOME_NOTES_MENU:

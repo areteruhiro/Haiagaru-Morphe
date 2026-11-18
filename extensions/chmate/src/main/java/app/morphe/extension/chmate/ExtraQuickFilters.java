@@ -15,7 +15,7 @@ import java.util.regex.*;
 /** Per-adapter display filters. Native DAT, read counts, NG flags and navigation stay untouched. */
 public final class ExtraQuickFilters {
     static final String OPTIMIZATION="quickFilterWorkOptimization";
-    static boolean optimized(){return FeatureSwitches.enabled(OPTIMIZATION,true);}
+    static boolean optimized(){return FeatureSwitches.enabled(OPTIMIZATION,false);}
     private static final String[] LABELS = {"人気レス", "リンク", "画像", "動画", "AA", "自分", "返信"};
     private static final String[] KINDS = {"POPULAR", "LINK", "IMAGE", "MOVIE"};
     private static final ThreadLocal<Boolean> RESETTING=new ThreadLocal<>();
@@ -23,6 +23,7 @@ public final class ExtraQuickFilters {
     private static final Map<Object, State> STATES = Collections.synchronizedMap(new WeakHashMap<>());
     private static final Map<View, WeakReference<Bar>> BARS = new WeakHashMap<>();
     private static final Map<View, WeakReference<PinnedPanel>> PINNED = new WeakHashMap<>();
+    private static final Map<Object, WeakReference<BottomControls>> BOTTOMS = new WeakHashMap<>();
     private static final Map<Object, WeakReference<Object>> FRAGMENTS = new WeakHashMap<>();
     private static final ArrayList<WeakReference<Object>> OWNERS = new ArrayList<>();
     private static final ArrayList<Threshold> THRESHOLDS = new ArrayList<>();
@@ -60,9 +61,34 @@ public final class ExtraQuickFilters {
         android.content.res.TypedArray colors=context.obtainStyledAttributes(new int[]{attr});
         try{return colors.getColor(0,fallback);}finally{colors.recycle();}
     }
-    private static int bottomInset(Activity activity){
-        android.graphics.Rect visible=new android.graphics.Rect();View decor=activity.getWindow().getDecorView();decor.getWindowVisibleDisplayFrame(visible);
-        return Math.max(0,decor.getHeight()-visible.bottom);
+    private static int popupBottomOffset(Activity activity,View excluded,int padding){
+        View decor=activity.getWindow().getDecorView();android.graphics.Rect visible=new android.graphics.Rect();decor.getWindowVisibleDisplayFrame(visible);
+        int[] location=new int[2];decor.getLocationOnScreen(location);int bottom=visible.bottom;
+        Integer toolbar=bottomToolbarTop(activity,excluded);
+        if(toolbar!=null)bottom=Math.min(bottom,toolbar);
+        else bottom-=Math.round(56*decor.getResources().getDisplayMetrics().density);
+        return Math.max(0,location[1]+decor.getHeight()-bottom)+padding;
+    }
+    private static Integer bottomToolbarTop(Activity activity,View excluded){
+        View decor=activity.getWindow().getDecorView();android.graphics.Rect visible=new android.graphics.Rect();decor.getWindowVisibleDisplayFrame(visible);
+        if(visible.isEmpty())return null;
+        int[] location=new int[2];decor.getLocationOnScreen(location);
+        int bottom=Math.min(visible.bottom,location[1]+decor.getHeight());
+        int density=Math.max(1,(int)(decor.getResources().getDisplayMetrics().density+.5f));
+        int[] best={Integer.MAX_VALUE};
+        findBottomToolbar(decor,excluded,visible,bottom,18*density,28*density,120*density,(int)(decor.getWidth()*.65f),best);
+        return best[0]==Integer.MAX_VALUE?null:best[0];
+    }
+    private static void findBottomToolbar(View view,View excluded,android.graphics.Rect visible,int bottom,
+                                          int maxGap,int minHeight,int maxHeight,int minWidth,int[] best){
+        if(view==null||view==excluded)return;
+        for(android.view.ViewParent parent=view.getParent();parent instanceof View;parent=((View)parent).getParent())
+            if(parent==excluded)return;
+        android.graphics.Rect bounds=new android.graphics.Rect();
+        if(view.isShown()&&view.getGlobalVisibleRect(bounds)&&bounds.width()>=minWidth&&bounds.height()>=minHeight
+                &&bounds.height()<=maxHeight&&bounds.top>visible.top+visible.height()/2
+                &&Math.abs(bounds.bottom-bottom)<=maxGap)best[0]=Math.min(best[0],bounds.top);
+        if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)findBottomToolbar(group.getChildAt(i),excluded,visible,bottom,maxGap,minHeight,maxHeight,minWidth,best);}
     }
     /** Same controls for the transient popup and the non-modal, persistent panel. */
     private static final class BottomControls extends LinearLayout {
@@ -103,6 +129,10 @@ public final class ExtraQuickFilters {
         @Override protected void onMeasure(int width,int height){
             super.onMeasure(width,View.MeasureSpec.makeMeasureSpec(clamp(Integer.MAX_VALUE),View.MeasureSpec.AT_MOST));
         }
+        @Override protected void onSizeChanged(int width,int height,int oldWidth,int oldHeight){
+            super.onSizeChanged(width,height,oldWidth,oldHeight);
+            if(width!=oldWidth||height!=oldHeight)post(resized);
+        }
         void redraw(){try{
             updateBackground();
             boolean[] on=selected(adapter);String[] names=labels(adapter);
@@ -119,13 +149,18 @@ public final class ExtraQuickFilters {
         int pad=Math.round(8*activity.getResources().getDisplayMetrics().density);
         PopupWindow popup=new PopupWindow();BottomControls grid=new BottomControls(activity,a,popup::dismiss);
         popup.setContentView(grid);popup.setWidth(-1);popup.setHeight(-2);popup.setFocusable(true);popup.setOutsideTouchable(true);
-        grid.resized=()->{if(!popup.isShowing())return;grid.measure(View.MeasureSpec.makeMeasureSpec(activity.getWindow().getDecorView().getWidth(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));popup.update(0,bottomInset(activity)+pad,-1,grid.getMeasuredHeight());};
+        grid.resized=()->{if(!popup.isShowing())return;grid.measure(View.MeasureSpec.makeMeasureSpec(activity.getWindow().getDecorView().getWidth(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));popup.update(0,popupBottomOffset(activity,null,pad),-1,grid.getMeasuredHeight());};
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));popup.setElevation(0);
         android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;grid.redraw();handler.postDelayed(this,150);}};
-        popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;});
+        popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;WeakReference<BottomControls> current=BOTTOMS.get(a);if(current!=null&&current.get()==grid)BOTTOMS.remove(a);});
         popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
-        popup.showAtLocation(activity.getWindow().getDecorView(),android.view.Gravity.BOTTOM,0,bottomInset(activity)+pad);handler.postDelayed(sync,150);return true;
+        popup.showAtLocation(activity.getWindow().getDecorView(),android.view.Gravity.BOTTOM,0,popupBottomOffset(activity,null,pad));
+        BOTTOMS.put(a,new WeakReference<>(grid));scheduleCounts(a);handler.postDelayed(sync,150);
+        // The native toolbar can finish its first layout after the popup was
+        // shown. Recompute the bottom edge once after that layout settles.
+        handler.postDelayed(grid.resized,120);
+        return true;
     }
     private static void updatePinned(Object fragment){
         try{
@@ -218,6 +253,7 @@ public final class ExtraQuickFilters {
                 panel.redraw();panel.setVisibility(View.VISIBLE);
                 if(host.indexOfChild(panel)!=host.getChildCount()-1)panel.bringToFront();
                 panel.measure(View.MeasureSpec.makeMeasureSpec(bounds.width(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+                Integer toolbar=bottomToolbarTop(activity,current);if(toolbar!=null&&toolbar<bounds.bottom)bounds.bottom=toolbar;
                 int height=panel.getMeasuredHeight(),width=bounds.width();FrameLayout.LayoutParams params=(FrameLayout.LayoutParams)panel.getLayoutParams();
                 if(params.width!=width||params.height!=height){params.width=width;params.height=height;panel.setLayoutParams(params);}
                 int[] origin=new int[2];host.getLocationOnScreen(origin);panel.setX(bounds.left-origin[0]);panel.setY(bounds.bottom-origin[1]-height);
@@ -339,7 +375,8 @@ public final class ExtraQuickFilters {
                     List<?> source=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
                     PopularNativeRows.Snapshot snapshot=PopularNativeRows.find(source);
                     if(snapshot==null||(s.counts[0]>=0&&!retry&&s.popularSnapshot==snapshot))continue;
-                    collect(a,source);
+                    collect(a,source,false);
+                    scheduleCounts(a);
                     if(retry||(!PopularReplies.enabledFor(context(a))&&PopularReplies.directFor(context(a))&&nativeSelected(a)[0]))rebuild(a);
                     else refresh(a);
                 }catch(Exception error){Log.w("Haiagaru","Finish native popular count",error);}
@@ -489,7 +526,7 @@ public final class ExtraQuickFilters {
         boolean needReplies=showCounts||(s.extra&4)!=0;
         boolean needMine=needReplies||(s.extra&2)!=0;
         int[] counts=new int[7];Set<Integer> aa=new HashSet<>(),mine=new HashSet<>(),replies=new HashSet<>();
-        if(source.isEmpty()){s.counts=counts;s.mediaCountsReady=true;s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return Collections.emptyMap();}
+        if(source.isEmpty()){if(includeCounts){s.counts=counts;s.mediaCountsReady=true;}s.aa=aa;s.mine=mine;s.replies=replies;s.failure=null;s.popularSnapshot=null;return Collections.emptyMap();}
         Object idx=needMine?index(a):null;
         String indexMethod=legacy(a)?"d":middle(a)?"a":"b";
         Method ownRead=needMine?(middle(a)?declaredMethod(idx.getClass(),"b",int.class,int.class)
@@ -597,7 +634,7 @@ public final class ExtraQuickFilters {
                 return snapshot;
             }
             List<?> full=PopularReplies.fullList(field(snapshot,"j"));
-            Map<Integer,Integer> direct=collect(a,full,!optimized());
+            Map<Integer,Integer> direct=collect(a,full,false);
             List<?> rows=(List<?>)field(snapshot,"b");
             List<?> filtered=filterCollected(a,rows,full,direct);
             if(filtered==rows){s.appliedSnapshot=snapshot;return snapshot;}
@@ -664,7 +701,7 @@ public final class ExtraQuickFilters {
         }catch(Exception e){Log.w("Haiagaru","Popular filter selection unavailable",e);}
         try {
             Object source=field(a,legacy(a)?"K":middle(a)?"J":"o");
-            List<?> full=PopularReplies.fullList(source);Map<Integer,Integer> direct=collect(a,full,!optimized());
+            List<?> full=PopularReplies.fullList(source);Map<Integer,Integer> direct=collect(a,full,false);
             List<?> kept=filterCollected(a,rows,full,direct);return kept instanceof ArrayList?(ArrayList<?>)kept:new ArrayList<>(kept);
         }catch(Exception e){state(a).failure=e;Log.e("Haiagaru","Extra quick filters unavailable",e);return rows instanceof ArrayList?(ArrayList<?>)rows:new ArrayList<>(rows);}
     }
@@ -687,8 +724,8 @@ public final class ExtraQuickFilters {
         }catch(Exception e){Log.e("Haiagaru","Extra legacy filters",e);}
     }
     private static void prepareCounts(Object adapter)throws Exception{
-        if(optimized())scheduleCounts(adapter);
-        else collect(adapter,PopularReplies.fullList(field(adapter,legacy(adapter)?"K":middle(adapter)?"J":"o")));
+        collect(adapter,PopularReplies.fullList(field(adapter,legacy(adapter)?"K":middle(adapter)?"J":"o")),false);
+        scheduleCounts(adapter);
     }
     private static boolean countsVisible(Object adapter){
         HaiagaruDialog dialog=state(adapter).dialog.get();
@@ -696,6 +733,8 @@ public final class ExtraQuickFilters {
         for(WeakReference<Bar> ref:new ArrayList<>(BARS.values())){
             Bar bar=ref.get();if(bar!=null&&bar.adapter.get()==adapter&&bar.isShown())return true;
         }
+        WeakReference<BottomControls> bottom=BOTTOMS.get(adapter);BottomControls controls=bottom==null?null:bottom.get();
+        if(controls!=null&&controls.isShown())return true;
         for(WeakReference<PinnedPanel> ref:new ArrayList<>(PINNED.values())){
             PinnedPanel panel=ref.get();
             if(panel!=null&&panel.panel!=null&&panel.panel.adapter==adapter&&panel.panel.isShown())return true;
@@ -704,11 +743,11 @@ public final class ExtraQuickFilters {
     }
     /** Counts decorate the controls; they must not delay the native extraction/commit. */
     private static void scheduleCounts(Object adapter){
-        if(!optimized()||!QuickFilterOptions.counts())return;State state=state(adapter);if(state.countQueued)return;
+        if(!QuickFilterOptions.counts())return;State state=state(adapter);if(state.countQueued)return;
         state.countQueued=true;state.mediaCountsReady=false;WeakReference<Object> ref=new WeakReference<>(adapter);
         new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(()->{
             Object current=ref.get();if(current==null)return;State latest=state(current);latest.countQueued=false;
-            if(!optimized()||!QuickFilterOptions.counts()||!countsVisible(current))return;
+            if(!QuickFilterOptions.counts()||!countsVisible(current))return;
             try{collect(current,PopularReplies.fullList(field(current,legacy(current)?"K":middle(current)?"J":"o")),true);}
             catch(Exception error){latest.mediaCountsReady=true;Arrays.fill(latest.counts,-1);Log.w("Haiagaru","Deferred filter counts unavailable",error);}
             refresh(current);
@@ -717,8 +756,7 @@ public final class ExtraQuickFilters {
     private static String[] labels(Object a) {
         State s=state(a);boolean showCounts=QuickFilterOptions.counts();
         if(showCounts&&!s.mediaCountsReady){
-            if(optimized())scheduleCounts(a);
-            else try{collect(a,PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o")));}catch(Exception error){s.mediaCountsReady=true;Arrays.fill(s.counts,-1);Log.w("Haiagaru","Filter counts unavailable",error);}
+            scheduleCounts(a);
         }
         int[] counts=s.counts;String[] result=new String[7];
         for(int i=0;i<7;i++)result[i]=showCounts?(!s.mediaCountsReady?"…":counts[i]<0?"—":Integer.toString(counts[i]))+"\n"+LABELS[i]:LABELS[i];return result;

@@ -72,10 +72,10 @@ public final class SettingsProfiles {
         booleanKey(VideoViewerSettings.INLINE_GIF);defaultValue(VideoViewerSettings.INLINE_GIF,false);
         booleanKey(ImageViewerRotationButton.MENU_KEY);defaultValue(ImageViewerRotationButton.MENU_KEY,true);
         booleanKey(UpdateConnectionHeaders.KEY);defaultValue(UpdateConnectionHeaders.KEY,true);
-        booleanKey(Haiagaru.STARTUP_OPTIMIZATION);defaultValue(Haiagaru.STARTUP_OPTIMIZATION,true);
-        booleanKey(ExtraQuickFilters.OPTIMIZATION);defaultValue(ExtraQuickFilters.OPTIMIZATION,true);
         booleanKey(ResponseNoteIndicator.KEY);defaultValue(ResponseNoteIndicator.KEY,true);
-        booleanKey(ArchiveSearchLayout.ORIGINAL_SITE);defaultValue(ArchiveSearchLayout.ORIGINAL_SITE,true);
+        booleanKey(ExtraQuickFilters.OPTIMIZATION);defaultValue(ExtraQuickFilters.OPTIMIZATION,false);
+        booleanKey(FilterPosition.DELAYED_SNAPSHOT);defaultValue(FilterPosition.DELAYED_SNAPSHOT,false);
+        booleanKey(ArchiveSearchLayout.ORIGINAL_SITE);defaultValue(ArchiveSearchLayout.ORIGINAL_SITE,false);
         for(String key:new String[]{"fast191UpdateConnect","optimize191UpdateProgress"}){booleanKey(key);defaultValue(key,true);}
         numberKey(CachedSearchOrder.KEY,0,4);defaultValue(CachedSearchOrder.KEY,0);
         for(String k:new String[]{EdgeLevelNg.OBSERVED}){booleanKey(k);defaultValue(k,false);}
