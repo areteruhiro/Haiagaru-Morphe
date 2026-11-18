@@ -71,6 +71,14 @@ final class NativeNgStore {
         WacchoiSuffixNg.notifyLegacyNameChange(store.getClass().getClassLoader(), category, itemType, before, after);
     }
 
+    /** Do not report success to a custom NG editor until ChMate exposes the saved rule. */
+    void updateAndVerify(Object before, Object after) throws ReflectiveOperationException {
+        update(before, after);
+        Entry expected = new Entry(after);
+        for (Entry saved : entries()) if (expected.same(saved)) return;
+        throw new IllegalStateException("ChMateにNGルールが保存されませんでした");
+    }
+
     void replace(List<Entry> before, List<Object> after) throws ReflectiveOperationException {
         // Refuse a stale preview rather than overwrite rules added while it was open.
         List<Entry> current = entries();

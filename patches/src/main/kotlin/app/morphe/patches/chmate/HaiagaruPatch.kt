@@ -2889,7 +2889,9 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchWacchoiLongPressM
             val mutableMethod = mutableClassDefBy(classDef).findMutableMethodOf(method)
             upperBounds.forEach { (index, literal) ->
                 val register = (instructions[index] as OneRegisterInstruction).registerA
-                val expandedBoundary = if (literal == 74) 75 else 76
+                // Keep the legacy native popup dispatcher open through the two
+                // Wacchoi copy actions (77/78), while leaving later IDs native.
+                val expandedBoundary = 79
                 mutableMethod.replaceInstruction(index,
                     "const/16 v$register, 0x${expandedBoundary.toString(16)}")
                 dispatcherCount++

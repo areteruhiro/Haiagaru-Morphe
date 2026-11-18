@@ -4726,6 +4726,16 @@ public final class Haiagaru {
                 "When one NG word rule enables chain, hidden and also block poster ID, also hides replies to that author's other responses and subsequent replies. Off by default. Close and reopen the thread after changing this setting."));
         posterIdChainDescription.setTextSize(13);
         layout.addView(posterIdChainDescription, rowParams(activity));
+        Switch threadScopedNg = addSwitch(layout, activity,
+                text("レスからNG登録するときに対象範囲を選べるようにする", "Offer a thread-only scope when registering NG from a response"),
+                ThreadScopedNg.enabled(activity));
+        live.toggle(threadScopedNg, ThreadScopedNg.ENABLED);
+        TextView threadScopedNgHelp = new TextView(activity);
+        threadScopedNgHelp.setText(text(
+                "ONで、レスからID・NGName・NGワードを追加するときに「このスレのみ」を選べます。OFFではChMate標準の登録処理をそのまま使います。おすすめプリセットではOFFです。",
+                "When on, response-based ID, NGName and NG word registration offers a thread-only choice. When off, ChMate's native registration runs unchanged. The recommended preset turns this off."));
+        threadScopedNgHelp.setTextSize(13);
+        layout.addView(threadScopedNgHelp, rowParams(activity));
         Switch wacchoiNgFirstMenu = addSwitch(layout, activity,
                 "ワッチョイ長押しメニューをNG登録優先の順番にする",
                 preferences.getBoolean("wacchoiNgFirstMenu", false));

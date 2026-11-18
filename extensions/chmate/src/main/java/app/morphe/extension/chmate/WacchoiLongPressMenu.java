@@ -21,22 +21,43 @@ public final class WacchoiLongPressMenu {
     private static final int ITEM_ID = 75;
     private static final int SUFFIX_SEARCH_ITEM_ID = 0x7e000077;
     private static final int PREFIX_SEARCH_ITEM_ID = 0x7e000078;
-    static final int COPY_PREFIX_ITEM_ID = 0x7e00007a;
-    static final int COPY_SUFFIX_ITEM_ID = 0x7e00007b;
+    static final int COPY_PREFIX_ITEM_ID = 77;
+    static final int COPY_SUFFIX_ITEM_ID = 78;
     static void copyPart(Context context,String query,boolean upper){
-        String value=upper?WacchoiSuffixNg.prefix(query):WacchoiSuffixNg.suffix(query);
-        if(value==null)return;
-        android.content.ClipboardManager clipboard=(android.content.ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);
-        if(clipboard==null)return;
-        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(upper?"ﾜｯﾁｮｲ上4桁":"ﾜｯﾁｮｲ下4桁",value));
-        if(android.os.Build.VERSION.SDK_INT<33)android.widget.Toast.makeText(context,value+" をコピーしました",android.widget.Toast.LENGTH_SHORT).show();
+        try{
+            String value=upper?WacchoiSuffixNg.prefixClipboardValue(query):WacchoiSuffixNg.suffixClipboardValue(query);
+            if(value==null)throw new IllegalArgumentException("ワッチョイを読み取れませんでした");
+            android.content.ClipboardManager clipboard=(android.content.ClipboardManager)context.getSystemService(Context.CLIPBOARD_SERVICE);
+            if(clipboard==null)throw new IllegalStateException("クリップボードを利用できません");
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText(upper?"ﾜｯﾁｮｲ上4桁":"ﾜｯﾁｮｲ下4桁",value));
+            if(android.os.Build.VERSION.SDK_INT<33)android.widget.Toast.makeText(context,value+" をコピーしました",android.widget.Toast.LENGTH_SHORT).show();
+        }catch(RuntimeException error){
+            android.util.Log.w("Haiagaru","Cannot copy Wacchoi part",error);
+            android.widget.Toast.makeText(context,"ワッチョイをコピーできませんでした",android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
     private static Object copyCallback(Class<?> type,Context context,String query,boolean upper){
         return java.lang.reflect.Proxy.newProxyInstance(type.getClassLoader(),new Class<?>[]{type},(proxy,method,args)->{
             if(method.getDeclaringClass()==Object.class){if(method.getName().equals("hashCode"))return System.identityHashCode(proxy);if(method.getName().equals("equals"))return proxy==args[0];return "HaiagaruWacchoiCopy";}
-            if(method.getName().equals("invoke")&&method.getParameterTypes().length==0)copyPart(context,query,upper);
-            return null;
+            if(method.getName().equals("invoke"))copyPart(context,query,upper);
+            return unitResult(method.getReturnType());
         });
+    }
+    private static Object unitResult(Class<?> type){
+        if(type==void.class)return null;
+        if(type.getName().equals("kotlin.Unit"))try{return type.getField("INSTANCE").get(null);}catch(ReflectiveOperationException ignored){}
+        if(type==boolean.class)return false;if(type==char.class)return '\0';
+        if(type==byte.class)return (byte)0;if(type==short.class)return (short)0;if(type==int.class)return 0;
+        if(type==long.class)return 0L;if(type==float.class)return 0f;if(type==double.class)return 0d;
+        return null;
+    }
+    private static final java.util.Map<MenuItem,Runnable> COPY_ACTIONS=
+            Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    public static boolean handleCopyItem(Object object){
+        if(!(object instanceof MenuItem))return false;
+        MenuItem item=(MenuItem)object;int id=item.getItemId();
+        if(id!=COPY_PREFIX_ITEM_ID&&id!=COPY_SUFFIX_ITEM_ID)return false;
+        Runnable action=COPY_ACTIONS.get(item);if(action==null)return false;action.run();return true;
     }
     private static final java.util.Map<MenuItem,Runnable> PREFIX_NG_ACTIONS=new java.util.WeakHashMap<>();
     public static boolean handlePrefixNg(Object object){
@@ -278,7 +299,7 @@ public final class WacchoiLongPressMenu {
 
     /** Custom popups bypass MenuItem's listener and call their own dispatcher. */
     public static boolean dispatchSuffixNgItem(Object itemObject) {
-        return ResponseArchive.handle(itemObject);
+        return handleCopyItem(itemObject)||ResponseArchive.handle(itemObject);
     }
 
     /** 242's Compose body menu dispatches through ResponseArchive, bypassing MenuItem listeners. */
@@ -544,9 +565,11 @@ public final class WacchoiLongPressMenu {
         final Context ngContext = (Context) activity;
         if(nameMenu)for(boolean upper:new boolean[]{true,false}){
             int id=upper?COPY_PREFIX_ITEM_ID:COPY_SUFFIX_ITEM_ID;
-            if(ResponseMenuSettings.nameMenuVisible(id)&&menu.findItem(id)==null&&(upper?WacchoiSuffixNg.prefix(context.query):WacchoiSuffixNg.suffix(context.query))!=null)
-                menu.add(Menu.NONE,id,ResponseMenuSettings.order(id,menu.size()),upper?"ﾜｯﾁｮｲ上4桁をコピー":"ﾜｯﾁｮｲ下4桁をコピー")
-                    .setOnMenuItemClickListener(item->{copyPart(ngContext,context.query,upper);return true;});
+            if(ResponseMenuSettings.nameMenuVisible(id)&&menu.findItem(id)==null&&(upper?WacchoiSuffixNg.prefix(context.query):WacchoiSuffixNg.suffix(context.query))!=null){
+                MenuItem copy=menu.add(Menu.NONE,id,ResponseMenuSettings.order(id,menu.size()),upper?"ﾜｯﾁｮｲ上4桁をコピー":"ﾜｯﾁｮｲ下4桁をコピー");
+                COPY_ACTIONS.put(copy,()->copyPart(ngContext,context.query,upper));
+                copy.setOnMenuItemClickListener(item->handleCopyItem(item));
+            }
         }
         if(menuVisible(0x7e000079,nameMenu)&&WacchoiSuffixNg.prefix(context.query)!=null&&menu.findItem(0x7e000079)==null){
             MenuItem upperNg=menu.add(Menu.NONE,0x7e000079,ResponseMenuSettings.order(0x7e000079,menu.size()),"ﾜｯﾁｮｲ上4桁をNG登録");

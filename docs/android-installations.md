@@ -2,6 +2,14 @@
 
 # Android導入・署名台帳
 
+## 2026-11-18 NG登録・ワッチョイ・記者ID修正候補（プレリリース準備）
+
+- 修正版MPP `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\candidate.mpp` / SHA-256 `0cedcb750952f4d8f1b6f705c6eb36473726b1600bb961db12f663e760678f79`。
+- 191 / Mi Note 10 Android 11 / ADB `d5497008` / package `jp.co.airfront.android.a2chMate.haiagaru.reporter191` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\final191.apk` / SHA-256 `8f34f303f6f6ba129ebb789b708abedf6c6ae6976d1692f49cc67004b5400bf9` / install-r Success `2026-11-18T13:31:07.753266`。
+- 226 / Mi Note 10 Android 11 / ADB `d5497008` / package `jp.co.airfront.android.a2chMate.haiagaru.reporter226` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\final226.apk` / SHA-256 `3118790ff2c6fded909d43dfd892991c6b26b10296ff696d906b3b07cf6ff038` / install-r Success `2026-11-18T13:31:44.855061`。
+- 242 / Mi Note 10 Android 11 / ADB `d5497008` / package `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current\build\ng-fixes-20261118\apks\final242.apk` / SHA-256 `b3955e7ae6fbb6425e72ba457c5c7996a40e1b2b8a2f4dad295ede246fe24161` / install-r Success `2026-11-18T13:30:42.679113`。
+- 全APKの署名SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed` / key `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore` / alias `Morphe`。各版のHomeActivity起動後にプロセス存続。導入前から242のcrash bufferに11-18 02:21:52／02:28:16の記録があり、導入後に新しいクラッシュ記録はなし。focused NG/Wacchoi/reporter instrumentationは各版PASS 12項目。広域reporter/archive/preview instrumentationは191／226 PASS 39項目。242はreporter/archive関連20項目後に画像プレビューの2/2スワイプ待ちで失敗し、crash buffer差分なし。
+
 ## 2026-11-18 閲覧履歴削除クラッシュ修正候補（未導入・未公開）
 
 1.46.0-dev.1の242版で履歴削除時に報告されたART `VerifyError` を調査し、

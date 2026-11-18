@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Switch;
 import android.widget.CheckBox;
 import android.view.View;
 import java.io.ByteArrayOutputStream;
@@ -242,6 +243,14 @@ final class UpdateHistory {
                 boolean upper=option==ReleaseFeatureOptions.Option.WACCHOI_COPY_UPPER;
                 toggle(content,activity,activity.getSharedPreferences("haiagaru_response_actions",0),upper?"ワッチョイ長押しに「上4桁をコピー」を表示":"ワッチョイ長押しに「下4桁をコピー」を表示",
                         upper?"wacchoiLongPressCopyPrefix":"wacchoiLongPressCopySuffix",true,null); break;
+            case WACCHOI_COPY_PARENS:
+                toggle(content,activity,activity.getSharedPreferences("haiagaru_response_actions",0),
+                        "ワッチョイ全文コピーで前後の括弧を除く",WacchoiClipboard.STRIP_PARENTHESES,false,null);
+                break;
+            case THREAD_REPORTER_COPY:
+                TextView reporterCopyHelp=new TextView(activity);
+                reporterCopyHelp.setText("スレタイ長押しに「記者IDをコピー」を追加しました。エッヂの記者IDを含むNGThreadルールはスレ一覧でも照合します。");
+                content.addView(reporterCopyHelp);break;
             case LOCAL_IMAGES:
                 toggle(content, activity, LocalImageArchive.prefs(activity), "保存済み画像から表示",
                         "enabled", true, LocalImageArchive::reset);
@@ -409,8 +418,13 @@ final class UpdateHistory {
                         new Intent(activity, RegisteredImageNgSettingsActivity.class)));
                 content.addView(images); break;
             case THREAD_SCOPED_NG:
+                Switch threadScopeToggle=new LiveSettings.Toggle(activity);
+                threadScopeToggle.setText("レスからNG登録するときに対象範囲を選べるようにする");
+                threadScopeToggle.setChecked(ThreadScopedNg.enabled(activity));
+                threadScopeToggle.setOnCheckedChangeListener((button,on)->FeatureSwitches.prefs(activity).edit().putBoolean(ThreadScopedNg.ENABLED,on).apply());
+                content.addView(threadScopeToggle);
                 TextView threadNgHelp=new TextView(activity);
-                threadNgHelp.setText("NG ID・NGName・NGワードをスレ画面から登録するときに「このスレのみを対象にする」を選べます。ﾜｯﾁｮｲ上下4桁NGでは板限定も選べます。対象スレを削除すると、そのスレに限定したルールも削除します。");
+                threadNgHelp.setText("ONにすると、NG ID・NGName・NGワードをレスから登録するときに「このスレのみを対象にする」を選べます。OFFではChMate標準の登録処理を使います。ﾜｯﾁｮｲ上下4桁NGでは板限定も選べます。対象スレを削除すると、そのスレに限定したルールも削除します。");
                 content.addView(threadNgHelp);break;
         }
     }

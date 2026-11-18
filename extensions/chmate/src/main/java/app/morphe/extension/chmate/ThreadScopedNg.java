@@ -1,19 +1,19 @@
 package app.morphe.extension.chmate;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.app.Activity;
 import android.widget.CheckBox;
 import android.widget.Toast;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 /** Removes only thread-scoped NG rows after their source thread is deleted. */
 final class ThreadScopedNg {
+    static final String ENABLED = "threadScopedNgEnabled";
     private static final String[] CATEGORIES = {"ID", "NAME", "WORD"};
     private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>();
     private static final Map<Activity,Boolean> PROMPTS = new WeakHashMap<>();
@@ -22,6 +22,12 @@ final class ThreadScopedNg {
 
     static void beginBypass(){BYPASS.set(Boolean.TRUE);}
     static void endBypass(){BYPASS.remove();}
+
+    static boolean enabled(Context context){
+        if(context==null)return true;
+        SharedPreferences prefs=FeatureSwitches.prefs(context);
+        return prefs.getBoolean(ENABLED,!prefs.getBoolean(MinimalSetup.ACTIVE,false));
+    }
 
     /** Called by ChMate's native bookmark deletion method after it returns. */
     public static void nativeThreadDeleted(Object nativeBoard, long threadId) {
@@ -59,20 +65,23 @@ final class ThreadScopedNg {
     public static boolean interceptRegistration(Object nativeStore,Object before,Object after) {
         if(Boolean.TRUE.equals(BYPASS.get())||nativeStore==null||before!=null||after==null)return false;
         Context context=Haiagaru.applicationContext();if(context==null)return false;
-        boolean supported=false;
+        if(!enabled(context))return false;
+        NativeNgStore supported=null;
         for(String category:CATEGORIES)try{
-            if(new NativeNgStore(context,category).store==nativeStore){supported=true;break;}
+            NativeNgStore candidate=new NativeNgStore(context,category);
+            if(candidate.store==nativeStore){supported=candidate;break;}
         }catch(Exception ignored){}
-        if(!supported)return false;
+        if(supported==null)return false;
         FilterPosition.ThreadTarget target=FilterPosition.currentVisibleThread();if(target==null)return false;
-        synchronized(PROMPTS){if(PROMPTS.containsKey(target.activity))return true;PROMPTS.put(target.activity,Boolean.TRUE);}
-        Runnable display=()->showRegistrationPrompt(target.activity,nativeStore,before,after,target);
+        synchronized(PROMPTS){if(PROMPTS.containsKey(target.activity))return false;PROMPTS.put(target.activity,Boolean.TRUE);}
+        NativeNgStore store=supported;
+        Runnable display=()->showRegistrationPrompt(target.activity,store,before,after,target);
         if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())display.run();
         else new android.os.Handler(android.os.Looper.getMainLooper()).post(display);
         return true;
     }
 
-    private static void showRegistrationPrompt(Activity activity,Object nativeStore,Object before,Object after,FilterPosition.ThreadTarget target){
+    private static void showRegistrationPrompt(Activity activity,NativeNgStore store,Object before,Object after,FilterPosition.ThreadTarget target){
         if(activity.isFinishing()||activity.isDestroyed()){synchronized(PROMPTS){PROMPTS.remove(activity);}return;}
         CheckBox onlyThread=new CheckBox(activity);onlyThread.setText("このスレのみを対象にする");
         HaiagaruDialog dialog=new HaiagaruDialog.Builder(activity).setTitle("NGに登録")
@@ -88,14 +97,7 @@ final class ThreadScopedNg {
                     item=after.getClass().getConstructor(String.class,short.class,long.class,String.class)
                             .newInstance(entry.pattern,entry.flags,entry.timestamp,NgBoardScope.thread(target.board,target.threadId));
                 }
-                Method update=null;
-                for(Method method:nativeStore.getClass().getDeclaredMethods()){
-                    Class<?>[] p=method.getParameterTypes();
-                    if(method.getReturnType()==int.class&&Arrays.equals(p,new Class<?>[]{after.getClass(),after.getClass()})){update=method;break;}
-                }
-                if(update==null)throw new NoSuchMethodException("Native NG updater changed");
-                update.setAccessible(true);BYPASS.set(Boolean.TRUE);
-                try{update.invoke(nativeStore,before,item);}finally{BYPASS.remove();}
+                store.updateAndVerify(before,item);
                 if(onlyThread.isChecked())Toast.makeText(activity,"このスレのみのNGとして登録しました",Toast.LENGTH_SHORT).show();
                 dialog.dismiss();finishPrompt(activity);
             }catch(Exception error){Log.w("Haiagaru","NG registration failed",error);Toast.makeText(activity,"NGを登録できませんでした",Toast.LENGTH_LONG).show();finishPrompt(activity);}

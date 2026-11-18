@@ -35,6 +35,7 @@ public final class SettingsProfiles {
         booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
         booleanKey(NotificationNg.CHAIN_KEY);defaultValue(NotificationNg.CHAIN_KEY,false);
+        booleanKey(ThreadScopedNg.ENABLED);defaultValue(ThreadScopedNg.ENABLED,!prefs(activity).getBoolean(MinimalSetup.ACTIVE,false));
         booleanKey(QuickFilterOptions.TRANSPARENT);defaultValue(QuickFilterOptions.TRANSPARENT,true);
         booleanKey(MediaUploadHosts.ASK_DESTINATION);defaultValue(MediaUploadHosts.ASK_DESTINATION,false);
         booleanKey(NativeImageNgList.ENABLE);defaultValue(NativeImageNgList.ENABLE,false);
@@ -53,6 +54,7 @@ public final class SettingsProfiles {
         booleanKey(ExternalBoardGroups.KEY);defaultValue(ExternalBoardGroups.KEY,false);
         booleanKey(BrowserUaTemplates.ENABLED);defaultValue(BrowserUaTemplates.ENABLED,false);
         booleanKey(ResponseMultiSelection.COPY_POPUP);defaultValue(ResponseMultiSelection.COPY_POPUP,false);
+        booleanKey(WacchoiClipboard.STRIP_PARENTHESES);defaultValue(WacchoiClipboard.STRIP_PARENTHESES,false);
         booleanKey("videoLandscapeImmersive");defaultValue("videoLandscapeImmersive",false);
         booleanKey(BoardCookies.KEY);defaultValue(BoardCookies.KEY,false);
         booleanKey(FirstResponseNg.KEY);defaultValue(FirstResponseNg.KEY,FirstResponseNg.DEFAULT);

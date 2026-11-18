@@ -25,14 +25,16 @@ final class ReleaseFeatureOptions {
         NOTE_INDICATOR("1.46.0"), HOME_NOTES_MENU("1.46.0"), ARCHIVE_VIEWER_MODE("1.46.0"),
         NG_CHAIN_REPLY_NOTIFICATIONS("1.46.0"), FILTER_TRANSPARENT_BACKGROUND("1.46.0"),
         IMAGE_PAGING_GESTURES("1.46.0"), GIF_DEDICATED_VIEWER("1.46.0"), THREAD_SCOPED_NG("1.46.0"),
-        X_POST_TRUNCATION_MODE("1.46.0"), WACCHOI_NG_EXPIRY("1.46.0");
+        X_POST_TRUNCATION_MODE("1.46.0"), WACCHOI_NG_EXPIRY("1.46.0"),
+        WACCHOI_COPY_PARENS("1.47.0"), THREAD_REPORTER_COPY("1.47.0");
 
         final String version;
         Option(String version) { this.version = version; }
         String category() {
             switch(this){
                 case SETTINGS_LINKS:case SITE_GROUPS:case EDGE:case ORG:case BAKUSAI:case FUTABA:case ANIMAN:return "アプリ・通信";
-                case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:case REPORTER_SEARCH:case REPORTER_MENU:case REPORTER_BOARD:return "表示・検索";
+                case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:case WACCHOI_COPY_PARENS:
+                case THREAD_REPORTER_COPY:case REPORTER_SEARCH:case REPORTER_MENU:case REPORTER_BOARD:return "表示・検索";
                 case NG_CHAIN_REPLY_NOTIFICATIONS:return "通知";
                 case FILTER_TRANSPARENT_BACKGROUND:return "表示・検索";
                 case X_POST_TRUNCATION_MODE:return "表示・検索";
@@ -51,7 +53,7 @@ final class ReleaseFeatureOptions {
         String description() {
             switch(this){
                 case LOCAL_IMAGES:return "保存画像の内容と元URLを照合して表示します。追加の検索フォルダや、改名済み画像との手動関連付けも設定できます。";
-                case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:return "ワッチョイ部分の長押しから、上4桁・下4桁をそれぞれコピーできます。ハイフンを含めず、大文字・小文字・記号を保持します。";
+                case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:return "ワッチョイ部分の長押しから、上4桁はaabb-、下4桁は-XXXXの形式でコピーできます。元の大文字・小文字・記号を保持します。";
                 case SETTINGS_LINKS:return "本文に書かれたHaiagaruの設定リンクから、設定を開いたり切り替えたりできます。";
                 case SITE_GROUPS:return "標準の分類にない外部板を、ホストごとの項目にまとめます。反映には再起動が必要です。";
                 case EDGE:case ORG:case BAKUSAI:case FUTABA:case ANIMAN:return "このサイトを使用するか切り替えます。板の追加・取得はChMateの掲示板設定から行います。OFFにしても保存済みのログは削除しません。";
@@ -87,6 +89,8 @@ final class ReleaseFeatureOptions {
                 case THREAD_SCOPED_NG:return "NG ID・名前・ワードを登録時にこのスレだけへ限定できます。ﾜｯﾁｮｲ上下4桁NGはこの板だけにも限定できます。スレ削除時は対応するスレ限定NGを削除します。";
                 case X_POST_TRUNCATION_MODE:return "Xの全文が取得できない場合に省略の可能性を知らせる基準を、詳細な280ポイント判定か簡易な320バイト判定から選べます。";
                 case WACCHOI_NG_EXPIRY:return "5chは次の日曜日、エッヂはUnix週境界（木曜日）に、ワッチョイ関連NGを自動解除する期限を登録ごとに設定できます。";
+                case WACCHOI_COPY_PARENS:return "ワッチョイの全文コピー時に、IDコードを含む丸括弧を任意で取り除けます。上4桁・下4桁コピーはNG登録に使えるハイフン付き形式です。";
+                case THREAD_REPORTER_COPY:return "スレタイ長押しに記者IDのコピーを追加し、記者IDのNGを一覧表示時にも適用します。";
                 case THREAD_RENAME:return "スレタイトル長押しに「スレの名前を変更」を表示します。表示名はHOMEとスレ一覧で使います。";
                 case KEYWORD_NAMES:return "検索条件ごとに短い表示名を付けられます。縦棒やカンマも使用できます。";
                 case HOME_THREAD_ORDER:return "HOMEのお気に入りスレを並び替え・固定できます。OFFにしても保存した並び順は保持します。";

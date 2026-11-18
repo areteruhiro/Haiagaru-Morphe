@@ -36,6 +36,10 @@ public final class WacchoiSuffixNg {
     private static final int REGEX = 0x20;
     private static final int CHAIN = 0x08;
     private static final int HIDDEN = 0x01;
+    private static final Pattern SUFFIX_PART = Pattern.compile(
+            "(?<![A-Za-z0-9])[A-Za-z0-9]{4}-([^\\s()（）<>]{4})(?![A-Za-z0-9])");
+    private static final Pattern PREFIX_PART = Pattern.compile(
+            "(?<![A-Za-z0-9])([A-Za-z0-9]{4})-[^\\s()（）<>]{4}(?![A-Za-z0-9])");
     private static final String EXPIRY_PREFS = "haiagaru_wacchoi_ng_expiry";
     private static final ScheduledExecutorService EXPIRY_WORKER = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread thread = new Thread(r, "Haiagaru-wacchoi-expiry"); thread.setDaemon(true); return thread;
@@ -158,7 +162,7 @@ public final class WacchoiSuffixNg {
 
     public static String suffix(String query) {
         if (query == null) return null;
-        Matcher match = Pattern.compile("(?<![A-Za-z0-9])[A-Za-z0-9]{4}-([^\\s()（）<>]{4})(?=$|[\\s()（）<>])").matcher(query);
+        Matcher match = SUFFIX_PART.matcher(query);
         return match.find() ? match.group(1) : null;
     }
 
@@ -168,7 +172,7 @@ public final class WacchoiSuffixNg {
     }
     public static String prefix(String query) {
         if(query==null)return null;
-        Matcher match=Pattern.compile("(?<![A-Za-z0-9])([A-Za-z0-9]{4})-[^\\s()（）<>]{4}(?=$|[\\s()（）<>])").matcher(query);
+        Matcher match=PREFIX_PART.matcher(query);
         return match.find()?match.group(1):null;
     }
     public static void confirmPrefix(Context context,String query,String board){confirmPart(context,query,board,true,null);}
@@ -177,6 +181,16 @@ public final class WacchoiSuffixNg {
     public static String clipboardValue(String query) {
         String value = suffix(query);
         return value == null ? null : "-" + value + "|";
+    }
+
+    /** Copy-friendly forms accepted by NGName's literal and regex editors. */
+    public static String prefixClipboardValue(String query) {
+        String value = prefix(query);
+        return value == null ? null : value + "-";
+    }
+    public static String suffixClipboardValue(String query) {
+        String value = suffix(query);
+        return value == null ? null : "-" + value;
     }
 
     public static void confirm(Context context, String query) {
@@ -306,7 +320,7 @@ public final class WacchoiSuffixNg {
                     if (target == null && current.size() >= Haiagaru.getNgRegistrationLimit())
                         throw new IllegalStateException("NGNameの登録上限に達しています");
                     Object savedItem=store.item(pattern, flags,target == null ? System.currentTimeMillis() : target.timestamp, board);
-                    store.update(target == null ? null : target.nativeItem, savedItem);
+                    store.updateAndVerify(target == null ? null : target.nativeItem, savedItem);
                     if(oneWeek.isChecked())saveExpiry(activity,new NativeNgStore.Entry(savedItem),nextWeeklyReset(edgeSite(host)));
                     dialog.dismiss(); Toast.makeText(activity, "NGNameに登録しました", Toast.LENGTH_SHORT).show();
                 } catch (ReflectiveOperationException | RuntimeException error) {
