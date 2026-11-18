@@ -831,14 +831,16 @@ public final class ExtraQuickFilters {
             android.graphics.Rect visible=new android.graphics.Rect();
             if(root==null||!root.isShown()||(!(source instanceof Activity)&&!root.hasWindowFocus())||!root.getGlobalVisibleRect(visible)||visible.isEmpty())continue;
             Object a=adapter(fragment),idx=index(a);
-            Method flags=idx.getClass().getMethod(legacy(a)?"d":middle(a)?"a":"b",int.class);flags.setAccessible(true);
+            Method flags=middle(a)?declaredMethod(idx.getClass(),"b",int.class,int.class)
+                    :idx.getClass().getMethod(legacy(a)?"d":"b",int.class);flags.setAccessible(true);
             List<?> rows=PopularReplies.fullList(field(a,legacy(a)?"K":middle(a)?"J":"o"));
             LinkedHashSet<String> urls=new LinkedHashSet<>();int characters=0;
             int inspected=0;
             for(Object response:rows){
                 if(++inspected>10000)break;
                 if(!response(response))continue;
-                if((((Number)flags.invoke(idx,number(response))).intValue()&0x1010)!=0)continue;
+                int rowFlags=((Number)(middle(a)?flags.invoke(idx,number(response),0):flags.invoke(idx,number(response)))).intValue();
+                if((rowFlags&0x1010)!=0)continue;
                 String[] values=null;
                 try{
                     Method attachments=response.getClass().getDeclaredMethod(legacy(a)||middle(a)?"d":"haiagaruPatrolAttachments");

@@ -17,3 +17,5 @@
 最終通常Lint/R8 build成功（build-candidate.log、3m51s）。新規fatalなし。生成MPPと各APKはbuild/performance-gallery-20261118/final-apks、導入は隔離reporter packageのみ。追加の最適化トグルは増やさず既存の起動/フィルターON/OFFを維持。
 
 最終実機結果: Mi Note 10 Android11 / d5497008、191=25、226=18、242=18項目成功。3版の署名照合・隔離package導入、履歴DEX検査成功。新規fatalなし。OPPO Android16の実時間・共有NGの実送信/外部サーバー到達は未確認。
+
+追加修正: 下部フィルター透過は未保存初期OFF。初回起動にbottomFilterOpaqueMigrationV1で保存済みも一度だけOFFへ移行し、その後の選択は維持。226の全レス画像収集が旧index a(int)を参照していたため、live index b(int,int)へ変更。synthetic mapでNG flags/default読出し実機成功（index226-runtime.log）。
