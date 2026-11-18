@@ -1,3 +1,46 @@
+# Haiagaru 1.46.0-dev.4 (2026-11-18)
+
+### 修正
+
+- 191の複数画像で戻るジェスチャーが効かない問題を修正。画像切り替え設定OFFでも戻る判定を受け取ります。
+- お気に入り・履歴一覧の重複変換と並び替え、不要な全レス本文解析を削減。表示されていないフィルターの遅延件数集計を抑止し、起動済みの設定再読込も削減。
+- 過去ログ検索の設定と結果へ区切り線を追加（従来/元サイト表示）。
+- 「選んだ投稿から共有NGを報告」を設定画面から削除。送信待ちがある場合は本送信で送信元登録と受領確認を行い、事前登録失敗による停止を回避。受領確認までキューを保持。
+- Mi Note 10 Android11で画像操作191=25/226=18/242=18項目成功、共有NG判定11309項目成功。OPPO Android16での速度改善・実共有NG送信は未確認です。
+
+👑 Kitadai 氏の多大なご支援に感謝申し上げます。
+
+Default thread overflow search to on while preserving saved choices. Persist native response ordering immediately in 191/226/242. Decode valid UTF-8 notification DAT before board legacy encodings and preserve the original history title on optional metadata OOM. Local build, three APK applications, signing and DEX checks passed. Real external thread comparison was not run.
+
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+
+今回のご報告・動作確認・連携へのご協力にも感謝します。
+
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
 # Haiagaru 1.46.0-dev.3 (2026-11-18)
 
 ### 修正
