@@ -1,4 +1,4 @@
-2026-11-20 1.46.0-dev.10 プレリリース公開済み: X返信先@handleを省略警告の詳細／簡易判定から除外し、詳細版は280ポイントちょうどを許容。X本文URLから通常リンクカードを抽出。242限定・初期OFFで、更新直後の新着数から透明NGレスを除く設定を追加。Crash/ANRログは既存Version項目を保ち、ChMate版とHaiagaru版を追加。Frida 17.18.0でX 7項目、新着件数5項目、ログ版数を確認。新着toastの実画面確認は未実施。`: CI Release `44551628678`／Attest成功。MPP SHA-256 `1799925e4e668445c8a33b749fdc689600f04cd11b6abd16a739eb5adf7a73f8`。Pre bundle version `1.46.0-dev.10`を照合。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.10。
+2026-11-20 1.46.0-dev.10 プレリリース公開済み: X返信先@handleを省略警告の詳細／簡易判定から除外し、詳細版は280ポイントちょうどを許容。X本文URLから通常リンクカードを抽出。242限定・初期OFFで、更新直後の新着数から透明NGレスを除く設定を追加。Crash/ANRログは既存Version項目を保ち、ChMate版とHaiagaru版を追加。Frida 17.18.0でX 7項目、新着件数5項目、ログ版数を確認。新着toastの実画面確認は未実施。CI Release `44551628678`／Attest成功。MPP SHA-256 `1799925e4e668445c8a33b749fdc689600f04cd11b6abd16a739eb5adf7a73f8`。Pre bundle version `1.46.0-dev.10`を照合。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.10。
 
 # 主開発先と統合状況
 
