@@ -49,14 +49,14 @@ public final class FilterPosition {
                 String url=NativeThreadContext.url(board,version,1);if(url==null)continue;
                 java.util.regex.Matcher id=java.util.regex.Pattern.compile("(?:/|=)([0-9]{6,24})(?:/|\\?|#|&|$)").matcher(url);
                 long threadId=-1;while(id.find())threadId=Long.parseLong(id.group(1));
-                if(threadId>0)return new ThreadTarget(activity,board.toString(),threadId);
+                if(threadId>0)return new ThreadTarget(activity,board.toString(),threadId,HiddenNgUnread.key(url));
             }catch(Exception ignored){}
         }
         return null;
     }
     static final class ThreadTarget{
-        final android.app.Activity activity;final String board;final long threadId;
-        ThreadTarget(android.app.Activity activity,String board,long threadId){this.activity=activity;this.board=board;this.threadId=threadId;}
+        final android.app.Activity activity;final String board;final long threadId;final String ngKey;
+        ThreadTarget(android.app.Activity activity,String board,long threadId,String ngKey){this.activity=activity;this.board=board;this.threadId=threadId;this.ngKey=ngKey;}
     }
     private static final ThreadLocal<Integer> CAPTURED_ACTION=new ThreadLocal<>();
     static void beginCapturedAction(){Integer depth=CAPTURED_ACTION.get();CAPTURED_ACTION.set(depth==null?1:depth+1);}

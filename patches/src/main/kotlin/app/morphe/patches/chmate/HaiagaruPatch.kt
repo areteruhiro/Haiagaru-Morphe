@@ -1642,6 +1642,7 @@ private val haiagaruBytecodePatch = bytecodePatch {
         patchRadarScrollbarTouch(packageMetadata.versionName)
         patchUnreadToolbarCount(packageMetadata.versionName)
         patchHiddenNgUnread(packageMetadata.versionName)
+        patchHiddenNgNewArrivalCount(packageMetadata.versionName)
         patchHomeBoardMultiSelect(packageMetadata.versionName, profile.homeFragmentClass)
         if (packageMetadata.versionName == "0.8.10.242 dev") {
             mutableClassDefBy(profile.homeFragmentClass).methods.single {

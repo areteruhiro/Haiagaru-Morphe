@@ -26,7 +26,7 @@ final class ReleaseFeatureOptions {
         NG_CHAIN_REPLY_NOTIFICATIONS("1.46.0"), FILTER_TRANSPARENT_BACKGROUND("1.46.0"),
         IMAGE_PAGING_GESTURES("1.46.0"), GIF_DEDICATED_VIEWER("1.46.0"), THREAD_SCOPED_NG("1.46.0"),
         X_POST_TRUNCATION_MODE("1.46.0"), WACCHOI_NG_EXPIRY("1.46.0"),
-        WACCHOI_COPY_PARENS("1.47.0"), THREAD_REPORTER_COPY("1.47.0");
+        WACCHOI_COPY_PARENS("1.47.0"), THREAD_REPORTER_COPY("1.47.0"), HIDDEN_NG_NEW_ARRIVAL_COUNT("1.47.0");
 
         final String version;
         Option(String version) { this.version = version; }
@@ -36,6 +36,7 @@ final class ReleaseFeatureOptions {
                 case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:case WACCHOI_COPY_PARENS:
                 case THREAD_REPORTER_COPY:case REPORTER_SEARCH:case REPORTER_MENU:case REPORTER_BOARD:return "表示・検索";
                 case NG_CHAIN_REPLY_NOTIFICATIONS:return "通知";
+                case HIDDEN_NG_NEW_ARRIVAL_COUNT:return "スレ更新";
                 case FILTER_TRANSPARENT_BACKGROUND:return "表示・検索";
                 case CONDITIONAL_REFRESH:return "スレ更新";
                 case X_POST_TRUNCATION_MODE:return "表示・検索";
@@ -84,11 +85,12 @@ final class ReleaseFeatureOptions {
                 case UPLOAD_DESTINATION:return "書き込み画面から画像・動画を添付するときに、送信先を選べます。";
                 case NG_REPLY_NOTIFICATIONS:return "NGに該当する返信を新着通知の対象から外します。";
                 case NG_CHAIN_REPLY_NOTIFICATIONS:return "連鎖NGの対象も通知から除外します。OFFでは、NGレスにアンカーしただけの別IDの返信は通知されます。";
+                case HIDDEN_NG_NEW_ARRIVAL_COUNT:return "ChMate 0.8.10.242で、スレ更新直後の「新着件数」から透明あぼーんとして判定されたレスを除きます。HOMEやスレ一覧の未読件数・既読位置は変えません。初期状態はOFFです。";
                 case FILTER_TRANSPARENT_BACKGROUND:return "下部フィルターパネルの背景を透明にするか、テーマ色の不透明背景を使うか切り替えます。";
                 case IMAGE_PAGING_GESTURES:return "ONではHaiagaruの方向指定を使い、OFFではChMate標準の画像切り替え操作を使います。初期状態はOFFです。";
                 case GIF_DEDICATED_VIEWER:return "GIFをHaiagaru専用ビューアで開くか切り替えます。初期状態はOFFです。";
                 case THREAD_SCOPED_NG:return "NG ID・名前・ワードを登録時にこのスレだけへ限定できます。ﾜｯﾁｮｲ上下4桁NGはこの板だけにも限定できます。スレ削除時は対応するスレ限定NGを削除します。";
-                case X_POST_TRUNCATION_MODE:return "Xの全文が取得できない場合に省略の可能性を知らせる基準を、詳細な280ポイント判定か簡易な320バイト判定から選べます。";
+                case X_POST_TRUNCATION_MODE:return "Xの全文が取得できない場合に省略の可能性を知らせる基準を、詳細な280ポイント判定か簡易な420バイト判定から選べます。返信先の@ユーザー名は判定から除きます。";
                 case WACCHOI_NG_EXPIRY:return "5chは次の日曜日、エッヂはUnix週境界（木曜日）に、ワッチョイ関連NGを自動解除する期限を登録ごとに設定できます。";
                 case WACCHOI_COPY_PARENS:return "ワッチョイの全文コピー時に、IDコードを含む丸括弧を任意で取り除けます。上4桁・下4桁コピーはNG登録に使えるハイフン付き形式です。";
                 case THREAD_REPORTER_COPY:return "スレタイ長押しに記者IDのコピーを追加し、記者IDのNGを一覧表示時にも適用します。";

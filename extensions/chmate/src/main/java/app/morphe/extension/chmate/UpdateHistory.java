@@ -251,6 +251,11 @@ final class UpdateHistory {
                 TextView reporterCopyHelp=new TextView(activity);
                 reporterCopyHelp.setText("スレタイ長押しに「記者IDをコピー」を追加しました。エッヂの記者IDを含むNGThreadルールはスレ一覧でも照合します。");
                 content.addView(reporterCopyHelp);break;
+            case HIDDEN_NG_NEW_ARRIVAL_COUNT:
+                String nativeVersion="";try{nativeVersion=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;}catch(Exception ignored){}
+                if(nativeVersion.contains(".242"))toggle(content,activity,main,"スレ更新後の新着件数から非表示NGのレスを除く",HiddenNgUnread.NEW_ARRIVAL_KEY,false,HiddenNgUnread::clear);
+                else {TextView unsupported=new TextView(activity);unsupported.setText("この新着件数オプションはChMate 0.8.10.242向けです。");content.addView(unsupported);}
+                break;
             case LOCAL_IMAGES:
                 toggle(content, activity, LocalImageArchive.prefs(activity), "保存済み画像から表示",
                         "enabled", true, LocalImageArchive::reset);
@@ -346,10 +351,10 @@ final class UpdateHistory {
                 Button viewerMode=new Button(activity);viewerMode.setText("専用ビューア1／2を選ぶ");viewerMode.setOnClickListener(view->ArchiveSearchLayout.choose(activity));content.addView(viewerMode);break;
             case X_POST_TRUNCATION_MODE:
                 Button xWarningMode=new Button(activity);
-                Runnable updateXMode=()->xWarningMode.setText("X投稿の省略判定："+(Haiagaru.xPostWarningThresholdMode()==0?"詳細判定（280ポイント）":"簡易判定（320バイト）"));
+                Runnable updateXMode=()->xWarningMode.setText("X投稿の省略判定："+(Haiagaru.xPostWarningThresholdMode()==0?"詳細判定（280ポイント）":"簡易判定（420バイト）"));
                 updateXMode.run();
                 xWarningMode.setOnClickListener(view->new HaiagaruDialog.Builder(activity).setTitle("X投稿の省略判定")
-                        .setSingleChoiceItems(new String[]{"詳細判定（日本語・絵文字・URLを考慮）","簡易判定（320バイト）"},Haiagaru.xPostWarningThresholdMode(),(dialog,which)->{
+                        .setSingleChoiceItems(new String[]{"詳細判定（日本語・絵文字・URLを考慮）","簡易判定（420バイト）"},Haiagaru.xPostWarningThresholdMode(),(dialog,which)->{
                             SettingsProfiles.prefs(activity).edit().putInt("xPostWarningThresholdMode",which).apply();
                             updateXMode.run();XPostPreview.thresholdModeChanged();dialog.dismiss();
                         }).setNegativeButton("閉じる",null).show());

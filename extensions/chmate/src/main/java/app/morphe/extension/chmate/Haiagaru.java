@@ -1098,11 +1098,19 @@ public final class Haiagaru {
                 + "Time: " + timestamp + "\n"
                 + "Package: " + context.getPackageName() + "\n"
                 + "Version: " + versionName + " (" + versionCode + ")\n"
+                + logVersionLines(context)
                 + "Android: " + Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")\n"
                 + "Device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
                 + "Thread: " + thread.getName() + "\n\n"
                 + stackTrace;
         writeDownloadLog(context, "chmate-crash-" + fileTimestamp + ".txt", report);
+    }
+
+    /** Shared, explicit version fields for crash and Android-confirmed ANR reports. */
+    static String logVersionLines(Context context){
+        String chmateVersion="unknown";
+        if(context!=null)try{chmateVersion=context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName;}catch(Throwable ignored){}
+        return "ChMate version: "+chmateVersion+"\nHaiagaru version: "+BuildConfig.HAIAGARU_VERSION+"\n";
     }
 
     /** Save a recoverable archive-viewer failure beside crash logs and return its code. */
@@ -3842,7 +3850,13 @@ public final class Haiagaru {
         live.toggle(historyRefreshTargets,RefreshTargetHistory.VISIBLE_KEY);
         Switch excludeHiddenNgUnread=addSwitch(lists,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
         live.toggle(excludeHiddenNgUnread,HiddenNgUnread.KEY);
-        TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("既読位置は変えず、取得してNG判定できた非表示レスだけを件数から除きます。未取得・未判定のレスは除きません。変更後はスレを開き直してください。");lists.addView(unreadNgHelp);
+        String unreadCountVersion="";
+        try{unreadCountVersion=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName;}catch(Exception ignored){}
+        if(unreadCountVersion.contains(".242")){
+            Switch excludeHiddenNgNew=addSwitch(lists,activity,"スレ更新後の「新着件数」から非表示NGのレスを除く",preferences.getBoolean(HiddenNgUnread.NEW_ARRIVAL_KEY,false));
+            live.toggle(excludeHiddenNgNew,HiddenNgUnread.NEW_ARRIVAL_KEY);
+        }
+        TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("上の設定はHOME・スレ一覧の未読件数が対象です。下の設定は今回のスレ更新後に表示する新着件数だけが対象で、既読位置は変えません。取得して透明あぼーん判定できたレスだけを除外します。変更後はスレを開き直してください。");lists.addView(unreadNgHelp);
         Switch hideDroppedDrafts=addSwitch(lists,activity,
                 text("DAT落ちスレの下書きを非表示", "Hide drafts for dropped threads"),
                 preferences.getBoolean(HiddenDroppedThreads.DRAFTS,false));
@@ -4571,12 +4585,12 @@ public final class Haiagaru {
         xDetails.available=xPostPreview::isChecked;xDetails.unavailableMessage="Xの投稿内容の表示をオンにすると変更できます。";
         Button xWarningMode = new Button(activity);
         Runnable updateXWarningMode = () -> xWarningMode.setText("省略の可能性を知らせる基準："
-                + (xPostWarningThresholdMode() == 0 ? "詳細判定（280ポイント）" : "簡易判定（320バイト）"));
+                + (xPostWarningThresholdMode() == 0 ? "詳細判定（280ポイント）" : "簡易判定（420バイト）"));
         updateXWarningMode.run();
         xWarningMode.setOnClickListener(v -> {
             int selected = xPostWarningThresholdMode();
             new HaiagaruDialog.Builder(activity).setTitle("X投稿の省略判定")
-                    .setSingleChoiceItems(new String[]{"詳細判定（日本語・絵文字・URLを考慮）", "簡易判定（320バイト）"}, selected,
+                    .setSingleChoiceItems(new String[]{"詳細判定（日本語・絵文字・URLを考慮）", "簡易判定（420バイト）"}, selected,
                             (dialog, which) -> {
                                 preferences.edit().putInt("xPostWarningThresholdMode", which).apply();
                                 updateXWarningMode.run();
@@ -4586,7 +4600,7 @@ public final class Haiagaru {
         });
         xDetails.addView(xWarningMode);
         TextView xWarningHelp = new TextView(activity);
-        xWarningHelp.setText("投稿全体が取得できず、選んだ基準を超えた場合に「省略の可能性」と表示します。添付メディアの短縮URLは文字数に含めません。通常のURLと改行は簡易判定のバイト数に含みます。");
+        xWarningHelp.setText("投稿全体が取得できず、選んだ基準を超えた場合に「省略の可能性」と表示します。返信先の@ユーザー名と添付メディアの短縮URLは文字数に含めません。簡易判定は420バイトを目安にし、通常のURLと改行を含みます。");
         xDetails.addView(xWarningHelp);
         Switch xPostFullText = addSwitch(xDetails, activity,
                 text("X投稿の本文を全文表示（オフは冒頭のみ）", "Show full X post text (off: excerpt only)"),
@@ -4611,7 +4625,7 @@ public final class Haiagaru {
         XPostPreview.addCacheSettings(x, activity);
 
         live.toggle(xPostPreview,"xPostPreviewEnabled");
-        live.toggle(xPostFullText,"xPostPreviewFullText");
+        live.toggle(xPostFullText,"xPostPreviewFullText",XPostPreview::thresholdModeChanged);
         live.toggle(xPostCollapsible,"xPostPreviewCollapsible");
         live.toggle(xPostCard,"xPostPreviewCard");
         live.toggle(xPostActions,"xPostPreviewActions");
@@ -6002,7 +6016,7 @@ public final class Haiagaru {
 
     public static boolean xPostPreviewFullText() {
         SharedPreferences prefs = preferencesOrNull();
-        return prefs == null || prefs.getBoolean("xPostPreviewFullText", true);
+        return prefs != null && prefs.getBoolean("xPostPreviewFullText", false);
     }
 
     public static boolean xPostPreviewCollapsible() {

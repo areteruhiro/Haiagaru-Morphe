@@ -11,16 +11,21 @@ import java.util.regex.Pattern;
 
 /** Approximate byte count of visible post text; attached-media URL ranges are omitted. */
 final class XPostLength {
-    static final int POSSIBLE_TRUNCATION_BYTES = 320;
+    static final int POSSIBLE_TRUNCATION_BYTES = 420;
     static final int POSSIBLE_TRUNCATION_POINTS = 280;
     private static final Pattern URL = Pattern.compile("(?i)(?:https?://|www\\.)[^\\s<>]+|t\\.co/[^\\s<>]+");
     private XPostLength() {}
 
     static int visibleBytes(String text, JSONObject post) {
+        return visibleBytes(text, post, 0);
+    }
+
+    static int visibleBytes(String text, JSONObject post, int startOffset) {
         if (text == null || text.isEmpty()) return 0;
+        int start = Math.max(0, Math.min(startOffset, text.length()));
         List<Range> media = mediaRanges(post);
         int bytes = 0;
-        for (int index = 0; index < text.length();) {
+        for (int index = start; index < text.length();) {
             Range attachment = containing(index, media);
             if (attachment != null) {
                 index = Math.min(text.length(), attachment.end);
@@ -34,16 +39,55 @@ final class XPostLength {
     }
 
     static int detailedPoints(String text, JSONObject post) {
+        return detailedPoints(text, post, 0);
+    }
+
+    static int detailedPoints(String text, JSONObject post, int startOffset) {
         if (text == null || text.isEmpty()) return 0;
+        int start = Math.max(0, Math.min(startOffset, text.length()));
         List<Range> media = mediaRanges(post);
         Matcher matcher = URL.matcher(text);
-        int points = 0, position = 0;
+        matcher.region(start, text.length());
+        int points = 0, position = start;
         while (matcher.find()) {
             points += weightedPlain(text, position, matcher.start(), media);
             if (!overlapsMedia(matcher.start(), matcher.end(), media)) points += 23;
             position = matcher.end();
         }
         return points + weightedPlain(text, position, text.length(), media);
+    }
+
+    /** Reply recipients are transport metadata, not text that should trigger a truncation warning. */
+    static int replyMentionPrefixEnd(String text, JSONObject post) {
+        if (text == null || text.isEmpty() || post == null || !isReply(post)) return 0;
+        int position = 0;
+        while (position < text.length() && Character.isWhitespace(text.charAt(position))) position++;
+        int end = position;
+        Pattern mention = Pattern.compile("@[A-Za-z0-9_]{1,50}");
+        Matcher matcher = mention.matcher(text);
+        while (position < text.length()) {
+            matcher.region(position, text.length());
+            if (!matcher.lookingAt()) break;
+            int after = matcher.end();
+            if (after < text.length() && !Character.isWhitespace(text.charAt(after))) break;
+            end = after;
+            position = after;
+            while (position < text.length() && Character.isWhitespace(text.charAt(position))) position++;
+            end = position;
+        }
+        return end;
+    }
+
+    private static boolean isReply(JSONObject post) {
+        return nonempty(post, "in_reply_to_status_id_str")
+                || nonempty(post, "in_reply_to_status_id")
+                || nonempty(post, "in_reply_to_user_id_str")
+                || nonempty(post, "in_reply_to_screen_name");
+    }
+
+    private static boolean nonempty(JSONObject post, String key) {
+        Object value = post.opt(key);
+        return value != null && value != JSONObject.NULL && !String.valueOf(value).isEmpty();
     }
 
     private static int weightedPlain(String text, int start, int end, List<Range> media) {

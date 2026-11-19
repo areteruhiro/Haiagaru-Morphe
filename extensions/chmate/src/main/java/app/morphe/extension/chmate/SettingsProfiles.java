@@ -154,7 +154,7 @@ public final class SettingsProfiles {
         booleanKey(PostEditorLimits.KEY);defaultValue(PostEditorLimits.KEY,true);
         numberKey("popularReplyThreshold",1,9999);
         numberKey("popularReplyStandardThreshold",1,9999);
-        for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY})booleanKey(key);
+        for(String key:new String[]{"quickFilterAA","quickFilterMine","quickFilterReplies",HiddenNgUnread.KEY,HiddenNgUnread.NEW_ARRIVAL_KEY})booleanKey(key);
         choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3)));
         choiceKey(GifAutoFetchPolicy.KEY,new HashSet<>(Arrays.asList(0,1,2,3)));
         defaultValue(GifAutoFetchPolicy.KEY,Haiagaru.gifAutoFetchMode());
