@@ -1,6 +1,6 @@
 # 主開発先と統合状況
 
-2026-11-19 なんG投稿上限・絵文字文字数（プレリリース準備）: nova.5ch.io/.netのlivegalileoに公開設定がない場合の1行上限を1024バイトとし、他板へ波及しないfallbackを追加。表示文字数はUTF-16コード単位で数え、補助平面絵文字は2文字として表示しつつ超過spanはコードポイント境界を維持。`:patches:buildAndroid`成功、ホスト50項目成功、Frida17.18.0でreporter191/226/242それぞれ実装済みparser・counterの板限定/1024・1025境界・絵文字spanを検証。各版の投稿UI結合は模擬下書きダイアログで26項目成功、投稿送信なし。詳細`docs/posting-limits-nova-20261119.md`、導入`docs/android-installations.md`。リリースCIは未実行。
+2026-11-19 なんG投稿上限・絵文字文字数（1.46.0-dev.8 公開済み）: nova.5ch.io/.netのlivegalileoに公開設定がない場合の1行上限を1024バイトとし、他板へ波及しないfallbackを追加。表示文字数はUTF-16コード単位で数え、補助平面絵文字は2文字として表示しつつ超過spanはコードポイント境界を維持。`:patches:buildAndroid`成功、ホスト50項目成功、Frida17.18.0でreporter191/226/242それぞれ実装済みparser・counterの板限定/1024・1025境界・絵文字spanを検証。各版の投稿UI結合は模擬下書きダイアログで26項目成功、投稿送信なし。CI Release `44449401344` 成功、MPP SHA-256 `ee6c2d0498e75320766d561050869c70c00b7cd9967d3f7e672b5daf42a214af`。詳細`docs/posting-limits-nova-20261119.md`、導入`docs/android-installations.md`。
 
 2026-11-18 画像戻る・HOME/返信負荷・共有NG（プレ公開準備）: 静止画ギャラリーの混在paging横取りを防ぎnative Backを独立受信。19125/22618/24218画像gesture項目成功、3版署名・隔離導入・履歴DEX成功。共有NG本文不要時のHTML解析省略11309項目、server personal148項目成功。HOME変換重複削減、表示UIなしの遅延集計抑止、初期化済みprefs読込省略、検索境界線/不要共有報告ボタン削除/personal送信時inline binding使用。OPPO実測と実共有投稿は未実施。詳細docs/performance-gallery-20261118.md。
 
