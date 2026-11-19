@@ -66,7 +66,7 @@ public final class PostEditorLimits {
                 boolean old=version.contains("191"),middle=version.contains("226");Object settings=field(m,old?"y":middle?"M":"K");if(settings==null)return new PostLimitSource.Values(0,0,0,false);
                 Method get=settings.getClass().getDeclaredMethod(old?"c":middle?"e":"d",String.class,int.class);get.setAccessible(true);Map<String,String> values=new HashMap<>();
                 for(String name:new String[]{"BBS_SUBJECT_COUNT","BBS_MESSAGE_COUNT","BBS_LINE_NUMBER","BBS_MAX_LINES","BBS_MAX_LINE_CHARS","BBS_MAX_LINE_BYTES"})values.put(name,String.valueOf(get.invoke(settings,name,0)));
-                return new PostLimitSource.Values(PostLimitRules.positive(values.get("BBS_SUBJECT_COUNT")),PostLimitRules.positive(values.get("BBS_MESSAGE_COUNT")),PostLimitRules.lines(values,java.net.URI.create(board).getHost()),false,PostLimitRules.lineMaximum(values),PostLimitRules.lineCharacters(values));
+                return new PostLimitSource.Values(PostLimitRules.positive(values.get("BBS_SUBJECT_COUNT")),PostLimitRules.positive(values.get("BBS_MESSAGE_COUNT")),PostLimitRules.lines(values,java.net.URI.create(board).getHost()),false,PostLimitRules.lineMaximum(values,board),PostLimitRules.lineCharacters(values,board));
             }catch(Exception notReady){return new PostLimitSource.Values(0,0,0,false);}
         }
         void retryNative(){if(!active)return;render();if(++attempts<12)root.postDelayed(retry,500);}

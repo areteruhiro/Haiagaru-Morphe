@@ -3781,3 +3781,11 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
 - 242 / package `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / Android 11 Mi Note 10 / ADB `d5497008` / `2026-11-19 08:49:49` / signature verified; `adb install -r` Success。APK `build/bugfix-20261119-frida/apks/final242.apk` SHA-256 `48d3082fb350f0aa9cfd835a177e4c8d1e6cb8c3cff9a32fe3843f955bec3c97`。
 - All three were signed with certificate SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`; MPP `build/bugfix-20261119-frida/apks/candidate.mpp` SHA-256 `ed860264bcde1776557ca9cb3241b86122a3536e9225739f3cb62033fc8dcfe7`.
 - Frida 17.18.0 checks are summarized in `docs/bugfix-frida-20261119.md`. No data was cleared; these are reporter package installs, separate from the normal ChMate package.
+
+## 2026-11-19 なんG投稿上限・絵文字文字数のFrida検証版
+
+- MPP `patches-1.46.0-dev.7.mpp` SHA-256 `c0a6669ebb43d39c4c73d9a63d75aa187b2d23f46e46989ed3f06d24140dea28`。
+- 191 / `jp.co.airfront.android.a2chMate.haiagaru.reporter191` / `2026-11-19 10:43:36` / signature verified; `adb install -r` Success。APK `build/post-limit-nova-20261119/apks/final191.apk` SHA-256 `718333a0c0086db23de1c5425d453878730542c32064a6f8e607861482a0ae7d`。
+- 226 / `jp.co.airfront.android.a2chMate.haiagaru.reporter226` / `2026-11-19 10:43:58` / signature verified; `adb install -r` Success。APK `build/post-limit-nova-20261119/apks/final226.apk` SHA-256 `0649f53840e1665c654cfb56dbee32e9ec16e056199f0966d9aaad8fc7b6319e`。
+- 242 / `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / `2026-11-19 10:44:29` / signature verified; `adb install -r` Success。APK `build/post-limit-nova-20261119/apks/final242.apk` SHA-256 `a2bab52ac8fe22d4de98f6c974f10c629ce0446b9d9e17bca9a745f7c9725898`。
+- All three use certificate SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`, Android 11 Mi Note 10, serial `d5497008`. Frida 17.18.0 verified board-scoped 1024-byte limits and supplementary emoji count / overflow offset in every reporter build. Normal ChMate was not changed; app data was not cleared.

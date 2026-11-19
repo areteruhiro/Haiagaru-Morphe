@@ -19,7 +19,7 @@ final class PostLimitSource {
     }
     static Values parse(String board,String text){
         Map<String,String> values=PostLimitRules.settings(text);
-        return new Values(PostLimitRules.positive(values.get("BBS_SUBJECT_COUNT")),PostLimitRules.positive(values.get("BBS_MESSAGE_COUNT")),PostLimitRules.lines(values,URI.create(board).getHost()),false,PostLimitRules.lineMaximum(values),PostLimitRules.lineCharacters(values));
+        return new Values(PostLimitRules.positive(values.get("BBS_SUBJECT_COUNT")),PostLimitRules.positive(values.get("BBS_MESSAGE_COUNT")),PostLimitRules.lines(values,URI.create(board).getHost()),false,PostLimitRules.lineMaximum(values,board),PostLimitRules.lineCharacters(values,board));
     }
     static int maximum(Element doc,String selector){
         Element input=doc.selectFirst(selector);return input==null?0:PostLimitRules.positive(input.attr("maxlength"));

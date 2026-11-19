@@ -6,7 +6,8 @@ public final class PostLimitRulesTest {
  public static void main(String[] args)throws Exception{
   for(String text:new String[]{"","a","日本語","a😀b","e\u0301"}){var r=inspect(text,100,100,PostLimitRules.UTF16);ok(r.excessStart==-1&&r.used==text.length(),"under limit, native UTF-16 "+text);}
   ok(inspect("abcd",3,0,PostLimitRules.UTF16).excessStart==3,"ASCII first excess character");
-  var emoji=inspect("a😀b",2,0,PostLimitRules.UTF16);ok(emoji.characters==3&&emoji.used==4&&emoji.excessStart==1,"whole emoji highlighted for UTF-16 limits");
+  var emoji=inspect("a😀b",2,0,PostLimitRules.UTF16);ok(emoji.characters==4&&emoji.used==4&&emoji.excessStart==1,"emoji counts its two UTF-16 code units; highlight keeps surrogate pair intact");
+  ok(inspect("👨‍👩‍👧‍👦",100,0,PostLimitRules.UTF16).characters=="👨‍👩‍👧‍👦".length(),"joined emoji count follows UTF-16 code units");
   ok(inspect("a😀b",2,0,PostLimitRules.CODE_POINTS).excessStart==3,"code-point limit does not split emoji");
   PostLimitRules.Measure utf8=text->text.toString().getBytes(StandardCharsets.UTF_8).length;
   ok(inspect("a日本",4,0,utf8).excessStart==2,"UTF-8 byte boundary after first Japanese character");
@@ -36,6 +37,11 @@ public final class PostLimitRulesTest {
   var em=PostLimitRules.inspectLines("a😀b\nok",new PostLimitRules.Limit(2,"文字",PostLimitRules.UTF16));ok(Arrays.equals(em.excess.get(0),new int[]{1,4}),"per-line emoji is never split");
   ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_CHARS=80"))==80,"explicit character cap");
   var bytes=PostLimitRules.settings("BBS_MAX_LINE_BYTES=160");ok(PostLimitRules.lineMaximum(bytes)==160&&!PostLimitRules.lineCharacters(bytes),"explicit byte cap");
+  Map<String,String> unconfigured=PostLimitRules.settings("BBS_MESSAGE_COUNT=4096");ok(PostLimitRules.lineMaximum(unconfigured,"https://nova.5ch.io/livegalileo/")==1024&&!PostLimitRules.lineCharacters(unconfigured,"https://nova.5ch.io/livegalileo/"),"livegalileo per-line 1024-byte cap");
+  var liveLineLimit=new PostLimitRules.Limit(1024,"バイト",utf8);ok(PostLimitRules.inspectLines("a".repeat(1024),liveLineLimit).excess.isEmpty(),"livegalileo line at 1024 bytes is accepted");
+  ok(Arrays.equals(PostLimitRules.inspectLines("a".repeat(1025),liveLineLimit).excess.get(0),new int[]{1024,1025}),"first byte over the livegalileo line cap is highlighted");
+  ok(PostLimitRules.lineMaximum(unconfigured,"https://nova.5ch.net/livegalileo/")==1024,"livegalileo cap follows the .net alias");
+  ok(PostLimitRules.lineMaximum(unconfigured,"https://nova.5ch.io/news4vip/")==0,"per-line rule is scoped only to livegalileo");
   ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_LENGTH=80"))==0,"unknown units do not invent a limit");
   ok(PostLimitRules.lineMaximum(PostLimitRules.settings("BBS_MAX_LINE_LENGTH=80\nBBS_MAX_LINE_UNIT=chars"))==80,"explicit length and units");
   ok(PostLimitRules.inspectLines("long line",new PostLimitRules.Limit(0,"文字",PostLimitRules.UTF16)).excess.isEmpty(),"unknown line cap has no warning");
