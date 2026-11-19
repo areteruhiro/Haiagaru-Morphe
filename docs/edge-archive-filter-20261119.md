@@ -1,6 +1,6 @@
 # エッヂ過去ログ遷移・タブレット下部フィルター
 
-2026-11-19時点の未公開修正候補。通常ChMateパッケージには変更を導入していない。
+2026-11-19 `1.46.0-dev.9` に含めてプレリリース公開済み。通常ChMateパッケージには変更を導入していない。
 
 ## 修正
 
@@ -23,4 +23,4 @@
 - reporter242 APK SHA-256: `a11750b976d02a22e4480094f076400c89fcd1bb5c23dc3c76cae2813e1b9f38`
 - 実機導入先: `jp.co.airfront.android.a2chMate.haiagaru.reporter191` と `jp.co.airfront.android.a2chMate.haiagaru.reporter242`（ADB `d5497008`、署名一致後にデータ保持install-r）。鍵証明書SHA-256は既存Morphe証明書 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
 
-この候補は未公開。正式版・プレリリースは作成していない。
+プレリリース: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.9

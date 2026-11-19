@@ -1,6 +1,6 @@
 # NGワードの安全な登録
 
-2026-11-19 未公開修正。NG ID・NGName・NGワードで私用領域を広く対象にする正規表現の登録を拒否し、NGワードは6文字未満の新規条件を拒否する。6文字条件はNGWordのWORDカテゴリのみで、短いNG ID・NGNameは従来どおり登録できる。
+2026-11-19 `1.46.0-dev.9` プレリリース公開済み。NG ID・NGName・NGワードで私用領域を広く対象にする正規表現の登録を拒否し、NGワードは6文字未満の新規条件を拒否する。6文字条件はNGWordのWORDカテゴリのみで、短いNG ID・NGNameは従来どおり登録できる。
 
 ## 実装
 
@@ -17,8 +17,9 @@
 
 ## 生成物
 
-- MPP SHA-256: `29e94aed9264e684c7634b47cf8c64d3f237ad393ac5eeb012e4071fbf9db8d4`
+- CI公開MPP SHA-256: `4e09e8f10395579b54b30b6c32a2e2adcfd07d27d3a362227003bfb6528de395`
+- 検証時MPP SHA-256: `29e94aed9264e684c7634b47cf8c64d3f237ad393ac5eeb012e4071fbf9db8d4`
 - APKs: `build/ng-word-safety-20261119/apks/final191.apk`, `final226.apk`, `final242.apk`
 - 署名証明書SHA-256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
 
-この候補は未公開。Semantic Releaseによるプレリリースも作成していない。
+Release: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.9

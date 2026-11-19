@@ -1,5 +1,7 @@
 # 主開発先と統合状況
 
+2026-11-19 1.46.0-dev.9 プレリリース公開済み: NG ID/NAME/WORDの私用領域regex登録拒否・起動時移行、NGWord新規条件6コードポイント以上、Eddi過去ログ遷移、タブレット下部フィルターpane配置を同梱。Frida各版18件／Edge191 7件／Expert242 7件成功、CI Release `44503814635` 成功。公開MPP SHA-256 `4e09e8f10395579b54b30b6c32a2e2adcfd07d27d3a362227003bfb6528de395`。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.9。
+
 2026-11-19 NG登録安全制限（未公開）: native NGWord・Haiagaru NGストア更新/置換・レス複数選択登録で、私用領域BMP/補助面に交差するUnicode regex rangeをID・NGName・NGワードに追加不可とし、起動時に既存の3カテゴリから該当regexだけ削除。WORDカテゴリの新規条件はtrim後Unicode codepointで6文字以上、短いID/NAMEと既存短文は保持。Host16項目成功、Frida17.18.0でreporter191/226/242各18項目成功。一時NGデータを使い移行で該当1件だけ削除・短い旧語と通常語を保持、試験後は元一覧へ復元。`:patches:buildAndroid`成功、3版隔離アプリ導入・起動。通常アプリのNG一覧は未変更。詳細`docs/ng-word-safety-20261119.md`、導入`docs/android-installations.md`。
 
 2026-11-19 エッヂ過去ログ遷移・タブレット下部フィルター・エキスパート設定即時反映（未公開）: エッヂ過去ログ専用ビューア1から外部板スレを開く際、5ch/2ch.sc用のアーカイブ取得経路へ誤って入りタイムアウトしていたため、該当hostは取得を試さずChMate標準の外部板遷移へ戻す。タブレットの下部フィルターはレス一覧paneの表示範囲内にPopupWindowを置き、板paneへはみ出さないようにする。Frida 17.18.0でEddi/5ch/Talkのroute判定・外部ネットワーク未実行・250ms以内復帰とtablet frame geometryの7項目成功。さらにMi Note 10のreporter242でExpert設定コントロールからON/OFFし、即時のView表示、保存値、Compose row一覧の増減をFridaで7項目検証。191/242の隔離パッケージは署名一致・install-r成功。実Eddi取得と実タブレット画面は未確認。詳細`docs/edge-archive-filter-20261119.md`。
