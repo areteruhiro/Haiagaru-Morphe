@@ -145,7 +145,7 @@ public final class SettingsProfiles {
         booleanKey(EmojiFontFallback.ENABLED);
         defaultValue(EmojiFontFallback.ENABLED,true);
         booleanKey(ThreadRefreshOptions.KEY);
-        defaultValue(ThreadRefreshOptions.KEY,true);
+        defaultValue(ThreadRefreshOptions.KEY,false);
         booleanKey("hissiViewerShowAdjust");
         defaultValue(NativeToolTabs.HEADER_HEIGHT_KEY,48);
         defaultValue("hissiViewerShowAdjust",true);
@@ -294,7 +294,7 @@ public final class SettingsProfiles {
         Map<String,Object> out=new LinkedHashMap<>();for(Map.Entry<String,Rule> e:RULES.entrySet())if(e.getValue().accepts(false))out.put(e.getKey(),false);
         for(String key:new String[]{"edgeReporterId","edgeReporterBoardList","dedicatedViewerEnabled","kyodemoEnhancedViewer","automaticDat",
                 "hideAd","chtoio","videoViewerEnabled","videoYoutubeEnabled","urlImageFetchEnabled","videoFrameThumbnailsEnabled","wacchoiSearchEnabled","showEdgeSearch",
-                ThreadRefreshOptions.KEY,UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,true);
+                UpdateConnectionHeaders.KEY,"fast191UpdateConnect","optimize191UpdateProgress"})out.put(key,true);
         out.put("urlVideoFetchMode",0);return out;
     }
 }

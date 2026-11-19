@@ -399,6 +399,11 @@ final class UpdateHistory {
             case FILTER_TRANSPARENT_BACKGROUND:
                 toggle(content, activity, SettingsProfiles.prefs(activity), "下部フィルターの背景を透過する",
                         QuickFilterOptions.TRANSPARENT, true, () -> ExtraQuickFilters.updateOptions(activity)); break;
+            case CONDITIONAL_REFRESH:
+                toggle(content,activity,SettingsProfiles.prefs(activity),"スレ更新で条件付き取得を省く",ThreadRefreshOptions.KEY,false,null);
+                TextView conditionalRefreshHelp=new TextView(activity);
+                conditionalRefreshHelp.setText("初期OFFではChMate標準の条件付き・Range更新を使います。更新日時だけで新着を取りこぼす場合にONにすると条件付きヘッダーを省きます。通信量が増えることがあります。");
+                content.addView(conditionalRefreshHelp);break;
             case IMAGE_PAGING_GESTURES:
                 toggle(content,activity,VideoViewerSettings.prefs(activity),"Haiagaruの画像切り替え設定を使う",
                         NativeImagePaging.ENABLED,false,null);break;

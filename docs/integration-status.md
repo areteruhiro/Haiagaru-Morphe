@@ -2122,3 +2122,11 @@ Release 43996385293はタグ／生成コミット01cc8d1fの作成後、Gradle p
 ## 2026-11-17 Haiagaru 1.45.0 正式公開
 
 投稿上限・残量表示とON/OFF、未公開だったリンクカードの位置ずれ修正を正式公開。Release 44018811823（Release／Attest）とBuild Haiagaru 44018811942成功。生成030b7615をmaster／devへ反映。公開9アセットのサイズ・GitHub SHA-256・ZIP整合性、MPPの投稿上限設定と位置保持処理、画像検出／VPN統合資材を検証。master／devの両バンドルJSONは正式1.45.0と公開MPPを指す。MPP SHA-256 `3b1367dfac61b9b92ffde8e89570df3a5617f588629402cc963849c909d0a242`。証跡build/post-input-limits-20261117/verified-1.45.0.json。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.45.0 。
+
+## 2026-11-19 アーカイブ検索クラッシュ・画像ジェスチャー初期化・242更新遅延（Frida確認済み、公開前）
+
+ModelUiのアーカイブ検索画面で、区切り線追加後も古い子View番号を使っていたため、navigationのLinearLayoutをButtonへcastしていた。divider 3、results 4、navigation 5、元サイトButton 6へ合わせた。画像ジェスチャーの初期化は方向指定だけを消し、ENABLED=trueを必ず保存する。242の更新経路では条件付きヘッダーを省く設定が初期ONで大きいDATの不要な取得を招くため、ChMate標準の条件付き／Range取得を初期値にし、古い更新日時で取りこぼす場合の切替は残した。更新履歴にも設定と通信量の説明を表示する。
+
+Patch buildAndroid成功。Frida 17.18.0／Java bridge 7.1.0で191・226・242を確認。画像設定のreset handlerと条件付き更新option各7チェック/版が成功し、テスト後に設定値を復元。実アーカイブActivityは各版で起動し、native childが7個、Compose navigation index 5はLinearLayout、元サイトButton index 6はButtonであることを確認。試験後のlogcatにClassCastException、VerifyError、fatal app crashなし。可視設定のタップ操作は端末がKeyguard中のため行わず、Fridaから同じreset handlerを呼び出した。242の更新所要時間を実スレで比較した試験ではない。
+
+署名済みreporter候補の導入成功。MPP SHA-256 `ed860264bcde1776557ca9cb3241b86122a3536e9225739f3cb62033fc8dcfe7`。APK署名・SHA・導入時刻はdocs/android-installations.md、詳細はdocs/bugfix-frida-20261119.md。通常ChMate packageの置換なし。公開前であり、既存Semantic Release CIからプレリリースする。

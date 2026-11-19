@@ -61,7 +61,7 @@ final class ExpertSettings {
         new LiveSettings(prefs,()->{}).toggle(delayedFilterPosition,FilterPosition.DELAYED_SNAPSHOT);
         LiveSettings.Toggle conditionalRefresh = new LiveSettings.Toggle(activity);
         conditionalRefresh.setText("スレ更新で条件付き取得を省く");
-        conditionalRefresh.setChecked(prefs.getBoolean(ThreadRefreshOptions.KEY, true));
+        conditionalRefresh.setChecked(prefs.getBoolean(ThreadRefreshOptions.KEY, false));
         options.addView(conditionalRefresh);
         android.widget.TextView conditionalRefreshHelp = new android.widget.TextView(activity);
         conditionalRefreshHelp.setText("サーバーの更新日時だけで『更新なし』と判定されるのを避けるため、DATを取得します。オフにするとChMate標準の条件付き取得に戻り、通信量が少なくなる場合があります。変更はすぐ反映されます。");

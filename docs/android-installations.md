@@ -3773,3 +3773,11 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
 - 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / Mi Note 10 Android 11 / serial `d5497008` / 2026-11-18T20:40:53.827869+09:00 / signature matched; install-r Success。APK `<workspace>/build/performance-gallery-20261118/final-apks/final242.apk` SHA-256 `3dc1c8237ea3c14bcc0a25dd411514f8157b72206c7aa8d9eb0b8f52b347f3c9`。MPP SHA-256 `fbbfabf0f85a57ef7ee84d4eef8bd9fc59547a8c323c9ec4b9fb31a512444e5a`。証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。
 
 鍵は既存 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias Morphe。絶対パス原本は非公開 `build/performance-gallery-20261118/final-apks/installations.json`。画像gesture実機191=25、226=18、242=18項目成功、履歴DEX3版成功、新規fatalなし。通常アプリの置換・データ消去なし。
+
+## 2026-11-19 修正候補・Frida確認用3版
+
+- 191 / package `jp.co.airfront.android.a2chMate.haiagaru.reporter191` / Android 11 Mi Note 10 / ADB `d5497008` / `2026-11-19 08:48:55` / signature verified; `adb install -r` Success。APK `build/bugfix-20261119-frida/apks/final191.apk` SHA-256 `86ab087b75bbd1b85ade65f94e641184ebde970dd079f18e49632363ee4f2e49`。
+- 226 / package `jp.co.airfront.android.a2chMate.haiagaru.reporter226` / Android 11 Mi Note 10 / ADB `d5497008` / `2026-11-19 08:49:18` / signature verified; `adb install -r` Success。APK `build/bugfix-20261119-frida/apks/final226.apk` SHA-256 `37e3d2381cdc8bab65709c5df5bc0566ba0d72be193f0cae25f55d9b78cab71b`。
+- 242 / package `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / Android 11 Mi Note 10 / ADB `d5497008` / `2026-11-19 08:49:49` / signature verified; `adb install -r` Success。APK `build/bugfix-20261119-frida/apks/final242.apk` SHA-256 `48d3082fb350f0aa9cfd835a177e4c8d1e6cb8c3cff9a32fe3843f955bec3c97`。
+- All three were signed with certificate SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`; MPP `build/bugfix-20261119-frida/apks/candidate.mpp` SHA-256 `ed860264bcde1776557ca9cb3241b86122a3536e9225739f3cb62033fc8dcfe7`.
+- Frida 17.18.0 checks are summarized in `docs/bugfix-frida-20261119.md`. No data was cleared; these are reporter package installs, separate from the normal ChMate package.

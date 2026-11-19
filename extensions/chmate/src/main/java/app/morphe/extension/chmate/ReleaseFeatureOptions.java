@@ -21,7 +21,7 @@ final class ReleaseFeatureOptions {
         UPLOAD_DESTINATION("1.40.0"), NG_REPLY_NOTIFICATIONS("1.40.0"), THREAD_RENAME("1.41.0"), KEYWORD_NAMES("1.41.0"),
         HOME_THREAD_ORDER("1.42.0"), KEYWORD_MENU("1.42.0"),
         RESPONSE_NOTES_MENU("1.43.0"), ROTATION_MENU("1.43.0"), EXTERNAL_VIDEO_CACHE("1.43.0"),
-        POST_LIMIT_DISPLAY("1.46.0"), FILTER_OPTIMIZATION("1.46.0"), DELAYED_POSITION_SNAPSHOT("1.46.0"),
+        POST_LIMIT_DISPLAY("1.46.0"), FILTER_OPTIMIZATION("1.46.0"), DELAYED_POSITION_SNAPSHOT("1.46.0"), CONDITIONAL_REFRESH("1.46.0"),
         NOTE_INDICATOR("1.46.0"), HOME_NOTES_MENU("1.46.0"), ARCHIVE_VIEWER_MODE("1.46.0"),
         NG_CHAIN_REPLY_NOTIFICATIONS("1.46.0"), FILTER_TRANSPARENT_BACKGROUND("1.46.0"),
         IMAGE_PAGING_GESTURES("1.46.0"), GIF_DEDICATED_VIEWER("1.46.0"), THREAD_SCOPED_NG("1.46.0"),
@@ -37,6 +37,7 @@ final class ReleaseFeatureOptions {
                 case THREAD_REPORTER_COPY:case REPORTER_SEARCH:case REPORTER_MENU:case REPORTER_BOARD:return "表示・検索";
                 case NG_CHAIN_REPLY_NOTIFICATIONS:return "通知";
                 case FILTER_TRANSPARENT_BACKGROUND:return "表示・検索";
+                case CONDITIONAL_REFRESH:return "スレ更新";
                 case X_POST_TRUNCATION_MODE:return "表示・検索";
                 case WACCHOI_NG_EXPIRY:return "NG・文字列置換";
                 case THREAD_RENAME:case KEYWORD_NAMES:case GLOBAL_SEARCH_BACKGROUND:case GLOBAL_SEARCH_HISTORY:case GLOBAL_SEARCH_PARTIAL:
@@ -101,6 +102,7 @@ final class ReleaseFeatureOptions {
                 case POST_LIMIT_DISPLAY:return "投稿欄に板ごとのスレタイ・本文・行数・1行あたりの上限と超過位置を表示します。";
                 case FILTER_OPTIMIZATION:return "レスフィルター全体の抽出・位置保持などの処理を任意で最適化します。初期状態はOFFです。";
                 case DELAYED_POSITION_SNAPSHOT:return "エキスパート設定で遅延位置スナップショットを切り替えられます。初期状態はOFFです。";
+                case CONDITIONAL_REFRESH:return "初期OFFではChMate標準の条件付き・Range更新を使います。更新日時だけで新着を取りこぼす場合にONにすると条件付きヘッダーを省きます。通信量が増えることがあります。";
                 case NOTE_INDICATOR:return "メモ済みレスの右下にアイコンを表示します。タップしてメモを開き、編集できます。";
                 case HOME_NOTES_MENU:return "HOMEの3点メニューにメモの一覧を表示します。";
                 case ARCHIVE_VIEWER_MODE:return "エッヂ過去ログの専用ビューア1（従来画面）／2（元サイト表示）を選びます。";
