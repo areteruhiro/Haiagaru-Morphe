@@ -1,5 +1,9 @@
 # 主開発先と統合状況
 
+2026-11-19 NG登録安全制限（未公開）: native NGWord・Haiagaru NGストア更新/置換・レス複数選択登録で、私用領域BMP/補助面に交差するUnicode regex rangeをID・NGName・NGワードに追加不可とし、起動時に既存の3カテゴリから該当regexだけ削除。WORDカテゴリの新規条件はtrim後Unicode codepointで6文字以上、短いID/NAMEと既存短文は保持。Host16項目成功、Frida17.18.0でreporter191/226/242各18項目成功。一時NGデータを使い移行で該当1件だけ削除・短い旧語と通常語を保持、試験後は元一覧へ復元。`:patches:buildAndroid`成功、3版隔離アプリ導入・起動。通常アプリのNG一覧は未変更。詳細`docs/ng-word-safety-20261119.md`、導入`docs/android-installations.md`。
+
+2026-11-19 エッヂ過去ログ遷移・タブレット下部フィルター・エキスパート設定即時反映（未公開）: エッヂ過去ログ専用ビューア1から外部板スレを開く際、5ch/2ch.sc用のアーカイブ取得経路へ誤って入りタイムアウトしていたため、該当hostは取得を試さずChMate標準の外部板遷移へ戻す。タブレットの下部フィルターはレス一覧paneの表示範囲内にPopupWindowを置き、板paneへはみ出さないようにする。Frida 17.18.0でEddi/5ch/Talkのroute判定・外部ネットワーク未実行・250ms以内復帰とtablet frame geometryの7項目成功。さらにMi Note 10のreporter242でExpert設定コントロールからON/OFFし、即時のView表示、保存値、Compose row一覧の増減をFridaで7項目検証。191/242の隔離パッケージは署名一致・install-r成功。実Eddi取得と実タブレット画面は未確認。詳細`docs/edge-archive-filter-20261119.md`。
+
 2026-11-19 なんG投稿上限・絵文字文字数（1.46.0-dev.8 公開済み）: nova.5ch.io/.netのlivegalileoに公開設定がない場合の1行上限を1024バイトとし、他板へ波及しないfallbackを追加。表示文字数はUTF-16コード単位で数え、補助平面絵文字は2文字として表示しつつ超過spanはコードポイント境界を維持。`:patches:buildAndroid`成功、ホスト50項目成功、Frida17.18.0でreporter191/226/242それぞれ実装済みparser・counterの板限定/1024・1025境界・絵文字spanを検証。各版の投稿UI結合は模擬下書きダイアログで26項目成功、投稿送信なし。CI Release `44449401344` 成功、MPP SHA-256 `ee6c2d0498e75320766d561050869c70c00b7cd9967d3f7e672b5daf42a214af`。詳細`docs/posting-limits-nova-20261119.md`、導入`docs/android-installations.md`。
 
 2026-11-18 画像戻る・HOME/返信負荷・共有NG（プレ公開準備）: 静止画ギャラリーの混在paging横取りを防ぎnative Backを独立受信。19125/22618/24218画像gesture項目成功、3版署名・隔離導入・履歴DEX成功。共有NG本文不要時のHTML解析省略11309項目、server personal148項目成功。HOME変換重複削減、表示UIなしの遅延集計抑止、初期化済みprefs読込省略、検索境界線/不要共有報告ボタン削除/personal送信時inline binding使用。OPPO実測と実共有投稿は未実施。詳細docs/performance-gallery-20261118.md。

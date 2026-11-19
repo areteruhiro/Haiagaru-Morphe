@@ -144,23 +144,60 @@ public final class ExtraQuickFilters {
             }
         }catch(Exception error){Log.w("Haiagaru","Bottom filter state",error);}}
     }
-    private static boolean showBottomPanel(Activity activity,Object a)throws Exception{
+    private static boolean showBottomPanel(Activity activity,Object a,Object fragment)throws Exception{
         prepareCounts(a);
         int pad=Math.round(8*activity.getResources().getDisplayMetrics().density);
         PopupWindow popup=new PopupWindow();BottomControls grid=new BottomControls(activity,a,popup::dismiss);
-        popup.setContentView(grid);popup.setWidth(-1);popup.setHeight(-2);popup.setFocusable(true);popup.setOutsideTouchable(true);
-        grid.resized=()->{if(!popup.isShowing())return;grid.measure(View.MeasureSpec.makeMeasureSpec(activity.getWindow().getDecorView().getWidth(),View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));popup.update(0,popupBottomOffset(activity,null,pad),-1,grid.getMeasuredHeight());};
+        View decor=activity.getWindow().getDecorView();popup.setContentView(grid);popup.setWidth(-1);popup.setHeight(-2);popup.setFocusable(true);popup.setOutsideTouchable(true);
+        Runnable resize=()->{
+            if(!popup.isShowing())return;
+            android.graphics.Rect pane=tabletResponseBounds(activity,fragment);
+            int width=pane==null?decor.getWidth():pane.width();if(width<=0)return;
+            grid.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+            int height=grid.getMeasuredHeight();
+            if(pane==null){popup.update(0,popupBottomOffset(activity,null,pad),-1,height);return;}
+            int[] origin=new int[2];decor.getLocationOnScreen(origin);
+            int[] frame=tabletPopupFrame(pane,origin[0],origin[1],height);
+            popup.update(frame[0],frame[1],frame[2],frame[3]);
+        };
+        grid.resized=resize;
         popup.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));popup.setElevation(0);
         android.os.Handler handler=new android.os.Handler(android.os.Looper.getMainLooper());
         Runnable sync=new Runnable(){public void run(){if(!popup.isShowing())return;grid.redraw();handler.postDelayed(this,150);}};
         popup.setOnDismissListener(()->{handler.removeCallbacks(sync);state(a).pendingFilterMask=0;WeakReference<BottomControls> current=BOTTOMS.get(a);if(current!=null&&current.get()==grid)BOTTOMS.remove(a);});
         popup.setInputMethodMode(PopupWindow.INPUT_METHOD_NOT_NEEDED);
-        popup.showAtLocation(activity.getWindow().getDecorView(),android.view.Gravity.BOTTOM,0,popupBottomOffset(activity,null,pad));
+        android.graphics.Rect pane=tabletResponseBounds(activity,fragment);
+        if(pane==null){popup.showAtLocation(decor,android.view.Gravity.BOTTOM,0,popupBottomOffset(activity,null,pad));}
+        else{
+            int width=pane.width();grid.measure(View.MeasureSpec.makeMeasureSpec(width,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));
+            int height=grid.getMeasuredHeight();int[] origin=new int[2];decor.getLocationOnScreen(origin);
+            int[] frame=tabletPopupFrame(pane,origin[0],origin[1],height);
+            popup.setWidth(frame[2]);popup.setHeight(frame[3]);
+            popup.showAtLocation(decor,android.view.Gravity.TOP|android.view.Gravity.LEFT,frame[0],frame[1]);
+        }
         BOTTOMS.put(a,new WeakReference<>(grid));scheduleCounts(a);handler.postDelayed(sync,150);
         // The native toolbar can finish its first layout after the popup was
         // shown. Recompute the bottom edge once after that layout settles.
-        handler.postDelayed(grid.resized,120);
+        handler.postDelayed(resize,120);
         return true;
+    }
+    private static android.graphics.Rect tabletResponseBounds(Activity activity,Object fragment){
+        if(activity==null||fragment==null||!activity.getClass().getName().contains("TabletHomeActivity"))return null;
+        try{
+            View root=(View)call(fragment,"getView",new Class<?>[0]);
+            View list=root==null?null:FilterPosition.findList(root);
+            android.graphics.Rect bounds=new android.graphics.Rect(),visible=new android.graphics.Rect();
+            if(list==null||!list.isShown()||!list.getGlobalVisibleRect(bounds))return null;
+            activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(visible);
+            if(!visible.isEmpty()&&!bounds.intersect(visible))return null;
+            Integer toolbar=bottomToolbarTop(activity,list);
+            if(toolbar!=null&&toolbar<bounds.bottom)bounds.bottom=toolbar;
+            return bounds.isEmpty()?null:bounds;
+        }catch(Exception error){Log.w("Haiagaru","Tablet filter pane bounds",error);return null;}
+    }
+    static int[] tabletPopupFrame(android.graphics.Rect pane,int decorLeft,int decorTop,int height){
+        if(pane==null||height<0)throw new IllegalArgumentException("Invalid tablet filter bounds");
+        return new int[]{pane.left-decorLeft,pane.bottom-decorTop-height,pane.width(),height};
     }
     private static void updatePinned(Object fragment){
         try{
@@ -787,7 +824,7 @@ public final class ExtraQuickFilters {
             Object a=adapter(fragment);Activity activity=(Activity)call(fragment,"getActivity",new Class<?>[0]);
             if(activity==null||activity.isFinishing())return false;
             if(QuickFilterOptions.pinned()){updatePinned(fragment);return true;}
-            if(QuickFilterOptions.bottom())return showBottomPanel(activity,a);
+            if(QuickFilterOptions.bottom())return showBottomPanel(activity,a,fragment);
             prepareCounts(a);
             int[] indices=visibleIndices();boolean[] all=selected(a);String[] fullNames=labels(a);
             boolean[] checked=new boolean[indices.length];String[] names=new String[indices.length];

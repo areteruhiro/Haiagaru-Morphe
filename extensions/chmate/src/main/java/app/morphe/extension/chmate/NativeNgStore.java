@@ -65,6 +65,13 @@ final class NativeNgStore {
     }
 
     void update(Object before, Object after) throws ReflectiveOperationException {
+        if (after != null) {
+            Entry value = new Entry(after);
+            Entry previous = before == null ? null : new Entry(before);
+            String rejection = NgRuleSafety.rejectionForUpdate(String.valueOf(category),
+                    previous == null ? null : previous.pattern, value.pattern, value.flags);
+            if (rejection != null) throw new IllegalArgumentException(rejection);
+        }
         ThreadScopedNg.beginBypass();
         try { update.invoke(store, before, after); }
         finally { ThreadScopedNg.endBypass(); }
@@ -80,6 +87,14 @@ final class NativeNgStore {
     }
 
     void replace(List<Entry> before, List<Object> after) throws ReflectiveOperationException {
+        Set<Object> existing = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Entry entry : before) existing.add(entry.nativeItem);
+        for (Object item : after) {
+            if (item == null || !itemType.isInstance(item)) throw new IllegalArgumentException("NG項目を確認できません");
+            if (existing.contains(item)) continue;
+            Entry value = new Entry(item);
+            NgRuleSafety.requireAllowed(String.valueOf(category), value.pattern, value.flags);
+        }
         // Refuse a stale preview rather than overwrite rules added while it was open.
         List<Entry> current = entries();
         if (before.size() != current.size()) throw new IllegalStateException("NG一覧が変更されました。開き直してください");

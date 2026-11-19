@@ -17,11 +17,40 @@ public final class ThreadScopedNg {
     private static final String[] CATEGORIES = {"ID", "NAME", "WORD"};
     private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>();
     private static final Map<Activity,Boolean> PROMPTS = new WeakHashMap<>();
+    private static boolean unsafeRegexMigrationComplete;
 
     private ThreadScopedNg() {}
 
     static void beginBypass(){BYPASS.set(Boolean.TRUE);}
     static void endBypass(){BYPASS.remove();}
+
+    /** Removes existing ID/NAME/WORD regexes that target private-use Unicode ranges. */
+    static synchronized int removeUnsafeRegexRules(Context context) {
+        if (unsafeRegexMigrationComplete || context == null) return 0;
+        int removed = 0;
+        boolean complete = true;
+        for (String category : CATEGORIES) {
+            try {
+                NativeNgStore store = new NativeNgStore(context, category);
+                List<NativeNgStore.Entry> before = store.entries();
+                ArrayList<Object> after = new ArrayList<>(before.size());
+                int categoryRemoved = 0;
+                for (NativeNgStore.Entry entry : before) {
+                    if ((entry.flags & NgRuleSafety.REGEX_FLAG) != 0
+                            && NgRuleSafety.containsPrivateUseRange(entry.pattern)) categoryRemoved++;
+                    else after.add(entry.nativeItem);
+                }
+                if (categoryRemoved > 0) store.replace(before, after);
+                removed += categoryRemoved;
+            } catch (Exception error) {
+                complete = false;
+                Log.w("Haiagaru", "Unable to remove unsafe private-use NG regexes from " + category, error);
+            }
+        }
+        if (complete) unsafeRegexMigrationComplete = true;
+        if (removed > 0) Log.i("Haiagaru", "Removed " + removed + " unsafe private-use NG regex(es)");
+        return removed;
+    }
 
     static boolean enabled(Context context){
         if(context==null)return true;
@@ -63,7 +92,7 @@ public final class ThreadScopedNg {
 
     /** Defers native ID/name/word insertion until the thread-only checkbox is chosen. */
     public static boolean interceptRegistration(Object nativeStore,Object before,Object after) {
-        if(Boolean.TRUE.equals(BYPASS.get())||nativeStore==null||before!=null||after==null)return false;
+        if(Boolean.TRUE.equals(BYPASS.get())||nativeStore==null||after==null)return false;
         // Native NG writes can also arrive during background refresh. Only a
         // foreground user registration should be replaced with an interactive
         // scope prompt; let all background writes follow ChMate's normal path.
@@ -76,6 +105,21 @@ public final class ThreadScopedNg {
             if(candidate.store==nativeStore){supported=candidate;break;}
         }catch(Exception ignored){}
         if(supported==null)return false;
+        try {
+            NativeNgStore.Entry candidate = new NativeNgStore.Entry(after);
+            NativeNgStore.Entry previous = before == null ? null : new NativeNgStore.Entry(before);
+            String rejection = NgRuleSafety.rejectionForUpdate(String.valueOf(supported.category),
+                    previous == null ? null : previous.pattern, candidate.pattern, candidate.flags);
+            if (rejection != null) {
+                Toast.makeText(context, rejection, Toast.LENGTH_LONG).show();
+                return true;
+            }
+        } catch (Exception error) {
+            Log.w("Haiagaru", "Unable to validate NG registration", error);
+            Toast.makeText(context, "NG登録内容を確認できませんでした", Toast.LENGTH_LONG).show();
+            return true;
+        }
+        if(before!=null)return false;
         FilterPosition.ThreadTarget target=FilterPosition.currentVisibleThread();if(target==null)return false;
         synchronized(PROMPTS){if(PROMPTS.containsKey(target.activity))return false;PROMPTS.put(target.activity,Boolean.TRUE);}
         NativeNgStore store=supported;
