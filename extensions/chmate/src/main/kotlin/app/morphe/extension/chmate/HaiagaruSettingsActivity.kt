@@ -50,7 +50,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
             { onBackPressedDispatcher.onBackPressed() }, { top() }, { bottom() }).also { it.setCloseAction { finish() } }
         if (savedInstanceState == null) window.decorView.post {
             SettingsBackupIntroduction.offer(this) {
-                SettingsSupport.offer(this) { PersonalNgSubmissions.offerOnSettingsOpen(this) { MinimalSetup.offer(this) } }
+                SettingsSupport.offer(this) { MinimalSetup.offer(this) }
             }
         }
     }

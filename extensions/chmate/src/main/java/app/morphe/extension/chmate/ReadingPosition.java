@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ListView;
+import android.widget.TextView;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -186,6 +187,7 @@ public final class ReadingPosition {
         final long installed;
         final String version;
         long nextInspection;
+        long nextReadMarkerInspection;
         long lastScroll;
         Object itemAdapter;
         Method itemAccessor, childPosition;
@@ -193,7 +195,7 @@ public final class ReadingPosition {
         String inspectedKey, written;
         boolean closed, restoring;
         Anchor coldPreview, openingAnchor;
-        boolean openingRebuild;
+        boolean openingRebuild, readMarkerHandled;
         long coldPreviewUntil;
         final long opened=android.os.SystemClock.uptimeMillis();
 
@@ -257,6 +259,44 @@ public final class ReadingPosition {
             return new File(directory, name + ".json");
         }
 
+        /** Keep ChMate's native unread boundary at the top when it opens below it. */
+        boolean alignVisibleReadMarker(long now) throws Exception {
+            if(readMarkerHandled||now-opened>30000||XPostPreviewPosition.hasUserInteraction(list)
+                    ||XPostPreviewPosition.pending(list)||!(list instanceof ViewGroup))return false;
+            if(now<nextReadMarkerInspection)return false;
+            nextReadMarkerInspection=now+250;
+            Object adapter=call(list,"getAdapter",new Class<?>[0]);
+            if(adapter==null)return false;
+            Method item=list instanceof ListView?adapter.getClass().getMethod("getItem",int.class):FilterPosition.findItem(adapter);
+            item.setAccessible(true);
+            ViewGroup children=(ViewGroup)list;
+            int count=((Number)call(adapter,list instanceof ListView?"getCount":"getItemCount",new Class<?>[0])).intValue();
+            for(int i=0;i<children.getChildCount();i++){
+                View child=children.getChildAt(i);
+                if(child.getBottom()<=list.getPaddingTop()||child.getTop()>=list.getHeight()-list.getPaddingBottom())continue;
+                int position=list instanceof ListView?((ListView)list).getPositionForView(child)
+                        :((Number)call(list,"getChildAdapterPosition",new Class<?>[]{View.class},child)).intValue();
+                if(position<0||position>=count)continue;
+                Object row=item.invoke(adapter,position);
+                if(response(row)!=null||!readMarkerText(child))continue;
+                readMarkerHandled=true;
+                openingAnchor=null;openingRebuild=false;coldPreview=null;
+                if(Math.abs(child.getTop()-list.getPaddingTop())>2
+                        &&FilterPosition.jumpToAdapterPosition(list,position,0)){
+                    restoring=true;
+                    return true;
+                }
+                return false;
+            }
+            return false;
+        }
+
+        private boolean readMarkerText(View view){
+            if(view instanceof TextView)return "ここまで読んだ".contentEquals(((TextView)view).getText().toString().trim());
+            if(view instanceof ViewGroup){ViewGroup group=(ViewGroup)view;for(int i=0;i<group.getChildCount();i++)if(readMarkerText(group.getChildAt(i)))return true;}
+            return false;
+        }
+
         @Override public boolean onPreDraw() {
             if (closed || !list.isShown()) return true;
             if (restoring) {
@@ -271,6 +311,13 @@ public final class ReadingPosition {
             // Never perform reflective anchor discovery on every 120 Hz frame.
             long now = android.os.SystemClock.uptimeMillis();
             if (!list.isShown()) return true;
+            try{if(alignVisibleReadMarker(now))return false;}
+            catch(Exception unavailable){Log.w("HaiagaruPosition","Unread boundary alignment unavailable",unavailable);}
+            if(readMarkerHandled){
+                try{Anchor current=anchor();if(current!=null){inspectedKey=current.key;onScrollChanged();}}
+                catch(Exception ignored){}
+                return true;
+            }
             // Capture the displayed unread viewport, not an adapter index. The
             // saved position is relevant only during the initial 191 load.
             if(!XPostPreviewPosition.pending(list)&&version.contains("191")&&now-opened<12000&&!XPostPreviewPosition.hasUserInteraction(list)){
@@ -312,6 +359,7 @@ public final class ReadingPosition {
                     }else coldPreview=null;
                 }
                 if(current.key.equals(inspectedKey))return true;
+                if(readMarkerHandled){inspectedKey=current.key;onScrollChanged();return true;}
                 if (android.os.SystemClock.uptimeMillis() > layoutDeadline) LAYOUT_ANCHORS.clear();
                 int[] layout = LAYOUT_ANCHORS.get(current.key);
                 if (layout != null) {
