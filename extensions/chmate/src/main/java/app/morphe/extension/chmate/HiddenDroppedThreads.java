@@ -152,6 +152,22 @@ public final class HiddenDroppedThreads {
             }
         }
     }
+    /** Remove an already-deleted history row from the live legacy adapter list. */
+    static void removeLiveHistoryThread(Object fragment,String board,long threadId)throws Exception{
+        if(fragment==null||threadId<=0)return;
+        Field adapterField=fragment.getClass().getDeclaredField("e");adapterField.setAccessible(true);
+        Object adapter=adapterField.get(fragment);
+        if(adapter==null)return;
+        Field rowsField=adapter.getClass().getDeclaredField("j");rowsField.setAccessible(true);
+        Object value=rowsField.get(adapter);
+        if(!(value instanceof List))return;
+        removeHistoryRows((List<?>)value,board,threadId);
+    }
+    public static int removeHistoryRows(List<?> rows,String board,long threadId){
+        if(rows==null||threadId<=0)return 0;int removed=0;
+        for(int i=rows.size()-1;i>=0;i--)if(historyThread(rows.get(i),board,threadId)){rows.remove(i);removed++;}
+        return removed;
+    }
     private static boolean historyThread(Object row,String board,long threadId){
         if(row==null||!row.getClass().getName().equals("o.onAdDisplayed$setIcon"))return false;
         try{

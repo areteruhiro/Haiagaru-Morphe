@@ -72,8 +72,12 @@ public final class BrowsingHistory {
         if(!removed||pending==null||pending.fragment!=fragment||pending.id!=threadId)return;
         try{
             HiddenDroppedThreads.removeRememberedHistoryThread(pending.board,threadId);
-            applyLegacy(fragment,pending.mode);
+        }catch(Exception error){Log.w("Haiagaru","HOME history source refresh unavailable",error);}
+        try{
+            HiddenDroppedThreads.removeLiveHistoryThread(fragment,pending.board,threadId);
         }catch(Exception error){Log.w("Haiagaru","HOME history swipe refresh unavailable",error);}
+        try{applyLegacy(fragment,pending.mode);}
+        catch(Exception error){Log.w("Haiagaru","HOME history adapter notification unavailable",error);}
     }
     public static List<?> transform(List<?> input, int mode) {
         mode=HomeThreadOrder.logicalMode(mode);

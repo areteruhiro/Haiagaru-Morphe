@@ -2,7 +2,7 @@
 import json,pathlib,subprocess,sys,time
 import frida,frida_tools
 
-if len(sys.argv) not in (3,4): raise SystemExit('usage: run-reading-position-sharedng-frida.py SERIAL PACKAGE [board|display|position]')
+if len(sys.argv) not in (3,4): raise SystemExit('usage: run-reading-position-sharedng-frida.py SERIAL PACKAGE [board|display|position|bugfix]')
 serial,package=sys.argv[1:3]
 device=frida.get_device(serial,timeout=10)
 app=next((item for item in device.enumerate_applications() if item.identifier==package),None)
@@ -22,6 +22,7 @@ try:
     if len(sys.argv)==4 and sys.argv[3]=='board': tests=[('shared-ng-board-migration-runtime.js','test')]
     elif len(sys.argv)==4 and sys.argv[3]=='display': tests=[('shared-ng-display-runtime.js','test')]
     elif len(sys.argv)==4 and sys.argv[3]=='position': tests=[('frida-preview-position-fixture.js','run')]
+    elif len(sys.argv)==4 and sys.argv[3]=='bugfix': tests=[('bugfix-nov20-frida.js','run')]
     for name,method in tests:
         source=bridge+'\nconst Java=bridge;\n'+pathlib.Path('scripts',name).read_text(encoding='utf-8')
         script=session.create_script(source)

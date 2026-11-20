@@ -6,6 +6,8 @@
 
 # 主開発先と統合状況
 
+2026-11-20 通知文字化け・日本語直結URL・HOME表示名メニュー・設定見出し色・閲覧履歴即時反映（ローカル確認）: UTF-8と板既定文字コードを日本語復号品質で選択、URL直前の日本語を許容、HOMEメニューIDをクリック振り分けにも接続、全設定カテゴリ見出しをテーマのアクセント色に統一、191履歴削除後に保持元とライブリストから対象行を除いて再通知。Host 57 URL項目とUTF-8/EUC-JP/MS932復号成功。Mi Note 10の隔離reporter191でFrida 17.18.0の通知3・URL2・履歴1・メニュー1・見出し27項目成功。3版reporterは署名確認・install-r済み。226／242のFridaテストとユーザー報告端末での実操作は未確認。詳細 `docs/bugfix-notification-home-settings-history-20261120.md`。
+
 2026-11-19 1.46.0-dev.9 プレリリース公開済み: NG ID/NAME/WORDの私用領域regex登録拒否・起動時移行、NGWord新規条件6コードポイント以上、Eddi過去ログ遷移、タブレット下部フィルターpane配置を同梱。Frida各版18件／Edge191 7件／Expert242 7件成功、CI Release `44503814635` 成功。公開MPP SHA-256 `4e09e8f10395579b54b30b6c32a2e2adcfd07d27d3a362227003bfb6528de395`。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.9。
 
 2026-11-19 NG登録安全制限（1.46.0-dev.9 プレリリース公開済み）: native NGWord・Haiagaru NGストア更新/置換・レス複数選択登録で、私用領域BMP/補助面に交差するUnicode regex rangeをID・NGName・NGワードに追加不可とし、起動時に既存の3カテゴリから該当regexだけ削除。WORDカテゴリの新規条件はtrim後Unicode codepointで6文字以上、短いID/NAMEと既存短文は保持。Host16項目成功、Frida17.18.0でreporter191/226/242各18項目成功。一時NGデータを使い移行で該当1件だけ削除・短い旧語と通常語を保持、試験後は元一覧へ復元。`:patches:buildAndroid`成功、3版隔離アプリ導入・起動。通常アプリのNG一覧は未変更。詳細`docs/ng-word-safety-20261119.md`、導入`docs/android-installations.md`。
