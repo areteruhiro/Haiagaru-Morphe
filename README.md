@@ -204,7 +204,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 - Red Frame X 様
 - ﾜｯﾁｮｲ 3f3c-gNc7 様
 - chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
-- rikunode 様
+- rikunode 様（226／242のDroid＋ツールバー対応）
 
 ## 構成
 
