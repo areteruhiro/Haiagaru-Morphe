@@ -3839,3 +3839,9 @@ MPP: `C:\Users\narum\.codex\worktrees\945d\morphe-chmate\output\haiagaru-current
 - 0.8.10.242 dev / `jp.co.airfront.android.a2chMate.haiagaru.reporter242` / Mi Note 10 Android 11 / ADB `d5497008` / 2026-11-21 03:03 JST / Morphe署名照合後 `adb install -r`成功。APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/ng-unread-tests-56e4612faf414ef59f2e24f6ffc8d63b/apks/final242.apk` SHA-256 `a20c820e0b933ca465a3ad1806485c4734e3c29e1f396dcd2427b16cf7803b57`。
 - 共通MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/patches/build/libs/patches-1.47.0.mpp` SHA-256 `32ab2a40b4ca980d4af7cadc05f76a138b5ce3fe58d1de4578b1ab880bb0c909`。署名証明書SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`、署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
 - Frida 17.18.0で各版のスレ名変更機能がなく、キーワード表示名機能・hook（191=4／226=4／242=3）が残っていることを確認。各版の追加回帰20項目およびXプレビュー7項目もPASS。通常ChMateパッケージは変更せず、reporterのデータを保持。詳細な試験数は`build/ng-unread-tests-56e4612faf414ef59f2e24f6ffc8d63b/apks/installations.json`。
+
+## 2026-11-21 Haiagaru 1.48.0 正式公開
+
+- Semantic Release Build CI `44841096719` と Release／Attest CI `44841096787` は成功。stable release（`draft=false`／`prerelease=false`）、9アセット。
+- 公開MPP SHA-256 `257f9c0835fb061e8dee5796927a6dad8fad9e3ba3ba5e56c0625945bd96ed2a`。公開版・プレ版の`patches-bundle.json` SHA-256 `c7b6fb8ff6c15daa8d775c7d7fa077ff8c74e77ef043659cc821126b8a224c42`。版番号`1.48.0`。
+- 公開URL https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.48.0。日本語更新履歴と指定の謝辞を確認。

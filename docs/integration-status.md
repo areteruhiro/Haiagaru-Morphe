@@ -1,3 +1,5 @@
+2026-11-21 Haiagaru 1.48.0 正式公開済み: スレ名変更機能（独自スレ名の編集・表示フック・関連トグル）を削除し、キーワード表示名フックは維持。191／226／242の新着件数から透明NGを除く処理、履歴削除反映、X添付URL処理、読書位置・追加フィルター・エッヂ検索の修正を同梱。Build CI `44841096719`、Release／Attest CI `44841096787`成功。stable `draft=false`／`prerelease=false`、9アセット確認。MPP SHA-256 `257f9c0835fb061e8dee5796927a6dad8fad9e3ba3ba5e56c0625945bd96ed2a`、patches-bundle.json／pre SHA-256 `c7b6fb8ff6c15daa8d775c7d7fa077ff8c74e77ef043659cc821126b8a224c42`、version `1.48.0`。Frida 17.18.0で各版のスレ名変更削除4項目、共通回帰20項目、Xプレビュー7項目を確認。履歴確認は191=27／226=16／242=50項目成功。新着toastはテスト時に新規レスがなく実表示未確認。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.48.0。
+
 2026-11-20 Haiagaru 1.47.0 正式公開済み: 既読位置・共有NG・返信通知文字コード・日本語直結URL・HOMEメニュー・設定見出し色・191閲覧履歴の即時反映を同梱。Semantic Release／Attest CI `44716075088` 成功、stable `draft=false`／`prerelease=false`、9アセット確認。MPP SHA-256 `be9108913ba9203a7befbb147eb0afa67c158e1beb409f2bc70f886dde7d09bf`、patches-bundle.json／pre SHA-256 `a9f924e6161d4d0133f83dec46468dd91a50ba3925dc36d8a59cf392233bd2c8`、version `1.47.0`。Host URL57・通知復号成功、Frida 17.18.0で191通知／URL／履歴／設定を確認、履歴DEX bindingは191／226／242全てPASS。3版reporter起動・署名照合済み。実機スレ本文・画像画面は未確認（利用者の「そのまま公式リリース」指示に基づき公開）。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.47.0。
 
 2026-11-20 Haiagaru 1.46.0 正式公開済み: 1.45.0からの未公開修正とTwitter画像配列の固定件数上限撤廃を含む。Release／Attest CI `44570390004`成功、stable `prerelease=false`、9アセットを確認。MPP SHA-256 `a74a65a1c855e3348460f542ae296d5636548a1831a59137e920ec2c70ac56ac`。配布ページの更新履歴を日本語化し、謝辞をREADMEと指定の一覧に統一。Twitter画像パーサーは191／226／242隔離版で64件の合成データをFrida確認。実際のX応答件数は未確認。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0。
@@ -8,9 +10,7 @@
 
 # 主開発先と統合状況
 
-2026-11-21 スレ名変更機能を削除（公式公開前）: スレタイトル長押しの名前変更、HOME／スレ一覧に独自スレ名を表示するフック、関連トグルと更新履歴設定を削除。キーワード表示名とスレ長押しの更新対象・新着通知・エッヂ閲覧認証・記者IDコピーは維持。3版のMPP適用成功、キーワード表示名hookは191=4／226=4／242=3箇所。Mi Note 10の隔離reporterでFrida各4項目PASS、アプリ起動成功。ビルド` :patches:buildAndroid`成功。詳細・APK SHA・署名は`docs/android-installations.md`。
 
-2026-11-21 ローカル修正候補（未公開）: 242の更新後新着件数がスレ総レス数になる原因は、`newArrivalCount`呼出しの戻り値を破棄していたこと。結果を表示レジスタへ保存する`move-result`を挿入し、生成DEXで値が書式化に使われることを確認。Frida合成計算6項目PASS、Mi Note 10のreporter242へ導入済み。実更新では新着レスがなく、toastの実表示は未確認。詳細 `docs/new-arrival-count-20261119.md`。同候補には履歴のネイティブ削除完了後にHOME表示・キャッシュを即時更新する処理も含み、3版reporterへ導入済み。通常版データには触れていない。
 
 2026-11-20 通知文字化け・日本語直結URL・HOME表示名メニュー・設定見出し色・閲覧履歴即時反映（ローカル確認）: UTF-8と板既定文字コードを日本語復号品質で選択、URL直前の日本語を許容、HOMEメニューIDをクリック振り分けにも接続、全設定カテゴリ見出しをテーマのアクセント色に統一、191履歴削除後に保持元とライブリストから対象行を除いて再通知。Host 57 URL項目とUTF-8/EUC-JP/MS932復号成功。Mi Note 10の隔離reporter191でFrida 17.18.0の通知3・URL2・履歴1・メニュー1・見出し27項目成功。3版reporterは署名確認・install-r済み。226／242のFridaテストとユーザー報告端末での実操作は未確認。詳細 `docs/bugfix-notification-home-settings-history-20261120.md`。
 
