@@ -134,6 +134,10 @@ public final class HissiMenuCompatibility {
             intent.setClass(owner,OpenUrlActivity.class);
             return;
         }
+        if (owner != null && uri != null && MediaUploadWebPolicy.gigaShare(uri.toString())) {
+            GigaFilePosting.prepareLink(owner,intent);
+            return;
+        }
         if(owner!=null&&intent.getComponent()==null
                 &&(intent.getPackage()==null||owner.getPackageName().equals(intent.getPackage()))
                 &&isTaisakuSite(uri)){
