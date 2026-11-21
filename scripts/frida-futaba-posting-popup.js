@@ -61,14 +61,18 @@ Java.perform(function () {
         let retries = 0;
         function verifyForm() {
             check(web !== null, mirror + ' official origin matched local WebView fixture');
-            evaluate("document.querySelector('textarea')?.value==='Haiagaru fixture >>654321'"
-                + "&&document.querySelector('input[type=file]')?.files[0]?.name==='fixture.jpg'"
-                + (Popup.openFromSettings ? "&&getComputedStyle(document.getElementById('outside')).display==='none'"
-                    + "&&document.querySelector('#haiagaru-post-actions input').offsetHeight>=" + (Popup.adResource ? 64 : 44)
-                    + "&&getComputedStyle(document.getElementById('haiagaru-post-actions')).textAlign==='center'" : ""), result => {
-                if (result !== 'true' && ++retries < 16) { ui(verifyForm, 250); return; }
+            evaluate("(()=>{const actions=document.querySelector('#haiagaru-post-actions');return ["
+                + "document.querySelector('textarea')?.value==='Haiagaru fixture >>654321',"
+                + "document.querySelector('input[type=file]')?.files[0]?.name==='fixture.jpg',"
+                + "getComputedStyle(document.getElementById('outside')).display==='none',"
+                + "actions?.querySelector('input').offsetHeight||0,"
+                + "actions?getComputedStyle(actions).textAlign:''];})()", result => {
+                const state = JSON.parse(result);
+                const ready = state && state[0] && state[1] && (!Popup.openFromSettings
+                    || state[2] && state[3] >= (Popup.adResource ? 64 : 44) && state[4] === 'center');
+                if (!ready && ++retries < 16) { ui(verifyForm, 250); return; }
                 ui(() => {
-                    check(result === 'true', mirror + ' draft, original quote number and attachment name transferred');
+                    check(ready, mirror + ' draft, attachment and form layout ' + result);
                     if (Popup.openFromSettings) {
                         check(web.getHeight() < web.getResources().getDisplayMetrics().heightPixels.value,
                             mirror + ' form-only popup fits below full height with a centered submit button');
