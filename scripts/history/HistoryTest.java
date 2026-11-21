@@ -69,6 +69,25 @@ public final class HistoryTest {
             check(BrowsingHistory.transform(source,102).equals(source),"Thread screen unchanged");
             check(BrowsingHistory.transform(source,104).equals(source),"Posting history unchanged");
             check(BrowsingHistory.transform(source,107).equals(source),"Board screen unchanged");
+            long archivedId=8_765_432_103L;
+            String archiveIdField=v191?"h":v226?"g":"b";
+            String archiveKey=a+"\n"+archivedId;
+            Object archived=row(type,a,"archived",now-1000);
+            Object sameIdOnOtherBoard=row(type,b,"other board",now-1000);
+            field(archived,archiveIdField).setLong(archived,archivedId);
+            field(sameIdOnOtherBoard,archiveIdField).setLong(sameIdOnOtherBoard,archivedId);
+            List<Object> archiveSource=Arrays.asList(archived,sameIdOnOtherBoard);
+            List<?> homeThreads=BrowsingHistory.transform(archiveSource,102);
+            BrowsingHistory.markArchived(a.toString(),archivedId);
+            BrowsingHistory.refreshVisible(null);
+            check(homeThreads.equals(List.of(sameIdOnOtherBoard)),"Successful archive removes only its thread from visible HOME threads");
+            check(BrowsingHistory.transform(archiveSource,102).equals(List.of(sameIdOnOtherBoard)),
+                    "Stale HOME source cannot restore an archived thread");
+            check(containsKey(BrowsingHistory.transform(archiveSource,104),archiveKey),"Archive keeps posting history");
+            Object reopenedArchive=row(type,a,"reopened archived thread",System.currentTimeMillis()+10_000);
+            field(reopenedArchive,archiveIdField).setLong(reopenedArchive,archivedId);
+            check(containsKey(BrowsingHistory.transform(List.of(reopenedArchive),102),archiveKey),
+                    "Reopened archived thread returns to HOME");
             if(v191){
                 long deletedId=8_765_432_101L;
                 Object deleted=row(type,a,"deleted",now),sameIdOtherBoard=row(type,b,"same id on another board",now-1000);
