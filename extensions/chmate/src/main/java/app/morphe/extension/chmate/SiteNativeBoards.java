@@ -25,13 +25,30 @@ public final class SiteNativeBoards {
    return AnimanchImageUrls.append(original,body,source->{try{return gateway.nativeImageUrl(source);}catch(Exception ignored){return null;}});
   }catch(RuntimeException unavailable){return original;}
  }
+ static void rewriteInfo(Object info){
+  Context context=Haiagaru.applicationContextForExtension();if(context==null||info==null)return;
+  try{
+   String[] fields=ExternalBoardEditor.infoFields().split(",");if(fields.length<2)return;
+   Field server=NativeFields.find(info.getClass(),fields[0]),path=NativeFields.find(info.getClass(),fields[1]);
+   String host=(String)server.get(info),boardPath=(String)path.get(info);
+   if(!"die-or.work".equalsIgnoreCase(host)||boardPath==null)return;
+   String address="https://die-or.work/"+boardPath.replaceAll("^/+|/+$","")+"/";
+   SiteBoardProtocol.Board board=SiteBoardProtocol.address(address);
+   if(SiteBoardProtocol.futabaTag(board).isEmpty())return;
+   String local=SiteBoardGateway.get(context).localUrl(address);if(local==null)return;
+   java.net.URI route=java.net.URI.create(local);
+   if(!"127.0.0.1".equals(route.getHost())||route.getPort()<1)return;
+   server.set(info,route.getRawAuthority());
+   path.set(info,route.getPath().replaceAll("^/+|/+$",""));
+  }catch(Exception unavailable){android.util.Log.w("Haiagaru","Futaba mirror board transport unavailable",unavailable);}
+ }
  public static String localUrl(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).localUrl(address);}catch(Exception unavailable){return null;}}
  /** Resolve unknown Animanch thread categories on a background thread only. */
  static String resolveUnclassifiedAnimanch(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).resolveUnclassifiedAnimanch(address);}catch(Exception unavailable){android.util.Log.w("Haiagaru","Animanch category lookup unavailable",unavailable);return null;}}
  static String copiedText(String text){
   text=LocalImageArchive.copiedText(text);
   Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1"))return text;
-  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}/(?:[0-9ln-]+)?|m/"+SiteBoardGateway.KEY_PATTERN+"/(?:arc/)?img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}\\.jpg|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"')）】])").matcher(text);
+  java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}(?:/[0-9ln-]*)?|m/"+SiteBoardGateway.KEY_PATTERN+"/(?:arc/)?img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}\\.jpg|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"')）】])").matcher(text);
   StringBuffer out=new StringBuffer();SiteBoardGateway gateway=SiteBoardGateway.get(context);while(matcher.find())matcher.appendReplacement(out,java.util.regex.Matcher.quoteReplacement(gateway.originalUrl(matcher.group())));matcher.appendTail(out);return out.toString();
  }
  static android.content.ClipData exportedClip(android.content.ClipData clip){

@@ -29,6 +29,12 @@ final class SiteBoardProtocol {
                     &&("http".equalsIgnoreCase(u.getScheme())||"https".equalsIgnoreCase(u.getScheme()))){
                 Matcher mirror=Pattern.compile("/(img|may)(/b/(?:futaba\\.(?:htm|php)|res/[1-9][0-9]{0,11}\\.htm)?)").matcher(path);
                 if(mirror.matches())return address("https://"+mirror.group(1)+".2chan.net"+mirror.group(2)+(u.getRawQuery()==null?"":"?"+u.getRawQuery()));
+                if(u.getRawQuery()==null){
+                    Matcher dat=Pattern.compile("/(img|may)/b/dat/([1-9][0-9]{0,11})\\.dat").matcher(path);
+                    Matcher read=Pattern.compile("/test/read\\.cgi/(img|may)/b/([1-9][0-9]{0,11})(?:/[0-9ln-]*)?").matcher(path);
+                    Matcher thread=dat.matches()?dat:read.matches()?read:null;
+                    if(thread!=null)return address("https://"+thread.group(1)+".2chan.net/b/res/"+thread.group(2)+".htm");
+                }
             }
             if(!"https".equalsIgnoreCase(u.getScheme())||host==null||u.getUserInfo()!=null||u.getPort()!=-1)throw new IllegalArgumentException();
             host=host.toLowerCase(Locale.ROOT);
