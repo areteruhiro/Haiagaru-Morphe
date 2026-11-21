@@ -992,7 +992,6 @@ public final class Haiagaru {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
-        ThreadScopedNg.removeUnsafeRegexRules(appContext);
         SharedPreferences startupPreferences=preferences(appContext);
         if(!startupPreferences.getBoolean("bottomFilterOpaqueMigrationV1",false))
             startupPreferences.edit().putBoolean(QuickFilterOptions.TRANSPARENT,false)
