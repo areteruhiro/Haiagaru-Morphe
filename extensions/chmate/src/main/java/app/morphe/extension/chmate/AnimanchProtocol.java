@@ -21,10 +21,12 @@ final class AnimanchProtocol {
     static final class Reply {
         final int number;final String name,date,html;final List<String> images;
         final boolean heart, own;
-        Reply(int number,String name,String date,String html,List<String> images,boolean heart,boolean own){
+        final int heartCount;
+        Reply(int number,String name,String date,String html,List<String> images,boolean heart,boolean own,int heartCount){
             this.number=number;this.name=name;this.date=date;this.html=html;
             this.images=Collections.unmodifiableList(new ArrayList<>(images));
             this.heart=heart;this.own=own;
+            this.heartCount=heartCount;
         }
     }
     static final class Page {
@@ -106,12 +108,31 @@ final class AnimanchProtocol {
             }
             String body=Jsoup.clean(clean.html(),address,BODY,new Document.OutputSettings().prettyPrint(false));
             rows.add(new Reply(n,text(item,".resname"),text(item,".resposted"),body,images,
-                    !actionToken(item,expected,n,false).isEmpty(),!actionToken(item,expected,n,true).isEmpty()));
+                    !actionToken(item,expected,n,false).isEmpty(),!actionToken(item,expected,n,true).isEmpty(),
+                    displayedHeartCount(item)));
         }
         if(rows.isEmpty())throw new IOException("本文のレスがありません");
         String title=doc.title().replaceFirst("[｜|]あにまん掲示板$","").trim();
         if(title.isEmpty())throw new IOException("スレタイトルがありません");
         return new Page(expected,title,rows);
+    }
+    private static int displayedHeartCount(Element item) {
+        Element count = item.selectFirst(".resheader .vote.good .vcount");
+        if (count == null) return -1;
+        return count.text().isEmpty() ? 0 : heartCount(count.text());
+    }
+
+    static int heartCount(String value) {
+        if (!value.matches("[0-9]{1,10}|[0-9]{1,3}(?:,[0-9]{3}){1,3}")) return -1;
+        try { return Integer.parseInt(value.replace(",", "")); }
+        catch (NumberFormatException invalid) { return -1; }
+    }
+
+    static int confirmedHeartCount(String body) {
+        try {
+            JSONObject receipt = new JSONObject(body);
+            return heartCount(receipt.optString("good", "").trim());
+        } catch (Exception invalid) { return -1; }
     }
     /** Only site-rendered controls for the exact response can supply an action. */
     static String actionToken(Element item, String thread, int number, boolean delete) {

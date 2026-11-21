@@ -3854,6 +3854,18 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalInte
                 val reference = (instruction as? ReferenceInstruction)?.reference
                     as? MethodReference ?: return@mapIndexedNotNull null
                 val parameters = reference.parameterTypes.map(CharSequence::toString)
+                val chooser = reference.definingClass == "Landroid/content/Intent;"
+                    && reference.name == "createChooser"
+                    && reference.returnType == "Landroid/content/Intent;"
+                    && parameters.take(2) == listOf("Landroid/content/Intent;", "Ljava/lang/CharSequence;")
+                if (chooser) {
+                    val register = when (instruction) {
+                        is FiveRegisterInstruction -> instruction.registerC
+                        is RegisterRangeInstruction -> instruction.startRegister
+                        else -> return@mapIndexedNotNull null
+                    }
+                    return@mapIndexedNotNull Triple(index, register, true)
+                }
                 val launch = reference.name == "startActivity" && parameters == listOf("Landroid/content/Intent;")
                 val launchForResult = reference.name == "startActivityForResult"
                     && parameters == listOf("Landroid/content/Intent;", "I")
@@ -3872,8 +3884,8 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalInte
                     }
                     else -> return@mapIndexedNotNull null
                 }
-                index to register
-            }.asReversed().forEach { (index, register) ->
+                Triple(index, register, false)
+            }.asReversed().forEach { (index, register, chooser) ->
                 val launchName = ((instructions[index] as ReferenceInstruction).reference as MethodReference).name
                 val checkerHook = if (launchName == "startActivity")
                     "invoke-static/range {v$register .. v$register}, " +
@@ -3891,6 +3903,14 @@ private fun app.morphe.patcher.patch.BytecodePatchContext.patchHissiExternalInte
                     is RegisterRangeInstruction -> "${instruction.opcode.name} {v${instruction.startRegister} .. " +
                         "v${instruction.startRegister + instruction.registerCount - 1}}, $reference"
                     else -> error("Unexpected launch instruction")
+                }
+                if (chooser) {
+                    mutable.replaceInstruction(index,
+                        "invoke-static/range {v$register .. v$register}, " +
+                        "Lapp/morphe/extension/chmate/SiteNativeBoards;->prepareBrowserChooser(Landroid/content/Intent;)V")
+                    mutable.addInstruction(index + 1, originalLaunch)
+                    patched++
+                    return@forEach
                 }
                 // Replace the instruction itself so incoming branches/try-entry labels
                 // cannot jump past the hook (191's video helper does exactly that).

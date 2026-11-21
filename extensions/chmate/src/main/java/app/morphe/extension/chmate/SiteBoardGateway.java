@@ -37,6 +37,7 @@ final class SiteBoardGateway {
         @Override protected boolean removeEldestEntry(Map.Entry<String,String> e){return size()>256;}
     });
     private final android.util.LruCache<String,Map<Integer,AnimanchAction>> animanchActions = new android.util.LruCache<>(16);
+    private final Set<String> animanchVotesInFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> posting=ConcurrentHashMap.newKeySet();
     private final Set<Socket> clients=ConcurrentHashMap.newKeySet();
     private final Map<String,Long> sent=new ConcurrentHashMap<>();
@@ -645,9 +646,13 @@ final class SiteBoardGateway {
                 if(!boardEnabled(board))throw new IOException("使用しない板です");
                 return page(url);
             },(address,reply)->{
-                if(reply.heart||reply.own) actions.put(reply.number,new AnimanchAction(address,reply.heart,reply.own));
+                if(reply.heart||reply.own||reply.heartCount>=0)
+                    actions.put(reply.number,new AnimanchAction(address,reply.heart,reply.own,reply.heartCount));
             });
-            animanchActions.put(id,Collections.unmodifiableMap(actions));
+            synchronized (animanchActions) {
+                restoreAnimanchVotes(id, actions);
+                animanchActions.put(id,Collections.unmodifiableMap(actions));
+            }
             return result;
         }
         return board.kind.equals("bakusai")?BakusaiPagination.thread(board,id,html,url->{if(!boardEnabled(board))throw new IOException("使用しない板です");return page(url);}):SiteBoardProtocol.thread(board,id,html);
@@ -655,18 +660,80 @@ final class SiteBoardGateway {
     static final class AnimanchAction {
         final String page;
         final boolean heart, own;
-        AnimanchAction(String page, boolean heart, boolean own) {
+        volatile int heartCount;
+        volatile boolean voted;
+        AnimanchAction(String page, boolean heart, boolean own, int heartCount) {
             this.page = page;
             this.heart = heart;
             this.own = own;
+            this.heartCount = heartCount;
+        }
+        String heartLabel() {
+            int count = heartCount;
+            return (voted ? "❤" : "♡") + (count < 0 ? "" : " " + count);
         }
     }
 
     Map<Integer,AnimanchAction> animanchActions(String thread) {
-        return animanchActions.get(thread);
+        synchronized (animanchActions) {
+            Map<Integer,AnimanchAction> actions = animanchActions.get(thread);
+            if (actions != null) return actions;
+            Map<Integer,AnimanchAction> cached = new HashMap<>();
+            restoreAnimanchVotes(thread, cached);
+            actions = Collections.unmodifiableMap(cached);
+            animanchActions.put(thread, actions);
+            return actions;
+        }
+    }
+
+    private void restoreAnimanchVotes(String thread, Map<Integer,AnimanchAction> actions) {
+        for (String saved : prefs.getStringSet("animanchHeart:" + thread, Collections.emptySet())) {
+            String[] parts = saved.split(":", 2);
+            int number = AnimanchProtocol.heartCount(parts[0]);
+            if (number < 1) continue;
+            int count = parts.length == 2 ? AnimanchProtocol.heartCount(parts[1]) : -1;
+            AnimanchAction action = actions.get(number);
+            if (action == null) {
+                action = new AnimanchAction("", false, false, count);
+                actions.put(number, action);
+            }
+            if (action.heartCount < 0) action.heartCount = count;
+            action.voted = true;
+        }
     }
 
     void runAnimanchAction(String thread, int number, boolean delete, AnimanchAction expected) throws Exception {
+        if (delete) {
+            sendAnimanchAction(thread, number, true, expected);
+            return;
+        }
+        String vote = thread + ":" + number;
+        if (!animanchVotesInFlight.add(vote)) throw new IOException("このレスのハートを処理中です");
+        try {
+            if (expected.voted) return;
+            int count = sendAnimanchAction(thread, number, false, expected);
+            synchronized (animanchActions) {
+                String key = "animanchHeart:" + thread;
+                Set<String> voted = new HashSet<>(prefs.getStringSet(key, Collections.emptySet()));
+                String response = Integer.toString(number);
+                voted.removeIf(saved -> saved.equals(response) || saved.startsWith(response + ":"));
+                voted.add(response + ":" + count);
+                prefs.edit().putStringSet(key, voted).apply();
+                expected.heartCount = count;
+                expected.voted = true;
+                Map<Integer,AnimanchAction> latest = animanchActions.get(thread);
+                AnimanchAction action = latest == null ? null : latest.get(number);
+                if (action != null) {
+                    action.heartCount = Math.max(action.heartCount, count);
+                    action.voted = true;
+                }
+            }
+        } finally {
+            animanchVotesInFlight.remove(vote);
+        }
+    }
+
+    private int sendAnimanchAction(String thread, int number, boolean delete, AnimanchAction expected) throws Exception {
         Map<Integer,AnimanchAction> current = animanchActions.get(thread);
         if (!siteEnabled("animanch") || current == null || current.get(number) != expected
                 || !(delete ? expected.own : expected.heart)) throw new IOException("更新してからやり直してください");
@@ -699,12 +766,10 @@ final class SiteBoardGateway {
         Response result = transport.post(plan, actionUrl);
         String answer=result.text();
         if(result.status!=200)throw new IOException(animanchActionResponseError(result.status,answer));
-        if(delete?!answer.trim().isEmpty():!animanchHeartAccepted(answer))
+        int count = delete ? -1 : AnimanchProtocol.confirmedHeartCount(answer);
+        if(delete?!answer.trim().isEmpty():count<0)
             throw new IOException(animanchActionResponseError(result.status,answer));
-    }
-
-    private static boolean animanchHeartAccepted(String body){
-        try{return new JSONObject(body).has("good");}catch(Exception invalid){return false;}
+        return count;
     }
 
     private static String animanchActionResponseError(int status,String body){
