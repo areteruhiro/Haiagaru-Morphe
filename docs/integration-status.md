@@ -8,6 +8,10 @@
 
 # 主開発先と統合状況
 
+2026-11-21 スレ名変更機能を削除（公式公開前）: スレタイトル長押しの名前変更、HOME／スレ一覧に独自スレ名を表示するフック、関連トグルと更新履歴設定を削除。キーワード表示名とスレ長押しの更新対象・新着通知・エッヂ閲覧認証・記者IDコピーは維持。3版のMPP適用成功、キーワード表示名hookは191=4／226=4／242=3箇所。Mi Note 10の隔離reporterでFrida各4項目PASS、アプリ起動成功。ビルド` :patches:buildAndroid`成功。詳細・APK SHA・署名は`docs/android-installations.md`。
+
+2026-11-21 ローカル修正候補（未公開）: 242の更新後新着件数がスレ総レス数になる原因は、`newArrivalCount`呼出しの戻り値を破棄していたこと。結果を表示レジスタへ保存する`move-result`を挿入し、生成DEXで値が書式化に使われることを確認。Frida合成計算6項目PASS、Mi Note 10のreporter242へ導入済み。実更新では新着レスがなく、toastの実表示は未確認。詳細 `docs/new-arrival-count-20261119.md`。同候補には履歴のネイティブ削除完了後にHOME表示・キャッシュを即時更新する処理も含み、3版reporterへ導入済み。通常版データには触れていない。
+
 2026-11-20 通知文字化け・日本語直結URL・HOME表示名メニュー・設定見出し色・閲覧履歴即時反映（ローカル確認）: UTF-8と板既定文字コードを日本語復号品質で選択、URL直前の日本語を許容、HOMEメニューIDをクリック振り分けにも接続、全設定カテゴリ見出しをテーマのアクセント色に統一、191履歴削除後に保持元とライブリストから対象行を除いて再通知。Host 57 URL項目とUTF-8/EUC-JP/MS932復号成功。Mi Note 10の隔離reporter191でFrida 17.18.0の通知3・URL2・履歴1・メニュー1・見出し27項目成功。3版reporterは署名確認・install-r済み。226／242のFridaテストとユーザー報告端末での実操作は未確認。詳細 `docs/bugfix-notification-home-settings-history-20261120.md`。
 
 2026-11-19 1.46.0-dev.9 プレリリース公開済み: NG ID/NAME/WORDの私用領域regex登録拒否・起動時移行、NGWord新規条件6コードポイント以上、Eddi過去ログ遷移、タブレット下部フィルターpane配置を同梱。Frida各版18件／Edge191 7件／Expert242 7件成功、CI Release `44503814635` 成功。公開MPP SHA-256 `4e09e8f10395579b54b30b6c32a2e2adcfd07d27d3a362227003bfb6528de395`。公開先 https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.46.0-dev.9。
