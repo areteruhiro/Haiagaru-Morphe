@@ -23,6 +23,7 @@ public final class BrowsingHistory {
     private static final List<Display> displays=new ArrayList<>();
     private static final List<Legacy> legacyFragments=new ArrayList<>();
     private static final LinkedHashMap<String,DeletedHistory> deletedHistory=new LinkedHashMap<>();
+    private static final LinkedHashMap<String,DeletedHistory> archivedThreads=new LinkedHashMap<>();
     private static final ThreadLocal<HistoryDelete> HISTORY_DELETE=new ThreadLocal<>();
     private static final class HistoryDelete {
         final Object fragment;final int mode;final long id,visited;final String board;
@@ -59,6 +60,7 @@ public final class BrowsingHistory {
         if(context==null||nativeBoard==null||threadId<=0)return;
         final String board=nativeBoard.toString();
         if(board.isEmpty())return;
+        boolean archived=ArchiveOrigins.consumeHomeArchive(board,threadId);
         long visited=historyVisited(board,threadId);
         // When HOME is not open, a newly loaded stale row still needs a cutoff.
         // A later reopen receives a newer native visit timestamp and is allowed back.
@@ -68,11 +70,12 @@ public final class BrowsingHistory {
         try{removeDeletedHistoryThread(board,threadId,visited);}
         catch(RuntimeException error){Log.w("Haiagaru","Deleted history display update unavailable",error);}
         Runnable update=()->{
+            if(archived)markArchived(board,threadId);
             Activity activity=homeActivity();
             if(activity!=null)refreshVisible(activity);
             else{
                 List<Legacy> tracked;synchronized(legacyFragments){tracked=new ArrayList<>(legacyFragments);}
-                for(Legacy entry:tracked){Object fragment=entry.fragment.get();if(fragment!=null&&HiddenDroppedThreads.historyMode(entry.mode))applyLegacy(fragment,entry.mode);}
+                for(Legacy entry:tracked){Object fragment=entry.fragment.get();if(fragment!=null&&(archived||HiddenDroppedThreads.historyMode(entry.mode)))applyLegacy(fragment,entry.mode);}
             }
         };
         if(android.os.Looper.myLooper()==android.os.Looper.getMainLooper())update.run();
@@ -167,7 +170,7 @@ public final class BrowsingHistory {
         return copy;
     }
     private static List<?> transformValues(List<?> input,int mode){
-        input=GlobalSearchHome.rows(input);
+        input=withoutArchivedThreads(GlobalSearchHome.rows(input),mode);
         if(HiddenDroppedThreads.historyMode(mode))input=withoutRecentlyDeleted(input);
         input=HiddenDroppedThreads.filter(input,mode);
         // Native HOME IDs: 101 = unread, 103 = browsing history, 104 = posted.
@@ -218,6 +221,32 @@ public final class BrowsingHistory {
                 HiddenDroppedThreads.removeHistoryRows(output,board,threadId);
                 HiddenDroppedThreads.removeEmptyTimeHeadings(output);
             }
+        }
+    }
+    static void markArchived(String board,long threadId){
+        long now=System.currentTimeMillis();
+        synchronized(archivedThreads){
+            archivedThreads.put(board+"\n"+threadId,new DeletedHistory(now,now+10*60_000L));
+            while(archivedThreads.size()>512)archivedThreads.remove(archivedThreads.keySet().iterator().next());
+        }
+    }
+    static List<?> withoutArchivedThreads(List<?> rows,int mode){
+        int screen=Math.abs(mode);
+        if(rows==null||(screen!=100&&screen!=101&&screen!=102&&screen!=103&&screen!=108&&screen!=109))return rows;
+        synchronized(archivedThreads){
+            if(archivedThreads.isEmpty())return rows;
+            long now=System.currentTimeMillis();
+            archivedThreads.entrySet().removeIf(e->now>=e.getValue().expiresAt);
+            if(archivedThreads.isEmpty())return rows;
+            List<Object> kept=null;
+            for(int i=0;i<rows.size();i++){
+                Object row=rows.get(i);
+                DeletedHistory archive=archivedThreads.get(HomeThreadOrder.key(row));
+                if(archive!=null&&historyVisited(row)<=archive.visited){
+                    if(kept==null)kept=new ArrayList<>(rows.subList(0,i));
+                }else if(kept!=null)kept.add(row);
+            }
+            return kept==null?rows:kept;
         }
     }
     private static List<?> withoutRecentlyDeleted(List<?> rows){
@@ -298,7 +327,7 @@ public final class BrowsingHistory {
                         : HiddenDroppedThreads.active(mode) && HiddenDroppedThreads.target(mode)
                                 ? HiddenDroppedThreads.filter((List<?>)original, mode) : source;
                 // transformValues already runs both passes for the full sort.
-                if(!group){ordered=GlobalSearchHome.rows(ordered);ordered=HomeThreadOrder.apply(ordered,mode);}
+                if(!group){ordered=withoutArchivedThreads(GlobalSearchHome.rows(ordered),mode);ordered=HomeThreadOrder.apply(ordered,mode);}
                 if(ordered==original){replacements[i]=original;processed.put(original,original);continue;}
                 replacements[i] = original.getClass().getConstructor(List.class).newInstance(ordered);
                 HiddenDroppedThreads.remember(replacements[i],source,mode);

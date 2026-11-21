@@ -193,7 +193,7 @@ https://github.com/areteruhiro/Haiagaru-Morphe/
 
 ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
 
-👑 Kitadai 様
+- Kitadai 様
 - yujirox 様
 - ﾜｯﾁｮｲ 8f01-uDul 様
 - toya0717 様
