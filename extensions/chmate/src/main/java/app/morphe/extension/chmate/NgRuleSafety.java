@@ -5,7 +5,6 @@ import java.util.regex.Pattern;
 
 /** Validation shared by native and Haiagaru NG-word registration paths. */
 final class NgRuleSafety {
-    static final int MIN_WORD_LENGTH = 6;
     static final int REGEX_FLAG = 0x20;
 
     private static final String HEX_ESCAPE = "(?:\\\\x\\{([0-9a-f]{1,6})\\}|\\\\u([0-9a-f]{4}))";
@@ -17,23 +16,14 @@ final class NgRuleSafety {
         String value = pattern == null ? "" : pattern.trim();
         if ((flags & REGEX_FLAG) != 0 && containsPrivateUseRange(value))
             return "私用領域を広く対象にする正規表現はNGに登録できません";
-        if (!"WORD".equals(category)) return null;
-        if (value.codePointCount(0, value.length()) < MIN_WORD_LENGTH)
-            return "NGワードは6文字以上で入力してください";
+        if ("WORD".equals(category) && value.isEmpty())
+            return "NGワードを入力してください";
         return null;
     }
 
     static void requireAllowed(String category, String pattern, short flags) {
         String reason = rejection(category, pattern, flags);
         if (reason != null) throw new IllegalArgumentException(reason);
-    }
-
-    static String rejectionForUpdate(String category, String beforePattern, String pattern, short flags) {
-        String reason = rejection(category, pattern, flags);
-        if (reason == null) return null;
-        if ("WORD".equals(category) && beforePattern != null && beforePattern.equals(pattern)
-                && !((flags & REGEX_FLAG) != 0 && containsPrivateUseRange(pattern))) return null;
-        return reason;
     }
 
     static boolean containsPrivateUseRange(String pattern) {

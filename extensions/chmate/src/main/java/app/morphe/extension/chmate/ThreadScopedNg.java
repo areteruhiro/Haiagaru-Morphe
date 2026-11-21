@@ -109,9 +109,8 @@ public final class ThreadScopedNg {
         if(supported==null)return false;
         try {
             NativeNgStore.Entry candidate = new NativeNgStore.Entry(after);
-            NativeNgStore.Entry previous = before == null ? null : new NativeNgStore.Entry(before);
-            String rejection = NgRuleSafety.rejectionForUpdate(String.valueOf(supported.category),
-                    previous == null ? null : previous.pattern, candidate.pattern, candidate.flags);
+            String rejection = NgRuleSafety.rejection(String.valueOf(supported.category),
+                    candidate.pattern, candidate.flags);
             if (rejection != null) {
                 Toast.makeText(context, rejection, Toast.LENGTH_LONG).show();
                 return true;

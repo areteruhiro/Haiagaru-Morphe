@@ -67,10 +67,7 @@ final class NativeNgStore {
     void update(Object before, Object after) throws ReflectiveOperationException {
         if (after != null) {
             Entry value = new Entry(after);
-            Entry previous = before == null ? null : new Entry(before);
-            String rejection = NgRuleSafety.rejectionForUpdate(String.valueOf(category),
-                    previous == null ? null : previous.pattern, value.pattern, value.flags);
-            if (rejection != null) throw new IllegalArgumentException(rejection);
+            NgRuleSafety.requireAllowed(String.valueOf(category), value.pattern, value.flags);
         }
         ThreadScopedNg.beginBypass();
         try { update.invoke(store, before, after); }
