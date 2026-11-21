@@ -47,7 +47,14 @@ public final class SiteNativeBoards {
  static String resolveUnclassifiedAnimanch(String address){Context context=Haiagaru.applicationContextForExtension();if(context==null)return null;try{return SiteBoardGateway.get(context).resolveUnclassifiedAnimanch(address);}catch(Exception unavailable){android.util.Log.w("Haiagaru","Animanch category lookup unavailable",unavailable);return null;}}
  static String copiedText(String text){
   text=LocalImageArchive.copiedText(text);
-  Context context=Haiagaru.applicationContextForExtension();if(context==null||text==null||!text.contains("127.0.0.1"))return text;
+  if(text==null)return null;
+  if(text.contains("die-or.work")||text.contains("2chan.net/test/read.cgi/")){
+   java.util.regex.Matcher external=Pattern.compile("https?://(?:die-or\\.work/|(?:img|may)\\.2chan\\.net/test/read\\.cgi/)[^\\s<>\"')）】]+").matcher(text);
+   StringBuffer rewritten=new StringBuffer();
+   while(external.find())external.appendReplacement(rewritten,java.util.regex.Matcher.quoteReplacement(SiteBoardProtocol.publicFutabaUrl(external.group())));
+   external.appendTail(rewritten);text=rewritten.toString();
+  }
+  Context context=Haiagaru.applicationContextForExtension();if(context==null||!text.contains("127.0.0.1"))return text;
   java.util.regex.Matcher matcher=Pattern.compile("https?://127\\.0\\.0\\.1(?::[0-9]+)?/(?:test/read\\.cgi/"+SiteBoardGateway.KEY_PATTERN+"/[0-9]{1,12}(?:/[0-9ln-]*)?|m/"+SiteBoardGateway.KEY_PATTERN+"/(?:arc/)?img/[1-9][0-9]{0,11}/[1-9][0-9]{0,11}\\.jpg|"+SiteBoardGateway.KEY_PATTERN+"/)(?=$|[\\s<>\"')）】])").matcher(text);
   StringBuffer out=new StringBuffer();SiteBoardGateway gateway=SiteBoardGateway.get(context);while(matcher.find())matcher.appendReplacement(out,java.util.regex.Matcher.quoteReplacement(gateway.originalUrl(matcher.group())));matcher.appendTail(out);return out.toString();
  }
@@ -64,6 +71,29 @@ public final class SiteNativeBoards {
    }
    if(!changed||items.isEmpty())return clip;android.content.ClipData out=new android.content.ClipData(new android.content.ClipDescription(clip.getDescription()),items.get(0));for(int n=1;n<items.size();n++)out.addItem(items.get(n));return out;
   }catch(RuntimeException unavailable){return clip;}
+ }
+ /** ChMate's “Open in another app” constructs a chooser directly. */
+ public static void prepareBrowserChooser(android.content.Intent target){
+  if(target==null||!android.content.Intent.ACTION_VIEW.equals(target.getAction()))return;
+  Context owner=Haiagaru.applicationContextForExtension();
+  if(owner!=null)prepareBrowserUrl(owner,target);
+ }
+ /** Resolve exported URLs before launching the browser while preserving explicit reader navigation. */
+ static boolean prepareBrowserUrl(Context owner,android.content.Intent intent){
+  android.content.ComponentName component=intent.getComponent();
+  boolean browser=component==null?!owner.getPackageName().equals(intent.getPackage())
+          :!owner.getPackageName().equals(component.getPackageName())||component.getClassName().equals("jp.syoboi.a2chMate.activity.WebViewActivity");
+  if(!browser)return false;
+  String before=intent.getDataString();
+  if(before==null)return false;
+  String after=SiteBoardProtocol.publicFutabaUrl(before);
+  if(after.equals(before)&&"127.0.0.1".equals(intent.getData().getHost())){
+   try{after=SiteBoardGateway.get(owner).originalUrl(before);}
+   catch(RuntimeException unavailable){return false;}
+  }
+  if(after.equals(before))return false;
+  intent.setDataAndType(android.net.Uri.parse(after),intent.getType());
+  return true;
  }
  /** Modern ChMate upgrades compatible-board URL producers to HTTPS. */
  public static String rewriteInfoUrl(Object info,String value){

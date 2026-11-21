@@ -3,6 +3,7 @@ package app.morphe.extension.chmate;
 import android.app.Activity;
 import android.graphics.*;
 import android.graphics.drawable.Drawable;
+import android.text.TextUtils;
 import android.view.*;
 import android.widget.*;
 import java.lang.ref.WeakReference;
@@ -98,7 +99,7 @@ final class ResponseNoteIndicator {
                         boolean hasNote = enabled && !urls.isEmpty() && urls.containsKey(key(SiteNativeBoards.copiedText(NativeThreadContext.url(board,version,no))));
                         SiteBoardGateway.AnimanchAction action=actions==null?null:actions.get(no);
                         if(action!=null){
-                            if(heartEnabled && action.heart){
+                            if(heartEnabled && (action.heart||action.voted||action.heartCount>=0)){
                                 heartRows.add(child);
                                 bindAction(hearts,child,no,action,false,false);
                             }
@@ -138,7 +139,6 @@ final class ResponseNoteIndicator {
             TextView control=controls.get(row);
             if(control==null){
                 control=new TextView(list.getContext());
-                control.setText(delete?"削除":"♡");
                 control.setContentDescription(delete?"自分のレスを削除":"このレスにハート");
                 control.setTag(delete?"haiagaru.animanch.delete":"haiagaru.animanch.heart");
                 control.setGravity(Gravity.CENTER);
@@ -149,8 +149,8 @@ final class ResponseNoteIndicator {
             if(control.getTag(0x48690d03)!=action){
                 control.setTag(0x48690d03,action);
                 final TextView button=control;
-                control.setText(delete?"削除":"♡");
-                control.setEnabled(true);
+                control.setText(delete?"削除":action.heartLabel());
+                control.setEnabled(delete||action.heart&&!action.voted);
                 control.setOnClickListener(v->{
                     if(delete){
                         new HaiagaruDialog.Builder(activity).setTitle("レス "+number+" を削除")
@@ -160,6 +160,16 @@ final class ResponseNoteIndicator {
                     } else runAction(button,number,action,false);
                 });
             }
+            if(!delete){
+                String label=action.heartLabel();
+                if(!TextUtils.equals(control.getText(),label)){
+                    control.setText(label);
+                    if(action.voted)control.setEnabled(false);
+                }
+                String description=(action.voted?"ハート済み":action.heart?"このレスにハート":"ハート")
+                        +(action.heartCount<0?"":"、"+action.heartCount+"件");
+                if(!TextUtils.equals(control.getContentDescription(),description))control.setContentDescription(description);
+            }
             TextView id=idText(row);
             if(id==null)id=firstText(row);
             int[] at=new int[2], host=new int[2];
@@ -167,6 +177,7 @@ final class ResponseNoteIndicator {
             row.getLocationOnScreen(at);
             int margin=Math.round(4*list.getResources().getDisplayMetrics().density);
             int width=Math.round((delete?48:32)*list.getResources().getDisplayMetrics().density);
+            if(!delete)width=Math.max(width,(int)Math.ceil(control.getPaint().measureText(control.getText().toString()))+2*margin);
             int height=Math.round(28*list.getResources().getDisplayMetrics().density);
             FrameLayout.LayoutParams lp=(FrameLayout.LayoutParams)control.getLayoutParams();
             if(lp.width!=width||lp.height!=height){lp.width=width;lp.height=height;control.setLayoutParams(lp);}
@@ -204,10 +215,14 @@ final class ResponseNoteIndicator {
                     final String error=failure;
                     activity.runOnUiThread(()->{
                         if(error!=null){
-                            if(button.getTag(0x48690d03)==action)button.setEnabled(true);
+                            if(button.getTag(0x48690d03)==action)button.setEnabled(delete||action.heart&&!action.voted);
                             Toast.makeText(activity,error,Toast.LENGTH_LONG).show();
                         } else {
-                            if(button.getTag(0x48690d03)==action)button.setText(delete?"削除済":"♥");
+                            if(button.getTag(0x48690d03)==action){
+                                button.setText(delete?"削除済":action.heartLabel());
+                                button.setEnabled(false);
+                            }
+                            list.invalidate();
                             if(delete)OpenTabsRefresh.refreshWatchedFragment(fragment.get());
                         }
                     });
