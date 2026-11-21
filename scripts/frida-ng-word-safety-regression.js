@@ -8,6 +8,7 @@ Java.perform(() => {
     const Shared = Java.use(prefix + 'SharedNgRules');
     const Store = Java.use(prefix + 'NativeNgStore');
     const Rule = Java.use(prefix + 'SharedNgRules$Rule');
+    const ArrayList = Java.use('java.util.ArrayList');
     const regex = '[\\x{E000}-\\x{F8FF}](?=HaiagaruFixture' + Date.now() + ')';
     let checks = 0;
     function check(value, label) {
@@ -28,11 +29,28 @@ Java.perform(() => {
             check(!Shared.shareableCondition(kind, regex, true), kind + ' private-use regex excluded from sharing');
             const store = Store.$new(app, category);
             const witness = store.item(regex, 0x20, Date.now(), null);
+            function field(name) {
+                const member = Store.class.getDeclaredField(name);
+                member.setAccessible(true);
+                return member.get(store);
+            }
+            const Method = Java.use('java.lang.reflect.Method');
+            const native = field('store');
+            const snapshot = Java.cast(field('snapshot'), Method);
+            const writer = Java.cast(field('save'), Method);
+            const before = Java.cast(snapshot.invoke(native, Java.array('java.lang.Object', [])), ArrayList);
+            const saved = ArrayList.$new();
+            for (let index = 0; index < before.size(); index++) {
+                const row = before.get(index);
+                if (row !== null && !String(row.toString()).includes('(?=HaiagaruFixture')) saved.add(row);
+            }
+            function restore() { writer.invoke(native, Java.array('java.lang.Object', [saved])); }
+            if (saved.size() !== before.size()) restore();
             try {
                 store.updateAndVerify(null, witness);
                 check(true, category + ' native store saves personal regex');
             } finally {
-                store.update(witness, null);
+                restore();
             }
         }
         send('NG_WORD_SAFETY_COMPLETE ' + checks + ' checks');
