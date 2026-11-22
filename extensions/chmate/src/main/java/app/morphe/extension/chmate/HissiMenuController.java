@@ -566,7 +566,7 @@ public final class HissiMenuController extends ToolScreenController {
             hissiTabs = createHissiTabs(webView);
             hissiTabs.setVisibility(View.GONE);
             // Keep result navigation next to the controls, above the scrolling content.
-            viewerToolbar.addView(hissiTabs, new LinearLayout.LayoutParams(
+            viewerToolbar.addView(hissiTabs, 0, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
             applyToolbarPalette(currentUsesKyodemo, Haiagaru.hissiViewerTheme());
         }
@@ -1507,8 +1507,10 @@ public final class HissiMenuController extends ToolScreenController {
         boolean dark = isDarkTheme(theme);
         int background = theme == 2 ? Color.BLACK : dark ? Color.rgb(30, 30, 32) : Color.WHITE;
         int foreground = dark ? Color.rgb(235, 235, 240) : Color.rgb(30, 30, 30);
-        viewerToolbar.setBackgroundColor(kyodemo ? background : theme == 2 ? Color.BLACK : Color.TRANSPARENT);
-        viewerToolbar.setTag(CheckerBarOptions.PALETTE_TAG, kyodemo ? new int[]{background, foreground} : null);
+        viewerToolbar.setBackgroundColor(background);
+        viewerToolbar.setTag(CheckerBarOptions.PALETTE_TAG, new int[]{background, foreground});
+        if (rootLayout != null)
+            rootLayout.setTag(CheckerBarOptions.PALETTE_TAG, new int[]{background, foreground});
         if (hissiTabButtons != null) for (Button button : hissiTabButtons) {
             button.setTextColor(foreground);
             if (button.getBackground() instanceof GradientDrawable)
@@ -1533,7 +1535,10 @@ public final class HissiMenuController extends ToolScreenController {
         boolean dark = isDarkTheme(theme);
         int background = theme == 2 ? Color.BLACK : dark ? Color.rgb(30, 30, 32) : Color.WHITE;
         int foreground = dark ? Color.rgb(235, 235, 240) : Color.rgb(30, 30, 30);
-        if (layout != null) layout.setBackgroundColor(background);
+        if (layout != null) {
+            layout.setBackgroundColor(background);
+            layout.setTag(CheckerBarOptions.PALETTE_TAG, new int[]{background, foreground});
+        }
         applyToolbarPalette(webView == null || webView.getUrl() == null ? currentUsesKyodemo
                 : isKyodemoPage(webView.getUrl()), theme);
         if (webView != null) {
@@ -1578,6 +1583,14 @@ public final class HissiMenuController extends ToolScreenController {
                     + (dark ? "#1c1c1f" : "#f7f7fa") + " !important;color:" + fg
                     + " !important;border:1px solid " + (dark ? "#36363b" : "#e1e1e6") + " !important;}"
                     + "body[data-haiagaru-kyodemo] #blist .r-head{color:" + fg + " !important;}"
+                    + "body[data-haiagaru-kyodemo] .box,body[data-haiagaru-kyodemo] .panel,"
+                    + "body[data-haiagaru-kyodemo] .panel-block,body[data-haiagaru-kyodemo] input,"
+                    + "body[data-haiagaru-kyodemo] textarea,body[data-haiagaru-kyodemo] select,"
+                    + "body[data-haiagaru-kyodemo] .button{background:" + bg
+                    + " !important;color:" + fg + " !important;border-color:"
+                    + (dark ? "#45494f" : "#d3d9df") + " !important;}"
+                    + "body[data-haiagaru-kyodemo] .title,body[data-haiagaru-kyodemo] .subtitle,"
+                    + "body[data-haiagaru-kyodemo] .label{color:" + fg + " !important;}"
                     + "body[data-haiagaru-kyodemo] #blist .haiagaru-kyodemo-item{padding:12px;margin:8px 0;"
                     + "background:" + (dark ? "#1c1c1f" : "#f7f7fa") + ";border-radius:10px;}"
                     + "header,.navbar,.footer,.right-column,.d-panel{display:none !important;}"
@@ -1722,6 +1735,13 @@ public final class HissiMenuController extends ToolScreenController {
                     + "iframe[src*=adsystem],iframe[src*=openx],iframe[src*=mediba],"
                     + "script[src*=\"adm.shinobi.jp\"],"
                     + "script[src*=googletagmanager],script[src*=google-analytics],ins.adsbygoogle{display:none !important;}';"
+                    + "if(kyodemo&&window.Chart&&Chart.instances){Object.keys(Chart.instances).forEach(function(key){"
+                    + "var chart=Chart.instances[key];try{chart.options.color='" + fg + "';"
+                    + "Object.keys(chart.options.scales||{}).forEach(function(axis){var scale=chart.options.scales[axis];"
+                    + "if(scale.ticks)scale.ticks.color='" + fg + "';"
+                    + "if(scale.grid)scale.grid.color='" + (dark ? "#45494f" : "#d3d9df") + "';});"
+                    + "if(chart.options.plugins&&chart.options.plugins.title)chart.options.plugins.title.color='" + fg + "';"
+                    + "chart.update('none');}catch(ignore){}});}"
                     + "function clean(){if(!window.haiagaruLongPress){window.haiagaruLongPress=true;var timer=null,last=null,copiedAt=0;"
                     + "function postNode(e){return e.closest ? e.closest('#rlist .post,.post,.res,article,dl') : null;}"
                     + "function postData(e){var n=postNode(e);if(!n)return '';var b=n.querySelector('.clmess,.res-body,.response,.message-body,dd');"
