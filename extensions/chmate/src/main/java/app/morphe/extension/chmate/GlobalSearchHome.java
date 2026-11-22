@@ -54,7 +54,9 @@ public final class GlobalSearchHome {
     }
     private static Type type(Context c)throws Exception{return new Type(c.getClassLoader(),c.getPackageManager().getPackageInfo(c.getPackageName(),0).versionName);}
     public static List<?> rows(List<?> input){
-        Context c=Haiagaru.applicationContextForExtension();if(input==null||!enabled(c))return input;
+        Context c=Haiagaru.applicationContextForExtension();
+        input=withoutRegionalBoardDuplicates(c,input);
+        if(input==null||!enabled(c))return input;
         try{
             Type t=type(c);ArrayList<Object> out=new ArrayList<>();
             Map<String,Integer> localRows=new HashMap<>(),globalRows=new HashMap<>();
@@ -97,6 +99,36 @@ public final class GlobalSearchHome {
             }
             return ordered;
         }catch(Exception error){android.util.Log.w("HaiagaruSearch","Native HOME search controls unchanged",error);return input;}
+    }
+
+    private static List<?> withoutRegionalBoardDuplicates(Context context, List<?> input) {
+        if (context == null || input == null) return input;
+        Set<String> seen = new HashSet<>();
+        ArrayList<Object> filtered = null;
+        SiteBoardGateway gateway = null;
+        for (int index = 0; index < input.size(); index++) {
+            Object row = input.get(index);
+            String identity = null;
+            if (row != null && row.getClass().getName().equals("o.onAdDisplayed$IconCompatParcelizer")) {
+                try {
+                    String id = (String) NativeFields.find(row.getClass(), "a").get(row);
+                    String decoded = android.net.Uri.decode(id);
+                    if (decoded.startsWith("127.0.0.1:") && decoded.contains("/hb")) {
+                        if (gateway == null) gateway = SiteBoardGateway.get(context);
+                        String address = gateway.originalUrl("http://" + decoded + "/");
+                        identity = SiteBoardProtocol.bakusaiBoardIdentity(address);
+                    }
+                } catch (Exception ignored) {
+                    // Preserve native rows whose board could not be resolved.
+                }
+            }
+            if (identity != null && !seen.add(identity)) {
+                if (filtered == null) filtered = new ArrayList<>(input.subList(0, index));
+            } else if (filtered != null) {
+                filtered.add(row);
+            }
+        }
+        return filtered == null ? input : filtered;
     }
     public static void menu(Object fragment,Menu menu){
         if(menu==null)return;Activity a=Haiagaru.toolbarActivity(fragment);if(a==null)return;

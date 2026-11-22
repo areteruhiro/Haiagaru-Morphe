@@ -1541,6 +1541,8 @@ public final class HissiMenuController extends ToolScreenController {
                     + "if(!document.querySelector('meta[name=viewport]')){var m=document.createElement('meta');"
                     + "m.name='viewport';m.content='width=device-width,initial-scale=1';document.head.appendChild(m);}}"
                     + "if(kyodemo){document.body.setAttribute('data-haiagaru-kyodemo','');}"
+                    + "if(kyodemo&&/^\\/sdemo\\/b\\/e_e_liveedge\\/(?:[0-9]+)?$/.test(location.pathname)){"
+                    + "document.body.setAttribute('data-haiagaru-kyodemo-archive','');}"
                     + "if(eddi){document.body.setAttribute('data-haiagaru-eddi','');"
                     + "if(!document.querySelector('meta[name=viewport]')){var m2=document.createElement('meta');"
                     + "m2.name='viewport';m2.content='width=device-width,initial-scale=1';document.head.appendChild(m2);}}"
@@ -1556,6 +1558,12 @@ public final class HissiMenuController extends ToolScreenController {
                     // light-theme color from winning when the viewer is dark.
                     + "body[data-haiagaru-hissi] *,#rlist,#rlist *,.post,.post *,dl,dt,dd{color:" + fg + " !important;}"
                     + "body[data-haiagaru-hissi] a,a{color:" + link + " !important;}"
+                    // The original Kyodemo search renders hits as Bulma panel blocks.
+                    + "body[data-haiagaru-kyodemo-archive] article.panel-block{background:"
+                    + bg + " !important;color:" + fg + " !important;border-color:"
+                    + (dark ? "#41454c" : "#d8d8de") + " !important;}"
+                    + "body[data-haiagaru-kyodemo-archive] article.panel-block .cltitle{"
+                    + "background:transparent !important;color:" + fg + " !important;}"
                     + "body[data-haiagaru-kyodemo] #blist .box.content{border:0;background:transparent;box-shadow:none;padding:0;}"
                     + "body[data-haiagaru-kyodemo] #blist .post{background:"
                     + (dark ? "#1c1c1f" : "#f7f7fa") + " !important;color:" + fg

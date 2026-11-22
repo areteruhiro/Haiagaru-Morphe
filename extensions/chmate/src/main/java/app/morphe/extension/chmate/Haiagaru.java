@@ -480,7 +480,9 @@ public final class Haiagaru {
                             ResponseArchive.onActivityResumed(activity);
                             StringReplacement.reload(activity, false, null);
                         }
-                        @Override public void onActivityPaused(Activity activity) { }
+                        @Override public void onActivityPaused(Activity activity) {
+                            BackgroundPostingUi.activityPaused(activity);
+                        }
                         @Override public void onActivityStopped(Activity activity) { }
                         @Override public void onActivitySaveInstanceState(Activity activity, Bundle state) { }
                         @Override public void onActivityDestroyed(Activity activity) { }
@@ -988,6 +990,9 @@ public final class Haiagaru {
         return ExternalEmojiPost.prepareBody(url, body);
     }
 
+    // Accessed only under initializeApplicationContext's lock.
+    private static Context migratedPackagePreferencesContext;
+
     private static synchronized void initializeApplicationContext(Context context) {
         Context resolvedContext = context.getApplicationContext();
         Context appContext = resolvedContext == null ? context : resolvedContext;
@@ -998,7 +1003,13 @@ public final class Haiagaru {
                     .putBoolean("bottomFilterOpaqueMigrationV1",true).apply();
         WacchoiSuffixNg.scheduleExpiry(appContext);
         runtimePackageName = appContext.getPackageName();
-        migrateRestoredPackageReferences(appContext);
+        // Provider and Application callbacks run in the same process. Migrate before
+        // ChMate reads its preferences, then avoid reopening every XML file again.
+        if (!startupPreferences.getBoolean(ExpertSettings.MIGRATION_ONCE, true)
+                || migratedPackagePreferencesContext != appContext) {
+            migrateRestoredPackageReferences(appContext);
+            migratedPackagePreferencesContext = appContext;
+        }
         LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
@@ -3855,6 +3866,9 @@ public final class Haiagaru {
         live.toggle(keepFilterPosition,"keepQuickFilterPosition");
         live.toggle(deleteReadLongPress, DeleteReadThreads.LONG_PRESS_KEY);
         live.toggle(hideNgThreadGroupSwitch,"hideNgThreadGroup");
+        if ("0.8.10.191 dev".equals(chMateVersion) || "0.8.10.226 dev".equals(chMateVersion)
+                || "0.8.10.242 dev".equals(chMateVersion))
+            ShortThreadFilter.settings(lists, activity, preferences);
         live.toggle(hideDroppedThreadsSwitch,HiddenDroppedThreads.KEY);
         live.toggle(historyRefreshTargets,RefreshTargetHistory.VISIBLE_KEY);
         Switch excludeHiddenNgUnread=addSwitch(lists,activity,"非表示NGのレスを未読件数に含めない",preferences.getBoolean(HiddenNgUnread.KEY,false));
@@ -6127,6 +6141,10 @@ public final class Haiagaru {
 
     public static java.util.List<?> ngThreadsForDisplay(java.util.List<?> threads) {
         return NgThreadGroup.visible(threads, hideNgThreadGroup());
+    }
+
+    public static java.util.List<?> shortThreadsForDisplay(java.util.List<?> threads) {
+        return ShortThreadFilter.display(threads, preferencesOrNull());
     }
 
     public static int hissiViewerTheme() {

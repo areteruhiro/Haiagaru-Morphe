@@ -306,12 +306,22 @@ final class SiteBoardProtocol {
             return sameBoard(board,parsed)?parsed.thread:null;
         }catch(IOException invalid){return null;}
     }
+    static String bakusaiBoardIdentity(String url) {
+        try {
+            Board board = address(url);
+            if ("bakusai".equals(board.kind) && board.thread == null)
+                return bakusaiBoardPath(board);
+        } catch (IOException ignored) { }
+        return null;
+    }
+    private static String bakusaiBoardPath(Board board) {
+        return board.path.substring(board.path.indexOf('/') + 1);
+    }
     static boolean sameBoard(Board board,Board other){
         if(!board.kind.equals(other.kind))return false;
         if(board.url.equals(other.url))return true;
         // Bakusai regional paths can refer to the same ctgid/bid board.
-        return board.kind.equals("bakusai")&&board.path.replaceFirst("^acode=[0-9]+/","")
-                .equals(other.path.replaceFirst("^acode=[0-9]+/",""));
+        return board.kind.equals("bakusai") && bakusaiBoardPath(board).equals(bakusaiBoardPath(other));
     }
     static boolean matchesRegisteredBoard(Board registered,Board source,String animanchCategory){
         if(!registered.kind.equals(source.kind))return false;
