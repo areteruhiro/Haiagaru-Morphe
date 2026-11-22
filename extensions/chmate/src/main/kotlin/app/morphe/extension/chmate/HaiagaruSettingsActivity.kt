@@ -144,6 +144,13 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
             else if (query.isBlank()) homeList else searchList
         val scope = rememberCoroutineScope()
         val invalidation = revision
+        // The backing Views are detached from Compose. Resnapshot their visibility
+        // when settings change so the lazy list receives a new set of rows.
+        val categoryRows = remember(currentCategory, searchQuery.isBlank(), invalidation) {
+            if (searchQuery.isBlank()) currentCategory?.sources.orEmpty().map { source ->
+                source to settingsRows(body(source))
+            } else emptyList()
+        }
         // Snapshot native toggle values on every preference refresh, even while the
         // asynchronous search index is being rebuilt. Keep the same controls/listeners.
         val visibleMatches = if (indexedScope == selected) matches.map { (group, option) -> group to option.refreshed() } else emptyList()
@@ -302,8 +309,7 @@ class HaiagaruSettingsActivity : HaiagaruComposeActivity() {
                         }
                 } else if (currentCategory != null) {
                     val group = currentCategory
-                    group.sources.forEachIndexed { index, source ->
-                        val rows = settingsRows(body(source))
+                    categoryRows.forEachIndexed { index, (source, rows) ->
                         if (group.sources.size > 1) item("heading:$source") {
                             Text(sectionTitle(source, english), style = MaterialTheme.typography.titleSmall, fontSize = 15.sp,
                                 color = if (source == "DISPLAY" || source == "SOCIAL")
