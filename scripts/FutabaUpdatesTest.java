@@ -7,15 +7,17 @@ public final class FutabaUpdatesTest {
     static void ok(boolean value,String label){if(!value)throw new AssertionError(label);checks++;}
     public static void main(String[] args)throws Exception{
         String browserCookies="session=fixture; cxyl=14x6x4x1x1";
-        for(String query:List.of("mode=cat","mode=cat&sort=3")){
-            String url="https://may.2chan.net/b/futaba.php?"+query;
-            ok(SiteBoardProtocol.catalogueCookies(URI.create(url),browserCookies)
-                    .equals("cxyl=14x6x100x0x0; session=fixture"),"may catalogue requests longer titles and keeps session cookies");
+        for(String board:List.of("img","may")){
+            for(String query:List.of("mode=cat","mode=cat&sort=3")){
+                String url="https://"+board+".2chan.net/b/futaba.php?"+query;
+                ok(SiteBoardProtocol.catalogueCookies(URI.create(url),browserCookies)
+                        .equals("cxyl=14x6x100x0x0; session=fixture"),board+" catalogue requests longer titles and keeps session cookies");
+            }
         }
-        for(String url:List.of("https://img.2chan.net/b/futaba.php?mode=cat&sort=3",
+        for(String url:List.of("https://img.2chan.net/b/res/123.htm",
                 "https://may.2chan.net/b/res/123.htm","https://may.2chan.net/b/futaba.php?mode=catset")){
             ok(SiteBoardProtocol.catalogueCookies(URI.create(url),browserCookies).equals(browserCookies),
-                    "catalogue preference is scoped to may list requests");
+                    "catalogue preference is scoped to list requests");
         }
         var may=SiteBoardProtocol.address("https://may.2chan.net/b/");
         String fullTitle="カタログの長いタイトルを一覧に表示する";

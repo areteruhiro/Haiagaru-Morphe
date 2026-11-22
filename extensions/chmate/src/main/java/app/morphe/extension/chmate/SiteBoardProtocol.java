@@ -88,7 +88,8 @@ final class SiteBoardProtocol {
     }
     static String catalogueCookies(URI address,String cookies){
         String query=address.getRawQuery();
-        if(!"may.2chan.net".equals(address.getHost())||!"/b/futaba.php".equals(address.getRawPath())
+        String host=address.getHost();
+        if((!"may.2chan.net".equals(host)&&!"img.2chan.net".equals(host))||!"/b/futaba.php".equals(address.getRawPath())
                 ||!("mode=cat".equals(query)||"mode=cat&sort=3".equals(query)))return cookies;
         // Use the site's catalogue preference with the default grid and 100 title characters.
         StringBuilder header=new StringBuilder("cxyl=14x6x100x0x0");
