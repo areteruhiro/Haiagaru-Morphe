@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+import android.widget.EditText;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -25,23 +26,29 @@ public final class BackgroundPostingUi {
         final WeakReference<Object> fragment;
         final WeakReference<Activity> editor;
         final WeakReference<Activity> parent;
+        final WeakReference<EditText> body;
         final String version;
         final WeakReference<Object> reader;
         final String thread;
+        final String postTarget;
         Object[] previousTasks;
         int attempt;
         boolean waiting;
         boolean hidden;
         boolean failed;
+        String submittedBody;
 
-        Binding(Object fragment, Activity editor, Activity parent, String version, String thread) {
+        Binding(Object fragment, Activity editor, Activity parent, String version, String thread,
+                String postTarget, EditText body) {
             this.fragment = new WeakReference<>(fragment);
             this.editor = new WeakReference<>(editor);
             this.parent = new WeakReference<>(parent);
+            this.body = new WeakReference<>(body);
             this.version = version;
             WeakReference<Object> activeReader = READERS.get(parent);
             this.reader = activeReader == null ? new WeakReference<>(null) : activeReader;
             this.thread = thread;
+            this.postTarget = postTarget;
         }
     }
 
@@ -50,9 +57,9 @@ public final class BackgroundPostingUi {
         lastPaused = new WeakReference<>(activity);
     }
 
-    static void bind(Object fragment, Object model) { bind(fragment, model, null); }
+    static void bind(Object fragment, Object model) { bind(fragment, model, null, null, null); }
 
-    static void bind(Object fragment, Object model, String thread) {
+    static void bind(Object fragment, Object model, String thread, EditText body, String postTarget) {
         try {
             Activity editor = (Activity) fragment.getClass().getMethod("getActivity").invoke(fragment);
             if (editor == null || !isEditor(editor)) return;
@@ -60,7 +67,7 @@ public final class BackgroundPostingUi {
             if (!supported(version)) return;
             Activity parent = lastPaused.get();
             if (!validParent(editor, parent)) parent = null;
-            Binding binding = new Binding(fragment, editor, parent, version, thread);
+            Binding binding = new Binding(fragment, editor, parent, version, thread, postTarget, body);
             binding.previousTasks = taskObjects(fragment, version);
             BINDINGS.put(fragment, binding);
             if (model != fragment) BINDINGS.put(model, binding);
@@ -83,11 +90,36 @@ public final class BackgroundPostingUi {
     public static void nativePosted(Object callback) {
         Object fragment = findFragment(callback, 0);
         Binding binding = BINDINGS.get(fragment);
-        if (binding == null || !binding.hidden || binding.thread == null) return;
+        if (binding == null) return;
+        clearSubmittedEdgeDraft(binding);
+        if (!binding.hidden || binding.thread == null) return;
         Object reader = binding.reader.get();
         if (reader == null) return;
         POST_REFRESH.put(reader, binding);
         refreshAfterPost(reader, binding, 0);
+    }
+
+    /** Clear only the submitted Edge reply after native success; preserve edits made while it sent. */
+    private static void clearSubmittedEdgeDraft(Binding binding) {
+        if (!isEdgeThread(binding.postTarget)) return;
+        EditText body = binding.body.get();
+        String submitted = binding.submittedBody;
+        if (body == null || submitted == null) return;
+        Runnable clear = () -> {
+            Activity editor = binding.editor.get();
+            if (editor != null && !editor.isDestroyed() && submitted.contentEquals(body.getText())) {
+                body.setText("");
+                body.setSelection(0);
+            }
+        };
+        if (Looper.myLooper() == Looper.getMainLooper()) clear.run();
+        else MAIN.post(clear);
+    }
+
+    private static boolean isEdgeThread(String address) {
+        try {
+            return "bbs.eddibb.cc".equalsIgnoreCase(android.net.Uri.parse(address).getHost());
+        } catch (RuntimeException invalid) { return false; }
     }
 
     private static void refreshAfterPost(Object reader, Binding binding, int attempt) {
@@ -142,8 +174,10 @@ public final class BackgroundPostingUi {
         Binding binding = BINDINGS.get(owner);
         if (binding == null) return;
         Activity editor = binding.editor.get();
-        if (editor == null || !enabled(editor) || !validParent(editor, binding.parent.get())) return;
+        EditText body = binding.body.get();
         synchronized (binding) {
+            binding.submittedBody = body == null ? null : body.getText().toString();
+            if (editor == null || !enabled(editor) || !validParent(editor, binding.parent.get())) return;
             binding.attempt++;
             binding.waiting = true;
             binding.hidden = false;

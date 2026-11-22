@@ -3940,3 +3940,11 @@ Success。
 Success。
 - APK `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/expert-live-20261122/apks/final242.apk` SHA-256 `9153d09abfb05a1254b8b9b5d9da60994a77db4e15ef9bfb57c4363dfe2679c7`。MPP `C:/Users/narum/.codex/worktrees/945d/morphe-chmate/output/haiagaru-current/build/expert-live-20261122/apks/candidate.mpp` SHA-256 `f30f93c0c81ae2e0ab9b6fd4e545fc8d2241b71806855abe7a3015d8157c1dca`。
 - 署名証明書 SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。署名鍵 `C:/Users/narum/morphe-chmate-local/tools/morphe-data/morphe.keystore`、alias `Morphe`。
+
+
+## 2026-11-23 エッヂ投稿成功後の本文消去
+
+- 検証用242 / jp.co.airfront.android.a2chMate.haiagaru.reporter242 / Mi Note 10 Android 11 / ADB d5497008。署名照合後install -r、起動成功。
+- APK `C:/Users/narum/.codex/worktrees/945d/haiagaru-edge-post-reset/build/edge-post-reset-20261123/test242-final.apk` SHA-256 `2956c84853b1073d065777be0ce9f15864c196ebcc1e70f1eadc99ebdb3c31b2`。MPP `C:/Users/narum/.codex/worktrees/945d/haiagaru-edge-post-reset/patches/build/libs/patches-1.50.1.mpp` SHA-256 `63e9a8eeeb824f1a39c001f95f97694296fee143258cb2a46c714ab4ff9f665d`。
+- 署名証明書 SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。alias Morphe。
+- FridaでnativePosted成功通知を模擬し、前画面復帰ON/OFF状態双方の本文消去、新規入力保持、他板の本文保持の4項目成功。実際の公開投稿は行っていない。
