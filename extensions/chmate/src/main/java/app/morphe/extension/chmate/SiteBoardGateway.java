@@ -955,6 +955,11 @@ final class SiteBoardGateway {
             String ua=overrideUa!=null?overrideUa:SiteAuthenticationPolicy.userAgent(host,useCookies,prefs.getString("browserUa",System.getProperty("http.agent","Haiagaru")));c.setRequestProperty("User-Agent",ua);
             if(useCookies){String cookie=CookieManager.getInstance().getCookie(address);if(cookie!=null&&!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
             if((host.endsWith(".2chan.net")||host.equals("bakusai.com"))&&c.getRequestProperty("Cookie")==null){String cookie=sessionCookies.header(uri);if(!cookie.isEmpty())c.setRequestProperty("Cookie",cookie);}
+            if(body==null){
+                String cookie=c.getRequestProperty("Cookie");
+                String catalogueCookies=SiteBoardProtocol.catalogueCookies(uri,cookie);
+                if(catalogueCookies!=cookie)c.setRequestProperty("Cookie",catalogueCookies);
+            }
             try{
                 if(body!=null){c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Referer",referer);c.setRequestProperty("Origin","https://"+host);if("bbs.animanch.com".equals(host))c.setRequestProperty("X-Requested-With","XMLHttpRequest");c.setRequestProperty("Content-Type",contentType);c.setFixedLengthStreamingMode(body.length);try(OutputStream output=c.getOutputStream()){output.write(body);}}
                 int status=c.getResponseCode();String type=c.getContentType();if(type==null)type="application/octet-stream";

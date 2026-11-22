@@ -86,6 +86,19 @@ final class SiteBoardProtocol {
         String tag=futabaTag(board);
         return tag.isEmpty()||text.endsWith(tag)?text:text+" "+tag;
     }
+    static String catalogueCookies(URI address,String cookies){
+        String query=address.getRawQuery();
+        if(!"may.2chan.net".equals(address.getHost())||!"/b/futaba.php".equals(address.getRawPath())
+                ||!("mode=cat".equals(query)||"mode=cat&sort=3".equals(query)))return cookies;
+        // Use the site's catalogue preference with the default grid and 100 title characters.
+        StringBuilder header=new StringBuilder("cxyl=14x6x100x0x0");
+        if(cookies!=null)for(String cookie:cookies.split(";")){
+            String value=cookie.trim();
+            int separator=value.indexOf('=');
+            if(separator>0&&!"cxyl".equals(value.substring(0,separator).trim()))header.append("; ").append(value);
+        }
+        return header.toString();
+    }
     static final class Topic {
         final String id,title;final int count;
         Topic(String id,String title,int count){this.id=id;this.title=title;this.count=count;}
