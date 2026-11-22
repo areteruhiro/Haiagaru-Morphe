@@ -1,3 +1,40 @@
+# Haiagaru 1.50.0-dev.1 (2026-11-22)
+
+### 追加機能
+
+背景送信後の元スレ更新とCookie確認画面への復帰を補い、板のスレ一覧にレス数で絞る設定を追加します。起動・履歴・Cookieなどの最適化に説明を付け、今回追加した9項目を初期ONにします。
+
+全板スレ検索とHOMEの重複、エッヂ過去ログのKyodemo配色、5ch対策サイトのアプリ内表示、リンクカード更新時の位置保持を修正します。画像検出ZIPのファイル選択を改善します。
+
+191／226／242の候補APKを生成し、191はAndroid 15実機に導入して起動を確認しました。日本語フォルダに置いた画像検出ZIPのCLI適用を確認しました。Morphe実機のファイル選択と背景送信の実投稿は未確認です。
+
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- Kitadai 様
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
 # Haiagaru 1.49.2-dev.3 (2026-11-22)
 
 ### 修正
