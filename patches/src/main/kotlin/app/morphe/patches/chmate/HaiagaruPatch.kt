@@ -3537,9 +3537,10 @@ private fun BytecodePatchContext.patchBackgroundPostingReload(version: String) {
 
     val thread = mutableClassDefBy(if (old) "Lo/pa;" else "Ljp/syoboi/a2chMate/ui/reslist/ResListFragment;")
     val resume = thread.methods.single { it.name == "onResume" && it.parameterTypes.isEmpty() }
-    val reloadMethod = if (old || middle) thread.methods.single {
-        it.name == "onActivityResult" && it.parameterTypes == listOf("I", "I", "Landroid/content/Intent;")
-    } else resume
+    // Only a resume-triggered network refresh supersedes our pending refresh.
+    // 191/226's result handler dispatches a post-position command that can finish
+    // without fetching DAT when the reader is already resumed.
+    val reloadMethod = resume
     val nativeReload = reloadMethod.implementation!!.instructions.withIndex().single { (_, instruction) ->
         val reference = (instruction as? ReferenceInstruction)?.reference as? MethodReference
         reference != null && reference.returnType == "Z" &&

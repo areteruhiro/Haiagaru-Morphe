@@ -3898,6 +3898,7 @@ public final class Haiagaru {
         LinearLayout layout = new LinearLayout(activity);
         layout.setOrientation(LinearLayout.VERTICAL);
         SharedPreferences preferences = preferences(activity);
+        ExpertSettings.addBackgroundPosting(layout, activity, preferences);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";
         try { chMateVersion = activity.getPackageManager().getPackageInfo(activity.getPackageName(),0).versionName; }

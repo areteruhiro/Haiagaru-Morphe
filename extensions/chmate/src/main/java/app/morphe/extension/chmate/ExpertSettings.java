@@ -117,6 +117,15 @@ final class ExpertSettings {
                 "板の認証画面を開く前に、アプリ内ブラウザが保存したCookieを別の処理で読みます。読み取り中も画面が応答しやすくなります。");
         optimization(options, activity, prefs, RUNTIME_VERSION, "画像切替などでアプリ版情報を再照会しない",
                 "画像を切り替えるときなどに、インストール済みChMateの版番号を毎回問い合わせず、起動中に取得した値を使います。");
+        android.widget.Button guide = new android.widget.Button(activity);
+        guide.setText("機能の詳細と用語集");
+        guide.setOnClickListener(view -> activity.startActivity(new android.content.Intent(
+                android.content.Intent.ACTION_VIEW, android.net.Uri.parse(
+                "https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/feature-guide.md"))));
+        options.addView(guide);
+    }
+
+    static void addBackgroundPosting(LinearLayout options, Activity activity, SharedPreferences prefs) {
         LiveSettings.Toggle backgroundPosting = new LiveSettings.Toggle(activity);
         backgroundPosting.setText("投稿後すぐ元の画面に戻る（送信エラー時は投稿画面を再表示）");
         backgroundPosting.setChecked(prefs.getBoolean(BACKGROUND_POSTING, true));
@@ -125,12 +134,6 @@ final class ExpertSettings {
         backgroundPostingHelp.setText("ネイティブの送信処理は止めず、投稿画面を同じタスクの背面に残して元の画面へ戻します。成功時はChMate標準の投稿結果通知で一覧を更新します。対応する送信Taskを確認できない場合は投稿画面を閉じません。変更はすぐ反映されます。");
         options.addView(backgroundPostingHelp);
         new LiveSettings(prefs, () -> {}).toggle(backgroundPosting, BACKGROUND_POSTING);
-        android.widget.Button guide = new android.widget.Button(activity);
-        guide.setText("機能の詳細と用語集");
-        guide.setOnClickListener(view -> activity.startActivity(new android.content.Intent(
-                android.content.Intent.ACTION_VIEW, android.net.Uri.parse(
-                "https://github.com/areteruhiro/Haiagaru-Morphe/blob/dev/docs/feature-guide.md"))));
-        options.addView(guide);
     }
 
     private static boolean responseModelAccessSupported(Activity activity) {

@@ -566,9 +566,9 @@ public final class HissiMenuController extends ToolScreenController {
             hissiTabs = createHissiTabs(webView);
             hissiTabs.setVisibility(View.GONE);
             // Keep result navigation next to the controls, above the scrolling content.
-            layout.addView(hissiTabs, layout.indexOfChild(webView), new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    48 * getResources().getDisplayMetrics().densityDpi / 160));
+            viewerToolbar.addView(hissiTabs, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            applyToolbarPalette(currentUsesKyodemo, Haiagaru.hissiViewerTheme());
         }
         showModel("投稿検索・結果", layout);
         if (!fullscreen && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -1509,6 +1509,11 @@ public final class HissiMenuController extends ToolScreenController {
         int foreground = dark ? Color.rgb(235, 235, 240) : Color.rgb(30, 30, 30);
         viewerToolbar.setBackgroundColor(kyodemo ? background : theme == 2 ? Color.BLACK : Color.TRANSPARENT);
         viewerToolbar.setTag(CheckerBarOptions.PALETTE_TAG, kyodemo ? new int[]{background, foreground} : null);
+        if (hissiTabButtons != null) for (Button button : hissiTabButtons) {
+            button.setTextColor(foreground);
+            if (button.getBackground() instanceof GradientDrawable)
+                ((GradientDrawable)button.getBackground()).setColor(background);
+        }
         int chipColor = theme == 2 ? Color.rgb(28, 28, 31)
                 : dark ? Color.rgb(55, 55, 60) : Color.rgb(242, 242, 247);
         for (int i = 0; i < viewerToolbar.getChildCount(); i++) {
@@ -1521,6 +1526,10 @@ public final class HissiMenuController extends ToolScreenController {
     }
 
     private void applyViewerTheme(LinearLayout layout, WebView webView, int theme) {
+        boolean kyodemoPage = webView == null || webView.getUrl() == null ? currentUsesKyodemo
+                : isKyodemoPage(webView.getUrl());
+        int palette = kyodemoPage ? CheckerBarOptions.palette(this) : 0;
+        if (palette != 0) theme = palette;
         boolean dark = isDarkTheme(theme);
         int background = theme == 2 ? Color.BLACK : dark ? Color.rgb(30, 30, 32) : Color.WHITE;
         int foreground = dark ? Color.rgb(235, 235, 240) : Color.rgb(30, 30, 30);

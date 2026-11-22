@@ -76,7 +76,8 @@ public final class BackgroundPostingUi {
 
     /** The reader's original post-result path is already issuing its update. */
     public static void nativeReload(Object reader) {
-        POST_REFRESH.remove(reader);
+        // A concurrent native request may have started before the post was
+        // accepted. Keep the post-success refresh queued until it finishes.
     }
 
     public static void nativePosted(Object callback) {
@@ -86,21 +87,54 @@ public final class BackgroundPostingUi {
         Object reader = binding.reader.get();
         if (reader == null) return;
         POST_REFRESH.put(reader, binding);
+        refreshAfterPost(reader, binding, 0);
+    }
+
+    private static void refreshAfterPost(Object reader, Binding binding, int attempt) {
         MAIN.postDelayed(() -> {
             if (POST_REFRESH.get(reader) != binding) return;
-            POST_REFRESH.remove(reader);
             Activity parent = binding.parent.get();
             if (parent == null || parent.isFinishing() || parent.isDestroyed()
-                    || ExternalBoardAuth.activity(reader) != parent) return;
+                    || ExternalBoardAuth.activity(reader) != parent) { POST_REFRESH.remove(reader); return; }
             try {
-                if (!Boolean.TRUE.equals(reader.getClass().getMethod("isResumed").invoke(reader))) return;
                 String url = NativeThreadContext.url(NativeThreadContext.board(reader, binding.version), binding.version, 1);
-                if (url == null || !GlobalTitleSearchRules.key(binding.thread).equals(GlobalTitleSearchRules.key(url))) return;
+                if (!sameThread(binding.thread, url)) { POST_REFRESH.remove(reader); return; }
+                if (!Boolean.TRUE.equals(reader.getClass().getMethod("isResumed").invoke(reader))
+                        || readerDownloading(reader, binding.version)) {
+                    if (attempt < 120) refreshAfterPost(reader, binding, attempt + 1);
+                    else POST_REFRESH.remove(reader);
+                    return;
+                }
+                POST_REFRESH.remove(reader);
                 OpenTabsRefresh.refreshWatchedFragment(reader);
+                android.util.Log.i(TAG, "Post-success reader refresh dispatched");
             } catch (Exception error) {
+                POST_REFRESH.remove(reader);
                 android.util.Log.w(TAG, "Post-success reader refresh unavailable", error);
             }
-        }, 350);
+        }, attempt == 0 ? 350 : 250);
+    }
+
+    private static boolean readerDownloading(Object reader, String version) throws ReflectiveOperationException {
+        String field = version.contains("191") ? "K" : version.contains("226") ? "B" : null;
+        if (field == null) return false;
+        Object task = NativeFields.find(reader.getClass(), field).get(reader);
+        if (task == null) return false;
+        for (Field candidate : NativeFields.all(task.getClass())) {
+            if (!java.util.concurrent.Future.class.isAssignableFrom(candidate.getType())) continue;
+            candidate.setAccessible(true);
+            java.util.concurrent.Future<?> future = (java.util.concurrent.Future<?>) candidate.get(task);
+            if (future != null && !future.isDone()) return true;
+        }
+        return false;
+    }
+
+    static boolean sameThread(String posted, String opened) {
+        if (posted == null || opened == null) return false;
+        ThreadWatchRules.Target first = ThreadWatchRules.target(posted);
+        ThreadWatchRules.Target second = ThreadWatchRules.target(opened);
+        if (first != null && second != null) return first.url.equals(second.url);
+        return GlobalTitleSearchRules.key(posted).equals(GlobalTitleSearchRules.key(opened));
     }
 
     /** Snapshot before native submit mutates its task fields. */
