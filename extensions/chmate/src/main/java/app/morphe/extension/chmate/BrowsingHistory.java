@@ -305,6 +305,8 @@ public final class BrowsingHistory {
             try{filterLegacyAdapter(adapter, mode, true);}
             catch(Exception error){Log.w("Haiagaru","Normal history rows could not be rebuilt after refresh",error);}
             finally{((BaseAdapter) adapter).notifyDataSetChanged();}
+            // Legacy HOME can replace the ListView after the fragment has resumed.
+            HomeBoardFoldLabels.ensureAttached(fragment);
         } catch (Exception error) {
             Log.w("Haiagaru", "Normal history adapter left unchanged", error);
         }

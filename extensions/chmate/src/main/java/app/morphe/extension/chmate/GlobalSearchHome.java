@@ -212,7 +212,7 @@ public final class GlobalSearchHome {
     public static void resumed(Object fragment){
         Activity a=Haiagaru.toolbarActivity(fragment);if(a==null)return;
         HOMES.removeIf(ref->ref.get()==null||ref.get()==fragment);HOMES.add(new WeakReference<>(fragment));
-        HomeBoardFoldButtons.attach(fragment);
+        HomeBoardFoldLabels.attach(fragment);
         String id=a.getIntent().getStringExtra(EXTRA);if(id==null)return;
         a.getIntent().removeExtra(EXTRA);show(a,fragment,id);
     }
@@ -300,10 +300,36 @@ public final class GlobalSearchHome {
         return text!=null&&!text.trim().isEmpty();
     }
 
-    private static String filterText(View root){
-        try{Object value=root.getClass().getMethod("haiagaruGlobalSearchQuery").invoke(root);return value instanceof String?(String)value:null;
-        }catch(Exception ignored){}
-        if(root instanceof ViewGroup){ViewGroup g=(ViewGroup)root;for(int i=0;i<g.getChildCount();i++){String found=filterText(g.getChildAt(i));if(found!=null)return found;}}
+    // BackgroundGlobalSearchPatch adds the query accessor only to these toolbars.
+    private static boolean searchToolbar(View view) {
+        if (view == null) return false;
+        for (Class<?> type = view.getClass(); type != null; type = type.getSuperclass()) {
+            switch (type.getName()) {
+                case "o.r8lambdaBgNelb8wzuneQt5bGzKp1rt5TaY": // 191
+                case "o.PAGBannerAd": // 226
+                case "o.zzaK": // 242
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private static String filterText(View root) {
+        if (searchToolbar(root)) {
+            try {
+                Object value = root.getClass().getMethod("haiagaruGlobalSearchQuery").invoke(root);
+                return value instanceof String ? (String) value : null;
+            } catch (ReflectiveOperationException ignored) {
+                // Leave native input alone if the accessor is unavailable.
+            }
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                String found = filterText(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
         return null;
     }
     private static EditText input(View root){
@@ -312,7 +338,7 @@ public final class GlobalSearchHome {
         return null;
     }
     private static boolean filter(View root,String query){
-        try{Method method=root.getClass().getMethod("setFilter",CharSequence.class);
+        if (searchToolbar(root)) try{Method method=root.getClass().getMethod("setFilter",CharSequence.class);
             // Open the original search input and dispatch its TextWatcher. setFilter alone
             // only paints the toolbar and does not change the HOME model's search query.
             for(Method show:root.getClass().getDeclaredMethods())if(show.getReturnType()==void.class&&Arrays.equals(show.getParameterTypes(),new Class<?>[]{boolean.class,boolean.class})){show.setAccessible(true);show.invoke(root,true,false);break;}

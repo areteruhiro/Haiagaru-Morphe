@@ -340,9 +340,8 @@ final class UpdateHistory {
                 content.addView(names); break;
             case HOME_THREAD_ORDER:
                 toggle(content,activity,SettingsProfiles.prefs(activity),"HOMEのお気に入りスレの並び替え・固定を使う",HomeThreadOrder.ENABLED,true,activity::invalidateOptionsMenu);
-                toggle(content,activity,SettingsProfiles.prefs(activity),"HOMEの★・ラベル見出しをタップして開閉",HomeThreadOrder.FOLD_ON_TAP,true,()->BrowsingHistory.refreshVisible(activity));
-                toggle(content,activity,SettingsProfiles.prefs(activity),"スレ（板順）の板見出しに開閉ボタンを表示",HomeBoardFoldButtons.VISIBLE,true,()->BrowsingHistory.refreshVisible(activity));
-                toggle(content,activity,SettingsProfiles.prefs(activity),"板順の開閉ボタン切替を上部に表示（OFFで︙メニュー）",HomeBoardFoldButtons.TITLE_CONTROL,true,()->{BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();}); break;
+                toggle(content,activity,SettingsProfiles.prefs(activity),"HOMEの★・ラベル・板名見出しをタップして開閉",HomeThreadOrder.FOLD_ON_TAP,true,()->BrowsingHistory.refreshVisible(activity));
+                toggle(content,activity,SettingsProfiles.prefs(activity),"板名タップ切替を上部に表示（OFFで︙メニュー）",HomeBoardFoldLabels.TITLE_CONTROL,true,()->{BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();}); break;
             case KEYWORD_MENU:
                 toggle(content,activity,SettingsProfiles.prefs(activity),"HOMEの3点メニューにキーワード表示名の設定を表示",HomeThreadOrder.KEYWORD_MENU,false,activity::invalidateOptionsMenu); break;
             case RESPONSE_NOTES_MENU:

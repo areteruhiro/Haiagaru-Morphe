@@ -125,7 +125,6 @@ public final class HomeThreadOrder {
         expandedForDisplay.remove();
         List<?> rows=apply(source,mode,true);
         if(expandedForDisplay.get()==null)expandedForDisplay.set(rows);
-        if(target(mode)&&rows!=null)projection(expandedForDisplay.get());
         if(target(mode))synchronized(presented){presented.put(mode,rows);}
         return rows;
     }
@@ -163,6 +162,54 @@ public final class HomeThreadOrder {
     static List<?> presented(int mode){
         synchronized(presented){return presented.get(tabMode(mode));}
     }
+    /** Resolve positions against the adapter displaying them. The next model may already differ. */
+    static List<?> presented(View list, int mode) {
+        if (list == null) return presented(mode);
+        if (!(list instanceof ListView)) return modernPresented(list, mode);
+        ListView visible = (ListView) list;
+        ListAdapter adapter = visible.getAdapter();
+        if (adapter == null) return Collections.emptyList();
+        String field;
+        switch (adapter.getClass().getName()) {
+            case "o.r8lambdaXZREaGE4vvLAA2ZOtsKBd3knAPA": field = "j"; break;
+            case "o.bea1": field = "d"; break;
+            default: field = null;
+        }
+        if (field != null) {
+            try {
+                Object current = NativeFields.find(adapter.getClass(), field).get(adapter);
+                if (current instanceof List<?>) {
+                    List<?> rows = (List<?>) current;
+                    int size = rows.size();
+                    if (size == adapter.getCount() &&
+                            (size == 0 || (rows.get(0) == adapter.getItem(0)
+                                    && rows.get(size - 1) == adapter.getItem(size - 1)))) return rows;
+                }
+            } catch (ReflectiveOperationException ignored) {}
+        }
+        return new AbstractList<Object>() {
+            @Override public int size() { return adapter.getCount(); }
+            @Override public Object get(int index) { return adapter.getItem(index); }
+        };
+    }
+
+    private static List<?> modernPresented(View list, int mode) {
+        try {
+            Object adapter=list.getClass().getMethod("getAdapter").invoke(list);
+            if(adapter==null)return Collections.emptyList();
+            if(!adapter.getClass().getName().equals("o.ModuleInstallStatusCodes"))return presented(mode);
+            // 242's native adapter uses the committed AsyncListDiffer list. Its
+            // positions include native header rows and can lag the next model.
+            Object differ=NativeFields.find(adapter.getClass().getSuperclass(),"b").get(adapter);
+            Object rows=differ==null?null:NativeFields.find(differ.getClass(),"a").get(differ);
+            return rows instanceof List<?>?(List<?>)rows:Collections.emptyList();
+        }catch(ReflectiveOperationException unavailable){
+            return Collections.emptyList();
+        }
+    }
+
+    static boolean canReorder(int mode) { return target(mode); }
+
     private static List<?> apply(List<?> source,int mode,boolean respectFolds){
         if(source==null||!target(mode)||Haiagaru.applicationContextForExtension()==null)return source;
 
@@ -468,8 +515,7 @@ public final class HomeThreadOrder {
         return id==null?categoryKey(row):isBoard(id)?FAVORITE_BOARDS_SECTION:null;
     }
 
-    static boolean moveLabel(Object source,Object target,int mode){
-        List<?> rows=displayed(mode);
+    static boolean moveLabel(Object source,Object target,int mode,List<?> rows){
         if(rows==null)return false;
         List<String> order=displayedSections(rows,mode);
         int from=order.indexOf(sectionKey(source)),to=order.indexOf(sectionKey(target));
@@ -675,7 +721,7 @@ public final class HomeThreadOrder {
     }
 
     public static void menu(Object fragment,Menu menu){
-        HomeBoardFoldButtons.menu(fragment,menu);
+        HomeBoardFoldLabels.menu(fragment,menu);
         ResponseNotes.homeMenu(fragment,menu);
         GlobalSearchHome.menu(fragment,menu);
         if(menu!=null&&menu.findItem(KEYWORD_DISPLAY_MENU)==null){
@@ -696,7 +742,7 @@ public final class HomeThreadOrder {
             HomeThreadDrag.toggle(activity,fragment,root,selected);
         }catch(Exception error){android.util.Log.w("Haiagaru","HOME drag unavailable",error);}
     }
-    static List<?> displayed(int mode){mode=tabMode(mode);synchronized(latest){List<?> rows=latest.get(mode);return rows==null?null:new ArrayList<>(apply(rows,mode));}}
+    static List<?> displayed(int mode){List<?> rows=presented(mode);return rows==null?null:new ArrayList<>(rows);}
     static void confirmResetOrder(Activity activity,int mode){
         new HaiagaruDialog.Builder(activity).setTitle("元の並び順に戻す")
             .setMessage("この一覧のスレとカテゴリを、手動で並び替える前の順序に戻します。ラベルと所属スレは残ります。")
