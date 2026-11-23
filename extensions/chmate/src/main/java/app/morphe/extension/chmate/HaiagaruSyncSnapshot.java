@@ -106,6 +106,11 @@ final class HaiagaruSyncSnapshot {
         if ((categories & KAKIKOMI) != 0) result.append("書き込みメモ: ")
                 .append(zipped ? (merge ? "既存ファイルは保持し、不足分のみ追加" : "保存ファイルから復元") : java.util.Objects.equals(local.opt("kakikomi"), remote.opt("kakikomi"))
                         ? "変更なし" : merge ? "不足する記録を追加" : "ファイルを更新").append('\n');
+        JSONArray notes = remote.optJSONArray(ResponseNotesBackup.KEY);
+        if ((categories & KAKIKOMI) != 0 && notes != null) {
+            result.append("Haiagaruのメモ: ").append(notes.length()).append("件")
+                    .append(merge ? "（既存メモを保持）" : "（同じメモは上書き）").append('\n');
+        }
         if ((categories & COOKIES) != 0) {
             JSONObject cookies = remote.optJSONObject("cookies");
             result.append("Cookie（ログイン情報を含む）: ")
@@ -152,6 +157,9 @@ final class HaiagaruSyncSnapshot {
             snapshot.put("postDataList", readOptional(
                     context.getFileStreamPath("postDataList.json")));
         }
+        if ((categories & KAKIKOMI) != 0) {
+            snapshot.put(ResponseNotesBackup.KEY, ResponseNotesBackup.capture(context));
+        }
         if (!streamed && (categories & KAKIKOMI) != 0) {
             snapshot.put("kakikomi", readOptional(kakikomiFile(context)));
         }
@@ -189,6 +197,9 @@ final class HaiagaruSyncSnapshot {
         }
         if ((categories & COOKIES) != 0 && snapshot.optJSONObject("cookies") == null) {
             throw new IOException("Cookieデータがありません");
+        }
+        if ((categories & KAKIKOMI) != 0 && snapshot.has(ResponseNotesBackup.KEY)) {
+            ResponseNotesBackup.validate(snapshot.optJSONArray(ResponseNotesBackup.KEY));
         }
         String source = snapshot.optString("sourcePackage", "");
         if (!source.matches("^[A-Za-z][A-Za-z0-9_.]{2,200}$")) {
@@ -233,6 +244,9 @@ final class HaiagaruSyncSnapshot {
         if ((selected & KAKIKOMI) != 0 && !snapshot.isNull("kakikomi")) {
             writeAtomic(kakikomiFile(context), decodeFile(snapshot.getString("kakikomi")));
         }
+        if ((selected & KAKIKOMI) != 0) {
+            ResponseNotesBackup.restore(context, snapshot.optJSONArray(ResponseNotesBackup.KEY), false);
+        }
         if ((selected & COOKIES) != 0) restoreCookies(context, snapshot.getJSONObject("cookies"), false);
         if ((selected & SETTINGS) != 0) ThreadWatchBackup.restore(context,snapshot.optJSONObject(ThreadWatchBackup.KEY),false);
         if (reconcileDat && (selected & BOOKMARKS) != 0) RestoredThreadCache.reconcile(context,snapshot.optJSONArray("bookmarks"));
@@ -266,6 +280,9 @@ final class HaiagaruSyncSnapshot {
         }
         if ((selected & KAKIKOMI) != 0 && !snapshot.isNull("kakikomi")) {
             mergeTextFile(kakikomiFile(context), decodeFile(snapshot.getString("kakikomi")));
+        }
+        if ((selected & KAKIKOMI) != 0) {
+            ResponseNotesBackup.restore(context, snapshot.optJSONArray(ResponseNotesBackup.KEY), true);
         }
         if ((selected & COOKIES) != 0) restoreCookies(context, snapshot.getJSONObject("cookies"), true);
         if ((selected & SETTINGS) != 0) ThreadWatchBackup.restore(context,snapshot.optJSONObject(ThreadWatchBackup.KEY),true);

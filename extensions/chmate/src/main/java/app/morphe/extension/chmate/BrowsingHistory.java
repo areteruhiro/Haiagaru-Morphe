@@ -178,9 +178,11 @@ public final class BrowsingHistory {
         return copy;
     }
     private static List<?> transformValues(List<?> input,int mode){
+        boolean search = GlobalSearchHome.isModernSearchResult(input);
         input=withoutArchivedThreads(GlobalSearchHome.rows(input),mode);
         if(HiddenDroppedThreads.historyMode(mode))input=withoutRecentlyDeleted(input);
         input=HiddenDroppedThreads.filter(input,mode);
+        if (search) return HomeThreadOrder.applyModernSearch(input, mode);
         // Native HOME IDs: 101 = unread, 103 = browsing history, 104 = posted.
         // Never override unread sorting (including its native board-sort option).
         if (input == null || Math.abs(mode) != 103 || !enabled()) return HomeThreadOrder.apply(input,mode);
