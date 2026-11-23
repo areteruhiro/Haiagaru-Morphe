@@ -1010,6 +1010,7 @@ public final class Haiagaru {
             migrateRestoredPackageReferences(appContext);
             migratedPackagePreferencesContext = appContext;
         }
+        BackgroundPostingUi.migrateSetting(startupPreferences);
         LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);

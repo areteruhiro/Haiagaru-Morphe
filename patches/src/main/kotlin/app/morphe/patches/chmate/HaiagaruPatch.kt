@@ -3570,10 +3570,11 @@ private fun BytecodePatchContext.patchPostingErrorCallbacks(version: String) {
         instruction.opcode == Opcode.NEW_INSTANCE &&
             (instruction as? ReferenceInstruction)?.reference.toString() == "Ljava/util/concurrent/CountDownLatch;"
     }
-    // Only the prompt branch creates a latch. Automatic retry and cancellation bypass it.
-    confirmation.addInstructions(prompt.index, """
-        invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/BackgroundPostingUi;->nativeFailure(Ljava/lang/Object;)V
-    """.trimIndent())
+    // Keep the native branch target on the hook so direct jumps into the prompt cannot skip it.
+    val latch = (prompt.value as OneRegisterInstruction).registerA
+    confirmation.replaceInstruction(prompt.index,
+        "invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/BackgroundPostingUi;->beforeCookiePrompt(Ljava/lang/Object;)V")
+    confirmation.addInstructions(prompt.index + 1, "new-instance v$latch, Ljava/util/concurrent/CountDownLatch;")
     fun hookResult(ownerType: String, methodName: String, parameter: String) {
         val owner = mutableClassDefBy(ownerType)
         val method = owner.methods.single {
