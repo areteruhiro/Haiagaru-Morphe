@@ -180,6 +180,7 @@ public final class GlobalSearchHome {
     public static void resumed(Object fragment){
         Activity a=Haiagaru.toolbarActivity(fragment);if(a==null)return;
         HOMES.removeIf(ref->ref.get()==null||ref.get()==fragment);HOMES.add(new WeakReference<>(fragment));
+        HomeBoardFoldButtons.attach(fragment);
         String id=a.getIntent().getStringExtra(EXTRA);if(id==null)return;
         a.getIntent().removeExtra(EXTRA);show(a,fragment,id);
     }
@@ -252,6 +253,21 @@ public final class GlobalSearchHome {
             }
         }finally{OVERRIDE.remove();BYPASS.remove();}
     }
+    static List<Activity> activitiesForLabels(){
+        List<Activity> activities=new ArrayList<>();
+        for(WeakReference<Object> ref:new ArrayList<>(HOMES)){
+            Object home=ref.get();
+            Activity activity=home==null?null:Haiagaru.toolbarActivity(home);
+            if(activity!=null&&!activities.contains(activity))activities.add(activity);
+        }
+        return activities;
+    }
+
+    static boolean hasSearchText(View root){
+        String text=filterText(root);
+        return text!=null&&!text.trim().isEmpty();
+    }
+
     private static String filterText(View root){
         try{Object value=root.getClass().getMethod("haiagaruGlobalSearchQuery").invoke(root);return value instanceof String?(String)value:null;
         }catch(Exception ignored){}

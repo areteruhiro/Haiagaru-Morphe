@@ -52,7 +52,7 @@ final class HaiagaruSyncSnapshot {
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String[] EXTRA_SETTINGS = {"haiagaru_thread_commands", "haiagaru_replace_str",
             "haiagaru.programmable-ng", "haiagaru_eddi_search", "haiagaru_upload_history",LocalAutoBackup.PREFS,
-            BackupOptionSettings.LOCAL,BackupOptionSettings.MEGA,SharedNgReporterBlocks.PREFS,HomeThreadOrder.PREFS,DisplayNames.PREFS};
+            BackupOptionSettings.LOCAL,BackupOptionSettings.MEGA,SharedNgReporterBlocks.PREFS,HomeThreadOrder.PREFS,DisplayNames.PREFS,SiteBoardGateway.PREFS};
 
     private HaiagaruSyncSnapshot() {}
 
@@ -537,6 +537,7 @@ final class HaiagaruSyncSnapshot {
             for (Map.Entry<String, ?> entry : context.getSharedPreferences(
                     name, Context.MODE_PRIVATE).getAll().entrySet()) {
                 if (!safePreferenceKey(entry.getKey())) continue;
+                if(name.equals(SiteBoardGateway.PREFS)&&!SiteBoardGateway.backupSetting(entry.getKey()))continue;
                 if(name.equals(LocalAutoBackup.PREFS)&&!LocalAutoBackup.backupSetting(entry.getKey()))continue;
                 if(BackupOptionSettings.store(name)&&!BackupOptionSettings.key(name,entry.getKey()))continue;
                 JSONObject typed = encodePreference(entry.getValue());
@@ -564,19 +565,20 @@ final class HaiagaruSyncSnapshot {
             if(BackupOptionSettings.store(name)){BackupOptionSettings.restore(context,name,values,false);continue;}
             SharedPreferences target = context.getSharedPreferences(targetName, Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = target.edit();
-            if (HAIAGARU_PREFS.equals(name)) {
+            if (HAIAGARU_PREFS.equals(name)||SiteBoardGateway.PREFS.equals(name)) {
                 // A full UI-settings restore must also reset options absent from
                 // older snapshots. Otherwise restoring B then A keeps B's extra
                 // features enabled permanently, even after restarting ChMate.
                 // Preserve the device's first-open prompt and excluded secrets.
                 for (String key : target.getAll().keySet()) {
-                    if (safePreferenceKey(key) && !values.has(key)
+                    if (safePreferenceKey(key) && (!SiteBoardGateway.PREFS.equals(name)||SiteBoardGateway.backupSetting(key)) && !values.has(key)
                             && !MinimalSetup.PROMPT.equals(key)) editor.remove(key);
                 }
             }
             for (Iterator<String> keys = values.keys(); keys.hasNext();) {
                 String key = keys.next();
                 if (!safePreferenceKey(key)) continue;
+                if(name.equals(SiteBoardGateway.PREFS)&&!SiteBoardGateway.backupSetting(key))continue;
                 JSONObject value = values.optJSONObject(key);
                 if (value == null) continue;
                 switch (value.optString("type")) {
@@ -628,6 +630,7 @@ final class HaiagaruSyncSnapshot {
             for (Iterator<String> keys = values.keys(); keys.hasNext();) {
                 String key = keys.next();
                 if (!safePreferenceKey(key) || preferences.contains(key)) continue;
+                if(name.equals(SiteBoardGateway.PREFS)&&!SiteBoardGateway.backupSetting(key))continue;
                 JSONObject value = values.optJSONObject(key);
                 if (value == null) continue;
                 switch (value.optString("type")) {

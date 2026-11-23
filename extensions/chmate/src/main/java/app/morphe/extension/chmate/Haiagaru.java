@@ -111,7 +111,7 @@ public final class Haiagaru {
 
     private static final int EDDI_ARCHIVE_TOOLBAR_ID = 0x7e000001;
     private static final int MARK_ALL_READ_TOOLBAR_ID = 0x7e000003;
-    private static final int DIRECT_COPY_TOOLBAR_ID = 0x7e000004;
+    private static final int DIRECT_COPY_TOOLBAR_ID = DirectCopyGesture.TOOLBAR_ACTION;
     private static final String PREFS_NAME =
             "io.github.areteruhiro.chmate.haiagaru.ui-config";
     private static final String LEGACY_TALK_PREFS_NAME = "talk";
@@ -526,6 +526,7 @@ public final class Haiagaru {
         // original filter row at the top of the response list.
         Object result = addToolbarChoice(toolbarModel, QuickFilterToolbar.ID, "haiagaru_quick_filter");
         result=addToolbarChoice(result,OpenTabsRefresh.ACTION,"haiagaru_refresh_open_tabs");
+        result=addToolbarChoice(result,ResponseNotes.MENU,"haiagaru_response_notes");
         try {
             String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)
@@ -674,6 +675,8 @@ public final class Haiagaru {
 
     /** Handles the custom toolbar item before ChMate dispatches its stock actions. */
     public static boolean handleEdgeArchiveToolbarClick(Object fragment, int itemId) {
+        if ((itemId == 2 || itemId == StockChmatePosting.ACTION)
+                && BackgroundPostingUi.blockEditorWhileSending(toolbarActivity(fragment), itemId == 2 ? fragment : null)) return true;
         if(itemId==ResponseNotes.MENU){ResponseNotes.open(toolbarActivity(fragment),null);return true;}
         if(MultiResponseNg.click(fragment,itemId))return true;
         if(HomeThreadOrder.click(fragment,itemId))return true;
@@ -707,20 +710,7 @@ public final class Haiagaru {
             return true;
         }
         if (itemId == DIRECT_COPY_TOOLBAR_ID) {
-            Activity activity = toolbarActivity(fragment);
-            if (activity == null || activity.isFinishing()) return true;
-            SharedPreferences prefs = preferences(activity);
-            boolean enabled = !prefs.getBoolean("directBodySelection", false);
-            prefs.edit().putBoolean("directBodySelection", enabled).apply();
-            EmojiFontFallback.refreshVisibleRows();
-            View button = activity.getWindow().getDecorView().findViewById(DIRECT_COPY_TOOLBAR_ID);
-            if (button != null) {
-                button.setActivated(enabled);
-                button.setSelected(enabled);
-                button.setContentDescription("長押しコピー: " + (enabled ? "ON" : "OFF"));
-            }
-            Toast.makeText(activity, enabled ? "長押しコピー: ON（本文を長押しして範囲選択）"
-                    : "長押しコピー: OFF（従来のレスメニュー）", Toast.LENGTH_SHORT).show();
+            DirectCopyGesture.toggle(toolbarActivity(fragment));
             return true;
         }
         if (itemId == MARK_ALL_READ_TOOLBAR_ID) {
@@ -3606,6 +3596,13 @@ public final class Haiagaru {
                 "100% uses ChMate's gesture distance. Higher values need a shorter swipe. Applies only inside settings, from the next gesture."));
         gestures.addView(gestureHelp);
         live.number(gestureSensitivity, HaiagaruSettingsGestures.SENSITIVITY, 50, 200);
+        Switch threadGroups = addSwitch(tabs, activity, "グループ化(実験的)", preferences.getBoolean(NativeTabGroups.KEY, false));
+        threadGroups.setOnCheckedChangeListener((button, checked) -> preferences.edit().putBoolean(NativeTabGroups.KEY, checked).apply());
+        Switch threadGroupButton = addSwitch(tabs, activity, "タブレット表示時にツールバーにグループ化ボタンを追加する", preferences.getBoolean(NativeTabGroups.BUTTON_KEY, true));
+        threadGroupButton.setOnCheckedChangeListener((button, checked) -> preferences.edit().putBoolean(NativeTabGroups.BUTTON_KEY, checked).apply());
+        TextView threadGroupsHelp = new TextView(activity);
+        threadGroupsHelp.setText("タブレット表示用。「グループ化(実験的)」をオンにすると、スレタブのメニューに「グループ化」が表示されます。表示ボタンは上のスイッチで個別に隠せます。グループ名を長押しすると統合・所属解除・1段／2段表示を選べます。通常のスレタブ移動はChMate標準の並べ替えです。変更はメニューを開き直すと反映されます。");
+        tabs.addView(threadGroupsHelp);
         LinearLayout screens=SettingsSection.add(tabs,text("自動でタブ表示する画面", "Screens opened as tabs"),text("オフの画面は別画面で開きます", "Disabled screens open separately"),true);
         Switch nativeSettingsTab = addSwitch(screens, activity,
                 text("タブ表示する画面：Haiagaru設定", "Tab screen: Haiagaru settings"),
@@ -3615,6 +3612,8 @@ public final class Haiagaru {
                 text("タブ表示する画面：エッヂ過去ログ検索", "Tab screen: Edge archive search"),
                 preferences.getBoolean(NativeToolTabs.EDDI_KEY, true));
         live.toggle(nativeEddiTab, NativeToolTabs.EDDI_KEY);
+        Switch nativeNotesTab = addSwitch(screens, activity, "タブ表示する画面：メモ", preferences.getBoolean(NativeToolTabs.NOTES_KEY, true));
+        live.toggle(nativeNotesTab, NativeToolTabs.NOTES_KEY);
         Switch nativeSearchTab = addSwitch(screens, activity,text("タブ表示する画面：投稿を探す", "Tab screen: Find posts"),preferences.getBoolean(NativeToolTabs.SEARCH_KEY,true));
         live.toggle(nativeSearchTab,NativeToolTabs.SEARCH_KEY);
         Switch nativeCheckerTab = addSwitch(screens, activity,text("タブ表示する画面：投稿検索・結果", "Tab screen: Checker results"),preferences.getBoolean(NativeToolTabs.CHECKER_KEY,true));
@@ -3693,6 +3692,13 @@ public final class Haiagaru {
         Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
         homeOrder.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.ENABLED);
         homeOrder.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.ENABLED,on).apply();activity.invalidateOptionsMenu();});
+        Switch boardFoldControls=addSwitch(lists,activity,"スレ（板順）の板見出しに開閉ボタンを表示",SettingsProfiles.prefs(activity).getBoolean(HomeBoardFoldButtons.VISIBLE,true));
+        boardFoldControls.setTag(SettingLinkEntry.KEY_TAG,HomeBoardFoldButtons.VISIBLE);
+        boardFoldControls.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeBoardFoldButtons.VISIBLE,on).apply();BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();});
+        Switch boardFoldLocation=addSwitch(lists,activity,"板順の開閉ボタン切替を上部に表示（OFFで︙メニュー）",SettingsProfiles.prefs(activity).getBoolean(HomeBoardFoldButtons.TITLE_CONTROL,true));
+        boardFoldLocation.setTag(SettingLinkEntry.KEY_TAG,HomeBoardFoldButtons.TITLE_CONTROL);
+        TextView boardFoldHelp=new TextView(activity);boardFoldHelp.setText("板順を表示しているときだけ、板見出しの開閉ボタンの表示を切り替える操作を追加します。ONは上部のタイトル横、OFFは︙メニューに表示します。白黒の上向き二重矢印で折りたたみ、下向き矢印で開きます。");lists.addView(boardFoldHelp);
+        boardFoldLocation.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeBoardFoldButtons.TITLE_CONTROL,on).apply();BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();});
         Switch cachedControls=addSwitch(search,activity,"取得済みスレ検索に追加の操作欄を表示",SettingsProfiles.prefs(activity).getBoolean(CachedWacchoiSearch.CONTROLS,true));
         cachedControls.setTag(SettingLinkEntry.KEY_TAG,CachedWacchoiSearch.CONTROLS);
         cachedControls.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(CachedWacchoiSearch.CONTROLS,on).apply());
@@ -3718,6 +3724,12 @@ public final class Haiagaru {
             View decor = activity.getWindow().getDecorView();
             decor.requestLayout(); decor.invalidate();
         });
+        Switch directCopyMode=addSwitch(behavior,activity,"レス本文の長押しコピー",preferences.getBoolean(DirectCopyGesture.KEY,false));
+        directCopyMode.setTag(SettingLinkEntry.KEY_TAG,DirectCopyGesture.KEY);
+        live.toggle(directCopyMode,DirectCopyGesture.KEY);
+        TextView directCopyHelp=new TextView(activity);
+        directCopyHelp.setText("ONは本文を長押しして範囲選択、OFFは従来のレスメニューを開きます。ツールバーと同じ設定です。ChMate設定の「ジェスチャー」に追加した「長押しコピー ON／OFF」に操作を割り当てると、ジェスチャーを行うたびに切り替わります。初期はOFF・ジェスチャー未割り当てです。");
+        behavior.addView(directCopyHelp);
         Switch directCopyAnchors = addSwitch(behavior, activity,
                 text("長押しコピー中も >>番号の長押し操作を優先", "Keep native >>anchor long presses while copying"),
                 preferences.getBoolean("directCopyAnchors", true));
@@ -4455,6 +4467,14 @@ public final class Haiagaru {
                         preferences.getBoolean(ImageViewerRotationButton.MENU_KEY, true));
                 rotationInMenu.setOnCheckedChangeListener((button, checked) ->
                         preferences.edit().putBoolean(ImageViewerRotationButton.MENU_KEY, checked).apply());
+            } else if ("0.8.10.242 dev".equals(version)) {
+                Switch hideBottomActions = addSwitch(layout, activity,
+                        ImageViewerRotationButton.HIDE_BOTTOM_ACTIONS_LABEL,
+                        preferences.getBoolean(ImageViewerRotationButton.HIDE_BOTTOM_ACTIONS, false));
+                live.toggle(hideBottomActions, ImageViewerRotationButton.HIDE_BOTTOM_ACTIONS);
+                TextView help = new TextView(activity);
+                help.setText("オンにすると、次に画像を開いたときから下部の操作ボタンを表示しません。初期値はオフです。");
+                layout.addView(help);
             }
         } catch (Exception error) { Log.w(LOG_TAG, "Rotation setting version check failed", error); }
         final Switch imageRotationButtonSetting = imageRotationButton;
