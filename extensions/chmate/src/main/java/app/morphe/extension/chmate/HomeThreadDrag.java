@@ -45,7 +45,8 @@ public final class HomeThreadDrag extends FrameLayout {
         View existing=root.findViewWithTag("haiagaru.home.drag");
         if(existing instanceof HomeThreadDrag){((HomeThreadDrag)existing).finish();return;}
         View list=FilterPosition.findList(root);
-        if(list==null||!(list.getParent() instanceof ViewGroup)||HomeThreadOrder.displayed(mode)==null){
+        if(list==null||!(list.getParent() instanceof ViewGroup)||!HomeThreadOrder.canReorder(mode)
+                ||HomeThreadOrder.presented(list,mode)==null){
             Toast.makeText(activity,"HOMEのスレ一覧を表示してください",Toast.LENGTH_SHORT).show();return;}
         ViewGroup parent=(ViewGroup)list.getParent();int index=parent.indexOfChild(list);ViewGroup.LayoutParams params=list.getLayoutParams();
         HomeThreadDrag wrapper=new HomeThreadDrag(activity,fragment,root,list,mode);
@@ -96,7 +97,7 @@ public final class HomeThreadDrag extends FrameLayout {
         try{ViewGroup group=(ViewGroup)list;for(int i=0;i<group.getChildCount();i++){View child=group.getChildAt(i);if(childPosition(child,i)==position)return child;}}catch(Exception ignored){}return null;
     }
     private void begin(){
-        List<?> visible=HomeThreadOrder.presented(mode);
+        List<?> visible=HomeThreadOrder.presented(list,mode);
         snapshot=visible==null?null:new ArrayList<>(visible);from=position(downX,downY);
         if(snapshot==null||from<0||from>=snapshot.size())return;
         String sourceKey=HomeThreadOrder.key(snapshot.get(from));
@@ -128,11 +129,11 @@ public final class HomeThreadDrag extends FrameLayout {
         if(dragging){
             y=event.getY();updateTarget();
             if(action==MotionEvent.ACTION_UP){
-                List<?> current=HomeThreadOrder.presented(mode);
+                List<?> current=HomeThreadOrder.presented(list,mode);
                 if(HomeThreadOrder.mode(fragment)==mode&&current!=null&&sameRows(snapshot,current)&&from>=0&&to>=0&&from!=to){
                     boolean saved;
                     if(draggedLabel!=null){
-                        saved=HomeThreadOrder.moveLabel(snapshot.get(from),snapshot.get(to),mode);
+                        saved=HomeThreadOrder.moveLabel(snapshot.get(from),snapshot.get(to),mode,snapshot);
                     }else{
                         saved=HomeThreadOrder.dropThread(snapshot.get(from),snapshot.get(to),mode,to>from);
                     }
@@ -146,7 +147,7 @@ public final class HomeThreadDrag extends FrameLayout {
         if(action==MotionEvent.ACTION_MOVE&&(Math.abs(event.getX()-downX)>ViewConfiguration.get(getContext()).getScaledTouchSlop()||Math.abs(event.getY()-downY)>ViewConfiguration.get(getContext()).getScaledTouchSlop()))handler.removeCallbacks(hold);
         if(action==MotionEvent.ACTION_UP&&Math.abs(event.getY()-downY)<=ViewConfiguration.get(getContext()).getScaledTouchSlop()
                 &&Math.abs(event.getX()-downX)<=ViewConfiguration.get(getContext()).getScaledTouchSlop()){
-            int index=position(event.getX(),event.getY());List<?> rows=HomeThreadOrder.presented(mode);
+            int index=position(event.getX(),event.getY());List<?> rows=HomeThreadOrder.presented(list,mode);
             if(rows!=null&&index>=0&&index<rows.size()){
                 String key=HomeThreadOrder.key(rows.get(index));
                 if(key!=null&&!key.startsWith("board\n")){
@@ -171,7 +172,7 @@ public final class HomeThreadDrag extends FrameLayout {
     }
 
     private void bindVisiblePins(){
-        List<?> rows=HomeThreadOrder.presented(mode);
+        List<?> rows=HomeThreadOrder.presented(list,mode);
         if(rows==null||!(list instanceof ViewGroup))return;
         ViewGroup children=(ViewGroup)list;
         Set<String> pinned=HomeThreadOrder.pins(mode);

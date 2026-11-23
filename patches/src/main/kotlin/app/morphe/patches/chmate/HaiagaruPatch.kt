@@ -5152,13 +5152,6 @@ val haiagaruPatch = resourcePatch(
         allowedExtensions = listOf("ttf", "otf"),
     )
 
-    val dedicatedCheckerViewer = stringOption(
-        key = "dedicatedCheckerViewer",
-        default = "true",
-        title = "必死チェッカー専用ビュワー",
-        description = "true=ChMate内の専用ビュワーを有効化、false=ChMate本来の外部ブラウザ動作。",
-    )
-
     val imageNgTfliteFix = stringOption(
         key = "imageNgTfliteFix",
         default = "true",
@@ -5574,14 +5567,7 @@ val haiagaruPatch = resourcePatch(
             throw PatchException("emojiModeは missing / all / off のいずれかを指定してください: $requestedEmojiMode")
         }
         val requestedFontPath = emojiFontPath.value.orEmpty().trim()
-        val dedicatedViewerEnabled = when (dedicatedCheckerViewer.value.orEmpty().trim().lowercase(Locale.ROOT)) {
-            "true", "1", "yes", "on" -> true
-            "false", "0", "no", "off" -> false
-            else -> throw PatchException(
-                "dedicatedCheckerViewerは true / false のいずれかを指定してください: "
-                    + dedicatedCheckerViewer.value
-            )
-        }
+        val dedicatedViewerEnabled = true
         if (requestedFontPath.isNotBlank() && requestedEmojiMode != "off") {
             val customFont = File(requestedFontPath)
             if (!customFont.isFile || !customFont.canRead()) {

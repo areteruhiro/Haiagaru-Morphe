@@ -3682,23 +3682,26 @@ public final class Haiagaru {
         noteIndicators.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(ResponseNoteIndicator.KEY,on).apply());
         Switch homeNotes=addSwitch(lists,activity,"HOMEの3点メニューにメモを表示",SettingsProfiles.prefs(activity).getBoolean("homeResponseNotesMenu",true));
         homeNotes.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean("homeResponseNotesMenu",on).apply();activity.invalidateOptionsMenu();});
-        Switch homeFold=addSwitch(lists,activity,"HOMEの★・ラベル見出しをタップして開閉",
+        Switch homeFold=addSwitch(lists,activity,"HOMEの★・ラベル・板名見出しをタップして開閉",
                 SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.FOLD_ON_TAP,true));
         homeFold.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.FOLD_ON_TAP);
         homeFold.setOnCheckedChangeListener((button,on)->{
             SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.FOLD_ON_TAP,on).apply();
             BrowsingHistory.refreshVisible(activity);
         });
+        TextView homeFoldHelp=new TextView(activity);
+        homeFoldHelp.setText("板順の板名ラベルをタップすると、その板のスレ一覧を折りたたみ／表示します。");
+        lists.addView(homeFoldHelp);
+        Switch boardFoldLocation=addSwitch(lists,activity,"板名タップ切替を上部に表示（OFFで︙メニュー）",
+                SettingsProfiles.prefs(activity).getBoolean(HomeBoardFoldLabels.TITLE_CONTROL,true));
+        boardFoldLocation.setTag(SettingLinkEntry.KEY_TAG,HomeBoardFoldLabels.TITLE_CONTROL);
+        boardFoldLocation.setOnCheckedChangeListener((button,on)->{
+            SettingsProfiles.prefs(activity).edit().putBoolean(HomeBoardFoldLabels.TITLE_CONTROL,on).apply();
+            BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();
+        });
         Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
         homeOrder.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.ENABLED);
         homeOrder.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.ENABLED,on).apply();activity.invalidateOptionsMenu();});
-        Switch boardFoldControls=addSwitch(lists,activity,"スレ（板順）の板見出しに開閉ボタンを表示",SettingsProfiles.prefs(activity).getBoolean(HomeBoardFoldButtons.VISIBLE,true));
-        boardFoldControls.setTag(SettingLinkEntry.KEY_TAG,HomeBoardFoldButtons.VISIBLE);
-        boardFoldControls.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeBoardFoldButtons.VISIBLE,on).apply();BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();});
-        Switch boardFoldLocation=addSwitch(lists,activity,"板順の開閉ボタン切替を上部に表示（OFFで︙メニュー）",SettingsProfiles.prefs(activity).getBoolean(HomeBoardFoldButtons.TITLE_CONTROL,true));
-        boardFoldLocation.setTag(SettingLinkEntry.KEY_TAG,HomeBoardFoldButtons.TITLE_CONTROL);
-        TextView boardFoldHelp=new TextView(activity);boardFoldHelp.setText("板順を表示しているときだけ、板見出しの開閉ボタンの表示を切り替える操作を追加します。ONは上部のタイトル横、OFFは︙メニューに表示します。白黒の上向き二重矢印で折りたたみ、下向き矢印で開きます。");lists.addView(boardFoldHelp);
-        boardFoldLocation.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeBoardFoldButtons.TITLE_CONTROL,on).apply();BrowsingHistory.refreshVisible(activity);activity.invalidateOptionsMenu();});
         Switch cachedControls=addSwitch(search,activity,"取得済みスレ検索に追加の操作欄を表示",SettingsProfiles.prefs(activity).getBoolean(CachedWacchoiSearch.CONTROLS,true));
         cachedControls.setTag(SettingLinkEntry.KEY_TAG,CachedWacchoiSearch.CONTROLS);
         cachedControls.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(CachedWacchoiSearch.CONTROLS,on).apply());
@@ -4304,8 +4307,8 @@ public final class Haiagaru {
         Switch dedicatedViewerEnabled = addSwitch(
                 layout,
                 activity,
-                text("専用ビュワーで開く（オフならChMate標準のWeb表示）",
-                        "Open in dedicated viewer (off: ChMate web view)"),
+                text("専用ビュワーで開く（オフならWeb表示）",
+                        "Open in dedicated viewer (off: web view)"),
                 preferences.getBoolean(DEDICATED_VIEWER_ENABLED_KEY, true)
         );
 

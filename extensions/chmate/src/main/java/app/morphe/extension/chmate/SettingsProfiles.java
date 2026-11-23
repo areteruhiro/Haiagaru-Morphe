@@ -91,8 +91,7 @@ public final class SettingsProfiles {
         booleanKey(ExpertSettings.COOKIE_AUTH_UI);defaultValue(ExpertSettings.COOKIE_AUTH_UI,true);
         booleanKey(ExpertSettings.RUNTIME_VERSION);defaultValue(ExpertSettings.RUNTIME_VERSION,true);
         booleanKey(HomeThreadOrder.FOLD_ON_TAP);defaultValue(HomeThreadOrder.FOLD_ON_TAP,true);
-        booleanKey(HomeBoardFoldButtons.VISIBLE);defaultValue(HomeBoardFoldButtons.VISIBLE,true);
-        booleanKey(HomeBoardFoldButtons.TITLE_CONTROL);defaultValue(HomeBoardFoldButtons.TITLE_CONTROL,true);
+        booleanKey(HomeBoardFoldLabels.TITLE_CONTROL);defaultValue(HomeBoardFoldLabels.TITLE_CONTROL,true);
         booleanKey(ExpertSettings.BACKGROUND_POSTING);defaultValue(ExpertSettings.BACKGROUND_POSTING,false);
         booleanKey(ShortThreadFilter.ENABLED);defaultValue(ShortThreadFilter.ENABLED,false);
         numberKey(ShortThreadFilter.LIMIT,1,ShortThreadFilter.MAX);defaultValue(ShortThreadFilter.LIMIT,1);

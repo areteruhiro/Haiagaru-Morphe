@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -94,7 +95,8 @@ internal class ResponseNotesScreen(
                 finally { busy = false; discard = false }
             }
         }
-        BackHandler { back() }
+        // ChMate's embedded tablet tabs use native Back; the standalone screen owns a dispatcher.
+        if (LocalOnBackPressedDispatcherOwner.current != null) BackHandler { back() }
         LaunchedEffect(editId) { if (editId != null && isNew) { memoFocus.requestFocus(); keyboard?.show() } }
         LaunchedEffect(Unit) {
             if (!loaded) { loaded = true
