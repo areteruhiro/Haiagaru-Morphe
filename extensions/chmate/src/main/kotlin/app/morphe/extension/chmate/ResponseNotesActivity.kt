@@ -26,11 +26,19 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.*
 
 class ResponseNotesActivity : HaiagaruComposeActivity() {
-    private lateinit var store: ResponseNotesStore
     override fun onCreate(state: Bundle?) {
-        super.onCreate(state); store = ResponseNotesStore.get(applicationContext)
-        setContent { HaiagaruUi.Theme { Notes() } }
+        super.onCreate(state)
+        val controller = ResponseNotesScreen(this, intent) { finish() }
+        setContent { HaiagaruUi.Theme { controller.Notes() } }
     }
+}
+
+internal class ResponseNotesScreen(
+    private val activity: android.app.Activity,
+    private val intent: Intent,
+    private val close: () -> Unit
+) {
+    private val store = ResponseNotesStore.get(activity.applicationContext)
     private fun blank() = ResponseNotesStore.Note("", "", "", "", "", 0, 0)
     private fun mediaHtml(source: String): String {
         val media = ThreadMediaUrls.collect(source, null).take(8).joinToString("") { raw ->
@@ -42,10 +50,10 @@ class ResponseNotesActivity : HaiagaruComposeActivity() {
     }
     private fun openSource(address: String) {
         if (address.isBlank()) return
-        startActivity(Intent(this, OpenUrlActivity::class.java).setData(Uri.parse(address)))
+        activity.startActivity(Intent(activity, OpenUrlActivity::class.java).setData(Uri.parse(address)))
     }
     @OptIn(ExperimentalMaterial3Api::class)
-    @Composable private fun Notes() {
+    @Composable fun Notes() {
         val scope = rememberCoroutineScope()
         val memoFocus = remember { FocusRequester() }
         val keyboard = LocalSoftwareKeyboardController.current
@@ -74,7 +82,7 @@ class ResponseNotesActivity : HaiagaruComposeActivity() {
             url = note.url; source = note.source; number = note.number; sourceExpanded = false
         }
         fun list() { editId = null; sourceUrl = ""; revision++ }
-        fun back() { if (busy) return; if (editId != null) { if (dirty) discard = true else list() } else finish() }
+        fun back() { if (busy) return; if (editId != null) { if (dirty) discard = true else list() } else close() }
         fun save(close: Boolean = true) {
             if (busy || text.isBlank()) return
             busy = true
