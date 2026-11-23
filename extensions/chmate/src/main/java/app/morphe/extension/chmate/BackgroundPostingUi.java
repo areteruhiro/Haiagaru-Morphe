@@ -36,6 +36,7 @@ public final class BackgroundPostingUi {
         boolean waiting;
         boolean hidden;
         boolean failed;
+        boolean succeeded;
         String submittedBody;
 
         Binding(Object fragment, Activity editor, Activity parent, String version, String thread,
@@ -91,6 +92,12 @@ public final class BackgroundPostingUi {
         Object fragment = findFragment(callback, 0);
         Binding binding = BINDINGS.get(fragment);
         if (binding == null) return;
+        synchronized (binding) {
+            if (binding.succeeded) return;
+            binding.succeeded = true;
+            binding.waiting = false;
+            binding.failed = false;
+        }
         clearSubmittedEdgeDraft(binding);
         if (!binding.hidden || binding.thread == null) return;
         Object reader = binding.reader.get();
@@ -176,6 +183,7 @@ public final class BackgroundPostingUi {
         Activity editor = binding.editor.get();
         EditText body = binding.body.get();
         synchronized (binding) {
+            binding.succeeded = false;
             binding.submittedBody = body == null ? null : body.getText().toString();
             if (editor == null || !enabled(editor) || !validParent(editor, binding.parent.get())) return;
             binding.attempt++;
