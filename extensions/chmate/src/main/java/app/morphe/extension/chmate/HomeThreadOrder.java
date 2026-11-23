@@ -130,6 +130,28 @@ public final class HomeThreadOrder {
         return rows;
     }
 
+    // Search rows already have the native result order and no custom category projection.
+    static List<?> applyModernSearch(List<?> rows, int mode) {
+        expandedForDisplay.remove();
+        if (rows == null || !target(mode)) return rows;
+        List<?> result = uniqueRows(rows);
+        synchronized (presented) {
+            presented.put(tabMode(mode), result);
+        }
+        return result;
+    }
+
+    private static List<?> uniqueRows(List<?> source) {
+        ArrayList<Object> clean=new ArrayList<>();
+        Set<String> seen=new HashSet<>();
+        for(Object row:source){
+            if(labelRows.contains(row))continue;
+            String id=key(row);
+            if(id==null||seen.add(id))clean.add(row);
+        }
+        return clean;
+    }
+
     private static boolean searchActive(){
         for(Activity activity:GlobalSearchHome.activitiesForLabels()){
             if(activity!=null&&!activity.isFinishing()
@@ -144,14 +166,7 @@ public final class HomeThreadOrder {
     private static List<?> apply(List<?> source,int mode,boolean respectFolds){
         if(source==null||!target(mode)||Haiagaru.applicationContextForExtension()==null)return source;
 
-        ArrayList<Object> clean=new ArrayList<>();
-        Set<String> seen=new HashSet<>();
-        for(Object row:source){
-            if(labelRows.contains(row))continue;
-            String id=key(row);
-            if(id==null||seen.add(id))clean.add(row);
-        }
-        source=clean;
+        source = uniqueRows(source);
         if(searchActive())return source;
         synchronized(latest){latest.put(mode,new ArrayList<>(source));}
         Map<String,Integer> ranks=ranks(mode);

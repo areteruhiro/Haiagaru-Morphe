@@ -27,10 +27,14 @@ public final class GlobalSearchHome {
     private static final Map<Activity,String> DISPLAYED=new WeakHashMap<>();
     private static final List<WeakReference<Object>> HOMES=new ArrayList<>();
     private static final class Action{final String query,id;Action(String query,String id){this.query=query;this.id=id;}}
+    private static volatile Type cachedType;
+    private static final String MODERN_SEARCH_ROW =
+            "o.getAvailabilityStatus$r8lambdavCwjfXDiSGcirCy4I008VOiJ_lw";
+
     private static final class Type {
         final Class<?> row,kind;final String enumField,queryField;
         Type(ClassLoader loader,String version)throws Exception{
-            String name=version.contains("191")?"o.onAdDisplayed$setHasDecor":version.contains("226")?"o.Yy2$value":"o.getAvailabilityStatus$r8lambdavCwjfXDiSGcirCy4I008VOiJ_lw";
+            String name=version.contains("191")?"o.onAdDisplayed$setHasDecor":version.contains("226")?"o.Yy2$value":MODERN_SEARCH_ROW;
             row=loader.loadClass(name);Constructor<?> ctor=row.getConstructors()[0];kind=ctor.getParameterTypes()[1];
             enumField=version.contains("226")?"c":"a";queryField=version.contains("242")?"d":"e";
         }
@@ -52,7 +56,35 @@ public final class GlobalSearchHome {
         }
         TextView help=new TextView(a);help.setText("通知や保存済みの結果はChMate標準の全板検索結果一覧で開きます。保存済み結果の再表示では再検索しません。バックグラウンド検索をオフにすると従来の検索に戻ります。途中表示がオンの場合は取得済み結果を先に表示し、取得できた板から追加します。保存は最新50件までです。");root.addView(help);
     }
-    private static Type type(Context c)throws Exception{return new Type(c.getClassLoader(),c.getPackageManager().getPackageInfo(c.getPackageName(),0).versionName);}
+    private static Type type(Context context) throws Exception {
+        Type current = cachedType;
+        if (current != null) return current;
+        current = new Type(context.getClassLoader(),
+                context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName);
+        cachedType = current;
+        return current;
+    }
+
+    /** Use the query attached to the native result, which is available off the UI thread. */
+    static boolean isModernSearchResult(List<?> rows) {
+        if (rows == null) return false;
+        ListIterator<?> iterator = rows.listIterator(rows.size());
+        while (iterator.hasPrevious()) {
+            Object row = iterator.previous();
+            if (row == null || !MODERN_SEARCH_ROW.equals(row.getClass().getName())) continue;
+            try {
+                Object kind = NativeFields.find(row.getClass(), "a").get(row);
+                if (!(kind instanceof Enum<?>)) continue;
+                String name = ((Enum<?>) kind).name();
+                if (!"LOCAL".equals(name) && !"FF2CH".equals(name)) continue;
+                Object query = NativeFields.find(row.getClass(), "d").get(row);
+                if (query instanceof String && !((String) query).trim().isEmpty()) return true;
+            } catch (ReflectiveOperationException ignored) {
+                // Keep ordinary HOME processing if the row structure is unavailable.
+            }
+        }
+        return false;
+    }
     public static List<?> rows(List<?> input){
         Context c=Haiagaru.applicationContextForExtension();
         input=withoutRegionalBoardDuplicates(c,input);
