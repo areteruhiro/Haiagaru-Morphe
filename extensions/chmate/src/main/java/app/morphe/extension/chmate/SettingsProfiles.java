@@ -88,6 +88,7 @@ public final class SettingsProfiles {
         booleanKey(ExpertSettings.BOARD_COOKIES);defaultValue(ExpertSettings.BOARD_COOKIES,true);
         booleanKey(ExpertSettings.COOKIE_AUTH_UI);defaultValue(ExpertSettings.COOKIE_AUTH_UI,true);
         booleanKey(ExpertSettings.RUNTIME_VERSION);defaultValue(ExpertSettings.RUNTIME_VERSION,true);
+        booleanKey(HomeThreadOrder.FOLD_ON_TAP);defaultValue(HomeThreadOrder.FOLD_ON_TAP,true);
         booleanKey(ExpertSettings.BACKGROUND_POSTING);defaultValue(ExpertSettings.BACKGROUND_POSTING,false);
         booleanKey(ShortThreadFilter.ENABLED);defaultValue(ShortThreadFilter.ENABLED,false);
         numberKey(ShortThreadFilter.LIMIT,1,ShortThreadFilter.MAX);defaultValue(ShortThreadFilter.LIMIT,1);

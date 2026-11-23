@@ -29,7 +29,7 @@ final class ReleaseFeatureOptions {
         WACCHOI_COPY_PARENS("1.47.0"), THREAD_REPORTER_COPY("1.47.0"), HIDDEN_NG_NEW_ARRIVAL_COUNT("1.47.0"),
         READING_POSITION_CARD_DEFAULT("1.47.0"), EXTRA_QUICK_FILTERS("1.47.0"), KYODEMO_TOOLBAR_PALETTE("1.49.0"),
         ANIMANCH_HEART("1.49.0"), CRASH_REPORTING("1.49.0"), GIGAFILE_BUTTON("1.49.0"), GIGAFILE_LINK_MODE("1.49.0"),
-        FUTABA_DIRECT_POSTING("1.49.0"), FUTABA_OFFICIAL_POSTING("1.49.0"), EXPERT_PERFORMANCE("1.49.2"), BACKGROUND_POSTING_OPT_IN("1.50.4"),
+        FUTABA_DIRECT_POSTING("1.49.0"), FUTABA_OFFICIAL_POSTING("1.49.0"), EXPERT_PERFORMANCE("1.49.2"), BACKGROUND_POSTING_OPT_IN("1.51.0"), HOME_INLINE_ORDER("1.51.0"),
         SHORT_BOARD_THREADS("1.50.0");
 
         final String version;
@@ -37,7 +37,7 @@ final class ReleaseFeatureOptions {
         String category() {
             switch(this){
                 case BACKGROUND_POSTING_OPT_IN:case EXPERT_PERFORMANCE:return "エキスパート設定";
-                case SHORT_BOARD_THREADS:return "表示・検索";
+                case HOME_INLINE_ORDER:case SHORT_BOARD_THREADS:return "表示・検索";
                 case FUTABA_DIRECT_POSTING:case FUTABA_OFFICIAL_POSTING:return "履歴・投稿";
                 case ANIMANCH_HEART:case CRASH_REPORTING:case SETTINGS_LINKS:case SITE_GROUPS:case EDGE:case ORG:case BAKUSAI:case FUTABA:case ANIMAN:return "アプリ・通信";
                 case WACCHOI_COPY_UPPER:case WACCHOI_COPY_LOWER:case WACCHOI_COPY_PARENS:
@@ -63,6 +63,7 @@ final class ReleaseFeatureOptions {
         }
         String description() {
             switch(this){
+                case HOME_INLINE_ORDER:return "HOMEの★とラベルの見出しをタップして開閉します。初期値はオンです。";
                 case BACKGROUND_POSTING_OPT_IN:return "今回の更新後は、以前オンにした場合も一度オフになります。再びオンにできます。";
                 case FUTABA_DIRECT_POSTING:return "ふたば img／may の鉛筆ボタンから公式投稿フォームだけを開きます。初期値はオンです。";
                 case FUTABA_OFFICIAL_POSTING:return "ふたば img／may の投稿に、広告を除いた公式フォームを使います。初期値はオンです。";

@@ -348,6 +348,9 @@ final class UpdateHistory {
                 toggle(content,activity,FeatureSwitches.prefs(activity),"投稿欄に板ごとの上限・残量・超過位置を表示", "postEditorLimitDisplay",true,null); break;
             case FILTER_OPTIMIZATION:
                 toggle(content,activity,FeatureSwitches.prefs(activity),"フィルターの抽出・位置保持・件数集計を最適化",ExtraQuickFilters.OPTIMIZATION,false,null); break;
+            case HOME_INLINE_ORDER:
+                toggle(content,activity,SettingsProfiles.prefs(activity),"HOMEの★・ラベル見出しをタップして開閉",
+                        HomeThreadOrder.FOLD_ON_TAP,true,()->BrowsingHistory.refreshVisible(activity)); break;
             case BACKGROUND_POSTING_OPT_IN:
                 ExpertSettings.addBackgroundPosting(content,activity,SettingsProfiles.prefs(activity)); break;
             case EXPERT_PERFORMANCE:
