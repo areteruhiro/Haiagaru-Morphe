@@ -144,6 +144,7 @@ public final class GlobalSearchHome {
     }
     public static boolean click(Object fragment,Object row){
         if(Boolean.TRUE.equals(BYPASS.get()))return false;
+        if(HomeThreadOrder.toggleCategory(fragment,row))return true;
         Activity a=Haiagaru.toolbarActivity(fragment);if(!enabled(a))return false;
         try{
             Type t=type(a);if(!t.row.isInstance(row))return false;

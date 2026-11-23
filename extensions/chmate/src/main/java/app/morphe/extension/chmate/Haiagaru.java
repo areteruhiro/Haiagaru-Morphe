@@ -1010,6 +1010,7 @@ public final class Haiagaru {
             migrateRestoredPackageReferences(appContext);
             migratedPackagePreferencesContext = appContext;
         }
+        BackgroundPostingUi.migrateSetting(startupPreferences);
         LocalAutoBackup.initialize(appContext);
         HistoryLimits.initialize(appContext);
         ImgurWebUpload.init(appContext);
@@ -3682,6 +3683,13 @@ public final class Haiagaru {
         noteIndicators.setOnCheckedChangeListener((button,on)->SettingsProfiles.prefs(activity).edit().putBoolean(ResponseNoteIndicator.KEY,on).apply());
         Switch homeNotes=addSwitch(lists,activity,"HOMEの3点メニューにメモを表示",SettingsProfiles.prefs(activity).getBoolean("homeResponseNotesMenu",true));
         homeNotes.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean("homeResponseNotesMenu",on).apply();activity.invalidateOptionsMenu();});
+        Switch homeFold=addSwitch(lists,activity,"HOMEの★・ラベル見出しをタップして開閉",
+                SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.FOLD_ON_TAP,true));
+        homeFold.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.FOLD_ON_TAP);
+        homeFold.setOnCheckedChangeListener((button,on)->{
+            SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.FOLD_ON_TAP,on).apply();
+            BrowsingHistory.refreshVisible(activity);
+        });
         Switch homeOrder=addSwitch(lists,activity,"HOMEのお気に入りの並び替え・固定を使う",SettingsProfiles.prefs(activity).getBoolean(HomeThreadOrder.ENABLED,true));
         homeOrder.setTag(SettingLinkEntry.KEY_TAG,HomeThreadOrder.ENABLED);
         homeOrder.setOnCheckedChangeListener((button,on)->{SettingsProfiles.prefs(activity).edit().putBoolean(HomeThreadOrder.ENABLED,on).apply();activity.invalidateOptionsMenu();});

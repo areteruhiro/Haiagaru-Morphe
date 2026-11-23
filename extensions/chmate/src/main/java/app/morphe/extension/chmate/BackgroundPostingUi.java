@@ -36,6 +36,7 @@ public final class BackgroundPostingUi {
         boolean waiting;
         boolean hidden;
         boolean failed;
+        boolean succeeded;
         String submittedBody;
 
         Binding(Object fragment, Activity editor, Activity parent, String version, String thread,
@@ -91,6 +92,12 @@ public final class BackgroundPostingUi {
         Object fragment = findFragment(callback, 0);
         Binding binding = BINDINGS.get(fragment);
         if (binding == null) return;
+        synchronized (binding) {
+            if (binding.succeeded) return;
+            binding.succeeded = true;
+            binding.waiting = false;
+            binding.failed = false;
+        }
         clearSubmittedEdgeDraft(binding);
         if (!binding.hidden || binding.thread == null) return;
         Object reader = binding.reader.get();
@@ -176,6 +183,7 @@ public final class BackgroundPostingUi {
         Activity editor = binding.editor.get();
         EditText body = binding.body.get();
         synchronized (binding) {
+            binding.succeeded = false;
             binding.submittedBody = body == null ? null : body.getText().toString();
             if (editor == null || !enabled(editor) || !validParent(editor, binding.parent.get())) return;
             binding.attempt++;
@@ -249,6 +257,61 @@ public final class BackgroundPostingUi {
             catch (Throwable ignored) { }
         }
         return values;
+    }
+
+    /** ChMate publishes the confirmation to the editor's lifecycle-bound UI, then waits for input. */
+    public static void beforeCookiePrompt(Object fragment) {
+        Binding binding = BINDINGS.get(fragment);
+        if (binding == null) return;
+        final int attempt;
+        synchronized (binding) {
+            if (binding.succeeded || (!binding.waiting && !binding.hidden)) return;
+            binding.waiting = false;
+            binding.failed = true;
+            if (!binding.hidden) return;
+            attempt = binding.attempt;
+        }
+        java.util.concurrent.CountDownLatch ready = new java.util.concurrent.CountDownLatch(1);
+        // A return to the reader may already be queued. Get the editor back in front
+        // before the native worker emits its one-shot confirmation event.
+        MAIN.postDelayed(() -> {
+            Activity editor = binding.editor.get();
+            Activity parent = binding.parent.get();
+            if (!validParent(editor, parent) || !reopen(editor, parent)) {
+                ready.countDown();
+                return;
+            }
+            awaitCookiePromptEditor(binding, attempt, ready, 0);
+        }, 80);
+        if (Looper.myLooper() == Looper.getMainLooper()) return;
+        try {
+            ready.await(3, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void awaitCookiePromptEditor(Binding binding, int attempt,
+            java.util.concurrent.CountDownLatch ready, int checks) {
+        MAIN.postDelayed(() -> {
+            Activity editor = binding.editor.get();
+            Object fragment = binding.fragment.get();
+            if (attempt != binding.attempt || !validParent(editor, binding.parent.get())
+                    || fragment == null || checks >= 48) {
+                ready.countDown();
+                return;
+            }
+            try {
+                if (Boolean.TRUE.equals(fragment.getClass().getMethod("isResumed").invoke(fragment))) {
+                    ready.countDown();
+                    return;
+                }
+            } catch (ReflectiveOperationException unavailable) {
+                ready.countDown();
+                return;
+            }
+            awaitCookiePromptEditor(binding, attempt, ready, checks + 1);
+        }, 50);
     }
 
     /** Called by narrowly hooked native failure callbacks, before their error state is displayed. */
@@ -365,8 +428,14 @@ public final class BackgroundPostingUi {
         }
     }
 
+    static void migrateSetting(android.content.SharedPreferences preferences) {
+        if (preferences.getBoolean("backgroundPostingOptInMigrationV1", false)) return;
+        preferences.edit().putBoolean(ENABLED, false)
+                .putBoolean("backgroundPostingOptInMigrationV1", true).apply();
+    }
+
     private static boolean enabled(Activity activity) {
-        try { return SettingsProfiles.prefs(activity).getBoolean(ENABLED, true); }
+        try { return SettingsProfiles.prefs(activity).getBoolean(ENABLED, false); }
         catch (Throwable ignored) { return true; }
     }
 
