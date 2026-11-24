@@ -136,7 +136,7 @@ final class VideoFrameThumbnail {
                 // Settings/network may have changed while this request was queued.
                 if (four && !fourAllowed()) { ATTEMPTED.cancel(attempt); return; }
                 video = File.createTempFile("frame-", ".mp4", directory);
-                long maxBytes = Haiagaru.videoThumbnailMaxMb() * 1024L * 1024L;
+                long maxBytes = MobileMediaPolicy.fileLimit(Haiagaru.videoThumbnailMaxMb() * 1024L * 1024L);
                 long timeoutMs = Haiagaru.videoThumbnailTimeoutSeconds() * 1000L;
                 long started = android.os.SystemClock.elapsedRealtime();
                 connection = previewResponse(context, url, four, timeoutMs);
@@ -156,7 +156,7 @@ final class VideoFrameThumbnail {
                 }
                 if (rangePreview) {
                     connection.disconnect(); connection = null;
-                } else try (InputStream input = connection.getInputStream(); OutputStream output = new FileOutputStream(video)) {
+                } else try (InputStream input = AppTrafficUsage.counting(context,"video_thumbnails",connection.getInputStream()); OutputStream output = new FileOutputStream(video)) {
                     byte[] buffer = new byte[8192];
                     long total = 0;
                         int bytesRead;

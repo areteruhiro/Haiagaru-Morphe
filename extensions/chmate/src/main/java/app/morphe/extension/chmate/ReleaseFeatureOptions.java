@@ -101,7 +101,7 @@ final class ReleaseFeatureOptions {
                 case GIGAFILE_BUTTON:return "書き込み画面のファイルアイコンと全画面メニューのアップロード項目を切り替えます。";
                 case GIGAFILE_LINK_MODE:return "共有リンクをアプリ内・外部ブラウザ・直接ダウンロードで開く方法を選べます。";
                 case UPLOAD_DESTINATION:return "書き込み画面から画像・動画を添付するときに、送信先を選べます。";
-                case NG_REPLY_NOTIFICATIONS:return "NGに該当する返信を新着通知の対象から外します。";
+                case NG_REPLY_NOTIFICATIONS:return "登録済みのID・名前・本文・BE・画像URL NGと、有効な共有／プログラムNGに一致するレスを新着通知の対象から外します。連鎖NGへの返信は別設定です。";
                 case NG_CHAIN_REPLY_NOTIFICATIONS:return "連鎖NGの対象も通知から除外します。OFFでは、NGレスにアンカーしただけの別IDの返信は通知されます。";
                 case HIDDEN_NG_NEW_ARRIVAL_COUNT:return "ChMate 0.8.10.191／226／242で、スレ更新直後の「新着件数」から透明あぼーんとして判定されたレスを除きます。HOMEやスレ一覧の未読件数・既読位置は変えません。初期状態はOFFです。";
                 case READING_POSITION_CARD_DEFAULT:return "WebサイトのリンクカードまたはXカード形式を有効にすると、読書位置の補助保存を未設定時だけ自動で有効にします。初期状態はOFFで、手動で変更した設定を優先します。";

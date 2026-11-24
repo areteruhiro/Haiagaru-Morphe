@@ -107,6 +107,22 @@ final class UpdateHistory {
         LinearLayout body=new LinearLayout(context);body.setOrientation(LinearLayout.VERTICAL);
         int pad=Math.round(16*context.getResources().getDisplayMetrics().density);body.setPadding(pad,pad,pad,pad);
         TextView help=new TextView(context);help.setText("追加された機能を目的別にまとめています。スイッチは変更すると自動保存され、通常の設定画面にも反映されます。詳しい説明は下にあります。");body.addView(help);
+        toggle(body,activity,SettingsProfiles.prefs(activity),"スレタイトルメニューに「記者IDをコピー」を表示",ThreadTitleActions.SHOW_REPORTER,true,null);
+        toggle(body,activity,SettingsProfiles.prefs(activity),"エッヂのスレタイトル＋URLコピーに記者IDを含める",EdgeReporterOptions.COPY_SUFFIX,true,null);
+        String[] fetchKeys={MobileMediaPolicy.IMAGE,MobileMediaPolicy.LIST,MobileMediaPolicy.WEB,MobileMediaPolicy.X};
+        String[] fetchLabels={"画像の自動取得","スレ一覧画像の自動取得","Webカードの自動取得","Xカードの自動取得"};
+        for(int i=0;i<fetchKeys.length;i++){
+            android.widget.Spinner choice=Haiagaru.addSpinner(body,activity,fetchLabels[i],new String[]{"取得する","取得しない","Wi-Fi時のみ自動で取得"},MobileMediaPolicy.configured(fetchKeys[i]));
+            new LiveSettings(SettingsProfiles.prefs(activity),()->{}).choice(choice,fetchKeys[i]);
+        }
+        android.widget.Spinner videoFetch=Haiagaru.addSpinner(body,activity,"動画リンクの自動取得",new String[]{"画像のみ","画像＋動画","動画のみ","取得しない","Wi-Fi時のみ自動で取得（画像＋動画）"},MobileMediaPolicy.videoConfigured());
+        new LiveSettings(SettingsProfiles.prefs(activity),()->{}).choice(videoFetch,"urlVideoFetchMode");
+        android.widget.Spinner gifFetch=Haiagaru.addSpinner(body,activity,"GIFリンクの自動取得",new String[]{"画像＋GIF","画像のみ","GIFのみ","取得しない","Wi-Fi時のみ自動で取得（画像＋GIF）"},MobileMediaPolicy.gifConfigured());
+        new LiveSettings(SettingsProfiles.prefs(activity),GifAutoFetch::changed).choice(gifFetch,GifAutoFetchPolicy.KEY);
+        BoardUrlPicker.addSettings(body,activity);
+        StorageUsage.addButton(body,activity);
+        AppTrafficUsage.addSettings(body,activity);
+        toggle(body,activity,SettingsProfiles.prefs(activity),"テキスト選択メニューを優先する",SelectionMenuPriority.KEY,false,null);
         for(String category:new String[]{"アプリ・通信","表示・検索","画像・動画","NG・文字列置換","履歴・投稿","エキスパート設定"}) {
             section(body,activity,category);
             for(ReleaseFeatureOptions.Option option:ReleaseFeatureOptions.Option.values()) {
@@ -457,7 +473,7 @@ final class UpdateHistory {
                 toggle(content, activity, FeatureSwitches.prefs(activity), "画像・動画のアップロード時にアップロード先を選ぶ",
                         MediaUploadHosts.ASK_DESTINATION, false, null); break;
             case NG_REPLY_NOTIFICATIONS:
-                toggle(content, activity, FeatureSwitches.prefs(activity), "NGされたレスの返信通知を無効にする",
+                toggle(content, activity, FeatureSwitches.prefs(activity), "登録済みNGに該当するレスを新着通知から除く",
                         NotificationNg.KEY, true, null); break;
             case NG_CHAIN_REPLY_NOTIFICATIONS:
                 toggle(content, activity, FeatureSwitches.prefs(activity), "連鎖NGされたレスへの返信も通知しない",
@@ -490,12 +506,12 @@ final class UpdateHistory {
                 content.addView(images); break;
             case THREAD_SCOPED_NG:
                 Switch threadScopeToggle=new LiveSettings.Toggle(activity);
-                threadScopeToggle.setText("レスからNG登録するときに対象範囲を選べるようにする");
+                threadScopeToggle.setText("NG登録時に「このスレのみを対象にする」を表示");
                 threadScopeToggle.setChecked(ThreadScopedNg.enabled(activity));
                 threadScopeToggle.setOnCheckedChangeListener((button,on)->FeatureSwitches.prefs(activity).edit().putBoolean(ThreadScopedNg.ENABLED,on).apply());
                 content.addView(threadScopeToggle);
                 TextView threadNgHelp=new TextView(activity);
-                threadNgHelp.setText("ONにすると、NG ID・NGName・NGワードをレスから登録するときに「このスレのみを対象にする」を選べます。OFFではChMate標準の登録処理を使います。ﾜｯﾁｮｲ上下4桁NGでは板限定も選べます。対象スレを削除すると、そのスレに限定したルールも削除します。");
+                threadNgHelp.setText("ONでID・名前・ワード・ﾜｯﾁｮｲ上下4桁の登録時に「このスレのみを対象にする」を表示します。OFFではID・名前・ワードは標準登録へ進み、ﾜｯﾁｮｲ登録画面のスレ限定チェックも隠します。登録済みの限定ルールと板限定設定は保持します。");
                 content.addView(threadNgHelp);break;
         }
     }
