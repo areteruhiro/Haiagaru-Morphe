@@ -3,6 +3,9 @@ rpc.exports.test = () => new Promise(resolve => Java.perform(() => {
     try {
         const application = Java.use('android.app.ActivityThread').currentApplication();
         if (!/\.haiagaru\.reporter(?:191|226|242)$/.test(String(application.getPackageName()))) throw Error('Use an isolated reporter');
+        const packageName=String(application.getPackageName());
+        const callbackType=packageName.endsWith('191')?'o.pa$15':packageName.endsWith('226')?'jp.syoboi.a2chMate.ui.reslist.ResListFragment$setHasDecor':'jp.syoboi.a2chMate.ui.reslist.ResListFragmentViewModel';
+        Java.use(callbackType).class.getDeclaredMethods();
         preferences = application.getSharedPreferences('io.github.areteruhiro.chmate.haiagaru.ui-config', 0);
         hadSetting = preferences.contains('excludeHiddenNgNewArrivals');
         oldSetting = preferences.getBoolean('excludeHiddenNgNewArrivals', false);
@@ -19,9 +22,12 @@ rpc.exports.test = () => new Promise(resolve => Java.perform(() => {
         const verify = (before, after, expected) => {
             const owner = Java.use('java.lang.Object').$new();
             const oldRows = collection(before), newRows = collection(after);
-            if (numbers.before(owner, oldRows) !== before.length) throw Error('Native size changed');
-            numbers.after(owner, newRows);
-            const actual = numbers.count(owner, before.length, after.length);
+            numbers.owner(owner);
+            if (numbers.before.overload('java.util.Collection').call(numbers, oldRows) !== before.length) throw Error('Native size changed');
+            numbers.owner(owner);
+            numbers.after.overload('java.util.Collection').call(numbers, newRows);
+            numbers.owner(owner);
+            const actual = numbers.count.overload('int', 'int').call(numbers, before.length, after.length);
             if (actual !== expected) throw Error(JSON.stringify({before, after, expected, actual}));
             if (oldRows.size() !== before.length || newRows.size() !== after.length) throw Error('Source list mutated');
             checks++;

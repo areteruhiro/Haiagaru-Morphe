@@ -11,6 +11,12 @@ public final class NewArrivalNumbers {
     static final String KEY = "countNewArrivalResponseNumbers";
     static boolean enabled() { return FeatureSwitches.enabled(KEY, true); }
     private static final Map<Object, Snapshot> SNAPSHOTS = new WeakHashMap<>();
+    private static final ThreadLocal<Object> OWNER = new ThreadLocal<>();
+    public static void owner(Object owner) { OWNER.set(owner); }
+    private static Object takeOwner() { Object owner = OWNER.get(); OWNER.remove(); return owner; }
+    public static int before(Collection<?> rows) { return before(takeOwner(), rows); }
+    public static void after(Collection<?> rows) { after(takeOwner(), rows); }
+    public static int count(int previous, int current) { return count(takeOwner(), previous, current); }
     private static final class Snapshot {
         final int last;
         Set<Integer> current;
