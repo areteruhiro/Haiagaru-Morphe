@@ -45,6 +45,17 @@ rpc.exports.test = () => new Promise(resolve => Java.perform(() => {
         verify([1,2,3,4,5], [1,4,5,6], 0);
         preferences.edit().putBoolean('countNewArrivalResponseNumbers', true).commit();
         verify([1,2,3,4,5], [1,4,5,6], 1);
+        verify([5,1,3], [8,5,1,6,8,0,-1], 2);
+        const a=Java.use('java.lang.Object').$new(),b=Java.use('java.lang.Object').$new();
+        const capture=(owner,rows)=>{numbers.owner(owner);numbers.before.overload('java.util.Collection').call(numbers,rows);};
+        const finish=(owner,rows,previous,current)=>{numbers.owner(owner);numbers.after.overload('java.util.Collection').call(numbers,rows);numbers.owner(owner);return numbers.count.overload('int','int').call(numbers,previous,current);};
+        capture(a,collection([1,2,3]));capture(b,collection([10,12]));
+        if(finish(a,collection([1,3,4]),3,3)!==1||finish(b,collection([10,12,13]),2,3)!==1)throw Error('Concurrent owners crossed snapshots');checks++;
+        const reused=collection([1,2,3]);capture(a,reused);reused.remove.overload('int').call(reused,1);reused.add(response.$new(4));
+        if(finish(a,reused,3,3)!==1)throw Error('Reused native list lost the old maximum');checks++;
+        capture(a,collection([1,2,3]));
+        if(finish(a,collection([1,2,3]),3,3)!==0)throw Error('No-change update changed count');
+        numbers.owner(a);if(numbers.count.overload('int','int').call(numbers,3,5)!==2)throw Error('Snapshot not consumed');checks++;
         resolve({passed: checks, networkRequests: 0, modifiesNativeHistory: false});
     } catch (error) { resolve({error: String(error)}); }
     finally {
