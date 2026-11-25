@@ -22,12 +22,7 @@ final class VideoFrameThumbnail {
     static boolean fourAllowed() {
         if (!Haiagaru.videoPreviewFourEnabled()) return false;
         if (!Haiagaru.videoPreviewWifiOnly()) return true;
-        try {
-            Context c = Haiagaru.applicationContextForExtension();
-            android.net.ConnectivityManager cm = (android.net.ConnectivityManager)c.getSystemService(Context.CONNECTIVITY_SERVICE);
-            android.net.NetworkInfo network = cm.getActiveNetworkInfo();
-            return network != null && network.isConnected() && network.getType() == android.net.ConnectivityManager.TYPE_WIFI;
-        } catch (RuntimeException ignored) { return false; }
+        return MobileMediaPolicy.wifi();
     }
     static void request(String url) {
         enqueue(url,false);
@@ -106,6 +101,11 @@ final class VideoFrameThumbnail {
     }
     static HttpURLConnection connectionForPreview(Context context, String url, boolean wifiOnly) throws IOException {
         URL address = new URL(url);
+        if (wifiOnly && android.os.Build.VERSION.SDK_INT >= 23) {
+            android.net.Network network = MobileMediaPolicy.activeWifiNetwork();
+            if (network != null) return (HttpURLConnection)network.openConnection(address);
+            throw new IOException("Wi-Fi unavailable; no cellular fallback");
+        }
         if (wifiOnly && android.os.Build.VERSION.SDK_INT >= 21) {
             android.net.ConnectivityManager cm = (android.net.ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
             for (android.net.Network network : cm.getAllNetworks()) {

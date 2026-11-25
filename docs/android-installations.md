@@ -4084,3 +4084,17 @@ Success。
 - DEX検査で全版の更新前／更新後／0件補正フックと空下書きガードを1か所ずつ確認。旧番号計算オプションはAPKに残っていない。
 - Frida結果・適用ログ・候補APK: `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/`。
 - 実機報告スレ上での新着0件再現は未実施。公開投稿、端末 `d5497008` のデータ変更なし。
+
+## 2026-11-25 モバイルメディア判定・通信量OFF 負荷確認
+
+- d5497008 / Mi Note10 / Android 11。隔離reporter191／226／242に署名照合後install-r Success。通常版ChMateは置換せず、設定はFrida確認後に復元。
+- MPP: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/mobile-policy-cache-20261125/candidates/candidate.mpp
+- MPP SHA256: d70d8b5b9effb00df11e15074585b0bdfb7f3b1d703666e9af54c5ffff27d21f
+- 191 APK: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/mobile-policy-cache-20261125/candidates/chatmate191.apk / SHA256 `796ec4d00a0cb3c9341ad4a88ed53acc379797f28e294241595ef152c22fdbd9`
+- 226 APK: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/mobile-policy-cache-20261125/candidates/chatmate226.apk / SHA256 `01bfddb7243245b9780c38b038dfd66eb15da889ec0e7bc3eec1504b76f04542`
+- 242 APK: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/mobile-policy-cache-20261125/candidates/chatmate242.apk / SHA256 `53344185f26728d486a05cd0185d861231a6c58039ff338d483fab9f448d363b`
+- 証明書SHA256: `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`
+- 各版で画像取得判定50,000回＋動画分割Wi-Fi判定50,000回。判定中の `getActiveNetwork()`／`getNetworkCapabilities()`／`getActiveNetworkInfo()`／`getAllNetworks()`／`getNetworkInfo()` は全て0回。時間は191 4,404ms／226 4,486ms／242 4,384ms。
+- 各版で通信量記録OFF時の入力計数ラッパー迂回、定期サンプラーの開始・停止を確認。
+- Fridaスクリプト: `scripts/frida-mobile-media-policy-cache.js`, `scripts/frida-app-traffic-default.js`
+- 記録: `docs/mobile-media-policy-performance-20261125.md`

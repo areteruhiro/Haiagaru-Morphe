@@ -24,22 +24,30 @@ public final class AppTrafficUsage {
     private static final long FEATURE_FLUSH_DELAY_SECONDS=2L;
     private static volatile String cachedFeatureDay;
     private static volatile long nextFeatureDayCheckElapsed;
-    private static boolean started;
+    private static volatile boolean started;
+    private static ScheduledFuture<?> samplerTask;
     private static SharedPreferences data(Context c){return c.getSharedPreferences("haiagaru.traffic-usage",0);}
     private static boolean enabled(Context c){return c.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).getBoolean(ENABLED,false);}
     public static synchronized void start(Context context){
-        Context c=context.getApplicationContext();if(started||!enabled(c))return;started=true;
-        IO.scheduleWithFixedDelay(()->{if(!enabled(c))return;try{sample(c);}catch(RuntimeException ignored){}},60,60,TimeUnit.SECONDS);
+        Context c=context.getApplicationContext();
+        if(!enabled(c)){stopSamplerLocked();return;}
+        if(samplerTask!=null&&!samplerTask.isCancelled()&&!samplerTask.isDone()){started=true;return;}
+        started=true;
+        samplerTask=IO.scheduleWithFixedDelay(()->{
+            if(!enabled(c)){stopSampler();return;}
+            try{sample(c);}catch(RuntimeException ignored){}
+        },60,60,TimeUnit.SECONDS);
     }
     public static void sampleSoon(Context c){
-        if(c==null||!enabled(c))return;
+        if(c==null)return;
+        if(!enabled(c)){stopSampler();return;}
         start(c);
         long now=SystemClock.elapsedRealtime();
         synchronized(FEATURE_LOCK){if(lastResumeSampleElapsed>0&&now-lastResumeSampleElapsed<RESUME_SAMPLE_MIN_INTERVAL_MS)return;lastResumeSampleElapsed=now;}
         IO.execute(()->{try{sample(c.getApplicationContext());}catch(RuntimeException ignored){}});
     }
     static long delta(long before,long now){return before<0||now<before?0:now-before;}
-    static InputStream counting(Context context,String category,InputStream source){return context==null?source:new CountingInputStream(context.getApplicationContext(),category,source);}
+    static InputStream counting(Context context,String category,InputStream source){return context==null||source==null||!enabled(context)?source:new CountingInputStream(context.getApplicationContext(),category,source);}
     static void recordFeatureBytes(Context context,String category,long bytes){
         if(context==null||bytes<=0||!enabled(context))return;
         String day=currentFeatureDay();
@@ -118,9 +126,17 @@ public final class AppTrafficUsage {
             save.apply();
         }catch(JSONException ignored){}
     }
+    private static synchronized void stopSampler(){stopSamplerLocked();}
+    private static void stopSamplerLocked(){
+        started=false;
+        ScheduledFuture<?> task=samplerTask;
+        samplerTask=null;
+        if(task!=null)task.cancel(false);
+        synchronized(FEATURE_LOCK){lastResumeSampleElapsed=0L;}
+    }
     static void addSettings(LinearLayout root,Activity a){
         Switch toggle=new Switch(a);toggle.setText("アプリの通信量を記録する");toggle.setChecked(enabled(a));root.addView(toggle);
-        toggle.setOnCheckedChangeListener((v,on)->{Context app=a.getApplicationContext();app.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).edit().putBoolean(ENABLED,on).apply();if(on)start(app);IO.execute(()->{flushFeatureBytes(app);data(app).edit().remove("rx").remove("tx").remove("baselineRx").remove("baselineTx").apply();sample(app);});});
+        toggle.setOnCheckedChangeListener((v,on)->{Context app=a.getApplicationContext();app.getSharedPreferences("io.github.areteruhiro.chmate.haiagaru.ui-config",0).edit().putBoolean(ENABLED,on).apply();if(on)start(app);else stopSampler();IO.execute(()->{flushFeatureBytes(app);data(app).edit().remove("rx").remove("tx").remove("baselineRx").remove("baselineTx").apply();if(on)sample(app);});});
         Button button=new Button(a);button.setText("通信量の記録を見る");button.setOnClickListener(v->show(a));root.addView(button);
         TextView help=new TextView(a);help.setText("初期OFF。ONにすると、アプリ全体の受信・送信を日別に最大93日記録します。URLや本文は保存しません。Wi-Fiとモバイルの合算です。記録開始時には、前回の再起動以降にアプリUIDが使った累計を参考値として表示します。別途、一覧画像・リンクカード・動画／GIFサムネイルなどHaiagaru側で取得した本文量を機能別に目安表示します。通信ヘッダーやChMate標準機能の通信は機能別内訳に含まれません。通常は約1分ごとに計測し、画面再開時の追加計測も60秒に1回までに制限します。機能別データはまとめて保存します。日付をまたぐ分は計測日に計上します。再起動やカウンターのリセットをまたぐ通信は分割できません。VPN・共有UIDなどによりAndroid設定値と差が出る場合があります。保存容量とは別です。");root.addView(help);
     }
