@@ -176,7 +176,7 @@ internal fun BytecodePatchContext.patchExternalBoardAuth(version: String) {
     editor.methods.add(MutableMethod(ImmutableMethod(editor.type,"haiagaruSaveExternalDraft",emptyList(),"V",
         0x1,emptySet(),emptySet(),ImmutableMethodImplementation(2,emptyList(),emptyList(),emptyList()))).apply {
         addInstructions(0,"""
-            const/4 v0, 0x1
+            const/4 v0, 0x0
             invoke-direct {p0, v0}, $saveDraft
             return-void
         """.trimIndent())

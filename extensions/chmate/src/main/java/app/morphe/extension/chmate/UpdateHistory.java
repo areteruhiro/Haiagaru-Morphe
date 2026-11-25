@@ -123,7 +123,7 @@ final class UpdateHistory {
         StorageUsage.addButton(body,activity);
         AppTrafficUsage.addSettings(body,activity);
         toggle(body,activity,SettingsProfiles.prefs(activity),"テキスト選択メニューを優先する",SelectionMenuPriority.KEY,false,null);
-        for(String category:new String[]{"アプリ・通信","表示・検索","画像・動画","NG・文字列置換","履歴・投稿","エキスパート設定"}) {
+        for(String category:new String[]{"アプリ・通信","表示・検索","画像・動画","NG・文字列置換","履歴・投稿","スレ更新","通知","エキスパート設定"}) {
             section(body,activity,category);
             for(ReleaseFeatureOptions.Option option:ReleaseFeatureOptions.Option.values()) {
                 if(!category.equals(option.category()))continue;
@@ -287,7 +287,7 @@ final class UpdateHistory {
                 toggle(content,activity,main,"フィルターにAA・自分・返信を追加",
                         "quickFilterExtras",false,()->ExtraQuickFilters.updateOptions(activity));break;
             case HIDDEN_NG_NEW_ARRIVAL_COUNT:
-                toggle(content,activity,main,"スレ更新後の新着件数から非表示NGのレスを除く（191／226／242）",HiddenNgUnread.NEW_ARRIVAL_KEY,false,HiddenNgUnread::clear);
+                toggle(content,activity,main,"スレ更新後の新着件数から非表示NGのレスを除く（191／226／242）",HiddenNgUnread.NEW_ARRIVAL_KEY,false,null);
                 break;
             case LOCAL_IMAGES:
                 toggle(content, activity, LocalImageArchive.prefs(activity), "保存済み画像から表示",
@@ -486,6 +486,8 @@ final class UpdateHistory {
                 TextView conditionalRefreshHelp=new TextView(activity);
                 conditionalRefreshHelp.setText("初期OFFではChMate標準の条件付き・Range更新を使います。更新日時だけで新着を取りこぼす場合にONにすると条件付きヘッダーを省きます。通信量が増えることがあります。");
                 content.addView(conditionalRefreshHelp);break;
+            case NUMBERED_ARRIVALS:
+                toggle(content,activity,main,"新しく取得したレス番号で新着件数を数える",NewArrivalNumbers.KEY,true,null);break;
             case IMAGE_PAGING_GESTURES:
                 toggle(content,activity,VideoViewerSettings.prefs(activity),"Haiagaruの画像切り替え設定を使う",
                         NativeImagePaging.ENABLED,false,null);break;

@@ -6,6 +6,7 @@ import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.*
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import app.morphe.util.findFreeRegister
 
 /** Adjust only the integer rendered by ChMate's "新着 %d" update message. */
 internal fun BytecodePatchContext.patchHiddenNgNewArrivalCount(version:String){
@@ -39,6 +40,18 @@ internal fun BytecodePatchContext.patchHiddenNgNewArrivalCount(version:String){
     fun isFormatGetString(instruction:Instruction):Boolean{
         val ref=referencedMethod(instruction)?:return false
         return ref.name=="getString"&&ref.parameterTypes.map(CharSequence::toString)==listOf("I","[Ljava/lang/Object;")
+    }
+    fun ownerRegister(method: app.morphe.patcher.util.proxy.mutableTypes.MutableMethod): Int =
+        method.implementation!!.registerCount - 1 - method.parameterTypes.sumOf {
+            if (it.toString() in listOf("J", "D")) 2 else 1
+        }
+    fun captureBefore(method: app.morphe.patcher.util.proxy.mutableTypes.MutableMethod, index: Int) {
+        val collection = invocationRegisters(method.implementation!!.instructions[index]).single()
+        val owner = ownerRegister(method)
+        val source = if (owner < 16) owner else method.findFreeRegister(index)
+        check(collection < 16 && source < 16)
+        method.replaceInstruction(index,"invoke-static {v$source, v$collection}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->before(Ljava/lang/Object;Ljava/util/Collection;)I")
+        if (owner >= 16) method.addInstructions(index,"move-object/from16 v$source, p0")
     }
     fun hasResourceValue(instructions:List<Instruction>,before:Int,register:Int):Boolean=
         (0 until before).any { index->
@@ -116,14 +129,29 @@ internal fun BytecodePatchContext.patchHiddenNgNewArrivalCount(version:String){
                 val current=sub.registerA
                 val previous=sub.registerB
                 check(current<16&&previous<16){"New-arrival count arguments need range invocation in $version ${method.name}"}
-                method.replaceInstruction(index,"invoke-static {v$previous, v$current}, Lapp/morphe/extension/chmate/HiddenNgUnread;->newArrivalCount(II)I")
+                check(method.accessFlags and 0x8 == 0) { "New-arrival owner must be an instance: $version" }
+                val owner = ownerRegister(method)
+                val source = if (owner < 16) owner else method.findFreeRegister(index)
+                check(source < 16)
+                method.replaceInstruction(index,"invoke-static {v$source, v$previous, v$current}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->count(Ljava/lang/Object;II)I")
                 method.addInstructions(index+1,"move-result v$current")
-                val patchedInstructions=method.implementation!!.instructions.toList()
-                check(patchedInstructions[index].opcode==Opcode.INVOKE_STATIC&&patchedInstructions[index+1].opcode==Opcode.MOVE_RESULT)
-                check((patchedInstructions[index+1] as OneRegisterInstruction).registerA==current){"Adjusted new-arrival count was not stored for $version"}
+                if(owner >= 16) method.addInstructions(index,"move-object/from16 v$source, p0")
+                val sizeIndex=(index-1 downTo 0).first { isCollectionSize(ins[it]) &&
+                    (ins.getOrNull(it+1) as? OneRegisterInstruction)?.registerA == current }
+                val collection=invocationRegisters(ins[sizeIndex]).single()
+                val captureOwner=if(owner < 16) owner else method.findFreeRegister(sizeIndex)
+                check(collection < 16 && captureOwner < 16)
+                val move=if(owner < 16) "" else "move-object/from16 v$captureOwner, p0\n"
+                method.addInstructions(sizeIndex,move+"invoke-static {v$captureOwner, v$collection}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->after(Ljava/lang/Object;Ljava/util/Collection;)V")
                 patched++
             }
+            if(version != "0.8.10.242 dev") captureBefore(method,ins.indexOfFirst { isCollectionSize(it) })
         }
+    }
+    if(version == "0.8.10.242 dev") {
+        val owner=mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;")
+        val update=owner.methods.single { it.name=="b" && it.parameterTypes.map(CharSequence::toString)==listOf("Lo/KeJ12;","Ljp/syoboi/a2chMate/client/BBSUrlInfo;","Z") }
+        captureBefore(update,update.implementation!!.instructions.indexOfFirst { isCollectionSize(it) })
     }
     check(patched>0){"No exact '新着 %d' update count formatter found for $version (format=$formattedCalls resource=$resourceCalls array=$arrayWrites boxed=$boxedIntegers sub=$matchingSubtractions)"}
     println("Hidden NG per-update count: $version $patched formatted new-arrival value(s)")

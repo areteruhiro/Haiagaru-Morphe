@@ -34,6 +34,7 @@ public final class SettingsProfiles {
         booleanKey(ImageModeration.GORE);defaultValue(ImageModeration.GORE,false);
         booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
+        booleanKey(NewArrivalNumbers.KEY);defaultValue(NewArrivalNumbers.KEY,true);
         booleanKey(NotificationNg.CHAIN_KEY);defaultValue(NotificationNg.CHAIN_KEY,false);
         choiceKey(BoardUrlPicker.STYLE,new HashSet<>(Arrays.asList(0,1)));defaultValue(BoardUrlPicker.STYLE,1);
         RULES.put(BoardUrlPicker.KEY,v->v instanceof String&&BoardUrlPicker.validSaved((String)v));
