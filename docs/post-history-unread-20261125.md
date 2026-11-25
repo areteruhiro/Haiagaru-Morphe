@@ -1,5 +1,15 @@
 # 空の送信済み履歴・NG未読件数の調査
 
+## プレリリース公開
+
+2026-11-25、利用者の「一回プレスリリースして」の指示により、実機Frida確認を未実施のまま1.54.0-dev.1を公開した。Release／Attest CI `45537591706` が成功。公式安定版は1.53.0を維持する。
+
+初回CI `45537131667` はビルドプラグイン1.3.4の解決で失敗した。設定へ同じプラグインの公式配布先リポジトリを追加し、バージョンを変更せず再実行して成功した。
+
+公開9アセットとプレリリース属性を確認。配布JSON2種とdevのpreフィードは1.54.0-dev.1で一致。MPP SHA-256 `a73505a6f3101f9b378808243d2c1d3371ee48e6e0d9b80d907bd061eacaab33` はGitHubのdigestと一致。公開MPP内の分割拡張DEX全体で `NewArrivalNumbers` と `countNewArrivalResponseNumbers` が存在し、`ZeroNewArrivalRetry` が存在しないことを確認した。公開ページの日本語更新履歴と「ポジ 様」の謝辞も確認した。
+
+公開先: https://github.com/areteruhiro/Haiagaru-Morphe/releases/tag/1.54.0-dev.1
+
 ## 空の送信済み履歴
 
 `BackgroundPostingUi.clearSubmittedEdgeDraft` は投稿成功後、送信済みの本文と現在の入力が一致する場合だけ入力欄を消し、`haiagaruSaveExternalDraft` を呼ぶ。従来のラッパーは標準保存処理に `true` を渡していた。
