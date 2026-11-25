@@ -4071,3 +4071,16 @@ Success。
 - 更新前APK: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/board-picker-install242/previous242.apk
 - 実機Frida UI: ダイアログ表示・小さい幅・検索欄と一覧・登録板読込・検索絞り込み／解除・システム戻る・枠外タップの8項目成功。登録板9950件。初回5秒待ちでは未完了、15秒待ちで成功。登録URL・板の削除や投稿なし。
 - 結果: C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/board-picker-install242/frida-popup.log
+
+## 2026-11-25 新着件数補正・空のエッヂ下書き・通信量記録軽量化
+
+- Android 16 AVD `emulator-5580` の隔離 reporter 191／226／242へ導入。物理端末 `d5497008` には導入していない。
+- MPP `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/candidate.mpp` SHA-256 `d33b8c5aa7a8643fd12294984e5fbe06145a8a92dacc3a7ef69f57c149f09d42`。
+- 191 APK `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/chatmate191.apk` SHA-256 `bcebfc9f4bc858a8758cfbc70392bcf8e39904f3f3eb5092d1b8bf82c79f3d8d`。
+- 226 APK `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/chatmate226.apk` SHA-256 `97d2c6aebf21f4abf1ad09980e39fe4fa10ec95807e1eb70ab7607df0acfcd17`。
+- 242 APK `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/chatmate242.apk` SHA-256 `724ed41f784dfa193d3724155a6df05375762df4454ca2ce769c5f5334ef8003`。
+- 全APKの署名SHA-256 `0af4ddc1302b93481adb5c7d9657aae48d8d6733afc1e15d01129107a59c1eed`。各版のAPKにはインストール成功。
+- Frida 17.18.0、各版で新着件数の合成ケース7件、空のエッヂ下書き14件、通信量記録の一括保存・初期OFFを確認。1,000回の合成記録呼び出しは191で183ms、226で103ms、242で100ms。初期OFF時にサンプラーが起動しないことも確認。
+- DEX検査で全版の更新前／更新後／0件補正フックと空下書きガードを1か所ずつ確認。旧番号計算オプションはAPKに残っていない。
+- Frida結果・適用ログ・候補APK: `C:/Users/narum/.codex/worktrees/945d/haiagaru-official-20261123/build/new-arrival-zero-fallback-20261125/final-candidate/`。
+- 実機報告スレ上での新着0件再現は未実施。公開投稿、端末 `d5497008` のデータ変更なし。

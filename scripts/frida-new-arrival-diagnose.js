@@ -16,13 +16,6 @@ Java.perform(() => {
         return adjusted;
     };
     const refreshed = Java.use('app.morphe.extension.chmate.OpenTabsRefresh').refreshWatchedFragment.overload('java.lang.Object');
-    const numbered = Java.use('app.morphe.extension.chmate.NewArrivalNumbers').count.overload('java.lang.Object', 'int', 'int');
-    numbered.implementation = function(owner, previous, current) {
-        const result = numbered.call(this, owner, previous, current);
-        send({event: 'numbered-new-arrival-count', previousListSize: previous, currentListSize: current,
-            adjusted: result, numberedEnabled: preferences.getBoolean('countNewArrivalResponseNumbers', true)});
-        return result;
-    };
     refreshed.implementation = function(reader) {
         const result = refreshed.call(this, reader);
         send({event: 'background-reader-refresh', dispatched: result});

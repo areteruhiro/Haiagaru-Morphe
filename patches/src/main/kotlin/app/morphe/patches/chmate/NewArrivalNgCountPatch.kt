@@ -40,10 +40,13 @@ internal fun BytecodePatchContext.patchHiddenNgNewArrivalCount(version:String){
         val ref=referencedMethod(instruction)?:return false
         return ref.name=="getString"&&ref.parameterTypes.map(CharSequence::toString)==listOf("I","[Ljava/lang/Object;")
     }
-    fun captureBefore(method: app.morphe.patcher.util.proxy.mutableTypes.MutableMethod, index: Int) {
-        val collection = invocationRegisters(method.implementation!!.instructions[index]).single()
-        method.replaceInstruction(index,"invoke-static/range {v$collection .. v$collection}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->before(Ljava/util/Collection;)I")
-        method.addInstructions(index,"invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->owner(Ljava/lang/Object;)V")
+    fun captureBefore(method:app.morphe.patcher.util.proxy.mutableTypes.MutableMethod,index:Int){
+        val collection=invocationRegisters(method.implementation!!.instructions[index]).single()
+        method.addInstructions(index,"invoke-static/range {v$collection .. v$collection}, Lapp/morphe/extension/chmate/NewArrivalCountFallback;->begin(Ljava/util/Collection;)V")
+    }
+    fun captureAfter(method:app.morphe.patcher.util.proxy.mutableTypes.MutableMethod,index:Int){
+        val collection=invocationRegisters(method.implementation!!.instructions[index]).single()
+        method.addInstructions(index,"invoke-static/range {v$collection .. v$collection}, Lapp/morphe/extension/chmate/NewArrivalCountFallback;->after(Ljava/util/Collection;)V")
     }
     fun hasResourceValue(instructions:List<Instruction>,before:Int,register:Int):Boolean=
         (0 until before).any { index->
@@ -116,28 +119,30 @@ internal fun BytecodePatchContext.patchHiddenNgNewArrivalCount(version:String){
             val method=mutableClassDefBy(klass.type).methods.single {
                 it.name==original.name&&it.parameterTypes==original.parameterTypes&&it.returnType==original.returnType
             }
+            val afterIndices=linkedSetOf<Int>()
             for(index in targetIndices.toList().asReversed()){
                 val sub=method.implementation!!.instructions[index] as TwoRegisterInstruction
                 val current=sub.registerA
                 val previous=sub.registerB
                 check(current<16&&previous<16){"New-arrival count arguments need range invocation in $version ${method.name}"}
                 check(method.accessFlags and 0x8 == 0) { "New-arrival owner must be an instance: $version" }
-                method.replaceInstruction(index,"invoke-static {v$previous, v$current}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->count(II)I")
+                val sizeResultIndex=(index-1 downTo 1).first { resultIndex->
+                    val result=ins[resultIndex] as? OneRegisterInstruction
+                    ins[resultIndex].opcode==Opcode.MOVE_RESULT&&result?.registerA==current&&isCollectionSize(ins[resultIndex-1])
+                }
+                afterIndices.add(sizeResultIndex-1)
+                method.replaceInstruction(index,"invoke-static {v$previous, v$current}, Lapp/morphe/extension/chmate/NewArrivalCountFallback;->count(II)I")
                 method.addInstructions(index+1,"move-result v$current")
-                method.addInstructions(index,"invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->owner(Ljava/lang/Object;)V")
-                val sizeIndex=(index-1 downTo 0).first { isCollectionSize(ins[it]) &&
-                    (ins.getOrNull(it+1) as? OneRegisterInstruction)?.registerA == current }
-                val collection=invocationRegisters(ins[sizeIndex]).single()
-                method.addInstructions(sizeIndex,"invoke-static/range {p0 .. p0}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->owner(Ljava/lang/Object;)V\ninvoke-static/range {v$collection .. v$collection}, Lapp/morphe/extension/chmate/NewArrivalNumbers;->after(Ljava/util/Collection;)V")
                 patched++
             }
-            if(version != "0.8.10.242 dev") captureBefore(method,ins.indexOfFirst { isCollectionSize(it) })
+            for(index in afterIndices.toList().asReversed())captureAfter(method,index)
+            if(version!="0.8.10.242 dev")captureBefore(method,ins.indexOfFirst{isCollectionSize(it)})
         }
     }
-    if(version == "0.8.10.242 dev") {
+    if(version=="0.8.10.242 dev"){
         val owner=mutableClassDefBy("Ljp/syoboi/a2chMate/ui/reslist/ResListFragmentViewModel;")
-        val update=owner.methods.single { it.name=="b" && it.parameterTypes.map(CharSequence::toString)==listOf("Lo/KeJ12;","Ljp/syoboi/a2chMate/client/BBSUrlInfo;","Z") }
-        captureBefore(update,update.implementation!!.instructions.indexOfFirst { isCollectionSize(it) })
+        val update=owner.methods.single{it.name=="b"&&it.parameterTypes.map(CharSequence::toString)==listOf("Lo/KeJ12;","Ljp/syoboi/a2chMate/client/BBSUrlInfo;","Z")}
+        captureBefore(update,update.implementation!!.instructions.indexOfFirst{isCollectionSize(it)})
     }
     check(patched>0){"No exact '新着 %d' update count formatter found for $version (format=$formattedCalls resource=$resourceCalls array=$arrayWrites boxed=$boxedIntegers sub=$matchingSubtractions)"}
     println("Hidden NG per-update count: $version $patched formatted new-arrival value(s)")

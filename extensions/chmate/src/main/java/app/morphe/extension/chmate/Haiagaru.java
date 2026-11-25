@@ -3916,11 +3916,6 @@ public final class Haiagaru {
         live.toggle(excludeHiddenNgUnread,HiddenNgUnread.KEY);
         Switch excludeHiddenNgNew=addSwitch(lists,activity,"スレ更新後の「新着件数」から非表示NGのレスを除く",preferences.getBoolean(HiddenNgUnread.NEW_ARRIVAL_KEY,false));
         live.toggle(excludeHiddenNgNew,HiddenNgUnread.NEW_ARRIVAL_KEY);
-        Switch numberedArrivals=addSwitch(lists,activity,"新しく取得したレス番号で新着件数を数える",preferences.getBoolean(NewArrivalNumbers.KEY,true));
-        live.toggle(numberedArrivals,NewArrivalNumbers.KEY);
-        TextView numberedArrivalHelp=new TextView(activity);
-        numberedArrivalHelp.setText("初期ON。更新前の最大レス番号より後に取得したレスだけを数えます。投稿の削除による件数減少を新着から差し引かず、欠番や重複番号も新着に含めません。非表示NGを新着件数から除く設定にも対応します。OFFでは従来の更新前後の件数差分に戻ります。追加通信はありません。変更後の更新から反映します。");
-        lists.addView(numberedArrivalHelp);
         TextView unreadNgHelp=new TextView(activity);unreadNgHelp.setText("上の設定はHOME・スレ一覧の未読件数が対象です。下の設定は今回のスレ更新後に表示する新着件数だけが対象で、既読位置は変えません。取得して透明あぼーん判定できたレスだけを除外します。変更後はスレを開き直してください。");lists.addView(unreadNgHelp);
         Switch hideDroppedDrafts=addSwitch(lists,activity,
                 text("DAT落ちスレの下書きを非表示", "Hide drafts for dropped threads"),

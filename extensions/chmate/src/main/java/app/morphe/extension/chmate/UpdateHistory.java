@@ -486,8 +486,6 @@ final class UpdateHistory {
                 TextView conditionalRefreshHelp=new TextView(activity);
                 conditionalRefreshHelp.setText("初期OFFではChMate標準の条件付き・Range更新を使います。更新日時だけで新着を取りこぼす場合にONにすると条件付きヘッダーを省きます。通信量が増えることがあります。");
                 content.addView(conditionalRefreshHelp);break;
-            case NUMBERED_ARRIVALS:
-                toggle(content,activity,main,"新しく取得したレス番号で新着件数を数える",NewArrivalNumbers.KEY,true,null);break;
             case DIRECT_BOARD:
                 DirectBoardShortcut.addSettings(content,activity);break;
             case IMAGE_PAGING_GESTURES:

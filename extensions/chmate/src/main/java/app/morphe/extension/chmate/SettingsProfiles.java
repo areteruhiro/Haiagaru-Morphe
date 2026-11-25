@@ -34,12 +34,11 @@ public final class SettingsProfiles {
         booleanKey(ImageModeration.GORE);defaultValue(ImageModeration.GORE,false);
         booleanKey(ImageModeration.LIST);defaultValue(ImageModeration.LIST,false);
         booleanKey(NotificationNg.KEY);defaultValue(NotificationNg.KEY,true);
-        booleanKey(NewArrivalNumbers.KEY);defaultValue(NewArrivalNumbers.KEY,true);
         booleanKey(NotificationNg.CHAIN_KEY);defaultValue(NotificationNg.CHAIN_KEY,false);
         choiceKey(BoardUrlPicker.STYLE,new HashSet<>(Arrays.asList(0,1)));defaultValue(BoardUrlPicker.STYLE,1);
         RULES.put(BoardUrlPicker.KEY,v->v instanceof String&&BoardUrlPicker.validSaved((String)v));
         for(int slot=0;slot<DirectBoardShortcut.COUNT;slot++) RULES.put(DirectBoardShortcut.key(slot),v->v instanceof String&&DirectBoardShortcut.validSaved((String)v));
-        booleanKey(AppTrafficUsage.ENABLED);defaultValue(AppTrafficUsage.ENABLED,true);
+        booleanKey(AppTrafficUsage.ENABLED);defaultValue(AppTrafficUsage.ENABLED,false);
         booleanKey(ThreadScopedNg.ENABLED);defaultValue(ThreadScopedNg.ENABLED,!prefs(activity).getBoolean(MinimalSetup.ACTIVE,false));
         booleanKey(QuickFilterOptions.TRANSPARENT);defaultValue(QuickFilterOptions.TRANSPARENT,false);
         booleanKey(MediaUploadHosts.ASK_DESTINATION);defaultValue(MediaUploadHosts.ASK_DESTINATION,false);

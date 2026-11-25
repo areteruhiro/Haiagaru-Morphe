@@ -30,7 +30,7 @@ final class ReleaseFeatureOptions {
         READING_POSITION_CARD_DEFAULT("1.47.0"), EXTRA_QUICK_FILTERS("1.47.0"), KYODEMO_TOOLBAR_PALETTE("1.49.0"),
         ANIMANCH_HEART("1.49.0"), CRASH_REPORTING("1.49.0"), GIGAFILE_BUTTON("1.49.0"), GIGAFILE_LINK_MODE("1.49.0"),
         FUTABA_DIRECT_POSTING("1.49.0"), FUTABA_OFFICIAL_POSTING("1.49.0"), EXPERT_PERFORMANCE("1.49.2"), BACKGROUND_POSTING_OPT_IN("1.50.4"),
-        SHORT_BOARD_THREADS("1.50.0"), THREAD_TAB_GROUPS("1.52.0"), HIDE_IMAGE_BOTTOM_ACTIONS("1.52.0"), DIRECT_COPY_GESTURE("1.52.0"), NUMBERED_ARRIVALS("1.54.0"), DIRECT_BOARD("1.54.0");
+        SHORT_BOARD_THREADS("1.50.0"), THREAD_TAB_GROUPS("1.52.0"), HIDE_IMAGE_BOTTOM_ACTIONS("1.52.0"), DIRECT_COPY_GESTURE("1.52.0"), DIRECT_BOARD("1.54.0");
 
         final String version;
         Option(String version) { this.version = version; }
@@ -48,7 +48,7 @@ final class ReleaseFeatureOptions {
                 case FILTER_TRANSPARENT_BACKGROUND:return "表示・検索";
                 case READING_POSITION_CARD_DEFAULT:return "表示・検索";
                 case EXTRA_QUICK_FILTERS:case KYODEMO_TOOLBAR_PALETTE:return "表示・検索";
-                case CONDITIONAL_REFRESH:case NUMBERED_ARRIVALS:return "スレ更新";
+                case CONDITIONAL_REFRESH:return "スレ更新";
                 case X_POST_TRUNCATION_MODE:return "表示・検索";
                 case WACCHOI_NG_EXPIRY:return "NG・文字列置換";
                 case KEYWORD_NAMES:case GLOBAL_SEARCH_BACKGROUND:case GLOBAL_SEARCH_HISTORY:case GLOBAL_SEARCH_PARTIAL:
@@ -65,7 +65,6 @@ final class ReleaseFeatureOptions {
         String description() {
             switch(this){
                 case DIRECT_BOARD:return "最大8個のボタンに移動先の板を登録して、HOME・スレ内から1タップで開きます。各番号のアイコンは「ツールバーのアイコン画像」で変更できます。配置・表示切替はChMate標準のツールバー設定で変更できます。";
-                case NUMBERED_ARRIVALS:return "初期ON。更新前の最大レス番号より後に取得したレスだけを数え、削除による減少・欠番・重複番号を新着件数に混ぜません。NG除外にも対応し、追加通信はありません。OFFでは従来の件数差分に戻ります。";
                 case DIRECT_COPY_GESTURE:return "ChMateのジェスチャー設定に「長押しコピー ON／OFF」を追加します。ツールバーと同じ本文範囲選択の設定を切り替えます。初期OFF・ジェスチャー未割り当てです。";
                 case BACKGROUND_POSTING_OPT_IN:return "今回の更新後は、以前オンにした場合も一度オフになります。再びオンにできます。";
                 case THREAD_TAB_GROUPS:return "タブレット表示時のスレタブメニューにグループ化ボタンを表示します。初期オン。グループ管理自体は初期オフです。";
