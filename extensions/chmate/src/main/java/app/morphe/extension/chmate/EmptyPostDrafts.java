@@ -12,12 +12,17 @@ public final class EmptyPostDrafts {
             boolean old=type.equals("o.n7"), middle=type.equals("o.setBorderWidth");
             if (!old && !middle && !type.equals("jp.syoboi.a2chMate.postdata.PostData")) return false;
             String url=(String)NativeFields.find(data.getClass(),old?"l":"n").get(data);
-            String body=(String)NativeFields.find(data.getClass(),old?"b":middle?"h":"g").get(data);
+            String bodyField=old?"b":middle?"h":"g";
+            String body=(String)NativeFields.find(data.getClass(),bodyField).get(data);
             long posted=NativeFields.find(data.getClass(),middle?"g":"j").getLong(data);
-            if (posted != 0 || body == null || !body.isEmpty() || url == null) return false;
+            if (posted != 0 || url == null) return false;
             String host=Uri.parse(url).getHost();
             if (!("bbs.eddibb.cc".equalsIgnoreCase(host) || "bbs.eddibb.net".equalsIgnoreCase(host)
                     || "bbs.eddibb.org".equalsIgnoreCase(host)) || !BoardUrlPicker.threadUrl(url)) return false;
+            if (body != null && !body.isEmpty()) return false;
+            // ChMate may enqueue a ViewModel update and persist the previous blank snapshot
+            // in the same onPause call. Read the still-attached editor only for this exact Edge thread.
+            if (EdgeDraftAutosave.restoreLiveBody(data,url,bodyField)) return false;
             // Native lookup returns only the unsent draft for this exact thread;
             // native removal persists and notifies its observers. Never edit JSON directly.
             Method lookup=store.getClass().getMethod(old?"d":middle?"a":"c",String.class);
