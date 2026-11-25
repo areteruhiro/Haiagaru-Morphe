@@ -503,6 +503,7 @@ public final class Haiagaru {
         Object result=addToolbarChoice(toolbarModel, EDDI_ARCHIVE_TOOLBAR_ID, "haiagaru_edge_archive");
         result=addToolbarChoice(result,ResponseNotes.MENU,"haiagaru_response_notes");
         result=addToolbarChoice(result,BoardUrlPicker.ACTION,"haiagaru_board_url_picker");
+        for(int slot=0;slot<DirectBoardShortcut.COUNT;slot++) result=addToolbarChoice(result,DirectBoardShortcut.ACTION+slot,DirectBoardShortcut.resource(slot));
         return addToolbarChoice(result,OpenTabsRefresh.ACTION,"haiagaru_refresh_open_tabs");
     }
 
@@ -531,6 +532,7 @@ public final class Haiagaru {
         result=addToolbarChoice(result,OpenTabsRefresh.ACTION,"haiagaru_refresh_open_tabs");
         result=addToolbarChoice(result,ResponseNotes.MENU,"haiagaru_response_notes");
         result=addToolbarChoice(result,BoardUrlPicker.ACTION,"haiagaru_board_url_picker");
+        for(int slot=0;slot<DirectBoardShortcut.COUNT;slot++) result=addToolbarChoice(result,DirectBoardShortcut.ACTION+slot,DirectBoardShortcut.resource(slot));
         try {
             String version = applicationContext.getPackageManager().getPackageInfo(applicationContext.getPackageName(), 0).versionName;
             if ("0.8.10.191 dev".equals(version) || "0.8.10.226 dev".equals(version)
@@ -682,6 +684,7 @@ public final class Haiagaru {
         if ((itemId == 2 || itemId == StockChmatePosting.ACTION)
                 && BackgroundPostingUi.blockEditorWhileSending(toolbarActivity(fragment), itemId == 2 ? fragment : null)) return true;
         if(itemId==BoardUrlPicker.ACTION){BoardUrlPicker.show(toolbarActivity(fragment));return true;}
+        if(DirectBoardShortcut.handles(itemId)){DirectBoardShortcut.open(toolbarActivity(fragment),itemId-DirectBoardShortcut.ACTION);return true;}
         if(itemId==ResponseNotes.MENU){ResponseNotes.open(toolbarActivity(fragment),null);return true;}
         if(MultiResponseNg.click(fragment,itemId))return true;
         if(HomeThreadOrder.click(fragment,itemId))return true;
@@ -3557,6 +3560,7 @@ public final class Haiagaru {
         layout.addView(addedFeatures);
         ThreadWatch.addSettingsButton(layout, activity);
         BoardUrlPicker.addSettings(layout,activity);
+        DirectBoardShortcut.addSettings(layout,activity);
         SharedPreferences preferences = preferences(activity);
         SharedPreferences chMatePreferences = PreferenceManager.getDefaultSharedPreferences(activity);
         String chMateVersion = "";

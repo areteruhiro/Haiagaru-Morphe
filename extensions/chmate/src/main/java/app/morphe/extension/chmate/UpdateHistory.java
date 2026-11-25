@@ -488,6 +488,8 @@ final class UpdateHistory {
                 content.addView(conditionalRefreshHelp);break;
             case NUMBERED_ARRIVALS:
                 toggle(content,activity,main,"新しく取得したレス番号で新着件数を数える",NewArrivalNumbers.KEY,true,null);break;
+            case DIRECT_BOARD:
+                DirectBoardShortcut.addSettings(content,activity);break;
             case IMAGE_PAGING_GESTURES:
                 toggle(content,activity,VideoViewerSettings.prefs(activity),"Haiagaruの画像切り替え設定を使う",
                         NativeImagePaging.ENABLED,false,null);break;
