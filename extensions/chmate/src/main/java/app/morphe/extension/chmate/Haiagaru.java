@@ -4546,7 +4546,8 @@ public final class Haiagaru {
                 text("動画リンクから自動で読み込むもの（使用中の通信量が増えます）", "What to load from video links"),
                 new String[]{text("画像のみ（サムネイル）", "Thumbnail only"),
                         text("画像＋動画", "Thumbnail and video"),
-                        text("動画のみ", "Video only"), text("取得しない", "Do not retrieve"), "Wi-Fi時のみ自動で取得（画像＋動画）"},
+                        text("動画のみ", "Video only"), text("取得しない", "Do not retrieve"),
+                        "Wi-Fi時のみ自動で取得（画像＋動画）", "Wi-Fi時のみ自動で取得（動画のみ）"},
                 MobileMediaPolicy.videoConfigured());
         Spinner imageAutoFetch = addSpinner(layout, activity,
                 text("画像リンクの画像を自動で読み込む（使用中の通信量が増えます）", "Automatically load images from image links"),
@@ -4555,7 +4556,8 @@ public final class Haiagaru {
         Spinner gifAutoFetch = addSpinner(layout, activity,
                 text("GIFリンクから自動で読み込むもの（使用中の通信量が増えます）", "What to load from GIF links"),
                 new String[]{text("画像＋GIF", "Thumbnail and GIF"), text("画像のみ（サムネイル）", "Thumbnail only"),
-                        text("GIFのみ", "GIF only"), text("取得しない", "Do not retrieve"), "Wi-Fi時のみ自動で取得（画像＋GIF）"}, MobileMediaPolicy.gifConfigured());
+                        text("GIFのみ", "GIF only"), text("取得しない", "Do not retrieve"),
+                        "Wi-Fi時のみ自動で取得（画像＋GIF）", "Wi-Fi時のみ自動で取得（GIFのみ）"}, MobileMediaPolicy.gifConfigured());
         TextView gifFetchHelp = new TextView(activity);
         gifFetchHelp.setText(text(".gif のリンクが対象です。画像は静止サムネイル、GIFは本体です。サムネイル生成にもGIFの取得が必要です（最大8MB）。GIFのみは自動再生を意味しません。実体がMP4のアニメーションは動画の設定に従います。",
                 "Applies to .gif links. Images are still thumbnails; GIF means the original file, not autoplay. Creating a thumbnail also downloads the GIF (up to 8MB). MP4 animations use video settings."));
@@ -6009,10 +6011,10 @@ public final class Haiagaru {
     }
 
     public static int mediaAutoFetchMode() {
-        int mode=MobileMediaPolicy.videoConfigured();return mode==4?(MobileMediaPolicy.wifi()?1:3):mode>=0&&mode<=3?mode:3;
+        return MobileMediaPolicy.videoMode(MobileMediaPolicy.videoConfigured(),MobileMediaPolicy.wifi());
     }
     public static int gifAutoFetchMode() {
-        int mode=MobileMediaPolicy.gifConfigured();return mode==4?(MobileMediaPolicy.wifi()?0:3):GifAutoFetchPolicy.mode(mode,mediaImageFetchEnabled());
+        return MobileMediaPolicy.gifMode(MobileMediaPolicy.gifConfigured(),MobileMediaPolicy.wifi(),mediaImageFetchEnabled());
     }
 
     public static int autoReloadIntervalSeconds() {

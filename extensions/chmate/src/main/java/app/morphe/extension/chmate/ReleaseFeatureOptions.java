@@ -30,13 +30,14 @@ final class ReleaseFeatureOptions {
         READING_POSITION_CARD_DEFAULT("1.47.0"), EXTRA_QUICK_FILTERS("1.47.0"), KYODEMO_TOOLBAR_PALETTE("1.49.0"),
         ANIMANCH_HEART("1.49.0"), CRASH_REPORTING("1.49.0"), GIGAFILE_BUTTON("1.49.0"), GIGAFILE_LINK_MODE("1.49.0"),
         FUTABA_DIRECT_POSTING("1.49.0"), FUTABA_OFFICIAL_POSTING("1.49.0"), EXPERT_PERFORMANCE("1.49.2"), BACKGROUND_POSTING_OPT_IN("1.50.4"),
-        SHORT_BOARD_THREADS("1.50.0"), THREAD_TAB_GROUPS("1.52.0"), HIDE_IMAGE_BOTTOM_ACTIONS("1.52.0"), DIRECT_COPY_GESTURE("1.52.0"), DIRECT_BOARD("1.54.0");
+        SHORT_BOARD_THREADS("1.50.0"), THREAD_TAB_GROUPS("1.52.0"), HIDE_IMAGE_BOTTOM_ACTIONS("1.52.0"), DIRECT_COPY_GESTURE("1.52.0"), DIRECT_BOARD("1.54.0"), WIFI_MEDIA_FETCH_OPTIONS("1.54.0");
 
         final String version;
         Option(String version) { this.version = version; }
         String category() {
             switch(this){
                 case DIRECT_BOARD:return "表示・検索";
+                case WIFI_MEDIA_FETCH_OPTIONS:return "画像・動画";
                 case BACKGROUND_POSTING_OPT_IN:case EXPERT_PERFORMANCE:return "エキスパート設定";
                 case DIRECT_COPY_GESTURE:case THREAD_TAB_GROUPS:case SHORT_BOARD_THREADS:return "表示・検索";
                 case FUTABA_DIRECT_POSTING:case FUTABA_OFFICIAL_POSTING:return "履歴・投稿";
@@ -82,6 +83,7 @@ final class ReleaseFeatureOptions {
                 case REPORTER_BOARD:return "対応する板のスレ一覧に記者IDを表示します。";
                 case THREAD_THUMBNAILS:return "スレ一覧に冒頭レスの画像を表示します。大きさ・枚数・対象の板は画像・動画の設定で変更できます。";
                 case VIDEO_THUMBNAILS:return "対応する動画から静止画を作り、サムネイルとして表示します。";
+                case WIFI_MEDIA_FETCH_OPTIONS:return "動画・GIFリンクの自動取得をWi-Fi接続時だけにし、サムネイルを取得せず動画・GIF本体のみを取得できます。モバイル通信では自動取得しません。";
                 case VIDEO_IMMERSIVE:return "専用動画ビューアを横向きにしたとき、システムバーを隠して表示します。";
                 case IMAGE_NG:return "登録した画像に一致するレスを、通常のあぼーんとして表示します。";
                 case COPY_PASTE_NG:return "ChMateがコピペ省略と判定したレスを、透明あぼーんで非表示にします。";

@@ -115,9 +115,9 @@ final class UpdateHistory {
             android.widget.Spinner choice=Haiagaru.addSpinner(body,activity,fetchLabels[i],new String[]{"取得する","取得しない","Wi-Fi時のみ自動で取得"},MobileMediaPolicy.configured(fetchKeys[i]));
             new LiveSettings(SettingsProfiles.prefs(activity),()->{}).choice(choice,fetchKeys[i]);
         }
-        android.widget.Spinner videoFetch=Haiagaru.addSpinner(body,activity,"動画リンクの自動取得",new String[]{"画像のみ","画像＋動画","動画のみ","取得しない","Wi-Fi時のみ自動で取得（画像＋動画）"},MobileMediaPolicy.videoConfigured());
+        android.widget.Spinner videoFetch=Haiagaru.addSpinner(body,activity,"動画リンクの自動取得",new String[]{"画像のみ","画像＋動画","動画のみ","取得しない","Wi-Fi時のみ自動で取得（画像＋動画）","Wi-Fi時のみ自動で取得（動画のみ）"},MobileMediaPolicy.videoConfigured());
         new LiveSettings(SettingsProfiles.prefs(activity),()->{}).choice(videoFetch,"urlVideoFetchMode");
-        android.widget.Spinner gifFetch=Haiagaru.addSpinner(body,activity,"GIFリンクの自動取得",new String[]{"画像＋GIF","画像のみ","GIFのみ","取得しない","Wi-Fi時のみ自動で取得（画像＋GIF）"},MobileMediaPolicy.gifConfigured());
+        android.widget.Spinner gifFetch=Haiagaru.addSpinner(body,activity,"GIFリンクの自動取得",new String[]{"画像＋GIF","画像のみ","GIFのみ","取得しない","Wi-Fi時のみ自動で取得（画像＋GIF）","Wi-Fi時のみ自動で取得（GIFのみ）"},MobileMediaPolicy.gifConfigured());
         new LiveSettings(SettingsProfiles.prefs(activity),GifAutoFetch::changed).choice(gifFetch,GifAutoFetchPolicy.KEY);
         BoardUrlPicker.addSettings(body,activity);
         StorageUsage.addButton(body,activity);
@@ -323,6 +323,18 @@ final class UpdateHistory {
             case VIDEO_THUMBNAILS:
                 toggle(content, activity, FeatureSwitches.prefs(activity), "動画からサムネイルを生成",
                         "videoFrameThumbnailsEnabled", true, null); break;
+            case WIFI_MEDIA_FETCH_OPTIONS:
+                android.widget.Spinner videoFetch = Haiagaru.addSpinner(content, activity, "動画リンクの自動取得",
+                        new String[]{"画像のみ", "画像＋動画", "動画のみ", "取得しない",
+                                "Wi-Fi時のみ自動で取得（画像＋動画）", "Wi-Fi時のみ自動で取得（動画のみ）"},
+                        MobileMediaPolicy.videoConfigured());
+                new LiveSettings(SettingsProfiles.prefs(activity), () -> {}).choice(videoFetch, "urlVideoFetchMode");
+                android.widget.Spinner gifFetch = Haiagaru.addSpinner(content, activity, "GIFリンクの自動取得",
+                        new String[]{"画像＋GIF", "画像のみ", "GIFのみ", "取得しない",
+                                "Wi-Fi時のみ自動で取得（画像＋GIF）", "Wi-Fi時のみ自動で取得（GIFのみ）"},
+                        MobileMediaPolicy.gifConfigured());
+                new LiveSettings(SettingsProfiles.prefs(activity), GifAutoFetch::changed).choice(gifFetch, GifAutoFetchPolicy.KEY);
+                break;
             case VIDEO_IMMERSIVE:
                 toggle(content, activity, FeatureSwitches.prefs(activity), "専用動画ビューアの横画面で没入表示",
                         "videoLandscapeImmersive", false, null); break;

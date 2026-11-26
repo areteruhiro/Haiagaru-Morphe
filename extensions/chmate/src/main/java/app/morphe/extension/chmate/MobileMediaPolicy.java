@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 /** Additional preview traffic only; explicit URL actions remain available. */
 final class MobileMediaPolicy {
     static final String IMAGE="urlImageFetchPolicy",LIST="threadListFetchPolicy",WEB="webCardFetchPolicy",X="xCardFetchPolicy";
+    static final int WIFI_MEDIA_AND_THUMBNAIL=4,WIFI_MEDIA_ONLY=5;
 
     // On Android 7.0+ the default-network callback keeps this value current, so
     // media rows never synchronously cross Binder just to ask whether Wi-Fi is
@@ -145,6 +146,16 @@ final class MobileMediaPolicy {
     static boolean allowed(String key){int mode=configured(key);return mode==0||mode==2&&wifi();}
     static int videoConfigured(){Context c=Haiagaru.applicationContextForExtension();if(c==null)return 4;SharedPreferences p=c.getSharedPreferences(WacchoiSearchOptions.PREFS,0);return p.getInt("urlVideoFetchMode",p.getInt("mediaAutoFetchMode",2)==3?3:4);}
     static int gifConfigured(){Context c=Haiagaru.applicationContextForExtension();return c==null?4:c.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getInt(GifAutoFetchPolicy.KEY,4);}
+    static int videoMode(int configured,boolean wifi){
+        if(configured==WIFI_MEDIA_AND_THUMBNAIL)return wifi?1:3;
+        if(configured==WIFI_MEDIA_ONLY)return wifi?2:3;
+        return configured>=0&&configured<=3?configured:3;
+    }
+    static int gifMode(int configured,boolean wifi,boolean images){
+        if(configured==WIFI_MEDIA_AND_THUMBNAIL)return wifi?0:3;
+        if(configured==WIFI_MEDIA_ONLY)return wifi?2:3;
+        return GifAutoFetchPolicy.mode(configured,images);
+    }
     static long fileLimit(long existing) {
         Context c=Haiagaru.applicationContextForExtension();
         int mb=c==null?0:c.getSharedPreferences(WacchoiSearchOptions.PREFS,0).getInt("previewFileLimitMb",0);

@@ -190,8 +190,8 @@ public final class SettingsProfiles {
         booleanKey(SelectionMenuPriority.KEY);defaultValue(SelectionMenuPriority.KEY,false);
         numberKey("previewFileLimitMb",0,1024);
         for(String key:new String[]{MobileMediaPolicy.IMAGE,MobileMediaPolicy.LIST,MobileMediaPolicy.WEB,MobileMediaPolicy.X}){choiceKey(key,new HashSet<>(Arrays.asList(0,1,2)));defaultValue(key,2);}
-        choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3,4)));defaultValue("urlVideoFetchMode",4);
-        choiceKey(GifAutoFetchPolicy.KEY,new HashSet<>(Arrays.asList(0,1,2,3,4)));
+        choiceKey("urlVideoFetchMode",new HashSet<>(Arrays.asList(0,1,2,3,4,5)));defaultValue("urlVideoFetchMode",4);
+        choiceKey(GifAutoFetchPolicy.KEY,new HashSet<>(Arrays.asList(0,1,2,3,4,5)));
         defaultValue(GifAutoFetchPolicy.KEY,4);
         RULES.put("settingsLanguage",v->"ja".equals(v)||"en".equals(v)||"system".equals(v));
         RULES.put("imageVpnDomains",v->{if(!(v instanceof String))return false;
