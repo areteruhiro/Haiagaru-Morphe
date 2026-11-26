@@ -256,7 +256,7 @@ public final class HissiMenuController extends ToolScreenController {
         TextView title = new TextView(this);
         boolean compactCheckerBackHeader = !eddiArchiveMode && !wacchoiSearchLaunch && !currentUsesKyodemo;
         title.setText(eddiArchiveMode
-                ? "‹   エッヂ過去ログ  ·  ChMateビュー"
+                ? "‹   過去ログ  ·  ChMateビュー"
                 : wacchoiSearchLaunch ? "‹   ワッチョイ全文検索  ·  Kyodemo"
                 : currentUsesKyodemo
                         ? "‹   ID検索  ·  Kyodemoビュー"
