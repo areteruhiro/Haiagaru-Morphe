@@ -939,6 +939,15 @@ private fun BytecodePatchContext.patchEdgeArchiveToolbar(
     } else {
         "Ljp/syoboi/a2chMate/feature/toolbar/ToolbarDefault;"
     }
+    if (legacyToolbar) {
+        val parser=mutableClassDefBy(toolbarModelType).methods.single {
+            it.name=="<init>" && it.parameterTypes.map(CharSequence::toString)==listOf("Ljava/lang/String;")
+        }
+        parser.addInstructions(0,"""
+            invoke-static {p1}, Lapp/morphe/extension/chmate/ToolbarSettingsCompat;->for191(Ljava/lang/String;)Ljava/lang/String;
+            move-result-object p1
+        """.trimIndent())
+    }
 
     fun MutableMethod.wrapModelReturns(includeMarkAllRead: Boolean = false, favorites: Boolean = false) {
         val indexes = implementation?.instructions
