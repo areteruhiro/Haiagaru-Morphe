@@ -14,6 +14,10 @@ final class NukoArchive {
                 String[] parts=source.getPath().split("/");
                 java.net.HttpURLConnection c=(java.net.HttpURLConnection)new java.net.URL("https://n2ch.net/r/-/"+parts[3]+"/"+parts[4]+"/?redirect=t_2ch&guid=ON").openConnection();
                 try{c.setConnectTimeout(8000);c.setReadTimeout(8000);c.setInstanceFollowRedirects(false);
+                    // Nuko returns an empty 200 for Android's default Dalvik UA,
+                    // whereas its browser route supplies the official-thread redirect.
+                    c.setRequestProperty("User-Agent","Mozilla/5.0 Haiagaru");
+                    c.setRequestProperty("Accept","text/html,application/xhtml+xml");
                     int status=c.getResponseCode();if(status<300||status>=400)throw new java.io.IOException();
                     URI target=URI.create(c.getHeaderField("Location"));String host=target.getHost();
                     if(host!=null&&(host.endsWith(".5ch.io")||host.endsWith(".5ch.net"))&&target.getUserInfo()==null&&target.getPort()==-1
