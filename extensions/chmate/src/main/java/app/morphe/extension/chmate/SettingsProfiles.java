@@ -182,6 +182,7 @@ public final class SettingsProfiles {
         numberKey("hissiViewerTextZoom",100,130);
         booleanKey(PopularReplies.CUSTOM_THRESHOLD);defaultValue(PopularReplies.CUSTOM_THRESHOLD,false);
         booleanKey(PostEditorLimits.KEY);defaultValue(PostEditorLimits.KEY,true);
+        booleanKey("chtoio");defaultValue("chtoio",true);
         booleanKey(SiteCards.LONG_PRESS);defaultValue(SiteCards.LONG_PRESS,true);
         booleanKey(SiteCards.EXPLICIT_ONLY);defaultValue(SiteCards.EXPLICIT_ONLY,true);
         booleanKey(SiteCards.COMPACT);defaultValue(SiteCards.COMPACT,false);

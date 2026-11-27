@@ -453,7 +453,7 @@ final class EddiArchiveSearchUi {
     private void restoreQuery(Uri uri) {
         if (uri == null) return;
         if("n2ch.net".equals(uri.getHost())&&"/q/-/".equals(uri.getPath())){
-            activeProvider=2;provider.setSelection(2);set(keyword,uri.getQueryParameter("q"));
+            activeProvider=2;provider.setSelection(2);set(keyword,NukoArchive.keyword(uri.toString()));
             try{page=Math.max(1,Integer.parseInt(uri.getQueryParameter("p"))+1);}
             catch(RuntimeException ignored){page=1;}
             return;
@@ -541,9 +541,7 @@ final class EddiArchiveSearchUi {
 
     private Uri queryUri(int requestedPage) {
         if(provider.getSelectedItemPosition()==2)
-            return Uri.parse("https://n2ch.net/q/-/").buildUpon().appendQueryParameter("q",value(keyword))
-                    .appendQueryParameter("kako","1").appendQueryParameter("p",String.valueOf(requestedPage-1))
-                    .appendQueryParameter("guid","ON").build();
+            return Uri.parse(NukoArchive.query(value(keyword),requestedPage));
         if (provider.getSelectedItemPosition() == 1)
             return Uri.parse(KyodemoArchive.query(value(keyword), value(startDate), value(endDate), requestedPage));
         Uri.Builder builder = new Uri.Builder().scheme("https").authority(HOST).path("/")

@@ -996,6 +996,10 @@ public final class Haiagaru {
         Context appContext = resolvedContext == null ? context : resolvedContext;
         applicationContext = appContext;
         SharedPreferences startupPreferences=preferences(appContext);
+        // Apply once, including existing explicit OFF values. Later manual choices survive.
+        if(!startupPreferences.getBoolean("chtoioDefaultOnMigrationV1",false))
+            startupPreferences.edit().putBoolean("chtoio",true)
+                    .putBoolean("chtoioDefaultOnMigrationV1",true).apply();
         if(!startupPreferences.getBoolean("bottomFilterOpaqueMigrationV1",false))
             startupPreferences.edit().putBoolean(QuickFilterOptions.TRANSPARENT,false)
                     .putBoolean("bottomFilterOpaqueMigrationV1",true).apply();

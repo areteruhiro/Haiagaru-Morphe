@@ -171,6 +171,9 @@ public final class HissiMenuController extends ToolScreenController {
             kyodemoTarget = KyodemoRouting.wacchoiSearchUrl(sourceHost, sourceBoard,
                     initialWacchoiQuery);
             target = kyodemoTarget;
+        } else if (incoming!=null&&NukoArchive.accepts(incoming.toString())) {
+            currentUsesKyodemo=false;hissiTarget=null;kyodemoTarget=null;
+            target=incoming.toString();
         } else if (isKyodemoBoardSearch(incoming)) {
             currentUsesKyodemo = true;
             hissiTarget = null;
