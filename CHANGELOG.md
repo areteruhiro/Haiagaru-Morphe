@@ -1,3 +1,38 @@
+# Haiagaru 1.56.1 (2026-11-27)
+
+### 修正
+
+ぬこの過去ログ検索で「元スレのURLを取得できませんでした」となる問題を修正しました。Android標準のDalvik User-Agentでは空のHTTP 200が返るため、転送先の問い合わせにブラウザ系User-Agentを指定します。実機Fridaで修正前の200・転送先なしと、修正後の302・元スレURLありを確認し、コンパイルも成功しました。
+
+
+## 謝辞
+
+ご支援いただいている皆様、ありがとうございます。README掲載の支援者の皆様へ感謝申し上げます。
+
+- Kitadai 様
+- ポジ 様
+- yujirox 様
+- ﾜｯﾁｮｲ 8f01-uDul 様
+- toya0717 様
+- MUMEI 様
+- タケヨシキ 様
+- 無名 様
+- ｵｲｺﾗﾐﾈｵ 様
+- Red Frame X 様
+- ﾜｯﾁｮｲ 3f3c-gNc7 様
+- chikuwadon 様（外部チェッカーとの連携をご快諾いただき、ありがとうございます）
+- rikunode 様（226／242のDroid＋ツールバー対応）
+- tesu tesu（ﾜｯﾁｮｲ 12fb-0bb6 ID:.0MKHNvk00）様（エッヂのNG判定高速化の調査・情報提供）
+
+## 開発継続へのご支援のお願い
+
+開発の継続を応援していただける場合は、よろしければ[GitHubのStar](https://github.com/areteruhiro/Haiagaru-Morphe)だけでもお願いします。励みになります。さらにご支援いただける場合は、以下から寄付を受け付けています。
+
+- [Amazon Gift Card](https://www.amazon.co.jp/gp/product/B004N3APGO) Send to (areteruhiro@gmail.com)
+- [PayPay](https://qr.paypay.ne.jp/p2p01_FSEj08sDQx0enogO)
+
+皆様からのご報告・検証・ご支援が開発の励みになっています。
+
 # Haiagaru 1.56.0 (2026-11-27)
 
 ### 追加機能
